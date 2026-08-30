@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { adminTourReviews } from '@/data/adminTourQueue';
 import { ASSETS } from '@/data/mockData';
 import { ROUTES } from '@/lib/routes';
 
@@ -57,7 +58,9 @@ export function AdminDashboard() {
               <p className="text-xs text-[#ffdad4] uppercase tracking-wider mb-1">Pending Tours</p>
               <span className="w-2 h-2 rounded-full bg-[#ff7043] animate-ping" />
             </div>
-            <h3 className="text-2xl md:text-3xl font-mono font-extrabold text-[#ff7043]">38</h3>
+            <h3 className="text-2xl md:text-3xl font-mono font-extrabold text-[#ff7043]">
+              {adminTourReviews.length}
+            </h3>
             <p className="text-xs text-[#ffdad4] mt-1 underline">Cần kiểm duyệt ngay &rarr;</p>
           </Link>
 
@@ -80,7 +83,7 @@ export function AdminDashboard() {
               <p className="text-xs text-[#ffdad4]">Khu vực miền Trung có mưa dông. Hệ thống CSP đã kích hoạt tuyến đường an toàn.</p>
             </div>
           </div>
-          <span className="text-xs font-bold text-[#ffdad4] underline hidden sm:inline">Xem chi tiết &rarr;</span>
+          <span className="hidden text-xs font-bold text-[#ffdad4] sm:inline">Cảnh báo mô phỏng</span>
         </div>
 
         {/* Main Grid: Interactive Map + Pending Approval Queue */}
@@ -104,7 +107,7 @@ export function AdminDashboard() {
             {/* Map Hotspot Pins */}
             <div className="relative z-10 flex-1 flex items-center justify-center pointer-events-none">
               {/* Pin Hanoi */}
-              <div className="absolute top-[28%] left-[48%] pointer-events-auto cursor-pointer group">
+              <div className="absolute top-[28%] left-[48%]">
                 <div className="w-4 h-4 rounded-full bg-[#71f8e4] border-2 border-white shadow-lg pulse-marker" />
                 <span className="text-[10px] font-bold text-white bg-[#00152a]/90 px-1.5 py-0.5 rounded shadow-xs ml-2">
                   Hà Nội (184 tours)
@@ -112,7 +115,7 @@ export function AdminDashboard() {
               </div>
 
               {/* Pin Da Nang */}
-              <div className="absolute top-[48%] left-[54%] pointer-events-auto cursor-pointer group">
+              <div className="absolute top-[48%] left-[54%]">
                 <div className="w-4 h-4 rounded-full bg-[#ff7043] border-2 border-white shadow-lg pulse-coral" />
                 <span className="text-[10px] font-bold text-[#ffdad4] bg-[#5a0000]/90 px-1.5 py-0.5 rounded shadow-xs ml-2">
                   Đà Nẵng (Mưa bão)
@@ -120,7 +123,7 @@ export function AdminDashboard() {
               </div>
 
               {/* Pin HCMC */}
-              <div className="absolute top-[72%] left-[49%] pointer-events-auto cursor-pointer group">
+              <div className="absolute top-[72%] left-[49%]">
                 <div className="w-4 h-4 rounded-full bg-[#71f8e4] border-2 border-white shadow-lg pulse-marker" />
                 <span className="text-[10px] font-bold text-white bg-[#00152a]/90 px-1.5 py-0.5 rounded shadow-xs ml-2">
                   TP.HCM (210 tours)
@@ -136,57 +139,31 @@ export function AdminDashboard() {
                 <span className="material-symbols-outlined text-[#71f8e4]">rule</span>
                 Hàng đợi kiểm duyệt
               </h3>
-              <span className="text-xs text-[#ff7043] font-bold">38 tour mới</span>
+              <span className="text-xs text-[#ff7043] font-bold">{adminTourReviews.length} tour mẫu</span>
             </div>
 
             <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar">
-              {/* Item 1 */}
-              <Link
-                href={ROUTES.admin.tourReview('demo')}
-                className="bg-[#00152a] hover:bg-[#00152a]/80 p-3.5 rounded-xl border border-[#314863] cursor-pointer transition-all hover:border-[#71f8e4]"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-semibold text-[#71f8e4]">Hanoi Heritage Travel</span>
-                  <span className="text-[10px] text-[#b0c9e8]">2h trước</span>
-                </div>
-                <h4 className="text-sm font-bold text-white mb-1">Hanoi Old Quarter Cycling Tour</h4>
-                <div className="flex items-center justify-between text-xs text-[#b0c9e8]">
-                  <span>899.000đ • 3.5h</span>
-                  <span className="text-[#ff7043] font-bold">Cần duyệt &rarr;</span>
-                </div>
-              </Link>
-
-              {/* Item 2 */}
-              <Link
-                href={ROUTES.admin.tourReview('demo')}
-                className="bg-[#00152a] hover:bg-[#00152a]/80 p-3.5 rounded-xl border border-[#314863] cursor-pointer transition-all hover:border-[#71f8e4]"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-semibold text-[#71f8e4]">Sapa Trekking Co.</span>
-                  <span className="text-[10px] text-[#b0c9e8]">4h trước</span>
-                </div>
-                <h4 className="text-sm font-bold text-white mb-1">Fansipan Peak Climbing Adventure</h4>
-                <div className="flex items-center justify-between text-xs text-[#b0c9e8]">
-                  <span>2.450.000đ • 2D1N</span>
-                  <span className="text-[#ff7043] font-bold">Cần duyệt &rarr;</span>
-                </div>
-              </Link>
-
-              {/* Item 3 */}
-              <Link
-                href={ROUTES.admin.tourReview('demo')}
-                className="bg-[#00152a] hover:bg-[#00152a]/80 p-3.5 rounded-xl border border-[#314863] cursor-pointer transition-all hover:border-[#71f8e4]"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-semibold text-[#71f8e4]">An Nam Discovery</span>
-                  <span className="text-[10px] text-[#b0c9e8]">Hôm qua</span>
-                </div>
-                <h4 className="text-sm font-bold text-white mb-1">Hue Imperial City Heritage Walk</h4>
-                <div className="flex items-center justify-between text-xs text-[#b0c9e8]">
-                  <span>550.000đ • 4h</span>
-                  <span className="text-[#ff7043] font-bold">Cần duyệt &rarr;</span>
-                </div>
-              </Link>
+              {adminTourReviews.slice(0, 3).map((review) => (
+                <Link
+                  key={review.id}
+                  href={ROUTES.admin.tourReview(review.id)}
+                  className="cursor-pointer rounded-xl border border-[#314863] bg-[#00152a] p-3.5 transition-all hover:border-[#71f8e4] hover:bg-[#00152a]/80"
+                >
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#71f8e4]">{review.operatorName}</span>
+                    <span className="text-[10px] text-[#b0c9e8]">{review.submittedTime}</span>
+                  </div>
+                  <h4 className="mb-1 text-sm font-bold text-white">{review.tourName}</h4>
+                  <div className="flex items-center justify-between text-xs text-[#b0c9e8]">
+                    <span>
+                      {review.price} • {review.duration}
+                    </span>
+                    <span className="font-bold text-[#ff7043]">
+                      {review.status === 'pending' ? 'Cần duyệt' : review.status} &rarr;
+                    </span>
+                  </div>
+                </Link>
+              ))}
             </div>
 
             <Link

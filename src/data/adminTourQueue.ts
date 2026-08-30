@@ -1,35 +1,158 @@
-export type TourReviewQueueItem = {
-  id: string;
-  operatorName: string;
-  tourName: string;
-  submittedTime: string;
-  price: string;
-  duration: string;
-};
+import { ASSETS } from '@/data/mockData';
+import type { PendingTourReview } from '@/types';
 
-export const adminTourQueue: TourReviewQueueItem[] = [
+export const adminTourReviews: PendingTourReview[] = [
   {
     id: 'demo',
     operatorName: 'Hanoi Heritage Travel',
     tourName: 'Hanoi Old Quarter Cycling Tour',
+    location: 'Hoàn Kiếm, Hà Nội',
+    status: 'pending',
+    operatorAvatar: ASSETS.agencyLogo,
+    rating: 4.8,
+    activeTours: 12,
     submittedTime: '2 giờ trước',
     price: '899.000đ',
     duration: '3.5 giờ',
+    maxPeople: 12,
+    languages: 'Tiếng Anh, Tiếng Việt',
+    category: 'Cycling',
+    matchScore: 92,
+    heroImage: ASSETS.hanoiEveningCycling,
+    overview:
+      "Experience the vibrant energy of Hanoi's historic heart on this guided cycling tour. We'll navigate the 36 streets, exploring hidden alleys, sampling local street food, and learning about the rich heritage that shapes this dynamic city. Perfect for active travelers looking for an immersive cultural deep dive.",
+    itinerary: [
+      {
+        id: 'hanoi-step-1',
+        title: 'Meet at Opera House',
+        category: 'Tập trung',
+        time: '17:00',
+        icon: 'location_on',
+        description: 'Bike fitting and safety briefing. Introduction to the guide.',
+      },
+      {
+        id: 'hanoi-step-2',
+        title: 'Hoan Kiem Lake Circuit',
+        category: 'Tham quan',
+        time: '17:30',
+        icon: 'pedal_bike',
+        description: 'A gentle ride around the iconic lake as the city lights begin to turn on.',
+      },
+      {
+        id: 'hanoi-step-3',
+        title: 'Street Food Stop: Ta Hien',
+        category: 'Ẩm thực',
+        time: '18:45',
+        icon: 'restaurant',
+        description: "Sample local delicacies like Banh Mi or Bun Cha in the bustling 'Beer Street'.",
+        warning:
+          'Ta Hien street is pedestrian-only after 19:00 on weekends. Ensure bike parking is secured outside the zone.',
+      },
+      {
+        id: 'hanoi-step-4',
+        title: 'Return to Opera House',
+        category: 'Kết thúc',
+        time: '20:30',
+        icon: 'flag',
+        description: 'Tour concludes at the starting point.',
+      },
+    ],
   },
   {
     id: 'fansipan-demo',
     operatorName: 'Sapa Trekking Co.',
     tourName: 'Fansipan Peak Climbing Adventure',
+    location: 'Sa Pa, Lào Cai',
+    status: 'pending',
+    operatorAvatar: ASSETS.operatorAvatar,
+    rating: 4.7,
+    activeTours: 8,
     submittedTime: '4 giờ trước',
     price: '2.450.000đ',
     duration: '2N1Đ',
+    maxPeople: 10,
+    languages: 'Tiếng Anh, Tiếng Việt',
+    category: 'Trekking',
+    matchScore: 89,
+    heroImage: ASSETS.topoVietnamBg,
+    overview:
+      'A two-day guided ascent of Fansipan with acclimatization stops, overnight camp support, and a safety-focused route led by local mountain guides.',
+    itinerary: [
+      {
+        id: 'fansipan-step-1',
+        title: 'Tram Ton Trailhead',
+        category: 'Tập trung',
+        time: '07:00',
+        icon: 'location_on',
+        description: 'Equipment check, weather briefing, and guide introduction before departure.',
+      },
+      {
+        id: 'fansipan-step-2',
+        title: 'Base Camp 2.200m',
+        category: 'Nghỉ đêm',
+        time: '16:30',
+        icon: 'camping',
+        description: 'Dinner, recovery, and an overnight stay at the supported mountain camp.',
+      },
+      {
+        id: 'fansipan-step-3',
+        title: 'Fansipan Summit',
+        category: 'Chinh phục',
+        time: '09:00',
+        icon: 'landscape',
+        description: 'Final summit approach followed by a controlled descent to Tram Ton.',
+        warning: 'The summit approach depends on weather and trail conditions confirmed by the lead guide.',
+      },
+    ],
   },
   {
     id: 'hue-demo',
     operatorName: 'An Nam Discovery',
     tourName: 'Hue Imperial City Heritage Walk',
+    location: 'Thành phố Huế',
+    status: 'pending',
+    operatorAvatar: ASSETS.guideAvatar,
+    rating: 4.6,
+    activeTours: 6,
     submittedTime: 'Hôm qua',
     price: '550.000đ',
     duration: '4 giờ',
+    maxPeople: 15,
+    languages: 'Tiếng Anh, Tiếng Việt',
+    category: 'Heritage Walk',
+    matchScore: 91,
+    heroImage: ASSETS.topoVietnamBg,
+    overview:
+      'A guided heritage walk through the Hue Imperial City, connecting major gates, royal courtyards, and restored monuments with historical interpretation from a local guide.',
+    itinerary: [
+      {
+        id: 'hue-step-1',
+        title: 'Ngo Mon Gate',
+        category: 'Tập trung',
+        time: '08:00',
+        icon: 'account_balance',
+        description: 'Ticket check and introduction to the Nguyen Dynasty historical complex.',
+      },
+      {
+        id: 'hue-step-2',
+        title: 'Thai Hoa Palace',
+        category: 'Di sản',
+        time: '09:00',
+        icon: 'temple_buddhist',
+        description: 'Guided interpretation of the ceremonial palace and its restored architecture.',
+      },
+      {
+        id: 'hue-step-3',
+        title: 'Royal Garden Walk',
+        category: 'Tham quan',
+        time: '10:30',
+        icon: 'park',
+        description: 'A walking route through the inner gardens and remaining royal residences.',
+      },
+    ],
   },
 ];
+
+export function findAdminTourReview(id: string) {
+  return adminTourReviews.find((review) => review.id === id);
+}

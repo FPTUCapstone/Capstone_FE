@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { adminTourQueue } from '@/data/adminTourQueue';
+import { adminTourReviews } from '@/data/adminTourQueue';
 import { ROUTES } from '@/lib/routes';
 
 export function TourReviewQueue() {
@@ -14,7 +14,7 @@ export function TourReviewQueue() {
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#00152a]">Hàng đợi kiểm duyệt Tour</h1>
             <p className="mt-2 text-sm text-[#43474d]">Dữ liệu hiện tại là mock và được giữ lại từ prototype Vite.</p>
           </div>
-          <StatusBadge tone="coral">{adminTourQueue.length} tour mẫu</StatusBadge>
+          <StatusBadge tone="coral">{adminTourReviews.length} tour mẫu</StatusBadge>
         </div>
 
         <section className="overflow-hidden rounded-2xl border border-[#c3c6ce] bg-white shadow-xs">
@@ -27,7 +27,7 @@ export function TourReviewQueue() {
           </div>
 
           <div className="divide-y divide-[#eceef1]">
-            {adminTourQueue.map((review) => (
+            {adminTourReviews.map((review) => (
               <Link
                 key={review.id}
                 href={ROUTES.admin.tourReview(review.id)}
@@ -40,7 +40,9 @@ export function TourReviewQueue() {
                 <h2 className="text-sm font-bold text-[#00152a]">{review.tourName}</h2>
                 <span className="font-mono text-xs font-bold text-[#00152a]">{review.price}</span>
                 <span className="text-xs text-[#43474d]">{review.duration}</span>
-                <StatusBadge tone="coral">Cần duyệt</StatusBadge>
+                <StatusBadge tone={review.status === 'pending' ? 'coral' : 'neutral'}>
+                  {review.status === 'pending' ? 'Cần duyệt' : review.status}
+                </StatusBadge>
               </Link>
             ))}
           </div>
