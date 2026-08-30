@@ -1,13 +1,17 @@
 # TripMate Frontend
 
-TripMate is a smart travel planning and travel services platform. This repository contains its public-facing website and Administrator Web Application.
+TripMate is a smart travel planning and travel services platform. This repository contains its responsive Next.js Web application.
 
 ## Project Scope
 
-The frontend is divided by platform:
+The approved Web product model contains four areas:
 
-- **Web:** Public Landing Page and Administrator Web Application, implemented in this repository with Next.js.
-- **Mobile:** Traveler and Tour Operator applications are developed separately with Flutter and are not part of this Web application. `src/legacy/mobile` contains visual reference components only; they are not production Web routes.
+- **Public Web:** the landing page and supported Guest discovery and account flows.
+- **Traveler Web:** Traveler functions classified as shared Web/Mobile by the approved SRS.
+- **Tour Operator Web:** Tour Operator functions classified as shared Web/Mobile by the approved SRS.
+- **Administrator Web:** the Web-only administration workspace.
+
+Some active-trip and device-dependent functions remain Mobile-only in the separate Flutter application. The canonical use-case boundary is documented in [`docs/WEB_SCOPE_MATRIX.md`](docs/WEB_SCOPE_MATRIX.md). `src/legacy/mobile` contains historical visual references only; its files are not production Web routes and do not determine platform ownership.
 
 ## Technology Stack
 
@@ -29,9 +33,9 @@ src/
   components/                Shared brand, navigation, and UI components
   data/                      Current mock and prototype data
   features/
-    public/                  Public Landing Page feature
-    admin/                   Administrator dashboard and tour-review features
-  legacy/mobile/             Non-routed Flutter UI visual references
+    public/                  Current Public Landing Page feature
+    admin/                   Current Administrator dashboard and tour-review features
+  legacy/mobile/             Historical, non-routed visual references
   lib/                       Shared route definitions
   types/                     Shared TypeScript types
 ```
@@ -78,6 +82,8 @@ Do not commit `.env.local` or any secret values.
 
 ## Application Architecture
 
+The SRS permits future approved feature modules under `src/features/public`, `src/features/traveler`, `src/features/operator`, and `src/features/admin`. Directories and routes are created only when an approved feature is implemented; this repository currently implements only the routes listed below.
+
 ### Public Web
 
 - `/` — Public Landing Page
@@ -94,7 +100,7 @@ The Admin Web is intended to be a protected administration system. Authenticatio
 ### Wider TripMate architecture context
 
 - **Backend:** A separate ASP.NET Core / .NET 8 Web API is planned outside this repository; this frontend is not currently connected to it.
-- **Mobile:** A separate Flutter application serves Traveler and Tour Operator roles. Only legacy visual references are preserved here.
+- **Mobile:** A separate Flutter application serves supported Guest, Traveler, and Tour Operator functions, including Mobile-only navigation, offline, travel-group, commercial-service, and QR-scanning experiences.
 
 ## Current Development Status
 
@@ -113,6 +119,8 @@ The Admin Web is intended to be a protected administration system. Authenticatio
 
 ### Planned / not yet integrated
 
+- Approved Traveler and Tour Operator Web screens identified by the Web scope matrix
+- Remaining Public and Administrator Web screens identified by the Web scope matrix
 - Real authentication and route protection
 - Backend API integration and persistent data
 - Production environment configuration

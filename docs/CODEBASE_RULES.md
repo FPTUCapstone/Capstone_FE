@@ -4,14 +4,26 @@ This document defines the engineering rules for the TripMate Web Frontend. It ap
 
 ## 1. Product and repository boundary
 
-This repository implements only:
+Production Web may contain:
 
-- the Public Website at `/`;
-- the Administrator Web Application under `/admin`.
+- the Public Website;
+- SRS-supported Traveler Web features;
+- SRS-supported Tour Operator Web features;
+- the Administrator Web workspace.
 
-Traveler and Tour Operator applications are maintained separately in Flutter. Components under `src/legacy/mobile` are visual references, are not production Next.js routes, and must not be promoted to Web modules without an explicit product decision.
+The exact platform boundary is determined, in order, by the latest approved SRS, [`WEB_SCOPE_MATRIX.md`](WEB_SCOPE_MATRIX.md), an approved Web Screen Specification, and the approved implementation task. Do not create Web equivalents for `MOBILE_ONLY` or `NON_SCREEN` use cases without an updated approved SRS and screen specification.
+
+The separate Flutter application owns Mobile-only experiences. Components under `src/legacy/mobile` are historical visual references: they are not production Next.js routes, must not be copied directly into production Web, and do not determine whether a Traveler or Tour Operator function is Web, Mobile, or shared.
 
 The current Administrator login, tour-review data, and moderation interactions are prototypes. Do not describe mock behavior as production authentication, authorization, persistence, or API integration.
+
+### Web screen documentation gate
+
+Before implementing a new visual Web screen, follow:
+
+`SRS / UC → Requirement / MVP / User Flow → Web Screen Specification → Web Stitch design → reviewed UI → Next.js implementation`
+
+An approved Web Screen Specification is required. Stitch is optional for purely non-visual work or when maintainers explicitly approve implementation without it. Documentation approval defines scope; it does not by itself authorize new routes or features.
 
 ## 2. Approved technology
 
@@ -46,6 +58,8 @@ Create `src/services/` only when real external integrations require a shared ser
 
 Do not create empty architecture layers in anticipation of future work. Prefer the smallest structure that gives the current feature a clear home.
 
+When approved features are implemented, `src/features/` may contain `public/`, `traveler/`, `operator/`, and `admin/` product-area folders. Create only the folders needed by the assigned implementation; the structure above reflects the repository today.
+
 ## 4. App Router and routing
 
 - Production routes belong under `app/`.
@@ -58,11 +72,23 @@ Do not create empty architecture layers in anticipation of future work. Prefer t
 - Do not use `window.location` for ordinary internal navigation without a documented technical reason.
 - Never simulate routes through a local `currentPage` state or similar page-switching mechanism.
 
-Current route scopes are:
+Current implemented route scopes are:
 
 - `/` — Public Website
 - `/admin/login` — Administrator authentication placeholder
 - `/admin/*` — Administrator application
+
+Architectural guidance for future approved Web work is:
+
+```text
+app/
+  (public)/                  Optional public route group; exact strategy decided with implementation
+  traveler/                  Approved Traveler Web workspace routes
+  operator/                  Approved Tour Operator Web workspace routes
+  admin/                     Administrator Web workspace routes
+```
+
+This guidance does not authorize creating or reorganizing routes. Existing routes remain unchanged until a scoped implementation task is approved.
 
 ## 5. Server and Client Components
 
@@ -82,12 +108,12 @@ Never import server-only code, credentials, or privileged data access into a Cli
 
 ## 6. Feature organization
 
-Place business-specific implementation under `src/features/<feature>/`. Administrator features belong under `src/features/admin/<feature>/`.
+Place business-specific implementation under `src/features/<product-area>/<feature>/`, where `<product-area>` is `public`, `traveler`, `operator`, or `admin` and is allowed by the Web scope matrix.
 
 A feature may add only the folders it needs:
 
 ```text
-src/features/admin/<feature>/
+src/features/<product-area>/<feature>/
   components/
   schemas/
   services/
@@ -294,6 +320,7 @@ Use npm and commit `package-lock.json` whenever dependency changes modify it. Do
 A task is done only when all applicable conditions are met:
 
 - The requested requirement is implemented without unrelated scope.
+- The feature's platform classification and approved Web Screen Specification were verified before visual Web implementation.
 - Correct route behavior exists and supports direct refresh.
 - The code follows the approved architecture and naming rules.
 - TypeScript, lint, build, and applicable tests pass.
