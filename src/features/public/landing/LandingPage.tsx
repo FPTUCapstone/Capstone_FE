@@ -33,22 +33,25 @@ export function LandingPage() {
                 href="#features"
                 className="bg-[#ff7043] hover:bg-[#f4511e] text-white px-8 py-3.5 rounded-xl font-semibold text-base transition-all shadow-md hover:shadow-lg flex items-center gap-2"
               >
-                Bắt đầu hành trình
+                Khám phá công nghệ
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </a>
 
               <a
-                href="#features"
+                href="#journey-preview"
                 className="bg-transparent border-2 border-[#006b5f] text-[#006b5f] hover:bg-[#6df5e1]/20 px-6 py-3 rounded-xl font-semibold text-base transition-colors flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-lg">navigation</span>
-                Xem Demo Live Nav
+                Xem mô phỏng hành trình
               </a>
             </div>
           </div>
 
           {/* Hero Visual: Route Ribbon Interactive Mockup */}
-          <div className="relative h-[540px] bg-[#f2f4f7] rounded-2xl border border-[#e0e3e6] overflow-hidden shadow-sm flex flex-col p-6 z-10">
+          <div
+            id="journey-preview"
+            className="relative z-10 flex h-[540px] scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-[#e0e3e6] bg-[#f2f4f7] p-6 shadow-sm"
+          >
             {/* Faux Map Background */}
             <div
               className="absolute inset-0 bg-cover bg-center opacity-40 z-0"
@@ -97,21 +100,15 @@ export function LandingPage() {
                     </span>
                   </div>
                   <p className="text-sm text-[#43474d] mb-3">Phố lồng đèn về đêm & Chùa Cầu</p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-[#00152a] bg-[#eceef1] hover:bg-[#e0e3e6] transition-colors px-3 py-1.5 rounded-lg flex items-center gap-1"
-                    >
+                  <div className="flex flex-wrap gap-2">
+                    <span className="flex items-center gap-1 rounded-lg bg-[#eceef1] px-3 py-1.5 text-xs font-semibold text-[#00152a]">
                       <span className="material-symbols-outlined text-[16px] text-[#006b5f]">map</span>
-                      Xem bản đồ trực tiếp
-                    </button>
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-[#ba1a1a] bg-[#ffdad6] hover:bg-[#ffdad6]/80 transition-colors px-3 py-1.5 rounded-lg flex items-center gap-1"
-                    >
+                      Bản đồ minh họa
+                    </span>
+                    <span className="flex items-center gap-1 rounded-lg bg-[#ffdad6] px-3 py-1.5 text-xs font-semibold text-[#ba1a1a]">
                       <span className="material-symbols-outlined text-[16px]">warning</span>
-                      Check thời tiết
-                    </button>
+                      Cảnh báo thời tiết mô phỏng
+                    </span>
                   </div>
                 </div>
               </div>
@@ -209,12 +206,9 @@ export function LandingPage() {
                   Đánh giá độ phù hợp của từng tour với sở thích cá nhân của bạn thông qua điểm TripMatch chuẩn xác theo từng cá tính du lịch.
                 </p>
                 <div className="flex gap-4">
-                  <a
-                    href="#features"
-                    className="border-2 border-[#006b5f] text-[#006b5f] hover:bg-[#6df5e1]/20 font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
-                  >
-                    Xem danh sách Tour
-                  </a>
+                  <span className="rounded-xl border-2 border-[#006b5f] px-6 py-2.5 text-sm font-semibold text-[#006b5f]">
+                    Tour mẫu minh họa
+                  </span>
                   <Link
                     href={ROUTES.admin.tourReview('demo')}
                     className="text-[#43474d] hover:text-[#00152a] text-sm font-semibold flex items-center gap-1.5"

@@ -1,4 +1,4 @@
-import type { ItineraryNode, PendingTourReview, TourBooking, UserProfile } from '@/types';
+import type { ItineraryNode, TourBooking, UserProfile } from '@/types';
 
 export const ASSETS = {
   // Maps & locations
@@ -106,56 +106,3 @@ export const operatorBookings: TourBooking[] = [
     date: '11/08',
   },
 ];
-
-export const mockTourReview: PendingTourReview = {
-  id: 'REV-9921',
-  tourName: 'Hanoi Old Quarter Evening Cycle',
-  operatorName: 'Hanoi Heritage Travel',
-  operatorAvatar: ASSETS.agencyLogo,
-  rating: 4.8,
-  activeTours: 12,
-  submittedTime: '2 giờ trước',
-  price: '899.000đ',
-  duration: '3.5 Hours',
-  maxPeople: 12,
-  languages: 'English, Vietnamese',
-  category: 'Cycling',
-  matchScore: 92,
-  heroImage: ASSETS.hanoiEveningCycling,
-  overview: "Experience the vibrant energy of Hanoi's historic heart on this guided cycling tour. We'll navigate the 36 streets, exploring hidden alleys, sampling local street food, and learning about the rich heritage that shapes this dynamic city. Perfect for active travelers looking for an immersive cultural deep dive.",
-  itinerary: [
-    {
-      id: 'step-1',
-      title: 'Meet at Opera House',
-      category: 'Tập trung',
-      time: '17:00',
-      icon: 'location_on',
-      description: 'Bike fitting and safety briefing. Introduction to the guide.',
-    },
-    {
-      id: 'step-2',
-      title: 'Hoan Kiem Lake Circuit',
-      category: 'Tham quan',
-      time: '17:30',
-      icon: 'pedal_bike',
-      description: 'A gentle ride around the iconic lake as the city lights begin to turn on.',
-    },
-    {
-      id: 'step-3',
-      title: 'Street Food Stop: Ta Hien',
-      category: 'Ẩm thực',
-      time: '18:45',
-      icon: 'restaurant',
-      description: "Sample local delicacies like Banh Mi or Bun Cha in the bustling 'Beer Street'.",
-      warning: 'Ta Hien street is pedestrian-only after 19:00 on weekends. Ensure bike parking is secured outside the zone.',
-    },
-    {
-      id: 'step-4',
-      title: 'Return to Opera House',
-      category: 'Kết thúc',
-      time: '20:30',
-      icon: 'flag',
-      description: 'Tour concludes at the starting point.',
-    },
-  ],
-};

@@ -36,6 +36,8 @@ export interface PendingTourReview {
   id: string;
   tourName: string;
   operatorName: string;
+  location: string;
+  status: 'pending';
   operatorAvatar: string;
   rating: number;
   activeTours: number;
