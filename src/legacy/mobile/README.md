@@ -1,10 +1,12 @@
 # Legacy Traveler and Tour Operator Prototype
 
-This directory preserves the Traveler and Tour Operator UI from the original Vite prototype.
+This directory preserves Traveler and Tour Operator UI from the original Vite prototype.
 
-- These components are visual references for the TripMate Flutter Mobile application.
+- These components are historical visual references; they are not a platform-scope definition.
 - They are not imported by the production Next.js Web routes.
+- Do not copy them directly into production Web or treat their existence as proof that a feature is Mobile-only.
+- Determine Web, Mobile, or shared ownership from the latest approved SRS and `docs/WEB_SCOPE_MATRIX.md`.
 - Their old `AppView` callback props remain only to keep the reference code understandable and type-safe.
-- Do not add these screens to Public or Admin Web navigation without a separate product-scope decision.
+- Add production routes only through an approved Web Screen Specification and implementation task.
 
-Current production Web routes are limited to the Public Landing Page and Administrator application under `app/`.
+Current implemented Web routes remain the Public Landing Page and Administrator application under `app/`; that implementation status does not limit the approved future Web product scope.

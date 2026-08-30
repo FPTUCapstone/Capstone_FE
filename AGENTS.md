@@ -2,8 +2,10 @@
 
 ## Scope
 
-- Production Web covers `/` and `/admin/*` only.
-- `src/legacy/mobile/` is reference-only; do not create Traveler or Tour Operator Web portals.
+- Production Web may contain Public, approved Traveler, approved Tour Operator, and Administrator product areas.
+- Determine platform ownership from the latest approved SRS and `docs/WEB_SCOPE_MATRIX.md`; never invent Web equivalents of `MOBILE_ONLY` or `NON_SCREEN` use cases.
+- Current implemented routes remain `/` and `/admin/*`; future namespaces are created only by an approved implementation task.
+- `src/legacy/mobile/` is historical visual reference code, not a platform-scope authority or production Next.js source.
 - Distinguish mock/prototype behavior from production integration.
 
 ## Before Editing
@@ -18,6 +20,7 @@
 - Default to Server Components. Add `'use client'` only for browser interaction and keep the boundary narrow.
 - Put reusable cross-feature UI in `src/components/`; keep feature-specific code inside its feature.
 - Use real App Router navigation with `next/link` or `router.push()` when required.
+- Before a new visual Web screen, verify its SRS classification, approved Web Screen Specification, reviewed UI, and approved implementation task; Stitch is optional for non-visual work or by maintainer approval.
 - Do not add global state, UI frameworks, or new architecture layers without approval.
 
 ## Package Manager
