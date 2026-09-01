@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
+import { findAdminTourReview } from '@/data/adminTourQueue';
 import { TourReview } from '@/features/admin/tour-reviews/TourReview';
 
 type TourReviewPageProps = {
@@ -12,6 +14,11 @@ export const metadata: Metadata = {
 
 export default async function AdminTourReviewPage({ params }: TourReviewPageProps) {
   const { id } = await params;
+  const review = findAdminTourReview(id);
 
-  return <TourReview reviewId={id} />;
+  if (!review) {
+    notFound();
+  }
+
+  return <TourReview review={review} />;
 }

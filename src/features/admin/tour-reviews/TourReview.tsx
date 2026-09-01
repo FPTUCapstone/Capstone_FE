@@ -1,17 +1,15 @@
 import Link from 'next/link';
 
-import { mockTourReview } from '@/data/mockData';
 import { ROUTES } from '@/lib/routes';
+import type { PendingTourReview } from '@/types';
 
 import { TourReviewDecisionPanel } from './TourReviewDecisionPanel';
 
 type TourReviewProps = {
-  reviewId: string;
+  review: PendingTourReview;
 };
 
-export function TourReview({ reviewId }: TourReviewProps) {
-  const review = { ...mockTourReview, id: reviewId };
-
+export function TourReview({ review }: TourReviewProps) {
   return (
     <div className="min-h-screen bg-[#f7f9fc] text-[#191c1e] pb-24 md:pb-12">
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
@@ -37,7 +35,7 @@ export function TourReview({ reviewId }: TourReviewProps) {
               Kiểm Duyệt Tour: {review.tourName}
             </h1>
             <p className="text-sm text-[#43474d] mt-1">
-              Đơn vị tổ chức: <strong className="text-[#00152a]">{review.operatorName}</strong>
+              Đơn vị tổ chức: <strong className="text-[#00152a]">{review.operatorName}</strong> • {review.location}
             </p>
           </div>
 
@@ -86,7 +84,7 @@ export function TourReview({ reviewId }: TourReviewProps) {
 
                   <div className="bg-[#f7f9fc] border border-[#c3c6ce] p-3 rounded-xl">
                     <span className="text-[11px] font-semibold text-[#74777e] block">Ngôn ngữ</span>
-                    <span className="text-base font-bold text-[#00152a]">Song ngữ Anh - Việt</span>
+                    <span className="text-base font-bold text-[#00152a]">{review.languages}</span>
                   </div>
                 </div>
 
