@@ -1,8 +1,15 @@
 type BrandLogoProps = {
+  context?: 'main' | 'partner' | 'admin';
   inverse?: boolean;
 };
 
-export function BrandLogo({ inverse = false }: BrandLogoProps) {
+const labels = {
+  main: 'TripMate',
+  partner: 'TripMate Partner',
+  admin: 'TripMate Admin',
+};
+
+export function BrandLogo({ context = 'main', inverse = false }: BrandLogoProps) {
   const color = inverse ? 'text-white' : 'text-[#00152a]';
 
   return (
@@ -17,7 +24,7 @@ export function BrandLogo({ inverse = false }: BrandLogoProps) {
         <circle cx="20" cy="70" r="8" fill="currentColor" />
         <circle cx="80" cy="30" r="8" fill="currentColor" />
       </svg>
-      <span className="text-2xl font-bold tracking-tight">TripMate</span>
+      <span className="text-xl font-extrabold tracking-tight sm:text-2xl">{labels[context]}</span>
     </span>
   );
 }

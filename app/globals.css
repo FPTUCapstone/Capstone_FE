@@ -118,6 +118,30 @@ body {
   }
 }
 
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  outline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 3px solid #4fdbc8;
+}
+
+::selection {
+  background: #6df5e1;
+  color: #00152a;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -161,10 +185,6 @@ body {
 
 .pulse-coral {
   animation: pulse-coral 2s infinite;
-}
-
-.route-ribbon-dashed {
-  background-image: repeating-linear-gradient(to bottom, #c3c6ce 0, #c3c6ce 4px, transparent 4px, transparent 12px);
 }
 
 .custom-scrollbar::-webkit-scrollbar {

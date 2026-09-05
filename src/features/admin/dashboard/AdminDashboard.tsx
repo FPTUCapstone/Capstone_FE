@@ -14,7 +14,7 @@ export function AdminDashboard() {
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2.5 h-2.5 rounded-full bg-[#71f8e4] animate-ping" />
               <span className="text-xs font-mono font-bold text-[#71f8e4] uppercase tracking-wider">
-                System Command Center
+                Administrator workspace
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
