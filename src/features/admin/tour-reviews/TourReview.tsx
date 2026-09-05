@@ -42,7 +42,7 @@ export function TourReview({ review }: TourReviewProps) {
           <div className="flex items-center gap-3">
             <div className="bg-[#00152a] text-white px-3.5 py-2 rounded-xl flex items-center gap-2 font-mono font-bold text-xs shadow-xs">
               <span className="material-symbols-outlined text-[16px] text-[#71f8e4]">radar</span>
-              TripMatch: {review.matchScore}%
+              Preference match: {review.matchScore}%
             </div>
           </div>
         </div>
@@ -95,7 +95,7 @@ export function TourReview({ review }: TourReviewProps) {
               </div>
             </div>
 
-            {/* Itinerary Timeline with Route Ribbon */}
+            {/* Itinerary timeline */}
             <div className="bg-white border border-[#c3c6ce] rounded-2xl p-6 shadow-xs">
               <h3 className="text-lg font-bold text-[#00152a] mb-6 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#006b5f]">route</span>
