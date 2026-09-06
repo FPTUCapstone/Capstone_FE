@@ -8,7 +8,7 @@ export function AdminNavigation() {
     <header className="sticky top-0 z-50 border-b border-[#314863] bg-[#00152a]/95 px-4 py-3 text-white shadow-md backdrop-blur-md md:px-8">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <Link href={ROUTES.admin.dashboard} aria-label="TripMate Admin Dashboard">
-          <BrandLogo inverse />
+          <BrandLogo context="admin" inverse />
         </Link>
 
         <nav className="flex items-center gap-1 rounded-xl border border-[#314863] bg-[#102a43] p-1" aria-label="Admin navigation">

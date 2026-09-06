@@ -87,10 +87,21 @@ The SRS permits future approved feature modules under `src/features/public`, `sr
 ### Public Web
 
 - `/` — Public Landing Page
+- `/sign-in` — Public Traveler and Tour Operator sign-in prototype
+- `/register` — Traveler registration prototype
+- `/verify-account` — Traveler account verification prototype
+- `/forgot-password` — Progressive public password-recovery prototype
+
+### Tour Operator Web
+
+- `/partner/register` — Tour Operator registration and Application Submitted state
+- `/partner/application` — Pending Review, Rejected, and Approved application-status variants
+- `/partner/application/resubmit` — Rejected-application correction and resubmission prototype
 
 ### Admin Web
 
-- `/admin/login` — Login UI placeholder
+- `/admin/login` — Administrator sign-in prototype
+- `/admin/forgot-password` — Progressive Administrator password-recovery prototype
 - `/admin` — Administrator dashboard
 - `/admin/tours/reviews` — Mock tour-review queue
 - `/admin/tours/reviews/[id]` — Mock tour-review detail and decision UI
@@ -108,19 +119,21 @@ The Admin Web is intended to be a protected administration system. Authenticatio
 
 - Next.js App Router project structure
 - Public Landing Page
+- Public and Administrator authentication and password-recovery flows
+- Traveler registration and account verification
+- Tour Operator registration, submission, application status, and resubmission flows
 - Administrator layout, dashboard, tour-review queue, and review detail routes
 - Responsive styling and shared Web components
 
 ### Prototype / mock
 
-- Administrator login interface
+- Batch 1 account forms, status variants, validation, loading, error, and success behavior
 - Tour-review data and moderation interactions
-- Content used by the current public and admin screens
+- Content used by the current public, partner, and admin screens
 
 ### Planned / not yet integrated
 
-- Approved Traveler and Tour Operator Web screens identified by the Web scope matrix
-- Remaining Public and Administrator Web screens identified by the Web scope matrix
+- Remaining approved Traveler, Tour Operator, Public, and Administrator Web screens identified by the Web scope matrix
 - Real authentication and route protection
 - Backend API integration and persistent data
 - Production environment configuration

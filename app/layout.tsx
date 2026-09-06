@@ -16,15 +16,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'TripMate - Intelligent Travel Atlas',
+    default: 'TripMate - Explore Central Vietnam',
     template: '%s | TripMate',
   },
-  description: 'TripMate - Bản đồ du lịch thông minh và hệ thống kiểm soát hành trình trực tiếp.',
+  description: 'Discover destinations and published tours across Central Vietnam with TripMate.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="vi">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
