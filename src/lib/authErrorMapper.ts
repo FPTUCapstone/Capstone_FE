@@ -56,23 +56,56 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
 /**
  * Map a BE error code and/or server-returned message to a user-facing message.
  *
- * Priority order:
- * 1. Server-provided message (from Backend / dbo.Messages cache)
- * 2. Hardcoded message from AUTH_ERROR_MESSAGES by code
- * 3. Default fallback message (MSG127)
+ * Only known message codes and exact allow-listed user-facing messages are returned.
+ * Unknown Backend text is replaced with the generic fallback.
  */
 export function mapAuthError(code?: string, serverMessage?: string): string {
-  if (
-    serverMessage &&
-    serverMessage.trim() &&
-    serverMessage !== 'One or more validation errors occurred.'
-  ) {
-    return serverMessage;
-  }
   if (code && AUTH_ERROR_MESSAGES[code]) {
     return AUTH_ERROR_MESSAGES[code];
   }
+  if (serverMessage && Object.values(AUTH_ERROR_MESSAGES).includes(serverMessage)) {
+    return serverMessage;
+  }
   return AUTH_ERROR_MESSAGES.MSG127;
+}
+
+type ErrorWithCode = {
+  code?: unknown;
+};
+
+const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
+  'auth/email-already-in-use': AUTH_ERROR_MESSAGES.EMAIL_ALREADY_EXISTS,
+  'auth/expired-action-code': AUTH_ERROR_MESSAGES.MSG14,
+  'auth/invalid-action-code': AUTH_ERROR_MESSAGES.MSG14,
+  'auth/invalid-email': AUTH_ERROR_MESSAGES.EMAIL_INVALID,
+  'auth/network-request-failed': AUTH_ERROR_MESSAGES.NETWORK_ERROR,
+  'auth/too-many-requests':
+    'Too many attempts. Please wait a few minutes before trying again.',
+  'auth/weak-password': AUTH_ERROR_MESSAGES.PASSWORD_POLICY_INVALID,
+};
+
+/** Map Firebase errors by their stable code and never expose SDK/internal messages. */
+export function mapFirebaseAuthError(error: unknown, fallback = AUTH_ERROR_MESSAGES.MSG127): string {
+  if (typeof error === 'object' && error !== null) {
+    const code = (error as ErrorWithCode).code;
+    if (typeof code === 'string' && FIREBASE_ERROR_MESSAGES[code]) {
+      return FIREBASE_ERROR_MESSAGES[code];
+    }
+  }
+
+  return fallback;
+}
+
+/** Map a structured Backend error by code; unknown response text is not user-facing. */
+export function getApiErrorMessage(error: unknown, fallback = AUTH_ERROR_MESSAGES.MSG127): string {
+  if (typeof error === 'object' && error !== null) {
+    const code = (error as ErrorWithCode).code;
+    if (typeof code === 'string' && AUTH_ERROR_MESSAGES[code]) {
+      return AUTH_ERROR_MESSAGES[code];
+    }
+  }
+
+  return fallback;
 }
 
 /** Extract the first field-level error from a 400 BE errors object. */
@@ -83,7 +116,7 @@ export function extractFieldErrors(
   const mapped: Record<string, string> = {};
   for (const [field, raw] of Object.entries(errors)) {
     const val = Array.isArray(raw) ? raw[0] : raw;
-    // If val is a known code (e.g. "MSG01"), map it; if it's already a full message from server, keep it
+    // Map known codes or allow-listed copy; replace unexpected Backend text with a safe fallback.
     mapped[field] = mapAuthError(val, val);
   }
   return mapped;
@@ -102,4 +135,3 @@ export function isTooManyRequestsError(err: unknown): boolean {
   }
   return false;
 }
-

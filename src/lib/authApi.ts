@@ -73,6 +73,15 @@ export interface ApiError {
   status: number;
 }
 
+export function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    typeof (error as { status?: unknown }).status === 'number'
+  );
+}
+
 interface RawApiErrorBody {
   code?: string;
   errorCode?: string;
@@ -116,7 +125,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
   const apiError: ApiError = {
     code: errorCode,
     message: body?.message ?? body?.title,
-    errors: fieldErrors ?? (body?.errors as Record<string, string>),
+    errors: fieldErrors,
     status: body?.statusCode ?? res.status,
   };
   throw apiError;

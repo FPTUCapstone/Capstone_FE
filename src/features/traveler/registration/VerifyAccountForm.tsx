@@ -7,14 +7,27 @@ import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
-import { isTooManyRequestsError } from '@/lib/authErrorMapper';
+import { isTooManyRequestsError, mapFirebaseAuthError } from '@/lib/authErrorMapper';
 import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
 import { ROUTES } from '@/lib/routes';
 
-type VerifyAccountFormProps = { email?: string };
+type Feedback = {
+  tone: 'info' | 'error' | 'success' | 'warning';
+  message: string;
+};
 
-export function VerifyAccountForm({ email = '' }: VerifyAccountFormProps) {
-  const [feedback, setFeedback] = useState<{ tone: 'info' | 'error' | 'success'; message: string } | null>(null);
+type VerifyAccountFormProps = { deliveryFailed?: boolean; email?: string };
+
+export function VerifyAccountForm({ deliveryFailed = false, email = '' }: VerifyAccountFormProps) {
+  const [feedback, setFeedback] = useState<Feedback | null>(
+    deliveryFailed
+      ? {
+          tone: 'warning',
+          message:
+            'The first verification email could not be delivered. Please request a new link below.',
+        }
+      : null,
+  );
   const [resending, setResending] = useState(false);
 
   // 60-second cooldown for resending verification email
@@ -55,11 +68,13 @@ export function VerifyAccountForm({ email = '' }: VerifyAccountFormProps) {
         });
         return;
       }
-      const errorMsg =
-        err instanceof Error && !err.message.includes('auth/')
-          ? err.message
-          : 'Unable to send verification email. Please try again later or sign in.';
-      setFeedback({ tone: 'error', message: errorMsg });
+      setFeedback({
+        tone: 'error',
+        message: mapFirebaseAuthError(
+          err,
+          'Unable to send verification email. Please try again later or sign in.',
+        ),
+      });
     } finally {
       setResending(false);
     }
@@ -76,7 +91,9 @@ export function VerifyAccountForm({ email = '' }: VerifyAccountFormProps) {
       </h2>
       
       <p className="mt-2 text-xs leading-relaxed text-[#6B7C97] max-w-sm mx-auto">
-        We have sent a verification link to your registered email address. Please check your inbox and click the link to activate your account.
+        {deliveryFailed
+          ? 'Use the button below to request a new verification link, then check your inbox to activate your account.'
+          : 'We have sent a verification link to your registered email address. Please check your inbox and click the link to activate your account.'}
       </p>
 
       {email ? (
