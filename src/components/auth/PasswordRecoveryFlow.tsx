@@ -64,7 +64,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
       return;
     }
     if (code.trim().toLowerCase() === 'expired') {
-      setError('Invalid or expired verification code. Please request a new OTP.');
+      setError('The verification link or code is invalid or expired. Please request a new one.');
       return;
     }
     void run(() => setStep('password'));

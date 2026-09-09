@@ -5,7 +5,12 @@ type VerifyAccountPageProps = { email?: string };
 
 export function VerifyAccountPage({ email }: VerifyAccountPageProps) {
   return (
-    <AuthShell eyebrow="Account verification" title="One step before your journey begins." description="Confirm the code delivered to your Email Address to activate the pending Traveler account.">
+    <AuthShell
+      singlePanel
+      eyebrow="Account verification"
+      title="Verify your account"
+      description="Enter the verification code sent to the registered Email Address. Protected Traveler functions remain unavailable until verification succeeds."
+    >
       <VerifyAccountForm email={email} />
     </AuthShell>
   );
