@@ -16,8 +16,12 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { CheckboxField, PasswordField, TextField } from '@/components/ui/FormControls';
 import { LegalModal, PrivacyContent, TermsContent } from '@/components/ui/LegalModal';
-import { type ApiError, googleAuth, registerTraveler, saveTokens } from '@/lib/authApi';
-import { extractFieldErrors, mapAuthError } from '@/lib/authErrorMapper';
+import { googleAuth, isApiError, registerTraveler, saveTokens } from '@/lib/authApi';
+import {
+  extractFieldErrors,
+  getApiErrorMessage,
+  mapFirebaseAuthError,
+} from '@/lib/authErrorMapper';
 import { ROUTES } from '@/lib/routes';
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
@@ -45,14 +49,14 @@ function validateForm(fields: {
     e.fullName = 'Please enter your full name.';
   } else if (/\d/.test(trimmedName)) {
     e.fullName = 'Full name cannot contain digits.';
-  } else if (/[^\p{L}\s]/u.test(trimmedName)) {
+  } else if (/[^\p{L}\p{Zs}]/u.test(trimmedName)) {
     e.fullName = 'Full name can only contain letters and spaces.';
   } else {
     const normalizedName = trimmedName.replace(/\s+/g, ' ');
     if (normalizedName.length < 2) {
       e.fullName = 'Full name must be at least 2 characters.';
-    } else if (normalizedName.length > 100) {
-      e.fullName = 'Full name must not exceed 100 characters.';
+    } else if (normalizedName.length > 150) {
+      e.fullName = 'Full name must not exceed 150 characters.';
     }
   }
 
@@ -79,8 +83,8 @@ function validateForm(fields: {
     e.password = 'Password cannot start or end with a space.';
   } else if (password.length < 8) {
     e.password = 'Password must be at least 8 characters.';
-  } else if (password.length > 128) {
-    e.password = 'Password must not exceed 128 characters.';
+    } else if (password.length > 72) {
+      e.password = 'Password must not exceed 72 characters.';
   } else {
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
@@ -166,17 +170,22 @@ export function TravelerRegistrationForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       createdFirebaseUser = userCredential.user;
 
-      // 2. Send Firebase verification email link
-      const actionCodeSettings = {
-        url: `${window.location.origin}/verify-email`,
-        handleCodeInApp: false,
-      };
-      await sendEmailVerification(createdFirebaseUser, actionCodeSettings);
+      // 2. Get the ID token required by the current Backend contract.
+      let idToken: string;
+      try {
+        idToken = await createdFirebaseUser.getIdToken();
+      } catch (tokenError) {
+        // Backend has not been called yet, so cleanup cannot remove a committed row.
+        try {
+          await createdFirebaseUser.delete();
+        } catch {
+          // Best-effort client rollback; Firebase may require server-side reconciliation.
+        }
+        throw tokenError;
+      }
 
-      // 3. Get ID token from Firebase
-      const idToken = await createdFirebaseUser.getIdToken();
-
-      // 4. Register Traveler in TripMate Backend
+      // 3. Register the pending Traveler before email delivery. If delivery fails,
+      // both account records remain recoverable through the resend screen.
       try {
         await registerTraveler(
           {
@@ -189,45 +198,74 @@ export function TravelerRegistrationForm() {
           idToken
         );
       } catch (backendError) {
-        // Rollback: delete Firebase account if backend registration fails
-        try {
-          await createdFirebaseUser.delete();
-        } catch (delErr) {
-          console.error('Failed to rollback Firebase user:', delErr);
+        // A structured API response proves that Backend rejected registration.
+        // For network/transport errors the commit outcome is unknown, so deleting
+        // the Firebase user could instead orphan a successfully-created Backend row.
+        const isDeterministicRejection =
+          isApiError(backendError) && [400, 401, 403, 409, 422].includes(backendError.status);
+        if (isDeterministicRejection) {
+          try {
+            await createdFirebaseUser.delete();
+          } catch {
+            // Best-effort client rollback; Firebase may require server-side reconciliation.
+          }
         }
         throw backendError;
       }
 
-      // 5. Navigate to verify-account instruction screen
-      router.push(`${ROUTES.verifyAccount}?email=${encodeURIComponent(normalizedEmail)}`);
+      // 4. Send the Firebase verification link.
+      let deliveryFailed = false;
+      try {
+        await sendEmailVerification(createdFirebaseUser, {
+          url: `${window.location.origin}/verify-email`,
+          handleCodeInApp: false,
+        });
+      } catch {
+        deliveryFailed = true;
+      }
+
+      // 5. Continue to the resend-capable instruction screen even when the first
+      // delivery attempt fails. Retrying registration would create duplicate state.
+      const deliveryQuery = deliveryFailed ? '&delivery=failed' : '';
+      router.push(
+        `${ROUTES.verifyAccount}?email=${encodeURIComponent(normalizedEmail)}${deliveryQuery}`,
+      );
     } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'string') {
+      if (
+        !isApiError(err) &&
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        typeof (err as { code: unknown }).code === 'string'
+      ) {
         const firebaseErr = err as { code: string; message?: string };
         if (firebaseErr.code === 'auth/email-already-in-use') {
           setErrors((prev) => ({
             ...prev,
-            email: 'An account with this email already exists. Please sign in or use another email.',
+            email: mapFirebaseAuthError(firebaseErr),
           }));
         } else if (firebaseErr.code === 'auth/weak-password') {
           setErrors((prev) => ({
             ...prev,
-            password: 'Password is too weak. Please use a stronger password.',
+            password: mapFirebaseAuthError(firebaseErr),
           }));
         } else if (firebaseErr.code === 'auth/invalid-email') {
           setErrors((prev) => ({
             ...prev,
-            email: 'Invalid email format. Please enter a valid email address.',
+            email: mapFirebaseAuthError(firebaseErr),
           }));
         } else {
           setFeedback({
             tone: 'error',
-            message: firebaseErr.message || 'Registration failed. Please try again.',
+            message: mapFirebaseAuthError(
+              firebaseErr,
+              'Registration failed. Please try again.',
+            ),
           });
         }
-      } else {
-        const apiErr = err as ApiError;
-        if (apiErr.errors) {
-          const fieldMapped = extractFieldErrors(apiErr.errors);
+      } else if (isApiError(err)) {
+        if (err.errors) {
+          const fieldMapped = extractFieldErrors(err.errors);
           setErrors({
             fullName: fieldMapped['FullName'] ?? fieldMapped['fullName'],
             email: fieldMapped['Email'] ?? fieldMapped['email'],
@@ -235,8 +273,10 @@ export function TravelerRegistrationForm() {
             terms: fieldMapped['AcceptedTerms'] ?? fieldMapped['acceptedTerms'] ?? fieldMapped['terms'],
           });
         } else {
-          setFeedback({ tone: 'error', message: mapAuthError(apiErr.code, apiErr.message) });
+          setFeedback({ tone: 'error', message: getApiErrorMessage(err) });
         }
+      } else {
+        setFeedback({ tone: 'error', message: 'Registration failed. Please try again.' });
       }
     } finally {
       setLoading(false);
@@ -270,9 +310,13 @@ export function TravelerRegistrationForm() {
         setFeedback(null);
         return;
       }
-      const errorMsg =
-        err instanceof Error ? err.message : 'Google authentication failed. Please try again.';
-      setFeedback({ tone: 'error', message: errorMsg });
+      const fallback = 'Google authentication failed. Please try again.';
+      setFeedback({
+        tone: 'error',
+        message: isApiError(err)
+          ? getApiErrorMessage(err, fallback)
+          : mapFirebaseAuthError(err, fallback),
+      });
     } finally {
       setLoading(false);
     }
@@ -321,7 +365,7 @@ export function TravelerRegistrationForm() {
           name="email"
           type="email"
           autoComplete="email"
-          maxLength={256}
+          maxLength={254}
           placeholder="phuc.nguyen@gmail.com"
           value={email}
           disabled={loading}
@@ -402,7 +446,13 @@ export function TravelerRegistrationForm() {
           .
         </CheckboxField>
 
-        <ActionButton type="submit" variant="primary" loading={loading} className="w-full mt-2">
+        <ActionButton
+          type="submit"
+          variant="primary"
+          loading={loading}
+          disabled={!terms}
+          className="w-full mt-2"
+        >
           Register
         </ActionButton>
       </form>
