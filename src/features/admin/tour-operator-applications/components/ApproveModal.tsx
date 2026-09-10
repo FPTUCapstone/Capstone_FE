@@ -8,6 +8,7 @@ interface ApproveModalProps {
   isOpen: boolean;
   userId: number;
   companyName: string;
+  isMissingMandatory?: boolean;
   onClose: () => void;
   onSuccess: (result: ApproveOperatorApplicationResponseDto) => void;
 }
@@ -16,6 +17,7 @@ export function ApproveModal({
   isOpen,
   userId,
   companyName,
+  isMissingMandatory = false,
   onClose,
   onSuccess,
 }: ApproveModalProps) {
@@ -54,6 +56,18 @@ export function ApproveModal({
           </div>
         </div>
 
+        {isMissingMandatory && (
+          <div className="mb-4 rounded-xl border border-rose-300 bg-rose-50 p-3.5 text-xs font-bold text-rose-900 flex items-start gap-2.5">
+            <span className="text-base">⚠️</span>
+            <div>
+              <p className="font-extrabold text-rose-950">Approval Blocked</p>
+              <p className="mt-0.5 font-medium text-rose-800">
+                Mandatory <strong>Business License (GPKD/ĐKKD)</strong> document is missing or rejected.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800">
           <p className="mb-2 font-medium">
             Are you sure you want to approve the Tour Operator application for{' '}
@@ -84,9 +98,9 @@ export function ApproveModal({
           </button>
           <button
             type="button"
-            disabled={loading}
+            disabled={loading || isMissingMandatory}
             onClick={handleConfirm}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-md shadow-emerald-600/25 hover:bg-emerald-700 transition disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-md shadow-emerald-600/25 hover:bg-emerald-700 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 disabled:shadow-none"
           >
             {loading && (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true" />

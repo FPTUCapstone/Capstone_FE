@@ -121,6 +121,11 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
     );
   }
 
+  const hasBusinessLicense = detail.documents.some(
+    (d) => d.documentType === 'BusinessLicense' && d.status !== 'Rejected'
+  );
+  const isMissingMandatory = !hasBusinessLicense;
+
   return (
     <div className="mx-auto max-w-6xl p-6 animate-fadeIn">
       {toastMessage && (
@@ -141,6 +146,7 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
         userId={detail.userId}
         companyName={detail.companyName}
         applicationStatus={detail.applicationStatus}
+        isMissingMandatory={isMissingMandatory}
         onOpenApprove={() => setIsApproveOpen(true)}
         onOpenReject={() => setIsRejectOpen(true)}
       />
@@ -153,6 +159,7 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
         isOpen={isApproveOpen}
         userId={detail.userId}
         companyName={detail.companyName}
+        isMissingMandatory={isMissingMandatory}
         onClose={() => setIsApproveOpen(false)}
         onSuccess={handleApproveSuccess}
       />

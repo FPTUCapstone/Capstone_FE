@@ -8,6 +8,7 @@ interface ApplicationHeaderProps {
   userId: number;
   companyName: string;
   applicationStatus: OperatorApprovalStatus;
+  isMissingMandatory?: boolean;
   onOpenApprove: () => void;
   onOpenReject: () => void;
 }
@@ -16,6 +17,7 @@ export function ApplicationHeader({
   userId,
   companyName,
   applicationStatus,
+  isMissingMandatory = false,
   onOpenApprove,
   onOpenReject,
 }: ApplicationHeaderProps) {
@@ -60,8 +62,10 @@ export function ApplicationHeader({
           </button>
           <button
             type="button"
+            disabled={isMissingMandatory}
             onClick={onOpenApprove}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/25 hover:bg-emerald-700 transition focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            title={isMissingMandatory ? "Cannot approve: Missing mandatory Business License document" : "Approve Application"}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/25 hover:bg-emerald-700 transition focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 disabled:shadow-none"
           >
             ✓ Approve Application
           </button>
