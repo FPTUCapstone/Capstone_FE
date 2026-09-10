@@ -68,12 +68,12 @@ const MOCK_APPLICATIONS: Record<number, TourOperatorApplicationDetailDto> = {
     documents: [
       {
         documentId: 201,
-        documentType: 'BusinessLicense',
+        documentType: 'TaxCode',
         fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         uploadedAt: '2026-09-09T08:10:00Z',
         status: 'Submitted',
       },
-      // Missing TaxCode document to demonstrate mandatory document alert
+      // Missing BusinessLicense — demonstrates mandatory document warning banner
     ],
   },
 };
