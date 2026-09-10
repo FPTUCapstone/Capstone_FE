@@ -11,10 +11,8 @@ export function DocumentsGrid({ documents }: DocumentsGridProps) {
   const hasBusinessLicense = documents.some(
     (d) => d.documentType === 'BusinessLicense' && d.status !== 'Rejected'
   );
-  const hasTaxCode = documents.some(
-    (d) => d.documentType === 'TaxCode' && d.status !== 'Rejected'
-  );
-  const isMissingMandatory = !hasBusinessLicense || !hasTaxCode;
+  // TaxCode is a text field verified via public registry; no separate document upload required.
+  const isMissingMandatory = !hasBusinessLicense;
 
   return (
     <div className="mt-8 rounded-2xl border-2 border-slate-300 bg-white p-6 shadow-sm">
@@ -32,11 +30,10 @@ export function DocumentsGrid({ documents }: DocumentsGridProps) {
           <div className="flex items-start gap-3">
             <span className="text-xl">⚠️</span>
             <div>
-              <h4 className="font-extrabold text-amber-950 text-sm">Mandatory Legal Documents Missing or Rejected</h4>
+              <h4 className="font-extrabold text-amber-950 text-sm">Mandatory Document Missing or Rejected</h4>
               <p className="text-xs text-amber-900 mt-1">
-                Approval requires valid <strong>BusinessLicense</strong> and <strong>TaxCode</strong> documents.
+                Approval requires a valid <strong>Business License (GPKD/ĐKKD)</strong> document.
                 {!hasBusinessLicense && <span className="block mt-0.5 font-bold">• Missing Business License document.</span>}
-                {!hasTaxCode && <span className="block mt-0.5 font-bold">• Missing Tax Code document.</span>}
               </p>
             </div>
           </div>
