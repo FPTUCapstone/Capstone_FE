@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { RejectOperatorApplicationResponseDto } from '@/types/tour-operator-application';
 import { rejectOperatorApplication, ApiError } from '../api/tourOperatorApplicationApi';
 
 interface RejectModalProps {
@@ -8,7 +9,7 @@ interface RejectModalProps {
   userId: number;
   companyName: string;
   onClose: () => void;
-  onSuccess: (message: string) => void;
+  onSuccess: (result: RejectOperatorApplicationResponseDto) => void;
 }
 
 export function RejectModal({
@@ -34,8 +35,8 @@ export function RejectModal({
     try {
       setLoading(true);
       setError(null);
-      await rejectOperatorApplication(userId, reason.trim());
-      onSuccess(`Application rejected for "${companyName}". Notification sent to operator. (MSG116)`);
+      const res = await rejectOperatorApplication(userId, reason.trim());
+      onSuccess(res);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

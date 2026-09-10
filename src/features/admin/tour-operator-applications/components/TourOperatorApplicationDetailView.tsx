@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   ApproveOperatorApplicationResponseDto,
+  RejectOperatorApplicationResponseDto,
   TourOperatorApplicationDetailDto,
 } from '@/types/tour-operator-application';
 import { fetchOperatorApplicationDetail, ApiError } from '../api/tourOperatorApplicationApi';
@@ -88,9 +89,25 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
     setTimeout(() => setToastMessage(null), 8000);
   }
 
-  function handleRejectSuccess(msg: string) {
+  function handleRejectSuccess(result: RejectOperatorApplicationResponseDto) {
     setIsRejectOpen(false);
-    setToastMessage(msg);
+    setToastMessage(result.message || `Application rejected for "${detail?.companyName}". Notification sent to operator. (MSG116)`);
+
+    if (detail) {
+      setDetail({
+        ...detail,
+        accountStatus: result.accountStatus || 'Rejected',
+        applicationStatus: 'Rejected',
+        rejectionReason: result.rejectionReason,
+        reviewedBy: result.reviewedBy,
+        reviewedAt: result.reviewedAt,
+        documents: detail.documents.map((d) => ({
+          ...d,
+          status: d.status === 'Submitted' ? 'Rejected' : d.status,
+        })),
+      });
+    }
+
     setTimeout(() => setToastMessage(null), 8000);
   }
 

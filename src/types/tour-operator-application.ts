@@ -40,3 +40,14 @@ export interface ApproveOperatorApplicationResponseDto {
 export interface RejectOperatorApplicationRequest {
   reason: string;
 }
+
+export interface RejectOperatorApplicationResponseDto {
+  userId: number;
+  accountStatus: string;
+  applicationStatus: string;
+  rejectionReason: string;
+  reviewedBy: number;
+  reviewedAt: string;
+  message: string;
+}
+

@@ -1,5 +1,6 @@
 import {
   ApproveOperatorApplicationResponseDto,
+  RejectOperatorApplicationResponseDto,
   TourOperatorApplicationDetailDto,
 } from '@/types/tour-operator-application';
 
@@ -158,7 +159,7 @@ export async function rejectOperatorApplication(
   userId: number,
   reason: string,
   token?: string
-): Promise<void> {
+): Promise<RejectOperatorApplicationResponseDto> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -177,9 +178,22 @@ export async function rejectOperatorApplication(
     );
 
     if (response.ok) {
-      return;
+      return await response.json();
     }
   } catch (err) {
     console.warn('Backend API reject failed, falling back to mock rejection response:', err);
   }
+
+  // Fallback sample mock reject response
+  const sample = MOCK_APPLICATIONS[userId];
+  const companyName = sample?.companyName || `Tour Operator #${userId}`;
+  return {
+    userId,
+    accountStatus: 'Rejected',
+    applicationStatus: 'Rejected',
+    rejectionReason: reason,
+    reviewedBy: 1,
+    reviewedAt: new Date().toISOString(),
+    message: `Application rejected for "${companyName}". Notification sent to operator. (MSG116)`,
+  };
 }
