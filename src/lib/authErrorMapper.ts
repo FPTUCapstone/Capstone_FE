@@ -23,6 +23,11 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
   MSG_RESEND_SUCCESS: 'A fresh verification link has been sent. Please check your email.',
   MSG127: 'Something went wrong. Please try again later.',
 
+  // Backend AUTH_* error codes (ProblemDetails errorCode values)
+  AUTH_TOKEN_INVALID: 'Your authentication token is invalid or has expired. Please try again.',
+  AUTH_EMAIL_MISMATCH:
+    'The email address does not match the account used for registration. Please try again with the same email address.',
+
   // Semantic Message Codes
   REGISTER_SUCCESS: 'Account registered successfully! Please check your email for the verification link.',
   VERIFICATION_EMAIL_SENT: 'A verification code has been sent to your email.',

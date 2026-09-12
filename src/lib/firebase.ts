@@ -1,6 +1,12 @@
 import { getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
+import { assertFirebaseEnv } from './firebaseConfig';
+
+// Fail fast with an actionable message when required Firebase Web config is
+// missing, instead of an opaque initializeApp() runtime error.
+assertFirebaseEnv(process.env);
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

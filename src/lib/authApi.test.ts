@@ -19,14 +19,15 @@ describe('isApiError', () => {
   it.each([
     ['registerTraveler', () => registerTraveler({ acceptedTerms: true, email: 'traveler@example.com', fullName: 'Traveler Name', password: 'Password1!' }, 'firebase-token')],
     ['googleAuth', () => googleAuth('google-token')],
-  ])('normalizes a Backend code envelope for %s without fake field errors', async (_name, callApi) => {
+  ])('normalizes a ProblemDetails business error for %s without fake field errors', async (_name, callApi) => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         json: async () => ({
-          errors: { code: 'MSG03' },
-          statusCode: 409,
-          success: false,
+          type: 'https://tools.ietf.org/html/rfc9110#section-15.5.1',
+          title: 'An account with this email already exists. Please sign in or use another email.',
+          status: 409,
+          errorCode: 'MSG03',
         }),
         ok: false,
         status: 409,
@@ -35,6 +36,7 @@ describe('isApiError', () => {
 
     await expect(callApi()).rejects.toMatchObject({
       code: 'MSG03',
+      message: 'An account with this email already exists. Please sign in or use another email.',
       errors: undefined,
       status: 409,
     });

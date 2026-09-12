@@ -17,6 +17,52 @@ describe('auth error mapping', () => {
     ).toBe('An account with this email already exists. Please sign in or use another email.');
   });
 
+  it('maps MSG_PHONE_DUP to its specific message', () => {
+    expect(
+      getApiErrorMessage({
+        code: 'MSG_PHONE_DUP',
+        message: 'internal backend detail',
+        status: 400,
+      }),
+    ).toBe('This phone number is already registered to another account.');
+  });
+
+  it('maps AUTH_TOKEN_INVALID to a specific message instead of the MSG127 fallback', () => {
+    const message = getApiErrorMessage({
+      code: 'AUTH_TOKEN_INVALID',
+      message: 'internal backend detail',
+      status: 401,
+    });
+
+    expect(message).toBe(
+      'Your authentication token is invalid or has expired. Please try again.',
+    );
+    expect(message).not.toBe('Something went wrong. Please try again later.');
+  });
+
+  it('maps AUTH_EMAIL_MISMATCH to a specific message instead of the MSG127 fallback', () => {
+    const message = getApiErrorMessage({
+      code: 'AUTH_EMAIL_MISMATCH',
+      message: 'internal backend detail',
+      status: 400,
+    });
+
+    expect(message).toBe(
+      'The email address does not match the account used for registration. Please try again with the same email address.',
+    );
+    expect(message).not.toBe('Something went wrong. Please try again later.');
+  });
+
+  it('still falls back to the generic message for unknown codes', () => {
+    expect(
+      getApiErrorMessage({
+        code: 'AUTH_TOKEN_MISSING',
+        message: 'internal backend detail',
+        status: 400,
+      }),
+    ).toBe('Something went wrong. Please try again later.');
+  });
+
   it('does not expose an unknown Backend response message', () => {
     expect(
       getApiErrorMessage({
