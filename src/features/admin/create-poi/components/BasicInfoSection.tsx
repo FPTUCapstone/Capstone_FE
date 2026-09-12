@@ -10,15 +10,13 @@ interface BasicInfoSectionProps {
 
 export function BasicInfoSection({ formData, errors, onChange, disabled, categories }: BasicInfoSectionProps) {
   return (
-    <section className="bg-white rounded-xl p-6 shadow-xs border border-slate-200 relative">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#102a43] text-white flex items-center justify-center">
-            <span className="material-symbols-outlined text-[18px]">info</span>
-          </div>
-          <h2 className="text-lg text-[#00152a] font-semibold">1. Basic Information</h2>
+    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-200 relative">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#006b5f] text-xl">info</span>
+          <h2 className="text-sm sm:text-base text-[#00152a] font-bold">1. Basic Information</h2>
         </div>
-        <span className="text-xs text-slate-400 font-medium">Required metadata</span>
+        <span className="text-[11px] text-slate-400 font-medium">Required metadata</span>
       </div>
 
       <div className="space-y-4 pt-4">

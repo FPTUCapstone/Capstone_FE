@@ -11,22 +11,20 @@ const ENVIRONMENT_OPTIONS: EnvironmentSetting[] = ['Indoor', 'Outdoor', 'Mixed']
 
 export function VisitAttributesSection({ formData, errors, onChange, disabled }: VisitAttributesSectionProps) {
   return (
-    <section className="bg-white rounded-xl p-6 shadow-xs border border-slate-200 relative">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#102a43] text-white flex items-center justify-center">
-            <span className="material-symbols-outlined text-[18px]">nature_people</span>
-          </div>
-          <h2 className="text-lg text-[#00152a] font-semibold">3. Visit Attributes</h2>
+    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-200 relative">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#006b5f] text-xl">tune</span>
+          <h2 className="text-sm sm:text-base text-[#00152a] font-bold">3. Visit Attributes</h2>
         </div>
-        <span className="text-xs text-slate-400 font-medium">Itinerary sizing parameters</span>
+        <span className="text-[11px] text-slate-400 font-medium">Itinerary sizing parameters</span>
       </div>
 
       <div className="space-y-5">
         {/* Indoor / Outdoor Segmented Control */}
         <div>
           <label className="text-xs font-semibold text-slate-900 block mb-2">
-            Environment Setting <span className="text-red-600">*</span>
+            Environment Type <span className="text-red-600">*</span>
           </label>
           <div className="grid grid-cols-3 gap-2 bg-[#f2f4f7] p-1.5 rounded-xl">
             {ENVIRONMENT_OPTIONS.map((opt) => {
@@ -59,7 +57,7 @@ export function VisitAttributesSection({ formData, errors, onChange, disabled }:
           {/* Average Visit Duration */}
           <div>
             <label className="text-xs font-semibold text-slate-900 block mb-1.5" htmlFor="poi-duration">
-              Average Visit Duration
+              Average Duration (Minutes)
             </label>
             <div className="relative">
               <input
@@ -77,7 +75,7 @@ export function VisitAttributesSection({ formData, errors, onChange, disabled }:
                   errors.avg_visit_duration_minutes ? 'border-red-500 bg-red-50/50' : 'border-transparent'
                 }`}
               />
-              <span className="absolute right-3.5 top-2.5 text-xs text-slate-500 font-medium">min</span>
+              <span className="absolute right-3.5 top-2.5 text-xs text-slate-500 font-medium">mins</span>
             </div>
             {errors.avg_visit_duration_minutes ? (
               <p className="text-xs text-red-600 mt-1 flex items-center gap-1 font-medium">
@@ -91,9 +89,12 @@ export function VisitAttributesSection({ formData, errors, onChange, disabled }:
 
           {/* Shelter Available Toggle */}
           <div className="flex flex-col justify-between">
-            <label className="text-xs font-semibold text-slate-900 mb-1.5">
-              Inclement Weather Shelter
-            </label>
+            <div>
+              <label className="text-xs font-semibold text-slate-900 mb-0.5 block">
+                Shelter Available
+              </label>
+              <p className="text-[11px] text-slate-500 mb-2">Protection during rain or high heat</p>
+            </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#f2f4f7] border border-slate-200">
               <span className="text-xs text-slate-800 font-medium">Shelter available on site</span>
               <label htmlFor="shelter-toggle" className="relative inline-flex items-center cursor-pointer">

@@ -14,6 +14,7 @@ import { LocationSection } from './components/LocationSection';
 import { VisitAttributesSection } from './components/VisitAttributesSection';
 import { TagsSection } from './components/TagsSection';
 import { OpeningHoursSection } from './components/OpeningHoursSection';
+import { CreationSummaryCard } from './components/CreationSummaryCard';
 import { PoiSummaryReadinessCard } from './components/PoiSummaryReadinessCard';
 import { OperationsCard } from './components/OperationsCard';
 import { TelemetryCard } from './components/TelemetryCard';
@@ -103,15 +104,15 @@ export function CreatePoiPage() {
     <div className="flex min-h-screen bg-[#F3F4F6] text-slate-900 font-sans">
       <div className="hidden lg:block lg:w-64 lg:shrink-0"><AdminSidebar onSignOut={signOut} disabled={busy} /></div>
       <div className="flex-1 flex flex-col min-w-0 pt-16 pb-24 lg:pb-12">
-        <AdminHeader onSave={handleSubmit} onCancel={handleReset} submitting={busy} saveDisabled={saveDisabled} />
-        <main className="flex-1 px-4 sm:px-6 py-6 max-w-7xl w-full mx-auto">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+        <AdminHeader onSave={handleSubmit} onCancel={handleReset} onSignOut={signOut} submitting={busy} saveDisabled={saveDisabled} />
+        <main className="flex-1 px-4 sm:px-6 py-4 sm:py-6 max-w-7xl w-full mx-auto">
+          <div className="mb-6 hidden lg:flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div><h1 className="text-2xl font-black tracking-tight">Create Point of Interest</h1><p className="text-xs text-slate-500 mt-1">Register a location and its visit attributes in the TripMate catalogue.</p></div>
             <button type="button" disabled={busy} onClick={signOut} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm">{signingOut ? 'Signing out...' : 'Sign out'}</button>
           </div>
-          <div className="mb-4 flex flex-wrap items-center gap-3 text-sm" role="status">
+          <div className="mb-4 flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-600" role="status">
             <span>{catalogueLoading ? 'Loading catalogue...' : catalogueError ? catalogueError.message : catalogue?.categories.length ? 'Catalogue loaded.' : 'No POI categories are available. An administrator must add a category before you can create a POI.'}</span>
-            <button type="button" disabled={catalogueLoading || busy} onClick={reloadCatalogue} className="min-h-11 rounded-lg border border-slate-300 px-3 disabled:opacity-50">Reload catalogue</button>
+            <button type="button" disabled={catalogueLoading || busy} onClick={reloadCatalogue} className="h-8 sm:min-h-11 rounded-lg border border-slate-300 px-2.5 text-xs disabled:opacity-50">Reload catalogue</button>
           </div>
           <div ref={feedback} tabIndex={-1} className="outline-none">
             {authError ? <p role="alert" className="mb-4 rounded-xl bg-amber-50 p-4 text-sm">{authError.message} <Link href={ROUTES.admin.login} className="font-semibold underline">Sign in</Link></p> : null}
@@ -127,14 +128,18 @@ export function CreatePoiPage() {
           </div>
           <form onSubmit={handleSubmit} noValidate aria-busy={submitting}>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              <div className="space-y-6 lg:col-span-8">
+              <div className="space-y-4 sm:space-y-6 lg:col-span-8">
                 <BasicInfoSection formData={formData} categories={catalogue?.categories ?? []} errors={errors} onChange={handleFieldChange} disabled={busy || catalogueLoading} />
                 <LocationSection formData={formData} errors={errors} onChange={handleFieldChange} disabled={busy} />
                 <VisitAttributesSection formData={formData} errors={errors} onChange={handleFieldChange} disabled={busy} />
                 <TagsSection formData={formData} tags={catalogue?.tags ?? []} errors={errors} onChange={handleFieldChange} disabled={busy || catalogueLoading} />
                 <OpeningHoursSection formData={formData} errors={errors} onChange={handleFieldChange} disabled={busy} />
+                {/* Section 6 (Mobile View): Creation Summary */}
+                <div className="lg:hidden">
+                  <CreationSummaryCard />
+                </div>
               </div>
-              <div className="space-y-6 lg:col-span-4"><div className="space-y-6 lg:sticky lg:top-20">
+              <div className="hidden lg:block space-y-6 lg:col-span-4"><div className="space-y-6 lg:sticky lg:top-20">
                 <PoiSummaryReadinessCard formData={formData} />
                 <OperationsCard onSave={handleSubmit} onCancel={handleReset} submitting={busy} saveDisabled={saveDisabled} />
                 <TelemetryCard payload={preview} />

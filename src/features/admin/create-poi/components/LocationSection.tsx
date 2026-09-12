@@ -18,17 +18,15 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
   };
 
   return (
-    <section className="bg-white rounded-xl p-6 shadow-xs border border-slate-200 relative">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#102a43] text-white flex items-center justify-center">
-            <span className="material-symbols-outlined text-[18px]">map</span>
-          </div>
-          <h2 className="text-lg text-[#00152a] font-semibold">2. Precise Location</h2>
+    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-200 relative">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#006b5f] text-xl">location_on</span>
+          <h2 className="text-sm sm:text-base text-[#00152a] font-bold">2. Location & Coordinates</h2>
         </div>
-        <span className="text-xs text-[#006b5f] font-semibold flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#006b5f]"></span>
-          WGS84 coordinates
+        <span className="text-[11px] text-[#006b5f] font-semibold flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#006b5f]"></span>
+          WGS84
         </span>
       </div>
 
@@ -41,8 +39,10 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
           disabled={disabled}
         />
 
+        <p className="text-[11px] text-slate-500">Tap and drag pin to refine location. Coordinate inputs sync automatically.</p>
+
         {/* Lat / Lng Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
           <div>
             <label className="text-xs font-semibold text-slate-900 block mb-1.5" htmlFor="poi-lat">
               Latitude <span className="text-red-600">*</span>

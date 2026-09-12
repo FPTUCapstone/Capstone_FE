@@ -26,58 +26,48 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
   };
 
   return (
-    <section className="bg-white rounded-xl p-6 shadow-xs border border-slate-200 relative">
-      <div className="flex flex-wrap items-center justify-between pb-4 gap-2 border-b border-slate-100 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#102a43] text-white flex items-center justify-center">
-            <span className="material-symbols-outlined text-[18px]">schedule</span>
-          </div>
-          <h2 className="text-lg text-[#00152a] font-semibold">5. Operating Schedule</h2>
+    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-200 relative">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#006b5f] text-xl">schedule</span>
+          <h2 className="text-sm sm:text-base text-[#00152a] font-bold">5. Opening Hours</h2>
         </div>
         <button
           type="button"
           disabled={disabled || formData.operating_schedule.length === 0}
           onClick={handleApplyMonToAll}
-          className="px-3 py-1.5 rounded-lg bg-[#e6e8eb] hover:bg-slate-300 text-[#00152a] text-xs font-semibold transition-colors flex items-center gap-1.5"
+          className="text-[11px] font-semibold text-[#006b5f] hover:underline disabled:opacity-50"
         >
-          <span className="material-symbols-outlined text-[16px]">content_copy</span>
-          <span>Apply Monday to All Days</span>
+          Apply to all
         </button>
       </div>
 
-      <label className="flex items-center gap-2 text-sm mb-4 min-h-11">
-        <input type="checkbox" disabled={disabled} checked={formData.operating_schedule.length > 0} onChange={event => onChange('operating_schedule', event.target.checked ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((name, index) => ({ day_name: name, day_of_week: (index + 1) % 7, is_open: true, open_time: '', close_time: '' })) : [])} />
-        Include opening hours (optional)
+      <label className="flex items-center gap-2 text-xs sm:text-sm mb-3 min-h-8 cursor-pointer">
+        <input
+          type="checkbox"
+          disabled={disabled}
+          checked={formData.operating_schedule.length > 0}
+          onChange={event => onChange('operating_schedule', event.target.checked ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((name, index) => ({ day_name: name, day_of_week: (index + 1) % 7, is_open: true, open_time: '07:00', close_time: '17:30' })) : [])}
+          className="rounded text-[#006b5f] focus:ring-[#006b5f]"
+        />
+        <span>Include opening hours (optional)</span>
       </label>
       {errors.operating_schedule ? <p className="text-xs text-red-600 mb-3">{errors.operating_schedule}</p> : null}
+
       {/* Schedule Day Rows */}
       <div className="space-y-2">
         {formData.operating_schedule.map((day, idx) => (
           <div
             key={day.day_name}
-            className={`flex flex-wrap items-center justify-between p-2.5 rounded-lg transition-colors gap-3 ${
-              day.is_open ? 'bg-[#f2f4f7] hover:bg-slate-200/60' : 'bg-slate-100 opacity-60'
+            className={`flex items-center justify-between p-2 sm:p-2.5 rounded-xl border transition-colors gap-2 ${
+              day.is_open ? 'bg-[#f8fafc] border-slate-200' : 'bg-slate-100/70 border-slate-200 opacity-60'
             }`}
           >
-            <div className="w-28 text-xs font-semibold text-[#00152a]">{day.day_name}</div>
-            <div className="flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  aria-label={`${day.day_name} open`}
-                  disabled={disabled}
-                  checked={day.is_open}
-                  onChange={(e) => handleDayChange(idx, { is_open: e.target.checked })}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#006b5f]" />
-              </label>
-              <span className={`text-xs font-semibold w-14 ${day.is_open ? 'text-[#006b5f]' : 'text-slate-400'}`}>
-                {day.is_open ? 'Open' : 'Closed'}
-              </span>
-            </div>
+            <span className="font-semibold text-slate-800 text-xs w-10 sm:w-12">
+              {day.day_name.slice(0, 3)}
+            </span>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-1 justify-center max-w-[200px] sm:max-w-none">
               <input
                 type="time"
                 step="1"
@@ -86,9 +76,9 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
                 disabled={disabled || !day.is_open}
                 value={day.open_time}
                 onChange={(e) => handleDayChange(idx, { open_time: e.target.value })}
-                className="min-w-0 px-2 py-2 rounded bg-white text-slate-900 font-mono text-sm border border-slate-300 w-28 sm:w-32 text-center font-semibold"
+                className="h-8 px-1.5 sm:px-2 rounded-lg bg-white text-slate-800 font-mono text-xs border border-slate-200 focus:border-[#006b5f] outline-none text-center font-medium w-20 sm:w-24 disabled:opacity-50"
               />
-              <span className="text-slate-400 text-xs">to</span>
+              <span className="text-slate-400 text-xs">-</span>
               <input
                 type="time"
                 step="1"
@@ -97,13 +87,29 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
                 disabled={disabled || !day.is_open}
                 value={day.close_time}
                 onChange={(e) => handleDayChange(idx, { close_time: e.target.value })}
-                className="min-w-0 px-2 py-2 rounded bg-white text-slate-900 font-mono text-sm border border-slate-300 w-28 sm:w-32 text-center font-semibold"
+                className="h-8 px-1.5 sm:px-2 rounded-lg bg-white text-slate-800 font-mono text-xs border border-slate-200 focus:border-[#006b5f] outline-none text-center font-medium w-20 sm:w-24 disabled:opacity-50"
               />
             </div>
-            {errors[`operating_schedule.${day.day_of_week}`] ? <p className="w-full text-xs text-red-600">{errors[`operating_schedule.${day.day_of_week}`]}</p> : null}
+
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => handleDayChange(idx, { is_open: !day.is_open })}
+              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all shrink-0 ${
+                day.is_open
+                  ? 'bg-teal-100 text-teal-800 hover:bg-teal-200'
+                  : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+              }`}
+            >
+              {day.is_open ? 'Open' : 'Closed'}
+            </button>
+            {errors[`operating_schedule.${day.day_of_week}`] ? (
+              <p className="w-full text-xs text-red-600 mt-1">{errors[`operating_schedule.${day.day_of_week}`]}</p>
+            ) : null}
           </div>
         ))}
       </div>
+      <p className="text-[10px] text-slate-400 mt-3">Overnight hours are not supported. Times must be within 00:00 - 23:59.</p>
     </section>
   );
 }
