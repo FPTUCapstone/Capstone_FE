@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+language: "en-US"
+
+tone_instructions: >
+  Group feedback into three buckets matching this team's pipeline: Bug (correctness, edge cases,
+  logic errors), Security (XSS, unsafe data exposure, leaking secrets via NEXT_PUBLIC_* values,
+  auth gaps), Architecture (violations of this repo's AGENTS.md — Server Components by default,
+  feature-scoped code, no invented state management/architecture layers, screens without an
+  approved Web Screen Specification or WEB_SCOPE_MATRIX classification). Label each comment.
+
+reviews:
+  profile: assertive
+  request_changes_workflow: false # human reviewer gives the real approval, not CodeRabbit
+  auto_review:
+    enabled: true
+    base_branches:
+      - "develop"
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/.next/**"
+  path_instructions:
+    - path: "app/**"
+      instructions: >
+        Default to Server Components; flag 'use client' unless the boundary is narrow and
+        justified by real browser interaction. Flag any new visual screen that doesn't have a
+        clear tie to an approved SRS classification / WEB_SCOPE_MATRIX entry.
+    - path: "src/features/**"
+      instructions: >
+        Feature-specific code must live inside its own feature folder, not leak into
+        src/components/ or a new architecture layer. Flag any mock/prototype data or behavior
+        that isn't clearly distinguished from production integration.
