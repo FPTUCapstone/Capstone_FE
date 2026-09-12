@@ -70,7 +70,7 @@ Open [http://localhost:3001](http://localhost:3001) in a browser.
 
 ## Environment Variables
 
-The current visual prototype does not require runtime environment variables. The committed `.env.example` is a placeholder for future server-only API and authentication settings, and it does not contain variable names or secrets.
+Admin sign-in and UC-52 Create POI require the server-only `TRIPMATE_API_BASE_URL` backend origin (for example, `http://localhost:5021` for a local backend). Copy `.env.example` to `.env.local` and use the backend build containing both Create POI and `GET /api/v1/admin/pois/catalogue`. No tokens or server secrets use a `NEXT_PUBLIC_` variable. Behind a reverse proxy, `TRIPMATE_WEB_ORIGIN` may specify the canonical Web origin for mutation origin checks. See [UC-52 integration and verification](docs/UC52-API-INTEGRATION.md).
 
 When variables are introduced, create a local Next.js environment file with:
 
@@ -100,17 +100,18 @@ The SRS permits future approved feature modules under `src/features/public`, `sr
 
 ### Admin Web
 
-- `/admin/login` — Administrator sign-in prototype
+- `/admin/login` — Real Administrator sign-in through the backend; access token is held in an HttpOnly cookie
+- `/admin/catalogue/points-of-interest/new` — UC-52 Create POI with live catalogue IDs, API validation and duplicate confirmation
 - `/admin/forgot-password` — Progressive Administrator password-recovery prototype
 - `/admin` — Administrator dashboard
 - `/admin/tours/reviews` — Mock tour-review queue
 - `/admin/tours/reviews/[id]` — Mock tour-review detail and decision UI
 
-The Admin Web is intended to be a protected administration system. Authentication and authorization are not yet integrated, so the current routes remain prototype screens.
+Admin sign-in and UC-52 now use backend authentication and authorization. Other Admin pages and password recovery remain prototypes; this change does not integrate those flows. A backend Active Administrator and existing category records are required. Session expiry requires sign-in again; no refresh endpoint is available yet.
 
 ### Wider TripMate architecture context
 
-- **Backend:** A separate ASP.NET Core / .NET 8 Web API is planned outside this repository; this frontend is not currently connected to it.
+- **Backend:** The separate ASP.NET Core Web API supplies Admin sign-in, POI catalogue references and POI creation. Other prototype features are not yet connected.
 - **Mobile:** A separate Flutter application serves supported Guest, Traveler, and Tour Operator functions, including Mobile-only navigation, offline, travel-group, commercial-service, and QR-scanning experiences.
 
 ## Current Development Status
@@ -134,8 +135,8 @@ The Admin Web is intended to be a protected administration system. Authenticatio
 ### Planned / not yet integrated
 
 - Remaining approved Traveler, Tour Operator, Public, and Administrator Web screens identified by the Web scope matrix
-- Real authentication and route protection
-- Backend API integration and persistent data
+- Authentication and route protection outside Admin sign-in/UC-52
+- Backend API integration and persistent data for the remaining prototype features
 - Production environment configuration
 - Live platform services such as maps and payments
 
