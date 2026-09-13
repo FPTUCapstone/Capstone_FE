@@ -15,5 +15,6 @@ export const ROUTES = {
     dashboard: '/admin',
     tourReviews: '/admin/tours/reviews',
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
+    auditLogs: '/admin/audit-logs',
   },
 } as const;
