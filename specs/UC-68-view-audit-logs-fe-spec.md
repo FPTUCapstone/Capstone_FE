@@ -44,7 +44,7 @@ app/admin/(console)/audit-logs/
 src/
 ├── features/admin/audit-logs/
 │   ├── components/
-│   │   ├── AuditLogManagementView.tsx    <-- Main Container View (with Dev Auto-Authenticate helper)
+│   │   ├── AuditLogManagementView.tsx    <-- Main Container View
 │   │   ├── AuditLogFilterBar.tsx         <-- Search & Filter Controls (with date picker bounds & showPicker)
 │   │   ├── AuditLogTable.tsx             <-- Table Presentation (table-fixed layout & Actions column)
 │   │   └── AuditLogPagination.tsx        <-- Pagination Controls
@@ -117,7 +117,6 @@ export interface GetAuditLogsParams {
    - Active tab highlighted under `Audit Logs` in Admin Console.
    - Title: "System Audit Logs" (high-contrast text against light background)
    - Subtitle: "Operational, security, and administrative event trail."
-   - Quick Dev Auto-Authenticate button for 1-click developer testing.
 
 2. **Filter Bar:**
    - Search Input: "Search by keyword, email, or entity ID..." (supports partial ID & string matching)

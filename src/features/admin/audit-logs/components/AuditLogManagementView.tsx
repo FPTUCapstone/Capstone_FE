@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GetAuditLogsParams, PaginatedList, AuditLogSummaryDto } from '../types/auditLogAdmin';
-import { getAuditLogs, devLoginAsAdmin, AuditLogServiceError } from '../services/auditLogAdminService';
+import { getAuditLogs, AuditLogServiceError } from '../services/auditLogAdminService';
 import { AuditLogFilterBar } from './AuditLogFilterBar';
 import { AuditLogTable } from './AuditLogTable';
 import { AuditLogPagination } from './AuditLogPagination';
@@ -110,47 +110,21 @@ export function AuditLogManagementView() {
     }));
   };
 
-  const handleDevLogin = async () => {
-    try {
-      setIsLoading(true);
-      await devLoginAsAdmin();
-      await fetchLogs();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(`Dev login failed: ${err.message}`);
-      }
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-6">
       {/* Header Banner */}
-      <div className="flex flex-col gap-3 border-b border-[#c3c6ce] pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-2xl text-[#006b5f]">
-              find_in_page
-            </span>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#00152a]">
-              System Audit Logs
-            </h1>
-          </div>
-          <p className="text-sm text-[#43474d]">
-            Operational, security, and administrative event trail for auditability and compliance.
-          </p>
+      <div className="flex flex-col gap-1 border-b border-[#c3c6ce] pb-5">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-2xl text-[#006b5f]">
+            find_in_page
+          </span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#00152a]">
+            System Audit Logs
+          </h1>
         </div>
-
-        {/* Quick Dev Login Button */}
-        <button
-          type="button"
-          onClick={handleDevLogin}
-          className="inline-flex items-center gap-1.5 self-start rounded-lg border border-[#006b5f] bg-[#e8f7f4] px-3 py-2 text-xs font-bold text-[#005048] shadow-xs transition-colors hover:bg-[#006b5f] hover:text-white sm:self-auto"
-          title="Auto-authenticate as Admin (linhtv171@gmail.com) for testing"
-        >
-          <span className="material-symbols-outlined text-base">key</span>
-          Dev Auto-Authenticate
-        </button>
+        <p className="text-sm text-[#43474d]">
+          Operational, security, and administrative event trail for auditability and compliance.
+        </p>
       </div>
 
       {/* Error Alert Display */}
@@ -161,24 +135,15 @@ export function AuditLogManagementView() {
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span>{error}</span>
-            <div className="flex items-center gap-2">
+            {!isForbidden && (
               <button
                 type="button"
-                onClick={handleDevLogin}
-                className="rounded bg-[#006b5f] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-[#005048]"
+                onClick={fetchLogs}
+                className="rounded bg-[#93000a] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-800"
               >
-                ⚡ Dev Login (linhtv171)
+                Retry
               </button>
-              {!isForbidden && (
-                <button
-                  type="button"
-                  onClick={fetchLogs}
-                  className="rounded bg-[#93000a] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-800"
-                >
-                  Retry
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </FeedbackAlert>
       )}
