@@ -66,3 +66,29 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
 
   return response.json();
 }
+
+export async function devLoginAsAdmin(): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: 'linhtv171@gmail.com',
+      password: 'Sekiro171@',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.title || errorData.message || `Dev login failed (${response.status})`);
+  }
+
+  const result = await response.json();
+  const token = result.data?.accessToken || result.accessToken || result.token || result.data?.token;
+
+  if (token && typeof window !== 'undefined') {
+    localStorage.setItem('token', token);
+  }
+
+  return token;
+}
+

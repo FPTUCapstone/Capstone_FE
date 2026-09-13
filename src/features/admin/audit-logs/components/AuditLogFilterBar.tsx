@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { GetAuditLogsParams, UserRole } from '../types/auditLogAdmin';
 
 interface AuditLogFilterBarProps {
@@ -10,6 +10,59 @@ interface AuditLogFilterBarProps {
 }
 
 export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilterBarProps) {
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
+
+  const handleContainerClick = (inputRef: React.RefObject<HTMLInputElement | null>) => {
+    if (inputRef.current) {
+      if (typeof inputRef.current.showPicker === 'function') {
+        inputRef.current.showPicker();
+      } else {
+        inputRef.current.focus();
+      }
+    }
+  };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Helper to convert UTC ISO string from filter state to local YYYY-MM-DD for date input
+  const getLocalDateInputVal = (isoStr?: string): string => {
+    if (!isoStr) return '';
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return '';
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return '';
+    }
+  };
+
+  // Convert user selected local YYYY-MM-DD to UTC ISO start-of-day (00:00:00 local time)
+  const handleFromDateChange = (val: string) => {
+    if (!val) {
+      onChange({ fromDateUtc: undefined });
+      return;
+    }
+    const localStartOfDay = new Date(`${val}T00:00:00`);
+    onChange({ fromDateUtc: localStartOfDay.toISOString() });
+  };
+
+  // Convert user selected local YYYY-MM-DD to UTC ISO end-of-day (23:59:59.999 local time)
+  const handleToDateChange = (val: string) => {
+    if (!val) {
+      onChange({ toDateUtc: undefined });
+      return;
+    }
+    const localEndOfDay = new Date(`${val}T23:59:59.999`);
+    onChange({ toDateUtc: localEndOfDay.toISOString() });
+  };
+
+  const fromDateValue = getLocalDateInputVal(filters.fromDateUtc);
+  const toDateValue = getLocalDateInputVal(filters.toDateUtc);
+
   return (
     <div className="rounded-xl border border-[#314863] bg-[#102a43] p-4 text-slate-100 shadow-md">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -96,13 +149,36 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
           <label htmlFor="audit-filter-from-date" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
             From Date (UTC)
           </label>
-          <input
-            id="audit-filter-from-date"
-            type="date"
-            value={filters.fromDateUtc ? filters.fromDateUtc.split('T')[0] : ''}
-            onChange={(e) => onChange({ fromDateUtc: e.target.value ? `${e.target.value}T00:00:00Z` : undefined })}
-            className="w-full rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
-          />
+          <div
+            onClick={() => handleContainerClick(fromDateRef)}
+            className="group relative flex cursor-pointer items-center rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
+          >
+            <span className="material-symbols-outlined mr-2 text-base text-[#71f8e4] transition-colors group-hover:text-white">
+              calendar_month
+            </span>
+            <input
+              ref={fromDateRef}
+              id="audit-filter-from-date"
+              type="date"
+              max={toDateValue || todayStr}
+              value={fromDateValue}
+              onChange={(e) => handleFromDateChange(e.target.value)}
+              className="w-full cursor-pointer bg-transparent text-xs text-[#d1e4ff] focus:outline-none [color-scheme:dark]"
+            />
+            {filters.fromDateUtc && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange({ fromDateUtc: undefined });
+                }}
+                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#314863] hover:text-white"
+                title="Clear From Date"
+              >
+                <span className="material-symbols-outlined text-xs">close</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Date To */}
@@ -110,13 +186,37 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
           <label htmlFor="audit-filter-to-date" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
             To Date (UTC)
           </label>
-          <input
-            id="audit-filter-to-date"
-            type="date"
-            value={filters.toDateUtc ? filters.toDateUtc.split('T')[0] : ''}
-            onChange={(e) => onChange({ toDateUtc: e.target.value ? `${e.target.value}T23:59:59Z` : undefined })}
-            className="w-full rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
-          />
+          <div
+            onClick={() => handleContainerClick(toDateRef)}
+            className="group relative flex cursor-pointer items-center rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
+          >
+            <span className="material-symbols-outlined mr-2 text-base text-[#71f8e4] transition-colors group-hover:text-[#71f8e4]">
+              event
+            </span>
+            <input
+              ref={toDateRef}
+              id="audit-filter-to-date"
+              type="date"
+              min={fromDateValue || undefined}
+              max={todayStr}
+              value={toDateValue}
+              onChange={(e) => handleToDateChange(e.target.value)}
+              className="w-full cursor-pointer bg-transparent text-xs text-[#d1e4ff] focus:outline-none [color-scheme:dark]"
+            />
+            {filters.toDateUtc && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange({ toDateUtc: undefined });
+                }}
+                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#314863] hover:text-white"
+                title="Clear To Date"
+              >
+                <span className="material-symbols-outlined text-xs">close</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -125,7 +225,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[#314863] bg-[#00152a] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#314863] hover:text-white"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[#314863] bg-[#00152a] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#314863] hover:text-white transition-colors"
         >
           <span className="material-symbols-outlined text-sm">restart_alt</span>
           Reset Filters

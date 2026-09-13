@@ -11,20 +11,20 @@ This specification defines the Next.js Frontend implementation for **UC-68: View
 It covers:
 - Route: `/admin/audit-logs` (app Router path: `app/admin/(console)/audit-logs/page.tsx`).
 - Navigation link added to `AdminNavigation.tsx` and `ROUTES.admin.auditLogs`.
-- Read-only table listing audit log entries with columns: Event Timestamp (`createdAtLocal`), Event Type (`actionType`), Actor Email/Name (`actorEmail` / `actorFullName`), Actor Role (`actorRole`), Affected Module/Entity (`affectedEntity`), Affected Entity ID (`affectedEntityId`), IP Address (`ipAddress`).
+- Read-only table listing audit log entries with fixed column widths (`table-fixed` layout): Event Timestamp (`createdAtLocal`), Event Type (`actionType`), Actor Email/Name (`actorEmail` / `actorFullName`), Actor Role (`actorRole`), Affected Module/Entity (`affectedEntity`), Affected Entity ID (`affectedEntityId`), IP Address (`ipAddress`), and `Actions` (icon button for UC-69 View Detail integration).
 - Search and filter bar supporting:
-  - Keyword search (`keyword`)
+  - Keyword search (`keyword`) with partial string matching across Email, FullName, ActionType, AffectedEntity, and AffectedEntityId.
   - Event Type / Action Type select filter (`actionType`)
   - Actor Role select filter (`actorRole`)
   - Affected Entity select filter (`affectedEntity`)
-  - Event Date range filter (`fromDateUtc`, `toDateUtc`)
+  - Event Date range filter (`fromDateUtc`, `toDateUtc`) with `max=Today` business constraint, `From Date <= To Date` bounds, click-to-open calendar picker (`showPicker()`), and local start-of-day/end-of-day UTC ISO conversion.
   - Reset filters button
 - Pagination control supporting page navigation and items per page selection.
 - Empty state (`MSG128`: "No audit log entries match the submitted criteria."), Loading state, and Error handling state (`MSG127` / `MSG126`).
 - Date/Time display compliant with CR-07 (`Asia/Ho_Chi_Minh` UTC+7 formatted as `dd/MM/yyyy HH:mm:ss`).
 
 > [!NOTE]
-> - **UC-69 Scope Separation:** Deep detail modal/panel (`BeforeData`, `AfterData`) is owned by **UC-69** (Screen #34).
+> - **UC-69 Scope Separation:** Deep detail modal/panel (`BeforeData`, `AfterData`) is owned by **UC-69** (Screen #34). UC-68 provides the `Actions` column with the View Detail icon button (`visibility`).
 > - **UC-67 Scope Separation:** Exporting audit logs / report generation is owned by **UC-67**.
 
 ---
@@ -44,12 +44,12 @@ app/admin/(console)/audit-logs/
 src/
 ├── features/admin/audit-logs/
 │   ├── components/
-│   │   ├── AuditLogManagementView.tsx    <-- Main Container View
-│   │   ├── AuditLogFilterBar.tsx         <-- Search & Filter Controls
-│   │   ├── AuditLogTable.tsx             <-- Table Presentation
+│   │   ├── AuditLogManagementView.tsx    <-- Main Container View (with Dev Auto-Authenticate helper)
+│   │   ├── AuditLogFilterBar.tsx         <-- Search & Filter Controls (with date picker bounds & showPicker)
+│   │   ├── AuditLogTable.tsx             <-- Table Presentation (table-fixed layout & Actions column)
 │   │   └── AuditLogPagination.tsx        <-- Pagination Controls
 │   ├── services/
-│   │   └── auditLogAdminService.ts       <-- Fetch API client
+│   │   └── auditLogAdminService.ts       <-- Fetch API client & devLoginAsAdmin helper
 │   └── types/
 │       └── auditLogAdmin.ts              <-- TypeScript interfaces & DTOs
 ├── components/navigation/
@@ -115,21 +115,23 @@ export interface GetAuditLogsParams {
 
 1. **Header & Navigation:**
    - Active tab highlighted under `Audit Logs` in Admin Console.
-   - Title: "System Audit Logs"
+   - Title: "System Audit Logs" (high-contrast text against light background)
    - Subtitle: "Operational, security, and administrative event trail."
+   - Quick Dev Auto-Authenticate button for 1-click developer testing.
 
 2. **Filter Bar:**
-   - Search Input: "Search by keyword, email, or entity ID..."
+   - Search Input: "Search by keyword, email, or entity ID..." (supports partial ID & string matching)
    - Filter Dropdown: Action Type (e.g., `ApproveOperatorApplication`, `RejectOperatorApplication`)
    - Filter Dropdown: Actor Role (`Administrator`, `TourOperator`, `Traveler`)
    - Filter Dropdown: Affected Entity (`OperatorProfile`, `TourPackage`, `User`)
-   - Date Range Pickers: From Date & To Date
+   - Date Range Pickers: From Date & To Date (`max=Today`, click-to-open calendar via `showPicker()`, local start/end of day ISO conversion)
    - Reset Button: Resets all filter inputs to default.
 
 3. **Table Presentation:**
-   - Dark mode glassmorphism styled table.
-   - Columns: `Timestamp (UTC+7)`, `Event Type`, `Actor`, `Role`, `Affected Entity`, `Entity ID`, `IP Address`.
+   - Dark mode glassmorphism styled table with `table-fixed` layout preventing column width jumping.
+   - Columns: `Timestamp (UTC+7)`, `Event Type`, `Actor`, `Role`, `Affected Entity`, `Entity ID`, `IP Address`, `Actions`.
    - Handling system-triggered actions (`actorUserId === null`): displays badge `"System"` with neutral grey tone.
+   - `Actions` column: View Detail icon button (`visibility`) preparing for UC-69 integration.
 
 4. **Empty State (`MSG128`):**
    - Displays icon + `"No audit log entries match the submitted criteria."` when `totalCount === 0`.
@@ -143,8 +145,9 @@ export interface GetAuditLogsParams {
 ## Acceptance Criteria
 
 1. Administrator can navigate to `/admin/audit-logs` from the Admin navigation bar.
-2. System audit logs are displayed in a paginated table ordered descending by timestamp.
-3. Administrator can filter by keyword, action type, actor role, entity, and date range.
+2. System audit logs are displayed in a paginated table ordered descending by timestamp with fixed column widths (`table-fixed`).
+3. Administrator can filter by keyword (partial string & ID match), action type, actor role, entity, and date range (`max=Today`).
 4. System-triggered events (`actorUserId === null`) display `"System"` gracefully.
-5. If no records match, `MSG128` empty state is displayed.
-6. Responsive design with glassmorphism UI styling following team aesthetics.
+5. `Actions` column provides View Detail icon button for seamless transition to UC-69.
+6. If no records match, `MSG128` empty state is displayed.
+7. Responsive design with glassmorphism UI styling following team aesthetics.
