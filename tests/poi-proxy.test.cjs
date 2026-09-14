@@ -29,9 +29,19 @@ test('forwards flat JSON with bearer and returns real status/body', async () => 
   const response = await proxy(req(), '/api/v1/admin/pois');
   assert.equal(response.status, 201); assert.deepEqual(await response.json(), { id: 51 });
 });
-test('BE 401 clears session; BE 500 hides database details', async () => {
-  const response = await setup('secret', async () => new Response(null, { status: 401 }))(req(), '/api/v1/admin/pois');
-  assert.equal(response.status, 401); assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
-  const failure = await setup('secret', async () => Response.json({ detail: 'database-password-secret' }, { status: 500 }))(req(), '/api/v1/admin/pois');
-  assert.equal(failure.status, 502); assert.doesNotMatch(await failure.text(), /database-password-secret/);
+test('BE auth denials clear session without exposing upstream details', async () => {
+  for (const status of [401, 403]) {
+    const response = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status }))(req(), '/api/v1/admin/pois');
+    assert.equal(response.status, status);
+    assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
+    assert.deepEqual(await response.json(), { title: status === 401 ? 'Administrator sign-in required.' : 'Administrator access is not allowed.' });
+  }
+});
+test('upstream and network failures return safe documented 503', async () => {
+  const upstream = await setup('secret', async () => Response.json({ detail: 'database-password-secret' }, { status: 500 }))(req(), '/api/v1/admin/pois');
+  assert.equal(upstream.status, 503);
+  assert.doesNotMatch(await upstream.text(), /database-password-secret/);
+  const network = await setup('secret', async () => { throw new Error('internal backend URL'); })(req(), '/api/v1/admin/pois');
+  assert.equal(network.status, 503);
+  assert.doesNotMatch(await network.text(), /internal backend URL/);
 });

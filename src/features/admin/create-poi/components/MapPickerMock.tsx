@@ -10,7 +10,7 @@ interface MapPickerMockProps {
 export function MapPickerMock({ latitude, longitude, onSelectCoordinates, disabled }: MapPickerMockProps) {
   return (
     <div className="space-y-3">
-      {/* Interactive Map Container */}
+      {/* Illustrative Map Preview */}
       <div className="relative rounded-xl overflow-hidden bg-[#e0e3e6] h-72 shadow-inner border border-slate-200">
         {/* Simulated Map Canvas (SVG Vector Topography from Stitch) */}
         <svg className="absolute inset-0 w-full h-full text-slate-400/40" fill="none" preserveAspectRatio="none" viewBox="0 0 800 450">
@@ -24,32 +24,15 @@ export function MapPickerMock({ latitude, longitude, onSelectCoordinates, disabl
           <path d="M 480 0 Q 520 190 470 450" stroke="#006b5f" strokeOpacity="0.5" strokeWidth="2.5" />
         </svg>
 
-        {/* Map Controls */}
-        <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
-          <div className="bg-white/95 backdrop-blur-md rounded-lg shadow-md p-1 flex flex-col items-center border border-slate-200">
-            <button className="w-8 h-8 rounded hover:bg-slate-100 flex items-center justify-center text-slate-800" type="button">
-              <span className="material-symbols-outlined text-[18px]">add</span>
-            </button>
-            <div className="w-5 h-px bg-slate-200 my-0.5" />
-            <button className="w-8 h-8 rounded hover:bg-slate-100 flex items-center justify-center text-slate-800" type="button">
-              <span className="material-symbols-outlined text-[18px]">remove</span>
-            </button>
-          </div>
-          <button className="bg-white/95 backdrop-blur-md w-10 h-10 rounded-lg shadow-md flex items-center justify-center text-slate-800 hover:bg-slate-100 border border-slate-200" type="button">
-            <span className="material-symbols-outlined text-[18px]">layers</span>
-          </button>
-        </div>
-
         {/* Spatial Badge */}
         <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold text-slate-700 shadow-xs flex items-center gap-1.5 border border-slate-200">
           <span className="material-symbols-outlined text-[16px] text-[#006b5f]">explore</span>
           <span>Da Nang Spatial Node VN-DN-05</span>
         </div>
 
-        {/* Draggable SVG Pin Marker & Tooltip */}
+        {/* SVG Pin Marker & Tooltip */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full z-20 flex flex-col items-center">
           <div className="bg-[#00152a] text-white text-xs px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap mb-1 flex items-center gap-1 font-semibold">
-            <span className="material-symbols-outlined text-[14px] text-[#6df5e1]">drag_indicator</span>
             <span>{String(latitude).trim() !== '' && String(longitude).trim() !== '' ? `${latitude}°, ${longitude}°` : 'Enter coordinates below'}</span>
           </div>
           <div className="relative flex items-center justify-center">

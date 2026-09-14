@@ -73,6 +73,7 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
                 step="1"
                 aria-label={`${day.day_name} opening time`}
                 aria-invalid={Boolean(errors[`operating_schedule.${day.day_of_week}`])}
+                aria-describedby={errors[`operating_schedule.${day.day_of_week}`] ? `poi-hours-${idx}-error` : undefined}
                 disabled={disabled || !day.is_open}
                 value={day.open_time}
                 onChange={(e) => handleDayChange(idx, { open_time: e.target.value })}
@@ -84,6 +85,7 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
                 step="1"
                 aria-label={`${day.day_name} closing time`}
                 aria-invalid={Boolean(errors[`operating_schedule.${day.day_of_week}`])}
+                aria-describedby={errors[`operating_schedule.${day.day_of_week}`] ? `poi-hours-${idx}-error` : undefined}
                 disabled={disabled || !day.is_open}
                 value={day.close_time}
                 onChange={(e) => handleDayChange(idx, { close_time: e.target.value })}
@@ -104,7 +106,7 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
               {day.is_open ? 'Open' : 'Closed'}
             </button>
             {errors[`operating_schedule.${day.day_of_week}`] ? (
-              <p className="w-full text-xs text-red-600 mt-1">{errors[`operating_schedule.${day.day_of_week}`]}</p>
+              <p id={`poi-hours-${idx}-error`} className="w-full text-xs text-red-600 mt-1">{errors[`operating_schedule.${day.day_of_week}`]}</p>
             ) : null}
           </div>
         ))}

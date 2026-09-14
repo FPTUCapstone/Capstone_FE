@@ -2,7 +2,7 @@ import 'server-only';
 
 export class BackendConfigurationError extends Error {
   constructor() {
-    super('TRIPMATE_API_BASE_URL must be an absolute HTTP(S) origin.');
+    super('TRIPMATE_API_BASE_URL must be an absolute backend origin (HTTPS required in production).');
     this.name = 'BackendConfigurationError';
   }
 }
@@ -11,7 +11,7 @@ export async function fetchBackend(path: string, init: RequestInit = {}): Promis
   let base: URL;
   try {
     base = new URL(process.env.TRIPMATE_API_BASE_URL ?? '');
-    if (!['http:', 'https:'].includes(base.protocol) || base.username || base.password || base.pathname !== '/' || base.search || base.hash) {
+    if (!['http:', 'https:'].includes(base.protocol) || (process.env.NODE_ENV === 'production' && base.protocol !== 'https:') || base.username || base.password || base.pathname !== '/' || base.search || base.hash) {
       throw new BackendConfigurationError();
     }
   } catch {

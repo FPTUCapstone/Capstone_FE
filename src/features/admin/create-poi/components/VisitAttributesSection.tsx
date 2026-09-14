@@ -90,13 +90,13 @@ export function VisitAttributesSection({ formData, errors, onChange, disabled }:
           {/* Shelter Available Toggle */}
           <div className="flex flex-col justify-between">
             <div>
-              <label className="text-xs font-semibold text-slate-900 mb-0.5 block">
+              <p className="text-xs font-semibold text-slate-900 mb-0.5 block">
                 Shelter Available
-              </label>
+              </p>
               <p className="text-[11px] text-slate-500 mb-2">Protection during rain or high heat</p>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#f2f4f7] border border-slate-200">
-              <span className="text-xs text-slate-800 font-medium">Shelter available on site</span>
+              <label htmlFor="shelter-toggle" className="text-xs text-slate-800 font-medium cursor-pointer">Shelter available on site</label>
               <label htmlFor="shelter-toggle" className="relative inline-flex items-center cursor-pointer">
                 <input
                   id="shelter-toggle"

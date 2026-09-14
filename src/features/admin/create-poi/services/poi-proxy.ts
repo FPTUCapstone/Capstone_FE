@@ -15,11 +15,13 @@ export async function proxyPoi(request: Request, path: '/api/v1/admin/pois' | '/
   }
   try {
     const upstream = await fetchBackend(path, { method: request.method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body });
-    if (upstream.status >= 500) return jsonNoStore({ title: 'The POI service is unavailable. The save could not be confirmed.' }, 502);
+    if (upstream.status >= 500) return jsonNoStore({ title: 'The POI service is unavailable. The save could not be confirmed.' }, 503);
+    if (upstream.status === 401 || upstream.status === 403) {
+      return clearAdminSession(jsonNoStore({ title: upstream.status === 401 ? 'Administrator sign-in required.' : 'Administrator access is not allowed.' }, upstream.status));
+    }
     const result: unknown = await upstream.json().catch(() => null);
-    const response = jsonNoStore(result ?? { title: 'The POI service returned no data.' }, upstream.status);
-    return upstream.status === 401 || upstream.status === 403 ? clearAdminSession(response) : response;
+    return jsonNoStore(result ?? { title: 'The POI service returned no data.' }, upstream.status);
   } catch {
-    return jsonNoStore({ title: 'The POI service could not be reached. The save could not be confirmed.' }, 502);
+    return jsonNoStore({ title: 'The POI service could not be reached. The save could not be confirmed.' }, 503);
   }
 }

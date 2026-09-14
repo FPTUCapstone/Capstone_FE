@@ -140,3 +140,31 @@ test('backend fetch requires origin-only HTTP config and enforces no cache and n
     else process.env.TRIPMATE_API_BASE_URL = prior;
   }
 });
+
+test('production rejects plaintext backend origin before sending credentials or tokens', async () => {
+  const { fetchBackend, BackendConfigurationError } = loadTs('src/lib/server/backend.ts');
+  const priorBase = process.env.TRIPMATE_API_BASE_URL;
+  const priorNodeEnv = process.env.NODE_ENV;
+  const originalFetch = global.fetch;
+  try {
+    process.env.TRIPMATE_API_BASE_URL = 'http://api.test';
+    process.env.NODE_ENV = 'production';
+    global.fetch = async () => assert.fail('Plaintext backend must not be contacted');
+    await assert.rejects(fetchBackend('/api/v1/auth/login'), BackendConfigurationError);
+    await assert.rejects(fetchBackend('/api/v1/admin/pois', { headers: { Authorization: 'Bearer token' } }), BackendConfigurationError);
+
+    process.env.TRIPMATE_API_BASE_URL = 'https://api.test';
+    global.fetch = async () => Response.json({});
+    assert.equal((await fetchBackend('/api/v1/auth/login')).status, 200);
+
+    process.env.NODE_ENV = 'development';
+    process.env.TRIPMATE_API_BASE_URL = 'http://localhost:5021';
+    assert.equal((await fetchBackend('/api/v1/auth/login')).status, 200);
+  } finally {
+    global.fetch = originalFetch;
+    if (priorBase === undefined) delete process.env.TRIPMATE_API_BASE_URL;
+    else process.env.TRIPMATE_API_BASE_URL = priorBase;
+    if (priorNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = priorNodeEnv;
+  }
+});

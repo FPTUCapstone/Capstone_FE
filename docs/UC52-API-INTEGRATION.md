@@ -36,7 +36,8 @@ D:/CapStone/Capstone_BE does not contain Create POI.
 
 Set server-only TRIPMATE_API_BASE_URL in .env.local to the running backend origin, e.g.
 http://localhost:5021 for the local HTTP profile. Do not append /api or embed credentials.
-Use HTTPS for deployed backends; never disable TLS verification. Start FE with npm run dev.
+Production rejects a non-HTTPS backend origin before sending credentials or bearer tokens;
+HTTP remains available for local development. Never disable TLS verification. Start FE with npm run dev.
 Visit /admin/login using a real active Administrator, then open Create POI. Categories/tags
 must exist in that backend database. Empty catalogues are shown explicitly; no fallback IDs.
 
