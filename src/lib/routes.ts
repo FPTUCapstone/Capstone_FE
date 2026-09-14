@@ -4,6 +4,8 @@ export const ROUTES = {
   register: '/register',
   verifyAccount: '/verify-account',
   forgotPassword: '/forgot-password',
+  pois: '/pois',
+  poi: (id: string | number) => `/pois/${id}`,
   partner: {
     register: '/partner/register',
     application: '/partner/application',
