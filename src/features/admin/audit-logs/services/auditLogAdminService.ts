@@ -62,6 +62,11 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
   });
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('tripmate_access_token');
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+    }
     const errorData = await response.json().catch(() => ({}));
     const message = errorData.title || errorData.message || `Failed to fetch audit logs (${response.status})`;
     throw new AuditLogServiceError(message, response.status, errorData.extensions?.errorCode);
@@ -90,6 +95,11 @@ export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> 
   });
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('tripmate_access_token');
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+    }
     const errorData = await response.json().catch(() => ({}));
     let message = errorData.title || errorData.message;
     if (!message) {
@@ -108,6 +118,12 @@ export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> 
 }
 
 export async function devLoginAsAdmin(): Promise<void> {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('tripmate_access_token');
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+  }
+
   try {
     const res = await authLogin({
       email: 'linhtv171@gmail.com',
@@ -118,12 +134,19 @@ export async function devLoginAsAdmin(): Promise<void> {
       saveTokens(res.accessToken, res.refreshToken, { email: res.email, fullName: res.fullName });
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', res.accessToken);
+        localStorage.setItem('tripmate_access_token', res.accessToken);
       }
+    } else {
+      throw new Error('No access token returned from login server.');
     }
   } catch (err: unknown) {
+    if (err instanceof Error) {
+      throw new Error(`Dev auto-login failed: ${err.message}`);
+    }
     throw new Error('Dev auto-login failed. Please verify credentials or backend API server state.');
   }
 }
+
 
 
 

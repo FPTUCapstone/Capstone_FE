@@ -5,7 +5,13 @@
 
 import { extractFieldErrors } from './authErrorMapper';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
+const getApiBase = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!envUrl) return 'http://localhost:5021/api/v1';
+  return envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/$/, '')}/api/v1`;
+};
+const API_BASE = getApiBase();
+
 
 // ─── Request / Response types ────────────────────────────────────────────────
 
