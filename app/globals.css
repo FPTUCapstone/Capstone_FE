@@ -1,60 +1,83 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface: #f7f9fc;
-  --color-surface-dim: #d8dadd;
-  --color-surface-bright: #f7f9fc;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f2f4f7;
-  --color-surface-container: #eceef1;
-  --color-surface-container-high: #e6e8eb;
-  --color-surface-container-highest: #e0e3e6;
-  --color-on-surface: #191c1e;
-  --color-on-surface-variant: #43474d;
-  --color-inverse-surface: #2d3133;
-  --color-inverse-on-surface: #eff1f4;
-  --color-outline: #74777e;
-  --color-outline-variant: #c3c6ce;
-  --color-surface-tint: #49607c;
+  --color-surface: #F4F7FC;
+  --color-surface-dim: #E1E8F3;
+  --color-surface-bright: #FFFFFF;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #F4F7FC;
+  --color-surface-container: #EEF2F9;
+  --color-surface-container-high: #E3E9F5;
+  --color-surface-container-highest: #D8E0ED;
+  --color-on-surface: #0F1B2D;
+  --color-on-surface-variant: #33425A;
+  --color-inverse-surface: #0F1B2D;
+  --color-inverse-on-surface: #F4F7FC;
+  --color-outline: #6B7C97;
+  --color-outline-variant: #E1E8F3;
+  --color-surface-tint: #1D4ED8;
 
-  --color-primary: #00152a;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #102a43;
-  --color-on-primary-container: #7a92b0;
-  --color-inverse-primary: #b0c9e8;
-  --color-primary-fixed: #d1e4ff;
-  --color-primary-fixed-dim: #b0c9e8;
-  --color-on-primary-fixed: #011d35;
-  --color-on-primary-fixed-variant: #314863;
+  --color-primary: #1D4ED8;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #2563EB;
+  --color-on-primary-container: #FFFFFF;
+  --color-inverse-primary: #BFD7F5;
+  --color-primary-fixed: #EAF1FE;
+  --color-primary-fixed-dim: #BFD7F5;
+  --color-on-primary-fixed: #0F1B2D;
+  --color-on-primary-fixed-variant: #1D4ED8;
 
-  --color-secondary: #006b5f;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #6df5e1;
-  --color-on-secondary-container: #006f64;
-  --color-secondary-fixed: #71f8e4;
-  --color-secondary-fixed-dim: #4fdbc8;
-  --color-on-secondary-fixed: #00201c;
-  --color-on-secondary-fixed-variant: #005048;
+  --color-secondary: #FF6A3D;
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: #FFF0EA;
+  --color-on-secondary-container: #C8461E;
+  --color-secondary-fixed: #FFF0EA;
+  --color-secondary-fixed-dim: #FFD2C2;
+  --color-on-secondary-fixed: #0F1B2D;
+  --color-on-secondary-fixed-variant: #D4603F;
 
-  --color-tertiary: #330000;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #5a0000;
-  --color-on-tertiary-container: #e96755;
-  --color-tertiary-fixed: #ffdad4;
-  --color-tertiary-fixed-dim: #ffb4a8;
-  --color-on-tertiary-fixed: #410000;
-  --color-on-tertiary-fixed-variant: #872015;
+  --color-tertiary: #7C3AED;
+  --color-on-tertiary: #FFFFFF;
+  --color-tertiary-container: #F1EBFE;
+  --color-on-tertiary-container: #5B21B6;
+  --color-tertiary-fixed: #F1EBFE;
+  --color-tertiary-fixed-dim: #DDD6FE;
+  --color-on-tertiary-fixed: #0F1B2D;
+  --color-on-tertiary-fixed-variant: #6D28D9;
 
-  --color-coral-accent: #ff7043;
-  --color-coral-hover: #f4511e;
+  --color-coral-accent: #FF6A3D;
+  --color-coral-hover: #E8582C;
 
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
+  --color-error: #E02D4D;
+  --color-on-error: #FFFFFF;
+  --color-error-container: #FDECEF;
+  --color-on-error-container: #8C1030;
 
-  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --font-sans: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
+}
+
+:root {
+  --brand: #1D4ED8;
+  --brand6: #2563EB;
+  --brand1: #EAF1FE;
+  --ink: #0F1B2D;
+  --ink2: #33425A;
+  --mut: #6B7C97;
+  --line: #E1E8F3;
+  --bg: #F4F7FC;
+  --acc: #FF6A3D;
+  --acc1: #FFF0EA;
+  --grn: #0E9F6E;
+  --grn1: #E6F7F0;
+  --amb: #D97706;
+  --amb1: #FEF3E2;
+  --red: #E02D4D;
+  --red1: #FDECEF;
+  --vio: #7C3AED;
+  --vio1: #F1EBFE;
+  --r: 14px;
+  --sh: 0 1px 2px rgba(15,27,45,.06), 0 8px 22px rgba(15,27,45,.06);
 }
 
 html {
@@ -63,83 +86,125 @@ html {
 
 body {
   margin: 0;
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f7f9fc;
-  color: #191c1e;
+  font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #F4F7FC;
+  color: #0F1B2D;
 }
 
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
+/* Report 3 Design System Utility Classes */
+.btn-brand {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: var(--brand);
+  color: #fff;
+  padding: 13px;
+  font-weight: 600;
+  font-size: 13px;
   line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
+  text-align: center;
+  letter-spacing: 0.3px;
+  transition: background-color 150ms ease, transform 100ms ease;
+}
+.btn-brand:hover {
+  background: var(--brand6);
+}
+.btn-brand:active {
+  transform: scale(0.99);
+}
+.btn-mut {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--ink2);
+  padding: 13px;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+  transition: background-color 150ms ease;
+}
+.btn-mut:hover {
+  background: #E8EEF8;
+}
+.segs {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 3px;
+}
+.segs button, .segs div {
+  flex: 1;
+  text-align: center;
+  font-size: 11.5px;
+  padding: 7px 4px;
+  border-radius: 8px;
+  color: var(--mut);
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.segs button.active, .segs div.on {
+  background: #fff;
+  color: var(--brand);
+  box-shadow: var(--sh);
+}
+.alert-error {
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 11.5px;
+  display: flex;
+  gap: 9px;
+  line-height: 1.5;
+  background: var(--red1);
+  color: #8C1030;
+  border: 1px solid #F7C9D3;
+}
+.alert-brand {
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 11.5px;
+  display: flex;
+  gap: 9px;
+  line-height: 1.5;
+  background: var(--brand1);
+  color: #12379B;
+  border: 1px solid #C6DAFB;
+}
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  padding: 3px 9px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
   white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
-
-.material-symbols-outlined.fill,
-.icon-fill {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+.badge-pill.green {
+  background: var(--grn1);
+  color: var(--grn);
 }
-
-/* Custom Animation & Utilities */
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 107, 95, 0.7);
-  }
-  70% {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 12px rgba(0, 107, 95, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 107, 95, 0);
-  }
-}
-
-@keyframes pulse-coral {
-  0% {
-    box-shadow: 0 0 0 0 rgba(233, 103, 85, 0.6);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(233, 103, 85, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(233, 103, 85, 0);
-  }
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-button,
-a,
-input,
-textarea,
-select {
-  outline-offset: 3px;
+.badge-pill.brand {
+  background: var(--brand1);
+  color: var(--brand);
 }
 
 :focus-visible {
-  outline: 3px solid #4fdbc8;
+  outline: 2px solid var(--brand);
 }
 
 ::selection {
-  background: #6df5e1;
-  color: #00152a;
+  background: var(--brand1);
+  color: var(--brand);
 }
 
 @keyframes fade-in {
