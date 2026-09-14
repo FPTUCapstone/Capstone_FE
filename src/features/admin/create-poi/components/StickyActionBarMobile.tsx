@@ -29,4 +29,3 @@ export function StickyActionBarMobile({ onSubmit, onReset, submitting, disabled,
     </div>
   );
 }
-

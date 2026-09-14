@@ -48,7 +48,7 @@ No commit, push, merge, schema migration, deployment or production seed operatio
 - Final FE checks: npm install, npm test, npm run lint, npm run typecheck and npm run build
   completed successfully. Installation audit findings are listed below; no dependency versions
   were changed. Production build includes dynamic protected UC-52 and all three proxy routes.
-- FE Node tests: 21 passed. Tests cover flat DTOs, zero/blank coordinates, integer duration,
+- FE Node tests: 23 passed. Tests cover flat DTOs, zero/blank coordinates, integer duration,
   opening-hour rules, nested field errors, real 201 guard, 409 IDs, malformed/non-JSON/network
   responses, bearer forwarding, origin checks, cookie lifecycle and sanitized server failures.
 - BE: 134 passed, 0 failed, 0 skipped, including all three SQL Server persistence/rollback

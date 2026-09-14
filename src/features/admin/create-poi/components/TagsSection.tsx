@@ -71,4 +71,3 @@ export function TagsSection({ formData, tags, errors, onChange, disabled }: Prop
     </section>
   );
 }
-

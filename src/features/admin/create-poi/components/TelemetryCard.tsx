@@ -17,4 +17,3 @@ export function TelemetryCard({ payload }: { payload: CreatePoiRequest | null })
     </details>
   );
 }
-
