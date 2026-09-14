@@ -1,4 +1,5 @@
 import { GetAuditLogsParams, PaginatedList, AuditLogSummaryDto, AuditLogDetailDto } from '../types/auditLogAdmin';
+import { login as authLogin, saveTokens } from '@/lib/authApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5021';
 
@@ -107,30 +108,24 @@ export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> 
 }
 
 export async function devLoginAsAdmin(): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  try {
+    const res = await authLogin({
       email: 'linhtv171@gmail.com',
       password: 'Sekiro171@',
-    }),
-  });
+    });
 
-  if (!response.ok) {
-    throw new Error('Dev auto-login failed. Please check backend server status.');
-  }
-
-  const data = await response.json();
-  const token = data.token || data.accessToken;
-  if (token) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('tripmate_access_token', token);
-      localStorage.setItem('token', token);
+    if (res && res.accessToken) {
+      saveTokens(res.accessToken, res.refreshToken, { email: res.email, fullName: res.fullName });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', res.accessToken);
+      }
     }
+  } catch (err: unknown) {
+    throw new Error('Dev auto-login failed. Please verify credentials or backend API server state.');
   }
 }
+
+
 
 
 
