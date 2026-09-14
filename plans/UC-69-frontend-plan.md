@@ -1,44 +1,45 @@
-# Implementation Plan — UC-69 Frontend: View Audit Log Details
+# Implementation Plan — UC-69 Frontend: View Audit Log Details (SRS Aligned)
 
 ## Overview
-This implementation plan outlines the Next.js / TypeScript frontend implementation for **UC-69: View Audit Log Details** in `Capstone_FE` (Screen #34 System Audit Log Entry Detail Drawer).
+This implementation plan outlines the Next.js / TypeScript frontend implementation for **UC-69: View Audit Log Details** in `Capstone_FE` (Screen #34 System Audit Log Entry Detail View), aligned 100% with SRS specifications.
 
-The feature enables Administrators to open a slide-over detail drawer by clicking the View Details icon button on any audit log entry in the `/admin/audit-logs` table, fetching comprehensive event details from `GET /api/v1/admin/audit-logs/{id}`.
+The feature enables Administrators to open a **Centered Modal Dialog** by clicking the View Details icon button on any audit log entry in the `/admin/audit-logs` table, displaying Entry Header, Actor Panel, Target Panel, Change Table (`Field` | `Previous Value` | `New Value`), Context Panel (Reason), and `[Back to List]` / `[Copy Event Identifier]` buttons.
 
 ---
 
 ## Technical Context & Decisions
 
-1. **Framework & Styling**: Next.js App Router, TypeScript, TailwindCSS, custom glassmorphism modal styling (`#00152a`, `#102a43`, `#314863`, `#71f8e4`).
+1. **Centered Modal Layout**: Replaces side-drawer with a **Centered Modal Dialog** (`max-w-4xl`, centered on screen, glassmorphism dark theme `#00152a`, `#102a43`, `#314863`, `#71f8e4`).
 2. **Clean Architecture Separation**:
-   - `types/auditLogAdmin.ts`: Added `AuditLogDetailDto` interface.
-   - `services/auditLogAdminService.ts`: Centralized `getAuditLogDetail(id)` API service function fetching `/api/v1/admin/audit-logs/{id}` with Bearer token authentication.
-   - `components/AuditLogDetailDrawer.tsx`: Standalone drawer modal component with backdrop blur, loading spinner, error state handling (`MSG129` for 404, `MSG126` for 403, `MSG127` for system/network failures), and `ESC` key press listener.
-   - `components/AuditLogManagementView.tsx`: Integrated `selectedLogId` state and `AuditLogDetailDrawer`.
-3. **Table Integration**: `AuditLogTable.tsx` passes `onViewDetail` callback from the `Actions` column eye icon button.
-4. **State Audit Data Formatting & Layout Protection**:
-   - `beforeData` & `afterData` strings parsed & formatted with `JSON.stringify(parsed, null, 2)` inside dark code blocks.
-   - Enforced `<pre>` CSS rules (`overflow-x-auto max-w-full whitespace-pre-wrap break-words break-all`) to guarantee that long URLs (e.g. Cloudinary/S3 image links) or base64/token strings never cause horizontal drawer overflow or distort the layout boundaries.
-   - Interactive "Copy" button for quick clipboard copying.
-   - Graceful fallbacks when prior or post states are null (`(No prior state record)`, `(No post state record)`).
-5. **System Actor Presentation**: `actorUserId === null` gracefully displays neutral badge `"System"`.
-6. **Timezone & Local Formatting (CR-07)**: Uses `createdAtLocal` formatted string directly from backend (GMT+7 `dd/MM/yyyy HH:mm:ss`) alongside UTC ISO string.
-
+   - `types/auditLogAdmin.ts`: Updated `AuditLogDetailDto` and added `FieldChangeRow` interface.
+   - `services/auditLogAdminService.ts`: `getAuditLogDetail(id)` fetching `/api/v1/admin/audit-logs/{id}`.
+   - `components/AuditLogDetailModal.tsx`: Centered modal dialog component implementing SRS panels, BR-03 sensitive masking, MSG128 no-change notification, MSG150 404 error handling, and `[Copy Event Identifier]` button.
+   - `components/AuditLogManagementView.tsx`: Integrated `selectedLogId` state and `AuditLogDetailModal`.
+3. **Change Table Parser & Sensitive Masking (BR-03, BR-130)**:
+   - Parses `beforeData` & `afterData` JSON strings into structured rows: `Field`, `Previous Value`, `New Value`.
+   - Automatically masks sensitive keys (`password`, `token`, `secret`, `creditCard`, `cvv`, etc.) as `***MASKED***`.
+   - If no field changes exist, displays **`MSG128`** ("No field changes recorded for this entry.") inside Change Table.
+4. **Context Panel (BR-119)**: Displays Supplied Reason (`reason` / `note`) when present.
+5. **System Actor Presentation (BR-115)**: System-triggered actions (`actorUserId === null`) display neutral badge `"System"`.
+6. **Error Message Alignment**:
+   - 404 Not Found -> **`MSG150`** ("The selected audit log entry does not exist.").
+   - 403 Forbidden -> **`MSG126`** ("Access denied. Administrator role required.").
+   - System/Network Failure -> **`MSG127`** ("The audit log details cannot be retrieved because of a system or network failure.").
 
 ---
 
 ## Proposed Component Changes
 
 ### Component 1: Types & API Service Layer
-- [MODIFY] [`auditLogAdmin.ts`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/types/auditLogAdmin.ts): Added `AuditLogDetailDto` interface.
-- [MODIFY] [`auditLogAdminService.ts`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/services/auditLogAdminService.ts): Added `getAuditLogDetail(id: number)` API client function.
+- [MODIFY] [`auditLogAdmin.ts`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/types/auditLogAdmin.ts): Update `AuditLogDetailDto` with SRS fields (`result`, `clientPlatform`, `affectedModule`, `reason`) and add `FieldChangeRow`.
+- [MODIFY] [`auditLogAdminService.ts`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/services/auditLogAdminService.ts): Update `getAuditLogDetail` error handling for `MSG150` 404.
 
 ### Component 2: Feature UI Components
-- [NEW] [`AuditLogDetailDrawer.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/components/AuditLogDetailDrawer.tsx): Side-drawer component displaying detailed audit entry information, formatted JSON states, copy buttons, and `ESC` dismissal.
-- [MODIFY] [`AuditLogManagementView.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/components/AuditLogManagementView.tsx): Wired `selectedLogId` state and rendered `AuditLogDetailDrawer`.
+- [NEW] [`AuditLogDetailModal.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/components/AuditLogDetailModal.tsx): Centered modal dialog implementing SRS Screen #34 layout (Header, Actor Panel, Target Panel, Change Table, Context Panel, `[Back to List]`, `[Copy Event Identifier]`).
+- [MODIFY] [`AuditLogManagementView.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/components/AuditLogManagementView.tsx): Replace drawer with `AuditLogDetailModal`.
 
 ### Component 3: Component Unit Tests
-- [NEW] [`AuditLogDetailDrawer.test.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/components/AuditLogDetailDrawer.test.tsx): Vitest test suite covering drawer open/close, data rendering, 404 error state (`MSG129`), and close button handlers.
+- [NEW] [`AuditLogDetailModal.test.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/audit-logs/components/AuditLogDetailModal.test.tsx): Vitest unit tests covering modal open/close, Change Table parsing, BR-03 sensitive masking, MSG128 no-change alert, MSG150 404 error state, and copy identifier button.
 
 ---
 
@@ -47,10 +48,3 @@ The feature enables Administrators to open a slide-over detail drawer by clickin
 ### Automated Tests
 - Run TypeScript typecheck: `npm run typecheck`
 - Run Vitest unit tests: `npm run test`
-
-### Manual Verification
-- Login as Administrator and navigate to `/admin/audit-logs`.
-- Click the eye icon on any row in the audit log table.
-- Verify drawer slides open with loading state, then populates Event Info, Actor Details, Target Object, and Before/After JSON states.
-- Click "Copy" button to verify clipboard copy functionality.
-- Press `ESC` or click backdrop overlay to verify drawer dismissal.
