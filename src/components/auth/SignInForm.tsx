@@ -15,8 +15,8 @@ import { auth } from '@/lib/firebase';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { CheckboxField, PasswordField, TextField } from '@/components/ui/FormControls';
-import { type ApiError, googleAuth, login, saveTokens, verifyEmail } from '@/lib/authApi';
-import { isTooManyRequestsError, mapAuthError } from '@/lib/authErrorMapper';
+import { type ApiError, googleAuth, isApiError, login, saveTokens, verifyEmail } from '@/lib/authApi';
+import { getApiErrorMessage, isTooManyRequestsError, mapAuthError, mapFirebaseAuthError } from '@/lib/authErrorMapper';
 import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
 import { ROUTES } from '@/lib/routes';
 
@@ -220,8 +220,10 @@ export function SignInForm({ admin = false }: SignInFormProps) {
         setFeedback(null);
         return;
       }
-      const errorMsg =
-        err instanceof Error ? err.message : 'Google authentication failed. Please try again.';
+      const fallback = 'Google authentication failed. Please try again.';
+      const errorMsg = isApiError(err)
+        ? getApiErrorMessage(err, fallback)
+        : mapFirebaseAuthError(err, fallback);
       setFeedback({ tone: 'error', message: errorMsg });
     } finally {
       setLoading(false);

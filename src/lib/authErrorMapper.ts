@@ -25,6 +25,8 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
 
   // Backend AUTH_* error codes (ProblemDetails errorCode values)
   AUTH_TOKEN_INVALID: 'Your authentication token is invalid or has expired. Please try again.',
+  'auth.admin_google_sign_in_disabled':
+    'Administrator accounts must sign in with email and password.',
   AUTH_EMAIL_MISMATCH:
     'The email address does not match the account used for registration. Please try again with the same email address.',
 
