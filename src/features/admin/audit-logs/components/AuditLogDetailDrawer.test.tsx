@@ -68,7 +68,24 @@ describe('AuditLogDetailDrawer', () => {
     expect(await screen.findByText('System audit log entry not found. (MSG129)')).toBeDefined();
   });
 
+  it('renders error state MSG127 when system or network failure occurs (500)', async () => {
+    const err = new service.AuditLogServiceError(
+      'The audit log details cannot be retrieved because of a system or network failure. (MSG127)',
+      500
+    );
+    vi.mocked(service.getAuditLogDetail).mockRejectedValue(err);
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    expect(
+      await screen.findByText(
+        'The audit log details cannot be retrieved because of a system or network failure. (MSG127)'
+      )
+    ).toBeDefined();
+  });
+
   it('calls onClose when close button is clicked', async () => {
+
     const mockDetail = {
       id: 101,
       actionType: 'ApproveOperatorApplication',

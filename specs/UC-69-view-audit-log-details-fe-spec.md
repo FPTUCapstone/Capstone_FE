@@ -25,7 +25,7 @@ It covers:
 - Error Handling:
   - HTTP 404 / `admin.audit_log_not_found`: Displays `MSG129` ("System audit log entry not found.").
   - HTTP 403 Forbidden: Displays `MSG126` ("Access denied. Administrator role required.").
-  - Network/Server failure: Displays generic error alert with drawer dismiss button.
+  - Network/Server failure (500, network error): Displays `MSG127` ("The audit log details cannot be retrieved because of a system or network failure.").
 
 ---
 
@@ -107,14 +107,16 @@ export interface AuditLogDetailDto {
 5. **Target Object Card:**
    - Affected Entity name (e.g., `OperatorProfile`, `TourPackage`) and Entity ID.
 
-6. **State Audit Data (Before / After JSON Comparison):**
+6. **State Audit Data (Before / After JSON Comparison & Layout Protection):**
    - Before Data block: Highlighted in amber tint, formatted with `JSON.stringify(parsed, null, 2)` if valid JSON. Includes "Copy" button.
    - After Data block: Highlighted in emerald tint, formatted with `JSON.stringify(parsed, null, 2)` if valid JSON. Includes "Copy" button.
+   - **CSS Layout Protection Requirement**: `<pre>` containers MUST include `overflow-x-auto`, `max-w-full`, `break-words`, `whitespace-pre-wrap`, and `break-all` to ensure long URLs (e.g., Cloudinary/S3 image links) or base64/token strings do not cause horizontal layout overflow or break the 400px–600px drawer boundary.
    - If `beforeData` or `afterData` is null, displays `(No prior state record)` or `(No post state record)`.
 
-7. **Error State (`MSG129` / `MSG126`):**
+7. **Error State (`MSG129` / `MSG126` / `MSG127`):**
    - 404 Not Found: Red feedback card displaying `MSG129` ("System audit log entry not found.") with a "Close Drawer" button.
    - 403 Forbidden: Red feedback card displaying `MSG126` ("Access denied. Administrator role required.").
+   - System/Network Failure (500 or fetch exception): Displays `MSG127` ("The audit log details cannot be retrieved because of a system or network failure.").
 
 ---
 
@@ -123,7 +125,8 @@ export interface AuditLogDetailDto {
 1. Clicking "View Details" on any audit log row opens the side-drawer overlay without navigating away from `/admin/audit-logs`.
 2. Detailed information is retrieved from `GET /api/v1/admin/audit-logs/{id}`.
 3. System-triggered logs (`actorUserId === null`) gracefully render the `"System"` actor badge.
-4. `beforeData` and `afterData` are formatted as readable JSON blocks with copy buttons.
+4. `beforeData` and `afterData` are formatted as readable JSON blocks with copy buttons, enforced with `overflow-x-auto max-w-full whitespace-pre-wrap break-all` CSS to prevent layout distortion from long URLs.
 5. Pressing `ESC` or clicking the backdrop overlay closes the detail drawer.
-6. If the audit log ID does not exist, `MSG129` 404 error is displayed safely inside the drawer.
+6. If the audit log ID does not exist, `MSG129` 404 error is displayed safely inside the drawer. System/network errors display `MSG127`.
 7. Unit test suite passes 100% via `vitest`.
+

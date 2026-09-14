@@ -86,11 +86,21 @@ export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> 
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const message = errorData.title || errorData.message || `System audit log entry not found. (${response.status})`;
+    let message = errorData.title || errorData.message;
+    if (!message) {
+      if (response.status === 404) {
+        message = 'System audit log entry not found. (MSG129)';
+      } else if (response.status === 403) {
+        message = 'Access denied. Administrator role required. (MSG126)';
+      } else {
+        message = 'The audit log details cannot be retrieved because of a system or network failure. (MSG127)';
+      }
+    }
     throw new AuditLogServiceError(message, response.status, errorData.extensions?.errorCode);
   }
 
   return response.json();
 }
+
 
 
