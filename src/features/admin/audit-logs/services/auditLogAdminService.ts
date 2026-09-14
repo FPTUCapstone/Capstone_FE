@@ -42,7 +42,9 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
     queryParams.append('pageSize', params.pageSize.toString());
   }
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') || sessionStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('tripmate_access_token') || localStorage.getItem('token') || sessionStorage.getItem('token')
+    : null;
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -68,7 +70,9 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
 }
 
 export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') || sessionStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('tripmate_access_token') || localStorage.getItem('token') || sessionStorage.getItem('token')
+    : null;
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -101,6 +105,33 @@ export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> 
 
   return response.json();
 }
+
+export async function devLoginAsAdmin(): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: 'linhtv171@gmail.com',
+      password: 'Sekiro171@',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Dev auto-login failed. Please check backend server status.');
+  }
+
+  const data = await response.json();
+  const token = data.token || data.accessToken;
+  if (token) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tripmate_access_token', token);
+      localStorage.setItem('token', token);
+    }
+  }
+}
+
 
 
 

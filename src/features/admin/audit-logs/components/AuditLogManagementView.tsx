@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GetAuditLogsParams, PaginatedList, AuditLogSummaryDto } from '../types/auditLogAdmin';
-import { getAuditLogs, AuditLogServiceError } from '../services/auditLogAdminService';
+import { getAuditLogs, AuditLogServiceError, devLoginAsAdmin } from '../services/auditLogAdminService';
 import { AuditLogFilterBar } from './AuditLogFilterBar';
 import { AuditLogTable } from './AuditLogTable';
 import { AuditLogPagination } from './AuditLogPagination';
@@ -19,6 +19,7 @@ export function AuditLogManagementView() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState<boolean>(false);
+  const [isDevLoggingIn, setIsDevLoggingIn] = useState<boolean>(false);
 
   // Detail Drawer state (UC-69)
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
@@ -49,9 +50,49 @@ export function AuditLogManagementView() {
     }
   }, [filters]);
 
+  const handleDevLogin = async () => {
+    setIsDevLoggingIn(true);
+    try {
+      await devLoginAsAdmin();
+      await fetchLogs();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Dev login failed.');
+      }
+    } finally {
+      setIsDevLoggingIn(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     
+    // Auto dev login if no token stored
+    const storedToken = typeof window !== 'undefined'
+      ? localStorage.getItem('tripmate_access_token') || localStorage.getItem('token') || sessionStorage.getItem('token')
+      : null;
+
+    if (!storedToken) {
+      devLoginAsAdmin()
+        .then(() => getAuditLogs(filters))
+        .then((result) => {
+          if (isMounted) {
+            setData(result);
+            setError(null);
+            setIsForbidden(false);
+            setIsLoading(false);
+          }
+        })
+        .catch(() => {
+          if (isMounted) {
+            fetchLogs();
+          }
+        });
+      return () => { isMounted = false; };
+    }
+
     getAuditLogs(filters)
       .then((result) => {
         if (isMounted) {
@@ -82,7 +123,7 @@ export function AuditLogManagementView() {
     return () => {
       isMounted = false;
     };
-  }, [filters]);
+  }, [filters, fetchLogs]);
 
   const handleFilterChange = (updatedFilters: Partial<GetAuditLogsParams>) => {
     setFilters((prev) => ({
@@ -117,18 +158,32 @@ export function AuditLogManagementView() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-6">
       {/* Header Banner */}
-      <div className="flex flex-col gap-1 border-b border-[#c3c6ce] pb-5">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-2xl text-[#006b5f]">
-            find_in_page
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#00152a]">
-            System Audit Logs
-          </h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#c3c6ce] pb-5">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-2xl text-[#006b5f]">
+              find_in_page
+            </span>
+            <h1 className="text-3xl font-extrabold tracking-tight text-[#00152a]">
+              System Audit Logs
+            </h1>
+          </div>
+          <p className="text-sm text-[#43474d]">
+            Operational, security, and administrative event trail for auditability and compliance.
+          </p>
         </div>
-        <p className="text-sm text-[#43474d]">
-          Operational, security, and administrative event trail for auditability and compliance.
-        </p>
+
+        {/* Quick Dev Login Action */}
+        <button
+          type="button"
+          onClick={handleDevLogin}
+          disabled={isDevLoggingIn}
+          className="inline-flex items-center gap-2 rounded-lg border border-[#006b5f] bg-[#006b5f]/10 px-3.5 py-2 text-xs font-bold text-[#006b5f] transition-all hover:bg-[#006b5f] hover:text-white disabled:opacity-50"
+          title="Authenticate as Admin for testing (linhtv171@gmail.com)"
+        >
+          <span className="material-symbols-outlined text-base">bolt</span>
+          {isDevLoggingIn ? 'Logging in as Admin...' : '⚡ Quick Dev Login as Admin'}
+        </button>
       </div>
 
       {/* Error Alert Display */}
@@ -139,18 +194,28 @@ export function AuditLogManagementView() {
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span>{error}</span>
-            {!isForbidden && (
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={fetchLogs}
-                className="rounded bg-[#93000a] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-800"
+                onClick={handleDevLogin}
+                className="rounded bg-[#006b5f] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-[#004d44]"
               >
-                Retry
+                ⚡ Login as Admin
               </button>
-            )}
+              {!isForbidden && (
+                <button
+                  type="button"
+                  onClick={fetchLogs}
+                  className="rounded bg-[#93000a] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-800"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
           </div>
         </FeedbackAlert>
       )}
+
 
       {/* Search & Filter Bar */}
       <AuditLogFilterBar
