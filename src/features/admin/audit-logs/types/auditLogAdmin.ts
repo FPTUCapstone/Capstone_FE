@@ -34,3 +34,20 @@ export interface GetAuditLogsParams {
   pageNumber?: number;
   pageSize?: number;
 }
+
+export interface AuditLogDetailDto {
+  id: number;
+  actionType: string;
+  actorUserId: number | null;
+  actorEmail: string | null;
+  actorFullName: string;
+  actorRole: UserRole | null;
+  affectedEntity: string;
+  affectedEntityId: number | null;
+  beforeData: string | null;
+  afterData: string | null;
+  ipAddress: string | null;
+  createdAtUtc: string;
+  createdAtLocal: string;
+}
+

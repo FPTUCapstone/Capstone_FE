@@ -1,4 +1,4 @@
-import { GetAuditLogsParams, PaginatedList, AuditLogSummaryDto } from '../types/auditLogAdmin';
+import { GetAuditLogsParams, PaginatedList, AuditLogSummaryDto, AuditLogDetailDto } from '../types/auditLogAdmin';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5021';
 
@@ -66,4 +66,31 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
 
   return response.json();
 }
+
+export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') || sessionStorage.getItem('token') : null;
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/audit-logs/${id}`, {
+    method: 'GET',
+    headers,
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const message = errorData.title || errorData.message || `System audit log entry not found. (${response.status})`;
+    throw new AuditLogServiceError(message, response.status, errorData.extensions?.errorCode);
+  }
+
+  return response.json();
+}
+
 
