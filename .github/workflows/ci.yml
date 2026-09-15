@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test
+        run: npm test
+
       - name: Lint
         run: npm run lint
 
@@ -29,6 +32,14 @@ jobs:
         run: npm run typecheck
 
       - name: Build
+        env:
+          # Public placeholders let Next.js prerender auth pages; CI does not deploy this build.
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: example.test
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-project
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: example.test
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '123456789'
+          NEXT_PUBLIC_FIREBASE_APP_ID: '1:123456789:web:ci'
         run: npm run build
         env:
           # NEXT_PUBLIC_* values are public Firebase Web App config (not secrets) —
