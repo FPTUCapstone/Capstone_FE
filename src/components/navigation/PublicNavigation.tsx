@@ -72,13 +72,13 @@ export function PublicNavigation() {
         <Link href={ROUTES.home} aria-label="TripMate Landing Page">
           <BrandLogo />
         </Link>
-        <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-2 sm:w-auto" aria-label="Public navigation">
-          <Link href="#discover" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Explore POIs</Link>
-          <Link href="#tours" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Tours</Link>
+        <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:order-2 sm:w-auto" aria-label="Public navigation">
+          <Link href={ROUTES.pois} className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[#43474d] hover:bg-[#eceef1] sm:px-3 sm:text-sm">Khám phá</Link>
+          <Link href="/#tours" className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[#43474d] hover:bg-[#eceef1] sm:px-3 sm:text-sm">Tours</Link>
           {!loading && !currentUser ? (
-            <Link href={ROUTES.register} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Register</Link>
+            <Link href={ROUTES.register} className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[#43474d] hover:bg-[#eceef1] sm:px-3 sm:text-sm">Đăng ký</Link>
           ) : null}
-          <Link href={ROUTES.partner.register} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Partner</Link>
+          <Link href={ROUTES.partner.register} className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[#43474d] hover:bg-[#eceef1] sm:px-3 sm:text-sm">Đối tác</Link>
         </nav>
         
         {loading ? (
@@ -92,14 +92,14 @@ export function PublicNavigation() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex min-h-10 items-center rounded-xl border border-[#d8dadd] bg-white px-3.5 py-1.5 text-xs font-bold text-[#43474d] hover:bg-[#f2f4f7] hover:text-[#00152a] transition cursor-pointer"
+              className="inline-flex min-h-11 items-center rounded-xl border border-[#d8dadd] bg-white px-3.5 py-1.5 text-xs font-bold text-[#43474d] hover:bg-[#f2f4f7] hover:text-[#00152a] transition cursor-pointer"
             >
-              Sign Out
+              Đăng xuất
             </button>
           </div>
         ) : (
-          <Link href={ROUTES.signIn} className="order-2 inline-flex min-h-10 items-center rounded-xl bg-[#1D4ED8] px-5 py-2 text-sm font-bold text-white hover:bg-[#1E40AF] transition sm:order-3">
-            Sign In
+          <Link href={ROUTES.signIn} className="order-2 inline-flex min-h-11 items-center rounded-xl bg-[#1D4ED8] px-4 py-2 text-sm font-bold text-white hover:bg-[#1E40AF] transition sm:order-3 sm:px-5">
+            Đăng nhập
           </Link>
         )}
       </div>

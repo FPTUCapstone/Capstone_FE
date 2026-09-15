@@ -29,7 +29,7 @@ export function LandingPage() {
                 Discover published destination information, compare available tours, and prepare your next journey with TripMate on the Web.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="#discover" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#007d6e] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#006b5f]">
+                <Link href={ROUTES.pois} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#007d6e] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#006b5f]">
                   Explore Points of Interest
                   <span className="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>
                 </Link>
@@ -87,7 +87,7 @@ export function LandingPage() {
                 <span className="material-symbols-outlined rounded-2xl bg-[#e8f7f4] p-3 text-3xl text-[#006b5f]" aria-hidden="true">location_on</span>
                 <h3 className="mt-6 text-2xl font-extrabold text-[#00152a]">Explore Points of Interest</h3>
                 <p className="mt-3 text-sm leading-relaxed text-[#59616b]">Browse approved destination content and prepare a personal discovery plan.</p>
-                <p className="mt-6 text-sm font-bold text-[#006b5f]">Public discovery entry</p>
+                <Link href={ROUTES.pois} className="mt-6 inline-flex min-h-11 items-center text-sm font-bold text-[#006b5f] hover:underline">Mở trang Khám phá →</Link>
               </article>
               <article id="tours" className="scroll-mt-24 rounded-3xl border border-[#d8dadd] bg-white p-7 shadow-[0_14px_40px_rgba(0,21,42,0.07)] sm:p-8">
                 <span className="material-symbols-outlined rounded-2xl bg-[#fff0ed] p-3 text-3xl text-[#d94b3a]" aria-hidden="true">confirmation_number</span>
