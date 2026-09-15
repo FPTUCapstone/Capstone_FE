@@ -30,3 +30,14 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # NEXT_PUBLIC_* values are public Firebase Web App config (not secrets) —
+          # see src/lib/firebaseConfig.ts. The build fails fast without them because
+          # src/lib/firebase.ts validates required keys at module load time.
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: tripmate-82be3.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: tripmate-82be3
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: tripmate-82be3.firebasestorage.app
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '105500206516'
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
