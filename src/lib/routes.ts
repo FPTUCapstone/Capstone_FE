@@ -5,6 +5,7 @@ export const ROUTES = {
   verifyAccount: '/verify-account',
   forgotPassword: '/forgot-password',
   partner: {
+    dashboard: '/partner',
     register: '/partner/register',
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',

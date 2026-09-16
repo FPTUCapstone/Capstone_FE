@@ -17,7 +17,7 @@ vi.mock('firebase/auth', () => ({
   applyActionCode: firebaseMocks.applyActionCode,
   checkActionCode: firebaseMocks.checkActionCode,
 }));
-vi.mock('@/lib/firebase', () => ({ auth: authState }));
+vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => authState }));
 vi.mock('@/lib/authApi', () => apiMocks);
 
 describe('VerifyEmailHandler', () => {
