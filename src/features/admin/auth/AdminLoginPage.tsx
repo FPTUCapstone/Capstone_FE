@@ -1,4 +1,4 @@
-import { SignInForm } from '@/components/auth/SignInForm';
+import { AdminSignInForm } from '@/features/admin/auth/AdminSignInForm';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { ROUTES } from '@/lib/routes';
 
@@ -12,7 +12,7 @@ export function AdminLoginPage() {
       title="Administrator Sign In"
       description="Authenticate to access the protected administration workspace."
     >
-      <SignInForm admin />
+      <AdminSignInForm />
     </AuthShell>
   );
 }
