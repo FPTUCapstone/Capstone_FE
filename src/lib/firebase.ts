@@ -3,18 +3,25 @@ import { getAuth } from 'firebase/auth';
 
 import { assertFirebaseEnv } from './firebaseConfig';
 
-// Next.js (Turbopack) only inlines statically-analyzable `process.env.NEXT_PUBLIC_*`
-// member references into the browser bundle — passing `process.env` wholesale would make
-// the runtime `env[key]` lookup in assertFirebaseEnv see an empty shim in the browser and
-// fail the assert even when .env.local is filled.
+// Next.js/Turbopack only reliably inlines statically analyzable
+// process.env.NEXT_PUBLIC_* member references into the browser bundle.
+// Passing process.env directly to assertFirebaseEnv can therefore make
+// runtime lookups see an empty environment shim in the browser.
 const env = {
-  NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  NEXT_PUBLIC_FIREBASE_API_KEY:
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID:
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  NEXT_PUBLIC_FIREBASE_APP_ID:
+    process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID:
+    process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 const firebaseConfig = {
@@ -27,10 +34,21 @@ const firebaseConfig = {
   measurementId: env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Client modules are evaluated while Next.js prerenders pages. Initialize only
-// when an auth action runs, so CI can build without browser Firebase config.
+/**
+ * Firebase is initialized lazily when an authentication action actually
+ * requires it.
+ *
+ * Client modules can be evaluated while Next.js prerenders pages, so eager
+ * Firebase initialization here would make CI/build depend on browser Firebase
+ * configuration even for pages that do not use authentication.
+ */
 export function getFirebaseAuth() {
   assertFirebaseEnv(env);
-  const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+
+  const app =
+    getApps().length > 0
+      ? getApps()[0]
+      : initializeApp(firebaseConfig);
+
   return getAuth(app);
 }

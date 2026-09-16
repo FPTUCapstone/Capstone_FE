@@ -2,76 +2,157 @@
 
 import Link from 'next/link';
 
+import { BrandLogo } from '@/components/brand/BrandLogo';
+import { signInDestination } from '@/features/auth/routing/signInDestination';
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { signInDestination } from '@/features/auth/routing/signInDestination';
-import { BrandLogo } from '@/components/brand/BrandLogo';
 import { ROUTES } from '@/lib/routes';
 
 export function PublicNavigation() {
-  // S01 runtime: an empty in-memory context is NOT Guest until the cookie-backed
-  // restore settles, so the navbar never flashes the unauthenticated state for a
-  // user whose session is about to be restored after F5/direct navigation.
+  // An empty in-memory context is NOT considered Guest until the
+  // cookie-backed session restore has completed.
+  //
+  // This prevents the navbar from briefly showing an unauthenticated
+  // state after F5/direct navigation while an existing session is
+  // being restored.
   const { status, context } = useWebSession();
-  const displayName = context ? context.fullName.trim() || context.email : '';
-  // Authoritative navigation decision: the Partner entry is shown only to
-  // settled Guests (future UC-02 registration entry point) and TourOperators
-  // (routed by the existing W06 destination projection). It stays hidden while
-  // restoring so a session about to be restored is never shown as Guest.
-  // Travelers and Administrators get no Partner/operator-registration entry;
-  // BR6 keeps Tour Operator registration a fully independent guest-like flow.
-  const showPartner = status === 'unauthenticated' || context?.role === 'TourOperator';
-  const partnerHref = context?.role === 'TourOperator'
-    ? signInDestination(context) ?? ROUTES.partner.application
-    : ROUTES.partner.register;
+
+  const displayName = context
+    ? context.fullName.trim() || context.email
+    : '';
+
+  // Authoritative navigation decision:
+  //
+  // - Guest:
+  //   may enter the Partner registration flow.
+  //
+  // - TourOperator:
+  //   routed according to the existing UC-04 destination projection.
+  //
+  // - Traveler / Administrator:
+  //   Partner entry is hidden.
+  //
+  // While session restore is running the Partner entry is also hidden,
+  // preventing an authenticated user from temporarily being rendered
+  // as Guest.
+  const showPartner =
+    status === 'unauthenticated' ||
+    context?.role === 'TourOperator';
+
+  const partnerHref =
+    context?.role === 'TourOperator'
+      ? signInDestination(context) ?? ROUTES.partner.application
+      : ROUTES.partner.register;
 
   function handleSignOut() {
-    // Clears the client-side session only; server-side revocation is D02.
+    // UC-04 behavior:
+    // clear client-side session state only.
+    //
+    // Server-side refresh-token revocation belongs to UC-05 and is
+    // intentionally not implemented here yet.
     AuthStorage.clear();
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#d8dadd] bg-white/95 px-4 py-3 shadow-xs backdrop-blur-md md:px-8">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-xs backdrop-blur-md md:px-8">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-        <Link href={ROUTES.home} aria-label="TripMate Landing Page">
+        <Link
+          href={ROUTES.home}
+          aria-label="TripMate Landing Page"
+        >
           <BrandLogo />
         </Link>
-        <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-2 sm:w-auto" aria-label="Public navigation">
-          <Link href="#discover" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Explore POIs</Link>
-          <Link href="#tours" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Tours</Link>
-          {status === 'unauthenticated' ? (
-            <Link href={ROUTES.register} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Register</Link>
-          ) : null}
+
+        <nav
+          className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-2 sm:w-auto"
+          aria-label="Public navigation"
+        >
+          <a
+            href="#destinations"
+            className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+          >
+            Điểm đến
+          </a>
+
+          <a
+            href="#csp-simulator"
+            className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+          >
+            Lịch trình Tối ưu
+          </a>
+
+          <a
+            href="#weather-rerouting"
+            className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+          >
+            Cứu nguy Thời tiết
+          </a>
+
+          <a
+            href="#tours"
+            className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+          >
+            Tour Bản địa
+          </a>
+
           {showPartner ? (
-            <Link href={partnerHref} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-[#43474d] hover:bg-[#eceef1]">Partner</Link>
+            <Link
+              href={partnerHref}
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+            >
+              Dành cho Đối tác
+            </Link>
           ) : null}
         </nav>
-        
+
         {status === 'authenticated' ? (
-          <div className="order-2 flex items-center gap-3 sm:order-3">
-            <div className="flex items-center gap-2 rounded-xl bg-[#EFF6FF] px-3.5 py-1.5 text-xs font-bold text-[#1D4ED8] border border-[#DBEAFE]">
-              <span className="material-symbols-outlined text-base">account_circle</span>
-              <span className="max-w-[140px] truncate sm:max-w-[180px]">{displayName}</span>
+          <div className="order-2 flex items-center gap-2 sm:order-3">
+            <div className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e]">
+              <span className="material-symbols-outlined text-sm">
+                account_circle
+              </span>
+
+              <span className="max-w-[120px] truncate sm:max-w-[160px]">
+                {displayName}
+              </span>
             </div>
+
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex min-h-10 items-center rounded-xl border border-[#d8dadd] bg-white px-3.5 py-1.5 text-xs font-bold text-[#43474d] hover:bg-[#f2f4f7] hover:text-[#00152a] transition cursor-pointer"
+              className="inline-flex min-h-9 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
             >
-              Sign Out
+              Đăng xuất
             </button>
           </div>
         ) : status === 'restoring' ? (
-          <div role="status" aria-label="Restoring session" className="order-2 h-10 w-24 animate-pulse rounded-xl bg-gray-200 sm:order-3">
-            <span className="sr-only">Restoring session…</span>
+          <div
+            role="status"
+            aria-label="Restoring session"
+            className="order-2 h-10 w-24 animate-pulse rounded-xl bg-gray-200 sm:order-3"
+          >
+            <span className="sr-only">
+              Restoring session…
+            </span>
           </div>
         ) : (
-          <Link href={ROUTES.signIn} className="order-2 inline-flex min-h-10 items-center rounded-xl bg-[#1D4ED8] px-5 py-2 text-sm font-bold text-white hover:bg-[#1E40AF] transition sm:order-3">
-            Sign In
-          </Link>
+          <div className="order-2 flex items-center gap-2 sm:order-3">
+            <Link
+              href={ROUTES.register}
+              className="hidden min-h-9 items-center rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 sm:inline-flex"
+            >
+              Đăng ký
+            </Link>
+
+            <Link
+              href={ROUTES.signIn}
+              className="inline-flex min-h-9 items-center rounded-xl bg-[#007d6e] px-4 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+            >
+              Đăng nhập
+            </Link>
+          </div>
         )}
       </div>
     </header>
   );
 }
-
