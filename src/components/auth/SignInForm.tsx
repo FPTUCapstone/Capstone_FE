@@ -9,7 +9,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { CheckboxField, PasswordField, TextField } from '@/components/ui/FormControls';
@@ -123,7 +123,7 @@ export function SignInForm({ admin = false }: SignInFormProps) {
 
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(getFirebaseAuth(), provider);
       const idToken = await result.user.getIdToken();
 
       const res = await webGoogleAuth(idToken, remember);

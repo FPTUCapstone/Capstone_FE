@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { loginWithWebRecovery, resendWebVerification } from './webRecovery';
 const mocks = vi.hoisted(() => ({ login: vi.fn(), verify: vi.fn(), firebase: vi.fn(), send: vi.fn(), auth: { currentUser: null as unknown } }));
 vi.mock('@/lib/authApi', async (original) => ({ ...(await original<typeof import('@/lib/authApi')>()), webLogin: mocks.login, webVerifyEmail: mocks.verify }));
-vi.mock('@/lib/firebase', () => ({ auth: mocks.auth }));
+vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => mocks.auth }));
 vi.mock('firebase/auth', () => ({ signInWithEmailAndPassword: mocks.firebase, sendEmailVerification: mocks.send }));
 const input = { email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true };
 const unverified = { code: 'MSG_UNVERIFIED', status: 403 };

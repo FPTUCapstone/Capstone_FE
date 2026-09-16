@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/lib/firebase', () => ({ auth: {} }));
+vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => ({}) }));
 vi.mock('firebase/auth', () => ({
   GoogleAuthProvider: class GoogleAuthProvider {},
   signInWithPopup: mocks.popup,

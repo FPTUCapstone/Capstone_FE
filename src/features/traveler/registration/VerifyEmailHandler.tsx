@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { applyActionCode, checkActionCode } from 'firebase/auth';
 
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { saveTokens, verifyEmail } from '@/lib/authApi';
@@ -33,6 +33,7 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
 
     async function verify() {
       try {
+        const auth = getFirebaseAuth();
         const actionCodeInfo = await checkActionCode(auth, oobCode as string);
         await applyActionCode(auth, oobCode as string);
         const currentUser = auth.currentUser;

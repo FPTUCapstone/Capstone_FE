@@ -29,7 +29,7 @@ vi.mock('firebase/auth', () => ({
   signInWithPopup: authMocks.signInWithPopup,
 }));
 
-vi.mock('@/lib/firebase', () => ({ auth: {} }));
+vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => ({}) }));
 vi.mock('@/lib/authApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/authApi')>()),
   ...apiMocks,

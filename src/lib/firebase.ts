@@ -17,10 +17,6 @@ const env = {
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Fail fast with an actionable message when required Firebase Web config is
-// missing, instead of an opaque initializeApp() runtime error.
-assertFirebaseEnv(env);
-
 const firebaseConfig = {
   apiKey: env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -31,6 +27,10 @@ const firebaseConfig = {
   measurementId: env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export default app;
+// Client modules are evaluated while Next.js prerenders pages. Initialize only
+// when an auth action runs, so CI can build without browser Firebase config.
+export function getFirebaseAuth() {
+  assertFirebaseEnv(env);
+  const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+  return getAuth(app);
+}
