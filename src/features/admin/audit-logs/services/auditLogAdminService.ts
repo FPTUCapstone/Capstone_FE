@@ -1,7 +1,5 @@
 import { GetAuditLogsParams, PaginatedList, AuditLogSummaryDto, AuditLogDetailDto } from '../types/auditLogAdmin';
-import { login as authLogin, saveTokens } from '@/lib/authApi';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5021';
+import { getApiBase } from '@/lib/authApi';
 
 export class AuditLogServiceError extends Error {
   statusCode?: number;
@@ -13,6 +11,31 @@ export class AuditLogServiceError extends Error {
     this.statusCode = statusCode;
     this.errorCode = errorCode;
   }
+}
+
+function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('tripmate_access_token');
+}
+
+function buildAuthorizedHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  const token = getAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+function clearStoredTokens(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('tripmate_access_token');
+  localStorage.removeItem('tripmate_refresh_token');
+  localStorage.removeItem('tripmate_user');
 }
 
 export async function getAuditLogs(params: GetAuditLogsParams): Promise<PaginatedList<AuditLogSummaryDto>> {
@@ -43,29 +66,15 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
     queryParams.append('pageSize', params.pageSize.toString());
   }
 
-  const token = typeof window !== 'undefined'
-    ? localStorage.getItem('tripmate_access_token') || localStorage.getItem('token') || sessionStorage.getItem('token')
-    : null;
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/audit-logs?${queryParams.toString()}`, {
+  const response = await fetch(`${getApiBase()}/admin/audit-logs?${queryParams.toString()}`, {
     method: 'GET',
-    headers,
+    headers: buildAuthorizedHeaders(),
     cache: 'no-store',
   });
 
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('tripmate_access_token');
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
+    if (response.status === 401) {
+      clearStoredTokens();
     }
     const errorData = await response.json().catch(() => ({}));
     const message = errorData.title || errorData.message || `Failed to fetch audit logs (${response.status})`;
@@ -76,39 +85,25 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
 }
 
 export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> {
-  const token = typeof window !== 'undefined'
-    ? localStorage.getItem('tripmate_access_token') || localStorage.getItem('token') || sessionStorage.getItem('token')
-    : null;
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/audit-logs/${id}`, {
+  const response = await fetch(`${getApiBase()}/admin/audit-logs/${id}`, {
     method: 'GET',
-    headers,
+    headers: buildAuthorizedHeaders(),
     cache: 'no-store',
   });
 
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('tripmate_access_token');
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
+    if (response.status === 401) {
+      clearStoredTokens();
     }
     const errorData = await response.json().catch(() => ({}));
     let message = errorData.title || errorData.message;
     if (!message) {
       if (response.status === 404) {
-        message = 'System audit log entry not found. (MSG129)';
+        message = 'System audit log entry not found.';
       } else if (response.status === 403) {
-        message = 'Access denied. Administrator role required. (MSG126)';
+        message = 'You do not have permission to access this function.';
       } else {
-        message = 'The audit log details cannot be retrieved because of a system or network failure. (MSG127)';
+        message = 'TripMate is temporarily unable to process your request. Please check your connection and try again.';
       }
     }
     throw new AuditLogServiceError(message, response.status, errorData.extensions?.errorCode);
@@ -116,40 +111,3 @@ export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> 
 
   return response.json();
 }
-
-export async function devLoginAsAdmin(): Promise<void> {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('tripmate_access_token');
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
-  }
-
-  try {
-    const res = await authLogin({
-      email: 'linhtv171@gmail.com',
-      password: 'Sekiro171@',
-    });
-
-    if (res && res.accessToken) {
-      saveTokens(res.accessToken, res.refreshToken, { email: res.email, fullName: res.fullName });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', res.accessToken);
-        localStorage.setItem('tripmate_access_token', res.accessToken);
-      }
-    } else {
-      throw new Error('No access token returned from login server.');
-    }
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      throw new Error(`Dev auto-login failed: ${err.message}`);
-    }
-    throw new Error('Dev auto-login failed. Please verify credentials or backend API server state.');
-  }
-}
-
-
-
-
-
-
-

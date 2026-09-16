@@ -13,14 +13,15 @@ It covers:
 - Navigation link added to `AdminNavigation.tsx` and `ROUTES.admin.auditLogs`.
 - Read-only table listing audit log entries with fixed column widths (`table-fixed` layout): Event Timestamp (`createdAtLocal`), Event Type (`actionType`), Actor Email/Name (`actorEmail` / `actorFullName`), Actor Role (`actorRole`), Affected Module/Entity (`affectedEntity`), Affected Entity ID (`affectedEntityId`), IP Address (`ipAddress`), and `Actions` (icon button for UC-69 View Detail integration).
 - Search and filter bar supporting:
-  - Keyword search (`keyword`) with partial string matching across Email, FullName, ActionType, AffectedEntity, and AffectedEntityId.
-  - Event Type / Action Type select filter (`actionType`)
+  - Keyword search (`keyword`) with partial string matching across Email, FullName, ActionType, AffectedEntity, and AffectedEntityId — applied **on submit** (Apply Filters button / Enter key), not on each keystroke (CR-02, SRS §3.9.12.1 BR-52).
+  - Event Type / Action Type select filter (`actionType`) — options mirror `TripMate.Domain.Common.AuditActionTypes`.
   - Actor Role select filter (`actorRole`)
-  - Affected Entity select filter (`affectedEntity`)
-  - Event Date range filter (`fromDateUtc`, `toDateUtc`) with `max=Today` business constraint, `From Date <= To Date` bounds, click-to-open calendar picker (`showPicker()`), and local start-of-day/end-of-day UTC ISO conversion.
+  - Affected Entity select filter (`affectedEntity`) — options mirror `TripMate.Domain.Common.AuditEntityTypes`.
+  - Event Date range filter (`fromDateUtc`, `toDateUtc`) with `max=Today` (local calendar date) business constraint, `From Date <= To Date` bounds, click-to-open calendar picker (`showPicker()`), and local start-of-day/end-of-day UTC ISO conversion.
   - Reset filters button
-- Pagination control supporting page navigation and items per page selection.
-- Empty state (`MSG128`: "No audit log entries match the submitted criteria."), Loading state, and Error handling state (`MSG127` / `MSG126`).
+- Pagination control supporting page navigation and items per page selection, with a default page size of **20** (CR-01).
+- Empty state (`MSG128`: "No records found matching your criteria."), Loading state, and Error handling state (`MSG127` / `MSG126`, locked SRS 5.3 content).
+- On `401` (expired/missing session): redirect to `/admin/login?returnUrl=/admin/audit-logs` preserving the intended destination (CR-10).
 - Date/Time display compliant with CR-07 (`Asia/Ho_Chi_Minh` UTC+7 formatted as `dd/MM/yyyy HH:mm:ss`).
 
 > [!NOTE]
@@ -49,7 +50,7 @@ src/
 │   │   ├── AuditLogTable.tsx             <-- Table Presentation (table-fixed layout & Actions column)
 │   │   └── AuditLogPagination.tsx        <-- Pagination Controls
 │   ├── services/
-│   │   └── auditLogAdminService.ts       <-- Fetch API client & devLoginAsAdmin helper
+│   │   └── auditLogAdminService.ts       <-- Fetch API client (reuses the shared API base URL resolver from `@/lib/authApi`)
 │   └── types/
 │       └── auditLogAdmin.ts              <-- TypeScript interfaces & DTOs
 ├── components/navigation/
@@ -119,7 +120,8 @@ export interface GetAuditLogsParams {
    - Subtitle: "Operational, security, and administrative event trail."
 
 2. **Filter Bar:**
-   - Search Input: "Search by keyword, email, or entity ID..." (supports partial ID & string matching)
+   - Search Input: "Search by keyword, email, or entity ID..." (supports partial ID & string matching; applied on submit)
+   - Apply Filters submit button and Reset button.
    - Filter Dropdown: Action Type (e.g., `ApproveOperatorApplication`, `RejectOperatorApplication`)
    - Filter Dropdown: Actor Role (`Administrator`, `TourOperator`, `Traveler`)
    - Filter Dropdown: Affected Entity (`OperatorProfile`, `TourPackage`, `User`)
@@ -133,11 +135,12 @@ export interface GetAuditLogsParams {
    - `Actions` column: View Detail icon button (`visibility`) preparing for UC-69 integration.
 
 4. **Empty State (`MSG128`):**
-   - Displays icon + `"No audit log entries match the submitted criteria."` when `totalCount === 0`.
+   - Displays icon + `"No records found matching your criteria."` when `totalCount === 0`.
 
 5. **Error State (`MSG126` / `MSG127`):**
-   - 403 Forbidden: Displays FeedbackAlert with `MSG126` ("Access denied. Administrator role required.").
-   - Network/Server failure: Displays FeedbackAlert with `MSG127` and a "Retry" button.
+   - 401 (expired/missing session): redirect to `/admin/login?returnUrl=/admin/audit-logs` (CR-10).
+   - 403 Forbidden: Displays FeedbackAlert with locked `MSG126` ("You do not have permission to access this function.").
+   - Network/Server failure: Displays FeedbackAlert with locked `MSG127` ("TripMate is temporarily unable to process your request. Please check your connection and try again.") and a "Retry" button.
 
 ---
 

@@ -100,7 +100,7 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
                       find_in_page
                     </span>
                     <p className="text-sm font-semibold text-slate-300">
-                      No audit log entries match the submitted criteria.
+                      No records found matching your criteria.
                     </p>
                     <p className="text-xs text-slate-400">
                       Try adjusting your search query, action type filter, or date range.

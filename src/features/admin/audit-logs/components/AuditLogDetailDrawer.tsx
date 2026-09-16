@@ -12,42 +12,43 @@ interface AuditLogDetailDrawerProps {
 
 export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
   const [detail, setDetail] = useState<AuditLogDetailDto | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedBefore, setCopiedBefore] = useState<boolean>(false);
   const [copiedAfter, setCopiedAfter] = useState<boolean>(false);
 
+  // Loading is derived: an open drawer with neither data nor error is fetching.
+  const isLoading = isOpen && logId !== null && detail === null && error === null;
+
+  const handleClose = () => {
+    setDetail(null);
+    setError(null);
+    onClose();
+  };
+
   useEffect(() => {
     if (!isOpen || logId === null) {
-      setDetail(null);
-      setError(null);
-      setIsLoading(false);
       return;
     }
 
     let isMounted = true;
-    setIsLoading(true);
-    setError(null);
 
     getAuditLogDetail(logId)
       .then((data) => {
         if (isMounted) {
           setDetail(data);
-          setIsLoading(false);
         }
       })
       .catch((err: unknown) => {
         if (isMounted) {
           if (err instanceof AuditLogServiceError && (err.statusCode === 404 || err.errorCode === 'admin.audit_log_not_found')) {
-            setError('System audit log entry not found. (MSG129)');
+            setError('System audit log entry not found.');
           } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'admin.audit_log_forbidden')) {
-            setError('Access denied. Administrator role required. (MSG126)');
+            setError('You do not have permission to access this function.');
           } else if (err instanceof Error && err.message) {
             setError(err.message);
           } else {
-            setError('The audit log details cannot be retrieved because of a system or network failure. (MSG127)');
+            setError('TripMate is temporarily unable to process your request. Please check your connection and try again.');
           }
-          setIsLoading(false);
         }
       });
 
@@ -60,6 +61,8 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
+        setDetail(null);
+        setError(null);
         onClose();
       }
     };
@@ -124,7 +127,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200 flex items-center justify-center p-4">
       {/* Backdrop overlay click to close */}
-      <div className="fixed inset-0" onClick={onClose} />
+      <div className="fixed inset-0" onClick={handleClose} />
 
       {/* Modal Dialog Box Centered */}
       <div className="relative w-full max-w-3xl max-h-[85vh] my-auto rounded-2xl border border-[#314863] bg-[#00152a] text-[#d1e4ff] shadow-2xl flex flex-col z-10 overflow-hidden">
@@ -148,7 +151,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-[#314863] hover:text-white transition-colors"
             title="Close (ESC)"
           >
@@ -174,7 +177,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
               <p className="text-sm text-red-300">{error}</p>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="mt-3 rounded-lg border border-red-700 bg-red-900/40 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800"
               >
                 Close Dialog
@@ -288,7 +291,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                     Supplied Reason / Action Note
                   </div>
                   <p className="text-xs text-amber-100 italic bg-amber-950/60 p-3 rounded-lg border border-amber-800/40">
-                    "{reasonText}"
+                    &ldquo;{reasonText}&rdquo;
                   </p>
                 </div>
               )}
@@ -369,7 +372,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
         <div className="border-t border-[#314863] bg-[#102a43]/90 px-6 py-3.5 flex justify-end">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-lg border border-[#314863] bg-[#00152a] px-4 py-2 text-xs font-semibold text-slate-200 hover:border-[#71f8e4] hover:text-white transition-colors"
           >
             Close

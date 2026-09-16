@@ -1,97 +1,41 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { GetAuditLogsParams, PaginatedList, AuditLogSummaryDto } from '../types/auditLogAdmin';
-import { getAuditLogs, AuditLogServiceError, devLoginAsAdmin } from '../services/auditLogAdminService';
+import { getAuditLogs, AuditLogServiceError } from '../services/auditLogAdminService';
 import { AuditLogFilterBar } from './AuditLogFilterBar';
 import { AuditLogTable } from './AuditLogTable';
 import { AuditLogPagination } from './AuditLogPagination';
 import { AuditLogDetailDrawer } from './AuditLogDetailDrawer';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 
+// CR-01: every list screen paginates at 20 records per page by default.
+const DEFAULT_PAGE_SIZE = 20;
+
+// SRS 5.3 locked message content.
+const MSG126 = 'You do not have permission to access this function.';
+const MSG127 = 'TripMate is temporarily unable to process your request. Please check your connection and try again.';
+
 export function AuditLogManagementView() {
+  const router = useRouter();
+
   const [filters, setFilters] = useState<GetAuditLogsParams>({
     pageNumber: 1,
-    pageSize: 10,
+    pageSize: DEFAULT_PAGE_SIZE,
   });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [data, setData] = useState<PaginatedList<AuditLogSummaryDto> | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState<boolean>(false);
-  const [isDevLoggingIn, setIsDevLoggingIn] = useState<boolean>(false);
 
   // Detail Drawer state (UC-69)
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
 
-  const fetchLogs = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    setIsForbidden(false);
-
-    try {
-      const result = await getAuditLogs(filters);
-      setData(result);
-    } catch (err: unknown) {
-      if (err instanceof AuditLogServiceError && err.statusCode === 401) {
-        setIsForbidden(true);
-        setError('Authentication required. Administrator credentials expected. (401)');
-      } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'Forbidden')) {
-        setIsForbidden(true);
-        setError('Access denied. Administrator role required. (MSG126)');
-      } else if (err instanceof Error) {
-        setError(err.message || 'Failed to load system audit logs. Please try again later. (MSG127)');
-      } else {
-        setError('Failed to load system audit logs. Please try again later. (MSG127)');
-      }
-      setData(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [filters]);
-
-  const handleDevLogin = async () => {
-    setIsDevLoggingIn(true);
-    try {
-      await devLoginAsAdmin();
-      await fetchLogs();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Dev login failed.');
-      }
-    } finally {
-      setIsDevLoggingIn(false);
-    }
-  };
-
   useEffect(() => {
     let isMounted = true;
-    
-    // Auto dev login if no token stored
-    const storedToken = typeof window !== 'undefined'
-      ? localStorage.getItem('tripmate_access_token') || localStorage.getItem('token') || sessionStorage.getItem('token')
-      : null;
-
-    if (!storedToken) {
-      devLoginAsAdmin()
-        .then(() => getAuditLogs(filters))
-        .then((result) => {
-          if (isMounted) {
-            setData(result);
-            setError(null);
-            setIsForbidden(false);
-            setIsLoading(false);
-          }
-        })
-        .catch(() => {
-          if (isMounted) {
-            fetchLogs();
-          }
-        });
-      return () => { isMounted = false; };
-    }
 
     getAuditLogs(filters)
       .then((result) => {
@@ -105,15 +49,15 @@ export function AuditLogManagementView() {
       .catch((err: unknown) => {
         if (isMounted) {
           if (err instanceof AuditLogServiceError && err.statusCode === 401) {
+            // CR-10: expired session — redirect to sign-in, preserving the intended destination.
+            router.replace(`/admin/login?returnUrl=${encodeURIComponent('/admin/audit-logs')}`);
+            return;
+          }
+          if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'Forbidden')) {
             setIsForbidden(true);
-            setError('Authentication required. Administrator credentials expected. (401)');
-          } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'Forbidden')) {
-            setIsForbidden(true);
-            setError('Access denied. Administrator role required. (MSG126)');
-          } else if (err instanceof Error) {
-            setError(err.message || 'Failed to load system audit logs. Please try again later. (MSG127)');
+            setError(MSG126);
           } else {
-            setError('Failed to load system audit logs. Please try again later. (MSG127)');
+            setError(MSG127);
           }
           setData(null);
           setIsLoading(false);
@@ -123,9 +67,16 @@ export function AuditLogManagementView() {
     return () => {
       isMounted = false;
     };
-  }, [filters, fetchLogs]);
+  }, [filters, refreshKey, router]);
+
+  const beginFetch = () => {
+    setIsLoading(true);
+    setError(null);
+    setIsForbidden(false);
+  };
 
   const handleFilterChange = (updatedFilters: Partial<GetAuditLogsParams>) => {
+    beginFetch();
     setFilters((prev) => ({
       ...prev,
       ...updatedFilters,
@@ -134,13 +85,15 @@ export function AuditLogManagementView() {
   };
 
   const handleResetFilters = () => {
+    beginFetch();
     setFilters({
       pageNumber: 1,
-      pageSize: 10,
+      pageSize: DEFAULT_PAGE_SIZE,
     });
   };
 
   const handlePageChange = (newPage: number) => {
+    beginFetch();
     setFilters((prev) => ({
       ...prev,
       pageNumber: newPage,
@@ -148,6 +101,7 @@ export function AuditLogManagementView() {
   };
 
   const handlePageSizeChange = (newSize: number) => {
+    beginFetch();
     setFilters((prev) => ({
       ...prev,
       pageSize: newSize,
@@ -155,10 +109,15 @@ export function AuditLogManagementView() {
     }));
   };
 
+  const handleRetry = () => {
+    beginFetch();
+    setRefreshKey((key) => key + 1);
+  };
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-6">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#c3c6ce] pb-5">
+      <div className="flex flex-col gap-4 border-b border-[#c3c6ce] pb-5">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-2xl text-[#006b5f]">
@@ -172,18 +131,6 @@ export function AuditLogManagementView() {
             Operational, security, and administrative event trail for auditability and compliance.
           </p>
         </div>
-
-        {/* Quick Dev Login Action */}
-        <button
-          type="button"
-          onClick={handleDevLogin}
-          disabled={isDevLoggingIn}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#006b5f] bg-[#006b5f]/10 px-3.5 py-2 text-xs font-bold text-[#006b5f] transition-all hover:bg-[#006b5f] hover:text-white disabled:opacity-50"
-          title="Authenticate as Admin for testing (linhtv171@gmail.com)"
-        >
-          <span className="material-symbols-outlined text-base">bolt</span>
-          {isDevLoggingIn ? 'Logging in as Admin...' : '⚡ Quick Dev Login as Admin'}
-        </button>
       </div>
 
       {/* Error Alert Display */}
@@ -194,28 +141,18 @@ export function AuditLogManagementView() {
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span>{error}</span>
-            <div className="flex items-center gap-2">
+            {!isForbidden && (
               <button
                 type="button"
-                onClick={handleDevLogin}
-                className="rounded bg-[#006b5f] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-[#004d44]"
+                onClick={handleRetry}
+                className="rounded bg-[#93000a] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-800"
               >
-                ⚡ Login as Admin
+                Retry
               </button>
-              {!isForbidden && (
-                <button
-                  type="button"
-                  onClick={fetchLogs}
-                  className="rounded bg-[#93000a] px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-800"
-                >
-                  Retry
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </FeedbackAlert>
       )}
-
 
       {/* Search & Filter Bar */}
       <AuditLogFilterBar

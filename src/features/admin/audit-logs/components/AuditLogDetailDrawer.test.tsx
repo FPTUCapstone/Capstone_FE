@@ -59,18 +59,18 @@ describe('AuditLogDetailDrawer', () => {
     expect(screen.getByText('127.0.0.1')).toBeDefined();
   });
 
-  it('renders error state MSG129 when audit log entry is not found (404)', async () => {
+  it('renders error state when audit log entry is not found (404)', async () => {
     const err = new service.AuditLogServiceError('Not found', 404, 'admin.audit_log_not_found');
     vi.mocked(service.getAuditLogDetail).mockRejectedValue(err);
 
     render(<AuditLogDetailDrawer logId={999} isOpen={true} onClose={mockOnClose} />);
 
-    expect(await screen.findByText('System audit log entry not found. (MSG129)')).toBeDefined();
+    expect(await screen.findByText('System audit log entry not found.')).toBeDefined();
   });
 
   it('renders error state MSG127 when system or network failure occurs (500)', async () => {
     const err = new service.AuditLogServiceError(
-      'The audit log details cannot be retrieved because of a system or network failure. (MSG127)',
+      'TripMate is temporarily unable to process your request. Please check your connection and try again.',
       500
     );
     vi.mocked(service.getAuditLogDetail).mockRejectedValue(err);
@@ -79,7 +79,7 @@ describe('AuditLogDetailDrawer', () => {
 
     expect(
       await screen.findByText(
-        'The audit log details cannot be retrieved because of a system or network failure. (MSG127)'
+        'TripMate is temporarily unable to process your request. Please check your connection and try again.'
       )
     ).toBeDefined();
   });
