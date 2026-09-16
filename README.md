@@ -65,18 +65,38 @@ Open [http://localhost:3001](http://localhost:3001) in a browser.
 | `npm run dev` | Start the development server on port 3001. |
 | `npm run build` | Create an optimized production build. |
 | `npm run start` | Serve the production build on port 3001. |
+| `npm test` | Run the Vitest test suite once. |
 | `npm run lint` | Run ESLint across the repository. |
 | `npm run typecheck` | Run TypeScript checks without emitting files. |
 
 ## Environment Variables
 
-The current visual prototype does not require runtime environment variables. The committed `.env.example` is a placeholder for future server-only API and authentication settings, and it does not contain variable names or secrets.
-
-When variables are introduced, create a local Next.js environment file with:
+The app reads Firebase Web config and API base URL from `NEXT_PUBLIC_*` environment variables. Create a local Next.js environment file from the template:
 
 ```bash
 cp .env.example .env.local
 ```
+
+### Firebase Web configuration
+
+The Firebase client (`src/lib/firebase.ts`) requires these variables to be set. They are the public Firebase **Web App** config that ships in the browser bundle — they are **not** secrets, and you must **never** put Firebase Admin / service-account credentials in the frontend.
+
+1. Open the Firebase Console → **Project settings** → **General** → **Your apps** → **SDK setup and configuration** and copy the web app config.
+2. Fill the corresponding `NEXT_PUBLIC_FIREBASE_*` values in `.env.local`:
+
+   ```dotenv
+   NEXT_PUBLIC_FIREBASE_API_KEY=...
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+   NEXT_PUBLIC_FIREBASE_APP_ID=...
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...   # optional (Analytics)
+   ```
+
+3. **Restart the Next.js dev server** after changing any `NEXT_PUBLIC_*` value — these are inlined at build/dev-server start, so edits do not hot-reload.
+
+If a required variable is missing, the app fails fast at startup with a clear message listing the missing key(s) (see `src/lib/firebaseConfig.ts`) instead of an opaque `initializeApp()` runtime error.
 
 Do not commit `.env.local` or any secret values.
 
