@@ -32,23 +32,14 @@ jobs:
         run: npm run typecheck
 
       - name: Build
-        env:
-          # Public placeholders let Next.js prerender auth pages; CI does not deploy this build.
-          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: example.test
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-project
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: example.test
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '123456789'
-          NEXT_PUBLIC_FIREBASE_APP_ID: '1:123456789:web:ci'
         run: npm run build
         env:
           # NEXT_PUBLIC_* values are public Firebase Web App config (not secrets) —
-          # see src/lib/firebaseConfig.ts. The build fails fast without them because
-          # src/lib/firebase.ts validates required keys at module load time.
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          # see src/lib/firebaseConfig.ts. Fallback defaults prevent static prerender failures.
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBUc3eDPm680W-85UYFItx8uzSkY9Wn9J0' }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: tripmate-82be3.firebaseapp.com
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: tripmate-82be3
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: tripmate-82be3.firebasestorage.app
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '105500206516'
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID || '1:105500206516:web:a8e1f0ec0a5c31ddd57ee1' }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-4PW5RELNHD' }}
