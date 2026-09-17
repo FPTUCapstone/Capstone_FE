@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 
+import { WebSessionProvider } from '@/features/auth/session/WebSessionProvider';
+
 import './globals.css';
 
 const geistSans = Geist({
@@ -34,7 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
-        {children}
+        <WebSessionProvider>{children}</WebSessionProvider>
       </body>
     </html>
   );

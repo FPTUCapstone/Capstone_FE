@@ -7,6 +7,7 @@ export const ROUTES = {
   pois: '/pois',
   poi: (id: string | number) => `/pois/${id}`,
   partner: {
+    dashboard: '/partner',
     register: '/partner/register',
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',
