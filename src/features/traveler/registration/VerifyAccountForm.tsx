@@ -50,7 +50,7 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
 
       const actionCodeSettings = {
         url: `${window.location.origin}/verify-email`,
-        handleCodeInApp: false,
+        handleCodeInApp: true,
       };
 
       await sendEmailVerification(user, actionCodeSettings);
