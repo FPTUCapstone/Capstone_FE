@@ -1,12 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { signInDestination } from '@/features/auth/routing/signInDestination';
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import { webLogout } from '@/lib/authApi';
 import { ROUTES } from '@/lib/routes';
+
+const signOutFailedMessage = 'Chưa thể hoàn tất việc kết thúc phiên đăng nhập. Vui lòng thử lại.';
 
 export function PublicNavigation() {
   // An empty in-memory context is NOT considered Guest until the
@@ -16,6 +21,8 @@ export function PublicNavigation() {
   // state after F5/direct navigation while an existing session is
   // being restored.
   const { status, context } = useWebSession();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState(false);
 
   const displayName = context
     ? context.fullName.trim() || context.email
@@ -44,13 +51,22 @@ export function PublicNavigation() {
       ? signInDestination(context) ?? ROUTES.partner.application
       : ROUTES.partner.register;
 
-  function handleSignOut() {
-    // UC-04 behavior:
-    // clear client-side session state only.
-    //
-    // Server-side refresh-token revocation belongs to UC-05 and is
-    // intentionally not implemented here yet.
-    AuthStorage.clear();
+  async function handleSignOut() {
+    // UC-05: the remote logout owns revocation — a local-only clear would
+    // desync this UI from the still-valid refresh cookie. The session-preserving
+    // failure policy keeps the authenticated context (and thus a retryable
+    // button) whenever the request fails; only a confirmed 200 clears local state.
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError(false);
+    try {
+      await webLogout();
+      AuthStorage.clear();
+    } catch {
+      setSignOutError(true);
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   return (
@@ -120,7 +136,9 @@ export function PublicNavigation() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex min-h-9 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+              disabled={signingOut}
+              aria-busy={signingOut}
+              className="inline-flex min-h-9 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
             >
               Đăng xuất
             </button>
@@ -152,6 +170,12 @@ export function PublicNavigation() {
             </Link>
           </div>
         )}
+
+        {signOutError ? (
+          <div className="order-last w-full">
+            <FeedbackAlert tone="error">{signOutFailedMessage}</FeedbackAlert>
+          </div>
+        ) : null}
       </div>
     </header>
   );
