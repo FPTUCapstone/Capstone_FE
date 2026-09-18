@@ -40,7 +40,7 @@ describe('bounded Web recovery', () => {
 describe('matching resend', () => {
   it('reuses only a matching Firebase user, no session/sync', async () => {
     const evidence = user(false); mocks.auth.currentUser = evidence; await resendWebVerification(input.email, input.password);
-    expect(mocks.send).toHaveBeenCalledWith(evidence, expect.objectContaining({ handleCodeInApp: false })); expect(mocks.firebase).not.toHaveBeenCalled(); expect(mocks.login).not.toHaveBeenCalled(); expect(mocks.verify).not.toHaveBeenCalled();
+    expect(mocks.send).toHaveBeenCalledWith(evidence, expect.objectContaining({ handleCodeInApp: true })); expect(mocks.firebase).not.toHaveBeenCalled(); expect(mocks.login).not.toHaveBeenCalled(); expect(mocks.verify).not.toHaveBeenCalled();
   });
   it('authenticates submitted account instead of sending to another current user', async () => {
     mocks.auth.currentUser = user(false, 'other@example.com'); const evidence = user(false); mocks.firebase.mockResolvedValue({ user: evidence });

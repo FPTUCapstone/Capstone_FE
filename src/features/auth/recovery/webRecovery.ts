@@ -35,5 +35,5 @@ export async function resendWebVerification(email: string, password: string): Pr
     user = (await signInWithEmailAndPassword(auth, normalizedEmail, password)).user;
   }
   requireMatchingUser(user, normalizedEmail);
-  await sendEmailVerification(user, { url: `${window.location.origin}/verify-email`, handleCodeInApp: false });
+  await sendEmailVerification(user, { url: `${window.location.origin}/verify-email`, handleCodeInApp: true });
 }

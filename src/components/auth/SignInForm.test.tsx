@@ -146,7 +146,7 @@ describe('Explicit verification actions', () => {
     render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     const resend = await screen.findByRole('button', { name: 'Resend Verification Email' });
     expect(mocks.firebaseSignIn).toHaveBeenCalledTimes(1); fireEvent.click(resend);
-    await waitFor(() => expect(mocks.resend).toHaveBeenCalledWith(user, expect.objectContaining({ handleCodeInApp: false })));
+    await waitFor(() => expect(mocks.resend).toHaveBeenCalledWith(user, expect.objectContaining({ handleCodeInApp: true })));
     expect(mocks.firebaseSignIn).toHaveBeenCalledWith(expect.anything(), 'user@example.com', ' unchanged ');
     expect(mocks.verifyEmail).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled(); expect(mocks.push).not.toHaveBeenCalled();
     await screen.findByText('A fresh verification link has been sent to your email. Please check your inbox.');
