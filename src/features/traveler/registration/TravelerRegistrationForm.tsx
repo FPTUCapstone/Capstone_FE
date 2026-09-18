@@ -218,7 +218,7 @@ export function TravelerRegistrationForm() {
       try {
         await sendEmailVerification(createdFirebaseUser, {
           url: `${window.location.origin}/verify-email`,
-          handleCodeInApp: false,
+          handleCodeInApp: true,
         });
       } catch {
         deliveryFailed = true;
