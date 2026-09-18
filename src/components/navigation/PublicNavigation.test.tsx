@@ -2,8 +2,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage } from '@/features/auth/session/authSession';
 
-const mocks = vi.hoisted(() => ({ webRefresh: vi.fn() }));
-vi.mock('@/lib/authApi', () => ({ webRefresh: mocks.webRefresh }));
+const mocks = vi.hoisted(() => ({ webRefresh: vi.fn(), webLogout: vi.fn() }));
+vi.mock('@/lib/authApi', () => ({ webRefresh: mocks.webRefresh, webLogout: mocks.webLogout }));
 
 const { PublicNavigation } = await import('./PublicNavigation');
 
@@ -104,6 +104,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('settles back to Sign In (not stuck restoring) when a warm session signs out', async () => {
     AuthStorage.accept(context({ fullName: 'Warm Context' }), false);
+    mocks.webLogout.mockResolvedValue(undefined);
     render(<PublicNavigation />);
     expect(screen.getByText('Warm Context')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
@@ -179,5 +180,116 @@ describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
     render(<PublicNavigation />);
     expect(screen.queryByRole('link', { name: 'Dành cho Đối tác' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
+  });
+});
+
+describe('PublicNavigation UC-05 sign out', () => {
+  const signOutFailedMessage = 'Chưa thể hoàn tất việc kết thúc phiên đăng nhập. Vui lòng thử lại.';
+
+  beforeEach(() => {
+    AuthStorage.clear();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  async function renderAuthenticated(keepMeSignedIn = false) {
+    AuthStorage.accept(context({ fullName: 'Test Traveler' }), keepMeSignedIn);
+    render(<PublicNavigation />);
+    await waitFor(() => expect(screen.getByText('Test Traveler')).toBeDefined());
+  }
+
+  it('calls webLogout exactly once, clears state only after the remote 200, and settles Guest on the same page', async () => {
+    let resolveLogout!: () => void;
+    const gate = new Promise<void>((resolve) => { resolveLogout = resolve; });
+    mocks.webLogout.mockImplementation(() => gate);
+    await renderAuthenticated(true);
+    // UC-05 replaces the local-only placeholder with a cookie-credential remote logout.
+    sessionStorage.setItem('tripmate_user', JSON.stringify({ stale: 'leftover' }));
+    localStorage.setItem('tripmate_access_token', 'legacy-access');
+
+    const hrefBefore = window.location.href;
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+
+    // D1: the pending remote request must NOT clear local auth state yet.
+    expect(mocks.webLogout).toHaveBeenCalledTimes(1);
+    expect(AuthStorage.getContext()).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Đăng xuất' })).toBeDefined();
+
+    resolveLogout();
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Đăng nhập' })).toBeDefined());
+    expect(AuthStorage.getContext()).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Đăng xuất' })).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    // AuthStorage.clear() removed tripmate_user from BOTH storages plus legacy keys.
+    expect(localStorage.getItem('tripmate_user')).toBeNull();
+    expect(sessionStorage.getItem('tripmate_user')).toBeNull();
+    expect(localStorage.getItem('tripmate_access_token')).toBeNull();
+    // D2: stay on the current page — no router push/replace, no reload.
+    expect(window.location.href).toBe(hrefBefore);
+  });
+
+  it('blocks duplicate clicks with a disabled busy button and sends only one request while pending', async () => {
+    let resolveLogout!: () => void;
+    const gate = new Promise<void>((resolve) => { resolveLogout = resolve; });
+    mocks.webLogout.mockImplementation(() => gate);
+    await renderAuthenticated(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+    const button = screen.getByRole('button', { name: 'Đăng xuất' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('aria-busy')).toBe('true');
+
+    fireEvent.click(button);
+    expect(mocks.webLogout).toHaveBeenCalledTimes(1);
+
+    resolveLogout();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Đăng xuất' })).toBeNull());
+  });
+
+  it('releases the loading state when the request fails', async () => {
+    mocks.webLogout.mockRejectedValue({ code: 'NETWORK', status: 0 });
+    await renderAuthenticated(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeDefined());
+    expect((screen.getByRole('button', { name: 'Đăng xuất' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByRole('button', { name: 'Đăng xuất' }).getAttribute('aria-busy')).toBe('false');
+  });
+
+  it.each([
+    ['network', { code: 'NETWORK', status: 0 }],
+    ['server 500', { code: 'MSG127', status: 500 }],
+  ])('preserves the authenticated session on %s failure, shows the exact safe error, and allows retry', async (_label, failure) => {
+    const hrefBefore = window.location.href;
+    mocks.webLogout.mockRejectedValueOnce(failure);
+    let resolveRetry!: () => void;
+    const retryGate = new Promise<void>((resolve) => { resolveRetry = resolve; });
+    await renderAuthenticated(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeDefined());
+    // D4: one exact safe copy for every failure kind; no raw backend detail.
+    expect(screen.getByText(signOutFailedMessage)).toBeDefined();
+    expect(screen.queryByText(/MSG127|NETWORK|ProblemDetails|token|cookie/i)).toBeNull();
+    // D1: session-preserving — context and authenticated UI remain.
+    expect(AuthStorage.getContext()).not.toBeNull();
+    expect(screen.getByText('Test Traveler')).toBeDefined();
+    expect((screen.getByRole('button', { name: 'Đăng xuất' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(window.location.href).toBe(hrefBefore);
+
+    // Retry clears the error at start and succeeds on the second request.
+    mocks.webLogout.mockImplementationOnce(() => retryGate);
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    resolveRetry();
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Đăng nhập' })).toBeDefined());
+    expect(mocks.webLogout).toHaveBeenCalledTimes(2);
+    expect(AuthStorage.getContext()).toBeNull();
+    expect(window.location.href).toBe(hrefBefore);
   });
 });
