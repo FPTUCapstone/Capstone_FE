@@ -122,49 +122,49 @@ describe('Web password failures', () => {
   });
 });
 
-describe('Password verification guidance without legacy session issuance', () => {
+describe('Password verification guidance without Firebase sign-in', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
-  it('uses Firebase evidence without issuing Mobile tokens for an unverified account', async () => {
+  it('surfaces Backend MSG_UNVERIFIED guidance without any Firebase authentication step', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    mocks.firebaseSignIn.mockResolvedValue({ user: { email: 'user@example.com', reload: vi.fn(), emailVerified: false, getIdToken: vi.fn().mockResolvedValue('test-firebase') } });
-    mocks.verifyEmail.mockResolvedValue({ accessToken: 'legacy-access', refreshToken: 'legacy-refresh' });
     render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     await waitFor(() => expect((screen.getByLabelText('Email address') as HTMLInputElement).disabled).toBe(false));
     expect(screen.getByText('Please verify your email before signing in.')).toBeDefined();
+    // The resend action remains reachable, but it no longer depends on a
+    // Firebase session or a Firebase sendEmailVerification call.
     expect(screen.getByRole('button', { name: 'Resend Verification Email' })).toBeDefined();
-    expect(mocks.firebaseSignIn).toHaveBeenCalledTimes(1); expect(mocks.verifyEmail).not.toHaveBeenCalled();
-    expect(mocks.saveTokens).not.toHaveBeenCalled(); expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.webLogin).toHaveBeenCalledTimes(1);
+    expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
+    expect(mocks.resend).not.toHaveBeenCalled();
+    expect(mocks.verifyEmail).not.toHaveBeenCalled();
+    expect(mocks.saveTokens).not.toHaveBeenCalled();
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.webLogin).toHaveBeenCalledTimes(1);
   });
 });
 
-describe('Explicit verification actions', () => {
+describe('Resend Verification Email surfaces non-production copy', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
-  it('retains the resend action without issuing a TripMate session', async () => {
-    const user = { email: 'user@example.com', emailVerified: false, reload: vi.fn() };
+  it('shows the UC-06 waitlist notice and never calls Firebase', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    mocks.firebaseSignIn.mockResolvedValue({ user }); mocks.resend.mockResolvedValue(undefined);
     render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     const resend = await screen.findByRole('button', { name: 'Resend Verification Email' });
-    expect(mocks.firebaseSignIn).toHaveBeenCalledTimes(1); fireEvent.click(resend);
-    await waitFor(() => expect(mocks.resend).toHaveBeenCalledWith(user, expect.objectContaining({ handleCodeInApp: false })));
-    expect(mocks.firebaseSignIn).toHaveBeenCalledWith(expect.anything(), 'user@example.com', ' unchanged ');
-    expect(mocks.verifyEmail).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled(); expect(mocks.push).not.toHaveBeenCalled();
-    await screen.findByText('A fresh verification link has been sent to your email. Please check your inbox.');
+    fireEvent.click(resend);
+    await screen.findByText(
+      'Your verification email was already sent when you registered. Check your spam folder, or contact support if you no longer have it.',
+    );
+    expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
+    expect(mocks.resend).not.toHaveBeenCalled();
+    expect(mocks.saveTokens).not.toHaveBeenCalled();
+    expect(mocks.push).not.toHaveBeenCalled();
   });
-  it('preserves an existing memory session and requires another explicit password submit', async () => {
-    const { AuthStorage } = await import('@/features/auth/session/authSession');
-    AuthStorage.accept({ userId: 42, email: 'a@example.com', fullName: '', role: 'Traveler', status: 'Active', applicationStatus: null, accessToken: 'test-access', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z' }, false);
+  it('still blocks resending after the form email changes', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    mocks.firebaseSignIn.mockResolvedValue({ user: { email: 'user@example.com', emailVerified: false, reload: vi.fn() } });
-    try {
-      render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-      await screen.findByText('Please verify your email before signing in.');
-      expect(mocks.webLogin).toHaveBeenCalledTimes(1); expect(AuthStorage.getAccessToken()).toBe('test-access');
-      fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-      await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledTimes(2));
-      await waitFor(() => expect((screen.getByLabelText('Email address') as HTMLInputElement).disabled).toBe(false));
-      expect(mocks.verifyEmail).not.toHaveBeenCalled(); expect(mocks.firebaseSignIn).toHaveBeenCalledTimes(2); expect(mocks.push).not.toHaveBeenCalled();
-    } finally { AuthStorage.clear(); }
+    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    const resend = await screen.findByRole('button', { name: 'Resend Verification Email' });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'other@example.com' } });
+    fireEvent.click(resend);
+    await screen.findByText('Please sign in with the email you want to verify before requesting a new link.');
+    expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
+    expect(mocks.resend).not.toHaveBeenCalled();
   });
 });
 
@@ -262,41 +262,34 @@ describe('Web Google failure boundaries', () => {
 
 describe('Web recovery form integration', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
-  it('waits for full second Web login instead of navigating from verify-only', async () => {
-    const getIdToken = vi.fn().mockResolvedValue('fresh-test'); const reload = vi.fn();
-    mocks.firebaseSignIn.mockResolvedValue({ user: { email: 'user@example.com', emailVerified: true, reload, getIdToken } });
-    mocks.webVerifyEmail.mockResolvedValue({ emailVerified: true });
-    let resolve!: (value: object) => void;
-    mocks.webLogin.mockRejectedValueOnce({ code: 'MSG_UNVERIFIED', status: 403 }).mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+  it('never calls Firebase sign-in or verify-email and surfaces the BE guidance', async () => {
+    mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
     render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-    await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledTimes(2));
-    expect(mocks.webVerifyEmail).toHaveBeenCalledWith('fresh-test'); expect(getIdToken).toHaveBeenCalledWith(true); expect(mocks.push).not.toHaveBeenCalled();
-    resolve({ role: 'TourOperator', status: 'Active', applicationStatus: 'Rejected' }); await screen.findByText('Signed in successfully! Redirecting...'); expect(mocks.push).toHaveBeenCalledWith('/partner/application'); expect(mocks.saveTokens).not.toHaveBeenCalled(); expect(mocks.verifyEmail).not.toHaveBeenCalled();
+    await screen.findByText('Please verify your email before signing in.');
+    expect(mocks.webLogin).toHaveBeenCalledTimes(1);
+    expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
+    expect(mocks.webVerifyEmail).not.toHaveBeenCalled();
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.saveTokens).not.toHaveBeenCalled();
   });
 });
 
-describe('Resend cooldown and safe retry', () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); mocks.resend.mockReset(); mocks.firebaseSignIn.mockReset(); });
+describe('Resend Verification Email stays non-production until UC-06', () => {
+  beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
   async function showGuidance() {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    mocks.firebaseSignIn.mockResolvedValue({ user: { email: 'user@example.com', emailVerified: false, reload: vi.fn() } });
     render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     return screen.findByRole('button', { name: 'Resend Verification Email' });
   }
-  it('starts a 60-second cooldown for provider rate limits without exposing SDK text', async () => {
-    const resend = await showGuidance(); mocks.resend.mockRejectedValue({ code: 'auth/too-many-requests', message: 'raw SDK' }); fireEvent.click(resend);
-    await screen.findByText('Too many attempts. Please wait a few minutes before trying again.');
-    const cooldown = screen.getByRole('button', { name: /Resend Email \(60s\)/ }); expect((cooldown as HTMLButtonElement).disabled).toBe(true); expect(screen.queryByText('raw SDK')).toBeNull(); expect(mocks.verifyEmail).not.toHaveBeenCalled();
-  });
-  it('allows explicit resend retry after transport failure without starting cooldown', async () => {
-    const resend = await showGuidance(); mocks.resend.mockRejectedValueOnce({ code: 'auth/network-request-failed' }).mockResolvedValueOnce(undefined); fireEvent.click(resend);
-    await screen.findByText('Unable to connect to TripMate. Please check your connection and try again.');
-    const retry = screen.getByRole('button', { name: 'Resend Verification Email' }); expect((retry as HTMLButtonElement).disabled).toBe(false); fireEvent.click(retry);
-    await screen.findByText('A fresh verification link has been sent to your email. Please check your inbox.'); expect(mocks.resend).toHaveBeenCalledTimes(2);
-  });
-  it('does not resend to the prior email after the form email has changed', async () => {
-    const resend = await showGuidance(); fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'other@example.com' } }); fireEvent.click(resend);
-    await screen.findByText('Please sign in with the email you want to verify before requesting a new link.'); expect(mocks.resend).not.toHaveBeenCalled(); expect(mocks.verifyEmail).not.toHaveBeenCalled();
+  it('always surfaces the waitlist notice without cooldown or SDK detail', async () => {
+    const resend = await showGuidance();
+    fireEvent.click(resend);
+    await screen.findByText(
+      'Your verification email was already sent when you registered. Check your spam folder, or contact support if you no longer have it.',
+    );
+    expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
+    expect(mocks.resend).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Resend Email \(\d+s\)/)).toBeNull();
   });
 });
 

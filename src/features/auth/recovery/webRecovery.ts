@@ -1,39 +1,43 @@
-import { sendEmailVerification, signInWithEmailAndPassword, type User } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
-import { isApiError, webLogin, webVerifyEmail, type WebLoginRequest } from '@/lib/authApi';
+import { webLogin, type WebLoginRequest } from '@/lib/authApi';
 import type { WebAuthContext } from '../session/authSession';
 
 const normalize = (email: string) => email.trim().toLowerCase();
-function requireMatchingUser(user: User | null | undefined, email: string): asserts user is User {
-  if (!user?.email || normalize(user.email) !== normalize(email)) throw { code: 'FIREBASE_SESSION_MISMATCH' };
-}
 
-export async function loginWithWebRecovery(input: WebLoginRequest, administrator: boolean): Promise<WebAuthContext> {
+/**
+ * Web password sign-in goes directly to the TripMate Backend. The Backend is
+ * the sole password authority; no Firebase password authentication is involved.
+ *
+ * `webLogin` may respond with `MSG_UNVERIFIED` / `MSG_EMAIL_NOT_VERIFIED` for
+ * an account whose email has not yet been verified. The TripMate contract is
+ * the authoritative source of that decision — re-asking Firebase to "evidence"
+ * it would amount to a second password authority and is intentionally absent.
+ */
+export async function loginWithWebRecovery(
+  input: WebLoginRequest,
+  administrator: boolean,
+): Promise<WebAuthContext> {
   const request = { ...input, email: normalize(input.email) };
-  try { return await webLogin(request, administrator); }
-  catch (error) {
-    if (!isApiError(error) || error.status !== 403 || error.code !== 'MSG_UNVERIFIED') throw error;
-  }
-  // Firebase is evidence only; backend verification and full Web login retain account authority.
-  const { user } = await signInWithEmailAndPassword(getFirebaseAuth(), request.email, request.password);
-  requireMatchingUser(user, request.email);
-  await user.reload();
-  requireMatchingUser(user, request.email);
-  if (!user.emailVerified) throw { code: 'MSG_UNVERIFIED', status: 403 };
-  const freshToken = await user.getIdToken(true);
-  await webVerifyEmail(freshToken);
-  // Deliberately outside the initial catch: second failure cannot recurse or recover again.
   return webLogin(request, administrator);
 }
 
-export async function resendWebVerification(email: string, password: string): Promise<void> {
-  const normalizedEmail = normalize(email);
-  const auth = getFirebaseAuth();
-  let user = auth.currentUser;
-  if (!user?.email || normalize(user.email) !== normalizedEmail) {
-    if (!password) throw { code: 'FIREBASE_SESSION_MISMATCH' };
-    user = (await signInWithEmailAndPassword(auth, normalizedEmail, password)).user;
-  }
-  requireMatchingUser(user, normalizedEmail);
-  await sendEmailVerification(user, { url: `${window.location.origin}/verify-email`, handleCodeInApp: false });
+/**
+ * TripMate Backend is the sole password authority and UC-06 password recovery
+ * is not yet implemented. Resending a verification email requires a live
+ * Firebase user session, which Web password sign-in no longer establishes,
+ * so this action is intentionally a non-production stub.
+ *
+ * Production callers must NOT rely on this for password reset, forgot-password,
+ * or any other password-authority flow. UC-06 will provide
+ *   POST /api/v1/auth/password-reset/request
+ *   POST /api/v1/auth/password-reset/confirm
+ * until then, the public UI surfaces the unverified-account guidance directly
+ * without issuing any Firebase email action.
+ */
+export async function resendWebVerification(
+  email: string,
+  password: string,
+): Promise<void> {
+  void email;
+  void password;
+  throw { code: 'MSG_VERIFICATION_RESEND_UNAVAILABLE', status: 409 };
 }
