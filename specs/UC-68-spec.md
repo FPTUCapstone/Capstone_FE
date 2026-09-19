@@ -11,9 +11,9 @@ This specification defines the Next.js Frontend implementation for **UC-68: View
 It covers:
 - Route: `/admin/audit-logs` (app Router path: `app/admin/(console)/audit-logs/page.tsx`).
 - Navigation link added to `AdminNavigation.tsx` and `ROUTES.admin.auditLogs`.
-- Read-only table listing audit log entries with fixed column widths (`table-fixed` layout): Event Timestamp (`createdAtLocal`), Event Type (`actionType`), Actor Email/Name (`actorEmail` / `actorFullName`), Actor Role (`actorRole`), Affected Module/Entity (`affectedEntity`), Affected Entity ID (`affectedEntityId`), IP Address (`ipAddress`), and `Actions` (icon button for UC-69 View Detail integration).
+- Read-only table listing audit log entries with fixed column widths (`table-fixed` layout): Event Timestamp (`createdAtLocal`), Event Type (`actionType`), Actor Email/Name (`actorEmail` / `actorFullName`), Actor Role (`actorRole`), Affected Entity (`affectedEntity`), Affected Entity ID (`affectedEntityId`), IP Address (`ipAddress`), and `Actions` (icon button for UC-69 View Detail integration).
 - Search and filter bar supporting:
-  - Keyword search (`keyword`) with partial string matching across Email, FullName, ActionType, AffectedEntity, and AffectedEntityId — applied **on submit** (Apply Filters button / Enter key), not on each keystroke (CR-02, SRS §3.9.12.1 BR-52).
+  - Keyword search (`keyword`) with partial string matching across Email, FullName, ActionType, and AffectedEntity, plus exact numeric matching on AffectedEntityId — applied **on submit** (Apply Filters button / Enter key), not on each keystroke (CR-02, SRS §3.9.12.1 BR-52).
   - Event Type / Action Type select filter (`actionType`) — options mirror `TripMate.Domain.Common.AuditActionTypes`.
   - Actor Role select filter (`actorRole`)
   - Affected Entity select filter (`affectedEntity`) — options mirror `TripMate.Domain.Common.AuditEntityTypes`.
@@ -75,6 +75,7 @@ Authorization: Bearer <Admin_JWT>
 export type UserRole = 'Traveler' | 'TourOperator' | 'Administrator';
 
 export interface AuditLogSummaryDto {
+  result: 'Success' | 'Failure' | null;
   id: number;
   actionType: string;
   actorUserId: number | null;
@@ -120,7 +121,7 @@ export interface GetAuditLogsParams {
    - Subtitle: "Operational, security, and administrative event trail."
 
 2. **Filter Bar:**
-   - Search Input: "Search by keyword, email, or entity ID..." (supports partial ID & string matching; applied on submit)
+   - Search Input: "Search by keyword, email, or entity ID..." (partial text matching; numeric keywords match the Entity ID exactly; applied on submit)
    - Apply Filters submit button and Reset button.
    - Filter Dropdown: Action Type (e.g., `ApproveOperatorApplication`, `RejectOperatorApplication`)
    - Filter Dropdown: Actor Role (`Administrator`, `TourOperator`, `Traveler`)
@@ -130,7 +131,7 @@ export interface GetAuditLogsParams {
 
 3. **Table Presentation:**
    - Dark mode glassmorphism styled table with `table-fixed` layout preventing column width jumping.
-   - Columns: `Timestamp (UTC+7)`, `Event Type`, `Actor`, `Role`, `Affected Entity`, `Entity ID`, `IP Address`, `Actions`.
+   - Columns: `Timestamp (UTC+7)`, `Event Type`, `Actor`, `Result`, `Role`, `Affected Entity`, `Entity ID`, `IP Address`, `Actions`.
    - Handling system-triggered actions (`actorUserId === null`): displays badge `"System"` with neutral grey tone.
    - `Actions` column: View Detail icon button (`visibility`) preparing for UC-69 integration.
 
@@ -148,8 +149,12 @@ export interface GetAuditLogsParams {
 
 1. Administrator can navigate to `/admin/audit-logs` from the Admin navigation bar.
 2. System audit logs are displayed in a paginated table ordered descending by timestamp with fixed column widths (`table-fixed`).
-3. Administrator can filter by keyword (partial string & ID match), action type, actor role, entity, and date range (`max=Today`).
+3. Administrator can filter by keyword (partial string match; exact numeric Entity ID match), action type, actor role, entity, and date range (`max=Today`).
 4. System-triggered events (`actorUserId === null`) display `"System"` gracefully.
 5. `Actions` column provides View Detail icon button for seamless transition to UC-69.
 6. If no records match, `MSG128` empty state is displayed.
 7. Responsive design with glassmorphism UI styling following team aesthetics.
+
+## Approved Result/Reason amendment — 2026-09-18
+
+Approved by the project owner for implementation. The list renders backend `result` as Success/Failure; null legacy values display "No recorded result". Never infer success from an action name. No Result filter is added. Client Platform and Affected Module are excluded; Affected Entity remains a distinct field. Preserve existing filters, pagination and detail selection.

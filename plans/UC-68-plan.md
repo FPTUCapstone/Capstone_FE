@@ -46,3 +46,9 @@ The feature enables Administrators to view, search, filter, and paginate system 
 ### Build & Linting Verification
 - Run build check: `npm run build`
 - Run linting check: `npm run lint`
+
+## Approved amendment — 2026-09-18
+
+1. Add nullable Success/Failure result to `types/auditLogAdmin.ts`.
+2. Share `components/AuditLogResultBadge.tsx` between list and detail. Add Result column with matching loading cells and empty-state colspan. Do not add a filter.
+3. Verify success/failure/legacy null rows using `AuditLogResultReason.test.tsx`, then run focused Vitest, lint, typecheck and build.
