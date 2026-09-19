@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AuditLogSummaryDto } from '../types/auditLogAdmin';
+import { AuditLogResultBadge } from './AuditLogResultBadge';
 
 interface AuditLogTableProps {
   items: AuditLogSummaryDto[];
@@ -59,6 +60,9 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
               <th scope="col" className="w-[200px] px-4 py-3.5">
                 Actor
               </th>
+              <th scope="col" className="w-[150px] px-4 py-3.5">
+                Result
+              </th>
               <th scope="col" className="w-[120px] px-4 py-3.5">
                 Role
               </th>
@@ -84,6 +88,7 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
                   <td className="px-4 py-4"><div className="h-3 w-28 rounded bg-[#314863]/60"></div></td>
                   <td className="px-4 py-4"><div className="h-3 w-36 rounded bg-[#314863]/60"></div></td>
                   <td className="px-4 py-4"><div className="h-3 w-32 rounded bg-[#314863]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#314863]/60"></div></td>
                   <td className="px-4 py-4"><div className="h-3 w-20 rounded bg-[#314863]/60"></div></td>
                   <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#314863]/60"></div></td>
                   <td className="px-4 py-4"><div className="h-3 w-12 rounded bg-[#314863]/60"></div></td>
@@ -94,7 +99,7 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
             ) : items.length === 0 ? (
               // Empty State (MSG128)
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center">
+                <td colSpan={9} className="px-4 py-12 text-center">
                   <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
                     <span className="material-symbols-outlined text-4xl text-slate-500">
                       find_in_page
@@ -134,6 +139,9 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
                         )}
                       </div>
                     )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <AuditLogResultBadge result={log.result} />
                   </td>
                   <td className="px-4 py-3">
                     {log.actorRole ? (

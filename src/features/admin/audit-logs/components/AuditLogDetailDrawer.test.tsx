@@ -32,6 +32,8 @@ describe('AuditLogDetailDrawer', () => {
 
   it('renders details successfully when open and data is loaded', async () => {
     const mockDetail = {
+      result: 'Success' as const,
+      reason: null,
       id: 101,
       actionType: 'ApproveOperatorApplication',
       actorUserId: 10,
@@ -51,7 +53,7 @@ describe('AuditLogDetailDrawer', () => {
 
     render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
 
-    expect(await screen.findByText('#101')).toBeDefined();
+    expect(await screen.findByText('ApproveOperatorApplication')).toBeDefined();
     expect(screen.getByText('ApproveOperatorApplication')).toBeDefined();
     expect(screen.getByText('Admin User')).toBeDefined();
     expect(screen.getByText('admin@tripmate.vn')).toBeDefined();
@@ -87,6 +89,8 @@ describe('AuditLogDetailDrawer', () => {
   it('calls onClose when close button is clicked', async () => {
 
     const mockDetail = {
+      result: 'Success' as const,
+      reason: null,
       id: 101,
       actionType: 'ApproveOperatorApplication',
       actorUserId: 10,

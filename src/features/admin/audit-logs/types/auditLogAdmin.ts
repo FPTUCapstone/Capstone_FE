@@ -1,6 +1,8 @@
 export type UserRole = 'Traveler' | 'TourOperator' | 'Administrator';
+export type AuditLogResult = 'Success' | 'Failure';
 
 export interface AuditLogSummaryDto {
+  result: AuditLogResult | null;
   id: number;
   actionType: string;
   actorUserId: number | null;
@@ -36,6 +38,8 @@ export interface GetAuditLogsParams {
 }
 
 export interface AuditLogDetailDto {
+  result: AuditLogResult | null;
+  reason: string | null;
   id: number;
   actionType: string;
   actorUserId: number | null;
@@ -50,4 +54,3 @@ export interface AuditLogDetailDto {
   createdAtUtc: string;
   createdAtLocal: string;
 }
-

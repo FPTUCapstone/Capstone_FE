@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuditLogDetailDto } from '../types/auditLogAdmin';
 import { getAuditLogDetail, AuditLogServiceError } from '../services/auditLogAdminService';
+import { AuditLogResultBadge } from './AuditLogResultBadge';
 
 interface AuditLogDetailDrawerProps {
   logId: number | null;
@@ -106,24 +107,6 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
     }
   };
 
-  const extractReason = (detail: AuditLogDetailDto): string | null => {
-    const tryExtract = (jsonStr: string | null): string | null => {
-      if (!jsonStr) return null;
-      try {
-        const parsed = JSON.parse(jsonStr);
-        if (typeof parsed === 'object' && parsed !== null) {
-          return parsed.reason || parsed.rejectionReason || parsed.suppliedReason || parsed.note || null;
-        }
-      } catch {
-        return null;
-      }
-      return null;
-    };
-    return tryExtract(detail.afterData) || tryExtract(detail.beforeData);
-  };
-
-  const reasonText = detail ? extractReason(detail) : null;
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200 flex items-center justify-center p-4">
       {/* Backdrop overlay click to close */}
@@ -196,6 +179,10 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                     <span className="inline-block rounded border border-[#71f8e4]/30 bg-[#71f8e4]/10 px-2.5 py-1 font-semibold text-[#71f8e4]">
                       {detail.actionType}
                     </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">Result</span>
+                    <AuditLogResultBadge result={detail.result} />
                   </div>
                   <div>
                     <span className="text-slate-400 block mb-1">IP Address</span>
@@ -284,17 +271,15 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
               </div>
 
               {/* Context / Reason Panel (SRS section: supplied reason) */}
-              {reasonText && (
                 <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 space-y-2">
                   <div className="text-xs font-semibold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-base">comment</span>
-                    Supplied Reason / Action Note
+                    Business Reason
                   </div>
-                  <p className="text-xs text-amber-100 italic bg-amber-950/60 p-3 rounded-lg border border-amber-800/40">
-                    &ldquo;{reasonText}&rdquo;
+                  <p className="text-xs text-amber-100 whitespace-pre-wrap break-words bg-amber-950/60 p-3 rounded-lg border border-amber-800/40">
+                    {detail.reason ?? 'No reason recorded'}
                   </p>
                 </div>
-              )}
 
               {/* Before & After State Changes */}
               <div className="space-y-4">
@@ -338,7 +323,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                   <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/70 px-4 py-2.5 text-xs">
                     <span className="font-semibold text-emerald-300 flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-base">update</span>
-                      After Data State
+                      {detail.result === 'Failure' ? 'Failure Context' : 'After Data State'}
                     </span>
                     {detail.afterData && (
                       <button
