@@ -3,6 +3,7 @@
  * Communicates with TripMate backend using Firebase ID tokens.
  */
 
+import { AuthStorage, InvalidAuthContextError, type WebAuthContext } from '@/features/auth/session/authSession';
 import { extractFieldErrors } from './authErrorMapper';
 
 export const getApiBase = () => {
@@ -60,9 +61,13 @@ export interface VerifyEmailResponse {
 
 export interface GoogleAuthResponse {
   userId: number;
+  email: string;
+  fullName: string;
+  role: string;
   status: string;
   accessToken: string;
   refreshToken: string;
+  accessTokenExpiresAtUtc: string;
   isNewAccount: boolean;
 }
 
@@ -177,11 +182,11 @@ export async function verifyEmail(idToken: string): Promise<VerifyEmailResponse>
 }
 
 export async function googleAuth(idToken: string): Promise<GoogleAuthResponse> {
+  // Body-only (UC-04 v2.0 §6.3): the Bearer header is no longer an input channel.
   const res = await fetch(`${API_BASE}/auth/google`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`,
     },
     body: JSON.stringify({ idToken }),
   });
@@ -190,7 +195,7 @@ export async function googleAuth(idToken: string): Promise<GoogleAuthResponse> {
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
-export function saveTokens(accessToken: string, refreshToken: string, user?: { email?: string; fullName?: string }): void {
+export function saveTokens(accessToken: string, refreshToken: string, user?: { email?: string; fullName?: string; role?: string }): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('tripmate_access_token', accessToken);
   localStorage.setItem('tripmate_refresh_token', refreshToken);
@@ -199,9 +204,85 @@ export function saveTokens(accessToken: string, refreshToken: string, user?: { e
   }
 }
 
-export function clearTokens(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem('tripmate_access_token');
-  localStorage.removeItem('tripmate_refresh_token');
-  localStorage.removeItem('tripmate_user');
+export interface WebLoginRequest {
+  email: string;
+  password: string;
+  keepMeSignedIn?: boolean;
+}
+
+async function webSignIn(path: string, body: object, keepMeSignedIn: boolean, google: boolean): Promise<WebAuthContext & { isNewAccount?: boolean }> {
+  const res = await fetch(`${API_BASE}/auth/web/${path}`, {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  // Rejected/network requests preserve the previous memory session and cookie.
+  if (!res.ok) return handleResponse<never>(res);
+  try {
+    const envelope: unknown = await res.json();
+    if (!envelope || typeof envelope !== 'object' || !('success' in envelope) || envelope.success !== true || !('data' in envelope)) throw new InvalidAuthContextError();
+    const data = envelope.data;
+    if (google && (!data || typeof data !== 'object' || !('isNewAccount' in data) || typeof data.isNewAccount !== 'boolean')) throw new InvalidAuthContextError();
+    const context = AuthStorage.accept(data, keepMeSignedIn);
+    return google ? Object.freeze({ ...context, isNewAccount: (data as { isNewAccount: boolean }).isNewAccount }) : context;
+  } catch {
+    AuthStorage.clear();
+    // Server cookie cleanup belongs to D02; local deletion does not revoke a session.
+    throw new InvalidAuthContextError();
+  }
+}
+
+export function webLogin(data: WebLoginRequest, administrator = false): Promise<WebAuthContext> {
+  const keepMeSignedIn = data.keepMeSignedIn ?? false;
+  return webSignIn(administrator ? 'admin/login' : 'login', {
+    email: data.email.trim().toLowerCase(), password: data.password, keepMeSignedIn,
+  }, keepMeSignedIn, false);
+}
+
+export async function webGoogleAuth(idToken: string, keepMeSignedIn = false): Promise<WebAuthContext & { isNewAccount: boolean }> {
+  return await webSignIn('google', { idToken, keepMeSignedIn }, keepMeSignedIn, true) as WebAuthContext & { isNewAccount: boolean };
+}
+
+/**
+ * S01 session restoration: redeems the HttpOnly tripmate_refresh cookie for the
+ * authoritative current Web auth context. No body, credentials included. A
+ * rejected or malformed response leaves the session genuinely unauthenticated;
+ * it never authenticates from persisted display metadata.
+ */
+export async function webRefresh(): Promise<WebAuthContext> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/auth/web/refresh`, { method: 'POST', credentials: 'include' });
+  } catch {
+    // Network/timeout is recoverable state, not proof of an invalid session:
+    // an existing in-memory context must survive; the caller retries later.
+    throw { code: 'NETWORK', message: 'Session restore unavailable.', status: 0 } satisfies ApiError;
+  }
+  if (!res.ok) {
+    // Definitive invalid/blocked session (401/403): genuinely unauthenticated.
+    AuthStorage.clear();
+    return handleResponse<never>(res);
+  }
+  try {
+    const envelope: unknown = await res.json();
+    if (!envelope || typeof envelope !== 'object' || !('success' in envelope) || envelope.success !== true || !('data' in envelope)) throw new InvalidAuthContextError();
+    return AuthStorage.accept(envelope.data, false);
+  } catch {
+    AuthStorage.clear();
+    throw new InvalidAuthContextError();
+  }
+}
+
+export async function webVerifyEmail(idToken: string): Promise<{ emailVerified: true }> {
+  const res = await fetch(`${API_BASE}/auth/web/verify-email`, {
+    method: 'POST', credentials: 'omit', headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (!res.ok) return handleResponse<never>(res);
+  try {
+    const envelope: unknown = await res.json();
+    if (envelope && typeof envelope === 'object' && 'success' in envelope && envelope.success === true && 'data' in envelope) {
+      const data = envelope.data;
+      if (data && typeof data === 'object' && 'emailVerified' in data && data.emailVerified === true && Object.keys(data).length === 1) return { emailVerified: true };
+    }
+  } catch { /* A malformed verify result never changes the existing auth session. */ }
+  throw { code: 'INVALID_VERIFICATION_RESPONSE', status: res.status } satisfies ApiError;
 }

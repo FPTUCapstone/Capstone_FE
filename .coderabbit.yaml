@@ -2,11 +2,9 @@
 language: "en-US"
 
 tone_instructions: >
-  Group feedback into three buckets matching this team's pipeline: Bug (correctness, edge cases,
-  logic errors), Security (XSS, unsafe data exposure, leaking secrets via NEXT_PUBLIC_* values,
-  auth gaps), Architecture (violations of this repo's AGENTS.md — Server Components by default,
-  feature-scoped code, no invented state management/architecture layers, screens without an
-  approved Web Screen Specification or WEB_SCOPE_MATRIX classification). Label each comment.
+  Group feedback into 3 buckets: Bug (correctness, edge cases), Security (XSS, secret leaks via
+  NEXT_PUBLIC_*, auth gaps), Architecture (violates AGENTS.md: Server Components default,
+  feature-scoped code, unapproved screens/state layers). Label each.
 
 reviews:
   profile: assertive

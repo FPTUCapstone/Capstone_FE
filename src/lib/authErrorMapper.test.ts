@@ -7,6 +7,12 @@ import {
 } from './authErrorMapper';
 
 describe('auth error mapping', () => {
+  it('directs administrators rejected by Google to email/password', () => {
+    expect(getApiErrorMessage({
+      code: 'auth.admin_google_sign_in_disabled', status: 403, message: 'internal detail',
+    })).toBe('Administrator accounts must sign in with email and password.');
+  });
+
   it('maps a structured Backend duplicate-account error by code', () => {
     expect(
       getApiErrorMessage({

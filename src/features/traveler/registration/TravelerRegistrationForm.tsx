@@ -11,7 +11,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { CheckboxField, PasswordField, TextField } from '@/components/ui/FormControls';
@@ -167,7 +167,7 @@ export function TravelerRegistrationForm() {
       const normalizedPhone = phone ? phone.replace(/\s+/g, '') : undefined;
 
       // 1. Create account in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      const userCredential = await createUserWithEmailAndPassword(getFirebaseAuth(), normalizedEmail, password);
       createdFirebaseUser = userCredential.user;
 
       // 2. Get the ID token required by the current Backend contract.
@@ -218,7 +218,7 @@ export function TravelerRegistrationForm() {
       try {
         await sendEmailVerification(createdFirebaseUser, {
           url: `${window.location.origin}/verify-email`,
-          handleCodeInApp: false,
+          handleCodeInApp: true,
         });
       } catch {
         deliveryFailed = true;
@@ -289,7 +289,7 @@ export function TravelerRegistrationForm() {
 
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(getFirebaseAuth(), provider);
       const idToken = await result.user.getIdToken();
 
       const res = await googleAuth(idToken);

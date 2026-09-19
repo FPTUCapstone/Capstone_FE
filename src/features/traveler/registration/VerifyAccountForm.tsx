@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { sendEmailVerification } from 'firebase/auth';
 
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { isTooManyRequestsError, mapFirebaseAuthError } from '@/lib/authErrorMapper';
@@ -39,7 +39,7 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
     setResending(true);
 
     try {
-      const user = auth.currentUser;
+      const user = getFirebaseAuth().currentUser;
       if (!user) {
         setFeedback({
           tone: 'info',
@@ -50,7 +50,7 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
 
       const actionCodeSettings = {
         url: `${window.location.origin}/verify-email`,
-        handleCodeInApp: false,
+        handleCodeInApp: true,
       };
 
       await sendEmailVerification(user, actionCodeSettings);

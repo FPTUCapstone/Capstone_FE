@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('firebase/auth', () => ({ sendEmailVerification: mocks.sendEmailVerification }));
-vi.mock('@/lib/firebase', () => ({ auth: mocks }));
+vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => mocks }));
 
 describe('VerifyAccountForm', () => {
   beforeEach(() => {

@@ -6,19 +6,20 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   GoogleAuthProvider,
-  sendEmailVerification,
-  signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth';
 
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { CheckboxField, PasswordField, TextField } from '@/components/ui/FormControls';
-import { type ApiError, googleAuth, login, saveTokens, verifyEmail } from '@/lib/authApi';
-import { isTooManyRequestsError, mapAuthError } from '@/lib/authErrorMapper';
+import { type ApiError, webGoogleAuth, isApiError } from '@/lib/authApi';
+import { mapGoogleSignInError, mapWebRecoveryError } from '@/lib/authErrorMapper';
 import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
+import { signInDestination, partnerUnresolvedMessage } from '@/features/auth/routing/signInDestination';
 import { ROUTES } from '@/lib/routes';
+import { loginWithWebRecovery, resendWebVerification } from '@/features/auth/recovery/webRecovery';
+import { GoogleConsentModal } from '@/features/auth/google/GoogleConsentModal';
 
 type SignInFormProps = {
   admin?: boolean;
@@ -29,13 +30,16 @@ type Feedback = {
   tone: 'info' | 'success' | 'error';
 } | null;
 
-const requiredMessage = 'This field is required.';
-const invalidEmailMessage = 'Invalid email format. Please enter a valid email address (e.g., user@example.com).';
+const emailRequiredMessage = 'Please enter your email.';
+const passwordRequiredMessage = 'Please enter your password.';
+const invalidEmailMessage = 'Invalid email format. Please enter a valid email address.';
 
 export function SignInForm({ admin = false }: SignInFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [googleConsent, setGoogleConsent] = useState(false);
+  const [googlePasswordHint, setGooglePasswordHint] = useState(false);
   const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -49,138 +53,60 @@ export function SignInForm({ admin = false }: SignInFormProps) {
     setLoading(true);
 
     try {
-      let user = auth.currentUser;
-      if (!user && unverifiedEmail && password) {
-        try {
-          const userCred = await signInWithEmailAndPassword(auth, unverifiedEmail, password);
-          user = userCred.user;
-        } catch (authErr: unknown) {
-          if (isTooManyRequestsError(authErr)) {
-            startResendCooldown();
-            setFeedback({
-              tone: 'error',
-              message: 'Too many resend attempts. Please wait a few minutes before trying again.',
-            });
-            return;
-          }
-        }
-      }
-
-      if (!user) {
-        setFeedback({
-          tone: 'error',
-          message: 'Unable to resend email. Please verify your password and try again.',
-        });
-        return;
-      }
-
-      await sendEmailVerification(user, {
-        url: `${window.location.origin}/verify-email`,
-        handleCodeInApp: false,
-      });
-
+      if (!unverifiedEmail || email.trim().toLowerCase() !== unverifiedEmail.trim().toLowerCase()) throw { code: 'FIREBASE_SESSION_MISMATCH' };
+      await resendWebVerification(unverifiedEmail, password);
       startResendCooldown();
-      setFeedback({
-        tone: 'success',
-        message: 'A fresh verification link has been sent to your email. Please check your inbox.',
-      });
-    } catch (err: unknown) {
-      if (isTooManyRequestsError(err)) {
-        startResendCooldown();
-        setFeedback({
-          tone: 'error',
-          message: 'Too many resend attempts. Please wait a few minutes before trying again.',
-        });
-        return;
-      }
-      const msg =
-        err instanceof Error && !err.message.includes('auth/')
-          ? err.message
-          : 'Unable to send verification email. Please try again later.';
-      setFeedback({ tone: 'error', message: msg });
-    } finally {
-      setLoading(false);
-    }
+      setFeedback({ tone: 'success', message: 'A fresh verification link has been sent to your email. Please check your inbox.' });
+    } catch (error: unknown) {
+      const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+      if (code === 'auth/too-many-requests') startResendCooldown();
+      setFeedback({ tone: 'error', message: mapWebRecoveryError(error) });
+    } finally { setLoading(false); }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading) return;
     const nextErrors: typeof errors = {};
 
-    if (!email.trim()) nextErrors.email = requiredMessage;
-    else if (!/^\S+@\S+\.\S+$/.test(email)) nextErrors.email = invalidEmailMessage;
-    if (!password) nextErrors.password = requiredMessage;
+    if (!email.trim()) nextErrors.email = emailRequiredMessage;
+    else if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = invalidEmailMessage;
+    if (!password) nextErrors.password = passwordRequiredMessage;
 
     setErrors(nextErrors);
     setFeedback(null);
     setUnverifiedEmail(null);
+    setGooglePasswordHint(false);
     if (Object.keys(nextErrors).length > 0) return;
 
     setLoading(true);
 
-    // Admin prototype simulation fallback
-    if (admin) {
-      setLoading(false);
-      setFeedback({
-        tone: 'success',
-        message: 'Welcome back to TripMate! Signed in successfully. Continue to the Admin prototype workspace below.',
-      });
-      return;
-    }
-
     try {
-      const res = await login({ email: email.trim(), password });
-      saveTokens(res.accessToken, res.refreshToken, {
-        email: res.email,
-        fullName: res.fullName,
-      });
-
-      try {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
-      } catch {
-        // Ignored if Firebase auth sync fails; REST tokens are preserved in localStorage
-      }
+      const res = await loginWithWebRecovery({ email: email.trim().toLowerCase(), password, keepMeSignedIn: remember }, admin);
 
       setFeedback({
         tone: 'success',
-        message: 'Signed in successfully! Redirecting...',
+        message: signInDestination(res) ? 'Signed in successfully! Redirecting...' : partnerUnresolvedMessage,
       });
 
-      router.push(ROUTES.home);
+      const destination = signInDestination(res);
+      if (destination) router.push(destination);
     } catch (err: unknown) {
       const apiErr = err as ApiError;
-      if (apiErr?.code === 'MSG_UNVERIFIED' || apiErr?.message?.includes('verified') || apiErr?.message?.includes('verification')) {
-        // Check if user has verified their email in Firebase Auth
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
-          await userCredential.user.reload();
-          if (userCredential.user.emailVerified) {
-            const idToken = await userCredential.user.getIdToken();
-            const verifyRes = await verifyEmail(idToken);
-            saveTokens(verifyRes.accessToken, verifyRes.refreshToken, {
-              email: userCredential.user.email || email.trim(),
-              fullName: userCredential.user.displayName || userCredential.user.email || email.trim(),
-            });
-            setFeedback({
-              tone: 'success',
-              message: 'Signed in successfully! Redirecting...',
-            });
-            router.push(ROUTES.home);
-            return;
-          }
-        } catch {
-          // Firebase signin failed or user genuinely not verified
-        }
-
+      if (apiErr?.code === 'MSG_UNVERIFIED' || apiErr?.code === 'MSG_EMAIL_NOT_VERIFIED') {
         setUnverifiedEmail(email.trim());
         setFeedback({
           tone: 'error',
-          message: 'Your email address has not been verified yet. Please verify your email before signing in.',
+          message: mapWebRecoveryError(apiErr),
         });
-      } else if (apiErr?.code === 'auth.invalid_credentials' || apiErr?.status === 401 || apiErr?.status === 400) {
-        setFeedback({ tone: 'error', message: apiErr?.message || 'Invalid email or password.' });
       } else {
-        setFeedback({ tone: 'error', message: mapAuthError(apiErr?.code, apiErr?.message) });
+        if (isApiError(err) && err.errors) {
+          setErrors({
+            email: err.errors.email === 'MSG01' ? emailRequiredMessage : err.errors.email === 'MSG02' ? invalidEmailMessage : undefined,
+            password: err.errors.password === 'MSG01' ? passwordRequiredMessage : undefined,
+          });
+        }
+        setFeedback({ tone: 'error', message: mapWebRecoveryError(err) });
       }
     } finally {
       setLoading(false);
@@ -188,26 +114,23 @@ export function SignInForm({ admin = false }: SignInFormProps) {
   }
 
   async function handleGoogle() {
+    if (admin || loading || !googleConsent) return;
+    setGoogleConsent(false);
+    setUnverifiedEmail(null);
+    setGooglePasswordHint(false);
     setFeedback(null);
     setLoading(true);
 
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(getFirebaseAuth(), provider);
       const idToken = await result.user.getIdToken();
 
-      const res = await googleAuth(idToken);
-      saveTokens(res.accessToken, res.refreshToken, {
-        email: result.user.email || '',
-        fullName: result.user.displayName || result.user.email || '',
-      });
+      const res = await webGoogleAuth(idToken, remember);
+      const destination = signInDestination(res);
+      setFeedback({ tone: 'success', message: destination ? 'Signed in with Google successfully! Redirecting...' : partnerUnresolvedMessage });
+      if (destination) router.push(destination);
 
-      setFeedback({
-        tone: 'success',
-        message: 'Signed in with Google successfully! Redirecting...',
-      });
-
-      router.push(ROUTES.home);
     } catch (err: unknown) {
       if (
         typeof err === 'object' &&
@@ -220,9 +143,9 @@ export function SignInForm({ admin = false }: SignInFormProps) {
         setFeedback(null);
         return;
       }
-      const errorMsg =
-        err instanceof Error ? err.message : 'Google authentication failed. Please try again.';
-      setFeedback({ tone: 'error', message: errorMsg });
+      const code = err && typeof err === 'object' && 'code' in err ? err.code : undefined;
+      setGooglePasswordHint(code === 'auth.admin_google_sign_in_disabled' || code === 'MSG_UNVERIFIED');
+      setFeedback({ tone: 'error', message: mapGoogleSignInError(err) });
     } finally {
       setLoading(false);
     }
@@ -305,7 +228,7 @@ export function SignInForm({ admin = false }: SignInFormProps) {
           <div className="my-4 flex items-center gap-3 text-xs text-[#6B7C97]" aria-hidden="true">
             <span className="h-px flex-1 bg-[#E1E8F3]" /> or continue with <span className="h-px flex-1 bg-[#E1E8F3]" />
           </div>
-          <ActionButton type="button" variant="outline" loading={loading} className="w-full font-semibold" onClick={handleGoogle}>
+          <ActionButton type="button" variant="outline" loading={loading} className="w-full font-semibold" onClick={() => { if (!loading) setGoogleConsent(true); }}>
             <span className="text-base font-bold text-[#4285f4]" aria-hidden="true">G</span>
             Continue with Google
           </ActionButton>
@@ -316,9 +239,14 @@ export function SignInForm({ admin = false }: SignInFormProps) {
         </>
       ) : null}
 
+      {googleConsent && !admin ? <GoogleConsentModal onCancel={() => setGoogleConsent(false)} onAgree={handleGoogle} /> : null}
       {feedback ? (
         <div className="mt-4 space-y-3">
           <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert>
+          {admin && feedback.tone === 'error' ? (
+            <Link href={ROUTES.signIn} className="font-semibold text-[#1D4ED8] hover:underline">Go to public sign-in</Link>
+          ) : null}
+          {googlePasswordHint ? <Link href={ROUTES.signIn} className="font-semibold text-[#1D4ED8] hover:underline">Sign in with email and password</Link> : null}
           {unverifiedEmail ? (
             <div className="flex flex-col gap-2 rounded-xl border border-[#E1E8F3] bg-[#F4F7FC] p-3 text-xs text-[#6B7C97]">
               <p>
@@ -335,11 +263,6 @@ export function SignInForm({ admin = false }: SignInFormProps) {
                 {resendOnCooldown ? `Resend Email (${resendSecondsLeft}s)` : 'Resend Verification Email'}
               </ActionButton>
             </div>
-          ) : null}
-          {feedback.tone === 'success' && admin ? (
-            <Link href={ROUTES.admin.dashboard} className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#1D4ED8] px-5 py-3 text-sm font-bold text-white hover:bg-[#2563EB]">
-              Open Admin Prototype
-            </Link>
           ) : null}
         </div>
       ) : null}

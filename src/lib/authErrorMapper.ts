@@ -25,6 +25,8 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
 
   // Backend AUTH_* error codes (ProblemDetails errorCode values)
   AUTH_TOKEN_INVALID: 'Your authentication token is invalid or has expired. Please try again.',
+  'auth.admin_google_sign_in_disabled':
+    'Administrator accounts must sign in with email and password.',
   AUTH_EMAIL_MISMATCH:
     'The email address does not match the account used for registration. Please try again with the same email address.',
 
@@ -139,4 +141,67 @@ export function isTooManyRequestsError(err: unknown): boolean {
     if (typeof e.message === 'string' && (e.message.includes('auth/too-many-requests') || e.message.includes('too-many-requests'))) return true;
   }
   return false;
+}
+
+/** Password/Web-only copy; never matches raw server or Firebase messages. */
+export function mapPasswordSignInError(error: unknown): string {
+  const value = error && typeof error === 'object' ? error as { code?: string; status?: number } : {};
+  const messages: Record<string, string> = {
+    'auth.invalid_credentials': 'Invalid email or password. Please try again.',
+    MSG_UNVERIFIED: 'Please verify your email before signing in.',
+    'auth.account_locked': 'Your account is locked. Please contact support.',
+    'auth.account_inactive': 'Your account is inactive. Please contact support.',
+    'auth.admin_access_required': 'T\u00e0i kho\u1ea3n n\u00e0y kh\u00f4ng c\u00f3 quy\u1ec1n truy c\u1eadp khu v\u1ef1c qu\u1ea3n tr\u1ecb. Vui l\u00f2ng \u0111\u0103ng nh\u1eadp t\u1ea1i trang d\u00e0nh cho ng\u01b0\u1eddi d\u00f9ng.',
+    'auth.account_state_unresolved': 'Ch\u01b0a th\u1ec3 x\u00e1c \u0111\u1ecbnh tr\u1ea1ng th\u00e1i t\u00e0i kho\u1ea3n. Vui l\u00f2ng li\u00ean h\u1ec7 h\u1ed7 tr\u1ee3.',
+    'auth.request_invalid': 'Unable to submit sign-in. Please check your details and try again.',
+    INVALID_AUTH_CONTEXT: 'Ch\u01b0a th\u1ec3 ho\u00e0n t\u1ea5t \u0111\u0103ng nh\u1eadp. Vui l\u00f2ng th\u1eed l\u1ea1i.',
+  };
+  if (error instanceof Error && error.message === 'INVALID_AUTH_CONTEXT') return messages.INVALID_AUTH_CONTEXT;
+  if (value.code && messages[value.code]) return messages[value.code];
+  if (value.status === 429) return 'Too many attempts. Please wait before trying again.';
+  if (value.status === 415) return 'Unable to submit sign-in. Please try again.';
+  if (value.status === 500) return 'Something went wrong. Please try again later.';
+  if (value.status && [502, 503, 504].includes(value.status)) return 'TripMate service is temporarily unavailable. Please try again later.';
+  if (error instanceof TypeError) return 'Unable to connect to TripMate. Please check your connection and try again.';
+  return 'Unable to complete sign-in. Please try again later.';
+}
+
+/** Web Google error copy is scoped separately from password/link verification. */
+export function mapGoogleSignInError(error: unknown): string {
+  const value = error && typeof error === 'object' ? error as { code?: string; status?: number } : {};
+  const messages: Record<string, string> = {
+    AUTH_TOKEN_MISSING: 'Unable to complete Google sign-in. Please try again.',
+    AUTH_TOKEN_INVALID: 'Your Google authentication could not be verified. Please try again.',
+    MSG_UNVERIFIED: 'Please verify your TripMate email before signing in.',
+    MSG_EMAIL_NOT_VERIFIED: 'Your Google account email could not be confirmed as verified. Please verify it with Google and try again.',
+    'auth.admin_google_sign_in_disabled': 'Administrator accounts must sign in with email and password.',
+    'auth.firebase_unavailable': 'Google authentication service is temporarily unavailable. Please try again later.',
+    'auth/popup-blocked': 'Please allow popups for TripMate and try again.',
+    'auth/network-request-failed': 'Unable to connect to TripMate. Please check your connection and try again.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a few minutes before trying again.',
+  };
+  if (value.code && messages[value.code]) return messages[value.code];
+  return mapPasswordSignInError(error);
+}
+
+/** Recovery token errors refer to Firebase ID-token evidence, not email-action links. */
+export function mapWebRecoveryError(error: unknown): string {
+  const value = error && typeof error === 'object' ? error as { code?: string; status?: number } : {};
+  const messages: Record<string, string> = {
+    MSG14: 'Your verification session is invalid or has expired. Please sign in and try again.',
+    MSG_EMAIL_NOT_VERIFIED: 'Please verify your email before signing in.',
+    AUTH_HEADER_MISSING: 'Unable to confirm email verification. Please sign in and try again.',
+    'auth.verification_email_missing': 'Unable to identify the email being verified. Please sign in and try again.',
+    MSG_USER_NOT_FOUND: 'Account not found. Please register first.',
+    'auth.verification_unavailable': 'Email verification is temporarily unavailable. Please try again later.',
+    FIREBASE_SESSION_MISMATCH: 'Please sign in with the email you want to verify before requesting a new link.',
+    'auth/invalid-credential': 'Invalid email or password. Please try again.',
+    'auth/wrong-password': 'Invalid email or password. Please try again.',
+    'auth/user-not-found': 'Invalid email or password. Please try again.',
+    'auth/invalid-email': 'Invalid email format. Please enter a valid email address.',
+    'auth/network-request-failed': 'Unable to connect to TripMate. Please check your connection and try again.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a few minutes before trying again.',
+  };
+  if (value.code && messages[value.code]) return messages[value.code];
+  return mapPasswordSignInError(error);
 }
