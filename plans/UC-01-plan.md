@@ -1,6 +1,6 @@
 # UC-01 Web Implementation Plan: Register Traveler Account & Email Verification (Rev. 3)
 
-> **Specification Reference:** [`Capstone_FE/specs/UC-01-web-spec.md`](file:///d:/FPTUCapstone/Capstone_FE/specs/UC-01-web-spec.md)
+> **Specification Reference:** [`Capstone_FE/specs/UC-01-spec.md`](file:///d:/FPTUCapstone/Capstone_FE/specs/UC-01-spec.md)
 > **Mockup Reference:** [`Report3_Screens_All.html`](file:///d:/FPTUCapstone/Report3_Screens_All.html#g32)
 
 ---
