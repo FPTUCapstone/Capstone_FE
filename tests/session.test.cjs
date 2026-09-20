@@ -9,7 +9,20 @@ const request = (origin = 'https://web.test', body = { email: ' admin@example.co
   headers: { ...(origin ? { Origin: origin } : {}), 'Content-Type': 'application/json' },
   ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
 });
-const loginResult = () => ({ role: 3, status: 2, accessToken: 'test-access-token', refreshToken: 'must-not-leak', accessTokenExpiresAtUtc: new Date(Date.now() + 3600000).toISOString() });
+// Confirmed Backend contract: POST /api/v1/auth/web/admin/login answers with
+// the legacy success envelope and a data object carrying string role/status.
+const loginResult = () => ({
+  success: true,
+  statusCode: 200,
+  message: 'Sign in successful.',
+  data: {
+    role: 'Administrator',
+    status: 'Active',
+    accessToken: 'test-access-token',
+    accessTokenExpiresAtUtc: new Date(Date.now() + 3600000).toISOString(),
+  },
+  errors: null,
+});
 const loadRoute = (fetchBackend) => loadTs(routePath, { '@/lib/server/backend': { fetchBackend } });
 
 test('session rejects foreign or missing Origin before contacting BE', async () => {
@@ -27,19 +40,18 @@ test('login validates credentials before sending to BE', async () => {
   }
 });
 
-test('login forwards credentials, checks active admin catalogue, and returns cookie without tokens', async () => {
+test('login forwards credentials, issues the session after the validated admin login response, and returns a cookie without tokens', async () => {
   const calls = [];
   const route = loadRoute(async (path, init) => {
     calls.push({ path, init });
-    return calls.length === 1 ? Response.json(loginResult()) : Response.json({ categories: [], tags: [] });
+    return Response.json(loginResult());
   });
   const response = await route.POST(request());
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { authenticated: true });
-  assert.deepEqual(JSON.parse(calls[0].init.body), { email: 'admin@example.com', password: 'secret' });
-  assert.equal(calls[0].path, '/api/v1/auth/login');
-  assert.equal(calls[1].path, '/api/v1/admin/pois/catalogue');
-  assert.equal(new Headers(calls[1].init.headers).get('authorization'), 'Bearer test-access-token');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { email: 'admin@example.com', password: 'secret', keepMeSignedIn: false });
+  assert.equal(calls[0].path, '/api/v1/auth/web/admin/login');
+  assert.equal(calls.length, 1, 'the validated admin login response alone must issue the session');
   const cookie = response.headers.get('set-cookie');
   assert.match(cookie, /tripmate_admin_access_token=test-access-token/);
   assert.match(cookie, /HttpOnly/i);
@@ -49,8 +61,8 @@ test('login forwards credentials, checks active admin catalogue, and returns coo
 });
 
 test('login denies non-admin, inactive, invalid expiry or invalid token response', async () => {
-  for (const change of [{ role: 1 }, { status: 3 }, { accessTokenExpiresAtUtc: 'invalid' }, { accessTokenExpiresAtUtc: '2000-01-01T00:00:00Z' }, { accessToken: '' }]) {
-    const route = loadRoute(async () => Response.json({ ...loginResult(), ...change }));
+  for (const change of [{ role: 'TourOperator' }, { status: 'Inactive' }, { accessTokenExpiresAtUtc: 'invalid' }, { accessTokenExpiresAtUtc: '2000-01-01T00:00:00Z' }, { accessToken: '' }]) {
+    const route = loadRoute(async () => Response.json({ ...loginResult(), data: { ...loginResult().data, ...change } }));
     const response = await route.POST(request());
     assert.ok([403, 502].includes(response.status));
     assert.match(response.headers.get('set-cookie'), /Max-Age=0/i);
@@ -65,14 +77,6 @@ test('BE auth denial clears old cookie and never exposes upstream error', async 
     assert.match(response.headers.get('set-cookie'), /Max-Age=0/i);
     assert.doesNotMatch(await response.text(), /internal sensitive text/);
   }
-});
-
-test('catalogue denial prevents session issuance', async () => {
-  let count = 0;
-  const route = loadRoute(async () => ++count === 1 ? Response.json(loginResult()) : new Response(null, { status: 403 }));
-  const response = await route.POST(request());
-  assert.equal(response.status, 403);
-  assert.match(response.headers.get('set-cookie'), /Max-Age=0/i);
 });
 
 test('BE network failure is a safe 503 and DELETE expires session', async () => {
@@ -103,8 +107,7 @@ test('production cookies use Secure on both login and logout', async () => {
   const previous = process.env.NODE_ENV;
   process.env.NODE_ENV = 'production';
   try {
-    let count = 0;
-    const route = loadRoute(async () => ++count === 1 ? Response.json(loginResult()) : Response.json({ categories: [], tags: [] }));
+    const route = loadRoute(async () => Response.json(loginResult()));
     const login = await route.POST(request());
     const logout = await route.DELETE(request(undefined, null, 'DELETE'));
     assert.match(login.headers.get('set-cookie'), /; Secure/i);
