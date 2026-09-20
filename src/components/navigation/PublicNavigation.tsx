@@ -8,10 +8,11 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { signInDestination } from '@/features/auth/routing/signInDestination';
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { webLogout } from '@/lib/authApi';
+import { webLogout, webLogoutAll } from '@/lib/authApi';
 import { ROUTES } from '@/lib/routes';
 
 const signOutFailedMessage = 'Chưa thể hoàn tất việc kết thúc phiên đăng nhập. Vui lòng thử lại.';
+const signOutAllConfirmation = 'Bạn sẽ đăng xuất khỏi tất cả thiết bị đang sử dụng tài khoản này.';
 
 export function PublicNavigation() {
   // An empty in-memory context is NOT considered Guest until the
@@ -51,16 +52,17 @@ export function PublicNavigation() {
       ? signInDestination(context) ?? ROUTES.partner.application
       : ROUTES.partner.register;
 
-  async function handleSignOut() {
+  async function handleSignOut(allDevices = false) {
     // UC-05: the remote logout owns revocation — a local-only clear would
     // desync this UI from the still-valid refresh cookie. The session-preserving
     // failure policy keeps the authenticated context (and thus a retryable
     // button) whenever the request fails; only a confirmed 200 clears local state.
     if (signingOut) return;
+    if (allDevices && !window.confirm(signOutAllConfirmation)) return;
     setSigningOut(true);
     setSignOutError(false);
     try {
-      await webLogout();
+      await (allDevices ? webLogoutAll() : webLogout());
       AuthStorage.clear();
     } catch {
       setSignOutError(true);
@@ -135,7 +137,17 @@ export function PublicNavigation() {
 
             <button
               type="button"
-              onClick={handleSignOut}
+              onClick={() => handleSignOut(true)}
+              disabled={signingOut}
+              aria-busy={signingOut}
+              className="inline-flex min-h-9 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+            >
+              Đăng xuất khỏi tất cả thiết bị
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSignOut()}
               disabled={signingOut}
               aria-busy={signingOut}
               className="inline-flex min-h-9 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"

@@ -2,8 +2,12 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage } from '@/features/auth/session/authSession';
 
-const mocks = vi.hoisted(() => ({ webRefresh: vi.fn(), webLogout: vi.fn() }));
-vi.mock('@/lib/authApi', () => ({ webRefresh: mocks.webRefresh, webLogout: mocks.webLogout }));
+const mocks = vi.hoisted(() => ({ webRefresh: vi.fn(), webLogout: vi.fn(), webLogoutAll: vi.fn() }));
+vi.mock('@/lib/authApi', () => ({
+  webRefresh: mocks.webRefresh,
+  webLogout: mocks.webLogout,
+  webLogoutAll: mocks.webLogoutAll,
+}));
 
 const { PublicNavigation } = await import('./PublicNavigation');
 
@@ -190,6 +194,8 @@ describe('PublicNavigation UC-05 sign out', () => {
     AuthStorage.clear();
     localStorage.clear();
     sessionStorage.clear();
+    mocks.webLogout.mockReset();
+    mocks.webLogoutAll.mockReset();
   });
 
   afterEach(() => {
@@ -291,5 +297,53 @@ describe('PublicNavigation UC-05 sign out', () => {
     expect(mocks.webLogout).toHaveBeenCalledTimes(2);
     expect(AuthStorage.getContext()).toBeNull();
     expect(window.location.href).toBe(hrefBefore);
+  });
+
+  it('confirms logout-all, preserves auth while pending, and clears it only after success', async () => {
+    let resolveLogoutAll!: () => void;
+    const gate = new Promise<void>((resolve) => { resolveLogoutAll = resolve; });
+    mocks.webLogoutAll.mockImplementation(() => gate);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await renderAuthenticated(true);
+
+    fireEvent.click(screen.getByRole('button', { name: '\u0110\u0103ng xu\u1ea5t kh\u1ecfi t\u1ea5t c\u1ea3 thi\u1ebft b\u1ecb' }));
+
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(mocks.webLogoutAll).toHaveBeenCalledTimes(1);
+    expect(mocks.webLogout).not.toHaveBeenCalled();
+    expect(AuthStorage.getContext()?.fullName).toBe('Test Traveler');
+    expect(screen.getByText('Test Traveler')).toBeDefined();
+
+    resolveLogoutAll();
+
+    await waitFor(() => expect(screen.getByRole('link', { name: '\u0110\u0103ng nh\u1eadp' })).toBeDefined());
+    expect(AuthStorage.getContext()).toBeNull();
+  });
+
+  it.each([401, 500])('keeps the authenticated UI when logout-all fails with %i and allows retry', async (status) => {
+    mocks.webLogoutAll.mockRejectedValueOnce({ status });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await renderAuthenticated(false);
+
+    const logoutAllButton = () => screen.getByRole('button', { name: '\u0110\u0103ng xu\u1ea5t kh\u1ecfi t\u1ea5t c\u1ea3 thi\u1ebft b\u1ecb' });
+    fireEvent.click(logoutAllButton());
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeDefined());
+    expect(AuthStorage.getContext()?.fullName).toBe('Test Traveler');
+    expect(screen.getByText('Test Traveler')).toBeDefined();
+    expect(screen.queryByRole('link', { name: '\u0110\u0103ng nh\u1eadp' })).toBeNull();
+    expect((logoutAllButton() as HTMLButtonElement).disabled).toBe(false);
+
+    let resolveRetry!: () => void;
+    const retryGate = new Promise<void>((resolve) => { resolveRetry = resolve; });
+    mocks.webLogoutAll.mockImplementationOnce(() => retryGate);
+    fireEvent.click(logoutAllButton());
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect(AuthStorage.getContext()?.fullName).toBe('Test Traveler');
+    resolveRetry();
+    await waitFor(() => expect(screen.getByRole('link', { name: '\u0110\u0103ng nh\u1eadp' })).toBeDefined());
+    expect(mocks.webLogoutAll).toHaveBeenCalledTimes(2);
+    expect(AuthStorage.getContext()).toBeNull();
   });
 });
