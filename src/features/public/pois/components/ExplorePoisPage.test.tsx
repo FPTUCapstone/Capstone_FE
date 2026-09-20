@@ -96,6 +96,62 @@ describe('ExplorePoisPage', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith('/pois?search=S%C6%A1n+Tr%C3%A0'));
   });
 
+  it('does not navigate or enter loading when submitting the active search query', async () => {
+    currentSearch = 'search=S%C6%A1n+Tr%C3%A0';
+    render(<ExplorePoisPage />);
+    await screen.findAllByText('Bãi biển Mỹ Khê');
+
+    fireEvent.submit(screen.getByRole('search'));
+
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByText('Đang cập nhật…')).toBeNull();
+  });
+
+  it('does not navigate or enter loading when selecting the active all-categories filter', async () => {
+    render(<ExplorePoisPage />);
+    await screen.findAllByText('Bãi biển Mỹ Khê');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tất cả' }));
+
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByText('Đang cập nhật…')).toBeNull();
+  });
+
+  it('does not navigate or enter loading when resetting already-default filters', async () => {
+    vi.mocked(fetchPois).mockResolvedValue({
+      page: 1,
+      pageSize: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    });
+
+    render(<ExplorePoisPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Đặt lại tìm kiếm và bộ lọc' }));
+
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByText('Đang cập nhật…')).toBeNull();
+  });
+
+  it('shows loading for a changed query and clears it after the new request completes', async () => {
+    let resolveNext: (value: typeof mockData) => void = () => undefined;
+    vi.mocked(fetchPois)
+      .mockResolvedValueOnce(mockData)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveNext = resolve; }));
+    const view = render(<ExplorePoisPage />);
+    await screen.findAllByText('Bãi biển Mỹ Khê');
+
+    fireEvent.change(screen.getByLabelText('Tìm kiếm địa điểm'), { target: { value: 'Sơn Trà' } });
+    fireEvent.submit(screen.getByRole('search'));
+    expect(screen.getByText('Đang cập nhật…')).toBeTruthy();
+
+    currentSearch = 'search=S%C6%A1n+Tr%C3%A0';
+    view.rerender(<ExplorePoisPage />);
+    resolveNext(mockData);
+
+    await waitFor(() => expect(screen.queryByText('Đang cập nhật…')).toBeNull());
+  });
+
   it('shows client validation error when search exceeds 200 characters', async () => {
     render(<ExplorePoisPage />);
     await screen.findAllByText('Bãi biển Mỹ Khê');
@@ -227,6 +283,7 @@ describe('ExplorePoisPage', () => {
   });
 
   it('provides an actionable reset for empty results', async () => {
+    currentSearch = 'search=kh%C3%B4ng-c%C3%B3';
     vi.mocked(fetchPois).mockResolvedValue({
       page: 1,
       pageSize: 20,

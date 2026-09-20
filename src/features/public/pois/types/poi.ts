@@ -60,7 +60,7 @@ export interface PoiTag {
 }
 
 export interface PoiDetail extends Omit<PoiSummary, 'thumbnailUrl' | 'distanceKm'> {
-  description: string;
+  description: string | null;
   status: string;
   scenicScore: number | null;
   photoRating: number | null;

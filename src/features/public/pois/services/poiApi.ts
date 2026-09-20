@@ -103,7 +103,7 @@ export function parsePoiDetail(value: unknown): PoiDetail {
     !isRecord(value) ||
     typeof value.id !== 'number' ||
     typeof value.name !== 'string' ||
-    typeof value.description !== 'string' ||
+    !isNullableString(value.description) ||
     typeof value.status !== 'string' ||
     typeof value.categoryId !== 'number' ||
     typeof value.categoryName !== 'string' ||

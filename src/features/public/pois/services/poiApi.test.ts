@@ -81,4 +81,9 @@ describe('POI API response parsing', () => {
       isClosed: true,
     });
   });
+
+  it('accepts a valid detail with a null description', () => {
+    const detail = parsePoiDetail({ id: 1, name: 'POI', description: null, status: 'Active', categoryId: 1, categoryName: 'Attraction', latitude: 1, longitude: 1, address: null, indoorOutdoor: 'Outdoor', averageVisitDurationMinutes: 60, hasShelter: false, scenicScore: null, photoRating: null, averageRating: null, reviewCount: 0, isOpenNow: true, openingHours: [], photos: [], tags: [], createdAtUtc: '2026-01-01T00:00:00Z', updatedAtUtc: '2026-01-01T00:00:00Z' });
+    expect(detail.description).toBeNull();
+  });
 });

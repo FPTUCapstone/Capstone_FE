@@ -71,13 +71,15 @@ Open [http://localhost:3001](http://localhost:3001) in a browser.
 
 ## Environment Variables
 
-Admin sign-in and UC-52 Create POI require the server-only `TRIPMATE_API_BASE_URL` backend origin (for example, `http://localhost:5021` for a local backend). Production requires HTTPS. Use the backend build containing both Create POI and `GET /api/v1/admin/pois/catalogue`. No tokens or server secrets use a `NEXT_PUBLIC_` variable. Behind a reverse proxy, `TRIPMATE_WEB_ORIGIN` may specify the canonical Web origin for mutation origin checks. See [UC-52 integration and verification](docs/UC52-API-INTEGRATION.md).
+Admin sign-in, UC-52 Create POI, and the UC-12 public POI proxy require the server-only `TRIPMATE_API_BASE_URL` backend origin (for example, `http://localhost:5021` for a local backend). Production requires HTTPS and the variable must be set in the Vercel server environment for every deployed target; `NEXT_PUBLIC_API_URL` cannot configure the server proxy. Use the backend build containing both Create POI and `GET /api/v1/admin/pois/catalogue`. No tokens or server secrets use a `NEXT_PUBLIC_` variable. Behind a reverse proxy, `TRIPMATE_WEB_ORIGIN` may specify the canonical Web origin for mutation origin checks. See [UC-52 integration and verification](docs/UC52-API-INTEGRATION.md).
 
 The public account flows also read Firebase Web config and an API base URL from `NEXT_PUBLIC_*` variables. Create a local Next.js environment file from the template:
 
 ```bash
 cp .env.example .env.local
 ```
+
+The public POI category chips are deliberately disabled in production until Backend provides an approved public category catalogue. `NEXT_PUBLIC_POI_CATEGORY_PREVIEW=true` is a development-only visual preview and must not be used to claim production category filtering.
 
 ### Firebase Web configuration
 

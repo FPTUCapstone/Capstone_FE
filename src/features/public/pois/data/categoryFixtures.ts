@@ -1,4 +1,4 @@
-export const POI_CATEGORY_PREVIEW_ENABLED = ['1', 'true'].includes(
+export const POI_CATEGORY_PREVIEW_ENABLED = process.env.NODE_ENV !== 'production' && ['1', 'true'].includes(
   process.env.NEXT_PUBLIC_POI_CATEGORY_PREVIEW?.toLowerCase() ?? '',
 );
 

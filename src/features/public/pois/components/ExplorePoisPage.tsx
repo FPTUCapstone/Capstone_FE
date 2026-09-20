@@ -70,10 +70,12 @@ export function ExplorePoisPage() {
   }, [filters, origin, requestVersion]);
 
   function navigate(next: PoiSearchState) {
+    const query = toPublicUrlParams(next).toString();
+    if (query === queryKey) return;
+
     setLoading(true);
     setError(null);
     setValidationMessage(null);
-    const query = toPublicUrlParams(next).toString();
     router.push(query ? `/pois?${query}` : '/pois');
   }
 
@@ -90,6 +92,8 @@ export function ExplorePoisPage() {
   }
 
   function resetFilters() {
+    if (!queryKey && !hasOrigin) return;
+
     setLoading(true);
     setOrigin({});
     setLocationMessage(null);

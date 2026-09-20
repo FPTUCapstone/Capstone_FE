@@ -174,7 +174,7 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
           <article className="min-w-0">
             <h2 className="text-2xl font-black tracking-tight">Giới thiệu địa điểm</h2>
-            <p className="mt-4 whitespace-pre-line text-base leading-8 text-[#4d5c63]">{detail.description}</p>
+            {detail.description && <p className="mt-4 whitespace-pre-line text-base leading-8 text-[#4d5c63]">{detail.description}</p>}
             {detail.tags.length > 0 ? (
               <section className="mt-8" aria-labelledby="poi-tags-heading">
                 <h3 id="poi-tags-heading" className="text-xs font-black uppercase tracking-[.14em] text-[#526068]">Thẻ danh mục và đặc trưng</h3>
