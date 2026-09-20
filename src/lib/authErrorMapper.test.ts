@@ -4,6 +4,8 @@ import {
   extractFieldErrors,
   getApiErrorMessage,
   mapFirebaseAuthError,
+  mapPasswordResetError,
+  mapWebRecoveryError,
 } from './authErrorMapper';
 
 describe('auth error mapping', () => {
@@ -101,5 +103,59 @@ describe('auth error mapping', () => {
         'Registration failed. Please try again.',
       ),
     ).toBe('Registration failed. Please try again.');
+  });
+});
+
+describe('UC-06 password reset error mapping', () => {
+  const MSG14_RESET_COPY = 'The verification code is invalid or has expired. Please try again or request a new code.';
+
+  it('maps MSG14 to reset-specific safe feedback, not the email-verification wording', () => {
+    const message = mapPasswordResetError({ code: 'MSG14', status: 400 });
+    expect(message).toBe(MSG14_RESET_COPY);
+    expect(message).not.toBe(mapWebRecoveryError({ code: 'MSG14', status: 400 }));
+  });
+
+  it('stays stateless: repeated MSG14 responses map identically with no attempt counter', () => {
+    const first = mapPasswordResetError({ code: 'MSG14', status: 400 });
+    const second = mapPasswordResetError({ code: 'MSG14', status: 400 });
+    const third = mapPasswordResetError({ code: 'MSG14', status: 400 });
+    expect(first).toBe(second);
+    expect(second).toBe(third);
+    // No remaining-attempt disclosure exists anywhere in the mapping output.
+    expect(first).not.toMatch(/attempt/i);
+  });
+
+  it('maps MSG127 to the generic system-failure copy', () => {
+    expect(mapPasswordResetError({ code: 'MSG127', status: 500 })).toBe(
+      'Something went wrong. Please try again later.',
+    );
+  });
+
+  it('maps HTTP 429 to safe rate-limit feedback', () => {
+    expect(mapPasswordResetError({ status: 429 })).toBe(
+      'Too many attempts. Please wait before trying again.',
+    );
+  });
+
+  it('maps a network failure to the existing connection feedback', () => {
+    expect(mapPasswordResetError(new TypeError('Failed to fetch'))).toBe(
+      'Unable to connect to TripMate. Please check your connection and try again.',
+    );
+  });
+
+  it('never leaks unknown raw Backend messages', () => {
+    const message = mapPasswordResetError({
+      code: 'AUTH_INTERNAL_ALIAS',
+      message: 'SQL timeout on Users_PasswordHash at 10.0.0.4',
+      status: 500,
+    });
+    expect(message).toBe('Something went wrong. Please try again later.');
+    expect(message).not.toContain('SQL');
+  });
+
+  it('preserves non-reset MSG14 behavior for email verification flows', () => {
+    expect(mapWebRecoveryError({ code: 'MSG14', status: 400 })).toBe(
+      'Your verification session is invalid or has expired. Please sign in and try again.',
+    );
   });
 });

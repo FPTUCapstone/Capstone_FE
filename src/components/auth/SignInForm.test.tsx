@@ -315,3 +315,19 @@ describe('Google Partner final context', () => {
   expect(mocks.saveTokens).not.toHaveBeenCalled();expect(mocks.verifyEmail).not.toHaveBeenCalled();expect(mocks.webVerifyEmail).not.toHaveBeenCalled();
  });
 });
+
+describe('UC-06 forgot-password entry points', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('keeps the public Forgot password link pointing to the public recovery route', () => {
+    render(<SignInForm />);
+    const link = screen.getByRole('link', { name: /forgot password/i });
+    expect(link.getAttribute('href')).toBe('/forgot-password');
+  });
+
+  it('keeps the administrator Forgot password link pointing to the admin recovery route', () => {
+    render(<SignInForm admin />);
+    const link = screen.getByRole('link', { name: /forgot password/i });
+    expect(link.getAttribute('href')).toBe('/admin/forgot-password');
+  });
+});
