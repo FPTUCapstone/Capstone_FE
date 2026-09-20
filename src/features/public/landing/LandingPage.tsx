@@ -143,6 +143,13 @@ export function LandingPage() {
               {/* Secondary Buttons & Highlights */}
               <ScrollReveal animation="fade-up" delay={450}>
                 <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <Link
+                    href={ROUTES.pois}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-50 border border-teal-200 px-5 py-2 text-xs font-bold text-[#007d6e] shadow-xs hover:bg-teal-100 transition"
+                  >
+                    <span className="material-symbols-outlined text-base text-[#007d6e]">explore</span>
+                    <span>Khám phá Điểm đến</span>
+                  </Link>
                   <a
                     href="#tours"
                     className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 px-5 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition"

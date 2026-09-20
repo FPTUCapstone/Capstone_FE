@@ -67,6 +67,13 @@ export function PublicNavigation() {
           className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-2 sm:w-auto"
           aria-label="Public navigation"
         >
+          <Link
+            href={ROUTES.pois}
+            className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+          >
+            Khám phá
+          </Link>
+
           <a
             href="#destinations"
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
