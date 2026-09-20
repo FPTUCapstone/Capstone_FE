@@ -280,3 +280,72 @@ export async function webVerifyEmail(idToken: string): Promise<{ emailVerified: 
   } catch { /* A malformed verify result never changes the existing auth session. */ }
   throw { code: 'INVALID_VERIFICATION_RESPONSE', status: res.status } satisfies ApiError;
 }
+
+// ─── UC-06 password reset ─────────────────────────────────────────────────────
+
+export interface PasswordResetMessageDto {
+  message: string;
+}
+
+export interface PasswordResetConfirmInput {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+/**
+ * UC-06 reset endpoints answer 2xx with a DIRECT `{ message }` DTO — not the
+ * legacy `{ success, data }` envelope — while errors use ProblemDetails /
+ * ValidationProblemDetails, which `handleResponse` already normalizes.
+ */
+async function handleDirectMessageResponse(res: Response): Promise<PasswordResetMessageDto> {
+  if (!res.ok) return handleResponse<never>(res);
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    body = undefined;
+  }
+  if (
+    body &&
+    typeof body === 'object' &&
+    'message' in body &&
+    typeof (body as { message?: unknown }).message === 'string' &&
+    Object.keys(body as Record<string, unknown>).length === 1
+  ) {
+    return body as PasswordResetMessageDto;
+  }
+  throw { code: 'INVALID_RESET_RESPONSE', status: res.status } satisfies ApiError;
+}
+
+async function postJson(path: string, body: unknown): Promise<Response> {
+  return fetch(`${API_BASE}/auth${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Request a password-reset OTP. The Backend answers enumeration-safely; the
+ * FE must never interpret the response as evidence that an account exists.
+ * The OTP never appears in this exchange.
+ */
+export async function requestPasswordReset(email: string): Promise<PasswordResetMessageDto> {
+  const res = await postJson('/password-reset/request', { email });
+  return handleDirectMessageResponse(res);
+}
+
+/**
+ * Confirm a password reset. The body is exactly { email, code, newPassword }:
+ * the OTP travels as a verbatim string (leading zeros preserved) and the
+ * FE-only confirmPassword can never be attached because it is not an input.
+ */
+export async function confirmPasswordReset(input: PasswordResetConfirmInput): Promise<PasswordResetMessageDto> {
+  const res = await postJson('/password-reset/confirm', {
+    email: input.email,
+    code: input.code,
+    newPassword: input.newPassword,
+  });
+  return handleDirectMessageResponse(res);
+}

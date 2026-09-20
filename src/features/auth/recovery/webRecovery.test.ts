@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { loginWithWebRecovery, resendWebVerification } from './webRecovery';
+import {
+  confirmWebPasswordReset,
+  loginWithWebRecovery,
+  requestWebPasswordReset,
+  resendWebVerification,
+} from './webRecovery';
 
 const mocks = vi.hoisted(() => ({
   login: vi.fn(),
   verify: vi.fn(),
   firebase: vi.fn(),
   send: vi.fn(),
+  requestReset: vi.fn(),
+  confirmReset: vi.fn(),
   auth: { currentUser: null as unknown },
 }));
 
@@ -13,6 +20,8 @@ vi.mock('@/lib/authApi', async (original) => ({
   ...(await original<typeof import('@/lib/authApi')>()),
   webLogin: mocks.login,
   webVerifyEmail: mocks.verify,
+  requestPasswordReset: mocks.requestReset,
+  confirmPasswordReset: mocks.confirmReset,
 }));
 vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => mocks.auth }));
 vi.mock('firebase/auth', () => ({
@@ -82,5 +91,51 @@ describe('Verification email resend is disabled until UC-06 lands', () => {
     expect(mocks.send).not.toHaveBeenCalled();
     expect(mocks.login).not.toHaveBeenCalled();
     expect(mocks.verify).not.toHaveBeenCalled();
+  });
+});
+
+describe('UC-06 password reset orchestration', () => {
+  const resetMessage = { message: 'If an account exists for this email, reset instructions have been sent.' };
+
+  it('normalizes the email like Web sign-in and requests a reset OTP', async () => {
+    mocks.requestReset.mockResolvedValue(resetMessage);
+
+    expect(await requestWebPasswordReset('  User@Example.COM ')).toBe(resetMessage);
+    expect(mocks.requestReset).toHaveBeenCalledTimes(1);
+    expect(mocks.requestReset).toHaveBeenCalledWith('user@example.com');
+  });
+
+  it('returns the generic Backend DTO without account-specific interpretation', async () => {
+    mocks.requestReset.mockResolvedValue(resetMessage);
+
+    const result = await requestWebPasswordReset('user@example.com');
+    expect(result).toEqual(resetMessage);
+    // No Firebase email action is ever involved.
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+
+  it('confirms with the normalized retained email, exact payload and a verbatim string OTP', async () => {
+    mocks.confirmReset.mockResolvedValue({ message: 'Your password has been reset. You can now sign in with your new password.' });
+
+    await confirmWebPasswordReset({ email: '  User@Example.COM ', code: '012345', newPassword: 'NewPassword1!' });
+
+    expect(mocks.confirmReset).toHaveBeenCalledTimes(1);
+    expect(mocks.confirmReset).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      code: '012345',
+      newPassword: 'NewPassword1!',
+    });
+  });
+
+  it.each([
+    { code: 'MSG14', status: 400 },
+    { code: 'MSG127', status: 500 },
+    { status: 429 },
+  ])('propagates Backend reset failure %# untouched for the caller to map', async (error) => {
+    mocks.confirmReset.mockRejectedValue(error);
+
+    await expect(
+      confirmWebPasswordReset({ email: 'user@example.com', code: '123456', newPassword: 'NewPassword1!' }),
+    ).rejects.toMatchObject(error);
   });
 });

@@ -205,3 +205,27 @@ export function mapWebRecoveryError(error: unknown): string {
   if (value.code && messages[value.code]) return messages[value.code];
   return mapPasswordSignInError(error);
 }
+
+/**
+ * UC-06 password reset errors. MSG14 gets reset-specific copy here instead of
+ * rewording the shared entry, which email-verification flows still rely on.
+ * The mapping is stateless: the Backend owns wrong-attempt counting and OTP
+ * validity, so repeated MSG14 responses map identically and no remaining-
+ * attempt count is ever produced.
+ */
+export function mapPasswordResetError(error: unknown): string {
+  const value = error && typeof error === 'object' ? error as { code?: string; status?: number } : {};
+  if (value.code === 'MSG14') {
+    return 'The verification code is invalid or has expired. Please try again or request a new code.';
+  }
+  if (value.status === 429) {
+    return 'Too many attempts. Please wait before trying again.';
+  }
+  if (error instanceof TypeError) {
+    return 'Unable to connect to TripMate. Please check your connection and try again.';
+  }
+  if (value.code && AUTH_ERROR_MESSAGES[value.code]) {
+    return AUTH_ERROR_MESSAGES[value.code];
+  }
+  return AUTH_ERROR_MESSAGES.MSG127;
+}

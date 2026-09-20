@@ -22,6 +22,7 @@ import {
   getApiErrorMessage,
   mapFirebaseAuthError,
 } from '@/lib/authErrorMapper';
+import { validatePassword } from '@/lib/passwordPolicy';
 import { ROUTES } from '@/lib/routes';
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
@@ -76,34 +77,10 @@ function validateForm(fields: {
     }
   }
 
-  // 4. Password
-  if (!password) {
-    e.password = 'Please enter your password.';
-  } else if (password.startsWith(' ') || password.endsWith(' ')) {
-    e.password = 'Password cannot start or end with a space.';
-  } else if (password.length < 8) {
-    e.password = 'Password must be at least 8 characters.';
-    } else if (password.length > 72) {
-      e.password = 'Password must not exceed 72 characters.';
-  } else {
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const hasDigit = /\d/.test(password);
-    const hasSpecial = /[^A-Za-z0-9]/.test(password);
-
-    if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
-      if (!hasUpper && !hasLower && !hasDigit && !hasSpecial) {
-        e.password = 'Password must contain uppercase, lowercase, number, and special character.';
-      } else if (!hasUpper && !hasDigit && !hasSpecial) {
-        e.password = 'Password must contain uppercase, number, and special character.';
-      } else if (!hasUpper && !hasSpecial) {
-        e.password = 'Password must contain uppercase and special character.';
-      } else if (!hasSpecial) {
-        e.password = 'Password must contain at least one special character.';
-      } else {
-        e.password = 'Password must contain uppercase, lowercase, number, and special character.';
-      }
-    }
+  // 4. Password (shared canonical FE policy)
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    e.password = passwordError;
   }
 
   // 5. Confirm Password
