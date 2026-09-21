@@ -31,12 +31,12 @@ export function GoogleConsentModal({ onCancel, onAgree }: GoogleConsentModalProp
         <>
           <p>If your Google email is new to TripMate, continuing creates a Traveler account, not a TourOperator account.</p>
           <p className="mt-3">By continuing, you agree to our{' '}
-            <a href="#google-terms" className="font-semibold text-[#1D4ED8] underline" onClick={(event) => { event.preventDefault(); setContent('terms'); }}>Terms of Service</a>{' '}and{' '}
-            <a href="#google-privacy" className="font-semibold text-[#1D4ED8] underline" onClick={(event) => { event.preventDefault(); setContent('privacy'); }}>Privacy Policy</a>.
+            <a href="#google-terms" className="font-semibold text-[#007D6E] underline" onClick={(event) => { event.preventDefault(); setContent('terms'); }}>Terms of Service</a>{' '}and{' '}
+            <a href="#google-privacy" className="font-semibold text-[#007D6E] underline" onClick={(event) => { event.preventDefault(); setContent('privacy'); }}>Privacy Policy</a>.
           </p>
           <div className="mt-5 space-y-3">
-            <ActionButton type="button" variant="primary" className="w-full" onClick={onAgree}>Agree and continue with Google</ActionButton>
-            <Link href={ROUTES.partner.register} onClick={onCancel} className="block py-2 text-center font-semibold text-[#1D4ED8]">Register as TourOperator</Link>
+            <ActionButton type="button" variant="teal" className="w-full" onClick={onAgree}>Agree and continue with Google</ActionButton>
+            <Link href={ROUTES.partner.register} onClick={onCancel} className="block py-2 text-center font-semibold text-[#007D6E]">Register as TourOperator</Link>
           </div>
         </>
       )}

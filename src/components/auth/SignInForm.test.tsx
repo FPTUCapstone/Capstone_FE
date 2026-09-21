@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SignInForm } from './SignInForm';
 
 const mocks = vi.hoisted(() => ({
-  webVerifyEmail: vi.fn(), firebaseSignIn: vi.fn(), verifyEmail: vi.fn(), resend: vi.fn(), webLogin: vi.fn(), webGoogleAuth: vi.fn(), popup: vi.fn(), googleAuth: vi.fn(), saveTokens: vi.fn(), push: vi.fn(),
+  webVerifyEmail: vi.fn(), firebaseSignIn: vi.fn(), verifyEmail: vi.fn(), resend: vi.fn(), webLogin: vi.fn(), webGoogleAuth: vi.fn(), popup: vi.fn(), googleAuth: vi.fn(), saveTokens: vi.fn(), push: vi.fn(), replace: vi.fn(),
 }));
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push, replace: mocks.replace }) }));
 vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => ({}) }));
 vi.mock('firebase/auth', () => ({
   GoogleAuthProvider: class GoogleAuthProvider {},
@@ -65,7 +65,8 @@ describe('Web password sign-in', () => {
     fireEvent.click(screen.getByLabelText('Keep me signed in'));
     fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true }, admin));
-    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(admin ? '/admin' : '/'));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(admin ? '/admin' : '/'));
+    expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.saveTokens).not.toHaveBeenCalled();
     expect(screen.queryByText('Open Admin Prototype')).toBeNull();
   });
@@ -85,7 +86,7 @@ describe('Web password sign-in', () => {
     let resolve!: (value: object) => void; mocks.webLogin.mockReturnValue(new Promise((done) => { resolve = done; }));
     render(<SignInForm admin />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     await waitFor(() => expect((screen.getByLabelText('Email address') as HTMLInputElement).disabled).toBe(true));
-    resolve({ role: 'Administrator', status: 'Active' }); await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/admin'));
+    resolve({ role: 'Administrator', status: 'Active' }); await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin'));
   });
 });
 
@@ -195,7 +196,7 @@ describe('Web Google consent', () => {
     fireEvent.click(screen.getByRole('button', { name: /agree and continue/i }));
     await waitFor(() => expect(mocks.webGoogleAuth).toHaveBeenCalledWith('test-firebase', true));
     await screen.findByText('Signed in with Google successfully! Redirecting...');
-    expect(mocks.googleAuth).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled(); expect(mocks.verifyEmail).not.toHaveBeenCalled(); expect(mocks.push).toHaveBeenCalledWith('/partner/application');
+    expect(mocks.googleAuth).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled(); expect(mocks.verifyEmail).not.toHaveBeenCalled(); expect(mocks.replace).toHaveBeenCalledWith('/partner/application');
   });
 });
 
@@ -241,7 +242,7 @@ describe('Web Google failure boundaries', () => {
     const data = { userId: 42, email: 'db@example.com', fullName: '', role: 'Traveler', status: 'Active', applicationStatus: null, accessToken: 'test-access', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z', isNewAccount: true };
     const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true, data }), { status: 200 })); vi.stubGlobal('fetch', request);
     try {
-      render(<SignInForm />); agreeGoogle(); await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/'));
+      render(<SignInForm />); agreeGoogle(); await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
       expect(AuthStorage.getContext()?.email).toBe('db@example.com'); expect(AuthStorage.getAccessToken()).toBe('test-access');
       const [url, options] = request.mock.calls[0]; expect(url).toMatch(/\/auth\/web\/google$/); expect(options.credentials).toBe('include'); expect(JSON.parse(options.body)).toEqual({ idToken: 'test-firebase', keepMeSignedIn: false });
       expect(localStorage.getItem('tripmate_access_token')).toBeNull(); expect(localStorage.getItem('tripmate_refresh_token')).toBeNull(); expect(mocks.googleAuth).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled();
@@ -300,7 +301,7 @@ describe('authoritative Partner routing', () => {
   mocks.webLogin.mockResolvedValue({role:'TourOperator',status:'Active',applicationStatus});
   render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button',{name:/^sign in$/i}));
   if (applicationStatus === null) { await screen.findByText(/Partner\./); expect(mocks.push).not.toHaveBeenCalled(); }
-  else await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(applicationStatus === 'Approved' ? '/partner' : '/partner/application'));
+  else await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(applicationStatus === 'Approved' ? '/partner' : '/partner/application'));
   expect(mocks.saveTokens).not.toHaveBeenCalled();
  });
 });
@@ -312,7 +313,7 @@ describe('Google Partner final context', () => {
   mocks.webGoogleAuth.mockResolvedValue({role:'TourOperator',status:'Active',applicationStatus});
   render(<SignInForm />); agreeGoogle();
   if (applicationStatus === null || applicationStatus === 'unexpected') {await screen.findByText(/Partner\./);expect(mocks.push).not.toHaveBeenCalled();}
-  else await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(applicationStatus === 'Approved' ? '/partner' : '/partner/application'));
+  else await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(applicationStatus === 'Approved' ? '/partner' : '/partner/application'));
   expect(mocks.saveTokens).not.toHaveBeenCalled();expect(mocks.verifyEmail).not.toHaveBeenCalled();expect(mocks.webVerifyEmail).not.toHaveBeenCalled();
  });
 });

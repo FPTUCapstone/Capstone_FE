@@ -266,6 +266,27 @@ export async function webRefresh(): Promise<WebAuthContext> {
   }
 }
 
+async function webSignOut(path: 'logout' | 'logout-all'): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/web/${path}`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) return handleResponse<never>(res);
+
+  await handleResponse<boolean>(res);
+  AuthStorage.clear();
+}
+
+/** Revokes only the refresh session represented by this browser's HttpOnly cookie. */
+export function webLogout(): Promise<void> {
+  return webSignOut('logout');
+}
+
+/** Revokes every active refresh session belonging to the cookie's user. */
+export function webLogoutAll(): Promise<void> {
+  return webSignOut('logout-all');
+}
+
 export async function webVerifyEmail(idToken: string): Promise<{ emailVerified: true }> {
   const res = await fetch(`${API_BASE}/auth/web/verify-email`, {
     method: 'POST', credentials: 'omit', headers: { Authorization: `Bearer ${idToken}` },

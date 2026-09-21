@@ -3,13 +3,14 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'coral' | 'outline';
+  variant?: 'primary' | 'secondary' | 'coral' | 'outline' | 'teal';
 };
 
 const variants = {
   primary: 'bg-[#1D4ED8] text-white hover:bg-[#2563EB] shadow-xs active:scale-[0.99]',
   secondary: 'bg-[#0F1B2D] text-white hover:bg-[#33425A]',
   coral: 'bg-[#FF6A3D] text-white hover:bg-[#E8582C]',
+  teal: 'bg-brand-teal text-white hover:bg-brand-brightTeal active:scale-[0.98] shadow-btn',
   outline: 'border border-[#E1E8F3] bg-[#F4F7FC] text-[#33425A] hover:bg-[#E8EEF8] hover:border-[#6B7C97]',
 };
 
