@@ -48,6 +48,14 @@ describe('PasswordRecoveryFlow request step', () => {
     expect(screen.queryByLabelText('Reset Code')).toBeNull();
   });
 
+  it('uses the branded recovery-card controls for the public email step', () => {
+    render(<PasswordRecoveryFlow />);
+
+    expect(screen.getByText('mail')).toBeDefined();
+    expect(screen.getByText('arrow_back')).toBeDefined();
+    expect(screen.getByRole('button', { name: /send reset code/i }).className).toContain('bg-brand-teal');
+  });
+
   it('begins at the email step for the admin self-service flow', () => {
     render(<PasswordRecoveryFlow admin />);
     expect(screen.getByLabelText('Email Address')).toBeDefined();
@@ -126,6 +134,9 @@ describe('PasswordRecoveryFlow reset form', () => {
     expect(screen.getByLabelText('Confirm New Password')).toBeDefined();
     expect(screen.getByLabelText('Reset Code').getAttribute('type')).toBe('text');
     expect(screen.getByLabelText('Reset Code').getAttribute('maxlength')).toBe('6');
+    expect(screen.getByText('pin')).toBeDefined();
+    expect(screen.getByText('lock')).toBeDefined();
+    expect(screen.getByText('lock_reset')).toBeDefined();
   });
 
   it('accepts a leading-zero OTP and passes it through verbatim', async () => {
@@ -228,6 +239,7 @@ describe('PasswordRecoveryFlow success and navigation', () => {
 
     const success = await screen.findByText(/password has been reset successfully/i);
     expect(success).toBeDefined();
+    expect(screen.getAllByText('check_circle').some((icon) => icon.className.includes('text-[36px]'))).toBe(true);
     expect(mocks.push).not.toHaveBeenCalled();
 
     const signInCta = screen.getByRole('link', { name: /^sign in$/i });
@@ -310,8 +322,15 @@ describe('PasswordRecoveryFlow resend cooldown and runtime errors', () => {
     await advanceToResetFormWithFakeTimers();
 
     const resend = () => screen.getByRole('button', { name: /resend code/i });
+    expect(resend().parentElement?.className).toContain(
+      'sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]',
+    );
+    expect(resend().className).toContain('w-full');
+    expect(resend().className).toContain('min-w-0');
     expect((resend() as HTMLButtonElement).disabled).toBe(true);
     expect(resend().textContent).toContain('(60s)');
+    expect(screen.getByText('Resend Code (60s)').className).toContain('whitespace-nowrap');
+    expect(screen.getByText('Resend Code (60s)').className).toContain('tabular-nums');
 
     await act(async () => {
       vi.advanceTimersByTime(30_000);

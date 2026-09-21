@@ -63,6 +63,9 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
   const resendInFlightRef = useRef(false);
   const { secondsLeft: resendSecondsLeft, isOnCooldown: resendOnCooldown, startCooldown: startResendCooldown } = useVerificationEmailCooldown(RESEND_COOLDOWN_SECONDS);
   const signInRoute = admin ? ROUTES.admin.login : ROUTES.signIn;
+  const backLinkClass = admin
+    ? 'flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7]'
+    : 'flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.98]';
   const currentIndex = steps.findIndex((item) => item.id === step);
 
   async function submitRequest(event: FormEvent<HTMLFormElement>) {
@@ -165,17 +168,17 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
   return (
     <div>
       {!admin ? (
-        <div className="mb-7">
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#006b5f]">Progressive recovery</p>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-[#00152a]">Password Recovery</h2>
+        <div className="mb-8">
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-teal">Progressive recovery</p>
+          <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy">Password Recovery</h2>
         </div>
       ) : null}
 
-      <ol className="mb-7 grid grid-cols-3 gap-2" aria-label="Password recovery progress">
+      <ol className="mb-8 grid grid-cols-3 gap-2" aria-label="Password recovery progress">
         {steps.map((item, index) => (
           <li key={item.id} className="min-w-0">
-            <span className={`block h-1.5 rounded-full ${index <= currentIndex ? 'bg-[#007d6e]' : 'bg-[#d8dadd]'}`} />
-            <span className={`mt-2 hidden text-[10px] font-bold uppercase tracking-wide sm:block ${index === currentIndex ? 'text-[#006b5f]' : 'text-[#74777e]'}`}>
+            <span className={`block h-1.5 rounded-full transition-colors ${index <= currentIndex ? 'bg-brand-brightTeal' : 'bg-slate-200'}`} />
+            <span className={`mt-2 hidden text-[10px] font-bold uppercase tracking-wide sm:block ${index === currentIndex ? 'text-brand-teal' : 'text-brand-textSecondary'}`}>
               {item.label}
             </span>
           </li>
@@ -185,8 +188,8 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
       {step === 'request' ? (
         <form className="space-y-5" noValidate onSubmit={submitRequest}>
           <div>
-            <h3 className="text-xl font-extrabold text-[#00152a]">{admin ? 'Recover administrator access' : 'Reset your password'}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-[#59616b]">
+            <h3 className="text-xl font-extrabold text-brand-navy">{admin ? 'Recover administrator access' : 'Reset your password'}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-brand-textSecondary">
               Enter the {admin ? 'Administrator ' : ''}Email Address associated with the account. The response does not disclose whether an account exists.
             </p>
           </div>
@@ -200,19 +203,26 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             disabled={loading}
             error={errors.email}
             onChange={(event) => setEmail(event.target.value)}
+            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">mail</span> : undefined}
           />
-          <ActionButton type="submit" variant={admin ? 'primary' : 'secondary'} loading={loading} className="w-full">Send Reset Code</ActionButton>
+          <ActionButton type="submit" variant={admin ? 'primary' : 'teal'} loading={loading} className="group w-full">
+            <span>Send Reset Code</span>
+            {!admin ? <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span> : null}
+          </ActionButton>
           {feedback ? <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert> : null}
-          <Link href={signInRoute} className="flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7]">Back to {admin ? 'Admin Login' : 'Sign In'}</Link>
+          <Link href={signInRoute} className={backLinkClass}>
+            {!admin ? <span className="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_back</span> : null}
+            Back to {admin ? 'Admin Login' : 'Sign In'}
+          </Link>
         </form>
       ) : null}
 
       {step === 'reset' ? (
         <form className="space-y-5" noValidate onSubmit={submitReset}>
           <div>
-            <h3 className="text-xl font-extrabold text-[#00152a]">Set a new password</h3>
-            <p className="mt-2 text-sm leading-relaxed text-[#59616b]">
-              Enter the 6-digit code sent to <span className="font-semibold">{email.trim().toLowerCase()}</span>, then choose a new password. {OTP_TTL_NOTICE}
+            <h3 className="text-xl font-extrabold text-brand-navy">Set a new password</h3>
+            <p className="mt-2 text-sm leading-relaxed text-brand-textSecondary">
+              Enter the 6-digit code sent to <span className="break-all font-semibold text-brand-navy">{email.trim().toLowerCase()}</span>, then choose a new password. {OTP_TTL_NOTICE}
             </p>
           </div>
           <TextField
@@ -227,6 +237,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             disabled={loading}
             error={errors.code}
             onChange={(event) => setCode(event.target.value)}
+            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">pin</span> : undefined}
           />
           <PasswordField
             label="New Password"
@@ -237,6 +248,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             help="At least 8 characters with uppercase, lowercase, number, and special character."
             error={errors.password}
             onChange={(event) => setPassword(event.target.value)}
+            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">lock</span> : undefined}
           />
           <PasswordField
             label="Confirm New Password"
@@ -246,32 +258,47 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             disabled={loading}
             error={errors.confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
+            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">lock_reset</span> : undefined}
           />
           {feedback ? <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert> : null}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ActionButton type="submit" variant={admin ? 'primary' : 'secondary'} loading={loading}>Reset Password</ActionButton>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <ActionButton className="min-w-0 w-full" type="submit" variant={admin ? 'primary' : 'teal'} loading={loading}>Reset Password</ActionButton>
             <ActionButton
+              className="min-w-0 w-full"
               type="button"
               variant="outline"
               loading={loading}
               disabled={resendOnCooldown || loading}
               onClick={handleResendCode}
             >
-              {resendOnCooldown ? `Resend Code (${resendSecondsLeft}s)` : 'Resend Code'}
+              <span className="whitespace-nowrap text-xs tabular-nums">
+                {resendOnCooldown ? `Resend Code (${resendSecondsLeft}s)` : 'Resend Code'}
+              </span>
             </ActionButton>
           </div>
-          <Link href={signInRoute} className="flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7]">Back to {admin ? 'Admin Login' : 'Sign In'}</Link>
+          <Link href={signInRoute} className={backLinkClass}>
+            {!admin ? <span className="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_back</span> : null}
+            Back to {admin ? 'Admin Login' : 'Sign In'}
+          </Link>
         </form>
       ) : null}
 
       {step === 'success' ? (
-        <div className="space-y-5">
+        <div className={`space-y-5 ${admin ? '' : 'text-center'}`}>
+          {!admin ? (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-lightTeal text-brand-teal">
+              <span className="material-symbols-outlined text-[36px]" aria-hidden="true">check_circle</span>
+            </div>
+          ) : null}
           <FeedbackAlert tone="success" title="Password reset successful">
             Your password has been reset successfully. Please sign in with your new password.
           </FeedbackAlert>
-          <p className="text-sm leading-relaxed text-[#59616b]">For your security, sign in with your new password the next time you access TripMate.</p>
-          <Link href={signInRoute} className={`flex min-h-11 items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-white ${admin ? 'bg-[#00152a] hover:bg-[#102a43]' : 'bg-[#007d6e] hover:bg-[#006b5f]'}`}>
+          <p className="text-sm leading-relaxed text-brand-textSecondary">For your security, sign in with your new password the next time you access TripMate.</p>
+          <Link href={signInRoute} className={admin
+            ? 'flex min-h-11 items-center justify-center rounded-xl bg-[#00152a] px-5 py-3 text-sm font-bold text-white hover:bg-[#102a43]'
+            : 'group flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-white shadow-btn transition hover:bg-brand-brightTeal active:scale-[0.98]'}>
             {admin ? 'Return to Admin Login' : 'Sign In'}
+            {!admin ? <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span> : null}
           </Link>
         </div>
       ) : null}

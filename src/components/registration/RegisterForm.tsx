@@ -13,7 +13,6 @@ import {
 
 import { getFirebaseAuth } from '@/lib/firebase';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
-import { CheckboxField, PasswordField, TextField } from '@/components/ui/FormControls';
 import { LegalModal, PrivacyContent, TermsContent } from '@/components/ui/LegalModal';
 import { googleAuth, isApiError, registerTraveler, saveTokens } from '@/lib/authApi';
 import {
@@ -23,75 +22,61 @@ import {
 } from '@/lib/authErrorMapper';
 import { validatePassword } from '@/lib/passwordPolicy';
 import { ROUTES } from '@/lib/routes';
+import FormField from '@/components/registration/FormField';
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^0\d{9,10}$/;
 
 type FieldErrors = Partial<
-  Record<'fullName' | 'email' | 'phone' | 'password' | 'confirmPassword' | 'terms', string>
+  Record<'fullName' | 'contactInfo' | 'phone' | 'password' | 'confirmPassword' | 'terms', string>
 >;
 
 function validateForm(fields: {
   fullName: string;
-  email: string;
+  contactInfo: string;
   phone: string;
   password: string;
   confirmPassword: string;
   terms: boolean;
 }): FieldErrors {
   const e: FieldErrors = {};
-  const { fullName, email, phone, password, confirmPassword, terms } = fields;
 
-  // 1. Full Name
-  const trimmedName = fullName.trim();
+  const trimmedName = fields.fullName.trim();
   if (!trimmedName) {
-    e.fullName = 'Please enter your full name.';
-  } else if (/\d/.test(trimmedName)) {
-    e.fullName = 'Full name cannot contain digits.';
+    e.fullName = 'Vui lòng nhập họ và tên.';
   } else if (/[^\p{L}\p{Zs}]/u.test(trimmedName)) {
-    e.fullName = 'Full name can only contain letters and spaces.';
-  } else {
-    const normalizedName = trimmedName.replace(/\s+/g, ' ');
-    if (normalizedName.length < 2) {
-      e.fullName = 'Full name must be at least 2 characters.';
-    } else if (normalizedName.length > 150) {
-      e.fullName = 'Full name must not exceed 150 characters.';
-    }
+    e.fullName = 'Họ và tên không được chứa ký tự đặc biệt.';
+  } else if (trimmedName.length < 2) {
+    e.fullName = 'Họ và tên phải có ít nhất 2 ký tự.';
   }
 
-  // 2. Email Address
-  const trimmedEmail = email.trim();
-  if (!trimmedEmail) {
-    e.email = 'Please enter your email.';
-  } else if (trimmedEmail.length > 254 || !EMAIL_RE.test(trimmedEmail)) {
-    e.email = 'Invalid email format. Please enter a valid email address.';
+  const trimmed = fields.contactInfo.trim();
+  if (!trimmed) {
+    e.contactInfo = 'Vui lòng nhập email hoặc số điện thoại.';
+  } else if (!EMAIL_RE.test(trimmed) && !PHONE_RE.test(trimmed.replace(/\s+/g, ''))) {
+    e.contactInfo = 'Email hoặc số điện thoại không hợp lệ.';
   }
 
-  // 3. Phone Number (Optional)
-  if (phone && phone.trim()) {
-    const normalizedPhone = phone.replace(/\s+/g, '');
-    if (!/^0\d{9}$/.test(normalizedPhone)) {
-      e.phone = 'Invalid phone number. Phone number must be 10 digits starting with 0.';
-    }
+  const trimmedPhone = fields.phone.trim().replace(/\s+/g, '');
+  if (trimmedPhone && !PHONE_RE.test(trimmedPhone)) {
+    e.phone = 'Số điện thoại không hợp lệ (gồm 10-11 chữ số bắt đầu bằng 0).';
   }
 
-  // 4. Password (shared canonical FE policy)
-  const passwordError = validatePassword(password);
+  const passwordError = validatePassword(fields.password);
   if (passwordError) {
     e.password = passwordError;
   }
 
-  // 5. Confirm Password
-  if (!confirmPassword) {
-    e.confirmPassword = 'Please confirm your password.';
-  } else if (confirmPassword !== password) {
-    e.confirmPassword = 'Passwords do not match. Please re-enter.';
+  if (!fields.confirmPassword) {
+    e.confirmPassword = 'Vui lòng xác nhận mật khẩu.';
+  } else if (fields.confirmPassword !== fields.password) {
+    e.confirmPassword = 'Mật khẩu không khớp. Vui lòng nhập lại.';
   }
 
-  // 6. Terms
-  if (!terms) {
-    e.terms = 'You must accept the Terms of Service and Privacy Policy to continue.';
+  if (!fields.terms) {
+    e.terms = 'Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật để tiếp tục.';
   }
 
   return e;
@@ -99,21 +84,19 @@ function validateForm(fields: {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function TravelerRegistrationForm() {
+export default function RegisterForm() {
   const router = useRouter();
 
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [terms, setTerms] = useState(false);
+  const [terms, setTerms] = useState(true);
 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [feedback, setFeedback] = useState<{ tone: 'info' | 'error' | 'success'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Legal modals
   const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
 
   function handlePasswordChange(val: string) {
@@ -121,7 +104,7 @@ export function TravelerRegistrationForm() {
     if (confirmPassword) {
       setErrors((prev) => ({
         ...prev,
-        confirmPassword: val !== confirmPassword ? 'Passwords do not match. Please re-enter.' : undefined,
+        confirmPassword: val !== confirmPassword ? 'Mật khẩu không khớp. Vui lòng nhập lại.' : undefined,
       }));
     }
   }
@@ -130,7 +113,7 @@ export function TravelerRegistrationForm() {
     event.preventDefault();
     setFeedback(null);
 
-    const nextErrors = validateForm({ fullName, email, phone, password, confirmPassword, terms });
+    const nextErrors = validateForm({ fullName, contactInfo, phone, password, confirmPassword, terms });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -139,29 +122,26 @@ export function TravelerRegistrationForm() {
 
     try {
       const normalizedFullName = fullName.trim().replace(/\s+/g, ' ');
-      const normalizedEmail = email.trim();
-      const normalizedPhone = phone ? phone.replace(/\s+/g, '') : undefined;
+      const trimmed = contactInfo.trim().replace(/\s+/g, '');
+      const isEmail = EMAIL_RE.test(trimmed);
+      const normalizedEmail = isEmail ? trimmed : `${trimmed}@placeholder.phone`;
+      const trimmedPhoneInput = phone.trim().replace(/\s+/g, '');
+      const normalizedPhone = trimmedPhoneInput ? trimmedPhoneInput : (isEmail ? undefined : trimmed);
 
-      // 1. Create account in Firebase Auth
+      // 1. Create Firebase account
       const userCredential = await createUserWithEmailAndPassword(getFirebaseAuth(), normalizedEmail, password);
       createdFirebaseUser = userCredential.user;
 
-      // 2. Get the ID token required by the current Backend contract.
+      // 2. Get ID token
       let idToken: string;
       try {
         idToken = await createdFirebaseUser.getIdToken();
       } catch (tokenError) {
-        // Backend has not been called yet, so cleanup cannot remove a committed row.
-        try {
-          await createdFirebaseUser.delete();
-        } catch {
-          // Best-effort client rollback; Firebase may require server-side reconciliation.
-        }
+        try { await createdFirebaseUser.delete(); } catch { /* best-effort */ }
         throw tokenError;
       }
 
-      // 3. Register the pending Traveler before email delivery. If delivery fails,
-      // both account records remain recoverable through the resend screen.
+      // 3. Register with Backend
       try {
         await registerTraveler(
           {
@@ -174,22 +154,15 @@ export function TravelerRegistrationForm() {
           idToken
         );
       } catch (backendError) {
-        // A structured API response proves that Backend rejected registration.
-        // For network/transport errors the commit outcome is unknown, so deleting
-        // the Firebase user could instead orphan a successfully-created Backend row.
         const isDeterministicRejection =
           isApiError(backendError) && [400, 401, 403, 409, 422].includes(backendError.status);
         if (isDeterministicRejection) {
-          try {
-            await createdFirebaseUser.delete();
-          } catch {
-            // Best-effort client rollback; Firebase may require server-side reconciliation.
-          }
+          try { await createdFirebaseUser.delete(); } catch { /* best-effort */ }
         }
         throw backendError;
       }
 
-      // 4. Send the Firebase verification link.
+      // 4. Send verification email
       let deliveryFailed = false;
       try {
         await sendEmailVerification(createdFirebaseUser, {
@@ -200,59 +173,38 @@ export function TravelerRegistrationForm() {
         deliveryFailed = true;
       }
 
-      // 5. Continue to the resend-capable instruction screen even when the first
-      // delivery attempt fails. Retrying registration would create duplicate state.
       const deliveryQuery = deliveryFailed ? '&delivery=failed' : '';
-      router.push(
-        `${ROUTES.verifyAccount}?email=${encodeURIComponent(normalizedEmail)}${deliveryQuery}`,
-      );
+      router.push(`${ROUTES.verifyAccount}?email=${encodeURIComponent(normalizedEmail)}${deliveryQuery}`);
     } catch (err: unknown) {
       if (
-        !isApiError(err) &&
         typeof err === 'object' &&
         err !== null &&
         'code' in err &&
-        typeof (err as { code: unknown }).code === 'string'
+        typeof (err as { code: string }).code === 'string'
       ) {
-        const firebaseErr = err as { code: string; message?: string };
+        const firebaseErr = err as { code: string };
         if (firebaseErr.code === 'auth/email-already-in-use') {
-          setErrors((prev) => ({
-            ...prev,
-            email: mapFirebaseAuthError(firebaseErr),
-          }));
+          setErrors((prev) => ({ ...prev, contactInfo: mapFirebaseAuthError(firebaseErr) }));
         } else if (firebaseErr.code === 'auth/weak-password') {
-          setErrors((prev) => ({
-            ...prev,
-            password: mapFirebaseAuthError(firebaseErr),
-          }));
+          setErrors((prev) => ({ ...prev, password: mapFirebaseAuthError(firebaseErr) }));
         } else if (firebaseErr.code === 'auth/invalid-email') {
-          setErrors((prev) => ({
-            ...prev,
-            email: mapFirebaseAuthError(firebaseErr),
-          }));
+          setErrors((prev) => ({ ...prev, contactInfo: mapFirebaseAuthError(firebaseErr) }));
         } else {
-          setFeedback({
-            tone: 'error',
-            message: mapFirebaseAuthError(
-              firebaseErr,
-              'Registration failed. Please try again.',
-            ),
-          });
+          setFeedback({ tone: 'error', message: mapFirebaseAuthError(firebaseErr, 'Đăng ký thất bại. Vui lòng thử lại.') });
         }
       } else if (isApiError(err)) {
         if (err.errors) {
           const fieldMapped = extractFieldErrors(err.errors);
           setErrors({
             fullName: fieldMapped['FullName'] ?? fieldMapped['fullName'],
-            email: fieldMapped['Email'] ?? fieldMapped['email'],
-            phone: fieldMapped['PhoneNumber'] ?? fieldMapped['phoneNumber'] ?? fieldMapped['phone'],
+            contactInfo: fieldMapped['Email'] ?? fieldMapped['email'] ?? fieldMapped['contactInfo'],
             terms: fieldMapped['AcceptedTerms'] ?? fieldMapped['acceptedTerms'] ?? fieldMapped['terms'],
           });
         } else {
           setFeedback({ tone: 'error', message: getApiErrorMessage(err) });
         }
       } else {
-        setFeedback({ tone: 'error', message: 'Registration failed. Please try again.' });
+        setFeedback({ tone: 'error', message: 'Đăng ký thất bại. Vui lòng thử lại.' });
       }
     } finally {
       setLoading(false);
@@ -282,11 +234,10 @@ export function TravelerRegistrationForm() {
         ((err as { code: string }).code === 'auth/popup-closed-by-user' ||
           (err as { code: string }).code === 'auth/cancelled-popup-request')
       ) {
-        // User closed the Google popup intentionally; clear feedback without showing raw error
         setFeedback(null);
         return;
       }
-      const fallback = 'Google authentication failed. Please try again.';
+      const fallback = 'Đăng nhập Google thất bại. Vui lòng thử lại.';
       setFeedback({
         tone: 'error',
         message: isApiError(err)
@@ -298,7 +249,7 @@ export function TravelerRegistrationForm() {
     }
   }
 
-  // ─── Registration form ────────────────────────────────────────────────────
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div>
@@ -328,84 +279,89 @@ export function TravelerRegistrationForm() {
 
         <form className="space-y-4" noValidate onSubmit={handleSubmit}>
           {/* Full Name */}
-          <TextField
+          <FormField
+            id="fullName"
             label="Họ và tên"
-            name="fullName"
-            autoComplete="name"
-            maxLength={150}
+            icon="person"
             placeholder="Nguyễn Văn A"
+            required
             value={fullName}
             disabled={loading}
-            error={errors.fullName}
-            leading={
-              <span className="material-symbols-outlined text-[20px]">person</span>
-            }
             onChange={(e) => setFullName(e.target.value)}
           />
+          {errors.fullName && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-500">
+              <span>⚠</span> {errors.fullName}
+            </p>
+          )}
 
-          {/* Email */}
-          <TextField
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            maxLength={254}
-            placeholder="traveler@example.com"
-            value={email}
+          {/* Email hoặc Số điện thoại */}
+          <FormField
+            id="contactInfo"
+            label="Email hoặc Số điện thoại"
+            icon="mail"
+            placeholder="traveler@example.com hoặc 090xxxxxxx"
+            required
+            value={contactInfo}
             disabled={loading}
-            error={errors.email}
-            leading={
-              <span className="material-symbols-outlined text-[20px]">mail</span>
-            }
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setContactInfo(e.target.value)}
           />
+          {errors.contactInfo && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-500">
+              <span>⚠</span> {errors.contactInfo}
+            </p>
+          )}
 
-          {/* Phone Number (Optional) */}
-          <TextField
-            label="Số điện thoại (không bắt buộc)"
-            name="phone"
-            type="tel"
-            autoComplete="tel"
-            maxLength={14}
-            placeholder="0905 123 456"
+          {/* Số điện thoại (Không bắt buộc) */}
+          <FormField
+            id="phone"
+            label="Số điện thoại (Không bắt buộc)"
+            icon="call"
+            placeholder="0901234567"
             value={phone}
             disabled={loading}
-            error={errors.phone}
-            leading={
-              <span className="material-symbols-outlined text-[20px]">phone</span>
-            }
             onChange={(e) => setPhone(e.target.value)}
           />
+          {errors.phone && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-500">
+              <span>⚠</span> {errors.phone}
+            </p>
+          )}
 
           {/* Password */}
-          <PasswordField
+          <FormField
+            id="password"
             label="Mật khẩu"
-            name="password"
-            autoComplete="new-password"
-            maxLength={72}
+            icon="lock"
             placeholder="••••••••••••"
+            toggleable
+            required
             value={password}
             disabled={loading}
-            error={errors.password}
-            leading={
-              <span className="material-symbols-outlined text-[20px]">lock</span>
-            }
-            help="Tối thiểu 8 ký tự gồm chữ hoa, số và ký tự đặc biệt"
             onChange={(e) => handlePasswordChange(e.target.value)}
+            hint={
+              <p className="text-[11px] text-brand-textSecondary mt-1.5 flex items-center gap-1 leading-snug">
+                <span className="material-symbols-outlined text-[14px] text-brand-teal">info</span>
+                Tối thiểu 8 ký tự gồm chữ hoa, số và ký tự đặc biệt
+              </p>
+            }
           />
+          {errors.password && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-500">
+              <span>⚠</span> {errors.password}
+            </p>
+          )}
 
           {/* Confirm Password */}
-          <PasswordField
+          <FormField
+            id="confirmPassword"
             label="Xác nhận mật khẩu"
-            name="confirmPassword"
-            autoComplete="new-password"
+            icon="lock_reset"
             placeholder="••••••••••••"
+            toggleable
+            required
             value={confirmPassword}
             disabled={loading}
-            error={errors.confirmPassword}
-            leading={
-              <span className="material-symbols-outlined text-[20px]">lock_reset</span>
-            }
             onChange={(e) => {
               setConfirmPassword(e.target.value);
               if (errors.confirmPassword || e.target.value) {
@@ -417,44 +373,58 @@ export function TravelerRegistrationForm() {
               }
             }}
           />
+          {errors.confirmPassword && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-500">
+              <span>⚠</span> {errors.confirmPassword}
+            </p>
+          )}
 
-          {/* Terms Checkbox */}
+          {/* Terms */}
           <div className="pt-1">
-            <CheckboxField
-              name="terms"
-              checked={terms}
-              disabled={loading}
-              error={errors.terms}
-              onChange={(e) => setTerms(e.target.checked)}
-            >
-              Tôi đồng ý với{' '}
-              <button
-                type="button"
-                onClick={() => setLegalModal('terms')}
-                className="text-brand-teal font-semibold hover:underline"
-              >
-                Điều khoản dịch vụ
-              </button>{' '}
-              và{' '}
-              <button
-                type="button"
-                onClick={() => setLegalModal('privacy')}
-                className="text-brand-teal font-semibold hover:underline"
-              >
-                Chính sách bảo mật
-              </button>{' '}
-              của TripMate
-            </CheckboxField>
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                name="terms"
+                required
+                checked={terms}
+                onChange={(e) => setTerms(e.target.checked)}
+                disabled={loading}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-teal focus:ring-brand-teal/20 focus:ring-offset-0 transition"
+              />
+              <span className="text-xs text-slate-600 leading-snug">
+                Tôi đồng ý với{' '}
+                <button
+                  type="button"
+                  onClick={() => setLegalModal('terms')}
+                  className="text-brand-teal font-semibold hover:underline"
+                >
+                  Điều khoản dịch vụ
+                </button>{' '}
+                và{' '}
+                <button
+                  type="button"
+                  onClick={() => setLegalModal('privacy')}
+                  className="text-brand-teal font-semibold hover:underline"
+                >
+                  Chính sách bảo mật
+                </button>{' '}
+                của TripMate
+              </span>
+            </label>
+            {errors.terms && (
+              <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-500">
+                <span>⚠</span> {errors.terms}
+              </p>
+            )}
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <div className="pt-2">
             <button
               type="submit"
               disabled={loading || !terms}
               aria-busy={loading}
-              aria-label={loading ? 'Đang đăng ký' : undefined}
-              className="w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 group disabled:cursor-not-allowed disabled:opacity-60"
+              className="group w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true" />
@@ -478,7 +448,7 @@ export function TravelerRegistrationForm() {
           </div>
         </div>
 
-        {/* Google Button */}
+        {/* Google */}
         <button
           type="button"
           disabled={loading}
@@ -491,25 +461,22 @@ export function TravelerRegistrationForm() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
           </svg>
-          <span>Tiếp tục với Google</span>
+          Tiếp tục với Google
         </button>
+
+        {/* Login redirect */}
+        <p className="mt-6 text-center text-sm text-brand-textSecondary">
+          Đã có tài khoản?
+          <Link href={ROUTES.signIn} className="text-brand-teal font-bold hover:underline ml-1">
+            Đăng nhập
+          </Link>
+        </p>
 
         {feedback ? (
           <div className="mt-3.5">
             <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert>
           </div>
         ) : null}
-
-        {/* Login link */}
-        <p className="mt-6 text-center text-sm text-brand-textSecondary">
-          Đã có tài khoản?
-          <Link
-            href={ROUTES.signIn}
-            className="text-brand-teal font-bold hover:underline ml-1"
-          >
-            Đăng nhập
-          </Link>
-        </p>
       </div>
     </div>
   );
