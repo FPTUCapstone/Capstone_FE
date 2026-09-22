@@ -11,7 +11,7 @@ export function AdminNavigation() {
           <BrandLogo context="admin" inverse />
         </Link>
 
-        <nav className="flex items-center gap-1 rounded-xl border border-[#314863] bg-[#102a43] p-1" aria-label="Admin navigation">
+        <nav className="flex flex-wrap items-center gap-1 rounded-xl border border-[#314863] bg-[#102a43] p-1" aria-label="Admin navigation">
           <Link
             href={ROUTES.admin.dashboard}
             className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
@@ -23,6 +23,12 @@ export function AdminNavigation() {
             className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
           >
             Tour Reviews
+          </Link>
+          <Link
+            href={ROUTES.admin.algorithmParameters}
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+          >
+            Algorithm Settings
           </Link>
         </nav>
 
