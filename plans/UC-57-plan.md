@@ -18,7 +18,10 @@ The changes were protected in local commit `3a495b1` and rebased onto Frontend
   `feature/linhnv-configure-algorithm-parameters`. The similarly named files in
   `Capstone_FE` belong to a different worktree and are not this evidence set.
 
-- Post-rebase verification HEAD: `783b35b`.
+- Full local verification was executed at `783b35b`. Commits after that point
+  only update verification documentation or normalize file endings; the final
+  pushed HEAD is identified by the PR and its CI run rather than embedded into
+  a self-referential commit.
 - Full test suite: 30 Node tests and 302 Vitest tests passed (332 total,
   0 failed); Vitest covered 28 test files.
 - Lint: 0 errors; 3 existing landing-page image warnings outside UC-57.
