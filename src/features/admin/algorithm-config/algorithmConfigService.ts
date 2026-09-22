@@ -27,4 +27,3 @@ async function request(method: 'GET' | 'PUT', values?: AlgorithmParameters): Pro
 }
 export function getAlgorithmParameters() { return request('GET'); }
 export function updateAlgorithmParameters(values: AlgorithmParameters) { return request('PUT', values); }
-
