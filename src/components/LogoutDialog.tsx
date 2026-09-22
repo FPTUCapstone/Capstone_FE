@@ -3,45 +3,22 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-export type LogoutScope = "current" | "all";
-
 type LogoutDialogProps = {
   open: boolean;
   onClose: () => void;
-  /** Gọi khi người dùng xác nhận. scope = "all" nghĩa là đăng xuất mọi thiết bị. */
-  onConfirm: (scope: LogoutScope) => Promise<void> | void;
+  onConfirm: () => Promise<void> | void;
+  errorMessage?: string | null;
 };
-
-const options: {
-  value: LogoutScope;
-  icon: string;
-  title: string;
-  desc: string;
-}[] = [
-  {
-    value: "current",
-    icon: "devices",
-    title: "Chỉ thiết bị này",
-    desc: "Các thiết bị khác vẫn giữ nguyên phiên đăng nhập.",
-  },
-  {
-    value: "all",
-    icon: "devices_off",
-    title: "Tất cả thiết bị",
-    desc: "Đăng xuất khỏi mọi trình duyệt và điện thoại đang dùng tài khoản này.",
-  },
-];
 
 export default function LogoutDialog({
   open,
   onClose,
   onConfirm,
+  errorMessage,
 }: LogoutDialogProps) {
-  const [scope, setScope] = useState<LogoutScope>("current");
   const [loading, setLoading] = useState(false);
 
   const handleClose = useCallback(() => {
-    setScope("current");
     setLoading(false);
     onClose();
   }, [onClose]);
@@ -66,14 +43,11 @@ export default function LogoutDialog({
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      await onConfirm(scope);
+      await onConfirm();
     } finally {
       setLoading(false);
-      setScope("current");
     }
   };
-
-  const isAll = scope === "all";
 
   const dialog = (
     <div
@@ -103,74 +77,19 @@ export default function LogoutDialog({
         </h2>
         <p
           id="logout-desc"
-          className="text-sm text-brand-textSecondary leading-relaxed mb-6"
+          className="text-sm text-brand-textSecondary leading-relaxed mb-4"
         >
           Bạn có chắc chắn muốn đăng xuất khỏi TripMate không?
         </p>
 
-        {/* Scope options */}
-        <div role="radiogroup" aria-label="Phạm vi đăng xuất" className="space-y-3 mb-6">
-          {options.map((opt) => {
-            const selected = scope === opt.value;
-            return (
-              <label
-                key={opt.value}
-                className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer select-none transition-all duration-200 ${
-                  selected
-                    ? "border-brand-teal bg-brand-lightTeal ring-2 ring-brand-teal/20"
-                    : "border-slate-200 bg-brand-surface hover:border-slate-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="logout-scope"
-                  value={opt.value}
-                  checked={selected}
-                  onChange={() => setScope(opt.value)}
-                  disabled={loading}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${
-                    selected
-                      ? "bg-brand-teal text-white"
-                      : "bg-white text-slate-500 border border-slate-200"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[22px]">
-                    {opt.icon}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-brand-navy">{opt.title}</div>
-                  <div className="text-xs text-brand-textSecondary mt-0.5 leading-snug">
-                    {opt.desc}
-                  </div>
-                </div>
-                <span
-                  className={`material-symbols-outlined text-[22px] mt-1 ${
-                    selected ? "text-brand-teal" : "text-slate-300"
-                  }`}
-                  aria-hidden
-                >
-                  {selected ? "radio_button_checked" : "radio_button_unchecked"}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-
-        {/* Cảnh báo khi chọn tất cả thiết bị */}
-        {isAll && (
-          <p className="mb-6 flex items-start gap-1.5 text-[11px] text-brand-textSecondary leading-snug">
-            <span className="material-symbols-outlined text-[14px] text-brand-coral mt-px">
-              warning
-            </span>
-            <span>
-              Bạn sẽ phải đăng nhập lại trên tất cả thiết bị, kể cả thiết bị này.
-            </span>
+        {errorMessage ? (
+          <p
+            role="alert"
+            className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
+          >
+            {errorMessage}
           </p>
-        )}
+        ) : null}
 
         {/* Actions */}
         <div className="grid grid-cols-2 gap-3">
@@ -187,11 +106,7 @@ export default function LogoutDialog({
             type="button"
             onClick={handleConfirm}
             disabled={loading}
-            className={`h-12 active:scale-[0.98] text-white font-semibold text-sm rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${
-              isAll
-                ? "bg-brand-coral hover:bg-[#f4602f]"
-                : "bg-brand-teal hover:bg-brand-brightTeal"
-            }`}
+            className="h-12 active:scale-[0.98] bg-brand-teal hover:bg-brand-brightTeal text-white font-semibold text-sm rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -201,7 +116,7 @@ export default function LogoutDialog({
                 <span>Đang xử lý...</span>
               </>
             ) : (
-              <span>{isAll ? "Đăng xuất tất cả" : "Đăng xuất"}</span>
+              <span>Đăng xuất</span>
             )}
           </button>
         </div>

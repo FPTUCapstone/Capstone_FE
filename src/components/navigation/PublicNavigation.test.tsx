@@ -5,7 +5,6 @@ import { AuthStorage } from '@/features/auth/session/authSession';
 const mocks = vi.hoisted(() => ({
   webRefresh: vi.fn(),
   webLogout: vi.fn(),
-  webLogoutAll: vi.fn(),
   replace: vi.fn(),
   refresh: vi.fn(),
 }));
@@ -20,7 +19,6 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/authApi', () => ({
   webRefresh: mocks.webRefresh,
   webLogout: mocks.webLogout,
-  webLogoutAll: mocks.webLogoutAll,
 }));
 
 const { PublicNavigation } = await import('./PublicNavigation');

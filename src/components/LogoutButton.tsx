@@ -2,20 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { webLogout, webLogoutAll } from "@/lib/authApi";
-import LogoutDialog, { type LogoutScope } from "./LogoutDialog";
+import { webLogout } from "@/lib/authApi";
+import LogoutDialog from "./LogoutDialog";
 
 export default function LogoutButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const handleConfirm = async (scope: LogoutScope) => {
-    if (scope === "all") {
-      await webLogoutAll();
-    } else {
-      await webLogout();
-    }
-
+  const handleConfirm = async () => {
+    await webLogout();
     setOpen(false);
     router.replace("/sign-in");
     router.refresh();

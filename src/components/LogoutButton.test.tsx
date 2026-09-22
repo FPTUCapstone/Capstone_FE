@@ -1,11 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   refresh: vi.fn(),
   webLogout: vi.fn(),
-  webLogoutAll: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -17,7 +16,6 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/authApi', () => ({
   webLogout: mocks.webLogout,
-  webLogoutAll: mocks.webLogoutAll,
 }));
 
 import LogoutButton from './LogoutButton';
@@ -43,5 +41,19 @@ describe('LogoutButton navbar layout', () => {
 
     expect(overlay?.className).toContain('fixed');
     expect(overlay?.parentElement).toBe(document.body);
+  });
+
+  it('offers a single current-session logout action', async () => {
+    render(<LogoutButton />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Đăng xuất/i }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).queryByRole('radiogroup')).toBeNull();
+    expect(within(dialog).getAllByRole('button')).toHaveLength(2);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đăng xuất' }));
+
+    await waitFor(() => expect(mocks.webLogout).toHaveBeenCalledTimes(1));
   });
 });
