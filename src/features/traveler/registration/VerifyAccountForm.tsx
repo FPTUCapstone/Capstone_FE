@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { sendEmailVerification } from 'firebase/auth';
 
 import { getFirebaseAuth } from '@/lib/firebase';
-import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { isTooManyRequestsError, mapFirebaseAuthError } from '@/lib/authErrorMapper';
 import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
@@ -81,51 +80,61 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
   }
 
   return (
-    <div className="text-center py-2">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EFF6FF] text-[#1D4ED8] border border-[#DBEAFE] shadow-xs">
+    <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+      {/* Icon Header */}
+      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-lightTeal text-brand-teal border border-brand-teal/20 shadow-sm">
         <span className="material-symbols-outlined text-3xl">mark_email_read</span>
       </div>
 
-      <h2 className="text-2xl font-bold tracking-tight text-[#0F1B2D]">
+      <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
         Check your email
       </h2>
-      
-      <p className="mt-2 text-xs leading-relaxed text-[#6B7C97] max-w-sm mx-auto">
+
+      <p className="text-sm text-brand-textSecondary leading-relaxed max-w-sm mx-auto mb-4">
         {deliveryFailed
           ? 'Use the button below to request a new verification link, then check your inbox to activate your account.'
           : 'We have sent a verification link to your registered email address. Please check your inbox and click the link to activate your account.'}
       </p>
 
       {email ? (
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#DBEAFE] bg-[#EFF6FF] px-3 py-1 text-xs font-semibold text-[#1D4ED8]">
-          <span className="material-symbols-outlined text-sm">mail</span>
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-teal/20 bg-brand-lightTeal px-4 py-1.5 text-xs font-semibold text-brand-teal">
+          <span className="material-symbols-outlined text-base">mail</span>
           <span>{email}</span>
         </div>
       ) : null}
 
       {feedback ? (
-        <div className="mt-4 text-left">
+        <div className="mb-6 text-left">
           <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert>
         </div>
       ) : null}
 
-      <div className="mt-6 space-y-3">
-        <ActionButton
+      <div className="space-y-3">
+        <button
           type="button"
-          variant="primary"
-          loading={resending}
           disabled={isOnCooldown || resending}
-          className="w-full"
+          aria-busy={resending}
           onClick={handleResendEmail}
+          className="group w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isOnCooldown ? `Resend Email (${secondsLeft}s)` : 'Resend Verification Email'}
-        </ActionButton>
+          {resending ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true" />
+          ) : (
+            <>
+              <span>{isOnCooldown ? `Resend Email (${secondsLeft}s)` : 'Resend Verification Email'}</span>
+              <span className="material-symbols-outlined text-[18px] transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true">
+                send
+              </span>
+            </>
+          )}
+        </button>
 
         <Link
           href={ROUTES.signIn}
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#E1E8F3] bg-white text-xs font-bold text-[#43474d] hover:bg-[#F4F7FC] transition"
+          className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#CBD5E1] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-sm"
         >
-          Proceed to Sign In
+          <span>Proceed to Sign In</span>
+          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </Link>
       </div>
     </div>

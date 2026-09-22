@@ -3,8 +3,8 @@
 import Link from 'next/link';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import LogoutButton from '@/components/LogoutButton';
 import { signInDestination } from '@/features/auth/routing/signInDestination';
-import { AuthStorage } from '@/features/auth/session/authSession';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
@@ -43,15 +43,6 @@ export function PublicNavigation() {
     context?.role === 'TourOperator'
       ? signInDestination(context) ?? ROUTES.partner.application
       : ROUTES.partner.register;
-
-  function handleSignOut() {
-    // UC-04 behavior:
-    // clear client-side session state only.
-    //
-    // Server-side refresh-token revocation belongs to UC-05 and is
-    // intentionally not implemented here yet.
-    AuthStorage.clear();
-  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-xs backdrop-blur-md md:px-8">
@@ -113,7 +104,7 @@ export function PublicNavigation() {
         </nav>
 
         {status === 'authenticated' ? (
-          <div className="order-2 flex items-center gap-2 sm:order-3">
+          <div className="order-2 flex items-center justify-end gap-2 sm:order-3">
             <div className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e]">
               <span className="material-symbols-outlined text-sm">
                 account_circle
@@ -124,13 +115,7 @@ export function PublicNavigation() {
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex min-h-9 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-            >
-              Đăng xuất
-            </button>
+            <LogoutButton />
           </div>
         ) : status === 'restoring' ? (
           <div

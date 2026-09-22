@@ -103,10 +103,10 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
 
   if (status === 'verifying') {
     return (
-      <div className="text-center py-10">
-        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#006b5f] border-t-transparent" />
-        <h2 className="text-2xl font-extrabold text-[#00152a]">Verifying Email...</h2>
-        <p className="mt-2 text-sm text-[#59616b]">
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+        <div className="mx-auto mb-6 h-12 w-12 animate-spin rounded-full border-4 border-brand-teal border-t-transparent" />
+        <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">Verifying Email...</h2>
+        <p className="text-sm text-brand-textSecondary leading-relaxed">
           Please wait while we confirm your email verification link.
         </p>
       </div>
@@ -115,86 +115,85 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
 
   if (status === 'success') {
     return (
-      <div className="text-center">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f7f4] text-[#006b5f]">
-          <span className="material-symbols-outlined text-4xl">check_circle</span>
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-lightTeal text-brand-teal border border-brand-teal/20 shadow-sm">
+          <span className="material-symbols-outlined text-3xl">check_circle</span>
         </div>
-        <h2 className="text-3xl font-extrabold tracking-tight text-[#00152a]">
+        <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
           Email Verified!
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-[#59616b]">
+        <p className="text-sm text-brand-textSecondary leading-relaxed max-w-sm mx-auto mb-8">
           Your email address has been verified successfully. Please sign in to activate your account and start your journey with TripMate.
         </p>
 
-        <div className="mt-8">
-          <Link
-            href={ROUTES.signIn}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#007d6e] px-5 py-3 text-sm font-bold text-white hover:bg-[#006b5f] transition"
-          >
-            Proceed to Sign In
-          </Link>
-        </div>
+        <Link
+          href={ROUTES.signIn}
+          className="w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 group"
+        >
+          <span>Proceed to Sign In</span>
+          <span className="material-symbols-outlined text-[18px] transition-transform duration-200 group-hover:translate-x-0.5">arrow_forward</span>
+        </Link>
       </div>
     );
   }
 
   if (status === 'incomplete') {
     return (
-      <div className="text-center">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#fff4d6] text-[#8a5a00]">
-          <span className="material-symbols-outlined text-4xl" aria-hidden="true">warning</span>
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 shadow-sm">
+          <span className="material-symbols-outlined text-3xl" aria-hidden="true">warning</span>
         </div>
-        <h2 className="text-3xl font-extrabold tracking-tight text-[#00152a]">
+        <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
           Verification Incomplete
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-[#59616b]">{errorMessage}</p>
+        <p className="text-sm text-brand-textSecondary leading-relaxed max-w-sm mx-auto mb-4">{errorMessage}</p>
 
-        <div className="mt-6">
+        <div className="mb-6 text-left">
           <FeedbackAlert tone="warning">
             Firebase accepted the email link, but TripMate has not confirmed the account yet.
           </FeedbackAlert>
         </div>
 
-        <div className="mt-8">
-          <Link
-            href={ROUTES.signIn}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#007d6e] px-5 py-3 text-sm font-bold text-white hover:bg-[#006b5f] transition"
-          >
-            Proceed to Sign In
-          </Link>
-        </div>
+        <Link
+          href={ROUTES.signIn}
+          className="w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 group"
+        >
+          <span>Proceed to Sign In</span>
+          <span className="material-symbols-outlined text-[18px] transition-transform duration-200 group-hover:translate-x-0.5">arrow_forward</span>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="text-center">
-      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#fde8e8] text-[#ba1a1a]">
-        <span className="material-symbols-outlined text-4xl">error</span>
+    <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 shadow-sm">
+        <span className="material-symbols-outlined text-3xl">error</span>
       </div>
-      <h2 className="text-3xl font-extrabold tracking-tight text-[#00152a]">
+      <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
         Verification Failed
       </h2>
-      <p className="mt-3 text-sm leading-relaxed text-[#59616b]">
+      <p className="text-sm text-brand-textSecondary leading-relaxed max-w-sm mx-auto mb-4">
         {errorMessage || 'The verification link is invalid, expired, or has already been used.'}
       </p>
 
-      <div className="mt-6">
+      <div className="mb-6 text-left">
         <FeedbackAlert tone="error">
           Please request a new verification email from the verification screen or proceed to sign in if you already verified your account.
         </FeedbackAlert>
       </div>
 
-      <div className="mt-8 flex flex-col gap-3">
+      <div className="space-y-3">
         <Link
           href={ROUTES.signIn}
-          className="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#007d6e] px-5 py-3 text-sm font-bold text-white hover:bg-[#006b5f] transition"
+          className="w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 group"
         >
-          Back to Sign In
+          <span>Back to Sign In</span>
+          <span className="material-symbols-outlined text-[18px] transition-transform duration-200 group-hover:translate-x-0.5">arrow_forward</span>
         </Link>
         <Link
           href={ROUTES.register}
-          className="flex min-h-11 w-full items-center justify-center rounded-xl border border-[#c3c6ce] px-5 py-3 text-sm font-bold text-[#314863] hover:bg-[#eceef1] transition"
+          className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#CBD5E1] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-sm"
         >
           Back to Registration
         </Link>

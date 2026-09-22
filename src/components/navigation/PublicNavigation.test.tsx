@@ -1,9 +1,25 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage } from '@/features/auth/session/authSession';
 
-const mocks = vi.hoisted(() => ({ webRefresh: vi.fn() }));
-vi.mock('@/lib/authApi', () => ({ webRefresh: mocks.webRefresh }));
+const mocks = vi.hoisted(() => ({
+  webRefresh: vi.fn(),
+  webLogout: vi.fn(),
+  replace: vi.fn(),
+  refresh: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: mocks.replace,
+    refresh: mocks.refresh,
+  }),
+}));
+
+vi.mock('@/lib/authApi', () => ({
+  webRefresh: mocks.webRefresh,
+  webLogout: mocks.webLogout,
+}));
 
 const { PublicNavigation } = await import('./PublicNavigation');
 
@@ -104,9 +120,13 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('settles back to Sign In (not stuck restoring) when a warm session signs out', async () => {
     AuthStorage.accept(context({ fullName: 'Warm Context' }), false);
+    mocks.webLogout.mockImplementation(async () => {
+      AuthStorage.clear();
+    });
     render(<PublicNavigation />);
     expect(screen.getByText('Warm Context')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Đăng xuất' }));
     await waitFor(() => expect(screen.getByRole('link', { name: 'Đăng nhập' })).toBeDefined());
     expect(screen.queryByRole('status')).toBeNull();
     expect(mocks.webRefresh).not.toHaveBeenCalled();

@@ -56,27 +56,31 @@ describe('TravelerRegistrationForm', () => {
     } = {},
   ) {
     const password = options.password ?? 'Password1!';
-    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: fullName } });
-    fireEvent.change(screen.getByLabelText('Email address'), {
+    fireEvent.change(screen.getByRole('textbox', { name: /^Họ và tên/ }), {
+      target: { value: fullName },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: /^Email/ }), {
       target: { value: options.email ?? 'traveler@example.com' },
     });
     if (options.phone !== undefined) {
-      fireEvent.change(screen.getByLabelText('Phone number'), { target: { value: options.phone } });
+      fireEvent.change(screen.getByRole('textbox', { name: /^Số điện thoại/ }), {
+        target: { value: options.phone },
+      });
     }
-    fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
+    fireEvent.change(screen.getByLabelText(/^Mật khẩu/), {
       target: { value: password },
     });
-    fireEvent.change(screen.getByPlaceholderText('••••••••'), {
+    fireEvent.change(screen.getByLabelText(/^Xác nhận mật khẩu/), {
       target: { value: options.confirmPassword ?? password },
     });
     fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: 'Register' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng ký' }));
   }
 
   it('keeps Register disabled until the traveler accepts the terms', () => {
     render(<TravelerRegistrationForm />);
 
-    const registerButton = screen.getByRole('button', { name: 'Register' });
+    const registerButton = screen.getByRole('button', { name: 'Đăng ký' });
     expect(registerButton.hasAttribute('disabled')).toBe(true);
 
     fireEvent.click(screen.getByRole('checkbox'));
@@ -91,7 +95,7 @@ describe('TravelerRegistrationForm', () => {
     completeForm('Traveler Name');
 
     await waitFor(() => {
-      const registerButton = screen.getByRole('button', { name: 'Register' });
+      const registerButton = screen.getByRole('button', { name: 'Đang đăng ký' });
       expect(registerButton.hasAttribute('disabled')).toBe(true);
       expect(registerButton.getAttribute('aria-busy')).toBe('true');
     });
@@ -100,7 +104,7 @@ describe('TravelerRegistrationForm', () => {
   it.each([149, 150])('accepts a valid full name containing %i characters', async (length) => {
     render(<TravelerRegistrationForm />);
 
-    const fullNameInput = screen.getByLabelText('Full name');
+    const fullNameInput = screen.getByRole('textbox', { name: /^Họ và tên/ });
     expect(fullNameInput.getAttribute('maxlength')).toBe('150');
     completeForm('A'.repeat(length));
 
@@ -312,7 +316,7 @@ describe('TravelerRegistrationForm', () => {
     });
     render(<TravelerRegistrationForm />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
 
     expect(
       await screen.findByText(

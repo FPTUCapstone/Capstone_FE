@@ -4,16 +4,16 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/lib/routes';
+import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
 
 interface AdminHeaderProps {
   onSave?: () => void;
   onCancel?: () => void;
-  onSignOut?: () => void;
   submitting?: boolean;
   saveDisabled?: boolean;
 }
 
-export function AdminHeader({ onSave, onCancel, onSignOut, submitting, saveDisabled }: AdminHeaderProps) {
+export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: AdminHeaderProps) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -120,19 +120,7 @@ export function AdminHeader({ onSave, onCancel, onSignOut, submitting, saveDisab
                   <p className="text-[10px] text-slate-400">Active Session</p>
                 </div>
               </div>
-              {onSignOut ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    onSignOut();
-                  }}
-                  className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10"
-                  aria-label="Sign out"
-                >
-                  <span className="material-symbols-outlined text-[20px]">logout</span>
-                </button>
-              ) : null}
+              <AdminLogoutButton />
             </div>
           </div>
           <div className="flex-1" onClick={() => setDrawerOpen(false)} />

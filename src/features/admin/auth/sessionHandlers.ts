@@ -26,35 +26,37 @@ export async function signInAdmin(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const response = await fetchBackend('/api/v1/auth/login', {
+    const response = await fetchBackend('/api/v1/auth/web/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: credentials.email.trim(), password: credentials.password }),
+      body: JSON.stringify({ email: credentials.email.trim(), password: credentials.password, keepMeSignedIn: false }),
     });
     if (response.status === 401) return failure(401, 'Incorrect email or password. Please try again.');
     if (response.status === 403) return failure(403, 'This account cannot access the administration workspace.');
     if (response.status === 400) return failure(400, 'Enter a valid email address and password.');
     if (!response.ok) return failure(503, unavailableMessage);
 
-    const session: unknown = await response.json();
-    if (!session || typeof session !== 'object' || !('accessToken' in session) || typeof session.accessToken !== 'string' ||
-      !session.accessToken || !('accessTokenExpiresAtUtc' in session) || typeof session.accessTokenExpiresAtUtc !== 'string') {
+    const envelope: unknown = await response.json();
+    const data = envelope && typeof envelope === 'object' && 'success' in envelope &&
+      (envelope as { success?: unknown }).success === true && 'data' in envelope &&
+      typeof (envelope as { data?: unknown }).data === 'object' && envelope.data !== null
+      ? (envelope as { data: Record<string, unknown> }).data
+      : undefined;
+    if (!data || typeof data.accessToken !== 'string' || !data.accessToken ||
+      typeof data.accessTokenExpiresAtUtc !== 'string') {
       return failure(502, unavailableMessage);
     }
-    if (!('role' in session) || session.role !== 3 || !('status' in session) || session.status !== 2) {
+    if (data.role !== 'Administrator' || data.status !== 'Active') {
       return failure(403, 'An active Administrator account is required.');
     }
-    const expiresAt = new Date(session.accessTokenExpiresAtUtc);
+    const expiresAt = new Date(data.accessTokenExpiresAtUtc);
     if (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) return failure(502, unavailableMessage);
 
-    // The BE checks the signed bearer token and current DB role/status before a session is issued.
-    const access = await fetchBackend('/api/v1/admin/pois/catalogue', {
-      headers: { Authorization: `Bearer ${session.accessToken}` },
-    });
-    if (access.status === 401 || access.status === 403) return failure(access.status, 'An active Administrator account is required.');
-    if (!access.ok) return failure(503, unavailableMessage);
-
-    return setAdminSession(jsonNoStore({ authenticated: true }), session.accessToken, expiresAt);
+    // /api/v1/auth/web/admin/login is Administrator-specific: the Backend has
+    // already authenticated the credentials and authorized the role/status
+    // before issuing this session, so no secondary authorization probe is
+    // needed (and /api/v1/admin/pois/catalogue no longer exists upstream).
+    return setAdminSession(jsonNoStore({ authenticated: true }), data.accessToken, expiresAt);
   } catch {
     return failure(503, unavailableMessage);
   }
