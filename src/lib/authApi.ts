@@ -273,23 +273,14 @@ export async function webRefresh(): Promise<WebAuthContext> {
  * success. Non-2xx reuses the shared ProblemDetails ApiError mapping; a network
  * throw keeps the session recoverable, exactly like webRefresh.
  */
-async function webSignOut(path: 'logout' | 'logout-all'): Promise<void> {
+export async function webLogout(): Promise<void> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/auth/web/${path}`, { method: 'POST', credentials: 'include' });
+    res = await fetch(`${API_BASE}/auth/web/logout`, { method: 'POST', credentials: 'include' });
   } catch {
     throw { code: 'NETWORK', message: 'Sign out unavailable.', status: 0 } satisfies ApiError;
   }
   if (!res.ok) return handleResponse<never>(res);
-}
-
-export function webLogout(): Promise<void> {
-  return webSignOut('logout');
-}
-
-/** Revokes every active refresh session belonging to the cookie's user. */
-export function webLogoutAll(): Promise<void> {
-  return webSignOut('logout-all');
 }
 
 export async function webVerifyEmail(idToken: string): Promise<{ emailVerified: true }> {
