@@ -6,13 +6,13 @@ Approved four-parameter implementation, 2026-09-21.
 2. Test first: service contract tests for bare DTO, four-key PUT, root errorCode, safe failures and session expiry. Implement types, messages, validation and service under src/features/admin/algorithm-config.
 3. Test first: form tests for loading/retry, validation boundaries, successful save, failed save preserving input, cancel and auth denials. Implement AlgorithmConfigForm using shared session and controls.
 4. Add server route composition at app/admin/(console)/settings/algorithm-parameters/page.tsx, route constant and AdminNavigation link.
-5. Verify focused/full tests, lint, typecheck, production build. Independent spec and code review coordinated by root; browser viewport/keyboard verification coordinated by root. Report any unverified actual login/API integration. No commit/push.
+5. Verify focused/full tests, lint, typecheck, production build. Independent spec and code review coordinated by root; browser viewport/keyboard verification coordinated by root. Report any unverified actual login/API integration.
 
-## Verification evidence (working tree)
+## Verification evidence
 
-Verified on 2026-09-22 from baseline HEAD
-`1eb94eba81c6b4631164e18afb4fe42cc01d9a3f` with the UC-57 changes still
-uncommitted:
+The original working-tree checks were run on 2026-09-22 before synchronization.
+The changes were then protected in local commit `3a495b1` and rebased onto
+Frontend `origin/develop` `9f96846`.
 
 - Evidence working directory:
   `D:\study\Project-Capstone\Capstone_FE-uc57`, branch
@@ -32,6 +32,6 @@ The browser fixture did not use the real login or database. Manual 320 px
 overflow verification is also still outstanding. These checks must be repeated
 against the integrated backend after the login owner completes their work.
 
-This evidence is suitable for working-tree review only. After commit/push, rerun
-the required checks on the final PR HEAD and record its SHA and remote CI result
-before marking the PR merge-ready.
+The checks above are pre-sync evidence. Rerun them after this rebase and record
+the exact pushed HEAD plus remote CI result in the PR description or re-review
+message before marking the PR merge-ready.
