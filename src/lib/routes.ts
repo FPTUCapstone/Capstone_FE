@@ -26,5 +26,6 @@ export const ROUTES = {
     tourReviews: '/admin/tours/reviews',
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
     createPoi: '/admin/catalogue/points-of-interest/new',
+    algorithmParameters: '/admin/settings/algorithm-parameters',
   },
 } as const;
