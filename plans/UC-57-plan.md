@@ -10,17 +10,17 @@ Approved four-parameter implementation, 2026-09-21.
 
 ## Verification evidence
 
-The original working-tree checks were run on 2026-09-22 before synchronization.
-The changes were then protected in local commit `3a495b1` and rebased onto
-Frontend `origin/develop` `9f96846`.
+The changes were protected in local commit `3a495b1` and rebased onto Frontend
+`origin/develop` `9f96846` on 2026-09-22.
 
 - Evidence working directory:
   `D:\study\Project-Capstone\Capstone_FE-uc57`, branch
   `feature/linhnv-configure-algorithm-parameters`. The similarly named files in
   `Capstone_FE` belong to a different worktree and are not this evidence set.
 
-- Full test suite: 269 passed across 23 test files, including the supported
-  Node 23 run.
+- Post-rebase verification HEAD: `783b35b`.
+- Full test suite: 30 Node tests and 302 Vitest tests passed (332 total,
+  0 failed); Vitest covered 28 test files.
 - Lint: 0 errors; 3 existing landing-page image warnings outside UC-57.
 - TypeScript typecheck: passed.
 - Production build: passed; the algorithm-parameters route was generated.
@@ -32,6 +32,6 @@ The browser fixture did not use the real login or database. Manual 320 px
 overflow verification is also still outstanding. These checks must be repeated
 against the integrated backend after the login owner completes their work.
 
-The checks above are pre-sync evidence. Rerun them after this rebase and record
-the exact pushed HEAD plus remote CI result in the PR description or re-review
-message before marking the PR merge-ready.
+The checks above are post-rebase local evidence. The exact pushed HEAD and remote
+CI result must still be recorded in the PR description or re-review message
+before marking the PR merge-ready.
