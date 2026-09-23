@@ -5,6 +5,9 @@ import { AuditLogDetailDrawer } from './AuditLogDetailDrawer';
 import { AuditLogTable } from './AuditLogTable';
 import * as service from '../services/auditLogAdminService';
 
+const { router } = vi.hoisted(() => ({ router: { replace: vi.fn() } }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
 vi.mock('../services/auditLogAdminService', () => ({
   getAuditLogDetail: vi.fn(),
   AuditLogServiceError: class extends Error {},

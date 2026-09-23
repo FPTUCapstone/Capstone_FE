@@ -1,8 +1,11 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { AuditLogDetailDrawer } from './AuditLogDetailDrawer';
 import * as service from '../services/auditLogAdminService';
+
+const { router } = vi.hoisted(() => ({ router: { replace: vi.fn() } }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 vi.mock('../services/auditLogAdminService', () => ({
   getAuditLogDetail: vi.fn(),
@@ -72,7 +75,7 @@ describe('AuditLogDetailDrawer', () => {
 
   it('renders error state MSG127 when system or network failure occurs (500)', async () => {
     const err = new service.AuditLogServiceError(
-      'TripMate is temporarily unable to process your request. Please check your connection and try again.',
+      'An unexpected error occurred.',
       500
     );
     vi.mocked(service.getAuditLogDetail).mockRejectedValue(err);
@@ -84,6 +87,34 @@ describe('AuditLogDetailDrawer', () => {
         'TripMate is temporarily unable to process your request. Please check your connection and try again.'
       )
     ).toBeDefined();
+  });
+
+  it('redirects an expired detail session to login with the audit list return URL', async () => {
+    vi.mocked(service.getAuditLogDetail).mockRejectedValue(new service.AuditLogServiceError('Unauthorized', 401));
+    render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Faudit-logs'));
+  });
+
+  it('does not redirect for a detail response arriving after the drawer closes', async () => {
+    let reject!: (reason: unknown) => void;
+    vi.mocked(service.getAuditLogDetail).mockReturnValue(new Promise((_, rej) => { reject = rej; }));
+    const { rerender } = render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    rerender(<AuditLogDetailDrawer logId={101} isOpen={false} onClose={mockOnClose} />);
+    await act(async () => reject(new service.AuditLogServiceError('Unauthorized', 401)));
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('uses MSG127 instead of exposing a network exception', async () => {
+    vi.mocked(service.getAuditLogDetail).mockRejectedValue(new TypeError('Failed to fetch'));
+    render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    expect(await screen.findByText('TripMate is temporarily unable to process your request. Please check your connection and try again.')).toBeDefined();
+    expect(screen.queryByText('Failed to fetch')).toBeNull();
+  });
+
+  it('preserves the locked forbidden message', async () => {
+    vi.mocked(service.getAuditLogDetail).mockRejectedValue(new service.AuditLogServiceError('Forbidden', 403));
+    render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    expect(await screen.findByText('You do not have permission to access this function.')).toBeDefined();
   });
 
   it('calls onClose when close button is clicked', async () => {

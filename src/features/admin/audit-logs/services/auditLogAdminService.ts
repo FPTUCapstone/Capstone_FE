@@ -4,13 +4,33 @@ import { getApiBase } from '@/lib/authApi';
 export class AuditLogServiceError extends Error {
   statusCode?: number;
   errorCode?: string;
+  validationErrors: Record<string, string[]>;
 
-  constructor(message: string, statusCode?: number, errorCode?: string) {
+  constructor(message: string, statusCode?: number, errorCode?: string, validationErrors: Record<string, string[]> = {}) {
     super(message);
     this.name = 'AuditLogServiceError';
     this.statusCode = statusCode;
     this.errorCode = errorCode;
+    this.validationErrors = validationErrors;
   }
+}
+
+async function readServiceError(response: Response): Promise<AuditLogServiceError> {
+  if (response.status === 401) clearStoredTokens();
+  const body: unknown = await response.json().catch(() => null);
+  const problem = body && typeof body === 'object' ? body as Record<string, unknown> : {};
+  const validationErrors: Record<string, string[]> = {};
+  if (response.status === 400 && problem.errors && typeof problem.errors === 'object' && !Array.isArray(problem.errors)) {
+    for (const [field, values] of Object.entries(problem.errors)) {
+      if (Array.isArray(values)) {
+        const messages = values.filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+        if (messages.length) Object.defineProperty(validationErrors, field, { value: messages, enumerable: true });
+      }
+    }
+  }
+  const message = typeof problem.title === 'string' ? problem.title : 'Unable to load audit logs.';
+  const errorCode = typeof problem.errorCode === 'string' ? problem.errorCode : undefined;
+  return new AuditLogServiceError(message, response.status, errorCode, validationErrors);
 }
 
 function getAccessToken(): string | null {
@@ -73,12 +93,7 @@ export async function getAuditLogs(params: GetAuditLogsParams): Promise<Paginate
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      clearStoredTokens();
-    }
-    const errorData = await response.json().catch(() => ({}));
-    const message = errorData.title || errorData.message || `Failed to fetch audit logs (${response.status})`;
-    throw new AuditLogServiceError(message, response.status, errorData.extensions?.errorCode);
+    throw await readServiceError(response);
   }
 
   return response.json();
@@ -92,21 +107,7 @@ export async function getAuditLogDetail(id: number): Promise<AuditLogDetailDto> 
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      clearStoredTokens();
-    }
-    const errorData = await response.json().catch(() => ({}));
-    let message = errorData.title || errorData.message;
-    if (!message) {
-      if (response.status === 404) {
-        message = 'System audit log entry not found.';
-      } else if (response.status === 403) {
-        message = 'You do not have permission to access this function.';
-      } else {
-        message = 'TripMate is temporarily unable to process your request. Please check your connection and try again.';
-      }
-    }
-    throw new AuditLogServiceError(message, response.status, errorData.extensions?.errorCode);
+    throw await readServiceError(response);
   }
 
   return response.json();

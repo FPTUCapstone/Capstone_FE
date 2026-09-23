@@ -47,3 +47,11 @@ This plan describes **UC-69: View Audit Log Details** against the current API co
 3. Add `AuditLogResultBadge.tsx` shared by drawer and table. Show Business Reason even when null. Label failure afterData as Failure Context because it stores safe error metadata rather than saved state.
 4. Keep service requests and auth unchanged. No new route, Result filter, Client Platform or Affected Module.
 5. Run focused Vitest, lint, typecheck and production build. Review requirements first, then code quality.
+
+## Approved error-contract correction (2026-09-20)
+
+1. Add failing service tests for root-level ProblemDetails codes, HTTP 400 validation errors, malformed responses and HTTP 401 session cleanup; add UI regressions for list validation and detail 401/500/network failures.
+2. Update `services/auditLogAdminService.ts` to normalize the existing backend error contract.
+3. Update `AuditLogManagementView.tsx` to distinguish correctable filter validation from server failure; update `AuditLogDetailDrawer.tsx` to redirect expired sessions and keep server errors on MSG127.
+4. Preserve existing successful data rendering, 403/404 behavior, and guards against stale responses. Update affected test mocks for App Router navigation.
+5. Review spec compliance and code quality; run focused tests, full `npm test`, lint, typecheck and build. Report local results separately from remote CI; do not claim merge readiness without remote evidence.

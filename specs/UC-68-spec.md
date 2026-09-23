@@ -139,6 +139,7 @@ export interface GetAuditLogsParams {
    - Displays icon + `"No records found matching your criteria."` when `totalCount === 0`.
 
 5. **Error State (`MSG126` / `MSG127`):**
+   - HTTP 400 validation (BE alignment approved 2026-09-20): display messages from the root `errors` map and allow filter correction. Use a safe correction prompt if no valid messages are supplied; do not show MSG127 or retry unchanged invalid filters. Read ProblemDetails `errorCode` at the JSON root.
    - 401 (expired/missing session): redirect to `/admin/login?returnUrl=/admin/audit-logs` (CR-10).
    - 403 Forbidden: Displays FeedbackAlert with locked `MSG126` ("You do not have permission to access this function.").
    - Network/Server failure: Displays FeedbackAlert with locked `MSG127` ("TripMate is temporarily unable to process your request. Please check your connection and try again.") and a "Retry" button.

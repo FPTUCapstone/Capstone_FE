@@ -30,6 +30,7 @@ export function AuditLogManagementView() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState<boolean>(false);
+  const [isValidationError, setIsValidationError] = useState(false);
 
   // Detail Drawer state (UC-69)
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
@@ -43,6 +44,7 @@ export function AuditLogManagementView() {
           setData(result);
           setError(null);
           setIsForbidden(false);
+          setIsValidationError(false);
           setIsLoading(false);
         }
       })
@@ -56,6 +58,10 @@ export function AuditLogManagementView() {
           if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'Forbidden')) {
             setIsForbidden(true);
             setError(MSG126);
+          } else if (err instanceof AuditLogServiceError && err.statusCode === 400) {
+            setIsValidationError(true);
+            const messages = Object.values(err.validationErrors).flat();
+            setError(messages.length ? messages.join(' ') : 'Please check the audit log filters and apply them again.');
           } else {
             setError(MSG127);
           }
@@ -73,6 +79,7 @@ export function AuditLogManagementView() {
     setIsLoading(true);
     setError(null);
     setIsForbidden(false);
+    setIsValidationError(false);
   };
 
   const handleFilterChange = (updatedFilters: Partial<GetAuditLogsParams>) => {
@@ -137,11 +144,11 @@ export function AuditLogManagementView() {
       {error && (
         <FeedbackAlert
           tone="error"
-          title={isForbidden ? 'Permission Denied' : 'Error Loading Audit Logs'}
+          title={isForbidden ? 'Permission Denied' : isValidationError ? 'Check Audit Log Filters' : 'Error Loading Audit Logs'}
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span>{error}</span>
-            {!isForbidden && (
+            {!isForbidden && !isValidationError && (
               <button
                 type="button"
                 onClick={handleRetry}

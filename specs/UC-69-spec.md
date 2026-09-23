@@ -92,3 +92,13 @@ export interface AuditLogDetailDto {
 8. Unit test suite passes 100% via `vitest`.
 9. Both JSON blocks and their clipboard copies use the backend-masked response. The frontend must not retrieve unmasked audit payloads. Sensitive values display as `[REDACTED]`; malformed payloads may be withheld in full.
 10. Failure `afterData` contains safe error metadata (`auditMetadata.errorCode`), not a successfully persisted entity snapshot. Label its block "Failure Context". Reasons support multiline text and wrapping; never render raw HTML.
+
+## Approved FE/BE error-contract alignment (2026-09-20)
+
+The project owner authorized correcting the four integration findings against BE `d162ba4`.
+
+- Both audit endpoints expose ProblemDetails `errorCode` at the JSON root. Parse untrusted error responses safely.
+- UC-68 list integration receives HTTP 400 with `errors` for an invalid date range. Preserve validation messages and let the administrator correct filters; do not display MSG127 or suggest retrying unchanged invalid input.
+- UC-69 HTTP 401 clears the stored session through the service and redirects to `/admin/login?returnUrl=%2Fadmin%2Faudit-logs`, consistently with the list.
+- Detail network/500 failures display locked MSG127, never a raw backend title or exception message. Existing 403/404 messages and stale-response protection remain applicable.
+- No endpoint, schema, Result/Reason semantics, or message-catalog approval changes are included.

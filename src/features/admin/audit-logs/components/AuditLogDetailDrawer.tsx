@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuditLogDetailDto } from '../types/auditLogAdmin';
 import { getAuditLogDetail, AuditLogServiceError } from '../services/auditLogAdminService';
 import { AuditLogResultBadge } from './AuditLogResultBadge';
@@ -12,6 +13,7 @@ interface AuditLogDetailDrawerProps {
 }
 
 export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
+  const router = useRouter();
   const [detail, setDetail] = useState<AuditLogDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedBefore, setCopiedBefore] = useState<boolean>(false);
@@ -41,12 +43,14 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
       })
       .catch((err: unknown) => {
         if (isMounted) {
+          if (err instanceof AuditLogServiceError && err.statusCode === 401) {
+            router.replace(`/admin/login?returnUrl=${encodeURIComponent('/admin/audit-logs')}`);
+            return;
+          }
           if (err instanceof AuditLogServiceError && (err.statusCode === 404 || err.errorCode === 'admin.audit_log_not_found')) {
             setError('System audit log entry not found.');
           } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'admin.audit_log_forbidden')) {
             setError('You do not have permission to access this function.');
-          } else if (err instanceof Error && err.message) {
-            setError(err.message);
           } else {
             setError('TripMate is temporarily unable to process your request. Please check your connection and try again.');
           }
@@ -57,7 +61,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
     return () => {
       isMounted = false;
     };
-  }, [isOpen, logId]);
+  }, [isOpen, logId, router]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

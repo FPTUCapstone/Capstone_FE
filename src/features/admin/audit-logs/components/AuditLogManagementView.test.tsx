@@ -39,6 +39,28 @@ function search(keyword: string) {
 describe('Audit list and detail state (U03)', () => {
   beforeEach(() => { vi.resetAllMocks(); });
 
+  it('uses safe actionable feedback for a 400 without validation messages', async () => {
+    vi.mocked(service.getAuditLogs).mockRejectedValue(new service.AuditLogServiceError('Internal backend detail', 400));
+    render(<AuditLogManagementView />);
+    expect(await screen.findByText('Please check the audit log filters and apply them again.')).toBeDefined();
+    expect(screen.queryByText('Internal backend detail')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('shows date validation feedback and lets the user correct the filters', async () => {
+    const message = 'The submitted Event Date range is logically invalid.';
+    vi.mocked(service.getAuditLogs).mockRejectedValueOnce(
+      new service.AuditLogServiceError('One or more validation errors occurred.', 400, undefined, { general: [message] })
+    ).mockResolvedValueOnce(page('Corrected'));
+    render(<AuditLogManagementView />);
+    expect(await screen.findByText(message)).toBeDefined();
+    expect(screen.getByText('Check Audit Log Filters')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    search('corrected');
+    await screen.findByText('Corrected');
+    expect(screen.queryByText(message)).toBeNull();
+  });
+
   it('keeps search B when the older search A response arrives last', async () => {
     const a = deferred<PaginatedList<AuditLogSummaryDto>>();
     const b = deferred<PaginatedList<AuditLogSummaryDto>>();

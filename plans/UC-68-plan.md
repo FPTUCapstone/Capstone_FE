@@ -52,3 +52,7 @@ The feature enables Administrators to view, search, filter, and paginate system 
 1. Add nullable Success/Failure result to `types/auditLogAdmin.ts`.
 2. Share `components/AuditLogResultBadge.tsx` between list and detail. Add Result column with matching loading cells and empty-state colspan. Do not add a filter.
 3. Verify success/failure/legacy null rows using `AuditLogResultReason.test.tsx`, then run focused Vitest, lint, typecheck and build.
+
+## Error-contract alignment — 2026-09-20
+
+As part of the approved UC-69 FE/BE integration correction, normalize root-level ProblemDetails codes and validation errors in the shared service. Add list regression coverage for HTTP 400 invalid date ranges, safe fallback, and successful filter correction; show actionable validation feedback without Retry. See UC-69 plan for shared implementation and validation.
