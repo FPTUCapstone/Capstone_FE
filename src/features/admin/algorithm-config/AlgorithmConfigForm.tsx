@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -40,32 +40,39 @@ export function AlgorithmConfigForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof AlgorithmParameters, string>>>({});
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const load = useCallback(async () => {
-    setViewState('loading');
-    setFeedback(null);
-    try {
-      const config = await getAlgorithmParameters();
-      setSavedConfig(config);
-      setValues(toEditable(config));
-      setErrors({});
-      setViewState('ready');
-    } catch (error) {
-      if (error instanceof AlgorithmConfigError && error.status === 401) {
-        router.replace(`/admin/login?returnUrl=${encodeURIComponent(ROUTE)}`);
-        return;
-      }
-      if (error instanceof AlgorithmConfigError && error.status === 403) {
-        setViewState('forbidden');
-        return;
-      }
-      setViewState('load-error');
-    }
-  }, [router]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let isMounted = true;
+    getAlgorithmParameters()
+      .then((config) => {
+        if (!isMounted) return;
+        setSavedConfig(config);
+        setValues(toEditable(config));
+        setErrors({});
+        setViewState('ready');
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        if (error instanceof AlgorithmConfigError && error.status === 401) {
+          router.replace(`/admin/login?returnUrl=${encodeURIComponent(ROUTE)}`);
+          return;
+        }
+        if (error instanceof AlgorithmConfigError && error.status === 403) {
+          setViewState('forbidden');
+          return;
+        }
+        setViewState('load-error');
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshKey, router]);
+
+  const handleRetry = () => {
+    setViewState('loading');
+    setRefreshKey((k) => k + 1);
+  };
 
   const setValue = (key: keyof EditableValues, value: string) => {
     setValues((current) => current ? { ...current, [key]: value } : current);
@@ -138,7 +145,7 @@ export function AlgorithmConfigForm() {
         <FeedbackAlert tone="error" title="Unable to Load Algorithm Parameters">
           <div className="flex flex-wrap items-center gap-3">
             <span>{CONFIG_MESSAGES.unavailable}</span>
-            <ActionButton type="button" variant="outline" onClick={() => void load()}>
+            <ActionButton type="button" variant="outline" onClick={handleRetry}>
               Retry
             </ActionButton>
           </div>
