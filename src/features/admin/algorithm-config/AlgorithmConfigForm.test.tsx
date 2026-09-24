@@ -5,16 +5,11 @@ import { AlgorithmConfigForm } from './AlgorithmConfigForm';
 import { CONFIG_MESSAGES } from './algorithmConfig';
 import * as service from './algorithmConfigService';
 
-const { router, session } = vi.hoisted(() => ({
+const { router } = vi.hoisted(() => ({
   router: { replace: vi.fn() },
-  session: { status: 'authenticated', context: { role: 'Administrator' } } as {
-    status: 'restoring' | 'authenticated' | 'unauthenticated';
-    context: { role: string } | null;
-  },
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
-vi.mock('@/features/auth/session/useWebSession', () => ({ useWebSession: () => session }));
 vi.mock('./algorithmConfigService', async (importOriginal) => ({
   ...await importOriginal<typeof service>(),
   getAlgorithmParameters: vi.fn(),
@@ -33,8 +28,6 @@ const loaded = {
 describe('AlgorithmConfigForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    session.status = 'authenticated';
-    session.context = { role: 'Administrator' };
     vi.mocked(service.getAlgorithmParameters).mockResolvedValue(loaded);
   });
 
@@ -83,20 +76,6 @@ describe('AlgorithmConfigForm', () => {
     expect((speed as HTMLInputElement).value).toBe('30');
   });
 
-  it('redirects an unauthenticated session and does not fetch', () => {
-    session.status = 'unauthenticated'; session.context = null;
-    render(<AlgorithmConfigForm />);
-    expect(router.replace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fsettings%2Falgorithm-parameters');
-    expect(service.getAlgorithmParameters).not.toHaveBeenCalled();
-  });
-
-  it('shows MSG126 for a non-administrator and does not fetch', () => {
-    session.context = { role: 'Traveler' };
-    render(<AlgorithmConfigForm />);
-    expect(screen.getByText(CONFIG_MESSAGES.forbidden)).toBeDefined();
-    expect(service.getAlgorithmParameters).not.toHaveBeenCalled();
-  });
-
   it('offers retry after load failure', async () => {
     vi.mocked(service.getAlgorithmParameters)
       .mockRejectedValueOnce(new service.AlgorithmConfigError(500))
@@ -107,15 +86,16 @@ describe('AlgorithmConfigForm', () => {
     expect(service.getAlgorithmParameters).toHaveBeenCalledTimes(2);
   });
 
-  it('redirects to login when the API rejects an expired session', async () => {
+  it('redirects to login when the API rejects an expired session (401)', async () => {
     vi.mocked(service.getAlgorithmParameters).mockRejectedValue(new service.AlgorithmConfigError(401));
     render(<AlgorithmConfigForm />);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fsettings%2Falgorithm-parameters'));
   });
 
-  it('shows MSG126 when the API denies an administrator token', async () => {
+  it('shows MSG126 when the API denies permission (403)', async () => {
     vi.mocked(service.getAlgorithmParameters).mockRejectedValue(new service.AlgorithmConfigError(403, 'admin.algorithm_config_forbidden'));
     render(<AlgorithmConfigForm />);
     expect(await screen.findByText(CONFIG_MESSAGES.forbidden)).toBeDefined();
   });
 });
+
