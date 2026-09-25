@@ -204,6 +204,11 @@ export interface WebLoginRequest {
   keepMeSignedIn?: boolean;
 }
 
+export interface WebResendVerificationRequest {
+  email: string;
+  password: string;
+}
+
 async function webSignIn(path: string, body: object, keepMeSignedIn: boolean, google: boolean): Promise<WebAuthContext & { isNewAccount?: boolean }> {
   const res = await fetch(`${API_BASE}/auth/web/${path}`, {
     method: 'POST', credentials: 'include',
@@ -230,6 +235,29 @@ export function webLogin(data: WebLoginRequest, administrator = false): Promise<
   return webSignIn(administrator ? 'admin/login' : 'login', {
     email: data.email.trim().toLowerCase(), password: data.password, keepMeSignedIn,
   }, keepMeSignedIn, false);
+}
+
+export async function webResendVerification(
+  data: WebResendVerificationRequest,
+): Promise<{ messageCode: string }> {
+  const res = await fetch(`${API_BASE}/auth/web/resend-verification`, {
+    method: 'POST',
+    credentials: 'omit',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+    }),
+  });
+  if (!res.ok) return handleResponse<never>(res);
+  try {
+    const body: unknown = await res.json();
+    if (body && typeof body === 'object' && 'messageCode' in body
+      && typeof body.messageCode === 'string') {
+      return { messageCode: body.messageCode };
+    }
+  } catch { /* handled below */ }
+  throw { code: 'INVALID_VERIFICATION_RESPONSE', status: res.status } satisfies ApiError;
 }
 
 export async function webGoogleAuth(idToken: string, keepMeSignedIn = false): Promise<WebAuthContext & { isNewAccount: boolean }> {

@@ -4,6 +4,7 @@ import { loginWithWebRecovery, resendWebVerification } from './webRecovery';
 const mocks = vi.hoisted(() => ({
   login: vi.fn(),
   verify: vi.fn(),
+  resendBackend: vi.fn(),
   firebase: vi.fn(),
   send: vi.fn(),
   auth: { currentUser: null as unknown },
@@ -13,6 +14,7 @@ vi.mock('@/lib/authApi', async (original) => ({
   ...(await original<typeof import('@/lib/authApi')>()),
   webLogin: mocks.login,
   webVerifyEmail: mocks.verify,
+  webResendVerification: mocks.resendBackend,
 }));
 vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => mocks.auth }));
 vi.mock('firebase/auth', () => ({
@@ -73,10 +75,13 @@ describe('Backend-only Web sign-in', () => {
   });
 });
 
-describe('Verification email resend is disabled until UC-06 lands', () => {
-  it('never calls Firebase sendEmailVerification or signInWithEmailAndPassword', async () => {
-    await expect(resendWebVerification(input.email, input.password)).rejects.toMatchObject({
-      code: 'MSG_VERIFICATION_RESEND_UNAVAILABLE',
+describe('Backend verification email resend', () => {
+  it('normalizes the email and calls Backend without Firebase password authentication', async () => {
+    mocks.resendBackend.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });
+    await resendWebVerification(' User@Example.com ', input.password);
+    expect(mocks.resendBackend).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      password: ' unchanged ',
     });
     expect(mocks.firebase).not.toHaveBeenCalled();
     expect(mocks.send).not.toHaveBeenCalled();

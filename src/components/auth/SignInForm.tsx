@@ -59,19 +59,10 @@ export function SignInForm({ admin = false }: SignInFormProps) {
       setFeedback({ tone: 'success', message: 'A fresh verification link has been sent to your email. Please check your inbox.' });
     } catch (error: unknown) {
       const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
-      if (code === 'auth/too-many-requests') startResendCooldown();
-      // The TripMate Backend is the sole password authority; UC-06 will own
-      // resending the verification email from the Backend. Until then the
-      // resend action is intentionally a no-op and the UI surfaces a stable,
-      // non-actionable notice so the user is never given false success.
-      if (code === 'MSG_VERIFICATION_RESEND_UNAVAILABLE') {
-        setFeedback({
-          tone: 'info',
-          message: 'Your verification email was already sent when you registered. Check your spam folder, or contact support if you no longer have it.',
-        });
-      } else {
-        setFeedback({ tone: 'error', message: mapWebRecoveryError(error) });
+      if (code === 'MSG_COOLDOWN' || (error && typeof error === 'object' && 'status' in error && error.status === 429)) {
+        startResendCooldown();
       }
+      setFeedback({ tone: 'error', message: mapWebRecoveryError(error) });
     } finally { setLoading(false); }
   }
 

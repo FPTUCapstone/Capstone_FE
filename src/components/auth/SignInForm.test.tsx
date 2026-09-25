@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SignInForm } from './SignInForm';
 
 const mocks = vi.hoisted(() => ({
-  webVerifyEmail: vi.fn(), firebaseSignIn: vi.fn(), verifyEmail: vi.fn(), resend: vi.fn(), webLogin: vi.fn(), webGoogleAuth: vi.fn(), popup: vi.fn(), googleAuth: vi.fn(), saveTokens: vi.fn(), push: vi.fn(),
+  webVerifyEmail: vi.fn(), webResendVerification: vi.fn(), firebaseSignIn: vi.fn(), verifyEmail: vi.fn(), resend: vi.fn(), webLogin: vi.fn(), webGoogleAuth: vi.fn(), popup: vi.fn(), googleAuth: vi.fn(), saveTokens: vi.fn(), push: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
@@ -16,7 +16,7 @@ vi.mock('firebase/auth', () => ({
 }));
 vi.mock('@/lib/authApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/authApi')>()),
-  webVerifyEmail: mocks.webVerifyEmail, verifyEmail: mocks.verifyEmail, webLogin: mocks.webLogin, webGoogleAuth: mocks.webGoogleAuth, googleAuth: mocks.googleAuth, saveTokens: mocks.saveTokens,
+  webVerifyEmail: mocks.webVerifyEmail, webResendVerification: mocks.webResendVerification, verifyEmail: mocks.verifyEmail, webLogin: mocks.webLogin, webGoogleAuth: mocks.webGoogleAuth, googleAuth: mocks.googleAuth, saveTokens: mocks.saveTokens,
 }));
 
 beforeEach(() => {
@@ -141,16 +141,16 @@ describe('Password verification guidance without Firebase sign-in', () => {
   });
 });
 
-describe('Resend Verification Email surfaces non-production copy', () => {
+describe('Resend Verification Email uses the Backend contract', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
-  it('shows the UC-06 waitlist notice and never calls Firebase', async () => {
+  it('shows success and never calls Firebase', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
+    mocks.webResendVerification.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });
     render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     const resend = await screen.findByRole('button', { name: 'Resend Verification Email' });
     fireEvent.click(resend);
-    await screen.findByText(
-      'Your verification email was already sent when you registered. Check your spam folder, or contact support if you no longer have it.',
-    );
+    await screen.findByText('A fresh verification link has been sent to your email. Please check your inbox.');
+    expect(mocks.webResendVerification).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ' });
     expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
     expect(mocks.resend).not.toHaveBeenCalled();
     expect(mocks.saveTokens).not.toHaveBeenCalled();
@@ -274,22 +274,21 @@ describe('Web recovery form integration', () => {
   });
 });
 
-describe('Resend Verification Email stays non-production until UC-06', () => {
+describe('Resend Verification Email cooldown', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
   async function showGuidance() {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
     render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     return screen.findByRole('button', { name: 'Resend Verification Email' });
   }
-  it('always surfaces the waitlist notice without cooldown or SDK detail', async () => {
+  it('starts the cooldown after Backend success without Firebase', async () => {
+    mocks.webResendVerification.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });
     const resend = await showGuidance();
     fireEvent.click(resend);
-    await screen.findByText(
-      'Your verification email was already sent when you registered. Check your spam folder, or contact support if you no longer have it.',
-    );
+    await screen.findByText('A fresh verification link has been sent to your email. Please check your inbox.');
     expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
     expect(mocks.resend).not.toHaveBeenCalled();
-    expect(screen.queryByText(/Resend Email \(\d+s\)/)).toBeNull();
+    expect(screen.getByRole('button', { name: /Resend Email \(\d+s\)/ })).toBeDefined();
   });
 });
 
