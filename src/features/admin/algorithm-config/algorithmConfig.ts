@@ -28,6 +28,6 @@ export function isAlgorithmConfig(value: unknown): value is AlgorithmConfig {
   const data = value as AlgorithmConfig;
   return typeof data.bufferTimeMinutes === 'number' && typeof data.defaultTravelSpeedKmh === 'number' &&
     typeof data.reroutingSearchRadiusKm === 'number' && Object.keys(validateParameters(data)).length === 0 &&
-    (data.updatedAtUtc === null || (typeof data.updatedAtUtc === 'string' && Number.isFinite(Date.parse(data.updatedAtUtc)))) &&
-    (data.updatedAtLocal === null || (typeof data.updatedAtLocal === 'string' && /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(data.updatedAtLocal)));
+    (data.updatedAtUtc === null || typeof data.updatedAtUtc === 'string') &&
+    (data.updatedAtLocal === null || typeof data.updatedAtLocal === 'string');
 }
