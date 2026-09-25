@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getAlgorithmParameters, updateAlgorithmParameters } from './algorithmConfigService';
-import { validateParameters } from './algorithmConfig';
+import { isAlgorithmConfig, validateParameters } from './algorithmConfig';
 const values = { bufferTimeMinutes: 15, defaultTravelSpeedKmh: 30, reroutingSearchRadiusKm: 5, weatherAlertThresholdSeverity: 'Severe' as const };
 const dto = { ...values, updatedAtUtc: '2026-09-21T02:00:00Z', updatedAtLocal: '21/09/2026 09:00:00' };
 afterEach(() => { vi.unstubAllGlobals(); });
@@ -44,6 +44,9 @@ describe('algorithm configuration contract', () => {
  it('accepts the BE UTC+7 display timestamp contract', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(dto)));
   await expect(getAlgorithmParameters()).resolves.toEqual(dto);
+ });
+ it('accepts ISO timestamps so a backend display-format change does not reject a valid configuration', () => {
+  expect(isAlgorithmConfig({ ...dto, updatedAtLocal: '2026-09-25T09:00:00+07:00' })).toBe(true);
  });
  it.each([5,60])('accepts buffer boundary %i', value => expect(validateParameters({...values,bufferTimeMinutes:value})).toEqual({}));
  it.each([4,61,5.5,NaN])('rejects invalid buffer %s', value => expect(validateParameters({...values,bufferTimeMinutes:value})).toHaveProperty('bufferTimeMinutes'));
