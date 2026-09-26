@@ -59,7 +59,9 @@ export function SignInForm({ admin = false }: SignInFormProps) {
       setFeedback({ tone: 'success', message: 'A fresh verification link has been sent to your email. Please check your inbox.' });
     } catch (error: unknown) {
       const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
-      if (code === 'auth/too-many-requests') startResendCooldown();
+      if (code === 'MSG_COOLDOWN' || (error && typeof error === 'object' && 'status' in error && error.status === 429)) {
+        startResendCooldown();
+      }
       setFeedback({ tone: 'error', message: mapWebRecoveryError(error) });
     } finally { setLoading(false); }
   }

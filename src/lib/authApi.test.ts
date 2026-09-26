@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { googleAuth, isApiError, registerTraveler } from './authApi';
+import { googleAuth, isApiError, registerTraveler, webResendVerification } from './authApi';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -40,5 +40,28 @@ describe('isApiError', () => {
       errors: undefined,
       status: 409,
     });
+  });
+});
+
+describe('webResendVerification', () => {
+  it('posts normalized credentials to the Backend and does not include a session cookie', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      messageCode: 'MSG_RESEND_SUCCESS',
+    }), { status: 200 }));
+    vi.stubGlobal('fetch', request);
+
+    await expect(webResendVerification({
+      email: ' User@Example.com ',
+      password: ' unchanged ',
+    })).resolves.toEqual({ messageCode: 'MSG_RESEND_SUCCESS' });
+
+    expect(request).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/web\/resend-verification$/),
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'omit',
+        body: JSON.stringify({ email: 'user@example.com', password: ' unchanged ' }),
+      }),
+    );
   });
 });
