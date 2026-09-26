@@ -10,6 +10,14 @@ export const ACTIVE_TRIPS_MESSAGES = {
   empty: 'No data is available for the selected criteria.',
 } as const;
 
+export function getVietnamTodayDate(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
 export type ActiveTripType = (typeof ACTIVE_TRIP_TYPES)[number];
 export type ActiveTripState = (typeof ACTIVE_TRIP_STATES)[number];
 export type AlertState = (typeof ALERT_STATES)[number];
@@ -100,8 +108,9 @@ export function formatVietnamDateTime(value: string | null): string {
 }
 
 const isDateOnly = (value: string) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
-export function validateDateRange(from: string, to: string): boolean {
-  return isDateOnly(from) && isDateOnly(to) && (!from || !to || from <= to);
+export function validateDateRange(from: string, to: string, today = getVietnamTodayDate()): boolean {
+  return isDateOnly(from) && isDateOnly(to) &&
+    (!from || from <= today) && (!to || to <= today) && (!from || !to || from <= to);
 }
 
 export function parseActiveTripsSearch(params: URLSearchParams): ActiveTripsSearch {
@@ -110,12 +119,13 @@ export function parseActiveTripsSearch(params: URLSearchParams): ActiveTripsSear
   const rawPage = Number(params.get('pageNumber'));
   const from = params.get('startDateFrom') ?? '';
   const to = params.get('startDateTo') ?? '';
+  const today = getVietnamTodayDate();
   return {
     keyword: (params.get('keyword') ?? '').trim().slice(0, 200),
     tripType: ACTIVE_TRIP_TYPES.includes(tripType as ActiveTripType) ? tripType as ActiveTripType : '',
     destination: (params.get('destination') ?? '').trim().slice(0, 300),
-    startDateFrom: isDateOnly(from) ? from : '',
-    startDateTo: isDateOnly(to) ? to : '',
+    startDateFrom: isDateOnly(from) && (!from || from <= today) ? from : '',
+    startDateTo: isDateOnly(to) && (!to || to <= today) ? to : '',
     alertState: ALERT_STATES.includes(alertState as AlertState) ? alertState as AlertState : '',
     pageNumber: Number.isSafeInteger(rawPage) && rawPage >= 1 ? rawPage : 1,
   };

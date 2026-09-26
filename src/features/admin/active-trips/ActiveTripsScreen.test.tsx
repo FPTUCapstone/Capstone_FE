@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ActiveTripsError, fetchActiveTrips } from './activeTripsService';
 import { ActiveTripsScreen } from './ActiveTripsScreen';
+import { getVietnamTodayDate } from './activeTrips';
 
 const push = vi.fn();
 const replace = vi.fn();
@@ -46,6 +47,20 @@ describe('ActiveTripsScreen', () => {
     await screen.findByText('TRIP-42');
     fireEvent.change(screen.getByLabelText('Start Date From'), { target: { value: '2026-09-27' } });
     fireEvent.change(screen.getByLabelText('Start Date To'), { target: { value: '2026-09-26' } });
+    fireEvent.submit(screen.getByRole('search'));
+    expect(screen.getByRole('alert').textContent).toContain('logically invalid');
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('limits both date controls to today in Vietnam and blocks a future range', async () => {
+    render(<ActiveTripsScreen />);
+    await screen.findByText('TRIP-42');
+    const from = screen.getByLabelText('Start Date From');
+    const to = screen.getByLabelText('Start Date To');
+    expect(from.getAttribute('max')).toBe(getVietnamTodayDate());
+    expect(to.getAttribute('max')).toBe(getVietnamTodayDate());
+    fireEvent.change(from, { target: { value: '2099-01-01' } });
+    fireEvent.change(to, { target: { value: '2099-01-02' } });
     fireEvent.submit(screen.getByRole('search'));
     expect(screen.getByRole('alert').textContent).toContain('logically invalid');
     expect(push).not.toHaveBeenCalled();

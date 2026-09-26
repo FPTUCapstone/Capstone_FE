@@ -9,6 +9,7 @@ import {
   ACTIVE_TRIPS_MESSAGES,
   defaultActiveTripsSearch,
   formatVietnamDateTime,
+  getVietnamTodayDate,
   parseActiveTripsSearch,
   serializeActiveTripsSearch,
   validateDateRange,
@@ -33,6 +34,7 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
   const [state, setState] = useState<LoadState>('loading');
   const [dateError, setDateError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
+  const maximumStartDate = useMemo(() => getVietnamTodayDate(), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -88,8 +90,8 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
           <Field label="Keyword"><input aria-label="Keyword" value={draft.keyword} maxLength={200} onChange={(e) => field('keyword', e.target.value)} className={inputClass} placeholder="Trip code, group, or tour" /></Field>
           <Field label="Trip Type"><select aria-label="Trip Type" value={draft.tripType} onChange={(e) => field('tripType', e.target.value as ActiveTripsSearch['tripType'])} className={inputClass}><option value="">All</option><option value="SelfPlanned">Self-Planned</option><option value="Tour">Tour</option></select></Field>
           <Field label="Destination"><input aria-label="Destination" value={draft.destination} maxLength={300} onChange={(e) => field('destination', e.target.value)} className={inputClass} /></Field>
-          <Field label="Start Date From"><input aria-label="Start Date From" aria-describedby={dateError ? 'date-error' : undefined} type="date" value={draft.startDateFrom} onChange={(e) => field('startDateFrom', e.target.value)} className={inputClass} /></Field>
-          <Field label="Start Date To"><input aria-label="Start Date To" aria-describedby={dateError ? 'date-error' : undefined} type="date" value={draft.startDateTo} onChange={(e) => field('startDateTo', e.target.value)} className={inputClass} /></Field>
+          <Field label="Start Date From"><input aria-label="Start Date From" aria-describedby={dateError ? 'date-error' : undefined} type="date" max={maximumStartDate} value={draft.startDateFrom} onChange={(e) => field('startDateFrom', e.target.value)} className={inputClass} /></Field>
+          <Field label="Start Date To"><input aria-label="Start Date To" aria-describedby={dateError ? 'date-error' : undefined} type="date" max={maximumStartDate} value={draft.startDateTo} onChange={(e) => field('startDateTo', e.target.value)} className={inputClass} /></Field>
           <Field label="Alert State"><select aria-label="Alert State" value={draft.alertState} onChange={(e) => field('alertState', e.target.value as ActiveTripsSearch['alertState'])} className={inputClass}><option value="">All</option><option value="WithOpenAlerts">With Open Alerts</option><option value="WithoutOpenAlerts">Without Open Alerts</option></select></Field>
         </div>
         {dateError ? <p id="date-error" role="alert" className="mt-3 text-sm font-semibold text-[#8c1030]">{dateError}</p> : null}

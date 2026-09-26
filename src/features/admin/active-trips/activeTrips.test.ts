@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   formatVietnamDateTime,
+  getVietnamTodayDate,
   parseActiveTripsResponse,
   parseActiveTripsSearch,
   serializeActiveTripsSearch,
@@ -52,7 +53,13 @@ describe('active trips contract', () => {
   });
 
   it('reports an inverted date range', () => {
-    expect(validateDateRange('2026-09-27', '2026-09-26')).toBe(false);
-    expect(validateDateRange('2026-09-26', '2026-09-26')).toBe(true);
+    expect(validateDateRange('2026-09-27', '2026-09-26', '2026-09-27')).toBe(false);
+    expect(validateDateRange('2026-09-26', '2026-09-26', '2026-09-26')).toBe(true);
+  });
+
+  it('uses the Vietnam calendar date and rejects future filter dates', () => {
+    expect(getVietnamTodayDate(new Date('2026-09-26T17:30:00Z'))).toBe('2026-09-27');
+    expect(validateDateRange('2026-09-27', '', '2026-09-26')).toBe(false);
+    expect(validateDateRange('', '2026-09-27', '2026-09-26')).toBe(false);
   });
 });
