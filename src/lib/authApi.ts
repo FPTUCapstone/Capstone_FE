@@ -266,6 +266,23 @@ export async function webRefresh(): Promise<WebAuthContext> {
   }
 }
 
+/**
+ * D02 Web sign-out: POSTs the cookie-only logout contract. Success is the HTTP
+ * status alone — the backend answers a direct DTO ({"message": ...}) instead of
+ * the ApiResponse envelope, and an idempotent 200 (missing cookie) is still
+ * success. Non-2xx reuses the shared ProblemDetails ApiError mapping; a network
+ * throw keeps the session recoverable, exactly like webRefresh.
+ */
+export async function webLogout(): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/auth/web/logout`, { method: 'POST', credentials: 'include' });
+  } catch {
+    throw { code: 'NETWORK', message: 'Sign out unavailable.', status: 0 } satisfies ApiError;
+  }
+  if (!res.ok) return handleResponse<never>(res);
+}
+
 export async function webVerifyEmail(idToken: string): Promise<{ emailVerified: true }> {
   const res = await fetch(`${API_BASE}/auth/web/verify-email`, {
     method: 'POST', credentials: 'omit', headers: { Authorization: `Bearer ${idToken}` },
