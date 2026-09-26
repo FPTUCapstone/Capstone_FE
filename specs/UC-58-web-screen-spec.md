@@ -19,7 +19,7 @@
 
 - Loading uses an accessible `role="status"` and does not present stale rows as current.
 - Empty shows locked MSG128: `No data is available for the selected criteria.`
-- Invalid local date range shows locked MSG29 at the date controls and sends no request.
+- An inverted range or either date later than the current `Asia/Ho_Chi_Minh` calendar date shows locked MSG29 at the date controls and sends no request. Both native date controls expose that current date through their `max` attribute.
 - Forbidden shows locked MSG126: `You do not have permission to access this function.`
 - Unavailable shows locked MSG127 with a Retry button: `TripMate is temporarily unable to process your request. Please check your connection and try again.`
 - A `401` redirects to `/admin/login?returnUrl=%2Fadmin%2Ftrips%2Factive`.

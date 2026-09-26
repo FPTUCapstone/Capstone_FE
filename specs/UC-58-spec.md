@@ -36,7 +36,7 @@ These values are global operational totals returned by the Backend and do not ch
 - Keyword: Trip Code, Group Name, or Tour Name.
 - Trip Type: All, Self-Planned, Tour.
 - Destination: submitted text filter; an empty value means all destinations.
-- Start Date From and Start Date To.
+- Start Date From and Start Date To. Both use the current `Asia/Ho_Chi_Minh` calendar date as their maximum; future dates are invalid.
 - Alert State: All, With Open Alerts, Without Open Alerts.
 - Search/Apply button. Search is submitted explicitly, never on each keystroke.
 - Clear button restores default criteria and page 1.
@@ -112,7 +112,7 @@ The proxy forwards only the allowlisted UC-58 query parameters to `GET /api/v1/a
 1. An authenticated Administrator can open `/admin/trips/active` and retrieve data through the HttpOnly Admin-session proxy without `useWebSession()` as the authorization gate.
 2. Summary cards and all approved list fields render from the validated Backend response.
 3. Search executes only on submit; filters compose and are represented in the URL.
-4. Client validation blocks an inverted date range and renders MSG29 inline.
+4. Client validation blocks an inverted date range or either future date and renders MSG29 inline.
 5. Empty, `401`, `403`, malformed success, and unavailable states follow this specification.
 6. Pagination preserves all submitted criteria and displays the total count.
 7. The screen performs no trip, itinerary, group, booking, alert, or rerouting mutation.

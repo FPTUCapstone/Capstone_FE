@@ -58,7 +58,7 @@ Exit: reviewed screen specification exists and maps every visible field to the B
 
 Tests first:
 
-- Add `src/features/admin/active-trips/activeTrips.test.ts` for valid/malformed payloads, nullable fields, non-negative counts, allowed statuses/types, ID safety, query parsing/serialization, unknown keys, and date-range validation.
+- Add `src/features/admin/active-trips/activeTrips.test.ts` for valid/malformed payloads, nullable fields, non-negative counts, allowed statuses/types, ID safety, query parsing/serialization, unknown keys, date-range validation, and future-date rejection against the Vietnam calendar date.
 
 Production changes:
 
