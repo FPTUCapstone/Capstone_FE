@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoutDialog from "@/components/LogoutDialog";
 import { ROUTES } from "@/lib/routes";
@@ -10,10 +10,13 @@ const logoutErrorMessage = "Không thể đăng xuất. Vui lòng thử lại.";
 
 export default function AdminLogoutButton() {
   const router = useRouter();
+  const logoutInFlightRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleConfirm = async () => {
+    if (logoutInFlightRef.current) return;
+    logoutInFlightRef.current = true;
     setErrorMessage(null);
 
     try {
@@ -21,6 +24,8 @@ export default function AdminLogoutButton() {
     } catch {
       setErrorMessage(logoutErrorMessage);
       return;
+    } finally {
+      logoutInFlightRef.current = false;
     }
 
     setOpen(false);

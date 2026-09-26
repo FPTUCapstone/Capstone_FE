@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type LogoutDialogProps = {
@@ -17,17 +17,50 @@ export default function LogoutDialog({
   errorMessage,
 }: LogoutDialogProps) {
   const [loading, setLoading] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const handleClose = useCallback(() => {
     setLoading(false);
     onClose();
   }, [onClose]);
 
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const previouslyFocused = document.activeElement;
+    const firstControl = dialogRef.current?.querySelector<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    firstControl?.focus();
+
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, [open]);
+
   // Esc để đóng + khóa cuộn nền
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !loading) handleClose();
+      if (e.key !== "Tab") return;
+
+      const controls = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (controls.length === 0) return;
+
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
@@ -57,6 +90,7 @@ export default function LogoutDialog({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="logout-title"
@@ -97,7 +131,6 @@ export default function LogoutDialog({
             type="button"
             onClick={handleClose}
             disabled={loading}
-            autoFocus
             className="h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#CBD5E1] rounded-xl text-[#1E293B] font-semibold text-sm transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Hủy

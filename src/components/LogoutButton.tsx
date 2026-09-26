@@ -1,26 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { webLogout } from "@/lib/authApi";
+import { AuthStorage } from "@/features/auth/session/authSession";
 import LogoutDialog from "./LogoutDialog";
+
+const logoutFailedMessage =
+  "Chưa thể hoàn tất việc kết thúc phiên đăng nhập. Vui lòng thử lại.";
 
 export default function LogoutButton() {
   const router = useRouter();
+  const logoutInFlightRef = useRef(false);
   const [open, setOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleConfirm = async () => {
-    await webLogout();
-    setOpen(false);
-    router.replace("/sign-in");
-    router.refresh();
+    if (logoutInFlightRef.current) return;
+    logoutInFlightRef.current = true;
+    setErrorMessage(null);
+    try {
+      await webLogout();
+      AuthStorage.clear();
+      setOpen(false);
+      router.replace("/sign-in");
+      router.refresh();
+    } catch {
+      setErrorMessage(logoutFailedMessage);
+    } finally {
+      logoutInFlightRef.current = false;
+    }
   };
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setErrorMessage(null);
+          setOpen(true);
+        }}
         className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
       >
         <span className="material-symbols-outlined text-base" aria-hidden="true">
@@ -33,6 +52,7 @@ export default function LogoutButton() {
         open={open}
         onClose={() => setOpen(false)}
         onConfirm={handleConfirm}
+        errorMessage={errorMessage}
       />
     </>
   );

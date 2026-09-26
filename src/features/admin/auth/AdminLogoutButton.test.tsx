@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -39,6 +39,30 @@ describe('AdminLogoutButton', () => {
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'DELETE' });
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('sends one request when two confirmations arrive before React re-renders', async () => {
+    let resolveLogout!: (response: Response) => void;
+    const pendingLogout = new Promise<Response>((resolve) => {
+      resolveLogout = resolve;
+    });
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(() => pendingLogout);
+
+    render(<AdminLogoutButton />);
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
+
+    const confirm = within(screen.getByRole('dialog')).getByRole('button', {
+      name: 'Đăng xuất',
+    });
+    act(() => {
+      confirm.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      confirm.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    resolveLogout(new Response(null, { status: 204 }));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin/login'));
   });
 
   it('keeps the admin signed in after an HTTP error and allows a successful retry', async () => {

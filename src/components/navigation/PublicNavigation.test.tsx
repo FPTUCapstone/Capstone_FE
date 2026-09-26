@@ -160,6 +160,15 @@ describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
     sessionStorage.clear();
   });
 
+  it('keeps the public POI discovery entry after the navigation redesign', async () => {
+    mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
+
+    render(<PublicNavigation />);
+
+    const explore = await screen.findByRole('link', { name: 'Khám phá' });
+    expect(explore.getAttribute('href')).toBe('/pois');
+  });
+
   it('keeps the generic Partner link to guest registration once settled unauthenticated', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
     render(<PublicNavigation />);
