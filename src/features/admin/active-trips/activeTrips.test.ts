@@ -26,6 +26,17 @@ describe('active trips contract', () => {
     expect(parseActiveTripsResponse(valid).items[0].tripId).toBe('9007199254740993');
   });
 
+  it('accepts both UTC ISO 8601 representations emitted at the contract boundary', () => {
+    expect(() => parseActiveTripsResponse({
+      ...valid,
+      items: [{ ...valid.items[0], startedAtUtc: '2026-09-26T01:30:00+00:00' }],
+    })).not.toThrow();
+    expect(() => parseActiveTripsResponse({
+      ...valid,
+      items: [{ ...valid.items[0], startedAtUtc: '2026-09-26T08:30:00+07:00' }],
+    })).toThrow();
+  });
+
   it('rejects unsafe IDs and negative counts', () => {
     expect(() => parseActiveTripsResponse({ ...valid, items: [{ ...valid.items[0], tripId: 42 }] })).toThrow();
     expect(() => parseActiveTripsResponse({ ...valid, summary: { ...valid.summary, activeTrips: -1 } })).toThrow();
