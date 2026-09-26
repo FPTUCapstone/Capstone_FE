@@ -24,6 +24,12 @@ export function AdminNavigation() {
           >
             Tour Reviews
           </Link>
+          <Link
+            href={ROUTES.admin.activeTrips}
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+          >
+            Active Trips
+          </Link>
         </nav>
 
         <Link
