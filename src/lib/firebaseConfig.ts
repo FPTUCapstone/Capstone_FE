@@ -27,14 +27,24 @@ export function getMissingFirebaseEnvKeys(env: EnvLike): string[] {
  * missing, so developers get a clear message instead of an opaque
  * `initializeApp()` runtime failure.
  */
-export function assertFirebaseEnv(env: EnvLike): void {
+export function assertFirebaseEnv(env: EnvLike, options?: { throwOnError?: boolean }): void {
   const missing = getMissingFirebaseEnvKeys(env);
   if (missing.length === 0) return;
 
-  throw new Error(
+  const msg =
     `Missing required Firebase environment variables: ${missing.join(', ')}. ` +
-      'Copy .env.example to .env.local and fill in the Firebase Web App config from the Firebase Console ' +
-      '(Project settings → General → Your apps → SDK setup and configuration), ' +
-      'then restart the Next.js dev server.',
-  );
+    'Copy .env.example to .env.local and fill in the Firebase Web App config from the Firebase Console ' +
+    '(Project settings → General → Your apps → SDK setup and configuration), ' +
+    'then restart the Next.js dev server.';
+
+  const shouldThrow =
+    options?.throwOnError ??
+    (typeof window !== 'undefined' || process.env.NODE_ENV === 'test');
+
+  if (!shouldThrow) {
+    console.warn(`[Firebase Warning] ${msg}`);
+    return;
+  }
+
+  throw new Error(msg);
 }
