@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
@@ -21,6 +21,7 @@ export function PublicNavigation() {
   // state after F5/direct navigation while an existing session is
   // being restored.
   const { status, context } = useWebSession();
+  const signOutInFlightRef = useRef(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState(false);
 
@@ -56,7 +57,8 @@ export function PublicNavigation() {
     // desync this UI from the still-valid refresh cookie. The session-preserving
     // failure policy keeps the authenticated context (and thus a retryable
     // button) whenever the request fails; only a confirmed 200 clears local state.
-    if (signingOut) return;
+    if (signOutInFlightRef.current) return;
+    signOutInFlightRef.current = true;
     setSigningOut(true);
     setSignOutError(false);
     try {
@@ -65,6 +67,7 @@ export function PublicNavigation() {
     } catch {
       setSignOutError(true);
     } finally {
+      signOutInFlightRef.current = false;
       setSigningOut(false);
     }
   }

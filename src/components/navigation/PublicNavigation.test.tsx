@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage } from '@/features/auth/session/authSession';
 
@@ -245,6 +245,24 @@ describe('PublicNavigation UC-05 sign out', () => {
     expect(button.getAttribute('aria-busy')).toBe('true');
 
     fireEvent.click(button);
+    expect(mocks.webLogout).toHaveBeenCalledTimes(1);
+
+    resolveLogout();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Đăng xuất' })).toBeNull());
+  });
+
+  it('sends one request when two click events arrive before React re-renders', async () => {
+    let resolveLogout!: () => void;
+    const gate = new Promise<void>((resolve) => { resolveLogout = resolve; });
+    mocks.webLogout.mockImplementation(() => gate);
+    await renderAuthenticated(false);
+
+    const button = screen.getByRole('button', { name: 'Đăng xuất' });
+    act(() => {
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
     expect(mocks.webLogout).toHaveBeenCalledTimes(1);
 
     resolveLogout();
