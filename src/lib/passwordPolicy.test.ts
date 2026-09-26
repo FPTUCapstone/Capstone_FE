@@ -2,18 +2,23 @@ import { describe, expect, it } from 'vitest';
 
 import { validatePassword } from './passwordPolicy';
 
-// Expectations pin the exact legacy granular messages extracted from
-// TravelerRegistrationForm.tsx so registration behavior is unchanged.
+// Expectations pin the shared registration/reset policy required by UC-06.
 describe('validatePassword (shared canonical FE password policy)', () => {
   it('requires a password', () => {
     expect(validatePassword('')).toBe('Please enter your password.');
   });
 
-  it.each([' NewPassword1!', 'NewPassword1! ', ' NewPassword1! '])(
-    'rejects leading/trailing whitespace: %s',
+  it.each([
+    ' NewPassword1!',
+    'NewPassword1! ',
+    'New Password1!',
+    'New\tPassword1!',
+    'NewPassword1!\u00a0',
+  ])(
+    'rejects whitespace anywhere in the password: %s',
     (password) => {
       expect(validatePassword(password)).toBe(
-        'Password cannot start or end with a space.',
+        'Password cannot contain whitespace.',
       );
     },
   );
@@ -33,7 +38,7 @@ describe('validatePassword (shared canonical FE password policy)', () => {
     ['password1!', 'Password must contain uppercase, lowercase, number, and special character.'],
     ['PASSWORD1!', 'Password must contain uppercase, lowercase, number, and special character.'],
     ['Password!!', 'Password must contain uppercase, lowercase, number, and special character.'],
-    ['         ', 'Password cannot start or end with a space.'],
+    ['         ', 'Password cannot contain whitespace.'],
   ])('rejects "%s" with the exact legacy granular message', (password, expected) => {
     expect(validatePassword(password)).toBe(expected);
   });
