@@ -6,7 +6,7 @@
 import { AuthStorage, InvalidAuthContextError, type WebAuthContext } from '@/features/auth/session/authSession';
 import { extractFieldErrors } from './authErrorMapper';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
 
 // ─── Request / Response types ────────────────────────────────────────────────
 
