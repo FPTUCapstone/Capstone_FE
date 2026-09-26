@@ -58,7 +58,8 @@ const isPositiveInteger = (value: unknown): value is number =>
   Number.isSafeInteger(value) && (value as number) >= 1;
 const isNullableString = (value: unknown): value is string | null => value === null || typeof value === 'string';
 const isUtcTimestamp = (value: unknown): value is string | null =>
-  value === null || (typeof value === 'string' && value.endsWith('Z') && Number.isFinite(Date.parse(value)));
+  value === null || (typeof value === 'string' &&
+    /(?:Z|\+00:00)$/.test(value) && Number.isFinite(Date.parse(value)));
 
 function parseItem(value: unknown): ActiveTripItem {
   if (!isRecord(value) || typeof value.tripId !== 'string' || !/^\d+$/.test(value.tripId) ||
