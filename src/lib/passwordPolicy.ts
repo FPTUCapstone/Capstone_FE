@@ -1,11 +1,9 @@
 /**
  * Shared canonical FE password policy.
  *
- * Single source of truth for local-password entry (registration, UC-06 reset
- * password). Extracted verbatim from the inline validation in
- * TravelerRegistrationForm.tsx so registration behavior is unchanged and no
- * second policy can appear. The Backend remains the password authority; these
- * are pre-submit FE checks only.
+ * Shared pre-submit validation for local-password entry (registration and
+ * UC-06 reset). Passwords are validated without normalization so the exact
+ * value entered by the user remains the value submitted for authentication.
  */
 
 const PASSWORD_MAX_LENGTH = 72;
@@ -18,8 +16,8 @@ export function validatePassword(password: string): string | null {
   if (!password) {
     return 'Please enter your password.';
   }
-  if (password.startsWith(' ') || password.endsWith(' ')) {
-    return 'Password cannot start or end with a space.';
+  if (/\s/u.test(password)) {
+    return 'Password cannot contain whitespace.';
   }
   if (password.length < 8) {
     return 'Password must be at least 8 characters.';
