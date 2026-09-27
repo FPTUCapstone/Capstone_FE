@@ -171,7 +171,7 @@ export function AuthShell({
           </aside>
         ) : null}
 
-        <div className={`w-full ${singlePanel ? 'max-w-md' : `flex items-center justify-center p-6 sm:p-10 lg:p-12 xl:p-16 ${admin ? 'max-w-lg' : ''}`}`}>
+        <div className={`box-border min-w-0 w-full max-w-full ${singlePanel ? 'max-w-md' : `flex items-center justify-center p-6 sm:p-10 lg:p-12 xl:p-16 ${admin ? 'lg:max-w-lg' : ''}`}`}>
           <section className="w-full max-w-[480px]">
             <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">
               {admin ? (
