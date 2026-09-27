@@ -4,7 +4,10 @@ export const ROUTES = {
   register: '/register',
   verifyAccount: '/verify-account',
   forgotPassword: '/forgot-password',
+  pois: '/pois',
+  poi: (id: string | number) => `/pois/${id}`,
   partner: {
+    dashboard: '/partner',
     register: '/partner/register',
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',
@@ -15,5 +18,6 @@ export const ROUTES = {
     dashboard: '/admin',
     tourReviews: '/admin/tours/reviews',
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
+    createPoi: '/admin/catalogue/points-of-interest/new',
   },
 } as const;
