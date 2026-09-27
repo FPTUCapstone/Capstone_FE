@@ -5,7 +5,11 @@ import { AuthStorage } from '../session/authSession';
 const mocks = vi.hoisted(() => ({ webRefresh: vi.fn(), replace: vi.fn() }));
 vi.mock('@/lib/authApi', () => ({ webRefresh: mocks.webRefresh }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace, push: vi.fn() }) }));
-vi.mock('next/font/google', () => ({ Geist: () => ({ variable: '' }), Geist_Mono: () => ({ variable: '' }) }));
+vi.mock('next/font/google', () => ({
+  Geist: () => ({ variable: '' }),
+  Geist_Mono: () => ({ variable: '' }),
+  Plus_Jakarta_Sans: () => ({ variable: '' }),
+}));
 
 const PartnerApplicationPage = (await import('../../../../app/partner/application/page')).default;
 const PartnerPage = (await import('../../../../app/partner/page')).default;
