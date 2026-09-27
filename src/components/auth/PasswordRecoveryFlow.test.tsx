@@ -344,7 +344,7 @@ describe('PasswordRecoveryFlow resend cooldown and runtime errors', () => {
     expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(1);
   });
 
-  it('resends to the retained email once, restarts the cooldown and shows superseded-OTP feedback', async () => {
+  it('resends to the retained email once and shows delivery-neutral feedback', async () => {
     vi.useFakeTimers();
     await advanceToResetFormWithFakeTimers('user@example.com');
     await expireCooldown();
@@ -362,9 +362,11 @@ describe('PasswordRecoveryFlow resend cooldown and runtime errors', () => {
     expect((resend as HTMLButtonElement).disabled).toBe(true);
     expect(resend.textContent).toContain('(60s)');
 
-    const notice = screen.getByText(/a new reset code has been sent/i);
-    expect(notice.textContent).not.toMatch(/still valid|remains valid/i);
-    expect(notice.textContent).toMatch(/no longer valid/i);
+    const notice = screen.getByText(/if an account exists for this email, check your inbox/i);
+    expect(notice.textContent).toContain('Any previous code may no longer be valid.');
+    expect(notice.textContent).not.toMatch(
+      /has been sent|new code was sent|previous code is no longer valid/i,
+    );
   });
 
   it('handles a 429 resend with safe rate-limit feedback and keeps the cooldown running', async () => {

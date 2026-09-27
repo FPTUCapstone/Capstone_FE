@@ -152,7 +152,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
       startResendCooldown();
       setFeedback({
         tone: 'info',
-        message: `A new reset code has been sent to your email. Any previous code is no longer valid. ${OTP_TTL_NOTICE}`,
+        message: `If an account exists for this email, check your inbox. Any previous code may no longer be valid. ${OTP_TTL_NOTICE}`,
       });
     } catch (error: unknown) {
       // A Backend rate limit keeps the local cooldown running so the user
