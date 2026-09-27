@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
+import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
 
-export function AdminSidebar({ onSignOut, disabled }: { onSignOut: () => void; disabled: boolean }) {
+export function AdminSidebar() {
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#102a43] text-white z-50 flex flex-col justify-between shadow-md">
       <div className="flex flex-col flex-1 overflow-y-auto">
@@ -96,9 +97,7 @@ export function AdminSidebar({ onSignOut, disabled }: { onSignOut: () => void; d
             <span className="text-[10px] text-slate-300 truncate">Admin workspace</span>
           </div>
         </div>
-        <button type="button" onClick={onSignOut} disabled={disabled} aria-label="Sign out of administration" className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
-          <span className="material-symbols-outlined text-[20px]">logout</span>
-        </button>
+        <AdminLogoutButton />
       </div>
     </aside>
   );

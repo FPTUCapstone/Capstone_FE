@@ -1,17 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
-import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
+import LogoutButton from '@/components/LogoutButton';
 import { signInDestination } from '@/features/auth/routing/signInDestination';
-import { AuthStorage } from '@/features/auth/session/authSession';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { webLogout } from '@/lib/authApi';
 import { ROUTES } from '@/lib/routes';
-
-const signOutFailedMessage = 'Chưa thể hoàn tất việc kết thúc phiên đăng nhập. Vui lòng thử lại.';
 
 export function PublicNavigation() {
   // An empty in-memory context is NOT considered Guest until the
@@ -21,9 +16,6 @@ export function PublicNavigation() {
   // state after F5/direct navigation while an existing session is
   // being restored.
   const { status, context } = useWebSession();
-  const signOutInFlightRef = useRef(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const [signOutError, setSignOutError] = useState(false);
 
   const displayName = context
     ? context.fullName.trim() || context.email
@@ -51,26 +43,6 @@ export function PublicNavigation() {
     context?.role === 'TourOperator'
       ? signInDestination(context) ?? ROUTES.partner.application
       : ROUTES.partner.register;
-
-  async function handleSignOut() {
-    // UC-05: the remote logout owns revocation — a local-only clear would
-    // desync this UI from the still-valid refresh cookie. The session-preserving
-    // failure policy keeps the authenticated context (and thus a retryable
-    // button) whenever the request fails; only a confirmed 200 clears local state.
-    if (signOutInFlightRef.current) return;
-    signOutInFlightRef.current = true;
-    setSigningOut(true);
-    setSignOutError(false);
-    try {
-      await webLogout();
-      AuthStorage.clear();
-    } catch {
-      setSignOutError(true);
-    } finally {
-      signOutInFlightRef.current = false;
-      setSigningOut(false);
-    }
-  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-xs backdrop-blur-md md:px-8">
@@ -132,7 +104,7 @@ export function PublicNavigation() {
         </nav>
 
         {status === 'authenticated' ? (
-          <div className="order-2 flex items-center gap-2 sm:order-3">
+          <div className="order-2 flex items-center justify-end gap-2 sm:order-3">
             <div className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e]">
               <span className="material-symbols-outlined text-sm">
                 account_circle
@@ -143,15 +115,7 @@ export function PublicNavigation() {
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={signingOut}
-              aria-busy={signingOut}
-              className="inline-flex min-h-9 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
-            >
-              Đăng xuất
-            </button>
+            <LogoutButton />
           </div>
         ) : status === 'restoring' ? (
           <div
@@ -180,12 +144,6 @@ export function PublicNavigation() {
             </Link>
           </div>
         )}
-
-        {signOutError ? (
-          <div className="order-last w-full">
-            <FeedbackAlert tone="error">{signOutFailedMessage}</FeedbackAlert>
-          </div>
-        ) : null}
       </div>
     </header>
   );

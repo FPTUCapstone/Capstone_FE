@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 interface LegalModalProps {
@@ -10,14 +10,49 @@ interface LegalModalProps {
 }
 
 export function LegalModal({ onClose, title, children }: LegalModalProps) {
-  // Close on Escape
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const handleClose = useCallback(() => onClose(), [onClose]);
+
+  useLayoutEffect(() => {
+    const previouslyFocused = document.activeElement;
+    const firstControl = dialogRef.current?.querySelector<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    firstControl?.focus();
+
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, []);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        handleClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const controls = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (controls.length === 0) return;
+
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [handleClose]);
 
   // Prevent body scroll while open
   useEffect(() => {
@@ -31,9 +66,9 @@ export function LegalModal({ onClose, title, children }: LegalModalProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="legal-modal-title"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="relative flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl">
+      <div ref={dialogRef} className="relative flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#e2e5ea] px-6 py-4">
           <h2 id="legal-modal-title" className="text-base font-extrabold text-[#00152a]">
@@ -41,7 +76,7 @@ export function LegalModal({ onClose, title, children }: LegalModalProps) {
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close"
             className="rounded-lg p-1 text-[#59616b] hover:bg-[#eceef1] hover:text-[#00152a]"
           >
@@ -58,7 +93,7 @@ export function LegalModal({ onClose, title, children }: LegalModalProps) {
         <div className="border-t border-[#e2e5ea] px-6 py-4">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="w-full rounded-xl bg-[#007d6e] px-5 py-3 text-sm font-bold text-white hover:bg-[#006b5f]"
           >
             I understand
