@@ -3,7 +3,7 @@ import HeroPanel from '@/components/registration/HeroPanel';
 import BrandLogo from '@/components/registration/BrandLogo';
 import { VerifyEmailHandler } from '@/features/traveler/registration/VerifyEmailHandler';
 
-export const metadata: Metadata = { title: 'Verify Email - TripMate' };
+export const metadata: Metadata = { title: 'Xác minh email' };
 
 type PageProps = {
   searchParams: Promise<{

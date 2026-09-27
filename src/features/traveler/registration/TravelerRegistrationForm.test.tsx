@@ -208,6 +208,17 @@ describe('TravelerRegistrationForm', () => {
     expect(apiMocks.registerTraveler.mock.calls[0][0].phoneNumber).toBe('0912345678');
   });
 
+  it('omits an optional phone number containing only whitespace', async () => {
+    render(<TravelerRegistrationForm />);
+
+    completeForm('Traveler Name', { phone: '   ' });
+
+    await waitFor(() => {
+      expect(apiMocks.registerTraveler).toHaveBeenCalledOnce();
+    });
+    expect(apiMocks.registerTraveler.mock.calls[0][0].phoneNumber).toBeUndefined();
+  });
+
   it('rejects an invalid phone number before Firebase registration', async () => {
     render(<TravelerRegistrationForm />);
 

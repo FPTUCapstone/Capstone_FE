@@ -34,6 +34,24 @@ describe('LoginForm production sign-in route', () => {
     vi.clearAllMocks();
   });
 
+  it('associates validation errors with the production sign-in fields', async () => {
+    render(<LoginForm />);
+
+    fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+
+    const email = screen.getByLabelText(/^Email/);
+    const password = screen.getByLabelText(/^Mật khẩu/);
+    const emailError = await screen.findByText('Please enter your email.');
+    const passwordError = await screen.findByText('Please enter your password.');
+
+    expect(email.getAttribute('aria-invalid')).toBe('true');
+    expect(email.getAttribute('aria-describedby')).toBe(emailError.id);
+    expect(password.getAttribute('aria-invalid')).toBe('true');
+    expect(password.getAttribute('aria-describedby')).toBe(passwordError.id);
+    expect(emailError.getAttribute('role')).toBe('alert');
+    expect(passwordError.getAttribute('role')).toBe('alert');
+  });
+
   it('resends verification through the Backend after an unverified sign-in', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
     mocks.webResendVerification.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });

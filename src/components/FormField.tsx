@@ -37,7 +37,7 @@ export default function FormField({
 
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-          <span className="material-symbols-outlined text-[20px]">{icon}</span>
+          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{icon}</span>
         </div>
 
         <input
@@ -57,7 +57,7 @@ export default function FormField({
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
             aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
               {visible ? "visibility_off" : "visibility"}
             </span>
           </button>

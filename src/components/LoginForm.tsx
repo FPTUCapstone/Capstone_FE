@@ -56,11 +56,12 @@ export default function LoginForm() {
           disabled={loading}
           onChange={(event) => setEmail(event.target.value)}
           aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? "login-email-error" : undefined}
           required
         />
         {errors.email ? (
-          <p className="-mt-2 flex items-center gap-1 text-[11px] font-semibold text-red-600">
-            <span>⚠</span> {errors.email}
+          <p id="login-email-error" role="alert" className="-mt-2 flex items-center gap-1 text-[11px] font-semibold text-red-600">
+            <span aria-hidden="true">⚠</span> {errors.email}
           </p>
         ) : null}
 
@@ -75,12 +76,13 @@ export default function LoginForm() {
           disabled={loading}
           onChange={(event) => setPassword(event.target.value)}
           aria-invalid={Boolean(errors.password)}
+          aria-describedby={errors.password ? "login-password-error" : undefined}
           toggleable
           required
         />
         {errors.password ? (
-          <p className="-mt-2 flex items-center gap-1 text-[11px] font-semibold text-red-600">
-            <span>⚠</span> {errors.password}
+          <p id="login-password-error" role="alert" className="-mt-2 flex items-center gap-1 text-[11px] font-semibold text-red-600">
+            <span aria-hidden="true">⚠</span> {errors.password}
           </p>
         ) : null}
 

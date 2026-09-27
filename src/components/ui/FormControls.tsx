@@ -48,13 +48,13 @@ export function TextField({ endAdornment, error, help, id, label, leading, optio
       </div>
       {help ? (
         <span id={helpId} className="mt-1.5 flex items-center gap-1 text-[11px] text-brand-textSecondary leading-snug">
-          <span className="material-symbols-outlined text-[14px] text-brand-teal">info</span>
+          <span className="material-symbols-outlined text-[14px] text-brand-teal" aria-hidden="true">info</span>
           {help}
         </span>
       ) : null}
       {error ? (
-        <span id={errorId} className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600">
-          <span>⚠</span> {error}
+        <span id={errorId} role="alert" className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600">
+          <span aria-hidden="true">⚠</span> {error}
         </span>
       ) : null}
     </div>
@@ -123,8 +123,8 @@ export function CheckboxField({ checked, children, disabled, error, name, onChan
         <span>{children}</span>
       </label>
       {error ? (
-        <p id={errorId} className="mt-1 flex items-center gap-1 text-[10.5px] font-semibold text-red-500">
-          <span>⚠</span> {error}
+        <p id={errorId} role="alert" className="mt-1 flex items-center gap-1 text-[10.5px] font-semibold text-red-500">
+          <span aria-hidden="true">⚠</span> {error}
         </p>
       ) : null}
     </div>

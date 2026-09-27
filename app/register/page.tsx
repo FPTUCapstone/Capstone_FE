@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import HeroPanel from '@/components/registration/HeroPanel';
 import BrandLogo from '@/components/registration/BrandLogo';
-import RegisterForm from '@/components/registration/RegisterForm';
+import { TravelerRegistrationForm } from '@/features/traveler/registration/TravelerRegistrationForm';
 
 export const metadata: Metadata = {
-  title: 'Đăng ký Traveler | TripMate',
+  title: 'Đăng ký Traveler',
   description: 'Lên lịch trình thông minh & khám phá trọn vẹn chuyến đi',
 };
 
@@ -27,7 +27,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="w-full max-w-[480px]">
-          <RegisterForm />
+          <TravelerRegistrationForm />
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
             Bằng việc đăng ký, bạn đã đồng ý với các điều khoản của TripMate.

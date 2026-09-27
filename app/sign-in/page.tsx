@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import HeroPanel from "@/components/HeroPanel";
 import BrandLogo from "@/components/BrandLogo";
 import LoginForm from "@/components/LoginForm";
+
+export const metadata: Metadata = { title: "Đăng nhập" };
 
 export default function SignInPage() {
   return (

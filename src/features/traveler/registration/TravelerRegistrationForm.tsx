@@ -140,7 +140,8 @@ export function TravelerRegistrationForm() {
     try {
       const normalizedFullName = fullName.trim().replace(/\s+/g, ' ');
       const normalizedEmail = email.trim();
-      const normalizedPhone = phone ? phone.replace(/\s+/g, '') : undefined;
+      const compactPhone = phone.replace(/\s+/g, '');
+      const normalizedPhone = compactPhone || undefined;
 
       // 1. Create account in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(getFirebaseAuth(), normalizedEmail, password);
@@ -169,7 +170,7 @@ export function TravelerRegistrationForm() {
             password,
             fullName: normalizedFullName,
             phoneNumber: normalizedPhone,
-            acceptedTerms: true,
+            acceptedTerms: terms,
           },
           idToken
         );
