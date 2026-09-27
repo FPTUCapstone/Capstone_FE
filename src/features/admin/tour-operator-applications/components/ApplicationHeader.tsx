@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ROUTES } from '@/lib/routes';
 import { OperatorApprovalStatus } from '@/types/tour-operator-application';
 
 interface ApplicationHeaderProps {
@@ -30,7 +31,7 @@ export function ApplicationHeader({
       <div>
         <div className="mb-2 flex items-center gap-3">
           <Link
-            href="/admin/tours"
+            href={ROUTES.admin.dashboard}
             className="inline-flex items-center text-xs font-bold text-teal-700 hover:text-teal-900 transition"
           >
             ← Back to Admin Console
@@ -52,23 +53,30 @@ export function ApplicationHeader({
       </div>
 
       {isPending && (
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onOpenReject}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-rose-300 bg-white px-5 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 hover:border-rose-400 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
-          >
-            ✕ Reject Application
-          </button>
-          <button
-            type="button"
-            disabled={isMissingMandatory}
-            onClick={onOpenApprove}
-            title={isMissingMandatory ? "Cannot approve: Missing mandatory Business License document" : "Approve Application"}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/25 hover:bg-emerald-700 transition focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 disabled:shadow-none"
-          >
-            ✓ Approve Application
-          </button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onOpenReject}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-rose-300 bg-white px-5 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 hover:border-rose-400 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              ✕ Reject Application
+            </button>
+            <button
+              type="button"
+              disabled={isMissingMandatory}
+              aria-describedby={isMissingMandatory ? 'approval-blocked-reason' : undefined}
+              onClick={onOpenApprove}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/25 hover:bg-emerald-700 transition focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 disabled:shadow-none"
+            >
+              ✓ Approve Application
+            </button>
+          </div>
+          {isMissingMandatory && (
+            <p id="approval-blocked-reason" className="max-w-sm text-right text-xs font-semibold text-amber-800">
+              A Business License document is required before approval.
+            </p>
+          )}
         </div>
       )}
     </div>

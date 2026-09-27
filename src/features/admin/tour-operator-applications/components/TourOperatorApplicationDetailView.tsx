@@ -50,7 +50,7 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
               setError(err.message);
             }
           } else {
-            setError('Failed to connect to backend server. Make sure server is running on http://localhost:5021.');
+            setError('Could not reach the application service. Please try again.');
           }
         }
       } finally {
@@ -69,7 +69,7 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
 
   function handleApproveSuccess(result: ApproveOperatorApplicationResponseDto) {
     setIsApproveOpen(false);
-    setToastMessage(result.message || `Tour Operator "${detail?.companyName}" approved. Account activated. (MSG114)`);
+    setToastMessage(result.message || `Tour Operator "${detail?.companyName}" approved. Account activated.`);
 
     if (detail) {
       setDetail({
@@ -91,6 +91,7 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
   function handleRejectSuccess(msg: string) {
     setIsRejectOpen(false);
     setToastMessage(msg);
+    setReloadToken((token) => token + 1);
     setTimeout(() => setToastMessage(null), 8000);
   }
 
@@ -127,9 +128,13 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
   const isMissingMandatory = !hasBusinessLicense;
 
   return (
-    <div className="mx-auto max-w-6xl p-6 animate-fadeIn">
+    <div className="mx-auto max-w-6xl p-6 animate-fade-in">
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-900 p-4 text-sm font-bold text-white shadow-2xl backdrop-blur-md">
+        <div
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-900 p-4 text-sm font-bold text-white shadow-2xl backdrop-blur-md"
+          role="status"
+          aria-live="polite"
+        >
           <span className="text-xl">✅</span>
           <span>{toastMessage}</span>
           <button

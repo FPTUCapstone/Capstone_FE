@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { rejectOperatorApplication, ApiError } from '../api/tourOperatorApplicationApi';
+import { useAccessibleDecisionDialog } from './useAccessibleDecisionDialog';
 
 interface RejectModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function RejectModal({
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useAccessibleDecisionDialog(isOpen, onClose, loading);
 
   if (!isOpen) return null;
 
@@ -35,7 +37,7 @@ export function RejectModal({
       setLoading(true);
       setError(null);
       await rejectOperatorApplication(userId, reason.trim());
-      onSuccess(`Application rejected for "${companyName}". Notification sent to operator. (MSG116)`);
+      onSuccess(`Application rejected for "${companyName}".`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -48,25 +50,33 @@ export function RejectModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl text-slate-900">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reject-application-title"
+      onClick={(event) => { if (event.target === event.currentTarget && !loading) onClose(); }}
+    >
+      <div ref={dialogRef} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl text-slate-900">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 border border-rose-300 text-rose-700 text-xl font-bold">
             ✕
           </div>
           <div>
-            <h3 className="text-lg font-extrabold text-slate-900">Reject Application</h3>
+            <h3 id="reject-application-title" className="text-lg font-extrabold text-slate-900">Reject Application</h3>
             <p className="text-xs font-medium text-slate-500">Application for &quot;{companyName}&quot;</p>
           </div>
         </div>
 
         <form onSubmit={handleConfirm}>
           <div className="mb-4">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-              Reason for Rejection (MSG115)
+            <label htmlFor="rejection-reason" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+              Reason for Rejection
             </label>
             <textarea
+              id="rejection-reason"
               required
+              maxLength={1000}
               rows={4}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -76,11 +86,11 @@ export function RejectModal({
           </div>
 
           <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-600">
-            ℹ️ <strong>Note:</strong> Reject action UI dependency for UC-50. Full rejection processing is owned by UC-51.
+            ℹ️ The applicant will be able to view this reason and correct the application.
           </div>
 
           {error && (
-            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">
+            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800" role="alert">
               ❌ {error}
             </div>
           )}

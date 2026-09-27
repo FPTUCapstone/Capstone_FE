@@ -1,84 +1,83 @@
-# Implementation Plan — UC-50 Approve Tour Operator Application Web Frontend
+# UC-50 Frontend Plan — Approve Tour Operator Application
 
-## Overview
+## Objective
 
-This implementation plan defines the Web Frontend implementation for **UC-50: Approve Tour Operator Application** in the `Capstone_FE` Next.js App Router project. It adds TypeScript DTOs, API Client methods, UI components (Company legal info card, Document viewer grid, Approve/Reject modals, Loading skeletons), and the Admin App Router page at `/admin/tour-operator-applications/[userId]`.
+Deliver the Administrator detail and approval screen at `/admin/tour-operator-applications/[userId]`, using the HttpOnly Administrator session and the backend UC-50 contract.
 
----
+## Approved business boundary
 
-## Technical Context & Decisions
+- Show `taxCode` as required application data; do not require or add a Tax Code file upload.
+- Treat only a non-rejected `BusinessLicense` document as mandatory for approval.
+- Keep rejection integration aligned with the future UC-51 success contract and record that backend dependency explicitly.
+- Do not add mock data or direct browser-to-backend access.
 
-1. **Architecture Boundaries**:
-   - Route composition lives in `app/admin/(console)/tour-operator-applications/[userId]/page.tsx`.
-   - Substantial feature implementation lives in `src/features/admin/tour-operator-applications/`.
-2. **Server/Client Components Boundary**:
-   - Page route acts as Server Component wrapper or client boundary where interactive modals (ApproveModal, RejectModal, Toast alerts) require `'use client'`.
-3. **API Integration**:
-   - Connects directly to backend API running at `http://localhost:5021/api/v1/admin/tour-operator-applications/`.
-   - Sends Bearer token in `Authorization` header.
-4. **Rich Aesthetics & Clear Structural Layout**:
-   - High-contrast Light Theme tailored to match the Admin Console (`#f7f9fc`).
-   - Deep dark navy titles (`text-slate-900 font-extrabold`), double section borders (`border-2 border-slate-300 bg-white rounded-2xl p-6 shadow-sm`), and individual field container boxes (`border border-slate-200 bg-slate-50/70 p-4 rounded-xl`).
-   - High-contrast action buttons: Emerald primary Approve button (`bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md`) and Rose outline Reject button (`border-2 border-rose-300 bg-white text-rose-700 hover:bg-rose-50 font-bold`).
-   - Development mock fallback data for sample applications `#2` and `#3` for zero-setup live testing.
+## Implementation
 
----
+### 1. Types and client API
 
-## Proposed File Changes
+- Keep application, document, status, approval, and error contracts in `src/types/tour-operator-application.ts`.
+- Use `src/features/admin/tour-operator-applications/api/tourOperatorApplicationApi.ts` for browser calls to same-origin routes:
+  - `fetchOperatorApplicationDetail(userId)`;
+  - `approveOperatorApplication(userId)`;
+  - `rejectOperatorApplication(userId, reason)`.
 
-### Component 1: TypeScript Types & DTOs
-- [NEW] [`tour-operator-application.ts`](file:///d:/study/Project-Capstone/Capstone_FE/src/types/tour-operator-application.ts): Type definitions for `OperatorDocumentDto`, `TourOperatorApplicationDetailDto`, `ApproveOperatorApplicationResponseDto`, and error contracts.
+### 2. Authenticated server proxy
 
-### Component 2: API Service & Client Layer
-- [NEW] [`tourOperatorApplicationApi.ts`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/tour-operator-applications/api/tourOperatorApplicationApi.ts): Functions for `getDetail(userId)`, `approve(userId)`, `reject(userId, reason)`.
+- Use `tourOperatorApplicationProxy.ts` and the Next.js routes under `src/app/api/admin/tour-operator-applications/[userId]/`.
+- Read the HttpOnly Administrator access-token cookie on the server and forward it to backend `/api/v1/admin/tour-operator-applications/...` endpoints.
+- Clear an invalid Administrator session on `401` using the shared session utility.
+- Return backend status and safe response data without exposing deployment URLs.
 
-### Component 3: Feature UI Components
-- [NEW] [`ApplicationHeader.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/tour-operator-applications/components/ApplicationHeader.tsx): Back button, company title, status badges, Approve/Reject buttons.
-- [NEW] [`CompanyInfoCard.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/tour-operator-applications/components/CompanyInfoCard.tsx): Company name, Tax Code, Business License No, Phone, Address, Reviewer info.
-- [NEW] [`DocumentsGrid.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/tour-operator-applications/components/DocumentsGrid.tsx): Document cards, status pills, file preview link, missing document alert.
-- [NEW] [`ApproveModal.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/tour-operator-applications/components/ApproveModal.tsx): Confirmation dialog with loading spinner, API approve call, and MSG114 toast.
-- [NEW] [`RejectModal.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/tour-operator-applications/components/RejectModal.tsx): Rejection reason dialog, UI stub call, and MSG116 toast.
-- [NEW] [`DetailSkeleton.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/src/features/admin/tour-operator-applications/components/DetailSkeleton.tsx): Loading skeletons for header, card, and documents grid.
+### 3. Application detail UI
 
-### Component 4: App Router Page
-- [NEW] [`page.tsx`](file:///d:/study/Project-Capstone/Capstone_FE/app/admin/(console)/tour-operator-applications/[userId]/page.tsx): Route page composing the detail view.
+- `TourOperatorApplicationDetailView.tsx`: fetch, loading/error states, modal state, approval state update, rejection refetch, and accessible success feedback.
+- `ApplicationHeader.tsx`: application status, `/admin` back link, pending-only decision buttons, and visible explanation when Business License is missing.
+- `CompanyInfoCard.tsx`: legal data including Tax Code value and rejection reason.
+- `DocumentsGrid.tsx`: uploaded-document cards and Business-License-only approval warning.
+- `ApproveModal.tsx` and `RejectModal.tsx`: accessible decision dialogs.
+- `useAccessibleDecisionDialog.ts`: initial focus, focus trap, Escape handling, focus restoration, and background scroll locking shared by both dialogs.
 
----
+Use the repository Tailwind CSS utilities, including the existing `animate-fade-in` utility. Do not introduce inline deployment configuration or a new styling framework.
 
-## Sequential Execution Tasks
+### 4. State correctness
 
-### Task 1: TypeScript Types & DTOs Layer
-- **Files**: `src/types/tour-operator-application.ts`.
-- **Verification Command**: `npm run typecheck`
-- **Definition of Done**: Defines all 4 DTO interfaces matching backend contracts.
+- After approve success, update the local application and document states using the returned contract.
+- After reject success, refetch the application detail. This makes the backend response authoritative for application status, document status, rejection reason, and decision-button visibility.
+- Announce success without rendering internal message codes such as `MSG114`, `MSG115`, or `MSG116`.
 
-### Task 2: API Service & Client Layer
-- **Files**: `src/features/admin/tour-operator-applications/api/tourOperatorApplicationApi.ts`.
-- **Verification Command**: `npm run typecheck`
-- **Definition of Done**: Exported `getDetail`, `approve`, `reject` functions.
+### 5. Accessibility
 
-### Task 3: Feature UI Components (Header, Company Card, Documents Grid, Modals, Skeleton)
-- **Files**: Files in `src/features/admin/tour-operator-applications/components/`.
-- **Verification Command**: `npm run typecheck`
-- **Definition of Done**: Rich Aesthetics UI components compiled without errors.
+- Give both modal containers `role="dialog"`, `aria-modal="true"`, and an accessible heading.
+- Focus the first meaningful control when opened, trap Tab/Shift+Tab, close with Escape while not submitting, and return focus to the opener.
+- Associate the rejection label with the textarea.
+- Expose the disabled approval explanation as visible text linked with `aria-describedby`.
 
-### Task 4: App Router Page Integration
-- **Files**: `app/admin/(console)/tour-operator-applications/[userId]/page.tsx`.
-- **Verification Command**: `npm run typecheck && npm run lint`
-- **Definition of Done**: Route page resolves `params.userId`, fetches data, and renders interactive review surface.
+### 6. Tests
 
-### Task 5: Project Build Verification
-- **Verification Command**: `npm run build`
-- **Definition of Done**: Next.js production build succeeds with zero errors.
+Add component regression coverage for the valid back-link route, Business License approval guard, safe network error text, rejection success refetch, stale-action removal, success live region, modal labels, focus behavior, Escape handling, and rejection textarea label association.
 
----
+Existing proxy, service, route, lint, type, test, and production-build checks remain part of validation.
 
-## Verification Plan
+## Verification commands
 
-### Automated Checks
-- `npm run typecheck`
-- `npm run lint`
-- `npm run build`
+Run from the FE repository:
 
-### Manual Verification
-- Test running dev server (`npm run dev`) and viewing `http://localhost:3001/admin/tour-operator-applications/2` with backend running on `http://localhost:5021`.
+```powershell
+npm run lint
+npm run typecheck
+npm test
+npm run build
+git diff --check
+```
+
+After committing, rerun the checks on the exact pushed HEAD and record the SHA and remote CI result in the PR description.
+
+## PR evidence
+
+The PR description must include the UC-50 summary and affected routes, pushed HEAD SHA, validation commands and results, screenshots of the pending detail view and decision dialogs, and known dependencies.
+
+## Known dependencies
+
+- UC-51 owns rejection processing. Until its backend is complete, the reject request can return an error even though the FE handles the future success response correctly.
+- The application-list route/inbound navigation is outside UC-50 and needs a separate owner/task.
+- Email notification is outside this FE scope and must not be claimed by success copy.

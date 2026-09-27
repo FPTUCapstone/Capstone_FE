@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { approveOperatorApplication, ApiError } from '../api/tourOperatorApplicationApi';
 import { ApproveOperatorApplicationResponseDto } from '@/types/tour-operator-application';
+import { useAccessibleDecisionDialog } from './useAccessibleDecisionDialog';
 
 interface ApproveModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export function ApproveModal({
 }: ApproveModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useAccessibleDecisionDialog(isOpen, onClose, loading);
 
   if (!isOpen) return null;
 
@@ -44,14 +46,20 @@ export function ApproveModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl text-slate-900">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="approve-application-title"
+      onClick={(event) => { if (event.target === event.currentTarget && !loading) onClose(); }}
+    >
+      <div ref={dialogRef} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl text-slate-900">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 border border-emerald-300 text-emerald-700 text-xl font-bold">
             ✓
           </div>
           <div>
-            <h3 className="text-lg font-extrabold text-slate-900">Approve Application</h3>
+            <h3 id="approve-application-title" className="text-lg font-extrabold text-slate-900">Approve Application</h3>
             <p className="text-xs font-medium text-slate-500">Account Activation Confirmation</p>
           </div>
         </div>
@@ -82,7 +90,7 @@ export function ApproveModal({
         </div>
 
         {error && (
-          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800" role="alert">
             ❌ {error}
           </div>
         )}
