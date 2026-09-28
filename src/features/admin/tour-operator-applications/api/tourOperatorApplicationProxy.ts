@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 
 import { ADMIN_ACCESS_TOKEN_COOKIE, clearAdminSession, isSameOriginRequest, jsonNoStore } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
+import { parseApplicationId } from '../utils/applicationId';
 
 type ApplicationAction = 'approve' | 'reject';
 
@@ -12,7 +13,7 @@ export async function proxyTourOperatorApplication(
   userId: string,
   action?: ApplicationAction,
 ) {
-  if (!/^\d+$/.test(userId) || userId === '0') {
+  if (parseApplicationId(userId) === null) {
     return jsonNoStore({ title: 'A valid application ID is required.' }, 400);
   }
   if (request.method !== 'GET' && !isSameOriginRequest(request)) {
