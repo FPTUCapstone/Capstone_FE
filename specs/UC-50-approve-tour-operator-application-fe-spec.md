@@ -16,6 +16,7 @@ This decision resolves the earlier FE wording that incorrectly treated both `Tax
 ## Route and access
 
 - Page: `/admin/tour-operator-applications/[userId]`
+- `userId` must be a canonical positive base-10 integer within JavaScript's safe-integer range. Partial numbers, decimals, scientific notation, leading-zero aliases, and unsafe integers render `Invalid Application ID` and are rejected by the proxy without contacting the backend.
 - The page is available only through the Administrator session flow.
 - The browser calls same-origin Next.js routes. The server proxy reads the HttpOnly Administrator cookie and forwards the request to the backend.
 - The UI must not expose bearer tokens, internal service URLs, or localhost topology.
@@ -65,6 +66,7 @@ There is no preview or mock fallback. A failed request produces product-facing e
 - Approve and Reject dialogs meet the keyboard and accessible-name behavior above.
 - A successful rejection reloads detail and removes decision actions when the returned status is no longer pending.
 - Tests cover the route, Business License guard, safe error text, rejection refresh, textarea label, dialog keyboard behavior, focus trap, and focus restoration.
+- Tests cover strict application-ID parsing at both the page boundary and the server proxy boundary.
 
 ## Dependencies and limitations
 

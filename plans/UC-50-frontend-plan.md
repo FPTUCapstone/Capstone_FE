@@ -24,6 +24,7 @@ Deliver the Administrator detail and approval screen at `/admin/tour-operator-ap
 ### 2. Authenticated server proxy
 
 - Use `tourOperatorApplicationProxy.ts` and the Next.js routes under `src/app/api/admin/tour-operator-applications/[userId]/`.
+- Parse route identifiers through the shared `parseApplicationId` utility. Accept only canonical positive base-10 safe integers, and reject malformed or unsafe IDs before any backend request.
 - Read the HttpOnly Administrator access-token cookie on the server and forward it to backend `/api/v1/admin/tour-operator-applications/...` endpoints.
 - Clear an invalid Administrator session on `401` using the shared session utility.
 - Return backend status and safe response data without exposing deployment URLs.
@@ -54,7 +55,7 @@ Use the repository Tailwind CSS utilities, including the existing `animate-fade-
 
 ### 6. Tests
 
-Add component regression coverage for the valid back-link route, Business License approval guard, safe network error text, rejection success refetch, stale-action removal, success live region, modal labels, focus behavior, Escape handling, and rejection textarea label association.
+Add component regression coverage for the valid back-link route, Business License approval guard, safe network error text, rejection success refetch, stale-action removal, success live region, modal labels, focus behavior, Escape handling, and rejection textarea label association. Add parser and proxy regressions for partial numbers, decimals, scientific notation, non-positive IDs, leading-zero aliases, and values outside JavaScript's safe-integer range.
 
 Existing proxy, service, route, lint, type, test, and production-build checks remain part of validation.
 

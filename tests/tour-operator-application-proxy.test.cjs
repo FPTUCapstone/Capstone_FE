@@ -33,6 +33,20 @@ test('requires an Administrator session before calling BE', async () => {
   assert.equal(response.status, 401);
 });
 
+test('rejects malformed or unsafe application IDs before calling BE', async () => {
+  let called = false;
+  const proxy = setup('admin-token', async () => {
+    called = true;
+    return Response.json({});
+  });
+
+  for (const userId of ['1abc', '1.5', '1e3', '0', '-1', '01', '9007199254740992']) {
+    const response = await proxy(request(), userId);
+    assert.equal(response.status, 400, `expected ${userId} to be rejected`);
+  }
+  assert.equal(called, false);
+});
+
 test('forwards detail and approve requests with the HttpOnly session token', async () => {
   const calls = [];
   const proxy = setup('admin-token', async (path, init) => {

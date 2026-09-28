@@ -1,5 +1,6 @@
 import { use } from 'react';
 import { TourOperatorApplicationDetailView } from '@/features/admin/tour-operator-applications/components/TourOperatorApplicationDetailView';
+import { parseApplicationId } from '@/features/admin/tour-operator-applications/utils/applicationId';
 
 interface PageProps {
   params: Promise<{
@@ -9,9 +10,9 @@ interface PageProps {
 
 export default function TourOperatorApplicationDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
-  const userIdNumber = parseInt(resolvedParams.userId, 10);
+  const userIdNumber = parseApplicationId(resolvedParams.userId);
 
-  if (isNaN(userIdNumber) || userIdNumber <= 0) {
+  if (userIdNumber === null) {
     return (
       <div className="mx-auto max-w-4xl p-8 text-center text-slate-400">
         <h2 className="text-xl font-bold text-rose-400 mb-2">Invalid Application ID</h2>
