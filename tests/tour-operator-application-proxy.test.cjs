@@ -86,6 +86,23 @@ test('rejects cross-origin mutations and forwards a valid rejection reason', asy
   assert.equal(called, true);
 });
 
+test('reject validation blocks empty and oversized reasons before calling BE', async () => {
+  let called = false;
+  const proxy = setup('admin-token', async () => {
+    called = true;
+    return new Response(null, { status: 200 });
+  });
+
+  const empty = await proxy(request('POST', { reason: '   ' }), '2', 'reject');
+  assert.equal(empty.status, 422);
+  assert.match(await empty.text(), /required/i);
+
+  const oversized = await proxy(request('POST', { reason: 'x'.repeat(501) }), '2', 'reject');
+  assert.equal(oversized.status, 422);
+  assert.match(await oversized.text(), /500/);
+  assert.equal(called, false);
+});
+
 test('clears an invalid session and does not expose upstream server failures', async () => {
   const denied = await setup('expired', async () => Response.json({ detail: 'private' }, { status: 401 }))(request(), '2');
   assert.equal(denied.status, 401);

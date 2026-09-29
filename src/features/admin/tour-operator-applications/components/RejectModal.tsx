@@ -22,22 +22,36 @@ export function RejectModal({
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useAccessibleDecisionDialog(isOpen, onClose, loading);
+
+  function handleClose() {
+    if (loading) return;
+    setReason('');
+    setError(null);
+    onClose();
+  }
+
+  const dialogRef = useAccessibleDecisionDialog(isOpen, handleClose, loading);
 
   if (!isOpen) return null;
 
   async function handleConfirm(e: React.FormEvent) {
     e.preventDefault();
-    if (!reason.trim()) {
-      setError('Please provide a specific rejection reason.');
+    const normalizedReason = reason.trim();
+    if (!normalizedReason) {
+      setError('Rejection reason is required.');
+      return;
+    }
+    if (normalizedReason.length > 500) {
+      setError('Rejection reason cannot exceed 500 characters.');
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      await rejectOperatorApplication(userId, reason.trim());
-      onSuccess(`Application rejected for "${companyName}".`);
+      await rejectOperatorApplication(userId, normalizedReason);
+      setReason('');
+      onSuccess('Application rejected. Notification sent to operator.');
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -55,7 +69,7 @@ export function RejectModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="reject-application-title"
-      onClick={(event) => { if (event.target === event.currentTarget && !loading) onClose(); }}
+      onClick={(event) => { if (event.target === event.currentTarget) handleClose(); }}
     >
       <div ref={dialogRef} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl text-slate-900">
         <div className="mb-4 flex items-center gap-3">
@@ -63,7 +77,7 @@ export function RejectModal({
             ✕
           </div>
           <div>
-            <h3 id="reject-application-title" className="text-lg font-extrabold text-slate-900">Reject Application</h3>
+            <h3 id="reject-application-title" className="text-lg font-extrabold text-slate-900">Reject Tour Operator Application</h3>
             <p className="text-xs font-medium text-slate-500">Application for &quot;{companyName}&quot;</p>
           </div>
         </div>
@@ -71,16 +85,16 @@ export function RejectModal({
         <form onSubmit={handleConfirm}>
           <div className="mb-4">
             <label htmlFor="rejection-reason" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-              Reason for Rejection
+              Please enter specific rejection reason to send to applicant:
             </label>
             <textarea
               id="rejection-reason"
               required
-              maxLength={1000}
+              maxLength={500}
               rows={4}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Enter specific rejection reason to send to applicant (e.g. Invalid license number, expired document)..."
+              placeholder="Enter reason for rejection..."
               className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
             />
           </div>
@@ -99,7 +113,7 @@ export function RejectModal({
             <button
               type="button"
               disabled={loading}
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100 transition disabled:opacity-50"
             >
               Cancel
