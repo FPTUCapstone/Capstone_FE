@@ -2,7 +2,11 @@ import { AdminSignInForm } from '@/features/admin/auth/AdminSignInForm';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { ROUTES } from '@/lib/routes';
 
-export function AdminLoginPage() {
+interface AdminLoginPageProps {
+  returnUrl?: string;
+}
+
+export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
   return (
     <AuthShell
       admin
@@ -12,7 +16,7 @@ export function AdminLoginPage() {
       title="Administrator Sign In"
       description="Authenticate to access the protected administration workspace."
     >
-      <AdminSignInForm />
+      <AdminSignInForm returnUrl={returnUrl} />
     </AuthShell>
   );
 }

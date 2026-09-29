@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
 import { ROUTES } from '@/lib/routes';
 
 export function AdminNavigation() {
@@ -24,15 +25,15 @@ export function AdminNavigation() {
           >
             Tour Reviews
           </Link>
+          <Link
+            href={ROUTES.admin.auditLogs}
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+          >
+            Audit Logs
+          </Link>
         </nav>
 
-        <Link
-          href={ROUTES.admin.login}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[#71f8e4] px-3 py-2 text-xs font-bold text-[#71f8e4] hover:bg-[#71f8e4] hover:text-[#00152a]"
-        >
-          <span className="material-symbols-outlined text-base">logout</span>
-          Login placeholder
-        </Link>
+        <AdminLogoutButton />
       </div>
     </header>
   );
