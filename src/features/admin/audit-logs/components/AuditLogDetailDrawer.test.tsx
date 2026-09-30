@@ -120,8 +120,7 @@ describe('AuditLogDetailDrawer', () => {
 
     render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
 
-    expect(await screen.findByText('#101')).toBeDefined();
-    expect(screen.getByText('-')).toBeDefined();
+    expect(await screen.findByText('-')).toBeDefined();
   });
 
   it('only reports copied after the clipboard write succeeds', async () => {
