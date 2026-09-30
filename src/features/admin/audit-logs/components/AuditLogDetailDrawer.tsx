@@ -40,14 +40,17 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
         if (isMounted) {
           if (err instanceof AuditLogServiceError && (err.statusCode === 404 || err.errorCode === 'admin.audit_log_not_found')) {
             setError('System audit log entry not found. (MSG129)');
-          } else if (err instanceof Error) {
-            setError(err.message || 'Failed to load audit log details.');
+          } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'admin.audit_log_forbidden')) {
+            setError('Access denied. Administrator role required. (MSG126)');
+          } else if (err instanceof Error && err.message) {
+            setError(err.message);
           } else {
-            setError('Failed to load audit log details.');
+            setError('The audit log details cannot be retrieved because of a system or network failure. (MSG127)');
           }
           setIsLoading(false);
         }
       });
+
 
     return () => {
       isMounted = false;
