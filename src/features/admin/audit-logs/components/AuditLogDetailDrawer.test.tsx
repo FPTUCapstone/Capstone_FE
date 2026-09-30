@@ -1,8 +1,18 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { AuditLogDetailDrawer } from './AuditLogDetailDrawer';
 import * as service from '../services/auditLogAdminService';
+
+const { routerReplace } = vi.hoisted(() => ({
+  routerReplace: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: routerReplace,
+  }),
+}));
 
 vi.mock('../services/auditLogAdminService', () => ({
   getAuditLogDetail: vi.fn(),
@@ -25,31 +35,32 @@ describe('AuditLogDetailDrawer', () => {
     vi.clearAllMocks();
   });
 
+  const buildDetail = (overrides: Partial<Awaited<ReturnType<typeof service.getAuditLogDetail>>> = {}) => ({
+    id: 101,
+    result: 'Success' as const,
+    actionType: 'ApproveOperatorApplication',
+    actorUserId: 10,
+    actorEmail: 'admin@tripmate.vn',
+    actorFullName: 'Admin User',
+    actorRole: 'Administrator' as const,
+    affectedEntity: 'OperatorProfile',
+    affectedEntityId: 5,
+    reason: null,
+    beforeData: '{"status":"Pending"}',
+    afterData: '{"status":"Approved"}',
+    ipAddress: '127.0.0.1',
+    createdAtUtc: '2026-09-13T10:00:00.000Z',
+    createdAtLocal: '13/09/2026 17:00:00',
+    ...overrides,
+  });
+
   it('renders nothing when isOpen is false', () => {
     render(<AuditLogDetailDrawer logId={101} isOpen={false} onClose={mockOnClose} />);
     expect(screen.queryByText('Audit Log Details')).toBeNull();
   });
 
   it('renders details successfully when open and data is loaded', async () => {
-    const mockDetail = {
-      id: 101,
-      result: 'Success' as const,
-      actionType: 'ApproveOperatorApplication',
-      actorUserId: 10,
-      actorEmail: 'admin@tripmate.vn',
-      actorFullName: 'Admin User',
-      actorRole: 'Administrator' as const,
-      affectedEntity: 'OperatorProfile',
-      affectedEntityId: 5,
-      reason: null,
-      beforeData: '{"status":"Pending"}',
-      afterData: '{"status":"Approved"}',
-      ipAddress: '127.0.0.1',
-      createdAtUtc: '2026-09-13T10:00:00.000Z',
-      createdAtLocal: '13/09/2026 17:00:00',
-    };
-
-    vi.mocked(service.getAuditLogDetail).mockResolvedValue(mockDetail);
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
 
     render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
 
@@ -59,6 +70,52 @@ describe('AuditLogDetailDrawer', () => {
     expect(screen.getByText('admin@tripmate.vn')).toBeDefined();
     expect(screen.getByText('13/09/2026 17:00:00')).toBeDefined();
     expect(screen.getByText('127.0.0.1')).toBeDefined();
+  });
+
+  it('exposes the modal with a dialog role and accessible name', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    const dialog = await screen.findByRole('dialog', { name: /Audit Log Details/ });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Close audit log details' })).toBeDefined();
+  });
+
+  it('prioritizes the BE reason field over JSON payload fallback', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail({
+      reason: 'Approved because the business license is valid.',
+      afterData: '{"reason":"payload fallback should not render"}',
+    }));
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    expect(await screen.findByText(/Approved because the business license is valid/)).toBeDefined();
+    expect(screen.getByText('Supplied Reason / Action Note')).toBeDefined();
+  });
+
+  it('ignores non-string JSON reason fields without crashing', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail({
+      reason: null,
+      beforeData: '{"reason":{"text":"not renderable"},"note":123}',
+      afterData: '{"rejectionReason":42}',
+    }));
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    expect(await screen.findByText('#101')).toBeDefined();
+    expect(screen.queryByText('Supplied Reason / Action Note')).toBeNull();
+  });
+
+  it('redirects to admin login when the detail request returns 401', async () => {
+    const err = new service.AuditLogServiceError('Administrator sign-in is required.', 401);
+    vi.mocked(service.getAuditLogDetail).mockRejectedValue(err);
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    await waitFor(() => {
+      expect(routerReplace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Faudit-logs');
+    });
   });
 
   it('renders error state when audit log entry is not found (404)', async () => {
@@ -87,26 +144,11 @@ describe('AuditLogDetailDrawer', () => {
   });
 
   it('calls onClose when close button is clicked', async () => {
-
-    const mockDetail = {
-      id: 101,
-      result: 'Success' as const,
-      actionType: 'ApproveOperatorApplication',
-      actorUserId: 10,
-      actorEmail: 'admin@tripmate.vn',
-      actorFullName: 'Admin User',
-      actorRole: 'Administrator' as const,
-      affectedEntity: 'OperatorProfile',
-      affectedEntityId: 5,
-      reason: null,
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail({
       beforeData: null,
       afterData: null,
       ipAddress: null,
-      createdAtUtc: '2026-09-13T10:00:00.000Z',
-      createdAtLocal: '13/09/2026 17:00:00',
-    };
-
-    vi.mocked(service.getAuditLogDetail).mockResolvedValue(mockDetail);
+    }));
 
     render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
 
