@@ -6,7 +6,7 @@
 import { AuthStorage, InvalidAuthContextError, type WebAuthContext } from '@/features/auth/session/authSession';
 import { extractFieldErrors } from './authErrorMapper';
 
-const getApiBase = () => {
+export const getApiBase = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!envUrl) return 'http://localhost:5021/api/v1';
   return envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/$/, '')}/api/v1`;
