@@ -369,17 +369,19 @@ export function TravelerProfileForm({
             </div>
           </div>
 
-          {/* Address */}
-          <TextField
-            id="profile-address"
-            label="Địa chỉ cư trú"
-            name="address"
-            value={fields.address}
-            onChange={(e) => setField('address', e.target.value)}
-            placeholder="Ví dụ: Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
-            disabled={submitting}
-            optional
-          />
+          {/* Address (Full-width on sm+ for longer address strings) */}
+          <div className="sm:col-span-2">
+            <TextField
+              id="profile-address"
+              label="Địa chỉ cư trú"
+              name="address"
+              value={fields.address}
+              onChange={(e) => setField('address', e.target.value)}
+              placeholder="Ví dụ: Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+              disabled={submitting}
+              optional
+            />
+          </div>
         </div>
 
         {/* Action Buttons */}
