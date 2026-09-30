@@ -7,6 +7,7 @@ import { getAuditLogs, AuditLogServiceError } from '../services/auditLogAdminSer
 import { AuditLogFilterBar } from './AuditLogFilterBar';
 import { AuditLogTable } from './AuditLogTable';
 import { AuditLogPagination } from './AuditLogPagination';
+import { AuditLogDetailDrawer } from './AuditLogDetailDrawer';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 
@@ -23,6 +24,7 @@ export function AuditLogManagementView() {
   const [isForbidden, setIsForbidden] = useState<boolean>(false);
   const [isValidationError, setIsValidationError] = useState<boolean>(false);
   const [reloadVersion, setReloadVersion] = useState<number>(0);
+  const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -158,6 +160,7 @@ export function AuditLogManagementView() {
       <AuditLogTable
         items={data?.items || []}
         isLoading={isLoading}
+        onViewDetail={(log) => setSelectedLogId(log.id)}
       />
 
       {/* Pagination Bar */}
@@ -173,6 +176,13 @@ export function AuditLogManagementView() {
           onPageSizeChange={handlePageSizeChange}
         />
       )}
+
+      {/* Detail Drawer Component (UC-69) */}
+      <AuditLogDetailDrawer
+        logId={selectedLogId}
+        isOpen={selectedLogId !== null}
+        onClose={() => setSelectedLogId(null)}
+      />
     </div>
   );
 }

@@ -37,6 +37,12 @@ export interface GetAuditLogsParams {
   pageSize?: number;
 }
 
+export interface AuditLogDetailDto extends AuditLogSummaryDto {
+  reason: string | null;
+  beforeData: string | null;
+  afterData: string | null;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -95,5 +101,15 @@ export function isAuditLogPage(value: unknown): value is PaginatedList<AuditLogS
     (value.totalPages as number) >= 0 &&
     typeof value.hasPreviousPage === 'boolean' &&
     typeof value.hasNextPage === 'boolean'
+  );
+}
+
+export function isAuditLogDetail(value: unknown): value is AuditLogDetailDto {
+  return (
+    isAuditLogSummary(value) &&
+    isRecord(value) &&
+    isNullableString(value.reason) &&
+    isNullableString(value.beforeData) &&
+    isNullableString(value.afterData)
   );
 }
