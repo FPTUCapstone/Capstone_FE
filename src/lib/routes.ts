@@ -13,6 +13,8 @@ export const ROUTES = {
     resubmitApplication: '/partner/application/resubmit',
   },
   account: {
+    profile: '/account/profile',
+    preferences: '/account/preferences',
     security: '/account/security',
   },
   admin: {
