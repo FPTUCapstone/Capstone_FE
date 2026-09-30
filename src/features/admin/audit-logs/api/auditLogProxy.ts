@@ -41,6 +41,7 @@ export async function proxyAuditLogs(request: Request): Promise<Response> {
     const upstream = await fetchBackend(buildUpstreamPath(request), {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
+      signal: request.signal,
     });
 
     if (upstream.status >= 500) {

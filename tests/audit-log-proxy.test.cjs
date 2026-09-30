@@ -43,7 +43,8 @@ test('forwards supported filters and the Admin cookie token only', async () => {
     return Response.json({ items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 0 });
   });
 
-  const response = await proxy(request('?keyword=trip%204&actorRole=Administrator&pageNumber=1&ignored=secret'));
+  const inboundRequest = request('?keyword=trip%204&actorRole=Administrator&pageNumber=1&ignored=secret');
+  const response = await proxy(inboundRequest);
 
   assert.equal(response.status, 200);
   assert.equal(calls.length, 1);
@@ -53,6 +54,7 @@ test('forwards supported filters and the Admin cookie token only', async () => {
   );
   assert.equal(calls[0].init.method, 'GET');
   assert.equal(calls[0].init.headers.Authorization, 'Bearer admin-cookie-token');
+  assert.equal(calls[0].init.signal, inboundRequest.signal);
 });
 
 test('clears invalid Admin sessions for authentication and authorization failures', async () => {

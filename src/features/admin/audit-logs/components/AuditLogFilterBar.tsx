@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GetAuditLogsParams, UserRole } from '../types/auditLogAdmin';
 
 const ACTION_TYPES = [
@@ -22,16 +22,57 @@ interface AuditLogFilterBarProps {
   onReset: () => void;
 }
 
-export function getLocalTodayDateInputValue(now = new Date()): string {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+const VIETNAM_UTC_OFFSET_MILLISECONDS = 7 * 60 * 60 * 1_000;
+const KEYWORD_DEBOUNCE_MILLISECONDS = 400;
+
+function formatVietnamDateInputValue(date: Date): string {
+  const vietnamTime = new Date(date.getTime() + VIETNAM_UTC_OFFSET_MILLISECONDS);
+  const year = vietnamTime.getUTCFullYear();
+  const month = String(vietnamTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(vietnamTime.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+export function getVietnamTodayDateInputValue(now = new Date()): string {
+  return formatVietnamDateInputValue(now);
+}
+
+export function toVietnamDayBoundaryUtc(
+  dateInputValue: string,
+  boundary: 'start' | 'end',
+): string | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateInputValue);
+  if (!match) return undefined;
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const calendarDate = new Date(Date.UTC(year, monthIndex, day));
+  if (
+    calendarDate.getUTCFullYear() !== year
+    || calendarDate.getUTCMonth() !== monthIndex
+    || calendarDate.getUTCDate() !== day
+  ) return undefined;
+
+  const localHour = boundary === 'start' ? 0 : 23;
+  const minute = boundary === 'start' ? 0 : 59;
+  const second = boundary === 'start' ? 0 : 59;
+  const millisecond = boundary === 'start' ? 0 : 999;
+  return new Date(
+    Date.UTC(year, monthIndex, day, localHour, minute, second, millisecond)
+      - VIETNAM_UTC_OFFSET_MILLISECONDS,
+  ).toISOString();
 }
 
 export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilterBarProps) {
   const fromDateRef = useRef<HTMLInputElement>(null);
   const toDateRef = useRef<HTMLInputElement>(null);
+  const keywordTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [keywordInput, setKeywordInput] = useState(filters.keyword ?? '');
+
+  useEffect(() => () => {
+    if (keywordTimeoutRef.current) clearTimeout(keywordTimeoutRef.current);
+  }, []);
 
   const handleContainerClick = (inputRef: React.RefObject<HTMLInputElement | null>) => {
     if (inputRef.current) {
@@ -43,45 +84,51 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
     }
   };
 
-  const todayStr = getLocalTodayDateInputValue();
+  const todayStr = getVietnamTodayDateInputValue();
 
-  // Helper to convert UTC ISO string from filter state to local YYYY-MM-DD for date input
-  const getLocalDateInputVal = (isoStr?: string): string => {
+  // Convert UTC instants to the fixed Vietnam business calendar date.
+  const getVietnamDateInputVal = (isoStr?: string): string => {
     if (!isoStr) return '';
-    try {
-      const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return '';
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    } catch {
-      return '';
-    }
+    const date = new Date(isoStr);
+    return Number.isNaN(date.getTime()) ? '' : formatVietnamDateInputValue(date);
   };
 
-  // Convert user selected local YYYY-MM-DD to UTC ISO start-of-day (00:00:00 local time)
   const handleFromDateChange = (val: string) => {
     if (!val) {
       onChange({ fromDateUtc: undefined });
       return;
     }
-    const localStartOfDay = new Date(`${val}T00:00:00`);
-    onChange({ fromDateUtc: localStartOfDay.toISOString() });
+    const utcBoundary = toVietnamDayBoundaryUtc(val, 'start');
+    if (utcBoundary) onChange({ fromDateUtc: utcBoundary });
   };
 
-  // Convert user selected local YYYY-MM-DD to UTC ISO end-of-day (23:59:59.999 local time)
   const handleToDateChange = (val: string) => {
     if (!val) {
       onChange({ toDateUtc: undefined });
       return;
     }
-    const localEndOfDay = new Date(`${val}T23:59:59.999`);
-    onChange({ toDateUtc: localEndOfDay.toISOString() });
+    const utcBoundary = toVietnamDayBoundaryUtc(val, 'end');
+    if (utcBoundary) onChange({ toDateUtc: utcBoundary });
   };
 
-  const fromDateValue = getLocalDateInputVal(filters.fromDateUtc);
-  const toDateValue = getLocalDateInputVal(filters.toDateUtc);
+  const handleKeywordChange = (value: string) => {
+    setKeywordInput(value);
+    if (keywordTimeoutRef.current) clearTimeout(keywordTimeoutRef.current);
+    keywordTimeoutRef.current = setTimeout(() => {
+      onChange({ keyword: value || undefined });
+      keywordTimeoutRef.current = null;
+    }, KEYWORD_DEBOUNCE_MILLISECONDS);
+  };
+
+  const handleReset = () => {
+    if (keywordTimeoutRef.current) clearTimeout(keywordTimeoutRef.current);
+    keywordTimeoutRef.current = null;
+    setKeywordInput('');
+    onReset();
+  };
+
+  const fromDateValue = getVietnamDateInputVal(filters.fromDateUtc);
+  const toDateValue = getVietnamDateInputVal(filters.toDateUtc);
   const fromDateMax = toDateValue && toDateValue < todayStr ? toDateValue : todayStr;
 
   return (
@@ -99,8 +146,8 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
             <input
               id="audit-search-keyword"
               type="text"
-              value={filters.keyword || ''}
-              onChange={(e) => onChange({ keyword: e.target.value })}
+              value={keywordInput}
+              onChange={(e) => handleKeywordChange(e.target.value)}
               placeholder="Search by keyword, email, or entity ID..."
               className="w-full rounded-lg border border-[#314863] bg-[#00152a] py-2 pl-9 pr-3 text-xs text-[#d1e4ff] placeholder-slate-400 focus:border-[#71f8e4] focus:outline-none"
             />
@@ -243,7 +290,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
       <div className="mt-4 flex items-center justify-end border-t border-[#314863]/50 pt-3">
         <button
           type="button"
-          onClick={onReset}
+          onClick={handleReset}
           className="inline-flex items-center gap-1.5 rounded-lg border border-[#314863] bg-[#00152a] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#314863] hover:text-white transition-colors"
         >
           <span className="material-symbols-outlined text-sm">restart_alt</span>
