@@ -6,6 +6,8 @@ export const ROUTES = {
   forgotPassword: '/forgot-password',
   pois: '/pois',
   poi: (id: string | number) => `/pois/${id}`,
+  plan: '/plan',
+  itinerary: (id: string | number) => `/itinerary/${id}`,
   partner: {
     dashboard: '/partner',
     register: '/partner/register',
