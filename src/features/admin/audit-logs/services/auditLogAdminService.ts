@@ -2,7 +2,9 @@ import {
   GetAuditLogsParams,
   PaginatedList,
   AuditLogSummaryDto,
+  AuditLogDetailDto,
   isAuditLogPage,
+  isAuditLogDetail,
 } from '../types/auditLogAdmin';
 
 export class AuditLogServiceError extends Error {
@@ -82,6 +84,51 @@ export async function getAuditLogs(
 
   const body: unknown = await response.json().catch(() => null);
   if (!isAuditLogPage(body)) {
+    throw new AuditLogServiceError(
+      'TripMate is temporarily unable to process your request. Please check your connection and try again.',
+      503,
+    );
+  }
+
+  return body;
+}
+
+export async function getAuditLogDetail(
+  id: number,
+  signal?: AbortSignal,
+): Promise<AuditLogDetailDto> {
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new AuditLogServiceError('A valid audit log ID is required.', 400);
+  }
+
+  const response = await fetch(`/api/admin/audit-logs/${id}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorData: unknown = await response.json().catch(() => null);
+    const problem = errorData !== null && typeof errorData === 'object'
+      ? errorData as Record<string, unknown>
+      : {};
+    const extensions = problem.extensions !== null && typeof problem.extensions === 'object'
+      ? problem.extensions as Record<string, unknown>
+      : {};
+    const rootErrorCode = typeof problem.errorCode === 'string' ? problem.errorCode : undefined;
+    const extensionErrorCode = typeof extensions.errorCode === 'string' ? extensions.errorCode : undefined;
+
+    throw new AuditLogServiceError(
+      response.status === 404
+        ? 'System audit log entry not found.'
+        : getSafeErrorMessage(response.status),
+      response.status,
+      rootErrorCode ?? extensionErrorCode,
+    );
+  }
+
+  const body: unknown = await response.json().catch(() => null);
+  if (!isAuditLogDetail(body)) {
     throw new AuditLogServiceError(
       'TripMate is temporarily unable to process your request. Please check your connection and try again.',
       503,
