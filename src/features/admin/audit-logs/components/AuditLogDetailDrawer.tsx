@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuditLogDetailDto } from '../types/auditLogAdmin';
 import { getAuditLogDetail, AuditLogServiceError } from '../services/auditLogAdminService';
+import { ROUTES } from '@/lib/routes';
 
 interface AuditLogDetailDrawerProps {
   logId: number | null;
@@ -11,19 +13,23 @@ interface AuditLogDetailDrawerProps {
 }
 
 export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
+  const router = useRouter();
   const [detail, setDetail] = useState<AuditLogDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedBefore, setCopiedBefore] = useState<boolean>(false);
   const [copiedAfter, setCopiedAfter] = useState<boolean>(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<Element | null>(null);
 
   // Loading is derived: an open drawer with neither data nor error is fetching.
   const isLoading = isOpen && logId !== null && detail === null && error === null;
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setDetail(null);
     setError(null);
     onClose();
-  };
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen || logId === null) {
@@ -42,6 +48,11 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
       .catch((err: unknown) => {
         if (isCurrentRequest) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
+          if (err instanceof AuditLogServiceError && err.statusCode === 401) {
+            const returnUrl = encodeURIComponent(ROUTES.admin.auditLogs);
+            router.replace(`${ROUTES.admin.login}?returnUrl=${returnUrl}`);
+            return;
+          }
           if (err instanceof AuditLogServiceError && (err.statusCode === 404 || err.errorCode === 'admin.audit_log_not_found')) {
             setError('System audit log entry not found.');
           } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'admin.audit_log_forbidden')) {
@@ -59,19 +70,60 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
       isCurrentRequest = false;
       controller.abort();
     };
-  }, [isOpen, logId]);
+  }, [isOpen, logId, router]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocusedRef.current = document.activeElement;
+    window.setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
+
+    return () => {
+      const previouslyFocused = previouslyFocusedRef.current;
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus();
+      }
+      previouslyFocusedRef.current = null;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        setDetail(null);
-        setError(null);
-        onClose();
+        handleClose();
+        return;
+      }
+
+      if (e.key !== 'Tab' || !isOpen) {
+        return;
+      }
+
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ) ?? []);
+
+      if (focusable.length === 0) {
+        e.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [handleClose, isOpen]);
 
   if (!isOpen) return null;
 
@@ -110,12 +162,26 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   };
 
   const extractReason = (detail: AuditLogDetailDto): string | null => {
+    if (typeof detail.reason === 'string' && detail.reason.trim()) {
+      return detail.reason;
+    }
+
+    const pickString = (value: unknown): string | null => (
+      typeof value === 'string' && value.trim() ? value : null
+    );
+
     const tryExtract = (jsonStr: string | null): string | null => {
       if (!jsonStr) return null;
       try {
         const parsed = JSON.parse(jsonStr);
         if (typeof parsed === 'object' && parsed !== null) {
-          return parsed.reason || parsed.rejectionReason || parsed.suppliedReason || parsed.note || null;
+          const record = parsed as Record<string, unknown>;
+          return (
+            pickString(record.reason) ||
+            pickString(record.rejectionReason) ||
+            pickString(record.suppliedReason) ||
+            pickString(record.note)
+          );
         }
       } catch {
         return null;
@@ -130,10 +196,18 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200 flex items-center justify-center p-4">
       {/* Backdrop overlay click to close */}
-      <div className="fixed inset-0" onClick={handleClose} />
+      <div className="fixed inset-0" onClick={handleClose} aria-hidden="true" />
 
       {/* Modal Dialog Box Centered */}
-      <div className="relative w-full max-w-3xl max-h-[85vh] my-auto rounded-2xl border border-[#314863] bg-[#00152a] text-[#d1e4ff] shadow-2xl flex flex-col z-10 overflow-hidden">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="audit-log-detail-title"
+        aria-describedby="audit-log-detail-description"
+        tabIndex={-1}
+        className="relative w-full max-w-3xl max-h-[85vh] my-auto rounded-2xl border border-[#314863] bg-[#00152a] text-[#d1e4ff] shadow-2xl flex flex-col z-10 overflow-hidden"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/90 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -141,7 +215,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
               read_more
             </span>
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 id="audit-log-detail-title" className="text-lg font-bold text-white flex items-center gap-2">
                 Audit Log Details
                 {logId && (
                   <span className="rounded bg-[#314863] px-2 py-0.5 font-mono text-xs text-[#71f8e4]">
@@ -149,14 +223,16 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-[#9edbd2]">UC-69 Detailed Event Audit Trail</p>
+              <p id="audit-log-detail-description" className="text-xs text-[#9edbd2]">UC-69 Detailed Event Audit Trail</p>
             </div>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={handleClose}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-[#314863] hover:text-white transition-colors"
             title="Close (ESC)"
+            aria-label="Close audit log details"
           >
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
