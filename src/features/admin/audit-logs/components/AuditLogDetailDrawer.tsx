@@ -18,6 +18,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   const [error, setError] = useState<string | null>(null);
   const [copiedBefore, setCopiedBefore] = useState<boolean>(false);
   const [copiedAfter, setCopiedAfter] = useState<boolean>(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedRef = useRef<Element | null>(null);
@@ -28,6 +29,9 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   const handleClose = useCallback(() => {
     setDetail(null);
     setError(null);
+    setCopyError(null);
+    setCopiedBefore(false);
+    setCopiedAfter(false);
     onClose();
   }, [onClose]);
 
@@ -137,15 +141,30 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
     }
   };
 
-  const handleCopy = (text: string, type: 'before' | 'after') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'before') {
-      setCopiedBefore(true);
-      setTimeout(() => setCopiedBefore(false), 2000);
-    } else {
-      setCopiedAfter(true);
-      setTimeout(() => setCopiedAfter(false), 2000);
+  const handleCopy = async (text: string, type: 'before' | 'after') => {
+    setCopyError(null);
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API is unavailable.');
+      }
+
+      await navigator.clipboard.writeText(text);
+      if (type === 'before') {
+        setCopiedBefore(true);
+        setTimeout(() => setCopiedBefore(false), 2000);
+      } else {
+        setCopiedAfter(true);
+        setTimeout(() => setCopiedAfter(false), 2000);
+      }
+    } catch {
+      setCopyError('Unable to copy audit data. Please select and copy the text manually.');
     }
+  };
+
+  const formatUtcTimestamp = (value: string): string => {
+    const timestamp = new Date(value);
+    return Number.isNaN(timestamp.getTime()) ? '-' : timestamp.toISOString();
   };
 
   const getRoleBadgeClass = (role: string | null) => {
@@ -291,7 +310,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                   <div>
                     <span className="text-slate-400 block mb-1">Timestamp (UTC)</span>
                     <span className="font-mono text-slate-400">
-                      {new Date(detail.createdAtUtc).toISOString()}
+                      {formatUtcTimestamp(detail.createdAtUtc)}
                     </span>
                   </div>
                 </div>
@@ -380,6 +399,15 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2] flex items-center justify-between">
                   <span>State Audit Data</span>
                 </div>
+
+                {copyError && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-amber-700/60 bg-amber-950/40 px-3 py-2 text-xs text-amber-200"
+                  >
+                    {copyError}
+                  </p>
+                )}
 
                 {/* Before Data */}
                 <div className="rounded-xl border border-[#314863] bg-[#00152a] overflow-hidden">
