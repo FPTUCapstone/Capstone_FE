@@ -33,6 +33,12 @@ describe('AuditLogDetailDrawer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    });
   });
 
   const buildDetail = (overrides: Partial<Awaited<ReturnType<typeof service.getAuditLogDetail>>> = {}) => ({
@@ -105,6 +111,46 @@ describe('AuditLogDetailDrawer', () => {
 
     expect(await screen.findByText('#101')).toBeDefined();
     expect(screen.queryByText('Supplied Reason / Action Note')).toBeNull();
+  });
+
+  it('falls back safely when the UTC timestamp is invalid', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail({
+      createdAtUtc: 'not-a-valid-date',
+    }));
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    expect(await screen.findByText('#101')).toBeDefined();
+    expect(screen.getByText('-')).toBeDefined();
+  });
+
+  it('only reports copied after the clipboard write succeeds', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    const copyLabels = await screen.findAllByText('Copy');
+    fireEvent.click(copyLabels[0].closest('button')!);
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalled();
+      expect(screen.getByText('Copied')).toBeDefined();
+    });
+  });
+
+  it('shows safe feedback and does not report copied when clipboard access fails', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Permission denied'));
+
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+
+    const copyLabels = await screen.findAllByText('Copy');
+    fireEvent.click(copyLabels[0].closest('button')!);
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Unable to copy audit data. Please select and copy the text manually.',
+    );
+    expect(screen.queryByText('Copied')).toBeNull();
   });
 
   it('redirects to admin login when the detail request returns 401', async () => {
