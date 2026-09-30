@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   confirmPasswordReset,
+  getApiBase,
   googleAuth,
   isApiError,
   registerTraveler,
@@ -59,6 +60,8 @@ const resetFetchOk = (message: string) =>
     json: async () => ({ message }),
   });
 
+const apiBase = getApiBase();
+
 describe('requestPasswordReset', () => {
   it('POSTs the email to the password-reset request endpoint and returns the direct DTO', async () => {
     const fetchMock = resetFetchOk(
@@ -72,7 +75,7 @@ describe('requestPasswordReset', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://localhost:5000/api/v1/auth/password-reset/request');
+    expect(url).toBe(`${apiBase}/auth/password-reset/request`);
     expect(init.method).toBe('POST');
     expect(JSON.parse(String(init.body))).toEqual({ email: 'user@example.com' });
     expect(result).toEqual({
@@ -123,7 +126,7 @@ describe('confirmPasswordReset', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://localhost:5000/api/v1/auth/password-reset/confirm');
+    expect(url).toBe(`${apiBase}/auth/password-reset/confirm`);
     expect(init.method).toBe('POST');
     expect(JSON.parse(String(init.body))).toEqual({
       email: 'user@example.com',
