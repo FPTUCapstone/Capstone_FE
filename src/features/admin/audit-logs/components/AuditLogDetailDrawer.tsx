@@ -30,16 +30,18 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
       return;
     }
 
-    let isMounted = true;
+    const controller = new AbortController();
+    let isCurrentRequest = true;
 
-    getAuditLogDetail(logId)
+    getAuditLogDetail(logId, controller.signal)
       .then((data) => {
-        if (isMounted) {
+        if (isCurrentRequest) {
           setDetail(data);
         }
       })
       .catch((err: unknown) => {
-        if (isMounted) {
+        if (isCurrentRequest) {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
           if (err instanceof AuditLogServiceError && (err.statusCode === 404 || err.errorCode === 'admin.audit_log_not_found')) {
             setError('System audit log entry not found.');
           } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'admin.audit_log_forbidden')) {
@@ -54,7 +56,8 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
 
 
     return () => {
-      isMounted = false;
+      isCurrentRequest = false;
+      controller.abort();
     };
   }, [isOpen, logId]);
 
