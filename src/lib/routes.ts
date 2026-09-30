@@ -12,9 +12,13 @@ export const ROUTES = {
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',
   },
+  account: {
+    security: '/account/security',
+  },
   admin: {
     login: '/admin/login',
     forgotPassword: '/admin/forgot-password',
+    accountSecurity: '/admin/account/security',
     dashboard: '/admin',
     auditLogs: '/admin/audit-logs',
     tourReviews: '/admin/tours/reviews',

@@ -105,7 +105,11 @@ export function PublicNavigation() {
 
         {status === 'authenticated' ? (
           <div className="order-2 flex items-center justify-end gap-2 sm:order-3">
-            <div className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e]">
+            <Link
+              href={ROUTES.account.security}
+              aria-label="Tài khoản và bảo mật"
+              className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e] transition hover:bg-teal-100"
+            >
               <span className="material-symbols-outlined text-sm">
                 account_circle
               </span>
@@ -113,7 +117,7 @@ export function PublicNavigation() {
               <span className="max-w-[120px] truncate sm:max-w-[160px]">
                 {displayName}
               </span>
-            </div>
+            </Link>
 
             <LogoutButton />
           </div>
