@@ -124,6 +124,7 @@ export interface SchedulingResponseDto {
   totalEstimatedCost: number;
   totalDurationMinutes: number;
   items: SchedulingItemDto[];
+  isDemoFixture?: boolean;
 }
 
 export interface SchedulingFormValues {

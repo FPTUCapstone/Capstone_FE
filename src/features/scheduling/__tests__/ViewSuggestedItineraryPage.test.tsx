@@ -81,18 +81,38 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
     expect(writeTextMock).toHaveBeenCalled();
   });
 
-  it('renders error alert when itinerary cannot be loaded', async () => {
+  it('renders explicit unavailable state (Pending Backend Integration) when itinerary cannot be loaded', async () => {
     vi.spyOn(schedulingApi, 'getItineraryById').mockRejectedValueOnce(
-      new Error('Không tìm thấy lịch trình #99999'),
+      new Error('Không tìm thấy lịch trình #99999. Năng lực truy xuất lịch trình từ máy chủ đang chờ tích hợp Backend (Pending Backend Integration).'),
     );
 
     render(<ViewSuggestedItineraryPage itineraryId="99999" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Không tìm thấy lịch trình')).toBeDefined();
-      expect(screen.getByText('Không tìm thấy lịch trình #99999')).toBeDefined();
+      expect(screen.getByText('Không tìm thấy lịch trình hoặc dữ liệu chưa sẵn sàng')).toBeDefined();
+      expect(screen.getByText(/Không tìm thấy lịch trình #99999/i)).toBeDefined();
+      expect(screen.getByText(/Trạng thái tích hợp: PENDING_BE_INTEGRATION/i)).toBeDefined();
     });
 
-    expect(screen.getByRole('link', { name: /Quay lại trang Lập lịch trình/i })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Tạo lịch trình mới/i })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Về trang chủ/i })).toBeDefined();
+  });
+
+  it('renders visible DEMO_ONLY warning banner when itinerary has DEMO_FIXTURE status', async () => {
+    const demoItinerary = {
+      ...mockItinerary,
+      status: 'DEMO_FIXTURE',
+      title: '[DEMO_ONLY] Lịch trình khám phá Đà Nẵng',
+    };
+    vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(demoItinerary);
+
+    render(<ViewSuggestedItineraryPage itineraryId="demo" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('[DEMO_ONLY] Lịch trình khám phá Đà Nẵng')).toBeDefined();
+    });
+
+    expect(screen.getByText(/Bản mẫu thử nghiệm \(DEMO_ONLY Fixture\)/i)).toBeDefined();
+    expect(screen.getByText(/Lịch trình này là bản mẫu phục vụ kiểm thử giao diện/i)).toBeDefined();
   });
 });

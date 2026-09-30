@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
-import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 
 import { getItineraryById } from '../services/schedulingApi';
@@ -87,19 +86,36 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
             </span>
           </nav>
 
-          {/* Error display */}
+          {/* Explicit Unavailable / Pending Backend Integration display (Requirement C) */}
           {error && (
-            <div className="mb-6">
-              <FeedbackAlert tone="error" title="Không tìm thấy lịch trình">
-                {error}
-              </FeedbackAlert>
-              <div className="mt-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                <span className="material-symbols-outlined text-3xl">event_busy</span>
+              </div>
+              <h2 className="mt-4 text-lg font-bold text-slate-900">
+                Không tìm thấy lịch trình hoặc dữ liệu chưa sẵn sàng
+              </h2>
+              <div className="mx-auto mt-2 max-w-lg space-y-2">
+                <p className="text-xs text-slate-600 sm:text-sm">{error}</p>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-800">
+                  <span className="material-symbols-outlined text-xs">pending</span>
+                  Trạng thái tích hợp: PENDING_BE_INTEGRATION
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   href={ROUTES.plan}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#007d6e] hover:underline"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
                 >
-                  <span className="material-symbols-outlined text-sm">arrow_back</span>
-                  Quay lại trang Lập lịch trình
+                  <span className="material-symbols-outlined text-sm">add_circle</span>
+                  <span>Tạo lịch trình mới</span>
+                </Link>
+                <Link
+                  href={ROUTES.home}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+                >
+                  <span className="material-symbols-outlined text-sm">home</span>
+                  <span>Về trang chủ</span>
                 </Link>
               </div>
             </div>
@@ -118,6 +134,19 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           {/* Main Itinerary Content */}
           {!loading && itinerary && (
             <div className="space-y-8">
+              {/* Visible DEMO_ONLY Fixture Warning Banner */}
+              {itinerary.status === 'DEMO_FIXTURE' && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs font-medium text-amber-900 shadow-2xs">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                    <span className="material-symbols-outlined text-sm">science</span>
+                    <span>Bản mẫu thử nghiệm (DEMO_ONLY Fixture)</span>
+                  </div>
+                  <p className="mt-1">
+                    Lịch trình này là bản mẫu phục vụ kiểm thử giao diện trong môi trường phát triển. Năng lực truy xuất lịch trình từ máy chủ đang chờ tích hợp Backend (Pending Backend Integration).
+                  </p>
+                </div>
+              )}
+
               {/* Header Title & Actions */}
               <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>

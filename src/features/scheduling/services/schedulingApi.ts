@@ -313,25 +313,70 @@ export async function createSchedulingRequest(
  * UC-11 Get Suggested Itinerary By ID
  *
  * ⚠️ PENDING_BE_INTEGRATION:
- * The dedicated GET /api/v1/itineraries/{id} endpoint is not yet implemented in Capstone_BE.
- * When the endpoint is deployed, this function calls it with Bearer token.
- * In the interim, it seamlessly retrieves the itinerary from sessionStorage or
- * generates an authentic simulated itinerary for direct access.
+/**
+ * Explicit DEMO_ONLY fixture for visual development and automated testing.
+ * Strictly labeled so that it is never presented as authentic user data.
+ */
+export function getDemoItineraryFixture(itineraryId: number | string = 'DEMO_ONLY'): SchedulingResponseDto {
+  const fallbackPayload: CreateSchedulingRequestPayload = {
+    startAt: new Date(Date.now() + 86400000).toISOString(),
+    timeZoneId: 'Asia/Ho_Chi_Minh',
+    startLatitude: 16.0544,
+    startLongitude: 108.2022,
+    explorationLatitude: 16.0471,
+    explorationLongitude: 108.2068,
+    endPoiId: null,
+    returnToStart: true,
+    availableMinutes: 480,
+    transportMode: 'Motorbike',
+    searchRadiusKm: 10,
+    budgetVnd: 800000,
+    mandatoryPoiIds: [],
+    restPreference: 'Auto',
+  };
+
+  const simulated = generateSimulatedItinerary(fallbackPayload);
+  return {
+    ...simulated,
+    itineraryId: typeof itineraryId === 'number' ? itineraryId : 999999,
+    title: `[DEMO_ONLY] ${simulated.title}`,
+    status: 'DEMO_FIXTURE',
+    isDemoFixture: true,
+  };
+}
+
+/**
+ * Retrieve an itinerary by its ID (UC-11).
+ *
+ * Approved data acquisition flow:
+ * A. If itinerary exists in sessionStorage from UC-10: return it.
+ * B. If a real backend response exists in the future via GET /api/v1/itineraries/{id}: return it.
+ * C. If neither source provides an itinerary: reject with an explicit descriptive error
+ *    (Pending Backend Integration / Not Found). Never fabricate data silently.
+ *
+ * For development & testing fixtures only:
+ * - If options.allowDemoFixture is true or itineraryId is 'demo' / 'DEMO_ONLY',
+ *   returns an explicitly marked DEMO_ONLY fixture with status 'DEMO_FIXTURE'.
  */
 export async function getItineraryById(
   itineraryId: number | string,
-  options?: { accessToken?: string },
+  options?: {
+    accessToken?: string;
+    allowDemoFixture?: boolean;
+  },
 ): Promise<SchedulingResponseDto> {
   const context = AuthStorage.getContext();
   const token = options?.accessToken ?? context?.accessToken;
   const API_BASE = getApiBase();
 
-  // Try cached itinerary first
+  // Source A: Authentic session storage cache generated genuinely by UC-10
   const cached = getCachedItinerary(itineraryId);
   if (cached) {
     return cached;
   }
 
+  // Source B: Projected Backend endpoint GET /api/v1/itineraries/{id}
+  // (PENDING_BE_INTEGRATION: Not yet deployed on Capstone_BE develop)
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -352,32 +397,22 @@ export async function getItineraryById(
       return data;
     }
   } catch {
-    // Network or server unreachable; proceed to fallback
+    // Network or server unreachable; proceed to explicit validation
   }
 
-  // Graceful simulation fallback for direct URL access
-  const fallbackPayload: CreateSchedulingRequestPayload = {
-    startAt: new Date(Date.now() + 86400000).toISOString(),
-    timeZoneId: 'Asia/Ho_Chi_Minh',
-    startLatitude: 16.0544,
-    startLongitude: 108.2022,
-    explorationLatitude: 16.0471,
-    explorationLongitude: 108.2068,
-    endPoiId: null,
-    returnToStart: true,
-    availableMinutes: 480,
-    transportMode: 'Motorbike',
-    searchRadiusKm: 10,
-    budgetVnd: 800000,
-    mandatoryPoiIds: [],
-    restPreference: 'Auto',
-  };
+  // Explicit DEMO_ONLY fixture (for development/testing only, never silently triggered in production)
+  const isDemoExplicitlyRequested =
+    options?.allowDemoFixture === true ||
+    String(itineraryId).toLowerCase() === 'demo' ||
+    String(itineraryId).toUpperCase() === 'DEMO_ONLY';
 
-  const simulated = generateSimulatedItinerary(fallbackPayload);
-  const updatedSimulated: SchedulingResponseDto = {
-    ...simulated,
-    itineraryId: Number(itineraryId) || simulated.itineraryId,
-  };
-  saveCachedItinerary(updatedSimulated);
-  return updatedSimulated;
+  if (isDemoExplicitlyRequested) {
+    return getDemoItineraryFixture(itineraryId);
+  }
+
+  // Source C: Neither source provided an itinerary.
+  // Explicit unavailable / pending-backend state (NO silent fake data generation)
+  throw new Error(
+    `Không tìm thấy lịch trình #${itineraryId}. Dữ liệu không tồn tại trong bộ nhớ phiên làm việc (sessionStorage) và tính năng truy xuất lịch trình từ máy chủ đang chờ tích hợp Backend (Pending Backend Integration). Vui lòng quay lại trang Lập lịch trình để tạo kế hoạch mới.`,
+  );
 }

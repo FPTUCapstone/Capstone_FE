@@ -226,12 +226,29 @@ describe('UC-10 Scheduling API Service', () => {
       expect(result).toEqual(mockFromBe);
     });
 
-    it('generates a simulated fallback if BE is offline and not in cache', async () => {
+    it('rejects with descriptive error (PENDING_BE_INTEGRATION) when neither cache nor BE provides the itinerary', async () => {
       global.fetch = vi.fn().mockRejectedValueOnce(new Error('BE offline'));
 
-      const result = await getItineraryById(777);
-      expect(result.itineraryId).toBe(777);
+      await expect(getItineraryById(777)).rejects.toThrow(
+        /Không tìm thấy lịch trình #777.*Pending Backend Integration/i,
+      );
+    });
+
+    it('returns an explicit DEMO_ONLY fixture when allowDemoFixture option is passed', async () => {
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('BE offline'));
+
+      const result = await getItineraryById(777, { allowDemoFixture: true });
+      expect(result.status).toBe('DEMO_FIXTURE');
+      expect(result.isDemoFixture).toBe(true);
+      expect(result.title).toContain('[DEMO_ONLY]');
       expect(result.items.length).toBeGreaterThan(0);
+    });
+
+    it('returns an explicit DEMO_ONLY fixture when itineraryId is demo', async () => {
+      const result = await getItineraryById('demo');
+      expect(result.status).toBe('DEMO_FIXTURE');
+      expect(result.isDemoFixture).toBe(true);
+      expect(result.title).toContain('[DEMO_ONLY]');
     });
   });
 });
