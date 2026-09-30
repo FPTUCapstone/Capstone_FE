@@ -1,10 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as auditLogService from '../services/auditLogAdminService';
 import type { AuditLogSummaryDto, PaginatedList } from '../types/auditLogAdmin';
 import { AuditLogManagementView } from './AuditLogManagementView';
-import { getLocalTodayDateInputValue } from './AuditLogFilterBar';
+import {
+  getVietnamTodayDateInputValue,
+  toVietnamDayBoundaryUtc,
+} from './AuditLogFilterBar';
 
 const { router } = vi.hoisted(() => ({ router: { replace: vi.fn() } }));
 
@@ -53,6 +56,10 @@ describe('UC-68 audit log management', () => {
     vi.resetAllMocks();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('renders the result contract and nullable actor name safely', async () => {
     vi.mocked(auditLogService.getAuditLogs).mockResolvedValue(page(null, 'Failure'));
 
@@ -65,6 +72,7 @@ describe('UC-68 audit log management', () => {
   });
 
   it('keeps the newest filter response when an older request finishes last', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     const older = deferred<PaginatedList<AuditLogSummaryDto>>();
     const newer = deferred<PaginatedList<AuditLogSummaryDto>>();
     vi.mocked(auditLogService.getAuditLogs)
@@ -76,8 +84,10 @@ describe('UC-68 audit log management', () => {
     await screen.findByText('Initial result');
 
     fireEvent.change(screen.getByLabelText('Search Keyword'), { target: { value: 'old' } });
+    await act(async () => vi.advanceTimersByTime(400));
     await waitFor(() => expect(auditLogService.getAuditLogs).toHaveBeenCalledTimes(2));
     fireEvent.change(screen.getByLabelText('Search Keyword'), { target: { value: 'new' } });
+    await act(async () => vi.advanceTimersByTime(400));
     await waitFor(() => expect(auditLogService.getAuditLogs).toHaveBeenCalledTimes(3));
 
     await act(async () => newer.resolve(page('Newest result')));
@@ -86,6 +96,25 @@ describe('UC-68 audit log management', () => {
     await act(async () => older.resolve(page('Obsolete result')));
     expect(screen.queryByText('Obsolete result')).toBeNull();
     expect(screen.getByText('Newest result')).toBeDefined();
+  });
+
+  it('debounces keyword requests until typing has paused', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(auditLogService.getAuditLogs).mockResolvedValue(page('Initial result'));
+
+    render(<AuditLogManagementView />);
+    await screen.findByText('Initial result');
+
+    const keyword = screen.getByLabelText('Search Keyword');
+    fireEvent.change(keyword, { target: { value: 't' } });
+    fireEvent.change(keyword, { target: { value: 'tr' } });
+    fireEvent.change(keyword, { target: { value: 'trip' } });
+    await act(async () => vi.advanceTimersByTime(399));
+    expect(auditLogService.getAuditLogs).toHaveBeenCalledTimes(1);
+
+    await act(async () => vi.advanceTimersByTime(1));
+    await waitFor(() => expect(auditLogService.getAuditLogs).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(auditLogService.getAuditLogs).mock.calls[1][0].keyword).toBe('trip');
   });
 
   it('redirects an expired Administrator session to login with a return URL', async () => {
@@ -139,8 +168,12 @@ describe('UC-68 audit log management', () => {
     expect(auditLogService.getAuditLogs).toHaveBeenCalledTimes(2);
   });
 
-  it('derives the date input maximum from the local calendar date', () => {
-    expect(getLocalTodayDateInputValue(new Date(2026, 8, 30, 0, 30, 0)))
+  it('derives date filters from the fixed Asia/Ho_Chi_Minh business timezone', () => {
+    expect(getVietnamTodayDateInputValue(new Date('2026-09-29T17:30:00.000Z')))
       .toBe('2026-09-30');
+    expect(toVietnamDayBoundaryUtc('2026-09-30', 'start'))
+      .toBe('2026-09-29T17:00:00.000Z');
+    expect(toVietnamDayBoundaryUtc('2026-09-30', 'end'))
+      .toBe('2026-09-30T16:59:59.999Z');
   });
 });
