@@ -33,6 +33,7 @@ describe('AuditLogDetailDrawer', () => {
   it('renders details successfully when open and data is loaded', async () => {
     const mockDetail = {
       id: 101,
+      result: 'Success' as const,
       actionType: 'ApproveOperatorApplication',
       actorUserId: 10,
       actorEmail: 'admin@tripmate.vn',
@@ -40,6 +41,7 @@ describe('AuditLogDetailDrawer', () => {
       actorRole: 'Administrator' as const,
       affectedEntity: 'OperatorProfile',
       affectedEntityId: 5,
+      reason: null,
       beforeData: '{"status":"Pending"}',
       afterData: '{"status":"Approved"}',
       ipAddress: '127.0.0.1',
@@ -88,6 +90,7 @@ describe('AuditLogDetailDrawer', () => {
 
     const mockDetail = {
       id: 101,
+      result: 'Success' as const,
       actionType: 'ApproveOperatorApplication',
       actorUserId: 10,
       actorEmail: 'admin@tripmate.vn',
@@ -95,6 +98,7 @@ describe('AuditLogDetailDrawer', () => {
       actorRole: 'Administrator' as const,
       affectedEntity: 'OperatorProfile',
       affectedEntityId: 5,
+      reason: null,
       beforeData: null,
       afterData: null,
       ipAddress: null,

@@ -6,9 +6,10 @@ import { AuditLogSummaryDto } from '../types/auditLogAdmin';
 interface AuditLogTableProps {
   items: AuditLogSummaryDto[];
   isLoading: boolean;
+  onViewDetail?: (log: AuditLogSummaryDto) => void;
 }
 
-export function AuditLogTable({ items, isLoading }: AuditLogTableProps) {
+export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableProps) {
   const formatTimestamp = (localStr?: string | null, utcStr?: string | null) => {
     if (localStr) return localStr;
     if (!utcStr) return '-';
@@ -56,7 +57,7 @@ export function AuditLogTable({ items, isLoading }: AuditLogTableProps) {
   return (
     <div className="w-full overflow-hidden rounded-xl border border-[#314863] bg-[#102a43] shadow-lg">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1100px] table-fixed text-left text-xs text-[#d1e4ff]">
+        <table className="w-full min-w-[1220px] table-fixed text-left text-xs text-[#d1e4ff]">
           <thead className="border-b border-[#314863] bg-[#00152a]/80 text-[11px] font-bold uppercase tracking-wider text-[#9edbd2]">
             <tr>
               <th scope="col" className="w-[170px] px-4 py-3.5">
@@ -83,6 +84,9 @@ export function AuditLogTable({ items, isLoading }: AuditLogTableProps) {
               <th scope="col" className="w-[120px] px-4 py-3.5">
                 IP Address
               </th>
+              <th scope="col" className="w-[120px] px-4 py-3.5">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#314863]/50">
@@ -98,12 +102,13 @@ export function AuditLogTable({ items, isLoading }: AuditLogTableProps) {
                   <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#314863]/60"></div></td>
                   <td className="px-4 py-4"><div className="h-3 w-12 rounded bg-[#314863]/60"></div></td>
                   <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#314863]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-8 w-20 rounded bg-[#314863]/60"></div></td>
                 </tr>
               ))
             ) : items.length === 0 ? (
               // Empty State (MSG128)
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center">
+                <td colSpan={9} className="px-4 py-12 text-center">
                   <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
                     <span className="material-symbols-outlined text-4xl text-slate-500">
                       find_in_page
@@ -166,6 +171,17 @@ export function AuditLogTable({ items, isLoading }: AuditLogTableProps) {
                   </td>
                   <td className="px-4 py-3 font-mono text-slate-400 truncate">
                     {log.ipAddress || '-'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => onViewDetail?.(log)}
+                      disabled={!onViewDetail}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#71f8e4]/50 bg-[#71f8e4]/10 px-3 py-2 text-[11px] font-semibold text-[#71f8e4] transition-colors hover:bg-[#71f8e4]/20 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-500"
+                    >
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      Details
+                    </button>
                   </td>
                 </tr>
               ))
