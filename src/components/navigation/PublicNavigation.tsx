@@ -72,12 +72,12 @@ export function PublicNavigation() {
             Điểm đến
           </a>
 
-          <a
-            href="#csp-simulator"
+          <Link
+            href={ROUTES.plan}
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
             Lịch trình Tối ưu
-          </a>
+          </Link>
 
           <a
             href="#weather-rerouting"
