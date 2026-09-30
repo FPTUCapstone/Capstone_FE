@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
+import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
@@ -45,7 +46,7 @@ export function ChangePasswordPage() {
     <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
       <PublicNavigation />
 
-      <main className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
           <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
@@ -54,6 +55,9 @@ export function ChangePasswordPage() {
           <span aria-hidden="true">/</span>
           <span className="text-[#00152A]">Bảo mật &amp; Mật khẩu</span>
         </nav>
+
+        {/* Account Workspace Navigation Tabs */}
+        <AccountWorkspaceNav activeTab="security" />
 
         {/* Change Password Card */}
         <ChangePasswordForm

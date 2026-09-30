@@ -48,6 +48,12 @@ describe('/account/security production route', () => {
 
     expect(screen.getByRole('heading', { name: 'Đổi mật khẩu' })).toBeDefined();
     expect(screen.getAllByText('Nguyen Van A').length).toBe(2);
+    expect(screen.getByLabelText('Mật khẩu hiện tại')).toBeDefined();
+    expect(screen.getByLabelText('Mật khẩu mới')).toBeDefined();
+    expect(screen.getByLabelText('Xác nhận mật khẩu mới')).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Hồ sơ cá nhân/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Sở thích du lịch/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Bảo mật & Mật khẩu/ })).toBeDefined();
     expect(screen.getByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeDefined();
     expect(
       (screen.getByRole('button', { name: 'Đổi mật khẩu' }) as HTMLButtonElement)
