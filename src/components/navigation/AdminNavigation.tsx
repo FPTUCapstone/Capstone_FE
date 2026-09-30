@@ -33,7 +33,17 @@ export function AdminNavigation() {
           </Link>
         </nav>
 
-        <AdminLogoutButton />
+        <div className="flex items-center gap-2">
+          <Link
+            href={ROUTES.admin.accountSecurity}
+            className="flex items-center gap-1.5 rounded-lg border border-[#314863] bg-[#102a43] px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white transition"
+            title="Đổi mật khẩu quản trị viên"
+          >
+            <span className="material-symbols-outlined text-[16px]">lock_reset</span>
+            <span>Bảo mật</span>
+          </Link>
+          <AdminLogoutButton />
+        </div>
       </div>
     </header>
   );
