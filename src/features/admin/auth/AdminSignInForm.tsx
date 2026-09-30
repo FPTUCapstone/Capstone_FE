@@ -10,7 +10,28 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { PasswordField, TextField } from '@/components/ui/FormControls';
 import { ROUTES } from '@/lib/routes';
 
-export function AdminSignInForm() {
+interface AdminSignInFormProps {
+  returnUrl?: string;
+}
+
+export function getSafeAdminReturnUrl(returnUrl?: string): string {
+  if (!returnUrl || !returnUrl.startsWith('/') || returnUrl.startsWith('//') || returnUrl.includes('\\')) {
+    return ROUTES.admin.createPoi;
+  }
+
+  try {
+    const baseUrl = 'http://tripmate.local';
+    const candidate = new URL(returnUrl, baseUrl);
+    const isAdminRoute = candidate.pathname === ROUTES.admin.dashboard || candidate.pathname.startsWith('/admin/');
+    const isLoginRoute = candidate.pathname === ROUTES.admin.login;
+    if (candidate.origin !== baseUrl || !isAdminRoute || isLoginRoute) return ROUTES.admin.createPoi;
+    return `${candidate.pathname}${candidate.search}${candidate.hash}`;
+  } catch {
+    return ROUTES.admin.createPoi;
+  }
+}
+
+export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
   const router = useRouter();
   const submitting = useRef(false);
   const [email, setEmail] = useState('');
@@ -46,7 +67,7 @@ export function AdminSignInForm() {
         return;
       }
       setPassword('');
-      router.replace(ROUTES.admin.createPoi);
+      router.replace(getSafeAdminReturnUrl(returnUrl));
       router.refresh();
     } catch {
       setMessage('Unable to connect. Please check your connection and try again.');

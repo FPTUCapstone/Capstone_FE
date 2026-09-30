@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/lib/routes';
 import type { CreatePoiRequest, PoiCatalogue, PoiFormData, PoiResponse, ValidationErrors } from './types/poi';
 import { createEmptyPoiForm, mapPoiErrors, toCreatePoiRequest, validatePoiForm } from './services/poi-contract';
@@ -21,7 +20,6 @@ import { TelemetryCard } from './components/TelemetryCard';
 import { StickyActionBarMobile } from './components/StickyActionBarMobile';
 
 export function CreatePoiPage() {
-  const router = useRouter();
   const [formData, setFormData] = useState<PoiFormData>(createEmptyPoiForm);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [catalogue, setCatalogue] = useState<PoiCatalogue | null>(null);
@@ -29,11 +27,10 @@ export function CreatePoiPage() {
   const [catalogueLoading, setCatalogueLoading] = useState(true);
   const [reloadCount, setReloadCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const inFlight = useRef(false);
   const [failure, setFailure] = useState<PoiApiError | null>(null);
   const [created, setCreated] = useState<PoiResponse | null>(null);
   const [duplicate, setDuplicate] = useState<{ id: number; request: CreatePoiRequest } | null>(null);
+  const inFlight = useRef(false);
   const feedback = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,7 +59,7 @@ export function CreatePoiPage() {
     setFormData(createEmptyPoiForm()); setErrors({}); setFailure(null); setDuplicate(null); setCreated(null);
   };
   const authError = [catalogueError, failure].find(error => error?.status === 401 || error?.status === 403);
-  const busy = submitting || signingOut;
+  const busy = submitting;
   const saveDisabled = busy || catalogueLoading || !catalogue?.categories.length || Boolean(authError) || Boolean(created);
 
   const sendRequest = async (request: CreatePoiRequest) => {
@@ -86,29 +83,16 @@ export function CreatePoiPage() {
     if (Object.keys(validation).length) { feedback.current?.focus(); return; }
     void sendRequest(toCreatePoiRequest(formData));
   };
-  const signOut = async () => {
-    if (inFlight.current) return;
-    inFlight.current = true; setSigningOut(true);
-    try {
-      const response = await fetch('/api/admin/session', { method: 'DELETE', signal: AbortSignal.timeout(15000) });
-      if (!response.ok) throw new Error('Sign-out failed');
-      router.replace(ROUTES.admin.login); router.refresh();
-    } catch {
-      inFlight.current = false; setSigningOut(false);
-      setFailure(new PoiApiError(0, 'Sign-out could not be completed. Please try again.'));
-    }
-  };
   const preview = Object.keys(validatePoiForm(formData)).length === 0 ? toCreatePoiRequest(formData) : null;
 
   return (
     <div className="flex min-h-screen bg-[#F3F4F6] text-slate-900 font-sans">
-      <div className="hidden lg:block lg:w-64 lg:shrink-0"><AdminSidebar onSignOut={signOut} disabled={busy} /></div>
+      <div className="hidden lg:block lg:w-64 lg:shrink-0"><AdminSidebar /></div>
       <div className="flex-1 flex flex-col min-w-0 pt-16 pb-24 lg:pb-12">
-        <AdminHeader onSave={handleSubmit} onCancel={handleReset} onSignOut={signOut} submitting={busy} saveDisabled={saveDisabled} />
+        <AdminHeader onSave={handleSubmit} onCancel={handleReset} submitting={busy} saveDisabled={saveDisabled} />
         <main className="flex-1 px-4 sm:px-6 py-4 sm:py-6 max-w-7xl w-full mx-auto">
           <div className="mb-6 hidden lg:flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div><h1 className="text-2xl font-black tracking-tight">Create Point of Interest</h1><p className="text-xs text-slate-500 mt-1">Register a location and its visit attributes in the TripMate catalogue.</p></div>
-            <button type="button" disabled={busy} onClick={signOut} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm">{signingOut ? 'Signing out...' : 'Sign out'}</button>
           </div>
           <div className="mb-4 flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-600" role="status">
             <span>{catalogueLoading ? 'Loading catalogue...' : catalogueError ? catalogueError.message : catalogue?.categories.length ? 'Catalogue loaded.' : 'No POI categories are available. An administrator must add a category before you can create a POI.'}</span>
