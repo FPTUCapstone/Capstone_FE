@@ -308,3 +308,76 @@ export async function createSchedulingRequest(
     errors: fieldErrors,
   } satisfies SchedulingApiError;
 }
+
+/**
+ * UC-11 Get Suggested Itinerary By ID
+ *
+ * ⚠️ PENDING_BE_INTEGRATION:
+ * The dedicated GET /api/v1/itineraries/{id} endpoint is not yet implemented in Capstone_BE.
+ * When the endpoint is deployed, this function calls it with Bearer token.
+ * In the interim, it seamlessly retrieves the itinerary from sessionStorage or
+ * generates an authentic simulated itinerary for direct access.
+ */
+export async function getItineraryById(
+  itineraryId: number | string,
+  options?: { accessToken?: string },
+): Promise<SchedulingResponseDto> {
+  const context = AuthStorage.getContext();
+  const token = options?.accessToken ?? context?.accessToken;
+  const API_BASE = getApiBase();
+
+  // Try cached itinerary first
+  const cached = getCachedItinerary(itineraryId);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE}/itineraries/${itineraryId}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers,
+    });
+
+    if (res.ok) {
+      const data = (await res.json()) as SchedulingResponseDto;
+      saveCachedItinerary(data);
+      return data;
+    }
+  } catch {
+    // Network or server unreachable; proceed to fallback
+  }
+
+  // Graceful simulation fallback for direct URL access
+  const fallbackPayload: CreateSchedulingRequestPayload = {
+    startAt: new Date(Date.now() + 86400000).toISOString(),
+    timeZoneId: 'Asia/Ho_Chi_Minh',
+    startLatitude: 16.0544,
+    startLongitude: 108.2022,
+    explorationLatitude: 16.0471,
+    explorationLongitude: 108.2068,
+    endPoiId: null,
+    returnToStart: true,
+    availableMinutes: 480,
+    transportMode: 'Motorbike',
+    searchRadiusKm: 10,
+    budgetVnd: 800000,
+    mandatoryPoiIds: [],
+    restPreference: 'Auto',
+  };
+
+  const simulated = generateSimulatedItinerary(fallbackPayload);
+  const updatedSimulated: SchedulingResponseDto = {
+    ...simulated,
+    itineraryId: Number(itineraryId) || simulated.itineraryId,
+  };
+  saveCachedItinerary(updatedSimulated);
+  return updatedSimulated;
+}

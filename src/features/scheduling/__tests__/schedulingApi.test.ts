@@ -5,6 +5,7 @@ import {
   createSchedulingRequest,
   saveCachedItinerary,
   getCachedItinerary,
+  getItineraryById,
 } from '../services/schedulingApi';
 import { CreateSchedulingRequestPayload } from '../types/schedulingTypes';
 
@@ -184,6 +185,53 @@ describe('UC-10 Scheduling API Service', () => {
           code: 'planning.constraints_infeasible',
         }),
       );
+    });
+  });
+
+  describe('getItineraryById', () => {
+    it('returns cached itinerary if available in sessionStorage', async () => {
+      const cached = {
+        schedulingRequestId: 11,
+        itineraryId: 999,
+        title: 'Lịch trình đã lưu',
+        status: 'OptimalGenerated',
+        totalEstimatedCost: 150000,
+        totalDurationMinutes: 240,
+        items: [],
+      };
+      saveCachedItinerary(cached);
+
+      const result = await getItineraryById(999);
+      expect(result).toEqual(cached);
+    });
+
+    it('calls BE endpoint if available and not in cache', async () => {
+      const mockFromBe = {
+        schedulingRequestId: 12,
+        itineraryId: 888,
+        title: 'Từ Backend API',
+        status: 'OptimalGenerated',
+        totalEstimatedCost: 350000,
+        totalDurationMinutes: 360,
+        items: [],
+      };
+
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockFromBe,
+      });
+
+      const result = await getItineraryById(888);
+      expect(result).toEqual(mockFromBe);
+    });
+
+    it('generates a simulated fallback if BE is offline and not in cache', async () => {
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('BE offline'));
+
+      const result = await getItineraryById(777);
+      expect(result.itineraryId).toBe(777);
+      expect(result.items.length).toBeGreaterThan(0);
     });
   });
 });
