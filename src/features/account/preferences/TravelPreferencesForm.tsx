@@ -136,7 +136,7 @@ export function TravelPreferencesForm({
         tone: 'error',
         title: 'Không thể lưu sở thích',
         message:
-          'TripMate tạm thời không thể kết nối tới máy chủ lưu trữ sở thích. Vui lòng thử lại sau (MSG127).',
+          'Không thể lưu sở thích trên thiết bị này. Vui lòng kiểm tra dung lượng hoặc quyền lưu trữ của trình duyệt rồi thử lại.',
       });
     } finally {
       setSubmitting(false);
@@ -147,14 +147,25 @@ export function TravelPreferencesForm({
   const handleReset = () => {
     setResetting(true);
     setValidationError(null);
-    const resetData = resetTravelPreferences(userId);
-    setPreferences(resetData);
-    setFeedback({
-      tone: 'info',
-      title: 'Đã đặt lại mặc định',
-      message: 'Các tùy chọn sở thích đã được khôi phục về giá trị khuyến nghị ban đầu.',
-    });
-    setResetting(false);
+    setFeedback(null);
+    try {
+      const resetData = resetTravelPreferences(userId);
+      setPreferences(resetData);
+      setFeedback({
+        tone: 'info',
+        title: 'Đã đặt lại mặc định',
+        message: 'Các tùy chọn sở thích đã được khôi phục về giá trị khuyến nghị ban đầu.',
+      });
+    } catch {
+      setFeedback({
+        tone: 'error',
+        title: 'Không thể đặt lại sở thích',
+        message:
+          'Không thể lưu cài đặt mặc định trên thiết bị này. Vui lòng kiểm tra dung lượng hoặc quyền lưu trữ của trình duyệt rồi thử lại.',
+      });
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (

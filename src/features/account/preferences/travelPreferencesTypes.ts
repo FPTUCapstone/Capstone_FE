@@ -200,3 +200,46 @@ export const DEFAULT_PREFERENCES: TravelPreferencesData = {
   foodPreference: 'noRestriction',
   autoApplyToPlans: true,
 };
+
+export const VALID_INTEREST_IDS = new Set<TravelInterestId>(
+  INTEREST_OPTIONS.map((opt) => opt.id),
+);
+export const VALID_TRAVEL_STYLE_IDS = new Set<TravelStyleId>(
+  TRAVEL_STYLE_OPTIONS.map((opt) => opt.id),
+);
+export const VALID_BUDGET_LEVEL_IDS = new Set<BudgetLevelId>(
+  BUDGET_LEVEL_OPTIONS.map((opt) => opt.id),
+);
+export const VALID_TRANSPORT_IDS = new Set<PreferredTransportId>(
+  TRANSPORT_OPTIONS.map((opt) => opt.id),
+);
+export const VALID_PACE_IDS = new Set<TravelPaceId>(
+  PACE_OPTIONS.map((opt) => opt.id),
+);
+export const VALID_FOOD_IDS = new Set<FoodPreferenceId>(
+  FOOD_OPTIONS.map((opt) => opt.id),
+);
+
+export function isTravelInterestId(value: unknown): value is TravelInterestId {
+  return typeof value === 'string' && VALID_INTEREST_IDS.has(value as TravelInterestId);
+}
+
+export function isTravelStyleId(value: unknown): value is TravelStyleId {
+  return typeof value === 'string' && VALID_TRAVEL_STYLE_IDS.has(value as TravelStyleId);
+}
+
+export function isBudgetLevelId(value: unknown): value is BudgetLevelId {
+  return typeof value === 'string' && VALID_BUDGET_LEVEL_IDS.has(value as BudgetLevelId);
+}
+
+export function isPreferredTransportId(value: unknown): value is PreferredTransportId {
+  return typeof value === 'string' && VALID_TRANSPORT_IDS.has(value as PreferredTransportId);
+}
+
+export function isTravelPaceId(value: unknown): value is TravelPaceId {
+  return typeof value === 'string' && VALID_PACE_IDS.has(value as TravelPaceId);
+}
+
+export function isFoodPreferenceId(value: unknown): value is FoodPreferenceId {
+  return typeof value === 'string' && VALID_FOOD_IDS.has(value as FoodPreferenceId);
+}
