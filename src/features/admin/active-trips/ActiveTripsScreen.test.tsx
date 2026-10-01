@@ -26,11 +26,12 @@ describe('ActiveTripsScreen', () => {
     query = ''; push.mockClear(); replace.mockClear(); vi.mocked(fetchActiveTrips).mockReset().mockResolvedValue(response);
   });
 
-  it('renders summary and rows without a UC-59 details action', async () => {
+  it('renders a visible details action for each active trip', async () => {
     render(<ActiveTripsScreen />);
     expect(await screen.findByText('TRIP-42')).toBeTruthy();
     expect(screen.getByText('26/09/2026 08:30')).toBeTruthy();
-    expect(screen.queryByText('View Details')).toBeNull();
+    expect(screen.getByRole('link', { name: 'View details for TRIP-42' }).getAttribute('href')).toBe('/admin/trips/active/42');
+    expect(screen.getByText('View Details')).toBeTruthy();
   });
 
   it('does not fetch while the Administrator is typing', async () => {

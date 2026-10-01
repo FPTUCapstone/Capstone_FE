@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
@@ -107,15 +108,16 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
       {state === 'ready' && data?.items.length === 0 ? <FeedbackAlert title="No active trips">{ACTIVE_TRIPS_MESSAGES.empty}</FeedbackAlert> : null}
       {state === 'ready' && data && data.items.length > 0 ? <>
         <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0} aria-label="Active trips table; scroll horizontally on small screens">
-          <table className="min-w-[1080px] w-full border-collapse text-left text-sm">
-            <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white"><tr>{['Trip Code','Trip Type','Current Status','Group or Traveler','Destination','Start Date','Current Day','Members','Open Alerts'].map((heading) => <th key={heading} className="px-4 py-3">{heading}</th>)}</tr></thead>
+          <table className="min-w-[1200px] w-full border-collapse text-left text-sm">
+            <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white"><tr>{['Trip Code','Trip Type','Current Status','Group or Traveler','Destination','Start Date','Current Day','Members','Open Alerts','Actions'].map((heading) => <th key={heading} className="px-4 py-3" scope="col">{heading}</th>)}</tr></thead>
             <tbody>{data.items.map((trip) => <tr key={trip.tripId} className="border-t border-[#e6edf5]">
-              <td className="px-4 py-3 font-mono font-bold text-[#00152a]">{trip.tripCode}</td>
+              <td className="px-4 py-3 font-mono font-bold text-[#00152a]"><Link href={ROUTES.admin.activeTripDetails(trip.tripId)} className="underline decoration-[#9fb3c8] underline-offset-2 hover:text-[#006b5f] hover:decoration-[#006b5f]">{trip.tripCode}</Link></td>
               <td className="px-4 py-3"><Badge>{trip.tripType === 'SelfPlanned' ? 'Self-Planned' : 'Tour'}</Badge></td>
               <td className="px-4 py-3"><Badge alert={trip.currentState === 'Interrupted'}>{trip.currentState}</Badge></td>
               <td className="px-4 py-3 font-medium">{trip.groupOrTraveler}</td><td className="px-4 py-3">{trip.destination ?? 'Not available'}</td>
               <td className="px-4 py-3 whitespace-nowrap">{formatVietnamDateTime(trip.startedAtUtc)}</td><td className="px-4 py-3">{trip.currentDay ?? 'Not available'}</td>
               <td className="px-4 py-3">{trip.members}</td><td className={`px-4 py-3 font-bold ${trip.openAlerts ? 'text-[#b42318]' : 'text-[#486581]'}`}>{trip.openAlerts}</td>
+              <td className="px-4 py-3"><Link href={ROUTES.admin.activeTripDetails(trip.tripId)} aria-label={`View details for ${trip.tripCode}`} className="inline-flex whitespace-nowrap rounded-lg border border-[#006b5f] px-3 py-2 font-bold text-[#006b5f] hover:bg-[#e6f7f0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]">View Details</Link></td>
             </tr>)}</tbody>
           </table>
         </div>

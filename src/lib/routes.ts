@@ -21,5 +21,6 @@ export const ROUTES = {
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
     createPoi: '/admin/catalogue/points-of-interest/new',
     activeTrips: '/admin/trips/active',
+    activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
   },
 } as const;
