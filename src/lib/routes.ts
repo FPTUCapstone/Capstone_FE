@@ -8,6 +8,8 @@ export const ROUTES = {
   poi: (id: string | number) => `/pois/${id}`,
   plan: '/plan',
   itinerary: (id: string | number) => `/itinerary/${id}`,
+  tours: '/tours',
+  tour: (id: string | number) => `/tours/${id}`,
   partner: {
     dashboard: '/partner',
     register: '/partner/register',
