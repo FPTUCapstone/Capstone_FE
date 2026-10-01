@@ -81,16 +81,19 @@ describe('TravelerProfileForm', () => {
     expect(api.updateTravelerProfile).not.toHaveBeenCalled();
   });
 
-  it('shows success feedback upon successful profile save (MSG20)', async () => {
+  it('shows local draft feedback upon profile save (LOCAL_DRAFT & PENDING_BE_INTEGRATION)', async () => {
     vi.mocked(api.updateTravelerProfile).mockResolvedValue({
       success: true,
-      messageCode: 'MSG20',
-      message: 'Cập nhật thông tin hồ sơ thành công.',
+      messageCode: 'LOCAL_DRAFT',
+      message: 'Thông tin tạm thời đã được lưu trên thiết bị này.',
+      notice: 'Đồng bộ hồ sơ với máy chủ đang chờ tích hợp.',
       profile: {
         fullName: 'Nguyễn Văn Đã Cập Nhật',
         email: 'traveler@tripmate.com',
         phoneNumber: '0901234567',
       },
+      storageMode: 'LOCAL_DRAFT',
+      integrationStatus: 'PENDING_BE_INTEGRATION',
       isSimulatedFallback: true,
     });
 
@@ -107,8 +110,8 @@ describe('TravelerProfileForm', () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Cập nhật thông tin hồ sơ thành công.')).toBeDefined();
-      expect(screen.getByText(/Chế độ mô phỏng máy chủ/)).toBeDefined();
+      expect(screen.getByText('Thông tin tạm thời đã được lưu trên thiết bị này.')).toBeDefined();
+      expect(screen.getByText(/Chờ tích hợp máy chủ/)).toBeDefined();
     });
   });
 

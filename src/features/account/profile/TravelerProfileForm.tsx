@@ -121,19 +121,21 @@ export function TravelerProfileForm({
         </p>
       </div>
 
-      {/* Top-Level Success Feedback (MSG20) */}
+      {/* Top-Level Feedback (LOCAL_DRAFT & PENDING_BE_INTEGRATION) */}
       {success ? (
-        <div className="mb-6">
-          <FeedbackAlert tone="success" title="Thành công">
-            {successMessage || 'Cập nhật thông tin hồ sơ thành công.'}
+        <div className="mb-6 space-y-3">
+          <FeedbackAlert tone="info" title="Lưu tạm trên thiết bị">
+            {successMessage || 'Thông tin tạm thời đã được lưu trên thiết bị này.'}
           </FeedbackAlert>
+          {backendFallbackNotice ? (
+            <FeedbackAlert tone="warning" title="Chờ tích hợp máy chủ">
+              {backendFallbackNotice}
+            </FeedbackAlert>
+          ) : null}
         </div>
-      ) : null}
-
-      {/* Top-Level Backend Notice (PENDING_BE_INTEGRATION) */}
-      {backendFallbackNotice ? (
+      ) : backendFallbackNotice ? (
         <div className="mb-6">
-          <FeedbackAlert tone="warning" title="Chế độ mô phỏng máy chủ">
+          <FeedbackAlert tone="warning" title="Chờ tích hợp máy chủ">
             {backendFallbackNotice}
           </FeedbackAlert>
         </div>

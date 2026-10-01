@@ -260,13 +260,8 @@ export function useTravelerProfile(options: UseTravelerProfileOptions = {}) {
       const result = await updateTravelerProfile(payload, { accessToken });
 
       setSuccess(true);
-      setSuccessMessage(result.message || 'Cập nhật thông tin hồ sơ thành công.');
-
-      if (result.isSimulatedFallback) {
-        setBackendFallbackNotice(
-          'Dữ liệu hồ sơ đã được lưu cục bộ (Chế độ tương thích: API máy chủ đang chờ tích hợp - PENDING_BE_INTEGRATION).',
-        );
-      }
+      setSuccessMessage(result.message || 'Thông tin tạm thời đã được lưu trên thiết bị này.');
+      setBackendFallbackNotice(result.notice || 'Đồng bộ hồ sơ với máy chủ đang chờ tích hợp.');
 
       onSuccess?.(result.profile);
       return true;
