@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TravelPreferencesForm } from '../TravelPreferencesForm';
 import * as api from '../travelPreferencesApi';
+import { LocalPreferencesStorageError } from '../travelPreferencesStorage';
 import { DEFAULT_PREFERENCES } from '../travelPreferencesTypes';
 
 vi.mock('../travelPreferencesApi', () => ({
@@ -23,7 +24,6 @@ describe('TravelPreferencesForm', () => {
       preferences: DEFAULT_PREFERENCES,
       storageMode: 'LOCAL_DEVICE_PREFERENCES',
       integrationStatus: 'PENDING_BE_INTEGRATION',
-      isSimulatedFallback: true,
     });
   });
 
@@ -91,7 +91,8 @@ describe('TravelPreferencesForm', () => {
   });
 
   it('submits form successfully and displays local device preferences feedback and notice', async () => {
-    render(<TravelPreferencesForm initialPreferences={DEFAULT_PREFERENCES} />);
+    const onSaved = vi.fn();
+    render(<TravelPreferencesForm initialPreferences={DEFAULT_PREFERENCES} onSaved={onSaved} />);
 
     const submitBtn = screen.getByRole('button', { name: /Lưu sở thích/ });
     fireEvent.click(submitBtn);
@@ -106,10 +107,37 @@ describe('TravelPreferencesForm', () => {
       );
       expect(screen.getByText('Sở thích du lịch đã được lưu trên thiết bị này.')).toBeDefined();
       expect(screen.getByText(/Chờ tích hợp máy chủ/)).toBeDefined();
+      expect(onSaved).toHaveBeenCalledWith(DEFAULT_PREFERENCES);
     });
   });
 
-  it('resets preferences to default values when reset button is clicked', () => {
+  it('handles save failure without reporting false success and does not call onSaved', async () => {
+    const onSaved = vi.fn();
+    vi.mocked(api.updateTravelPreferences).mockRejectedValueOnce(
+      new LocalPreferencesStorageError(
+        'Không thể lưu sở thích trên thiết bị này. Vui lòng kiểm tra dung lượng hoặc quyền lưu trữ của trình duyệt rồi thử lại.',
+      ),
+    );
+
+    render(<TravelPreferencesForm initialPreferences={DEFAULT_PREFERENCES} onSaved={onSaved} />);
+
+    const submitBtn = screen.getByRole('button', { name: /Lưu sở thích/ });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Không thể lưu sở thích')).toBeDefined();
+      expect(
+        screen.getByText(
+          'Không thể lưu sở thích trên thiết bị này. Vui lòng kiểm tra dung lượng hoặc quyền lưu trữ của trình duyệt rồi thử lại.',
+        ),
+      ).toBeDefined();
+      expect(screen.queryByText('Đã lưu trên thiết bị')).toBeNull();
+      expect(screen.queryByText('Sở thích du lịch đã được lưu trên thiết bị này.')).toBeNull();
+      expect(onSaved).not.toHaveBeenCalled();
+    });
+  });
+
+  it('resets preferences to default values when reset button is clicked and succeeds', () => {
     render(
       <TravelPreferencesForm
         initialPreferences={{
@@ -124,6 +152,41 @@ describe('TravelPreferencesForm', () => {
     fireEvent.click(resetBtn);
 
     expect(api.resetTravelPreferences).toHaveBeenCalled();
-    expect(screen.getByText(/Đã đặt lại mặc định/)).toBeDefined();
+    expect(screen.getByText('Đã đặt lại mặc định')).toBeDefined();
+    expect(
+      screen.getByText('Các tùy chọn sở thích đã được khôi phục về giá trị khuyến nghị ban đầu.'),
+    ).toBeDefined();
+  });
+
+  it('handles reset failure gracefully without updating state or reporting false success', () => {
+    vi.mocked(api.resetTravelPreferences).mockImplementationOnce(() => {
+      throw new LocalPreferencesStorageError();
+    });
+
+    render(
+      <TravelPreferencesForm
+        initialPreferences={{
+          ...DEFAULT_PREFERENCES,
+          interests: ['adventure'],
+          travelStyle: 'solo',
+        }}
+      />,
+    );
+
+    const resetBtn = screen.getByRole('button', { name: /Đặt lại mặc định/ });
+    fireEvent.click(resetBtn);
+
+    expect(api.resetTravelPreferences).toHaveBeenCalled();
+    // Must NOT show success
+    expect(screen.queryByText('Đã đặt lại mặc định')).toBeNull();
+    // Must show explicit error
+    expect(screen.getByText('Không thể đặt lại sở thích')).toBeDefined();
+    expect(
+      screen.getByText(
+        'Không thể lưu cài đặt mặc định trên thiết bị này. Vui lòng kiểm tra dung lượng hoặc quyền lưu trữ của trình duyệt rồi thử lại.',
+      ),
+    ).toBeDefined();
+    // Reset button must not be stuck in resetting state
+    expect(resetBtn.hasAttribute('disabled')).toBe(false);
   });
 });

@@ -1,6 +1,12 @@
 import { AuthStorage } from '@/features/auth/session/authSession';
-import { loadStoredPreferences, saveStoredPreferences } from './travelPreferencesStorage';
+import {
+  LocalPreferencesStorageError,
+  loadStoredPreferences,
+  saveStoredPreferences,
+} from './travelPreferencesStorage';
 import { DEFAULT_PREFERENCES, TravelPreferencesData } from './travelPreferencesTypes';
+
+export { LocalPreferencesStorageError };
 
 export interface UpdatePreferencesResult {
   success: boolean;
@@ -10,7 +16,6 @@ export interface UpdatePreferencesResult {
   preferences: TravelPreferencesData;
   storageMode: 'LOCAL_DEVICE_PREFERENCES';
   integrationStatus: 'PENDING_BE_INTEGRATION';
-  isSimulatedFallback?: boolean;
 }
 
 /**
@@ -58,7 +63,6 @@ export async function updateTravelPreferences(
     preferences: saved,
     storageMode: 'LOCAL_DEVICE_PREFERENCES',
     integrationStatus: 'PENDING_BE_INTEGRATION',
-    isSimulatedFallback: true,
   };
 }
 
