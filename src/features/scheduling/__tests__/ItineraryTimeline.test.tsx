@@ -2,52 +2,61 @@ import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ItineraryTimeline } from '../components/ItineraryTimeline';
-import { SchedulingItemDto } from '../types/schedulingTypes';
+import { ItineraryDetailItemDto } from '../types/schedulingTypes';
 
 describe('ItineraryTimeline (UC-11)', () => {
   afterEach(() => {
     cleanup();
   });
 
-  const mockItems: SchedulingItemDto[] = [
+  const mockItems: ItineraryDetailItemDto[] = [
     {
+      itemId: 1,
       sequenceNo: 1,
       poiId: 101,
       poiName: 'Bảo tàng Điêu khắc Chăm',
-      itemKind: 'Visit',
+      category: 'Văn hóa & Di sản',
+      kind: 'Visit',
       plannedArrival: '2026-10-20T08:00:00+07:00',
       plannedDeparture: '2026-10-20T09:00:00+07:00',
       stayDurationMinutes: 60,
-      travelDurationToNextMinutes: 15,
+      travelDurationFromPreviousMinutes: null,
       estimatedCost: 60000,
       isMandatory: true,
       recommendationReason: 'Phù hợp với sở thích Văn hóa & Di sản',
+      isUnavailable: false,
     },
     {
+      itemId: 2,
       sequenceNo: 2,
       poiId: null,
       poiName: 'Bữa trưa đặc sản Mì Quảng',
-      itemKind: 'Rest',
+      category: 'Ẩm thực',
+      kind: 'Rest',
       plannedArrival: '2026-10-20T12:00:00+07:00',
       plannedDeparture: '2026-10-20T13:00:00+07:00',
       stayDurationMinutes: 60,
-      travelDurationToNextMinutes: 20,
+      travelDurationFromPreviousMinutes: 15,
       estimatedCost: 65000,
       isMandatory: false,
       recommendationReason: 'Nghỉ ngơi và thưởng thức đặc sản',
+      isUnavailable: false,
     },
     {
+      itemId: 3,
       sequenceNo: 3,
       poiId: 102,
       poiName: 'Cầu Rồng Đà Nẵng',
-      itemKind: 'Visit',
+      category: 'Danh lam thắng cảnh',
+      kind: 'Visit',
       plannedArrival: '2026-10-20T14:00:00+07:00',
       plannedDeparture: '2026-10-20T15:00:00+07:00',
       stayDurationMinutes: 60,
-      travelDurationToNextMinutes: null,
+      travelDurationFromPreviousMinutes: 20,
       estimatedCost: 0,
       isMandatory: false,
       recommendationReason: 'Biểu tượng nổi tiếng',
+      isUnavailable: true,
     },
   ];
 
@@ -65,22 +74,30 @@ describe('ItineraryTimeline (UC-11)', () => {
     // Mandatory badge
     expect(screen.getByText('Bắt buộc')).toBeDefined();
 
+    // Category chips
+    expect(screen.getByText('Văn hóa & Di sản')).toBeDefined();
+    expect(screen.getByText('Ẩm thực')).toBeDefined();
+    expect(screen.getByText('Danh lam thắng cảnh')).toBeDefined();
+
+    // Unavailable badge
+    expect(screen.getByText('Tạm ngưng hoạt động')).toBeDefined();
+
     // Costs
     expect(screen.getByText('60.000 VNĐ')).toBeDefined();
     expect(screen.getByText('65.000 VNĐ')).toBeDefined();
     expect(screen.getByText('Miễn phí')).toBeDefined();
   });
 
-  it('renders travel transition segments between stops with directions icon and neutral text', () => {
+  it('renders incoming travel transition segments before item N with travelDurationFromPreviousMinutes', () => {
     render(<ItineraryTimeline items={mockItems} />);
 
     expect(screen.getAllByText(/Di chuyển khoảng/i).length).toBe(2);
     expect(screen.getByText('15 phút')).toBeDefined();
     expect(screen.getByText('20 phút')).toBeDefined();
+    expect(screen.getAllByText(/từ điểm trước/i).length).toBe(2);
 
-    // Verify directions icon is present and two_wheeler is absent
+    // Verify directions icon is present
     expect(screen.getAllByText('directions').length).toBe(2);
-    expect(screen.queryByText('two_wheeler')).toBeNull();
   });
 
   it('formats arrival and departure times under Asia/Ho_Chi_Minh', () => {

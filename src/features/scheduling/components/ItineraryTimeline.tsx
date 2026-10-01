@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
-import { formatVietnamTime, SchedulingItemDto } from '../types/schedulingTypes';
+import { formatVietnamTime, ItineraryDetailItemDto } from '../types/schedulingTypes';
 
 interface ItineraryTimelineProps {
-  items: SchedulingItemDto[];
+  items: ItineraryDetailItemDto[];
 }
 
 export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
@@ -35,13 +35,30 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
 
       <div className="space-y-6">
         {items.map((item, index) => {
-          const isRest = item.itemKind === 'Rest';
+          const isRest = (item.kind ?? (item as unknown as { itemKind?: string }).itemKind) === 'Rest';
           const isLast = index === items.length - 1;
           const arrivalTime = formatTime(item.plannedArrival);
           const departureTime = formatTime(item.plannedDeparture);
 
           return (
-            <div key={item.sequenceNo || index} className="relative">
+            <div key={item.itemId || item.sequenceNo || index} className="relative">
+              {/* Incoming travel transition from previous stop (Part 9) */}
+              {index > 0 &&
+                item.travelDurationFromPreviousMinutes !== null &&
+                item.travelDurationFromPreviousMinutes !== undefined && (
+                  <div className="mb-4 ml-10 flex items-center gap-2 text-xs text-slate-500 sm:ml-12">
+                    <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11.5px] font-medium shadow-2xs">
+                      <span className="material-symbols-outlined text-sm text-[#007d6e]">
+                        directions
+                      </span>
+                      <span>
+                        Di chuyển khoảng{' '}
+                        <strong>{item.travelDurationFromPreviousMinutes} phút</strong> từ điểm trước
+                      </span>
+                    </div>
+                  </div>
+                )}
+
               {/* Connecting line to next item */}
               {!isLast && (
                 <div
@@ -53,7 +70,9 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
               {/* Stop Card */}
               <div
                 className={`relative flex items-start gap-3.5 rounded-2xl border p-4 shadow-2xs transition sm:gap-4 sm:p-5 ${
-                  isRest
+                  item.isUnavailable
+                    ? 'border-rose-200 bg-rose-50/30'
+                    : isRest
                     ? 'border-amber-200/80 bg-amber-50/40 hover:border-amber-300'
                     : 'border-slate-200 bg-white hover:border-teal-300'
                 }`}
@@ -61,7 +80,9 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
                 {/* Sequence circle badge */}
                 <div
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black shadow-xs sm:h-12 sm:w-12 sm:text-base ${
-                    isRest
+                    item.isUnavailable
+                      ? 'bg-rose-500 text-white'
+                      : isRest
                       ? 'bg-amber-500 text-white'
                       : 'bg-[#007d6e] text-white'
                   }`}
@@ -87,9 +108,22 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
                         {isRest ? 'Nghỉ ngơi / Ẩm thực' : 'Điểm tham quan'}
                       </span>
 
+                      {item.category && (
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                          {item.category}
+                        </span>
+                      )}
+
                       {item.isMandatory && (
                         <span className="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
                           Bắt buộc
+                        </span>
+                      )}
+
+                      {item.isUnavailable && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
+                          <span className="material-symbols-outlined text-xs">block</span>
+                          Tạm ngưng hoạt động
                         </span>
                       )}
                     </div>
@@ -157,21 +191,6 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
                   </div>
                 </div>
               </div>
-
-              {/* Travel segment transition to next stop */}
-              {!isLast && item.travelDurationToNextMinutes !== null && (
-                <div className="my-2 ml-10 flex items-center gap-2 text-xs text-slate-500 sm:ml-12">
-                  <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11.5px] font-medium shadow-2xs">
-                    <span className="material-symbols-outlined text-sm text-[#007d6e]">
-                      directions
-                    </span>
-                    <span>
-                      Di chuyển khoảng{' '}
-                      <strong>{item.travelDurationToNextMinutes} phút</strong> đến điểm tiếp theo
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}

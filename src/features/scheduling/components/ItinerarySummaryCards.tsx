@@ -1,14 +1,18 @@
 'use client';
 
-import { SchedulingResponseDto } from '../types/schedulingTypes';
+import { ItineraryDetailDto, SchedulingResponseDto } from '../types/schedulingTypes';
 
 interface ItinerarySummaryCardsProps {
-  itinerary: SchedulingResponseDto;
+  itinerary: ItineraryDetailDto | SchedulingResponseDto;
 }
 
 export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps) {
-  const visitCount = itinerary.items.filter((i) => i.itemKind === 'Visit').length;
-  const restCount = itinerary.items.filter((i) => i.itemKind === 'Rest').length;
+  const visitCount = itinerary.items.filter(
+    (i) => (('kind' in i ? i.kind : (i as { itemKind: string }).itemKind) === 'Visit'),
+  ).length;
+  const restCount = itinerary.items.filter(
+    (i) => (('kind' in i ? i.kind : (i as { itemKind: string }).itemKind) === 'Rest'),
+  ).length;
 
   const hours = Math.floor(itinerary.totalDurationMinutes / 60);
   const minutes = itinerary.totalDurationMinutes % 60;

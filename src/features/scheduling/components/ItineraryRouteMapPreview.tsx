@@ -1,9 +1,9 @@
 'use client';
 
-import { SchedulingResponseDto } from '../types/schedulingTypes';
+import { ItineraryDetailDto, SchedulingResponseDto } from '../types/schedulingTypes';
 
 interface ItineraryRouteMapPreviewProps {
-  itinerary: SchedulingResponseDto;
+  itinerary: ItineraryDetailDto | SchedulingResponseDto;
 }
 
 export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreviewProps) {
@@ -30,10 +30,11 @@ export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreview
           <div className="flex flex-wrap items-center justify-center gap-2 py-2">
             {itinerary.items.map((item, idx) => {
               const isLast = idx === itinerary.items.length - 1;
-              const isRest = item.itemKind === 'Rest';
+              const isRest =
+                ('kind' in item ? item.kind : (item as { itemKind: string }).itemKind) === 'Rest';
 
               return (
-                <div key={item.sequenceNo || idx} className="flex items-center gap-2">
+                <div key={('itemId' in item && item.itemId) || item.sequenceNo || idx} className="flex items-center gap-2">
                   <div
                     className="flex flex-col items-center"
                     title={item.poiName ?? `Điểm dừng ${item.sequenceNo}`}
@@ -74,7 +75,7 @@ export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreview
               <span>Bản đồ hành trình trực quan</span>
             </div>
             <p className="mt-1 text-[11px] text-slate-500">
-              Thông tin bản đồ và tuyến đường chi tiết đang chờ dữ liệu tích hợp từ hệ thống bản đồ (Pending Backend Integration).
+              Sơ đồ minh họa thứ tự các điểm dừng trên lộ trình khám phá.
             </p>
           </div>
         </div>

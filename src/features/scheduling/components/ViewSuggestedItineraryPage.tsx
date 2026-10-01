@@ -8,8 +8,8 @@ import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
-import { getItineraryById } from '../services/schedulingApi';
-import { formatVietnamTime, SchedulingResponseDto } from '../types/schedulingTypes';
+import { getItineraryById, ItineraryHttpError } from '../services/schedulingApi';
+import { formatVietnamTime, ItineraryDetailDto } from '../types/schedulingTypes';
 import { ItineraryRouteMapPreview } from './ItineraryRouteMapPreview';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
 import { ItineraryTimeline } from './ItineraryTimeline';
@@ -21,9 +21,9 @@ interface ViewSuggestedItineraryPageProps {
 export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItineraryPageProps) {
   const router = useRouter();
   const { status, context } = useWebSession();
-  const [itinerary, setItinerary] = useState<SchedulingResponseDto | null>(null);
+  const [itinerary, setItinerary] = useState<ItineraryDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ status?: number; message: string } | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -53,11 +53,12 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
       })
       .catch((err) => {
         if (isMounted) {
-          setError(
+          const httpStatus = err instanceof ItineraryHttpError ? err.status : undefined;
+          const msg =
             err instanceof Error
               ? err.message
-              : 'Không thể tải chi tiết lịch trình. Vui lòng thử lại sau.',
-          );
+              : 'Không thể tải chi tiết lịch trình. Vui lòng thử lại sau.';
+          setError({ status: httpStatus, message: msg });
           setLoading(false);
         }
       });
@@ -115,21 +116,23 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
             </span>
           </nav>
 
-          {/* Explicit Unavailable / Pending Backend Integration display (Requirement C) */}
+          {/* Truthful Error Display */}
           {error && (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                <span className="material-symbols-outlined text-3xl">event_busy</span>
+                <span className="material-symbols-outlined text-3xl">
+                  {error.status === 403 ? 'lock' : error.status === 404 ? 'search_off' : 'event_busy'}
+                </span>
               </div>
               <h2 className="mt-4 text-lg font-bold text-slate-900">
-                Không tìm thấy lịch trình hoặc dữ liệu chưa sẵn sàng
+                {error.status === 403
+                  ? 'Bạn không có quyền xem lịch trình này'
+                  : error.status === 404
+                  ? 'Không tìm thấy lịch trình'
+                  : 'Không thể tải chi tiết lịch trình'}
               </h2>
               <div className="mx-auto mt-2 max-w-lg space-y-2">
-                <p className="text-xs text-slate-600 sm:text-sm">{error}</p>
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-800">
-                  <span className="material-symbols-outlined text-xs">pending</span>
-                  Trạng thái tích hợp: PENDING_BE_INTEGRATION
-                </div>
+                <p className="text-xs text-slate-600 sm:text-sm">{error.message}</p>
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link
@@ -171,7 +174,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     <span>Bản mẫu thử nghiệm (DEMO_ONLY Fixture)</span>
                   </div>
                   <p className="mt-1">
-                    Lịch trình này là bản mẫu phục vụ kiểm thử giao diện trong môi trường phát triển. Năng lực truy xuất lịch trình từ máy chủ đang chờ tích hợp Backend (Pending Backend Integration).
+                    Lịch trình này là bản mẫu phục vụ kiểm thử giao diện trong môi trường phát triển.
                   </p>
                 </div>
               )}
@@ -187,9 +190,20 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                       Mã: #{itinerary.itineraryId}
                     </span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                      v{itinerary.version}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                      {itinerary.status}
+                    </span>
+                    {!itinerary.canManage && (
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                        Chỉ xem
+                      </span>
+                    )}
                   </div>
                   <h1 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
-                    {itinerary.title}
+                    {itinerary.title || 'Lịch trình khám phá'}
                   </h1>
                   <p className="mt-1 text-xs text-slate-500 sm:text-sm">
                     Kế hoạch khám phá tự động cân đối giữa các điểm tham quan, ẩm thực và thời gian di chuyển.
