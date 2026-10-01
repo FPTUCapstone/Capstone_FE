@@ -1,18 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { loadStoredPreferences } from '@/features/account/preferences/travelPreferencesStorage';
-import {
-  INTEREST_OPTIONS,
-  TravelInterestId,
-} from '@/features/account/preferences/travelPreferencesTypes';
 import { ROUTES } from '@/lib/routes';
 
-import { createSchedulingRequest } from '../services/schedulingApi';
+import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
 import {
   CreateSchedulingRequestPayload,
   DESTINATION_PRESETS,
@@ -30,6 +26,11 @@ interface CreateSchedulingRequestFormProps {
   onSuccess?: (itinerary: SchedulingResponseDto) => void;
 }
 
+type PendingSchedulingAttempt = {
+  payloadFingerprint: string;
+  idempotencyKey: string;
+};
+
 export function CreateSchedulingRequestForm({
   userId,
   onSuccess,
@@ -38,7 +39,6 @@ export function CreateSchedulingRequestForm({
   const [selectedDestination, setSelectedDestination] = useState<DestinationPreset>(
     DESTINATION_PRESETS[0],
   );
-  const [startAddress, setStartAddress] = useState(DESTINATION_PRESETS[0].defaultStartAddress);
 
   // Stored preferences snapshot
   const [initialPreferences] = useState(() => {
@@ -78,15 +78,17 @@ export function CreateSchedulingRequestForm({
     if (initialPreferences?.budgetLevel === 'premium') return 2000000;
     return 800000;
   });
-  const [selectedInterests, setSelectedInterests] = useState<TravelInterestId[]>(() => {
-    if (initialPreferences?.interests && initialPreferences.interests.length > 0) {
-      return initialPreferences.interests;
-    }
-    return ['culture', 'food'];
-  });
 
-  // Preference sync indicator
-  const preferencesSynced = Boolean(initialPreferences && initialPreferences.interests?.length > 0);
+  // Preference sync indicator (supported fields: transport, pace/rest, budget)
+  const preferencesSynced = Boolean(
+    initialPreferences &&
+      (initialPreferences.preferredTransport ||
+        initialPreferences.travelPace ||
+        initialPreferences.budgetLevel),
+  );
+
+  // Idempotency attempt tracking across retries
+  const attemptRef = useRef<PendingSchedulingAttempt | null>(null);
 
   // Submission & Optimization state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,23 +106,10 @@ export function CreateSchedulingRequestForm({
     const dest = DESTINATION_PRESETS.find((d) => d.id === destId);
     if (dest) {
       setSelectedDestination(dest);
-      setStartAddress(dest.defaultStartAddress);
       setFeedback(null);
     }
   };
 
-  // Toggle interest tags
-  const toggleInterest = (id: TravelInterestId) => {
-    setSelectedInterests((prev) => {
-      const exists = prev.includes(id);
-      if (exists) {
-        if (prev.length === 1) return prev; // Keep at least one
-        return prev.filter((item) => item !== id);
-      }
-      return [...prev, id];
-    });
-    setFeedback(null);
-  };
 
   // Calculate live end time
   const calculateEndTime = () => {
@@ -173,10 +162,6 @@ export function CreateSchedulingRequestForm({
 
     if (budgetVnd !== '' && budgetVnd <= 0) {
       errors.budgetVnd = 'Ngân sách dự kiến phải lớn hơn 0 VNĐ.';
-    }
-
-    if (selectedInterests.length === 0) {
-      errors.selectedInterests = 'Vui lòng chọn ít nhất 1 sở thích trải nghiệm.';
     }
 
     setValidationErrors(errors);
@@ -238,8 +223,21 @@ export function CreateSchedulingRequestForm({
       restPreference,
     };
 
+    // Stable idempotency key lifecycle across retries for the same payload
+    const fingerprint = JSON.stringify(payload);
+    let idempotencyKey: string;
+    if (attemptRef.current?.payloadFingerprint === fingerprint) {
+      idempotencyKey = attemptRef.current.idempotencyKey;
+    } else {
+      idempotencyKey = generateIdempotencyKey();
+      attemptRef.current = {
+        payloadFingerprint: fingerprint,
+        idempotencyKey,
+      };
+    }
+
     try {
-      const result = await createSchedulingRequest(payload);
+      const result = await createSchedulingRequest(payload, { idempotencyKey });
       setOptimizationPhase('Hoàn tất! Lịch trình tối ưu đã sẵn sàng.');
       setGeneratedItinerary(result.data);
 
@@ -277,7 +275,7 @@ export function CreateSchedulingRequestForm({
               sync_saved_locally
             </span>
             <span>
-              Đã tự động điền các thông số từ <strong>Sở thích du lịch</strong> trong tài khoản của bạn.
+              TripMate đã tự động điền các thiết lập được UC-10 hỗ trợ hiện tại như phương tiện, nhịp độ và ngân sách.
             </span>
           </div>
           <Link
@@ -375,20 +373,22 @@ export function CreateSchedulingRequestForm({
 
             <div>
               <label
-                htmlFor="start-address"
+                htmlFor="default-start-address"
                 className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm"
               >
-                Vị trí xuất phát (Khách sạn / Địa điểm)
+                Điểm xuất phát mặc định
               </label>
               <input
-                id="start-address"
+                id="default-start-address"
                 type="text"
-                value={startAddress}
-                onChange={(e) => setStartAddress(e.target.value)}
-                placeholder="VD: Cầu Rồng, Khách sạn Novotel..."
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-[#007d6e] focus:outline-hidden focus:ring-2 focus:ring-[#007d6e]/20"
+                readOnly
+                value={selectedDestination.defaultStartAddress}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 cursor-not-allowed select-none"
               />
-              <p className="mt-1.5 text-xs text-slate-400">
+              <p className="mt-1.5 text-xs text-slate-500">
+                TripMate hiện sử dụng điểm xuất phát mặc định của khu vực đã chọn.
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
                 Tọa độ: {selectedDestination.defaultStartLatitude.toFixed(4)},{' '}
                 {selectedDestination.defaultStartLongitude.toFixed(4)}
               </p>
@@ -683,7 +683,7 @@ export function CreateSchedulingRequestForm({
           </div>
         </section>
 
-        {/* Card 4: Budget & Experience Interests */}
+        {/* Card 4: Budget */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-7">
           <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#007d6e]">
@@ -691,10 +691,10 @@ export function CreateSchedulingRequestForm({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 sm:text-lg">
-                4. Ngân sách & Sở thích trải nghiệm
+                4. Ngân sách
               </h2>
               <p className="text-xs text-slate-500">
-                Cá nhân hóa chi phí và các loại hình điểm đến ưu tiên
+                Cá nhân hóa chi phí dự kiến cho chuyến đi
               </p>
             </div>
           </div>
@@ -758,52 +758,6 @@ export function CreateSchedulingRequestForm({
             {validationErrors.budgetVnd && (
               <p className="mt-1 text-xs text-rose-600">
                 {validationErrors.budgetVnd}
-              </p>
-            )}
-          </div>
-
-          {/* Interests */}
-          <div className="border-t border-slate-100 pt-5">
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-700 sm:text-sm">
-                Sở thích & Chủ đề tham quan
-              </label>
-              <span className="text-xs text-slate-500">
-                Đã chọn: <strong>{selectedInterests.length}</strong>
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-2.5">
-              {INTEREST_OPTIONS.map((item) => {
-                const active = selectedInterests.includes(item.id);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleInterest(item.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-medium transition sm:text-sm ${
-                      active
-                        ? 'border-[#007d6e] bg-teal-50/80 text-[#007d6e] shadow-xs'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-base">
-                      {item.icon}
-                    </span>
-                    <span>{item.label}</span>
-                    {active && (
-                      <span className="material-symbols-outlined text-xs text-[#007d6e]">
-                        check
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {validationErrors.selectedInterests && (
-              <p className="mt-2 text-xs text-rose-600">
-                {validationErrors.selectedInterests}
               </p>
             )}
           </div>

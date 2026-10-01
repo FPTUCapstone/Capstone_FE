@@ -3,9 +3,10 @@
  * Strictly aligned with Capstone_BE SchedulingRequestsController & Domain Enums
  */
 
-import { TravelInterestId, PreferredTransportId, TravelPaceId } from '@/features/account/preferences/travelPreferencesTypes';
+import { PreferredTransportId, TravelPaceId } from '@/features/account/preferences/travelPreferencesTypes';
 
 export type TransportMode = 'Walking' | 'Motorbike' | 'Car' | 'PublicTransit';
+
 
 export type RestPreference = 'Auto' | 'None' | 'Frequent';
 
@@ -127,7 +128,6 @@ export interface SchedulingResponseDto {
 
 export interface SchedulingFormValues {
   destinationId: string;
-  startAddress: string;
   startDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   availableHours: number; // 1 to 12
@@ -136,7 +136,6 @@ export interface SchedulingFormValues {
   transportMode: TransportMode;
   restPreference: RestPreference;
   budgetVnd: number | '';
-  selectedInterests: TravelInterestId[];
 }
 
 export function mapTransportPreferenceToMode(pref: PreferredTransportId): TransportMode {
