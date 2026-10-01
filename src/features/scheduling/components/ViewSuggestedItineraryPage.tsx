@@ -282,10 +282,27 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                       Lưu ý khi thực hiện chuyến đi
                     </h4>
                     <ul className="mt-3 space-y-2 text-xs text-slate-600">
-                      <li className="flex items-start gap-1.5">
-                        <span className="text-[#007d6e] font-bold">•</span>
-                        <span>Nên xuất phát đúng giờ dự kiến ({itinerary.items[0]?.plannedArrival ? formatVietnamTime(itinerary.items[0].plannedArrival) : '08:00'}) để đảm bảo khớp giờ mở cửa.</span>
-                      </li>
+                      {(() => {
+                        const firstPlannedArrival = itinerary.items[0]?.plannedArrival;
+                        const firstArrivalTime = firstPlannedArrival
+                          ? formatVietnamTime(firstPlannedArrival)
+                          : null;
+                        const hasValidDepartureTime = Boolean(
+                          firstArrivalTime && firstArrivalTime !== '--:--',
+                        );
+
+                        if (!hasValidDepartureTime) return null;
+
+                        return (
+                          <li className="flex items-start gap-1.5">
+                            <span className="text-[#007d6e] font-bold">•</span>
+                            <span>
+                              Nên xuất phát đúng giờ dự kiến ({firstArrivalTime}) để đảm bảo khớp giờ
+                              mở cửa.
+                            </span>
+                          </li>
+                        );
+                      })()}
                       <li className="flex items-start gap-1.5">
                         <span className="text-[#007d6e] font-bold">•</span>
                         <span>Chuẩn bị nước uống, kem chống nắng và điện thoại đầy pin để chụp ảnh.</span>

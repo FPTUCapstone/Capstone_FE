@@ -9,7 +9,7 @@ interface ItineraryRouteMapPreviewProps {
 export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreviewProps) {
   return (
     <div className="space-y-4">
-      {/* Route Map Card */}
+      {/* Stop Order Preview */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
         <div className="border-b border-slate-100 p-4">
           <div className="flex items-center justify-between">
@@ -32,12 +32,13 @@ export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreview
               const isLast = idx === itinerary.items.length - 1;
               const isRest =
                 ('kind' in item ? item.kind : (item as { itemKind: string }).itemKind) === 'Rest';
+              const fullStopName = item.poiName ?? `Điểm dừng ${item.sequenceNo}`;
 
               return (
                 <div key={('itemId' in item && item.itemId) || item.sequenceNo || idx} className="flex items-center gap-2">
                   <div
                     className="flex flex-col items-center"
-                    title={item.poiName ?? `Điểm dừng ${item.sequenceNo}`}
+                    title={fullStopName}
                   >
                     <div
                       className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold shadow-xs ${
@@ -48,8 +49,10 @@ export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreview
                     >
                       {item.sequenceNo}
                     </div>
-                    <span className="mt-1 max-w-[72px] truncate text-center text-[10px] font-medium text-slate-700">
-                      {item.poiName?.split(' ')[0] ?? `#${item.sequenceNo}`}...
+                    <span
+                      className="mt-1 max-w-[80px] truncate text-center text-[10px] font-medium text-slate-700"
+                    >
+                      {fullStopName}
                     </span>
                   </div>
 
@@ -66,16 +69,16 @@ export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreview
             })}
           </div>
 
-          {/* Truthful Map Status Note */}
+          {/* Stop Sequence Note */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
             <div className="flex items-center gap-1.5 font-medium text-slate-700">
               <span className="material-symbols-outlined text-sm text-slate-400">
                 info
               </span>
-              <span>Bản đồ hành trình trực quan</span>
+              <span>Thứ tự điểm dừng</span>
             </div>
             <p className="mt-1 text-[11px] text-slate-500">
-              Sơ đồ minh họa thứ tự các điểm dừng trên lộ trình khám phá.
+              Sơ đồ thể hiện trình tự các điểm dừng trong lịch trình.
             </p>
           </div>
         </div>

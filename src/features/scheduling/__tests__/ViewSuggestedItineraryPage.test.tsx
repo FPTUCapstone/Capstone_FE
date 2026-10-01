@@ -304,10 +304,16 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
         expect(screen.getByText('Sơ đồ thứ tự điểm dừng')).toBeDefined();
       });
 
-      expect(screen.getByText(/Sơ đồ minh họa thứ tự các điểm dừng trên lộ trình khám phá/i)).toBeDefined();
+      expect(screen.getByText('Thứ tự điểm dừng')).toBeDefined();
+      expect(screen.getByText(/Sơ đồ thể hiện trình tự các điểm dừng trong lịch trình/i)).toBeDefined();
+      expect(screen.queryByText('Bản đồ hành trình trực quan')).toBeNull();
       expect(screen.queryByText(/16\.0544/i)).toBeNull();
       expect(screen.queryByText(/Bán kính hoạt động: 10 km/i)).toBeNull();
       expect(screen.queryByText(/Lộ trình khép kín/i)).toBeNull();
+
+      // P3-1: Full stop name in DOM and no forced ellipsis
+      expect(screen.getAllByText('Bảo tàng Điêu khắc Chăm').length).toBeGreaterThanOrEqual(1);
+      expect(screen.queryByText('Bảo...')).toBeNull();
     });
 
     it('TRUTH-4: renders neutral subtitle in Stat 4 card', async () => {
@@ -346,6 +352,28 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
       await waitFor(() => {
         expect(screen.getByText(/Nên xuất phát đúng giờ dự kiến \(08:00\)/i)).toBeDefined();
       });
+    });
+
+    it('TIME-2 (P3-2): omits departure time tip when itinerary has no items or no valid plannedArrival (no fake 08:00)', async () => {
+      const itineraryWithoutArrival: ItineraryDetailDto = {
+        ...mockItinerary,
+        items: [
+          {
+            ...mockItinerary.items[0],
+            plannedArrival: '',
+          },
+        ],
+      };
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(itineraryWithoutArrival);
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Lịch trình khám phá Đà Nẵng (8 giờ)')).toBeDefined();
+      });
+
+      expect(screen.queryByText(/Nên xuất phát đúng giờ dự kiến/i)).toBeNull();
+      expect(screen.queryByText(/08:00/i)).toBeNull();
     });
   });
 

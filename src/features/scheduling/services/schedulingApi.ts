@@ -10,6 +10,7 @@ import {
   CreateSchedulingRequestPayload,
   SchedulingResponseDto,
   SchedulingItemDto,
+  isValidSchedulingResponseDto,
   ItineraryDetailDto,
   isValidItineraryDetailDto,
   isValidItineraryId,
@@ -39,7 +40,6 @@ export interface CreateSchedulingResult {
   messageCode: string;
   message: string;
   data: SchedulingResponseDto;
-  isSimulatedFallback?: boolean;
 }
 
 export interface SchedulingApiError {
@@ -167,16 +167,12 @@ export function generateDemoItineraryFixture(payload: CreateSchedulingRequestPay
 }
 
 /**
- * Backward compatibility alias for fixture tests
- */
-export const generateSimulatedItinerary = generateDemoItineraryFixture;
-
-/**
  * Submit a new scheduling request (UC-10).
  * Calls real ASP.NET Core 8 backend endpoint POST /api/v1/scheduling-requests with Idempotency-Key.
  *
  * In accordance with TripMate integration policy:
- * - If backend responds 201 Created: caches the verified itinerary in sessionStorage and returns success.
+ * - If backend responds 201 Created: runtime-validates response contract (isValidSchedulingResponseDto) and returns success.
+ * - UC-11 retrieves persisted itinerary detail authoritatively via the server GET flow. No sessionStorage itinerary cache exists.
  * - If backend responds with error or network fails: throws real ProblemDetails / SchedulingApiError.
  * - Silent fake fallback is strictly prohibited.
  */
@@ -219,13 +215,31 @@ export async function createSchedulingRequest(
   }
 
   if (res.status === 201) {
-    const data = (await res.json()) as SchedulingResponseDto;
+    let body: unknown;
+
+    try {
+      body = await res.json();
+    } catch {
+      throw {
+        code: 'server.malformed_response',
+        message: 'Dữ liệu phản hồi từ máy chủ không hợp lệ.',
+        status: 502,
+      } satisfies SchedulingApiError;
+    }
+
+    if (!isValidSchedulingResponseDto(body)) {
+      throw {
+        code: 'server.invalid_contract',
+        message: 'Cấu trúc dữ liệu lịch trình không khớp hợp đồng TripMate.',
+        status: 502,
+      } satisfies SchedulingApiError;
+    }
+
     return {
       success: true,
       messageCode: 'MSG30',
       message: 'Khởi tạo lịch trình tối ưu thành công! TripMate đã áp dụng thuật toán CSP hoàn tất.',
-      data,
-      isSimulatedFallback: false,
+      data: body,
     };
   }
 

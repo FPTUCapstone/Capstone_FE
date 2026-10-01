@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   generateIdempotencyKey,
-  generateSimulatedItinerary,
+  generateDemoItineraryFixture,
   createSchedulingRequest,
   getItineraryById,
   isDemoAllowedInCurrentEnv,
@@ -47,9 +47,9 @@ describe('UC-10 Scheduling API Service', () => {
     });
   });
 
-  describe('generateSimulatedItinerary', () => {
+  describe('generateDemoItineraryFixture', () => {
     it('generates valid SchedulingResponseDto with sequence numbers and items', () => {
-      const itinerary = generateSimulatedItinerary(samplePayload);
+      const itinerary = generateDemoItineraryFixture(samplePayload);
 
       expect(itinerary.schedulingRequestId).toBeGreaterThan(0);
       expect(itinerary.itineraryId).toBeGreaterThan(0);
@@ -66,7 +66,6 @@ describe('UC-10 Scheduling API Service', () => {
         );
       }
     });
-
   });
 
   describe('createSchedulingRequest', () => {
@@ -105,8 +104,111 @@ describe('UC-10 Scheduling API Service', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.isSimulatedFallback).toBe(false);
       expect(result.data.itineraryId).toBe(456);
+    });
+
+    it('C15-1: throws server.malformed_response when 201 body is non-JSON', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => {
+          throw new SyntaxError('Unexpected token < in JSON at position 0');
+        },
+      });
+
+      await expect(createSchedulingRequest(samplePayload)).rejects.toEqual(
+        expect.objectContaining({
+          status: 502,
+          code: 'server.malformed_response',
+          message: 'Dữ liệu phản hồi từ máy chủ không hợp lệ.',
+        }),
+      );
+    });
+
+    it('C15-2: throws server.invalid_contract when 201 JSON is missing required top-level fields', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          // Missing itineraryId and status
+          schedulingRequestId: 123,
+          title: 'Lịch trình thiếu thông tin',
+        }),
+      });
+
+      await expect(createSchedulingRequest(samplePayload)).rejects.toEqual(
+        expect.objectContaining({
+          status: 502,
+          code: 'server.invalid_contract',
+          message: 'Cấu trúc dữ liệu lịch trình không khớp hợp đồng TripMate.',
+        }),
+      );
+    });
+
+    it('C15-3: preserves existing success behavior when 201 response is complete and valid', async () => {
+      const validResponse = {
+        schedulingRequestId: 999,
+        itineraryId: 888,
+        title: 'Lịch trình hoàn chỉnh',
+        status: 'OptimalGenerated',
+        totalEstimatedCost: 200000,
+        totalDurationMinutes: 300,
+        items: [
+          {
+            sequenceNo: 1,
+            poiId: 10,
+            poiName: 'Điểm 1',
+            itemKind: 'Visit',
+            plannedArrival: '2026-10-20T08:00:00+07:00',
+            plannedDeparture: '2026-10-20T09:00:00+07:00',
+            stayDurationMinutes: 60,
+            travelDurationToNextMinutes: 15,
+            estimatedCost: 50000,
+            isMandatory: true,
+            recommendationReason: 'Hợp lý',
+          },
+        ],
+      };
+
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => validResponse,
+      });
+
+      const result = await createSchedulingRequest(samplePayload);
+      expect(result.success).toBe(true);
+      expect(result.data.itineraryId).toBe(888);
+      expect(result.data.items).toHaveLength(1);
+    });
+
+    it('C15-4: throws server.invalid_contract when 201 response has invalid nested item', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          schedulingRequestId: 123,
+          itineraryId: 456,
+          title: 'Lịch trình có item sai',
+          status: 'OptimalGenerated',
+          totalEstimatedCost: 100000,
+          totalDurationMinutes: 120,
+          items: [
+            {
+              // missing sequenceNo and invalid itemKind
+              poiName: 'Điểm lỗi',
+              itemKind: 'InvalidKind',
+            },
+          ],
+        }),
+      });
+
+      await expect(createSchedulingRequest(samplePayload)).rejects.toEqual(
+        expect.objectContaining({
+          status: 502,
+          code: 'server.invalid_contract',
+        }),
+      );
     });
 
     it('throws network.unavailable error when network fails to connect', async () => {
