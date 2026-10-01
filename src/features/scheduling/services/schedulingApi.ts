@@ -365,39 +365,10 @@ export async function getItineraryById(
     allowDemoFixture?: boolean;
   },
 ): Promise<SchedulingResponseDto> {
-  const context = AuthStorage.getContext();
-  const token = options?.accessToken ?? context?.accessToken;
-  const API_BASE = getApiBase();
-
   // Source A: Authentic session storage cache generated genuinely by UC-10
   const cached = getCachedItinerary(itineraryId);
   if (cached) {
     return cached;
-  }
-
-  // Source B: Projected Backend endpoint GET /api/v1/itineraries/{id}
-  // (PENDING_BE_INTEGRATION: Not yet deployed on Capstone_BE develop)
-  try {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`${API_BASE}/itineraries/${itineraryId}`, {
-      method: 'GET',
-      credentials: 'include',
-      headers,
-    });
-
-    if (res.ok) {
-      const data = (await res.json()) as SchedulingResponseDto;
-      saveCachedItinerary(data);
-      return data;
-    }
-  } catch {
-    // Network or server unreachable; proceed to explicit validation
   }
 
   // Explicit DEMO_ONLY fixture (for development/testing only, never silently triggered in production)

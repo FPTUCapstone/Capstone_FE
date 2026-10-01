@@ -205,30 +205,7 @@ describe('UC-10 Scheduling API Service', () => {
       expect(result).toEqual(cached);
     });
 
-    it('calls BE endpoint if available and not in cache', async () => {
-      const mockFromBe = {
-        schedulingRequestId: 12,
-        itineraryId: 888,
-        title: 'Từ Backend API',
-        status: 'OptimalGenerated',
-        totalEstimatedCost: 350000,
-        totalDurationMinutes: 360,
-        items: [],
-      };
-
-      global.fetch = vi.fn().mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockFromBe,
-      });
-
-      const result = await getItineraryById(888);
-      expect(result).toEqual(mockFromBe);
-    });
-
-    it('rejects with descriptive error (PENDING_BE_INTEGRATION) when neither cache nor BE provides the itinerary', async () => {
-      global.fetch = vi.fn().mockRejectedValueOnce(new Error('BE offline'));
-
+    it('rejects with descriptive error (PENDING_BE_INTEGRATION) when itinerary is not in sessionStorage', async () => {
       await expect(getItineraryById(777)).rejects.toThrow(
         /Không tìm thấy lịch trình #777.*Pending Backend Integration/i,
       );
