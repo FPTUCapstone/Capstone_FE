@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -35,8 +34,6 @@ export function CreateSchedulingRequestForm({
   userId,
   onSuccess,
 }: CreateSchedulingRequestFormProps) {
-  const router = useRouter();
-
   // Selected destination preset
   const [selectedDestination, setSelectedDestination] = useState<DestinationPreset>(
     DESTINATION_PRESETS[0],
