@@ -10,15 +10,19 @@ import { ROUTES } from '@/lib/routes';
 
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
 import {
+  buildVietnamStartAtIso,
   CreateSchedulingRequestPayload,
   DESTINATION_PRESETS,
   DestinationPreset,
-  getTomorrowDateString,
+  getVietnamCalendarDate,
+  getVietnamTomorrowDateString,
+  isFutureVietnamStartAt,
   mapPaceToRestPreference,
   mapTransportPreferenceToMode,
   RestPreference,
   SchedulingResponseDto,
   TransportMode,
+  TRIPMATE_TIME_ZONE,
 } from '../types/schedulingTypes';
 
 interface CreateSchedulingRequestFormProps {
@@ -50,7 +54,7 @@ export function CreateSchedulingRequestForm({
   });
 
   // Time & duration
-  const [startDate, setStartDate] = useState(getTomorrowDateString());
+  const [startDate, setStartDate] = useState(getVietnamTomorrowDateString());
   const [startTime, setStartTime] = useState('08:00');
   const [availableHours, setAvailableHours] = useState(() => {
     if (initialPreferences?.travelPace === 'relaxed') return 6;
@@ -134,17 +138,15 @@ export function CreateSchedulingRequestForm({
 
     if (!startDate) {
       errors.startDate = 'Vui lòng chọn ngày bắt đầu chuyến đi.';
-    } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const chosen = new Date(`${startDate}T00:00:00`);
-      if (chosen < today) {
-        errors.startDate = 'Ngày bắt đầu chuyến đi không thể ở trong quá khứ.';
-      }
+    } else if (startDate < getVietnamCalendarDate()) {
+      errors.startDate = 'Ngày bắt đầu chuyến đi không thể ở trong quá khứ.';
     }
 
     if (!startTime) {
       errors.startTime = 'Vui lòng chọn giờ bắt đầu.';
+    } else if (startDate && !errors.startDate && !isFutureVietnamStartAt(startDate, startTime)) {
+      errors.startDate =
+        'Thời gian bắt đầu phải sau thời điểm hiện tại theo giờ Việt Nam (Asia/Ho_Chi_Minh).';
     }
 
     if (availableHours < 1 || availableHours > 12) {
@@ -204,11 +206,29 @@ export function CreateSchedulingRequestForm({
     setOptimizationPhase('Chạy thuật toán thỏa mãn ràng buộc CSP (Constraint Satisfaction)...');
     await new Promise((r) => setTimeout(r, 500));
 
+    // Authoritative pre-request check: verify start instant is still in the future right before POST
+    if (!isFutureVietnamStartAt(startDate, startTime)) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        startDate:
+          'Thời gian bắt đầu phải sau thời điểm hiện tại theo giờ Việt Nam (Asia/Ho_Chi_Minh).',
+      }));
+      setFeedback({
+        tone: 'error',
+        title: 'Thông tin chưa hợp lệ',
+        message:
+          'Thời gian bắt đầu đã trôi qua trong quá trình khởi tạo. Vui lòng chọn lại giờ bắt đầu ở tương lai.',
+      });
+      setIsSubmitting(false);
+      setOptimizationPhase(null);
+      return;
+    }
+
     // Construct backend payload
-    const startAtIso = `${startDate}T${startTime}:00+07:00`;
+    const startAtIso = buildVietnamStartAtIso(startDate, startTime);
     const payload: CreateSchedulingRequestPayload = {
       startAt: startAtIso,
-      timeZoneId: 'Asia/Ho_Chi_Minh',
+      timeZoneId: TRIPMATE_TIME_ZONE,
       startLatitude: selectedDestination.defaultStartLatitude,
       startLongitude: selectedDestination.defaultStartLongitude,
       explorationLatitude: selectedDestination.centerLatitude,
@@ -459,7 +479,7 @@ export function CreateSchedulingRequestForm({
                 id="start-date"
                 type="date"
                 value={startDate}
-                min={new Date().toISOString().split('T')[0]}
+                min={getVietnamCalendarDate()}
                 onChange={(e) => {
                   setStartDate(e.target.value);
                   setValidationErrors((prev) => ({ ...prev, startDate: '' }));

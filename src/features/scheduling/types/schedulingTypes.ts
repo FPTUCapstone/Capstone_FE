@@ -165,19 +165,48 @@ export function mapPaceToRestPreference(pace: TravelPaceId): RestPreference {
   }
 }
 
-export function getTodayDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+export const TRIPMATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
+export function getVietnamCalendarDate(now?: Date): string {
+  const d = now ?? new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: TRIPMATE_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = formatter.formatToParts(d);
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
   return `${year}-${month}-${day}`;
 }
 
-export function getTomorrowDateString(): string {
-  const now = new Date();
-  now.setDate(now.getDate() + 1);
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+export function getVietnamTomorrowDateString(now?: Date): string {
+  const today = getVietnamCalendarDate(now);
+  const [y, m, d] = today.split('-').map(Number);
+  const nextDate = new Date(Date.UTC(y, m - 1, d + 1));
+  const nextY = nextDate.getUTCFullYear();
+  const nextM = String(nextDate.getUTCMonth() + 1).padStart(2, '0');
+  const nextD = String(nextDate.getUTCDate()).padStart(2, '0');
+  return `${nextY}-${nextM}-${nextD}`;
+}
+
+export function buildVietnamStartAtIso(date: string, time: string): string {
+  return `${date}T${time}:00+07:00`;
+}
+
+export function isFutureVietnamStartAt(date: string, time: string, now?: Date): boolean {
+  if (!date || !time) return false;
+  const startInstant = new Date(buildVietnamStartAtIso(date, time)).getTime();
+  const currentInstant = (now ?? new Date()).getTime();
+  return !isNaN(startInstant) && startInstant > currentInstant;
+}
+
+export function getTodayDateString(now?: Date): string {
+  return getVietnamCalendarDate(now);
+}
+
+export function getTomorrowDateString(now?: Date): string {
+  return getVietnamTomorrowDateString(now);
 }
