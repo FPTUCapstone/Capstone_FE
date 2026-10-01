@@ -4,6 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CreateSchedulingRequestForm } from '../components/CreateSchedulingRequestForm';
 import * as schedulingApi from '../services/schedulingApi';
 import * as preferencesStorage from '@/features/account/preferences/travelPreferencesStorage';
+import {
+  TRIPMATE_TIME_ZONE,
+  getVietnamCalendarDate,
+  getVietnamTomorrowDateString,
+  buildVietnamStartAtIso,
+  isFutureVietnamStartAt,
+} from '../types/schedulingTypes';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -29,12 +36,14 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
   };
 
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
     sessionStorage.clear();
     localStorage.clear();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     cleanup();
     localStorage.clear();
   });
@@ -48,6 +57,236 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     expect(screen.getByText(/4\. Ngân sách/i)).toBeDefined();
     expect(screen.queryByText(/Ngân sách & Sở thích trải nghiệm/i)).toBeNull();
     expect(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i })).toBeDefined();
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* [P1] StartAt past validation under Asia/Ho_Chi_Minh                */
+  /* ------------------------------------------------------------------ */
+  describe('[P1] StartAt past validation under Asia/Ho_Chi_Minh', () => {
+    describe('Timezone helpers', () => {
+      it('builds canonical Vietnam ISO instant with +07:00 offset', () => {
+        const iso = buildVietnamStartAtIso('2026-10-01', '19:30');
+        expect(iso).toBe('2026-10-01T19:30:00+07:00');
+        expect(TRIPMATE_TIME_ZONE).toBe('Asia/Ho_Chi_Minh');
+      });
+
+      it('CASE FE-6: correctly evaluates Vietnam calendar date across UTC midnight boundary', () => {
+        // UTC 17:30:00 on Sept 30 is 00:30:00 on Oct 01 in Vietnam (UTC+7)
+        const boundaryDate = new Date('2026-09-30T17:30:00.000Z');
+        expect(getVietnamCalendarDate(boundaryDate)).toBe('2026-10-01');
+        expect(getVietnamTomorrowDateString(boundaryDate)).toBe('2026-10-02');
+      });
+
+      it('evaluates whether start instant is in the future accurately', () => {
+        // Reference time: 2026-10-01 19:30:00 Vietnam time (12:30:00 UTC)
+        const refTime = new Date('2026-10-01T12:30:00.000Z');
+
+        // Past time on same day
+        expect(isFutureVietnamStartAt('2026-10-01', '18:00', refTime)).toBe(false);
+
+        // Exact equal time on same day
+        expect(isFutureVietnamStartAt('2026-10-01', '19:30', refTime)).toBe(false);
+
+        // Future time on same day
+        expect(isFutureVietnamStartAt('2026-10-01', '20:00', refTime)).toBe(true);
+
+        // Tomorrow
+        expect(isFutureVietnamStartAt('2026-10-02', '08:00', refTime)).toBe(true);
+
+        // Yesterday
+        expect(isFutureVietnamStartAt('2026-09-30', '22:00', refTime)).toBe(false);
+      });
+    });
+
+    it('CASE FE-1: rejects Vietnam today with a past start time and does NOT call backend', async () => {
+      // Mock clock: 2026-10-01 19:30:00 Vietnam time (12:30 UTC)
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-10-01T12:30:00.000Z'));
+
+      const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
+
+      render(<CreateSchedulingRequestForm />);
+
+      // Select today (2026-10-01) and past time (18:00)
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
+      fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
+
+      const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
+      fireEvent.change(timeInput, { target: { value: '18:00' } });
+
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      fireEvent.click(submitBtn);
+
+      expect(
+        screen.getByText(
+          /Thời gian bắt đầu phải sau thời điểm hiện tại theo giờ Việt Nam \(Asia\/Ho_Chi_Minh\)\./i,
+        ),
+      ).toBeDefined();
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+
+    it('CASE FE-2: rejects Vietnam today with exact current minute / instant', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-10-01T12:30:00.000Z')); // 19:30 Vietnam
+
+      const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
+
+      render(<CreateSchedulingRequestForm />);
+
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
+      fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
+
+      const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
+      fireEvent.change(timeInput, { target: { value: '19:30' } });
+
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      fireEvent.click(submitBtn);
+
+      expect(
+        screen.getByText(
+          /Thời gian bắt đầu phải sau thời điểm hiện tại theo giờ Việt Nam \(Asia\/Ho_Chi_Minh\)\./i,
+        ),
+      ).toBeDefined();
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+
+    it('CASE FE-3: allows Vietnam today with future start time', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-10-01T01:00:00.000Z')); // 08:00 Vietnam time
+
+      const createSpy = vi
+        .spyOn(schedulingApi, 'createSchedulingRequest')
+        .mockResolvedValueOnce(mockSuccessResponse);
+
+      render(<CreateSchedulingRequestForm />);
+
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
+      fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
+
+      // Start at 09:00 (future by 1 hour) with 3 hours duration so it completes before 24:00
+      const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
+      fireEvent.change(timeInput, { target: { value: '09:00' } });
+
+      const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
+      fireEvent.click(quickPresetBtn);
+
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      fireEvent.click(submitBtn);
+
+      // Fast-forward CSP progression timers (400ms + 500ms + 500ms)
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      const payload = createSpy.mock.calls[0][0];
+      expect(payload.startAt).toBe('2026-10-01T09:00:00+07:00');
+      expect(payload.timeZoneId).toBe('Asia/Ho_Chi_Minh');
+    });
+
+    it('CASE FE-4: rejects previous calendar date', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-10-01T12:00:00.000Z')); // 2026-10-01 19:00 Vietnam
+
+      render(<CreateSchedulingRequestForm />);
+
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
+      fireEvent.change(dateInput, { target: { value: '2026-09-30' } });
+
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      fireEvent.click(submitBtn);
+
+      expect(screen.getByText(/Ngày bắt đầu chuyến đi không thể ở trong quá khứ/i)).toBeDefined();
+    });
+
+    it('CASE FE-5: allows tomorrow date', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-10-01T12:00:00.000Z')); // 2026-10-01 19:00 Vietnam
+
+      const createSpy = vi
+        .spyOn(schedulingApi, 'createSchedulingRequest')
+        .mockResolvedValueOnce(mockSuccessResponse);
+
+      render(<CreateSchedulingRequestForm />);
+
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i) as HTMLInputElement;
+      expect(dateInput.value).toBe('2026-10-02'); // Defaults to Vietnam tomorrow
+
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      fireEvent.click(submitBtn);
+
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      expect(createSpy.mock.calls[0][0].startAt).toContain('2026-10-02');
+    });
+
+    it('CASE FE-6: date input min attribute reflects Vietnam calendar date', () => {
+      vi.useFakeTimers();
+      // UTC 2026-09-30 17:30 -> Vietnam 2026-10-01 00:30
+      vi.setSystemTime(new Date('2026-09-30T17:30:00.000Z'));
+
+      render(<CreateSchedulingRequestForm />);
+
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i) as HTMLInputElement;
+      expect(dateInput.min).toBe('2026-10-01');
+    });
+
+    it('CASE FE-7: immediately re-validates right before network POST and blocks if start time elapsed', async () => {
+      vi.useFakeTimers();
+      // Initially: 2026-10-01 19:29:59 Vietnam (future by 1 second for 19:30)
+      vi.setSystemTime(new Date('2026-10-01T12:29:59.000Z'));
+
+      const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
+
+      render(<CreateSchedulingRequestForm />);
+
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
+      fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
+
+      const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
+      fireEvent.change(timeInput, { target: { value: '19:30' } });
+
+      const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
+      fireEvent.click(quickPresetBtn);
+
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      fireEvent.click(submitBtn);
+
+      // Advance timers by 2 seconds during the 1.4s progression so clock becomes 19:30:01
+      await vi.advanceTimersByTimeAsync(2000);
+
+      // Pre-request check caught the elapsed time
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(
+        screen.getByText(/Thời gian bắt đầu đã trôi qua trong quá trình khởi tạo/i),
+      ).toBeDefined();
+    });
+
+    it('CASE FE-8: sends verified startAt and timeZoneId Asia/Ho_Chi_Minh in payload', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-10-01T01:00:00.000Z'));
+
+      const createSpy = vi
+        .spyOn(schedulingApi, 'createSchedulingRequest')
+        .mockResolvedValueOnce(mockSuccessResponse);
+
+      render(<CreateSchedulingRequestForm />);
+
+      const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
+      fireEvent.change(dateInput, { target: { value: '2026-10-05' } });
+
+      const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
+      fireEvent.change(timeInput, { target: { value: '10:00' } });
+
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      fireEvent.click(submitBtn);
+
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      const payload = createSpy.mock.calls[0][0];
+      expect(payload.startAt).toBe('2026-10-05T10:00:00+07:00');
+      expect(payload.timeZoneId).toBe('Asia/Ho_Chi_Minh');
+    });
   });
 
   /* ------------------------------------------------------------------ */
@@ -220,7 +459,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
   /* [P1-3] Idempotency retry lifecycle tests                          */
   /* ------------------------------------------------------------------ */
   describe('[P1-3] Idempotency-Key retry semantics', () => {
-    it('CASE A & B: generates K1 on first submit and reuses exact same K1 across retries on network failure', async () => {
+    it('CASE A & B (FE-9): generates K1 on first submit and reuses exact same K1 across retries on network failure', async () => {
       const createSpy = vi
         .spyOn(schedulingApi, 'createSchedulingRequest')
         .mockRejectedValueOnce(new Error('Network disconnected'))
@@ -297,7 +536,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(retryKey).toBe(firstKey);
     }, 10000);
 
-    it('CASE D & E: generates a new key K2 != K1 when user materially changes payload after failure', async () => {
+    it('CASE D & E (FE-10): generates a new key K2 != K1 when user materially changes payload after failure', async () => {
       const createSpy = vi
         .spyOn(schedulingApi, 'createSchedulingRequest')
         .mockRejectedValueOnce(new Error('Network error'))
@@ -406,20 +645,6 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
     expect(screen.getByText('12:00')).toBeDefined();
     expect(screen.getByText(/Cùng ngày ✓/i)).toBeDefined();
-  });
-
-  it('shows error if past start date is selected (BR-22)', async () => {
-    render(<CreateSchedulingRequestForm />);
-
-    const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
-    fireEvent.change(dateInput, { target: { value: '2020-01-01' } });
-
-    const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Ngày bắt đầu chuyến đi không thể ở trong quá khứ/i)).toBeDefined();
-    });
   });
 
   it('shows error if budget is zero or negative', async () => {
