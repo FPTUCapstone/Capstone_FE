@@ -17,9 +17,12 @@ describe('TravelPreferencesForm', () => {
     vi.mocked(api.resetTravelPreferences).mockReturnValue(DEFAULT_PREFERENCES);
     vi.mocked(api.updateTravelPreferences).mockResolvedValue({
       success: true,
-      messageCode: 'MSG21',
-      message: 'Sở thích du lịch đã được lưu thành công. TripMate sẽ cá nhân hóa gợi ý cho bạn!',
+      messageCode: 'LOCAL_DEVICE_PREFERENCES',
+      message: 'Sở thích du lịch đã được lưu trên thiết bị này.',
+      notice: 'Đồng bộ sở thích du lịch với máy chủ đang chờ tích hợp.',
       preferences: DEFAULT_PREFERENCES,
+      storageMode: 'LOCAL_DEVICE_PREFERENCES',
+      integrationStatus: 'PENDING_BE_INTEGRATION',
       isSimulatedFallback: true,
     });
   });
@@ -87,7 +90,7 @@ describe('TravelPreferencesForm', () => {
     expect(api.updateTravelPreferences).not.toHaveBeenCalled();
   });
 
-  it('submits form successfully and displays MSG21 confirmation', async () => {
+  it('submits form successfully and displays local device preferences feedback and notice', async () => {
     render(<TravelPreferencesForm initialPreferences={DEFAULT_PREFERENCES} />);
 
     const submitBtn = screen.getByRole('button', { name: /Lưu sở thích/ });
@@ -101,7 +104,8 @@ describe('TravelPreferencesForm', () => {
         }),
         expect.any(Object),
       );
-      expect(screen.getByText(/Sở thích du lịch đã được lưu thành công/)).toBeDefined();
+      expect(screen.getByText('Sở thích du lịch đã được lưu trên thiết bị này.')).toBeDefined();
+      expect(screen.getByText(/Chờ tích hợp máy chủ/)).toBeDefined();
     });
   });
 
