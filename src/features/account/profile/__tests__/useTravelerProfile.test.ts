@@ -10,10 +10,14 @@ import {
   validatePhoneNumber,
 } from '../useTravelerProfile';
 
-vi.mock('../travelerProfileApi', () => ({
-  getTravelerProfile: vi.fn(),
-  updateTravelerProfile: vi.fn(),
-}));
+vi.mock('../travelerProfileApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../travelerProfileApi')>();
+  return {
+    ...actual,
+    getTravelerProfile: vi.fn(),
+    updateTravelerProfile: vi.fn(),
+  };
+});
 
 describe('useTravelerProfile validations', () => {
   it('validates full name (MSG01)', () => {
@@ -140,7 +144,6 @@ describe('useTravelerProfile hook logic', () => {
       },
       storageMode: 'LOCAL_DRAFT',
       integrationStatus: 'PENDING_BE_INTEGRATION',
-      isSimulatedFallback: true,
     });
 
     const onSuccess = vi.fn();
@@ -167,6 +170,34 @@ describe('useTravelerProfile hook logic', () => {
       expect.objectContaining({
         fullName: 'Nguyễn Văn Đã Sửa',
       }),
+    );
+  });
+
+  it('sets form error and does not report success when local storage fails', async () => {
+    vi.mocked(api.updateTravelerProfile).mockRejectedValue(
+      new api.LocalProfileStorageError(
+        'LOCAL_DRAFT_STORAGE_FAILED',
+        'Không thể lưu thông tin vào bộ nhớ thiết bị. Vui lòng kiểm tra dung lượng trình duyệt.',
+      ),
+    );
+
+    const { result } = renderHook(() => useTravelerProfile());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => {
+      result.current.setField('fullName', 'Test Name');
+      result.current.setField('phoneNumber', '0901234567');
+    });
+
+    await act(async () => {
+      const ok = await result.current.handleSubmit();
+      expect(ok).toBe(false);
+    });
+
+    expect(result.current.success).toBe(false);
+    expect(result.current.errors.form).toBe(
+      'Không thể lưu thông tin vào bộ nhớ thiết bị. Vui lòng kiểm tra dung lượng trình duyệt.',
     );
   });
 });

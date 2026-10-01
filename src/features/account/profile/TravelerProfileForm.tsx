@@ -210,6 +210,10 @@ export function TravelerProfileForm({
               Định dạng cho phép: JPG, PNG, WEBP. Dung lượng tối đa: 5MB (BR-16).
             </p>
 
+            <div className="rounded-lg border border-[#F3E2B8] bg-[#FFF8E6] p-2 text-[11px] leading-relaxed text-[#805B10]">
+              <span className="font-semibold">Lưu ý:</span> Tính năng tải ảnh đại diện lên máy chủ đang chờ tích hợp. Ảnh được chọn chỉ hiển thị xem trước trong phiên làm việc hiện tại và không lưu vào bộ nhớ thiết bị.
+            </div>
+
             {errors.avatar ? (
               <p role="alert" className="text-[11px] font-semibold text-red-600">
                 <span aria-hidden="true">⚠ </span>

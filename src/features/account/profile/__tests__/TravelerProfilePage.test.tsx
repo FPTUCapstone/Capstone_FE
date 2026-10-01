@@ -80,4 +80,50 @@ describe('TravelerProfilePage', () => {
     expect(screen.getByText('Sở thích du lịch')).toBeDefined();
     expect(screen.getByText('Bảo mật & Mật khẩu')).toBeDefined();
   });
+
+  it('redirects an authenticated Tour Operator to partner dashboard without rendering traveler profile', () => {
+    vi.mocked(useWebSession).mockReturnValue({
+      status: 'authenticated',
+      context: {
+        userId: 2,
+        email: 'operator@tripmate.com',
+        fullName: 'Test Operator',
+        role: 'TourOperator',
+        status: 'Active',
+        applicationStatus: 'Approved',
+        applicationUnresolved: false,
+        accessToken: 'operator-token',
+        accessTokenExpiresAtUtc: new Date(Date.now() + 60000).toISOString(),
+      },
+    });
+
+    const { container } = render(<TravelerProfilePage />);
+
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Thông tin cá nhân' })).toBeNull();
+    expect(mocks.replace).toHaveBeenCalledWith('/partner');
+  });
+
+  it('redirects an authenticated Administrator to admin dashboard without rendering traveler profile', () => {
+    vi.mocked(useWebSession).mockReturnValue({
+      status: 'authenticated',
+      context: {
+        userId: 99,
+        email: 'admin@tripmate.com',
+        fullName: 'Admin User',
+        role: 'Administrator',
+        status: 'Active',
+        applicationStatus: null,
+        applicationUnresolved: false,
+        accessToken: 'admin-token',
+        accessTokenExpiresAtUtc: new Date(Date.now() + 60000).toISOString(),
+      },
+    });
+
+    const { container } = render(<TravelerProfilePage />);
+
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Thông tin cá nhân' })).toBeNull();
+    expect(mocks.replace).toHaveBeenCalledWith('/admin');
+  });
 });
