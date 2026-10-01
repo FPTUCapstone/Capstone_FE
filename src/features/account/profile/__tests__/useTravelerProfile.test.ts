@@ -130,13 +130,16 @@ describe('useTravelerProfile hook logic', () => {
   it('submits successfully and calls onSuccess callback', async () => {
     vi.mocked(api.updateTravelerProfile).mockResolvedValue({
       success: true,
-      messageCode: 'MSG20',
-      message: 'Cập nhật thông tin hồ sơ thành công.',
+      messageCode: 'LOCAL_DRAFT',
+      message: 'Thông tin tạm thời đã được lưu trên thiết bị này.',
+      notice: 'Đồng bộ hồ sơ với máy chủ đang chờ tích hợp.',
       profile: {
         fullName: 'Nguyễn Văn Đã Sửa',
         email: 'traveler@example.com',
         phoneNumber: '0909998877',
       },
+      storageMode: 'LOCAL_DRAFT',
+      integrationStatus: 'PENDING_BE_INTEGRATION',
       isSimulatedFallback: true,
     });
 
@@ -156,7 +159,10 @@ describe('useTravelerProfile hook logic', () => {
     });
 
     expect(result.current.success).toBe(true);
-    expect(result.current.backendFallbackNotice).toBeDefined();
+    expect(result.current.successMessage).toBe('Thông tin tạm thời đã được lưu trên thiết bị này.');
+    expect(result.current.backendFallbackNotice).toBe(
+      'Đồng bộ hồ sơ với máy chủ đang chờ tích hợp.',
+    );
     expect(onSuccess).toHaveBeenCalledWith(
       expect.objectContaining({
         fullName: 'Nguyễn Văn Đã Sửa',
