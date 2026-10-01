@@ -70,10 +70,10 @@ export function getCachedItinerary(itineraryId: number | string): SchedulingResp
 }
 
 /**
- * Generate an authentic fallback itinerary for demonstration and testing
- * when the backend API is offline during local UI development.
+ * Demo / test fixture helper for generating an itinerary structure.
+ * Note: Marked for testing/preview purposes; NOT invoked during production request failures.
  */
-export function generateSimulatedItinerary(payload: CreateSchedulingRequestPayload): SchedulingResponseDto {
+export function generateDemoItineraryFixture(payload: CreateSchedulingRequestPayload): SchedulingResponseDto {
   const startDateTime = new Date(payload.startAt);
   const items: SchedulingItemDto[] = [];
 
@@ -164,7 +164,7 @@ export function generateSimulatedItinerary(payload: CreateSchedulingRequestPaylo
   const generatedItineraryId = Math.floor(Date.now() % 1000000) + 100;
   const requestId = Math.floor(Math.random() * 9000) + 1000;
 
-  const result: SchedulingResponseDto = {
+  return {
     schedulingRequestId: requestId,
     itineraryId: generatedItineraryId,
     title: `Lịch trình khám phá Đà Nẵng (${Math.round(currentMinutes / 60)} giờ)`,
@@ -173,14 +173,21 @@ export function generateSimulatedItinerary(payload: CreateSchedulingRequestPaylo
     totalDurationMinutes: currentMinutes,
     items,
   };
-
-  saveCachedItinerary(result);
-  return result;
 }
 
 /**
+ * Backward compatibility alias for fixture tests
+ */
+export const generateSimulatedItinerary = generateDemoItineraryFixture;
+
+/**
  * Submit a new scheduling request (UC-10).
- * Calls POST /api/v1/scheduling-requests with Idempotency-Key.
+ * Calls real ASP.NET Core 8 backend endpoint POST /api/v1/scheduling-requests with Idempotency-Key.
+ *
+ * In accordance with TripMate integration policy:
+ * - If backend responds 201 Created: caches the verified itinerary in sessionStorage and returns success.
+ * - If backend responds with error or network fails: throws real ProblemDetails / SchedulingApiError.
+ * - Silent fake fallback is strictly prohibited.
  */
 export async function createSchedulingRequest(
   payload: CreateSchedulingRequestPayload,
@@ -203,7 +210,7 @@ export async function createSchedulingRequest(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  let res: Response | null = null;
+  let res: Response;
   try {
     res = await fetch(`${API_BASE}/scheduling-requests`, {
       method: 'POST',
@@ -212,10 +219,15 @@ export async function createSchedulingRequest(
       body: JSON.stringify(payload),
     });
   } catch {
-    // Network failure or backend not running locally
+    throw {
+      code: 'network.unavailable',
+      message:
+        'Không thể kết nối đến máy chủ TripMate. Vui lòng kiểm tra kết nối mạng và thử lại sau.',
+      status: 503,
+    } satisfies SchedulingApiError;
   }
 
-  if (res && res.status === 201) {
+  if (res.status === 201) {
     const data = (await res.json()) as SchedulingResponseDto;
     saveCachedItinerary(data);
     return {
@@ -227,48 +239,72 @@ export async function createSchedulingRequest(
     };
   }
 
-  // Handle BE errors (400 Bad Request, 401 Unauthorized, 409 Conflict, 422 Unprocessable Entity)
-  if (res && !res.ok && res.status !== 404 && res.status !== 502 && res.status !== 503) {
-    let body: Record<string, unknown> = {};
-    try {
-      body = (await res.json()) as Record<string, unknown>;
-    } catch {
-      // non-JSON
-    }
+  // Handle BE errors (400, 401, 403, 409, 422, 5xx)
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await res.json()) as Record<string, unknown>;
+  } catch {
+    // non-JSON
+  }
 
-    const detail = (body.detail as string) ?? (body.message as string) ?? (body.title as string);
-    const errorCode = (body.errorCode as string) ?? (body.code as string);
+  const detail =
+    (body.detail as string) ?? (body.message as string) ?? (body.title as string) ?? undefined;
+  const errorCode = (body.errorCode as string) ?? (body.code as string) ?? undefined;
+  const rawErrors = body.errors as Record<string, string | string[]> | undefined;
+  let fieldErrors: Record<string, string> | undefined;
 
-    if (res.status === 422) {
-      throw {
-        code: errorCode || 'planning.constraints_infeasible',
-        message: detail || 'Ràng buộc thời gian hoặc khu vực không khả thi để tạo lịch trình. Vui lòng mở rộng bán kính hoặc thời lượng.',
-        status: 422,
-      } satisfies SchedulingApiError;
-    }
+  if (rawErrors && typeof rawErrors === 'object') {
+    fieldErrors = Object.fromEntries(
+      Object.entries(rawErrors).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
+    );
+  }
 
-    if (res.status === 401) {
-      throw {
-        code: 'auth.unauthorized',
-        message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tạo lịch trình.',
-        status: 401,
-      } satisfies SchedulingApiError;
-    }
-
+  if (res.status === 401) {
     throw {
-      code: errorCode,
-      message: detail || 'Yêu cầu không hợp lệ. Vui lòng kiểm tra lại thông tin.',
-      status: res.status,
+      code: errorCode || 'auth.unauthorized',
+      message:
+        'Phiên đăng nhập đã hết hạn hoặc bạn chưa đăng nhập. Vui lòng đăng nhập tài khoản Du khách để tạo lịch trình.',
+      status: 401,
+      errors: fieldErrors,
     } satisfies SchedulingApiError;
   }
 
-  // Graceful simulation fallback when BE endpoint is offline or 404/502/503
-  const simulated = generateSimulatedItinerary(payload);
-  return {
-    success: true,
-    messageCode: 'MSG30',
-    message: 'Khởi tạo lịch trình tối ưu thành công! (Mô phỏng thuật toán CSP tối ưu hóa tuyến đường)',
-    data: simulated,
-    isSimulatedFallback: true,
-  };
+  if (res.status === 403) {
+    throw {
+      code: errorCode || 'auth.forbidden',
+      message: 'Tài khoản hiện tại không có quyền tạo lịch trình du lịch.',
+      status: 403,
+      errors: fieldErrors,
+    } satisfies SchedulingApiError;
+  }
+
+  if (res.status === 409) {
+    throw {
+      code: errorCode || 'planning.conflict',
+      message:
+        detail || 'Yêu cầu tạo lịch trình bị trùng lặp hoặc đang được xử lý. Vui lòng kiểm tra lại.',
+      status: 409,
+      errors: fieldErrors,
+    } satisfies SchedulingApiError;
+  }
+
+  if (res.status === 422) {
+    throw {
+      code: errorCode || 'planning.constraints_infeasible',
+      message:
+        detail ||
+        'Ràng buộc thời gian hoặc khu vực không khả thi để tạo lịch trình. Vui lòng mở rộng bán kính hoặc thời lượng.',
+      status: 422,
+      errors: fieldErrors,
+    } satisfies SchedulingApiError;
+  }
+
+  throw {
+    code: errorCode || 'scheduling.failed',
+    message:
+      detail ||
+      'Yêu cầu tạo lịch trình không thành công. Vui lòng kiểm tra lại thông tin và thử lại.',
+    status: res.status,
+    errors: fieldErrors,
+  } satisfies SchedulingApiError;
 }

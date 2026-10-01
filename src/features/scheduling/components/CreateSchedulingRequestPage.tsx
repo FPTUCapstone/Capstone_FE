@@ -1,13 +1,45 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 import { CreateSchedulingRequestForm } from './CreateSchedulingRequestForm';
 
 export function CreateSchedulingRequestPage() {
+  const router = useRouter();
   const { status, context } = useWebSession();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.plan)}`);
+    } else if (status === 'authenticated' && context?.role === 'TourOperator') {
+      router.replace(ROUTES.partner.dashboard);
+    } else if (status === 'authenticated' && context?.role === 'Administrator') {
+      router.replace(ROUTES.admin.dashboard);
+    }
+  }, [status, context, router]);
+
+  if (status === 'restoring') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            aria-hidden="true"
+          />
+          <p className="text-xs font-semibold text-slate-500">Đang tải kế hoạch du lịch…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated' || !context || context.role !== 'Traveler') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -43,28 +75,8 @@ export function CreateSchedulingRequestPage() {
             </p>
           </div>
 
-          {/* Guest Sign-in Tip Banner if unauthenticated */}
-          {status === 'unauthenticated' && (
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-200 bg-sky-50/70 p-4 text-xs text-sky-900 shadow-xs sm:text-sm">
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-lg text-sky-600">
-                  info
-                </span>
-                <span>
-                  Bạn đang sử dụng chế độ Khách. Đăng nhập để tự động áp dụng <strong>Sở thích du lịch</strong> và lưu lịch trình vào tài khoản!
-                </span>
-              </div>
-              <Link
-                href={`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.plan)}`}
-                className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-1.5 font-bold text-white transition hover:bg-sky-700"
-              >
-                Đăng nhập ngay
-              </Link>
-            </div>
-          )}
-
           {/* Form */}
-          <CreateSchedulingRequestForm userId={context?.userId} />
+          <CreateSchedulingRequestForm userId={context.userId} />
         </div>
       </main>
 

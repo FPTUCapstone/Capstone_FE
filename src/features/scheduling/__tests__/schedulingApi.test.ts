@@ -68,8 +68,9 @@ describe('UC-10 Scheduling API Service', () => {
       }
     });
 
-    it('caches the simulated itinerary into sessionStorage', () => {
+    it('can be manually saved to cached itineraries if needed', () => {
       const itinerary = generateSimulatedItinerary(samplePayload);
+      saveCachedItinerary(itinerary);
       const retrieved = getCachedItinerary(itinerary.itineraryId);
       expect(retrieved).not.toBeNull();
       expect(retrieved?.itineraryId).toBe(itinerary.itineraryId);
@@ -139,15 +140,32 @@ describe('UC-10 Scheduling API Service', () => {
       expect(result.data.itineraryId).toBe(456);
     });
 
-    it('falls back to simulation when backend endpoint returns 404 or fails to respond', async () => {
+    it('throws network.unavailable error when network fails to connect', async () => {
       global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network offline'));
 
-      const result = await createSchedulingRequest(samplePayload);
+      await expect(createSchedulingRequest(samplePayload)).rejects.toEqual(
+        expect.objectContaining({
+          status: 503,
+          code: 'network.unavailable',
+        }),
+      );
+    });
 
-      expect(result.success).toBe(true);
-      expect(result.isSimulatedFallback).toBe(true);
-      expect(result.data.items.length).toBeGreaterThan(0);
-      expect(result.messageCode).toBe('MSG30');
+    it('throws 401 error when user is unauthenticated', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          code: 'auth.unauthorized',
+        }),
+      });
+
+      await expect(createSchedulingRequest(samplePayload)).rejects.toEqual(
+        expect.objectContaining({
+          status: 401,
+          code: 'auth.unauthorized',
+        }),
+      );
     });
 
     it('throws structured error when backend returns 422 infeasible constraint', async () => {

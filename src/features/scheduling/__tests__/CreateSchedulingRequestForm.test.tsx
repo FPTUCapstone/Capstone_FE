@@ -16,10 +16,12 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   afterEach(() => {
     cleanup();
+    localStorage.clear();
   });
 
   it('renders all form cards and inputs correctly', () => {
@@ -145,4 +147,53 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       { timeout: 4000 },
     );
   });
+
+  it('safely handles corrupted localStorage preferences by consuming sanitized canonical defaults', () => {
+    localStorage.setItem(
+      'tripmate_travel_preferences_456',
+      JSON.stringify({
+        preferredTransport: 'teleport',
+        travelPace: 'turbo',
+        travelStyle: 'spaceship',
+        budgetLevel: 'billionaire',
+      }),
+    );
+
+    render(<CreateSchedulingRequestForm userId={456} />);
+
+    const motorbikeBtn = screen.getByRole('button', { name: /Xe máy/i });
+    expect(motorbikeBtn.className).toContain('border-[#007d6e]');
+    expect(screen.getByText(/8 giờ \(480 phút\)/i)).toBeDefined();
+  });
+
+  it('safely handles malformed JSON in localStorage and initializes form with defaults', () => {
+    localStorage.setItem('tripmate_travel_preferences_789', '{invalid-json:broken');
+
+    render(<CreateSchedulingRequestForm userId={789} />);
+
+    const motorbikeBtn = screen.getByRole('button', { name: /Xe máy/i });
+    expect(motorbikeBtn.className).toContain('border-[#007d6e]');
+  });
+
+  it('safely initializes when stored interests array is empty []', () => {
+    localStorage.setItem(
+      'tripmate_travel_preferences_empty',
+      JSON.stringify({
+        interests: [],
+        travelStyle: 'solo',
+        budgetLevel: 'standard',
+        preferredTransport: 'walking',
+        travelPace: 'relaxed',
+        foodPreference: 'noRestriction',
+        autoApplyToPlans: true,
+      }),
+    );
+
+    render(<CreateSchedulingRequestForm userId="empty" />);
+
+    const walkingBtn = screen.getByRole('button', { name: /Đi bộ/i });
+    expect(walkingBtn.className).toContain('border-[#007d6e]');
+    expect(screen.getByText(/6 giờ \(360 phút\)/i)).toBeDefined();
+  });
 });
+
