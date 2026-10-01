@@ -56,6 +56,14 @@ describe('ChangePasswordForm', () => {
     expect(screen.getByText('Bạn chưa thể cập nhật mật khẩu ở thời điểm hiện tại.')).toBeDefined();
     expect(container.querySelector('[data-integration-status="PENDING_BE_INTEGRATION"]')).not.toBeNull();
 
+    const currentPasswordInput = screen.getByLabelText('Mật khẩu hiện tại') as HTMLInputElement;
+    const newPasswordInput = screen.getByLabelText('Mật khẩu mới') as HTMLInputElement;
+    const confirmPasswordInput = screen.getByLabelText('Xác nhận mật khẩu mới') as HTMLInputElement;
+
+    expect(currentPasswordInput.disabled).toBe(true);
+    expect(newPasswordInput.disabled).toBe(true);
+    expect(confirmPasswordInput.disabled).toBe(true);
+
     const submitButton = screen.getByRole('button', {
       name: 'Đổi mật khẩu',
     }) as HTMLButtonElement;
@@ -74,6 +82,15 @@ describe('ChangePasswordForm', () => {
     render(<ChangePasswordForm capability={availableCapability()} />);
 
     expect(screen.queryByText(/đang chờ tích hợp máy chủ/)).toBeNull();
+
+    const currentPasswordInput = screen.getByLabelText('Mật khẩu hiện tại') as HTMLInputElement;
+    const newPasswordInput = screen.getByLabelText('Mật khẩu mới') as HTMLInputElement;
+    const confirmPasswordInput = screen.getByLabelText('Xác nhận mật khẩu mới') as HTMLInputElement;
+
+    expect(currentPasswordInput.disabled).toBe(false);
+    expect(newPasswordInput.disabled).toBe(false);
+    expect(confirmPasswordInput.disabled).toBe(false);
+
     expect(
       (screen.getByRole('button', { name: 'Đổi mật khẩu' }) as HTMLButtonElement)
         .disabled,
@@ -120,7 +137,7 @@ describe('ChangePasswordForm', () => {
 
   it('preserves cancel navigation and password visibility controls', () => {
     const onCancel = vi.fn();
-    render(<ChangePasswordForm onCancel={onCancel} />);
+    render(<ChangePasswordForm capability={availableCapability()} onCancel={onCancel} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
     expect(onCancel).toHaveBeenCalledTimes(1);

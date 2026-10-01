@@ -140,7 +140,7 @@ export function ChangePasswordForm({
           value={fields.currentPassword}
           onChange={(event) => setField('currentPassword', event.target.value)}
           error={errors.currentPassword}
-          disabled={submitting}
+          disabled={submitting || integrationPending}
           placeholder="••••••••"
         />
 
@@ -153,7 +153,7 @@ export function ChangePasswordForm({
           value={fields.newPassword}
           onChange={(event) => setField('newPassword', event.target.value)}
           error={errors.newPassword}
-          disabled={submitting}
+          disabled={submitting || integrationPending}
           placeholder="••••••••"
           help="Ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
         />
@@ -165,7 +165,7 @@ export function ChangePasswordForm({
           value={fields.confirmPassword}
           onChange={(event) => setField('confirmPassword', event.target.value)}
           error={errors.confirmPassword}
-          disabled={submitting}
+          disabled={submitting || integrationPending}
           placeholder="••••••••"
         />
 

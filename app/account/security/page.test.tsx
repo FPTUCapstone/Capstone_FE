@@ -95,4 +95,27 @@ describe('/account/security production route', () => {
     expect(container.firstChild).toBeNull();
     expect(mocks.replace).toHaveBeenCalledWith('/sign-in?returnUrl=%2Faccount%2Fsecurity');
   });
+
+  it('redirects an authenticated Administrator to the admin account security route without rendering the public form', () => {
+    mocks.useWebSession.mockReturnValue({
+      status: 'authenticated',
+      context: {
+        userId: 99,
+        email: 'admin@tripmate.vn',
+        fullName: 'Admin User',
+        role: 'Administrator',
+        status: 'Active',
+        applicationStatus: null,
+        applicationUnresolved: false,
+        accessToken: 'admin-token',
+        accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z',
+      },
+    });
+
+    const { container } = render(<AccountSecurityPage />);
+
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Đổi mật khẩu' })).toBeNull();
+    expect(mocks.replace).toHaveBeenCalledWith('/admin/account/security');
+  });
 });
