@@ -18,8 +18,10 @@ export function ChangePasswordPage() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.security)}`);
+    } else if (status === 'authenticated' && context?.role === 'Administrator') {
+      router.replace(ROUTES.admin.accountSecurity);
     }
-  }, [status, router]);
+  }, [status, context, router]);
 
   if (status === 'restoring') {
     return (
@@ -35,7 +37,7 @@ export function ChangePasswordPage() {
     );
   }
 
-  if (status === 'unauthenticated' || !context) {
+  if (status === 'unauthenticated' || !context || context.role === 'Administrator') {
     return null;
   }
 

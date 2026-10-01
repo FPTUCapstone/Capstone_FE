@@ -23,11 +23,6 @@ export function AdminChangePasswordView() {
 
       <ChangePasswordForm
         capability={pendingChangePasswordCapability}
-        userDisplay={{
-          name: 'Administrator',
-          email: 'admin@tripmate.vn',
-          role: 'Administrator',
-        }}
         onCancel={() => router.push(ROUTES.admin.dashboard)}
       />
     </main>
