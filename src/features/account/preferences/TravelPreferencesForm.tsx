@@ -48,7 +48,7 @@ export function TravelPreferencesForm({
     tone: 'success' | 'warning' | 'error' | 'info';
     title?: string;
     message: string;
-    isPendingSync?: boolean;
+    notice?: string;
   } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -125,10 +125,10 @@ export function TravelPreferencesForm({
     try {
       const res = await updateTravelPreferences(preferences, { userId });
       setFeedback({
-        tone: 'success',
-        title: 'Đã lưu sở thích',
-        message: res.message, // MSG21
-        isPendingSync: res.isSimulatedFallback,
+        tone: 'info',
+        title: 'Đã lưu trên thiết bị',
+        message: res.message,
+        notice: res.notice,
       });
       onSaved?.(res.preferences);
     } catch {
@@ -171,9 +171,9 @@ export function TravelPreferencesForm({
           <FeedbackAlert tone={feedback.tone} title={feedback.title}>
             {feedback.message}
           </FeedbackAlert>
-          {feedback.isPendingSync ? (
-            <FeedbackAlert tone="info" title="Thông báo đồng bộ hệ thống">
-              Tính năng lưu sở thích du lịch đã được ghi nhận cục bộ trên thiết bị của bạn và sẵn sàng sử dụng cho thuật toán gợi ý chuyến đi. Đồng bộ dữ liệu máy chủ đang chờ triển khai (PENDING_BE_INTEGRATION).
+          {feedback.notice ? (
+            <FeedbackAlert tone="warning" title="Chờ tích hợp máy chủ">
+              {feedback.notice}
             </FeedbackAlert>
           ) : null}
         </div>

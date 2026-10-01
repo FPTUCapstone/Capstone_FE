@@ -23,11 +23,15 @@ export function TravelPreferencesPage() {
       router.replace(
         `${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.preferences)}`,
       );
+    } else if (status === 'authenticated' && context?.role === 'TourOperator') {
+      router.replace(ROUTES.partner.dashboard);
+    } else if (status === 'authenticated' && context?.role === 'Administrator') {
+      router.replace(ROUTES.admin.dashboard);
     }
-  }, [status, router]);
+  }, [status, context, router]);
 
   useEffect(() => {
-    if (status === 'authenticated' && context) {
+    if (status === 'authenticated' && context && context.role === 'Traveler') {
       let isMounted = true;
       getTravelPreferences({
         accessToken: context.accessToken,
@@ -45,7 +49,7 @@ export function TravelPreferencesPage() {
     }
   }, [status, context]);
 
-  if (status === 'restoring' || (status === 'authenticated' && initialData === null)) {
+  if (status === 'restoring' || (status === 'authenticated' && context?.role === 'Traveler' && initialData === null)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F3F6F7]">
         <div className="flex flex-col items-center gap-3">
@@ -59,7 +63,7 @@ export function TravelPreferencesPage() {
     );
   }
 
-  if (status === 'unauthenticated' || !context) {
+  if (status === 'unauthenticated' || !context || context.role !== 'Traveler') {
     return null;
   }
 
