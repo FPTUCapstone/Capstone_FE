@@ -4,7 +4,7 @@ import { ChangePasswordPage } from '@/features/account/security/ChangePasswordPa
 
 export const metadata: Metadata = {
   title: 'Đổi mật khẩu | TripMate',
-  description: 'Cập nhật thông tin mật khẩu bảo mật tài khoản TripMate của bạn.',
+  description: 'Trang bảo mật mật khẩu cho tài khoản TripMate.',
 };
 
 export default function AccountSecurityPage() {

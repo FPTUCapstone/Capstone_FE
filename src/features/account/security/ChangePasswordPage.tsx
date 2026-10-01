@@ -8,6 +8,7 @@ import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
+import { pendingChangePasswordCapability } from './changePasswordCapability';
 import { ChangePasswordForm } from './ChangePasswordForm';
 
 export function ChangePasswordPage() {
@@ -54,15 +55,13 @@ export function ChangePasswordPage() {
 
         {/* Change Password Card */}
         <ChangePasswordForm
+          capability={pendingChangePasswordCapability}
           userDisplay={{
             name: context.fullName,
             email: context.email,
             role: context.role,
           }}
           onCancel={() => router.push(ROUTES.home)}
-          onUnauthorized={() => {
-            router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.security)}`);
-          }}
         />
       </main>
     </div>
