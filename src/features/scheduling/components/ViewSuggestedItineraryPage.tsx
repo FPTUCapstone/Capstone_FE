@@ -18,9 +18,24 @@ interface ViewSuggestedItineraryPageProps {
   itineraryId: string;
 }
 
+function getErrorPresentation(status?: number): { heading: string; icon: string } {
+  switch (status) {
+    case 401:
+      return { heading: 'Phiên đăng nhập đã hết hạn', icon: 'login' };
+    case 403:
+      return { heading: 'Bạn không có quyền xem lịch trình này', icon: 'lock' };
+    case 404:
+      return { heading: 'Không tìm thấy lịch trình', icon: 'search_off' };
+    default:
+      return { heading: 'Không thể tải chi tiết lịch trình', icon: 'event_busy' };
+  }
+}
+
 export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItineraryPageProps) {
   const router = useRouter();
   const { status, context } = useWebSession();
+  const userId = context?.userId;
+  const role = context?.role;
   const [itinerary, setItinerary] = useState<ItineraryDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ status?: number; message: string } | null>(null);
@@ -30,28 +45,31 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
       router.replace(
         `${ROUTES.signIn}?returnUrl=${encodeURIComponent(`/itinerary/${itineraryId}`)}`,
       );
-    } else if (status === 'authenticated' && context?.role === 'TourOperator') {
+    } else if (status === 'authenticated' && role === 'TourOperator') {
       router.replace(ROUTES.partner.dashboard);
-    } else if (status === 'authenticated' && context?.role === 'Administrator') {
+    } else if (status === 'authenticated' && role === 'Administrator') {
       router.replace(ROUTES.admin.dashboard);
     }
-  }, [status, context, router, itineraryId]);
+  }, [status, role, router, itineraryId]);
 
   useEffect(() => {
-    if (status !== 'authenticated' || !context || context.role !== 'Traveler') {
+    if (status !== 'authenticated' || userId === undefined || role !== 'Traveler') {
       return;
     }
 
     let isMounted = true;
+    async function loadItinerary() {
+      setLoading(true);
+      setError(null);
+      setItinerary(null);
 
-    getItineraryById(itineraryId, { currentUserId: context.userId })
-      .then((data) => {
+      try {
+        const data = await getItineraryById(itineraryId);
         if (isMounted) {
           setItinerary(data);
           setLoading(false);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (isMounted) {
           const httpStatus = err instanceof ItineraryHttpError ? err.status : undefined;
           const msg =
@@ -61,12 +79,18 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           setError({ status: httpStatus, message: msg });
           setLoading(false);
         }
-      });
+      }
+    }
+
+    void loadItinerary();
 
     return () => {
       isMounted = false;
     };
-  }, [itineraryId, status, context]);
+  }, [itineraryId, status, userId, role]);
+
+  const errorPresentation = getErrorPresentation(error?.status);
+  const signInHref = `${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.itinerary(itineraryId))}`;
 
   const handlePrint = () => {
     if (typeof window !== 'undefined') {
@@ -88,7 +112,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
     );
   }
 
-  if (status === 'unauthenticated' || !context || context.role !== 'Traveler') {
+  if (status === 'unauthenticated' || userId === undefined || role !== 'Traveler') {
     return null;
   }
 
@@ -120,28 +144,32 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           {error && (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                <span className="material-symbols-outlined text-3xl">
-                  {error.status === 403 ? 'lock' : error.status === 404 ? 'search_off' : 'event_busy'}
-                </span>
+                <span className="material-symbols-outlined text-3xl">{errorPresentation.icon}</span>
               </div>
               <h2 className="mt-4 text-lg font-bold text-slate-900">
-                {error.status === 403
-                  ? 'Bạn không có quyền xem lịch trình này'
-                  : error.status === 404
-                  ? 'Không tìm thấy lịch trình'
-                  : 'Không thể tải chi tiết lịch trình'}
+                {errorPresentation.heading}
               </h2>
               <div className="mx-auto mt-2 max-w-lg space-y-2">
                 <p className="text-xs text-slate-600 sm:text-sm">{error.message}</p>
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <Link
-                  href={ROUTES.plan}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
-                >
-                  <span className="material-symbols-outlined text-sm">add_circle</span>
-                  <span>Tạo lịch trình mới</span>
-                </Link>
+                {error.status === 401 ? (
+                  <Link
+                    href={signInHref}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+                  >
+                    <span className="material-symbols-outlined text-sm">login</span>
+                    <span>Đăng nhập lại</span>
+                  </Link>
+                ) : (
+                  <Link
+                    href={ROUTES.plan}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+                  >
+                    <span className="material-symbols-outlined text-sm">add_circle</span>
+                    <span>Tạo lịch trình mới</span>
+                  </Link>
+                )}
                 <Link
                   href={ROUTES.home}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"

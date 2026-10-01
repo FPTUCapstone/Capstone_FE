@@ -11,7 +11,6 @@ import { ROUTES } from '@/lib/routes';
 import {
   createSchedulingRequest,
   generateIdempotencyKey,
-  saveCachedItinerary,
 } from '../services/schedulingApi';
 import {
   buildVietnamStartAtIso,
@@ -263,11 +262,7 @@ export function CreateSchedulingRequestForm({
     try {
       const result = await createSchedulingRequest(payload, {
         idempotencyKey,
-        userId: userId ?? undefined,
       });
-      if (userId) {
-        saveCachedItinerary(result.data, userId);
-      }
       setOptimizationPhase('Hoàn tất! Lịch trình tối ưu đã sẵn sàng.');
       setGeneratedItinerary(result.data);
 

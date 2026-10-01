@@ -81,6 +81,8 @@ cp .env.example .env.local
 
 The public POI category chips are deliberately disabled in production until Backend provides an approved public category catalogue. `NEXT_PUBLIC_POI_CATEGORY_PREVIEW=true` is a development-only visual preview and must not be used to claim production category filtering.
 
+UC-11 itinerary demo fixtures are disabled by default. They require the exact public opt-in `NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true` in a non-production environment plus an explicit demo request; production always rejects fixtures regardless of the flag.
+
 ### Firebase Web configuration
 
 The Firebase client (`src/lib/firebase.ts`) requires these variables to be set. They are the public Firebase **Web App** config that ships in the browser bundle — they are **not** secrets, and you must **never** put Firebase Admin / service-account credentials in the frontend.

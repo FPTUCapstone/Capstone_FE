@@ -212,12 +212,6 @@ export function getTomorrowDateString(now?: Date): string {
   return getVietnamTomorrowDateString(now);
 }
 
-export interface CachedItineraryEnvelope {
-  schemaVersion: 1;
-  ownerUserId: number | string;
-  itinerary: SchedulingResponseDto | ItineraryDetailDto;
-}
-
 export interface ItineraryDetailItemDto {
   itemId: number;
   sequenceNo: number;

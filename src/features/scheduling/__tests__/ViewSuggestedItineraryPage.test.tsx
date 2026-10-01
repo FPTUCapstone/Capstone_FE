@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ViewSuggestedItineraryPage } from '../components/ViewSuggestedItineraryPage';
 import * as schedulingApi from '../services/schedulingApi';
@@ -26,6 +26,16 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
 vi.mock('@/components/navigation/PublicNavigation', () => ({
   PublicNavigation: () => <nav data-testid="public-navigation">Public Navigation</nav>,
 }));
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
+}
 
 describe('ViewSuggestedItineraryPage (UC-11)', () => {
   beforeEach(() => {
@@ -138,7 +148,120 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
         expect(screen.getByText('Lịch trình khám phá Đà Nẵng (8 giờ)')).toBeDefined();
       });
 
-      expect(getSpy).toHaveBeenCalledWith('789', { currentUserId: 1 });
+      expect(getSpy).toHaveBeenCalledWith('789');
+    });
+  });
+
+  describe('REQUEST LIFECYCLE: route transitions and session stability', () => {
+    it('clears the previous itinerary and renders loading immediately when the route ID changes', async () => {
+      const nextRequest = createDeferred<ItineraryDetailDto>();
+      vi.spyOn(schedulingApi, 'getItineraryById')
+        .mockResolvedValueOnce(mockItinerary)
+        .mockReturnValueOnce(nextRequest.promise);
+      const { rerender } = render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => {
+        expect(screen.getByText(mockItinerary.title!)).toBeDefined();
+      });
+
+      rerender(<ViewSuggestedItineraryPage itineraryId="790" />);
+
+      expect(screen.getByText('Đang tải kế hoạch lịch trình gợi ý…')).toBeDefined();
+      expect(screen.queryByText(mockItinerary.title!)).toBeNull();
+
+      const nextItinerary = {
+        ...mockItinerary,
+        itineraryId: 790,
+        title: 'Lịch trình mới',
+      };
+      await act(async () => {
+        nextRequest.resolve(nextItinerary);
+        await nextRequest.promise;
+      });
+    });
+
+    it('clears a previous 404 panel immediately while the next route is loading', async () => {
+      const nextRequest = createDeferred<ItineraryDetailDto>();
+      vi.spyOn(schedulingApi, 'getItineraryById')
+        .mockRejectedValueOnce(
+          new schedulingApi.ItineraryHttpError(
+            404,
+            'Không tìm thấy lịch trình.',
+            'itinerary.not_found',
+          ),
+        )
+        .mockReturnValueOnce(nextRequest.promise);
+      const { rerender } = render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Không tìm thấy lịch trình')).toBeDefined();
+      });
+
+      rerender(<ViewSuggestedItineraryPage itineraryId="790" />);
+
+      expect(screen.queryByText('Không tìm thấy lịch trình')).toBeNull();
+      expect(screen.getByText('Đang tải kế hoạch lịch trình gợi ý…')).toBeDefined();
+
+      await act(async () => {
+        nextRequest.resolve({ ...mockItinerary, itineraryId: 790 });
+        await nextRequest.promise;
+      });
+    });
+
+    it('keeps the newest route result when an older request resolves last', async () => {
+      const oldRequest = createDeferred<ItineraryDetailDto>();
+      const newRequest = createDeferred<ItineraryDetailDto>();
+      vi.spyOn(schedulingApi, 'getItineraryById')
+        .mockReturnValueOnce(oldRequest.promise)
+        .mockReturnValueOnce(newRequest.promise);
+      const { rerender } = render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      rerender(<ViewSuggestedItineraryPage itineraryId="790" />);
+
+      const newestItinerary = {
+        ...mockItinerary,
+        itineraryId: 790,
+        title: 'Lịch trình mới nhất',
+      };
+      await act(async () => {
+        newRequest.resolve(newestItinerary);
+        await newRequest.promise;
+      });
+      expect(screen.getByText('Lịch trình mới nhất')).toBeDefined();
+
+      await act(async () => {
+        oldRequest.resolve({ ...mockItinerary, title: 'Lịch trình cũ trả về muộn' });
+        await oldRequest.promise;
+      });
+
+      expect(screen.getByText('Lịch trình mới nhất')).toBeDefined();
+      expect(screen.queryByText('Lịch trình cũ trả về muộn')).toBeNull();
+    });
+
+    it('does not refetch when session context identity changes but userId and role stay stable', async () => {
+      const getSpy = vi
+        .spyOn(schedulingApi, 'getItineraryById')
+        .mockResolvedValue(mockItinerary);
+      const { rerender } = render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => {
+        expect(screen.getByText(mockItinerary.title!)).toBeDefined();
+      });
+
+      mockUseWebSession.mockReturnValue({
+        status: 'authenticated',
+        context: {
+          userId: 1,
+          email: 'updated@tripmate.vn',
+          fullName: 'Updated display name',
+          role: 'Traveler',
+          status: 'Active',
+          accessToken: 'refreshed-token',
+        },
+      });
+      rerender(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      expect(getSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -227,6 +350,37 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
   });
 
   describe('API & DEMO: errors and demo fixtures', () => {
+    it('API-0: renders expired-session recovery with the exact itinerary return URL and no stale content', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById')
+        .mockResolvedValueOnce({
+          ...mockItinerary,
+          itineraryId: 788,
+          title: 'Lịch trình cũ trước khi hết phiên',
+        })
+        .mockRejectedValueOnce(
+          new schedulingApi.ItineraryHttpError(
+            401,
+            'Phiên đăng nhập đã hết hạn hoặc bạn chưa đăng nhập.',
+            'auth.unauthorized',
+          ),
+        );
+      const { rerender } = render(<ViewSuggestedItineraryPage itineraryId="788" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Lịch trình cũ trước khi hết phiên')).toBeDefined();
+      });
+
+      rerender(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Phiên đăng nhập đã hết hạn' })).toBeDefined();
+      });
+
+      const signInLink = screen.getByRole('link', { name: /Đăng nhập lại/i });
+      expect(signInLink.getAttribute('href')).toBe('/sign-in?returnUrl=%2Fitinerary%2F789');
+      expect(screen.queryByText('Lịch trình cũ trước khi hết phiên')).toBeNull();
+    });
+
     it('API-1: renders 403 access-denied state when user is not authorized', async () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockRejectedValueOnce(
         new schedulingApi.ItineraryHttpError(403, 'Bạn không có quyền xem lịch trình này.', 'auth.forbidden'),

@@ -3,9 +3,8 @@ import {
   generateIdempotencyKey,
   generateSimulatedItinerary,
   createSchedulingRequest,
-  saveCachedItinerary,
-  getCachedItinerary,
   getItineraryById,
+  isDemoAllowedInCurrentEnv,
 } from '../services/schedulingApi';
 import { CreateSchedulingRequestPayload, ItineraryDetailDto } from '../types/schedulingTypes';
 
@@ -28,7 +27,6 @@ describe('UC-10 Scheduling API Service', () => {
   };
 
   beforeEach(() => {
-    sessionStorage.clear();
     vi.restoreAllMocks();
   });
 
@@ -69,68 +67,6 @@ describe('UC-10 Scheduling API Service', () => {
       }
     });
 
-    it('can be manually saved to cached itineraries if needed', () => {
-      const itinerary = generateSimulatedItinerary(samplePayload);
-      saveCachedItinerary(itinerary, 1);
-      const retrieved = getCachedItinerary(itinerary.itineraryId, 1);
-      expect(retrieved).not.toBeNull();
-      expect(retrieved?.itineraryId).toBe(itinerary.itineraryId);
-    });
-  });
-
-  describe('saveCachedItinerary and getCachedItinerary', () => {
-    it('saves and retrieves an itinerary correctly', () => {
-      const mockItinerary = {
-        schedulingRequestId: 99,
-        itineraryId: 101,
-        title: 'Chuyến đi thử nghiệm',
-        status: 'OptimalGenerated',
-        totalEstimatedCost: 200000,
-        totalDurationMinutes: 300,
-        items: [],
-      };
-
-      saveCachedItinerary(mockItinerary, 42);
-      const result = getCachedItinerary(101, 42);
-      expect(result).toEqual(mockItinerary);
-    });
-
-    it('enforces cache isolation across different users', () => {
-      const mockItinerary = {
-        schedulingRequestId: 12,
-        itineraryId: 102,
-        title: 'Chuyến đi của User 42',
-        status: 'OptimalGenerated',
-        totalEstimatedCost: 100000,
-        totalDurationMinutes: 180,
-        items: [],
-      };
-
-      saveCachedItinerary(mockItinerary, 42);
-      // User 99 must NOT access User 42's cached itinerary
-      const resultOtherUser = getCachedItinerary(102, 99);
-      expect(resultOtherUser).toBeNull();
-
-      // User 42 CAN access their own cached itinerary
-      const resultOwner = getCachedItinerary(102, 42);
-      expect(resultOwner).toEqual(mockItinerary);
-    });
-
-    it('rejects corrupted or non-conforming cache entries', () => {
-      window.sessionStorage.setItem('tripmate_itinerary_42_103', JSON.stringify({ invalid: true }));
-      expect(getCachedItinerary(103, 42)).toBeNull();
-
-      window.sessionStorage.setItem(
-        'tripmate_itinerary_42_104',
-        JSON.stringify({ schemaVersion: 2, ownerUserId: 42, itinerary: {} }),
-      );
-      expect(getCachedItinerary(104, 42)).toBeNull();
-    });
-
-    it('returns null for nonexistent itinerary ID', () => {
-      const result = getCachedItinerary(999999, 42);
-      expect(result).toBeNull();
-    });
   });
 
   describe('createSchedulingRequest', () => {
@@ -282,7 +218,6 @@ describe('UC-10 Scheduling API Service', () => {
 
       const result = await getItineraryById(789, {
         accessToken: 'traveler-bearer-token',
-        currentUserId: 42,
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -296,10 +231,6 @@ describe('UC-10 Scheduling API Service', () => {
         }),
       );
       expect(result).toEqual(mockDetailResponse);
-
-      // Verify it cached the verified response
-      const cached = getCachedItinerary(789, 42);
-      expect(cached).toEqual(mockDetailResponse);
     });
 
     it('P1-FE-2: propagates 401 Unauthorized as ItineraryHttpError', async () => {
@@ -315,17 +246,14 @@ describe('UC-10 Scheduling API Service', () => {
       });
     });
 
-    it('P1-FE-3: propagates 403 Forbidden as ItineraryHttpError and NEVER falls back to cache', async () => {
-      // Pre-populate stale cache for another session
-      saveCachedItinerary(mockDetailResponse, 42);
-
+    it('P1-FE-3: propagates 403 Forbidden as ItineraryHttpError', async () => {
       global.fetch = vi.fn().mockResolvedValueOnce({
         ok: false,
         status: 403,
         json: async () => ({ code: 'auth.forbidden' }),
       });
 
-      await expect(getItineraryById(789, { currentUserId: 42 })).rejects.toMatchObject({
+      await expect(getItineraryById(789)).rejects.toMatchObject({
         status: 403,
         code: 'auth.forbidden',
       });
@@ -394,24 +322,42 @@ describe('UC-10 Scheduling API Service', () => {
       });
     });
 
-    describe('P2 Production Lockdown & Route ID Validation', () => {
-      it('P2-1: in production, rejects demo ID with 404 without network request', async () => {
+    describe('P2 Demo Fixture Gate & Route ID Validation', () => {
+      const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+
+      function setDemoFlag(value: string | undefined): void {
+        if (value === undefined) {
+          delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+          return;
+        }
+        process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = value;
+      }
+
+      afterEach(() => {
+        setDemoFlag(originalDemoFlag);
+      });
+
+      it('P2-1: disables fixtures in production even when the public flag is exactly true', async () => {
         vi.stubEnv('NODE_ENV', 'production');
+        setDemoFlag('true');
         const fetchSpy = vi.fn();
         global.fetch = fetchSpy;
 
-        await expect(getItineraryById('demo')).rejects.toMatchObject({
+        expect(isDemoAllowedInCurrentEnv()).toBe(false);
+        await expect(getItineraryById('demo', { allowDemoFixture: true })).rejects.toMatchObject({
           status: 404,
           code: 'itinerary.invalid_id',
         });
         expect(fetchSpy).not.toHaveBeenCalled();
       });
 
-      it('P2-2: in production, rejects DEMO_ONLY ID with 404 without network request', async () => {
-        vi.stubEnv('NODE_ENV', 'production');
+      it('P2-2: disables fixtures in development when the public flag is missing', async () => {
+        vi.stubEnv('NODE_ENV', 'development');
+        setDemoFlag(undefined);
         const fetchSpy = vi.fn();
         global.fetch = fetchSpy;
 
+        expect(isDemoAllowedInCurrentEnv()).toBe(false);
         await expect(getItineraryById('DEMO_ONLY')).rejects.toMatchObject({
           status: 404,
           code: 'itinerary.invalid_id',
@@ -419,19 +365,52 @@ describe('UC-10 Scheduling API Service', () => {
         expect(fetchSpy).not.toHaveBeenCalled();
       });
 
-      it('P2-3: in production, ignores allowDemoFixture flag and rejects non-numeric ID with 404', async () => {
-        vi.stubEnv('NODE_ENV', 'production');
-        const fetchSpy = vi.fn();
-        global.fetch = fetchSpy;
+      it('P2-3: disables fixtures in development when the public flag is false', async () => {
+        vi.stubEnv('NODE_ENV', 'development');
+        setDemoFlag('false');
 
-        await expect(getItineraryById('custom_demo', { allowDemoFixture: true })).rejects.toMatchObject({
+        expect(isDemoAllowedInCurrentEnv()).toBe(false);
+        await expect(getItineraryById('demo')).rejects.toMatchObject({
           status: 404,
           code: 'itinerary.invalid_id',
         });
-        expect(fetchSpy).not.toHaveBeenCalled();
       });
 
-      it('P2-4: rejects invalid route IDs (abc, -1, 0, float) with 404 before dispatching request', async () => {
+      it.each(['1', 'TRUE', 'yes'])('P2-4: rejects truthy-looking flag value %s', async (flag) => {
+        vi.stubEnv('NODE_ENV', 'development');
+        setDemoFlag(flag);
+
+        expect(isDemoAllowedInCurrentEnv()).toBe(false);
+        await expect(getItineraryById('demo')).rejects.toMatchObject({
+          status: 404,
+          code: 'itinerary.invalid_id',
+        });
+      });
+
+      it('P2-5: exact true enables only explicit demo IDs or allowDemoFixture opt-in', async () => {
+        vi.stubEnv('NODE_ENV', 'development');
+        setDemoFlag('true');
+
+        expect(isDemoAllowedInCurrentEnv()).toBe(true);
+
+        const demoByShortId = await getItineraryById('demo');
+        const demoByCanonicalId = await getItineraryById('DEMO_ONLY');
+        const demoByOption = await getItineraryById(789, { allowDemoFixture: true });
+
+        for (const fixture of [demoByShortId, demoByCanonicalId, demoByOption]) {
+          expect(fixture.title).toBe('[DEMO_ONLY] Lịch trình khám phá Đà Nẵng');
+          expect(fixture.status).toBe('DEMO_FIXTURE');
+          expect(fixture.isDemoFixture).toBe(true);
+        }
+        expect(demoByOption.itineraryId).toBe(789);
+
+        await expect(getItineraryById('custom_demo')).rejects.toMatchObject({
+          status: 404,
+          code: 'itinerary.invalid_id',
+        });
+      });
+
+      it('P2-6: rejects invalid route IDs (abc, -1, 0, float) with 404 before dispatching request', async () => {
         const fetchSpy = vi.fn();
         global.fetch = fetchSpy;
 
@@ -453,16 +432,6 @@ describe('UC-10 Scheduling API Service', () => {
         });
 
         expect(fetchSpy).not.toHaveBeenCalled();
-      });
-
-      it('P2-5: in test/development, returns DEMO_FIXTURE when explicitly requested', async () => {
-        vi.stubEnv('NODE_ENV', 'test');
-
-        const demoResult = await getItineraryById('demo');
-        expect(demoResult.status).toBe('DEMO_FIXTURE');
-        expect(demoResult.title).toContain('[DEMO_ONLY]');
-        expect(demoResult.canManage).toBe(true);
-        expect(demoResult.items.length).toBeGreaterThan(0);
       });
     });
   });

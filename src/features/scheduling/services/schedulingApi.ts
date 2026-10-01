@@ -10,8 +10,6 @@ import {
   CreateSchedulingRequestPayload,
   SchedulingResponseDto,
   SchedulingItemDto,
-  CachedItineraryEnvelope,
-  isValidSchedulingResponseDto,
   ItineraryDetailDto,
   isValidItineraryDetailDto,
   isValidItineraryId,
@@ -30,7 +28,10 @@ export class ItineraryHttpError extends Error {
 }
 
 export function isDemoAllowedInCurrentEnv(): boolean {
-  return process.env.NODE_ENV !== 'production';
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true'
+  );
 }
 
 export interface CreateSchedulingResult {
@@ -57,83 +58,6 @@ export function generateIdempotencyKey(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
-}
-
-const ITINERARY_STORAGE_PREFIX = 'tripmate_itinerary_';
-
-export function saveCachedItinerary(
-  itinerary: SchedulingResponseDto | ItineraryDetailDto,
-  ownerUserId?: number | string,
-): void {
-  if (typeof window === 'undefined') return;
-  const resolvedUserId = ownerUserId ?? AuthStorage.getContext()?.userId;
-  if (!resolvedUserId) return;
-
-  const envelope: CachedItineraryEnvelope = {
-    schemaVersion: 1,
-    ownerUserId: resolvedUserId,
-    itinerary,
-  };
-  const serialized = JSON.stringify(envelope);
-
-  try {
-    window.sessionStorage.setItem(
-      `${ITINERARY_STORAGE_PREFIX}${resolvedUserId}_${itinerary.itineraryId}`,
-      serialized,
-    );
-    window.sessionStorage.setItem(
-      `tripmate_latest_itinerary_${resolvedUserId}`,
-      serialized,
-    );
-  } catch {
-    // quota or storage unavailable
-  }
-}
-
-export function getCachedItinerary(
-  itineraryId: number | string,
-  currentUserId?: number | string,
-): SchedulingResponseDto | ItineraryDetailDto | null {
-  if (typeof window === 'undefined') return null;
-  const resolvedUserId = currentUserId ?? AuthStorage.getContext()?.userId;
-  if (!resolvedUserId) return null;
-
-  try {
-    const raw = window.sessionStorage.getItem(
-      `${ITINERARY_STORAGE_PREFIX}${resolvedUserId}_${itineraryId}`,
-    );
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<CachedItineraryEnvelope>;
-      if (
-        parsed &&
-        parsed.schemaVersion === 1 &&
-        String(parsed.ownerUserId) === String(resolvedUserId) &&
-        (isValidItineraryDetailDto(parsed.itinerary) ||
-          isValidSchedulingResponseDto(parsed.itinerary)) &&
-        String(parsed.itinerary.itineraryId) === String(itineraryId)
-      ) {
-        return parsed.itinerary;
-      }
-    }
-
-    const latest = window.sessionStorage.getItem(`tripmate_latest_itinerary_${resolvedUserId}`);
-    if (latest) {
-      const parsed = JSON.parse(latest) as Partial<CachedItineraryEnvelope>;
-      if (
-        parsed &&
-        parsed.schemaVersion === 1 &&
-        String(parsed.ownerUserId) === String(resolvedUserId) &&
-        (isValidItineraryDetailDto(parsed.itinerary) ||
-          isValidSchedulingResponseDto(parsed.itinerary)) &&
-        String(parsed.itinerary.itineraryId) === String(itineraryId)
-      ) {
-        return parsed.itinerary;
-      }
-    }
-  } catch {
-    return null;
-  }
-  return null;
 }
 
 /**
@@ -261,13 +185,11 @@ export async function createSchedulingRequest(
   options?: {
     accessToken?: string;
     idempotencyKey?: string;
-    userId?: number | string;
   },
 ): Promise<CreateSchedulingResult> {
   const context = AuthStorage.getContext();
   const token = options?.accessToken ?? context?.accessToken;
   const idempotencyKey = options?.idempotencyKey ?? generateIdempotencyKey();
-  const targetUserId = options?.userId ?? context?.userId;
   const API_BASE = getApiBase();
 
   const headers: Record<string, string> = {
@@ -298,7 +220,6 @@ export async function createSchedulingRequest(
 
   if (res.status === 201) {
     const data = (await res.json()) as SchedulingResponseDto;
-    saveCachedItinerary(data, targetUserId);
     return {
       success: true,
       messageCode: 'MSG30',
@@ -381,9 +302,9 @@ export async function createSchedulingRequest(
 /**
  * Explicit DEMO_ONLY fixture for visual development and automated testing.
  * Strictly labeled so that it is never presented as authentic user data.
- * Disabled unconditionally in production (NODE_ENV === 'production').
+ * The caller is responsible for enforcing the environment and explicit-intent gate.
  */
-export function getDemoItineraryFixture(
+function getDemoItineraryFixture(
   itineraryId: number | string = 'DEMO_ONLY',
 ): ItineraryDetailDto {
   const numericId = typeof itineraryId === 'number' ? itineraryId : 999999;
@@ -393,10 +314,7 @@ export function getDemoItineraryFixture(
   return {
     itineraryId: numericId,
     schedulingRequestId: 1001,
-    title:
-      typeof itineraryId === 'string' && itineraryId.toUpperCase().includes('DEMO')
-        ? `[DEMO_ONLY] Lịch trình khám phá Đà Nẵng`
-        : `Lịch trình khám phá Đà Nẵng`,
+    title: '[DEMO_ONLY] Lịch trình khám phá Đà Nẵng',
     version: 1,
     status: 'DEMO_FIXTURE',
     validFrom: startTime.toISOString(),
@@ -511,30 +429,25 @@ export function getDemoItineraryFixture(
  *
  * Authoritative Server Architecture:
  * 1. Validates itineraryId format before dispatching network request.
- * 2. In non-production environments (test/development), explicit demo requests return a typed fixture.
- * 3. In production (NODE_ENV === 'production'), demo fixtures are completely locked down.
+ * 2. A non-production environment flag and explicit demo intent are both required for fixtures.
+ * 3. In production, demo fixtures are completely locked down regardless of the public flag.
  * 4. Calls real ASP.NET Core 8 backend endpoint GET /api/v1/itineraries/{itineraryId} with Traveler Bearer token.
- * 5. On 200 OK: executes runtime validation (isValidItineraryDetailDto) and refreshes session cache.
- * 6. On 401/403/404/5xx or network error: throws typed ItineraryHttpError; never falls back to cache.
+ * 5. On 200 OK: executes runtime validation (isValidItineraryDetailDto).
+ * 6. On 401/403/404/5xx or network error: throws typed ItineraryHttpError.
  */
 export async function getItineraryById(
   itineraryId: number | string,
   options?: {
     accessToken?: string;
-    currentUserId?: number | string;
     allowDemoFixture?: boolean;
   },
 ): Promise<ItineraryDetailDto> {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const demoFixtureEnabled = !isProduction;
-
   const isDemoExplicitlyRequested =
-    demoFixtureEnabled &&
-    (options?.allowDemoFixture === true ||
-      String(itineraryId).toLowerCase() === 'demo' ||
-      String(itineraryId).toUpperCase() === 'DEMO_ONLY');
+    options?.allowDemoFixture === true ||
+    String(itineraryId).toLowerCase() === 'demo' ||
+    String(itineraryId).toUpperCase() === 'DEMO_ONLY';
 
-  if (isDemoExplicitlyRequested) {
+  if (isDemoAllowedInCurrentEnv() && isDemoExplicitlyRequested) {
     return getDemoItineraryFixture(itineraryId);
   }
 
@@ -592,12 +505,6 @@ export async function getItineraryById(
         'Cấu trúc dữ liệu chi tiết lịch trình không khớp hợp đồng TripMate.',
         'server.invalid_contract',
       );
-    }
-
-    // Refresh user-scoped cache on successful authoritative server retrieval
-    const targetUserId = options?.currentUserId ?? context?.userId;
-    if (targetUserId) {
-      saveCachedItinerary(body, targetUserId);
     }
 
     return body;
