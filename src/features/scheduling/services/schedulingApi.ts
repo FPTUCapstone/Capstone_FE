@@ -10,14 +10,36 @@ import {
   CreateSchedulingRequestPayload,
   SchedulingResponseDto,
   SchedulingItemDto,
+  isValidSchedulingResponseDto,
+  ItineraryDetailDto,
+  isValidItineraryDetailDto,
+  isValidItineraryId,
 } from '../types/schedulingTypes';
+
+export class ItineraryHttpError extends Error {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(status: number, message: string, code?: string) {
+    super(message);
+    this.name = 'ItineraryHttpError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export function isDemoAllowedInCurrentEnv(): boolean {
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true'
+  );
+}
 
 export interface CreateSchedulingResult {
   success: boolean;
   messageCode: string;
   message: string;
   data: SchedulingResponseDto;
-  isSimulatedFallback?: boolean;
 }
 
 export interface SchedulingApiError {
@@ -36,37 +58,6 @@ export function generateIdempotencyKey(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
-}
-
-const ITINERARY_STORAGE_PREFIX = 'tripmate_itinerary_';
-
-export function saveCachedItinerary(itinerary: SchedulingResponseDto): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.sessionStorage.setItem(
-      `${ITINERARY_STORAGE_PREFIX}${itinerary.itineraryId}`,
-      JSON.stringify(itinerary),
-    );
-    window.sessionStorage.setItem('tripmate_latest_itinerary', JSON.stringify(itinerary));
-  } catch {
-    // quota or storage unavailable
-  }
-}
-
-export function getCachedItinerary(itineraryId: number | string): SchedulingResponseDto | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.sessionStorage.getItem(`${ITINERARY_STORAGE_PREFIX}${itineraryId}`);
-    if (raw) return JSON.parse(raw) as SchedulingResponseDto;
-    const latest = window.sessionStorage.getItem('tripmate_latest_itinerary');
-    if (latest) {
-      const parsed = JSON.parse(latest) as SchedulingResponseDto;
-      if (String(parsed.itineraryId) === String(itineraryId)) return parsed;
-    }
-  } catch {
-    return null;
-  }
-  return null;
 }
 
 /**
@@ -176,16 +167,12 @@ export function generateDemoItineraryFixture(payload: CreateSchedulingRequestPay
 }
 
 /**
- * Backward compatibility alias for fixture tests
- */
-export const generateSimulatedItinerary = generateDemoItineraryFixture;
-
-/**
  * Submit a new scheduling request (UC-10).
  * Calls real ASP.NET Core 8 backend endpoint POST /api/v1/scheduling-requests with Idempotency-Key.
  *
  * In accordance with TripMate integration policy:
- * - If backend responds 201 Created: caches the verified itinerary in sessionStorage and returns success.
+ * - If backend responds 201 Created: runtime-validates response contract (isValidSchedulingResponseDto) and returns success.
+ * - UC-11 retrieves persisted itinerary detail authoritatively via the server GET flow. No sessionStorage itinerary cache exists.
  * - If backend responds with error or network fails: throws real ProblemDetails / SchedulingApiError.
  * - Silent fake fallback is strictly prohibited.
  */
@@ -228,14 +215,31 @@ export async function createSchedulingRequest(
   }
 
   if (res.status === 201) {
-    const data = (await res.json()) as SchedulingResponseDto;
-    saveCachedItinerary(data);
+    let body: unknown;
+
+    try {
+      body = await res.json();
+    } catch {
+      throw {
+        code: 'server.malformed_response',
+        message: 'Dữ liệu phản hồi từ máy chủ không hợp lệ.',
+        status: 502,
+      } satisfies SchedulingApiError;
+    }
+
+    if (!isValidSchedulingResponseDto(body)) {
+      throw {
+        code: 'server.invalid_contract',
+        message: 'Cấu trúc dữ liệu lịch trình không khớp hợp đồng TripMate.',
+        status: 502,
+      } satisfies SchedulingApiError;
+    }
+
     return {
       success: true,
       messageCode: 'MSG30',
       message: 'Khởi tạo lịch trình tối ưu thành công! TripMate đã áp dụng thuật toán CSP hoàn tất.',
-      data,
-      isSimulatedFallback: false,
+      data: body,
     };
   }
 
@@ -307,4 +311,246 @@ export async function createSchedulingRequest(
     status: res.status,
     errors: fieldErrors,
   } satisfies SchedulingApiError;
+}
+
+/**
+ * Explicit DEMO_ONLY fixture for visual development and automated testing.
+ * Strictly labeled so that it is never presented as authentic user data.
+ * The caller is responsible for enforcing the environment and explicit-intent gate.
+ */
+function getDemoItineraryFixture(
+  itineraryId: number | string = 'DEMO_ONLY',
+): ItineraryDetailDto {
+  const numericId = typeof itineraryId === 'number' ? itineraryId : 999999;
+  const now = Date.now();
+  const startTime = new Date(now + 86400000);
+
+  return {
+    itineraryId: numericId,
+    schedulingRequestId: 1001,
+    title: '[DEMO_ONLY] Lịch trình khám phá Đà Nẵng',
+    version: 1,
+    status: 'DEMO_FIXTURE',
+    validFrom: startTime.toISOString(),
+    validTo: new Date(startTime.getTime() + 480 * 60000).toISOString(),
+    canManage: true,
+    totalEstimatedCost: 305000,
+    totalDurationMinutes: 480,
+    isDemoFixture: true,
+    items: [
+      {
+        itemId: 1,
+        sequenceNo: 1,
+        poiId: 1,
+        poiName: 'Bảo tàng Điêu khắc Chăm Đà Nẵng',
+        category: 'Văn hóa & Di sản',
+        kind: 'Visit',
+        plannedArrival: startTime.toISOString(),
+        plannedDeparture: new Date(startTime.getTime() + 60 * 60000).toISOString(),
+        travelDurationFromPreviousMinutes: null,
+        stayDurationMinutes: 60,
+        estimatedCost: 60000,
+        isMandatory: true,
+        recommendationReason: 'Phù hợp với sở thích Văn hóa & Di sản',
+        isUnavailable: false,
+      },
+      {
+        itemId: 2,
+        sequenceNo: 2,
+        poiId: 2,
+        poiName: 'Cầu Rồng & Bờ sông Hàn',
+        category: 'Kiến trúc & Cảnh quan',
+        kind: 'Visit',
+        plannedArrival: new Date(startTime.getTime() + 75 * 60000).toISOString(),
+        plannedDeparture: new Date(startTime.getTime() + 120 * 60000).toISOString(),
+        travelDurationFromPreviousMinutes: 15,
+        stayDurationMinutes: 45,
+        estimatedCost: 0,
+        isMandatory: false,
+        recommendationReason: 'Biểu tượng Đà Nẵng, nằm trên tuyến di chuyển tối ưu',
+        isUnavailable: false,
+      },
+      {
+        itemId: 3,
+        sequenceNo: 3,
+        poiId: 3,
+        poiName: 'Bữa trưa đặc sản Mì Quảng Bà Mua',
+        category: 'Ẩm thực',
+        kind: 'Rest',
+        plannedArrival: new Date(startTime.getTime() + 140 * 60000).toISOString(),
+        plannedDeparture: new Date(startTime.getTime() + 190 * 60000).toISOString(),
+        travelDurationFromPreviousMinutes: 20,
+        stayDurationMinutes: 50,
+        estimatedCost: 65000,
+        isMandatory: false,
+        recommendationReason: 'Điểm dừng nghỉ trưa nạp năng lượng & thưởng thức ẩm thực miền Trung',
+        isUnavailable: false,
+      },
+      {
+        itemId: 4,
+        sequenceNo: 4,
+        poiId: 4,
+        poiName: 'Chùa Linh Ứng - Bán đảo Sơn Trà',
+        category: 'Tâm linh & Cảnh quan',
+        kind: 'Visit',
+        plannedArrival: new Date(startTime.getTime() + 215 * 60000).toISOString(),
+        plannedDeparture: new Date(startTime.getTime() + 290 * 60000).toISOString(),
+        travelDurationFromPreviousMinutes: 25,
+        stayDurationMinutes: 75,
+        estimatedCost: 0,
+        isMandatory: false,
+        recommendationReason: 'Cảnh quan biển ngoạn mục, tượng Phật Bà Quan Âm cao 67m',
+        isUnavailable: false,
+      },
+      {
+        itemId: 5,
+        sequenceNo: 5,
+        poiId: 5,
+        poiName: 'Bãi biển Mỹ Khê',
+        category: 'Biển & Nghỉ dưỡng',
+        kind: 'Visit',
+        plannedArrival: new Date(startTime.getTime() + 320 * 60000).toISOString(),
+        plannedDeparture: new Date(startTime.getTime() + 380 * 60000).toISOString(),
+        travelDurationFromPreviousMinutes: 30,
+        stayDurationMinutes: 60,
+        estimatedCost: 30000,
+        isMandatory: false,
+        recommendationReason: 'Top bãi biển quyến rũ nhất hành tinh, thích hợp dạo biển chiều',
+        isUnavailable: false,
+      },
+      {
+        itemId: 6,
+        sequenceNo: 6,
+        poiId: 6,
+        poiName: 'Chợ Đêm Helio & Ẩm thực đêm',
+        category: 'Mua sắm & Ẩm thực',
+        kind: 'Visit',
+        plannedArrival: new Date(startTime.getTime() + 400 * 60000).toISOString(),
+        plannedDeparture: new Date(startTime.getTime() + 460 * 60000).toISOString(),
+        travelDurationFromPreviousMinutes: 20,
+        stayDurationMinutes: 60,
+        estimatedCost: 150000,
+        isMandatory: false,
+        recommendationReason: 'Thiên đường ẩm thực đêm, giải trí và mua sắm quà lưu niệm',
+        isUnavailable: false,
+      },
+    ],
+  };
+}
+
+/**
+ * Retrieve an itinerary by its ID (UC-11).
+ *
+ * Authoritative Server Architecture:
+ * 1. Validates itineraryId format before dispatching network request.
+ * 2. A non-production environment flag and explicit demo intent are both required for fixtures.
+ * 3. In production, demo fixtures are completely locked down regardless of the public flag.
+ * 4. Calls real ASP.NET Core 8 backend endpoint GET /api/v1/itineraries/{itineraryId} with Traveler Bearer token.
+ * 5. On 200 OK: executes runtime validation (isValidItineraryDetailDto).
+ * 6. On 401/403/404/5xx or network error: throws typed ItineraryHttpError.
+ */
+export async function getItineraryById(
+  itineraryId: number | string,
+  options?: {
+    accessToken?: string;
+    allowDemoFixture?: boolean;
+  },
+): Promise<ItineraryDetailDto> {
+  const isDemoExplicitlyRequested =
+    options?.allowDemoFixture === true ||
+    String(itineraryId).toLowerCase() === 'demo' ||
+    String(itineraryId).toUpperCase() === 'DEMO_ONLY';
+
+  if (isDemoAllowedInCurrentEnv() && isDemoExplicitlyRequested) {
+    return getDemoItineraryFixture(itineraryId);
+  }
+
+  // Route ID Validation
+  if (!isValidItineraryId(itineraryId)) {
+    throw new ItineraryHttpError(
+      404,
+      `Không tìm thấy lịch trình. Mã lịch trình "${itineraryId}" không hợp lệ.`,
+      'itinerary.invalid_id',
+    );
+  }
+
+  const numericId = typeof itineraryId === 'number' ? itineraryId : parseInt(itineraryId, 10);
+  const context = AuthStorage.getContext();
+  const token = options?.accessToken ?? context?.accessToken;
+  const API_BASE = getApiBase();
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/itineraries/${numericId}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers,
+    });
+  } catch {
+    throw new ItineraryHttpError(
+      503,
+      'Không thể kết nối đến máy chủ TripMate. Vui lòng kiểm tra kết nối mạng và thử lại sau.',
+      'network.unavailable',
+    );
+  }
+
+  if (res.status === 200) {
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      throw new ItineraryHttpError(
+        502,
+        'Dữ liệu phản hồi từ máy chủ không hợp lệ.',
+        'server.malformed_response',
+      );
+    }
+
+    if (!isValidItineraryDetailDto(body)) {
+      throw new ItineraryHttpError(
+        502,
+        'Cấu trúc dữ liệu chi tiết lịch trình không khớp hợp đồng TripMate.',
+        'server.invalid_contract',
+      );
+    }
+
+    return body;
+  }
+
+  if (res.status === 401) {
+    throw new ItineraryHttpError(
+      401,
+      'Phiên đăng nhập đã hết hạn hoặc bạn chưa đăng nhập. Vui lòng đăng nhập tài khoản Du khách để xem lịch trình.',
+      'auth.unauthorized',
+    );
+  }
+
+  if (res.status === 403) {
+    throw new ItineraryHttpError(
+      403,
+      'Bạn không có quyền xem lịch trình này.',
+      'auth.forbidden',
+    );
+  }
+
+  if (res.status === 404) {
+    throw new ItineraryHttpError(
+      404,
+      'Không tìm thấy lịch trình.',
+      'itinerary.not_found',
+    );
+  }
+
+  throw new ItineraryHttpError(
+    res.status,
+    'Không thể tải lịch trình từ máy chủ. Vui lòng thử lại sau.',
+    'server.error',
+  );
 }

@@ -124,6 +124,7 @@ export interface SchedulingResponseDto {
   totalEstimatedCost: number;
   totalDurationMinutes: number;
   items: SchedulingItemDto[];
+  isDemoFixture?: boolean;
 }
 
 export interface SchedulingFormValues {
@@ -209,4 +210,166 @@ export function getTodayDateString(now?: Date): string {
 
 export function getTomorrowDateString(now?: Date): string {
   return getVietnamTomorrowDateString(now);
+}
+
+export interface ItineraryDetailItemDto {
+  itemId: number;
+  sequenceNo: number;
+  poiId: number | null;
+  poiName: string | null;
+  category: string | null;
+  kind: ItineraryItemKind;
+  plannedArrival: string;
+  plannedDeparture: string;
+  travelDurationFromPreviousMinutes: number | null;
+  stayDurationMinutes: number;
+  estimatedCost: number | null;
+  isMandatory: boolean;
+  recommendationReason: string | null;
+  isUnavailable: boolean;
+}
+
+export interface ItineraryDetailDto {
+  itineraryId: number;
+  schedulingRequestId: number;
+  title: string | null;
+  version: number;
+  status: string;
+  validFrom: string | null;
+  validTo: string | null;
+  canManage: boolean;
+  totalEstimatedCost: number;
+  totalDurationMinutes: number;
+  items: ItineraryDetailItemDto[];
+  isDemoFixture?: boolean;
+}
+
+export function isValidItineraryId(itineraryId: unknown): boolean {
+  if (typeof itineraryId === 'number') {
+    return Number.isSafeInteger(itineraryId) && itineraryId > 0;
+  }
+  if (typeof itineraryId === 'string') {
+    const trimmed = itineraryId.trim();
+    if (!/^\d+$/.test(trimmed)) return false;
+    const parsed = Number(trimmed);
+    return Number.isSafeInteger(parsed) && parsed > 0;
+  }
+  return false;
+}
+
+export function isValidItineraryDetailDto(data: unknown): data is ItineraryDetailDto {
+  if (!data || typeof data !== 'object') return false;
+  const candidate = data as Partial<ItineraryDetailDto>;
+  if (
+    typeof candidate.itineraryId !== 'number' ||
+    typeof candidate.schedulingRequestId !== 'number' ||
+    (candidate.title !== undefined &&
+      candidate.title !== null &&
+      typeof candidate.title !== 'string') ||
+    typeof candidate.version !== 'number' ||
+    typeof candidate.status !== 'string' ||
+    (candidate.validFrom !== undefined &&
+      candidate.validFrom !== null &&
+      typeof candidate.validFrom !== 'string') ||
+    (candidate.validTo !== undefined &&
+      candidate.validTo !== null &&
+      typeof candidate.validTo !== 'string') ||
+    typeof candidate.canManage !== 'boolean' ||
+    typeof candidate.totalEstimatedCost !== 'number' ||
+    typeof candidate.totalDurationMinutes !== 'number' ||
+    !Array.isArray(candidate.items)
+  ) {
+    return false;
+  }
+  if (candidate.isDemoFixture !== undefined && typeof candidate.isDemoFixture !== 'boolean') {
+    return false;
+  }
+  for (const item of candidate.items) {
+    if (!item || typeof item !== 'object') return false;
+    const i = item as Partial<ItineraryDetailItemDto>;
+    if (
+      typeof i.itemId !== 'number' ||
+      typeof i.sequenceNo !== 'number' ||
+      (i.poiId !== undefined && i.poiId !== null && typeof i.poiId !== 'number') ||
+      (i.poiName !== undefined && i.poiName !== null && typeof i.poiName !== 'string') ||
+      (i.category !== undefined && i.category !== null && typeof i.category !== 'string') ||
+      (i.kind !== 'Visit' && i.kind !== 'Rest') ||
+      typeof i.plannedArrival !== 'string' ||
+      typeof i.plannedDeparture !== 'string' ||
+      (i.travelDurationFromPreviousMinutes !== undefined &&
+        i.travelDurationFromPreviousMinutes !== null &&
+        typeof i.travelDurationFromPreviousMinutes !== 'number') ||
+      typeof i.stayDurationMinutes !== 'number' ||
+      (i.estimatedCost !== undefined &&
+        i.estimatedCost !== null &&
+        typeof i.estimatedCost !== 'number') ||
+      typeof i.isMandatory !== 'boolean' ||
+      (i.recommendationReason !== undefined &&
+        i.recommendationReason !== null &&
+        typeof i.recommendationReason !== 'string') ||
+      typeof i.isUnavailable !== 'boolean'
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function isValidSchedulingResponseDto(data: unknown): data is SchedulingResponseDto {
+  if (!data || typeof data !== 'object') return false;
+  const candidate = data as Partial<SchedulingResponseDto>;
+  if (
+    typeof candidate.schedulingRequestId !== 'number' ||
+    typeof candidate.itineraryId !== 'number' ||
+    typeof candidate.title !== 'string' ||
+    typeof candidate.status !== 'string' ||
+    typeof candidate.totalEstimatedCost !== 'number' ||
+    typeof candidate.totalDurationMinutes !== 'number' ||
+    !Array.isArray(candidate.items)
+  ) {
+    return false;
+  }
+  if (candidate.isDemoFixture !== undefined && typeof candidate.isDemoFixture !== 'boolean') {
+    return false;
+  }
+  for (const item of candidate.items) {
+    if (!item || typeof item !== 'object') return false;
+    const i = item as Partial<SchedulingItemDto>;
+    if (
+      typeof i.sequenceNo !== 'number' ||
+      (i.poiId !== undefined && i.poiId !== null && typeof i.poiId !== 'number') ||
+      (i.poiName !== undefined && i.poiName !== null && typeof i.poiName !== 'string') ||
+      (i.itemKind !== 'Visit' && i.itemKind !== 'Rest') ||
+      typeof i.plannedArrival !== 'string' ||
+      typeof i.plannedDeparture !== 'string' ||
+      typeof i.stayDurationMinutes !== 'number' ||
+      (i.travelDurationToNextMinutes !== undefined &&
+        i.travelDurationToNextMinutes !== null &&
+        typeof i.travelDurationToNextMinutes !== 'number') ||
+      (i.estimatedCost !== undefined && i.estimatedCost !== null && typeof i.estimatedCost !== 'number') ||
+      typeof i.isMandatory !== 'boolean' ||
+      (i.recommendationReason !== undefined &&
+        i.recommendationReason !== null &&
+        typeof i.recommendationReason !== 'string')
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function formatVietnamTime(isoString?: string): string {
+  if (!isoString) return '--:--';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '--:--';
+    return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: TRIPMATE_TIME_ZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(d);
+  } catch {
+    return '--:--';
+  }
 }
