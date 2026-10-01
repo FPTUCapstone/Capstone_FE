@@ -71,8 +71,8 @@ describe('UC-10 Scheduling API Service', () => {
 
     it('can be manually saved to cached itineraries if needed', () => {
       const itinerary = generateSimulatedItinerary(samplePayload);
-      saveCachedItinerary(itinerary);
-      const retrieved = getCachedItinerary(itinerary.itineraryId);
+      saveCachedItinerary(itinerary, 1);
+      const retrieved = getCachedItinerary(itinerary.itineraryId, 1);
       expect(retrieved).not.toBeNull();
       expect(retrieved?.itineraryId).toBe(itinerary.itineraryId);
     });
@@ -90,13 +90,45 @@ describe('UC-10 Scheduling API Service', () => {
         items: [],
       };
 
-      saveCachedItinerary(mockItinerary);
-      const result = getCachedItinerary(101);
+      saveCachedItinerary(mockItinerary, 42);
+      const result = getCachedItinerary(101, 42);
       expect(result).toEqual(mockItinerary);
     });
 
+    it('enforces cache isolation across different users', () => {
+      const mockItinerary = {
+        schedulingRequestId: 12,
+        itineraryId: 102,
+        title: 'Chuyến đi của User 42',
+        status: 'OptimalGenerated',
+        totalEstimatedCost: 100000,
+        totalDurationMinutes: 180,
+        items: [],
+      };
+
+      saveCachedItinerary(mockItinerary, 42);
+      // User 99 must NOT access User 42's cached itinerary
+      const resultOtherUser = getCachedItinerary(102, 99);
+      expect(resultOtherUser).toBeNull();
+
+      // User 42 CAN access their own cached itinerary
+      const resultOwner = getCachedItinerary(102, 42);
+      expect(resultOwner).toEqual(mockItinerary);
+    });
+
+    it('rejects corrupted or non-conforming cache entries', () => {
+      window.sessionStorage.setItem('tripmate_itinerary_42_103', JSON.stringify({ invalid: true }));
+      expect(getCachedItinerary(103, 42)).toBeNull();
+
+      window.sessionStorage.setItem(
+        'tripmate_itinerary_42_104',
+        JSON.stringify({ schemaVersion: 2, ownerUserId: 42, itinerary: {} }),
+      );
+      expect(getCachedItinerary(104, 42)).toBeNull();
+    });
+
     it('returns null for nonexistent itinerary ID', () => {
-      const result = getCachedItinerary(999999);
+      const result = getCachedItinerary(999999, 42);
       expect(result).toBeNull();
     });
   });
@@ -199,9 +231,9 @@ describe('UC-10 Scheduling API Service', () => {
         totalDurationMinutes: 240,
         items: [],
       };
-      saveCachedItinerary(cached);
+      saveCachedItinerary(cached, 42);
 
-      const result = await getItineraryById(999);
+      const result = await getItineraryById(999, { currentUserId: 42 });
       expect(result).toEqual(cached);
     });
 

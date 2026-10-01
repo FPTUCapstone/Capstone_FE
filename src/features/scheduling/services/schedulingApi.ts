@@ -10,6 +10,8 @@ import {
   CreateSchedulingRequestPayload,
   SchedulingResponseDto,
   SchedulingItemDto,
+  CachedItineraryEnvelope,
+  isValidSchedulingResponseDto,
 } from '../types/schedulingTypes';
 
 export interface CreateSchedulingResult {
@@ -40,28 +42,72 @@ export function generateIdempotencyKey(): string {
 
 const ITINERARY_STORAGE_PREFIX = 'tripmate_itinerary_';
 
-export function saveCachedItinerary(itinerary: SchedulingResponseDto): void {
+export function saveCachedItinerary(
+  itinerary: SchedulingResponseDto,
+  ownerUserId?: number | string,
+): void {
   if (typeof window === 'undefined') return;
+  const resolvedUserId = ownerUserId ?? AuthStorage.getContext()?.userId;
+  if (!resolvedUserId) return;
+
+  const envelope: CachedItineraryEnvelope = {
+    schemaVersion: 1,
+    ownerUserId: resolvedUserId,
+    itinerary,
+  };
+  const serialized = JSON.stringify(envelope);
+
   try {
     window.sessionStorage.setItem(
-      `${ITINERARY_STORAGE_PREFIX}${itinerary.itineraryId}`,
-      JSON.stringify(itinerary),
+      `${ITINERARY_STORAGE_PREFIX}${resolvedUserId}_${itinerary.itineraryId}`,
+      serialized,
     );
-    window.sessionStorage.setItem('tripmate_latest_itinerary', JSON.stringify(itinerary));
+    window.sessionStorage.setItem(
+      `tripmate_latest_itinerary_${resolvedUserId}`,
+      serialized,
+    );
   } catch {
     // quota or storage unavailable
   }
 }
 
-export function getCachedItinerary(itineraryId: number | string): SchedulingResponseDto | null {
+export function getCachedItinerary(
+  itineraryId: number | string,
+  currentUserId?: number | string,
+): SchedulingResponseDto | null {
   if (typeof window === 'undefined') return null;
+  const resolvedUserId = currentUserId ?? AuthStorage.getContext()?.userId;
+  if (!resolvedUserId) return null;
+
   try {
-    const raw = window.sessionStorage.getItem(`${ITINERARY_STORAGE_PREFIX}${itineraryId}`);
-    if (raw) return JSON.parse(raw) as SchedulingResponseDto;
-    const latest = window.sessionStorage.getItem('tripmate_latest_itinerary');
+    const raw = window.sessionStorage.getItem(
+      `${ITINERARY_STORAGE_PREFIX}${resolvedUserId}_${itineraryId}`,
+    );
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<CachedItineraryEnvelope>;
+      if (
+        parsed &&
+        parsed.schemaVersion === 1 &&
+        String(parsed.ownerUserId) === String(resolvedUserId) &&
+        isValidSchedulingResponseDto(parsed.itinerary) &&
+        String(parsed.itinerary.itineraryId) === String(itineraryId)
+      ) {
+        return parsed.itinerary;
+      }
+    }
+
+    const latest = window.sessionStorage.getItem(`tripmate_latest_itinerary_${resolvedUserId}`);
     if (latest) {
-      const parsed = JSON.parse(latest) as SchedulingResponseDto;
-      if (String(parsed.itineraryId) === String(itineraryId)) return parsed;
+      const parsed = JSON.parse(latest) as Partial<CachedItineraryEnvelope>;
+      if (
+        parsed &&
+        parsed.schemaVersion === 1 &&
+        String(parsed.ownerUserId) === String(resolvedUserId) &&
+        isValidSchedulingResponseDto(parsed.itinerary) &&
+        String(parsed.itinerary.itineraryId) === String(itineraryId)
+      ) {
+        return parsed.itinerary;
+      }
     }
   } catch {
     return null;
@@ -194,11 +240,13 @@ export async function createSchedulingRequest(
   options?: {
     accessToken?: string;
     idempotencyKey?: string;
+    userId?: number | string;
   },
 ): Promise<CreateSchedulingResult> {
   const context = AuthStorage.getContext();
   const token = options?.accessToken ?? context?.accessToken;
   const idempotencyKey = options?.idempotencyKey ?? generateIdempotencyKey();
+  const targetUserId = options?.userId ?? context?.userId;
   const API_BASE = getApiBase();
 
   const headers: Record<string, string> = {
@@ -229,7 +277,7 @@ export async function createSchedulingRequest(
 
   if (res.status === 201) {
     const data = (await res.json()) as SchedulingResponseDto;
-    saveCachedItinerary(data);
+    saveCachedItinerary(data, targetUserId);
     return {
       success: true,
       messageCode: 'MSG30',
@@ -362,11 +410,12 @@ export async function getItineraryById(
   itineraryId: number | string,
   options?: {
     accessToken?: string;
+    currentUserId?: number | string;
     allowDemoFixture?: boolean;
   },
 ): Promise<SchedulingResponseDto> {
   // Source A: Authentic session storage cache generated genuinely by UC-10
-  const cached = getCachedItinerary(itineraryId);
+  const cached = getCachedItinerary(itineraryId, options?.currentUserId);
   if (cached) {
     return cached;
   }

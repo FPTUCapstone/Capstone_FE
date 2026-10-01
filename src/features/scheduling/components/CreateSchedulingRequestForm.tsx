@@ -8,7 +8,11 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { loadStoredPreferences } from '@/features/account/preferences/travelPreferencesStorage';
 import { ROUTES } from '@/lib/routes';
 
-import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
+import {
+  createSchedulingRequest,
+  generateIdempotencyKey,
+  saveCachedItinerary,
+} from '../services/schedulingApi';
 import {
   buildVietnamStartAtIso,
   CreateSchedulingRequestPayload,
@@ -257,7 +261,13 @@ export function CreateSchedulingRequestForm({
     }
 
     try {
-      const result = await createSchedulingRequest(payload, { idempotencyKey });
+      const result = await createSchedulingRequest(payload, {
+        idempotencyKey,
+        userId: userId ?? undefined,
+      });
+      if (userId) {
+        saveCachedItinerary(result.data, userId);
+      }
       setOptimizationPhase('Hoàn tất! Lịch trình tối ưu đã sẵn sàng.');
       setGeneratedItinerary(result.data);
 

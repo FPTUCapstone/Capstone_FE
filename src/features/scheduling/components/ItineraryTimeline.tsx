@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
-import { SchedulingItemDto } from '../types/schedulingTypes';
+import { formatVietnamTime, SchedulingItemDto } from '../types/schedulingTypes';
 
 interface ItineraryTimelineProps {
   items: SchedulingItemDto[];
@@ -20,18 +20,7 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
     );
   }
 
-  // Helper to format ISO time string to HH:mm
-  const formatTime = (isoString?: string): string => {
-    if (!isoString) return '--:--';
-    try {
-      const date = new Date(isoString);
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch {
-      return '--:--';
-    }
-  };
+  const formatTime = (isoString?: string): string => formatVietnamTime(isoString);
 
   return (
     <div className="relative space-y-6">
@@ -174,7 +163,7 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
                 <div className="my-2 ml-10 flex items-center gap-2 text-xs text-slate-500 sm:ml-12">
                   <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11.5px] font-medium shadow-2xs">
                     <span className="material-symbols-outlined text-sm text-[#007d6e]">
-                      two_wheeler
+                      directions
                     </span>
                     <span>
                       Di chuyển khoảng{' '}

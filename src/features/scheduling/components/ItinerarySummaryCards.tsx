@@ -78,7 +78,7 @@ export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps)
         <p className="mt-2 text-lg font-black text-[#007d6e] sm:text-xl">
           Tối ưu hoàn tất
         </p>
-        <span className="text-[11px] text-teal-700">Khớp sở thích cá nhân</span>
+        <span className="text-[11px] text-teal-700">Đã tạo lịch trình</span>
       </div>
     </div>
   );

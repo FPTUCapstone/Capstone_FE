@@ -71,15 +71,27 @@ describe('ItineraryTimeline (UC-11)', () => {
     expect(screen.getByText('Miễn phí')).toBeDefined();
   });
 
-  it('renders travel transition segments between stops', () => {
+  it('renders travel transition segments between stops with directions icon and neutral text', () => {
     render(<ItineraryTimeline items={mockItems} />);
 
     expect(screen.getAllByText(/Di chuyển khoảng/i).length).toBe(2);
     expect(screen.getByText('15 phút')).toBeDefined();
     expect(screen.getByText('20 phút')).toBeDefined();
+
+    // Verify directions icon is present and two_wheeler is absent
+    expect(screen.getAllByText('directions').length).toBe(2);
+    expect(screen.queryByText('two_wheeler')).toBeNull();
   });
 
-  it('renders link to POI details (UC-12) when poiId is present', () => {
+  it('formats arrival and departure times under Asia/Ho_Chi_Minh', () => {
+    render(<ItineraryTimeline items={mockItems} />);
+
+    expect(screen.getByText('08:00 - 09:00')).toBeDefined();
+    expect(screen.getByText('12:00 - 13:00')).toBeDefined();
+    expect(screen.getByText('14:00 - 15:00')).toBeDefined();
+  });
+
+  it('renders link to POI details (UC-12) when poiId is present and omits when null', () => {
     render(<ItineraryTimeline items={mockItems} />);
 
     const poiLinks = screen.getAllByRole('link', { name: /Chi tiết địa điểm/i });

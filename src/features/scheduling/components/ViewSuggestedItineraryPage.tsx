@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
+import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
 import { getItineraryById } from '../services/schedulingApi';
-import { SchedulingResponseDto } from '../types/schedulingTypes';
+import { formatVietnamTime, SchedulingResponseDto } from '../types/schedulingTypes';
 import { ItineraryRouteMapPreview } from './ItineraryRouteMapPreview';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
 import { ItineraryTimeline } from './ItineraryTimeline';
@@ -17,15 +19,32 @@ interface ViewSuggestedItineraryPageProps {
 }
 
 export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItineraryPageProps) {
+  const router = useRouter();
+  const { status, context } = useWebSession();
   const [itinerary, setItinerary] = useState<SchedulingResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace(
+        `${ROUTES.signIn}?returnUrl=${encodeURIComponent(`/itinerary/${itineraryId}`)}`,
+      );
+    } else if (status === 'authenticated' && context?.role === 'TourOperator') {
+      router.replace(ROUTES.partner.dashboard);
+    } else if (status === 'authenticated' && context?.role === 'Administrator') {
+      router.replace(ROUTES.admin.dashboard);
+    }
+  }, [status, context, router, itineraryId]);
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !context || context.role !== 'Traveler') {
+      return;
+    }
+
     let isMounted = true;
 
-    getItineraryById(itineraryId)
+    getItineraryById(itineraryId, { currentUserId: context.userId })
       .then((data) => {
         if (isMounted) {
           setItinerary(data);
@@ -46,21 +65,31 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
     return () => {
       isMounted = false;
     };
-  }, [itineraryId]);
-
-  const handleCopyLink = () => {
-    if (typeof window !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    }
-  };
+  }, [itineraryId, status, context]);
 
   const handlePrint = () => {
     if (typeof window !== 'undefined') {
       window.print();
     }
   };
+
+  if (status === 'restoring') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            aria-hidden="true"
+          />
+          <p className="text-xs font-semibold text-slate-500">Đang tải kế hoạch du lịch…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated' || !context || context.role !== 'Traveler') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -171,17 +200,6 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                 <div className="flex flex-wrap items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={handleCopyLink}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
-                  >
-                    <span className="material-symbols-outlined text-sm">
-                      {copied ? 'check' : 'share'}
-                    </span>
-                    <span>{copied ? 'Đã sao chép link' : 'Chia sẻ'}</span>
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={handlePrint}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
                   >
@@ -224,7 +242,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     <ul className="mt-3 space-y-2 text-xs text-slate-600">
                       <li className="flex items-start gap-1.5">
                         <span className="text-[#007d6e] font-bold">•</span>
-                        <span>Nên xuất phát đúng giờ dự kiến ({itinerary.items[0]?.plannedArrival ? new Date(itinerary.items[0].plannedArrival).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '08:00'}) để đảm bảo khớp giờ mở cửa.</span>
+                        <span>Nên xuất phát đúng giờ dự kiến ({itinerary.items[0]?.plannedArrival ? formatVietnamTime(itinerary.items[0].plannedArrival) : '08:00'}) để đảm bảo khớp giờ mở cửa.</span>
                       </li>
                       <li className="flex items-start gap-1.5">
                         <span className="text-[#007d6e] font-bold">•</span>

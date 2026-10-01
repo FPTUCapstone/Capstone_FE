@@ -15,50 +15,67 @@ export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreview
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-lg text-[#007d6e]">
-                map
+                route
               </span>
-              <h3 className="text-sm font-bold text-slate-900">Sơ đồ cung đường tối ưu</h3>
+              <h3 className="text-sm font-bold text-slate-900">Sơ đồ thứ tự điểm dừng</h3>
             </div>
             <span className="rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-[#007d6e]">
-              Miền Trung / Đà Nẵng
+              {itinerary.items.length} điểm dừng
             </span>
           </div>
         </div>
 
-        {/* Visual Map Representation */}
-        <div className="relative flex h-52 w-full flex-col justify-between bg-gradient-to-br from-slate-100 via-teal-50/30 to-blue-50/50 p-4">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span className="font-semibold text-slate-700">Tọa độ trung tâm: 16.0544, 108.2022</span>
-            <span className="flex items-center gap-1 text-[#007d6e]">
-              <span className="material-symbols-outlined text-xs">navigation</span>
-              Lộ trình khép kín
-            </span>
-          </div>
+        {/* Sequential Visual Diagram */}
+        <div className="p-4 space-y-4">
+          <div className="flex flex-wrap items-center justify-center gap-2 py-2">
+            {itinerary.items.map((item, idx) => {
+              const isLast = idx === itinerary.items.length - 1;
+              const isRest = item.itemKind === 'Rest';
 
-          {/* Connected Stop Nodes Visualizer */}
-          <div className="my-auto flex items-center justify-between px-2">
-            {itinerary.items.slice(0, 5).map((item, idx) => (
-              <div key={item.sequenceNo || idx} className="flex flex-col items-center">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold shadow-xs ${
-                    item.itemKind === 'Rest'
-                      ? 'border-2 border-white bg-amber-500 text-white'
-                      : 'border-2 border-white bg-[#007d6e] text-white'
-                  }`}
-                  title={item.poiName || undefined}
-                >
-                  {item.sequenceNo}
+              return (
+                <div key={item.sequenceNo || idx} className="flex items-center gap-2">
+                  <div
+                    className="flex flex-col items-center"
+                    title={item.poiName ?? `Điểm dừng ${item.sequenceNo}`}
+                  >
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold shadow-xs ${
+                        isRest
+                          ? 'border-2 border-white bg-amber-500 text-white'
+                          : 'border-2 border-white bg-[#007d6e] text-white'
+                      }`}
+                    >
+                      {item.sequenceNo}
+                    </div>
+                    <span className="mt-1 max-w-[72px] truncate text-center text-[10px] font-medium text-slate-700">
+                      {item.poiName?.split(' ')[0] ?? `#${item.sequenceNo}`}...
+                    </span>
+                  </div>
+
+                  {!isLast && (
+                    <span
+                      className="material-symbols-outlined text-slate-300 text-base"
+                      aria-hidden="true"
+                    >
+                      arrow_forward
+                    </span>
+                  )}
                 </div>
-                <span className="mt-1 max-w-[64px] truncate text-center text-[10px] font-medium text-slate-700">
-                  {item.poiName?.split(' ')[0]}...
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
-            <span>Bán kính hoạt động: 10 km</span>
-            <span>Khoảng cách di chuyển được tối ưu tối đa</span>
+          {/* Truthful Map Status Note */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
+            <div className="flex items-center gap-1.5 font-medium text-slate-700">
+              <span className="material-symbols-outlined text-sm text-slate-400">
+                info
+              </span>
+              <span>Bản đồ hành trình trực quan</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Thông tin bản đồ và tuyến đường chi tiết đang chờ dữ liệu tích hợp từ hệ thống bản đồ (Pending Backend Integration).
+            </p>
           </div>
         </div>
       </div>

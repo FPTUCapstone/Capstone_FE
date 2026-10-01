@@ -211,3 +211,68 @@ export function getTodayDateString(now?: Date): string {
 export function getTomorrowDateString(now?: Date): string {
   return getVietnamTomorrowDateString(now);
 }
+
+export interface CachedItineraryEnvelope {
+  schemaVersion: 1;
+  ownerUserId: number | string;
+  itinerary: SchedulingResponseDto;
+}
+
+export function isValidSchedulingResponseDto(data: unknown): data is SchedulingResponseDto {
+  if (!data || typeof data !== 'object') return false;
+  const candidate = data as Partial<SchedulingResponseDto>;
+  if (
+    typeof candidate.schedulingRequestId !== 'number' ||
+    typeof candidate.itineraryId !== 'number' ||
+    typeof candidate.title !== 'string' ||
+    typeof candidate.status !== 'string' ||
+    typeof candidate.totalEstimatedCost !== 'number' ||
+    typeof candidate.totalDurationMinutes !== 'number' ||
+    !Array.isArray(candidate.items)
+  ) {
+    return false;
+  }
+  if (candidate.isDemoFixture !== undefined && typeof candidate.isDemoFixture !== 'boolean') {
+    return false;
+  }
+  for (const item of candidate.items) {
+    if (!item || typeof item !== 'object') return false;
+    const i = item as Partial<SchedulingItemDto>;
+    if (
+      typeof i.sequenceNo !== 'number' ||
+      (i.poiId !== undefined && i.poiId !== null && typeof i.poiId !== 'number') ||
+      (i.poiName !== undefined && i.poiName !== null && typeof i.poiName !== 'string') ||
+      (i.itemKind !== 'Visit' && i.itemKind !== 'Rest') ||
+      typeof i.plannedArrival !== 'string' ||
+      typeof i.plannedDeparture !== 'string' ||
+      typeof i.stayDurationMinutes !== 'number' ||
+      (i.travelDurationToNextMinutes !== undefined &&
+        i.travelDurationToNextMinutes !== null &&
+        typeof i.travelDurationToNextMinutes !== 'number') ||
+      (i.estimatedCost !== undefined && i.estimatedCost !== null && typeof i.estimatedCost !== 'number') ||
+      typeof i.isMandatory !== 'boolean' ||
+      (i.recommendationReason !== undefined &&
+        i.recommendationReason !== null &&
+        typeof i.recommendationReason !== 'string')
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function formatVietnamTime(isoString?: string): string {
+  if (!isoString) return '--:--';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '--:--';
+    return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: TRIPMATE_TIME_ZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(d);
+  } catch {
+    return '--:--';
+  }
+}
