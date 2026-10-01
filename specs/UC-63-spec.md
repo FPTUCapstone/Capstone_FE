@@ -63,7 +63,8 @@ Single-column responsive page under the Admin console layout:
 | Success | Summary + table; empty match renders locked MSG128 (`No data is available for the selected criteria.`) and keeps the filters (SRS 5.a1). |
 | `401` | Redirect to `/admin/login?returnUrl=%2Fadmin%2Fpayouts`. |
 | `403` | Locked MSG126 alert; no data rendered. |
-| `400` (invalid filters, incl. inverted period range → proposed MSG134) / `503` / network | Locked MSG127 alert with Retry; retry refetches without a full page reload (SRS 5.a2). |
+| `400` (invalid filters, incl. inverted period range → proposed MSG134) | Alert titled "The payout records could not be retrieved with the submitted filters" rendering the BE ProblemDetails message verbatim (e.g. `PeriodFrom is outside the supported range.`); no Retry — the user corrects the filters. Amended 2026-10-01: a user-input error is never presented as MSG127 (SRS 5.a2 reserves MSG127 for system/network failure). |
+| `503` / network | Locked MSG127 alert with Retry; retry refetches without a full page reload (SRS 5.a2). |
 
 ## Acceptance criteria
 

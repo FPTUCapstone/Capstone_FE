@@ -31,6 +31,12 @@ export function AdminNavigation() {
           >
             Audit Logs
           </Link>
+          <Link
+            href={ROUTES.admin.payouts}
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+          >
+            Payout Records
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2">

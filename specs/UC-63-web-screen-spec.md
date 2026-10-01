@@ -41,7 +41,9 @@
   locked content is the POI-coordinates message — recorded defect, D10) and sends no request
   (SRS 4.a1).
 - Forbidden shows locked MSG126: `You do not have permission to access this function.`
-- Unavailable (`400`/`503`/network) shows locked MSG127 with a Retry button:
+- A `400` from invalid filter values shows the BE ProblemDetails message verbatim in an error
+  alert (no Retry) — a user-input error must never be presented as MSG127. (Amended 2026-10-01.)
+- Unavailable (`503`/network) shows locked MSG127 with a Retry button:
   `TripMate is temporarily unable to process your request. Please check your connection and try
   again.` (SRS 5.a2)
 - A `401` redirects to `/admin/login?returnUrl=%2Fadmin%2Fpayouts`.
