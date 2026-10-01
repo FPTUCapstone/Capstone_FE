@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { isApiError } from '@/lib/authApi';
 import {
   getTravelerProfile,
+  LocalProfileStorageError,
   updateTravelerProfile,
   type TravelerProfileDto,
   type UpdateTravelerProfilePayload,
@@ -279,6 +280,10 @@ export function useTravelerProfile(options: UseTravelerProfileOptions = {}) {
             form: err.message || 'Không thể cập nhật hồ sơ lúc này. Vui lòng thử lại sau.',
           });
         }
+      } else if (err instanceof LocalProfileStorageError) {
+        setErrors({
+          form: err.message,
+        });
       } else {
         setErrors({
           form: 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.',

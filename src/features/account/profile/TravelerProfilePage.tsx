@@ -17,8 +17,12 @@ export function TravelerProfilePage() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.profile)}`);
+    } else if (status === 'authenticated' && context?.role === 'TourOperator') {
+      router.replace(ROUTES.partner.dashboard);
+    } else if (status === 'authenticated' && context?.role === 'Administrator') {
+      router.replace(ROUTES.admin.dashboard);
     }
-  }, [status, router]);
+  }, [status, context, router]);
 
   if (status === 'restoring') {
     return (
@@ -34,7 +38,7 @@ export function TravelerProfilePage() {
     );
   }
 
-  if (status === 'unauthenticated' || !context) {
+  if (status === 'unauthenticated' || !context || context.role !== 'Traveler') {
     return null;
   }
 

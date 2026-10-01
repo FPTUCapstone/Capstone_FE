@@ -4,10 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../travelerProfileApi';
 import { TravelerProfileForm } from '../TravelerProfileForm';
 
-vi.mock('../travelerProfileApi', () => ({
-  getTravelerProfile: vi.fn(),
-  updateTravelerProfile: vi.fn(),
-}));
+vi.mock('../travelerProfileApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../travelerProfileApi')>();
+  return {
+    ...actual,
+    getTravelerProfile: vi.fn(),
+    updateTravelerProfile: vi.fn(),
+  };
+});
 
 describe('TravelerProfileForm', () => {
   beforeEach(() => {
@@ -94,7 +98,6 @@ describe('TravelerProfileForm', () => {
       },
       storageMode: 'LOCAL_DRAFT',
       integrationStatus: 'PENDING_BE_INTEGRATION',
-      isSimulatedFallback: true,
     });
 
     render(<TravelerProfileForm />);
@@ -113,6 +116,34 @@ describe('TravelerProfileForm', () => {
       expect(screen.getByText('Thông tin tạm thời đã được lưu trên thiết bị này.')).toBeDefined();
       expect(screen.getByText(/Chờ tích hợp máy chủ/)).toBeDefined();
     });
+  });
+
+  it('renders explicit error and suppresses success banner when local storage fails', async () => {
+    vi.mocked(api.updateTravelerProfile).mockRejectedValue(
+      new api.LocalProfileStorageError(
+        'LOCAL_DRAFT_STORAGE_FAILED',
+        'Không thể lưu thông tin vào bộ nhớ thiết bị. Vui lòng kiểm tra dung lượng trình duyệt.',
+      ),
+    );
+
+    render(<TravelerProfileForm />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Đang tải thông tin hồ sơ…')).toBeNull();
+    });
+
+    const submitBtn = screen.getByRole('button', { name: 'Lưu thay đổi' });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Không thể lưu thông tin vào bộ nhớ thiết bị. Vui lòng kiểm tra dung lượng trình duyệt.'),
+      ).toBeDefined();
+    });
+
+    // Success banners MUST NOT be displayed
+    expect(screen.queryByText('Thông tin tạm thời đã được lưu trên thiết bị này.')).toBeNull();
+    expect(screen.queryByText(/Chờ tích hợp máy chủ/)).toBeNull();
   });
 
   it('calls onCancel when Hủy thay đổi button is clicked', async () => {
