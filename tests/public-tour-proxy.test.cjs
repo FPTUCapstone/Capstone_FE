@@ -154,3 +154,24 @@ test('passthrough 400, 404, 500 error status and body without modification', asy
     assert.deepEqual(body, errorBody);
   }
 });
+
+test('rejects path traversal segments . and .. with 400 ProblemDetails', async () => {
+  const { proxyTourRequest } = setup(async () => {
+    throw new Error('Should not reach upstream fetch');
+  });
+
+  for (const maliciousSegment of ['.', '..']) {
+    const response = await proxyTourRequest([maliciousSegment]);
+    assert.equal(response.status, 400);
+    assert.equal(response.headers.get('Content-Type'), 'application/problem+json');
+    const problem = await response.json();
+    assert.equal(problem.status, 400);
+    assert.equal(problem.errorCode, 'Tour.InvalidPath');
+    assert.equal(problem.title, 'Đường dẫn yêu cầu không hợp lệ.');
+  }
+
+  const multiResponse = await proxyTourRequest(['safe', '..', 'admin']);
+  assert.equal(multiResponse.status, 400);
+  const multiProblem = await multiResponse.json();
+  assert.equal(multiProblem.errorCode, 'Tour.InvalidPath');
+});

@@ -16,6 +16,12 @@ export async function proxyTourRequest(
   segments: string[],
   incomingQuery = new URLSearchParams(),
 ): Promise<Response> {
+  for (const segment of segments) {
+    if (segment === '.' || segment === '..') {
+      return problem(400, 'Đường dẫn yêu cầu không hợp lệ.', 'Tour.InvalidPath');
+    }
+  }
+
   const safePath = segments.map((segment) => encodeURIComponent(segment)).join('/');
   const query = sanitizeProxyQuery(incomingQuery);
   const queryString = query.size > 0 ? `?${query.toString()}` : '';

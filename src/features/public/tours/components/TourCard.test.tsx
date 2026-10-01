@@ -50,14 +50,81 @@ describe('TourCard component', () => {
     );
   });
 
-  it('displays "Hết chỗ" when remainingSlots is 0 or status is SoldOut', () => {
-    const soldOutTour: TourSearchItemDto = {
-      ...mockTour,
-      availabilityStatus: 'SoldOut',
-      remainingSlots: 0,
-    };
-    render(<TourCard tour={soldOutTour} />);
+  describe('availability presentation truthfulness (Blocker 1)', () => {
+    it('AVAIL-1: renders "Còn 8 chỗ" when availabilityStatus is available and remainingSlots is 8', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        availabilityStatus: 'available',
+        remainingSlots: 8,
+      };
+      render(<TourCard tour={tour} />);
+      expect(screen.getByText('Còn 8 chỗ')).toBeTruthy();
+    });
 
-    expect(screen.getByText('Hết chỗ')).toBeTruthy();
+    it('AVAIL-2: renders "Còn chỗ" when availabilityStatus is available and remainingSlots is null', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        availabilityStatus: 'available',
+        remainingSlots: null,
+      };
+      render(<TourCard tour={tour} />);
+      expect(screen.getByText('Còn chỗ')).toBeTruthy();
+    });
+
+    it('AVAIL-3: renders "Hết chỗ" and NOT "Còn chỗ" when availabilityStatus is soldOut', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        availabilityStatus: 'soldOut',
+        remainingSlots: 0,
+      };
+      render(<TourCard tour={tour} />);
+      expect(screen.getByText('Hết chỗ')).toBeTruthy();
+      expect(screen.queryByText(/Còn.*chỗ/)).toBeNull();
+    });
+
+    it('AVAIL-4: renders "Chưa có lịch khởi hành" and NOT "Còn chỗ" or "Hết chỗ" when availabilityStatus is noUpcomingSchedule', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        availabilityStatus: 'noUpcomingSchedule',
+        remainingSlots: null,
+      };
+      render(<TourCard tour={tour} />);
+      expect(screen.getByText('Chưa có lịch khởi hành')).toBeTruthy();
+      expect(screen.queryByText(/Còn.*chỗ/)).toBeNull();
+      expect(screen.queryByText('Hết chỗ')).toBeNull();
+    });
+
+    it('AVAIL-5: renders "Chưa xác định" and NOT "Còn chỗ" when availabilityStatus is unknown', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        availabilityStatus: 'unknown',
+        remainingSlots: null,
+      };
+      render(<TourCard tour={tour} />);
+      expect(screen.getByText('Chưa xác định')).toBeTruthy();
+      expect(screen.queryByText(/Còn.*chỗ/)).toBeNull();
+    });
+
+    it('AVAIL-6: renders safe neutral label "Chưa xác định" for unexpected status', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        availabilityStatus: 'future_cancelled_status_99',
+        remainingSlots: 10,
+      };
+      render(<TourCard tour={tour} />);
+      expect(screen.getByText('Chưa xác định')).toBeTruthy();
+      expect(screen.queryByText(/Còn.*chỗ/)).toBeNull();
+    });
+
+    it('defensively renders "Hết chỗ" if status is available but remainingSlots is 0', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        availabilityStatus: 'available',
+        remainingSlots: 0,
+      };
+      render(<TourCard tour={tour} />);
+      expect(screen.getByText('Hết chỗ')).toBeTruthy();
+      expect(screen.queryByText(/Còn.*chỗ/)).toBeNull();
+    });
   });
 });

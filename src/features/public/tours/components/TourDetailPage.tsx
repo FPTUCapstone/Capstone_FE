@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { getTourDetail } from '../services/tourApi';
+import { getTourDetail, isTourDemoAllowedInCurrentEnv } from '../services/tourApi';
 import type { TourDetailDto } from '../types/tour';
 import { TourDetailView } from './TourDetailView';
 
@@ -18,7 +18,7 @@ export function TourDetailPage({ id }: TourDetailPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status } = useWebSession();
-  const isDemo = searchParams.get('demo') === '1';
+  const isDemo = searchParams.get('demo') === '1' && isTourDemoAllowedInCurrentEnv();
 
   const [tour, setTour] = useState<TourDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,13 +123,15 @@ export function TourDetailPage({ id }: TourDetailPageProps) {
                 <span>Quay lại danh sách tour</span>
               </button>
 
-              <Link
-                href={`/tours/${id}?demo=1`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
-              >
-                <span className="material-symbols-outlined text-sm">visibility</span>
-                <span>Xem bản mô phỏng giao diện (Demo Mode)</span>
-              </Link>
+              {isTourDemoAllowedInCurrentEnv() && (
+                <Link
+                  href={`/tours/${encodeURIComponent(id)}?demo=1`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
+                >
+                  <span className="material-symbols-outlined text-sm">visibility</span>
+                  <span>Xem bản mô phỏng giao diện (Demo Mode)</span>
+                </Link>
+              )}
             </div>
           </div>
         ) : (

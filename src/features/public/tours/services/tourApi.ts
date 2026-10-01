@@ -127,18 +127,33 @@ export async function searchTours(
 }
 
 /**
+ * Production gate for tour demo fixtures.
+ * Strictly requires non-production environment AND explicit NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true'.
+ * Production environment ALWAYS wins (returns false).
+ */
+export function isTourDemoAllowedInCurrentEnv(): boolean {
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true'
+  );
+}
+
+/**
  * UC-25: Receive Tour Recommendations
  * Status: PENDING_BE_INTEGRATION
  *
  * Backend endpoint does not exist yet in Capstone_BE.
  * In production mode: returns empty array indicating pending integration.
- * In explicit demo opt-in mode (?demo=1 or allowDemo=true): returns DEMO_RECOMMENDED_TOURS.
+ * In explicit demo opt-in mode (non-production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + allowDemo=true):
+ * returns DEMO_RECOMMENDED_TOURS.
  */
 export async function getTourRecommendations(options?: {
   signal?: AbortSignal;
   allowDemo?: boolean;
 }): Promise<{ items: TourRecommendationDto[]; isPendingBe: boolean; isDemo: boolean }> {
-  if (options?.allowDemo) {
+  const demoAllowed = options?.allowDemo === true && isTourDemoAllowedInCurrentEnv();
+
+  if (demoAllowed) {
     return {
       items: DEMO_RECOMMENDED_TOURS,
       isPendingBe: false,
@@ -160,7 +175,8 @@ export async function getTourRecommendations(options?: {
  * Status: PENDING_BE_INTEGRATION
  *
  * Backend endpoint GET /api/v1/tours/{id} does not exist yet in Capstone_BE.
- * In explicit demo opt-in mode (?demo=1 or allowDemo=true): returns DEMO_TOUR_DETAIL_HOI_AN.
+ * In explicit demo opt-in mode (non-production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + allowDemo=true):
+ * returns DEMO_TOUR_DETAIL_HOI_AN.
  * In production mode: attempts to fetch via BFF. If not found or BE unavailable,
  * throws TourApiError so the UI renders the explicit pending/unavailable state.
  */
@@ -171,7 +187,9 @@ export async function getTourDetail(
     allowDemo?: boolean;
   },
 ): Promise<TourDetailDto> {
-  if (options?.allowDemo) {
+  const demoAllowed = options?.allowDemo === true && isTourDemoAllowedInCurrentEnv();
+
+  if (demoAllowed) {
     return {
       ...DEMO_TOUR_DETAIL_HOI_AN,
       tourId: id || DEMO_TOUR_DETAIL_HOI_AN.tourId,

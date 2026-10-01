@@ -4,7 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
-import { getTourRecommendations, searchTours } from '../services/tourApi';
+import {
+  getTourRecommendations,
+  isTourDemoAllowedInCurrentEnv,
+  searchTours,
+} from '../services/tourApi';
 import type {
   PagedToursResponseDto,
   TourRecommendationDto,
@@ -27,7 +31,7 @@ export function ExploreToursPage() {
   const searchParams = useSearchParams();
   const queryKey = searchParams.toString();
 
-  const isDemo = searchParams.get('demo') === '1';
+  const isDemo = searchParams.get('demo') === '1' && isTourDemoAllowedInCurrentEnv();
 
   const filters = useMemo(
     () => parseTourSearchState(new URLSearchParams(queryKey)),

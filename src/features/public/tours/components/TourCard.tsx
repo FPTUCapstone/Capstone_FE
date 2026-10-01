@@ -9,14 +9,72 @@ interface TourCardProps {
   searchContextQuery?: string;
 }
 
+export interface TourAvailabilityPresentation {
+  label: string;
+  badgeClass: string;
+  icon: string;
+}
+
+export function getTourAvailabilityPresentation(
+  status: string,
+  remainingSlots: number | null,
+): TourAvailabilityPresentation {
+  const normalized = (status || '').trim().toLowerCase();
+
+  if (normalized === 'available') {
+    if (remainingSlots === 0) {
+      return {
+        label: 'Hết chỗ',
+        badgeClass: 'bg-red-600/90 text-white',
+        icon: 'block',
+      };
+    }
+    if (remainingSlots !== null && remainingSlots > 0) {
+      return {
+        label: `Còn ${remainingSlots} chỗ`,
+        badgeClass: 'bg-teal-700/90 text-white',
+        icon: 'check_circle',
+      };
+    }
+    return {
+      label: 'Còn chỗ',
+      badgeClass: 'bg-teal-700/90 text-white',
+      icon: 'check_circle',
+    };
+  }
+
+  if (normalized === 'soldout') {
+    return {
+      label: 'Hết chỗ',
+      badgeClass: 'bg-red-600/90 text-white',
+      icon: 'block',
+    };
+  }
+
+  if (normalized === 'noupcomingschedule') {
+    return {
+      label: 'Chưa có lịch khởi hành',
+      badgeClass: 'bg-amber-600/90 text-white',
+      icon: 'event_busy',
+    };
+  }
+
+  return {
+    label: 'Chưa xác định',
+    badgeClass: 'bg-slate-600/90 text-white',
+    icon: 'help',
+  };
+}
+
 export function TourCard({ tour, searchContextQuery }: TourCardProps) {
   const detailHref = `/tours/${encodeURIComponent(tour.tourId)}${
     searchContextQuery ? `?${searchContextQuery}` : ''
   }`;
 
-  const isAvailable =
-    tour.availabilityStatus.toLowerCase() !== 'soldout' &&
-    (tour.remainingSlots === null || tour.remainingSlots > 0);
+  const availability = getTourAvailabilityPresentation(
+    tour.availabilityStatus,
+    tour.remainingSlots,
+  );
 
   return (
     <article
@@ -54,20 +112,12 @@ export function TourCard({ tour, searchContextQuery }: TourCardProps) {
         {/* Availability Badge */}
         <div className="absolute top-3 right-3">
           <span
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold shadow-xs backdrop-blur-xs ${
-              isAvailable ? 'bg-teal-700/90 text-white' : 'bg-red-600/90 text-white'
-            }`}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold shadow-xs backdrop-blur-xs ${availability.badgeClass}`}
           >
             <span className="material-symbols-outlined text-xs">
-              {isAvailable ? 'check_circle' : 'block'}
+              {availability.icon}
             </span>
-            <span>
-              {isAvailable
-                ? tour.remainingSlots !== null
-                  ? `Còn ${tour.remainingSlots} chỗ`
-                  : 'Còn chỗ'
-                : 'Hết chỗ'}
-            </span>
+            <span>{availability.label}</span>
           </span>
         </div>
       </div>

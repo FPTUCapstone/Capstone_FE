@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getTourDetail } from '../services/tourApi';
 import { DEMO_TOUR_DETAIL_HOI_AN } from '../data/tourDemoFixtures';
@@ -22,15 +22,37 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
   useWebSession: () => ({ status: 'unauthenticated', context: null }),
 }));
 
-vi.mock('../services/tourApi', () => ({
-  getTourDetail: vi.fn(),
-}));
+vi.mock('../services/tourApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/tourApi')>();
+  return {
+    ...actual,
+    getTourDetail: vi.fn(),
+  };
+});
+
+function setNodeEnv(val?: string) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = val;
+}
 
 describe('TourDetailPage', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+
   beforeEach(() => {
     push.mockClear();
     currentSearch = '';
     vi.mocked(getTourDetail).mockReset();
+    setNodeEnv('development');
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+  });
+
+  afterEach(() => {
+    setNodeEnv(originalNodeEnv);
+    if (originalDemoFlag === undefined) {
+      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    } else {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = originalDemoFlag;
+    }
   });
 
   it('renders pending BE integration state in production mode when BE endpoint does not exist', async () => {
@@ -103,5 +125,26 @@ describe('TourDetailPage', () => {
     // Sold out button should be disabled
     const soldOutScheduleBtn = screen.getByRole('button', { name: /Hết chỗ/i });
     expect(soldOutScheduleBtn.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('enforces demo gate lockdown in production: calling ?demo=1 passes allowDemo: false to service', async () => {
+    setNodeEnv('production');
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    currentSearch = 'demo=1';
+
+    vi.mocked(getTourDetail).mockRejectedValue(
+      new TourApiError('Pending BE', 501),
+    );
+
+    render(<TourDetailPage id="9007199254740995" />);
+
+    await waitFor(() => {
+      expect(getTourDetail).toHaveBeenCalledWith(
+        '9007199254740995',
+        expect.objectContaining({ allowDemo: false }),
+      );
+      expect(screen.getByText(/Chi Tiết Tour Đang Chờ Kết Nối Backend/i)).toBeTruthy();
+      expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeNull();
+    });
   });
 });

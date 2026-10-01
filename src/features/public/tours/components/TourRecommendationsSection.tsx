@@ -117,7 +117,7 @@ export function TourRecommendationsSection({
                   <div>
                     <h4 className="line-clamp-2 text-sm font-bold text-slate-900 mb-1">
                       <Link
-                        href={`/tours/${rec.tour.tourId}?demo=1`}
+                        href={`/tours/${encodeURIComponent(rec.tour.tourId)}?demo=1`}
                         className="hover:text-teal-700 transition"
                       >
                         {rec.tour.title}
@@ -144,7 +144,7 @@ export function TourRecommendationsSection({
                       {formatVndPrice(rec.tour.basePrice)}
                     </span>
                     <Link
-                      href={`/tours/${rec.tour.tourId}?demo=1`}
+                      href={`/tours/${encodeURIComponent(rec.tour.tourId)}?demo=1`}
                       className="rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-teal-700 hover:bg-teal-600 hover:text-white transition"
                     >
                       Xem chi tiết

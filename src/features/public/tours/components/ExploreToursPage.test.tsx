@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getTourRecommendations, searchTours } from '../services/tourApi';
 import { ExploreToursPage } from './ExploreToursPage';
@@ -18,10 +18,14 @@ vi.mock('@/components/navigation/PublicNavigation', () => ({
   PublicNavigation: () => <div data-testid="public-navigation" />,
 }));
 
-vi.mock('../services/tourApi', () => ({
-  searchTours: vi.fn(),
-  getTourRecommendations: vi.fn(),
-}));
+vi.mock('../services/tourApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/tourApi')>();
+  return {
+    ...actual,
+    searchTours: vi.fn(),
+    getTourRecommendations: vi.fn(),
+  };
+});
 
 const mockToursResponse: PagedToursResponseDto = {
   page: 1,
@@ -61,7 +65,14 @@ const mockToursResponse: PagedToursResponseDto = {
   ],
 };
 
+function setNodeEnv(val?: string) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = val;
+}
+
 describe('ExploreToursPage', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+
   beforeEach(() => {
     push.mockClear();
     currentSearch = '';
@@ -74,6 +85,15 @@ describe('ExploreToursPage', () => {
       isPendingBe: true,
       isDemo: false,
     });
+  });
+
+  afterEach(() => {
+    setNodeEnv(originalNodeEnv);
+    if (originalDemoFlag === undefined) {
+      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    } else {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = originalDemoFlag;
+    }
   });
 
   it('renders page layout, navigation, filters, and results', async () => {
@@ -163,25 +183,79 @@ describe('ExploreToursPage', () => {
     });
   });
 
-  it('displays explicit DEMO_ONLY banner and demo recommendations only when ?demo=1', async () => {
-    currentSearch = 'demo=1';
-    vi.mocked(getTourRecommendations).mockResolvedValue({
-      items: [
-        {
-          tour: mockToursResponse.items[0],
-          matchingScore: 92,
-          matchingReasons: ['Phù hợp với sở thích Văn hóa'],
-        },
-      ],
-      isPendingBe: false,
-      isDemo: true,
+  describe('demo fixture environment lockdown (Blocker 2)', () => {
+    it('DEMO-1: NODE_ENV=production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + ?demo=1 -> NO fixture', async () => {
+      setNodeEnv('production');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+      currentSearch = 'demo=1';
+
+      render(<ExploreToursPage />);
+
+      await waitFor(() => {
+        expect(getTourRecommendations).toHaveBeenCalledWith(
+          expect.objectContaining({ allowDemo: false }),
+        );
+        expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeNull();
+        expect(screen.getByText('PENDING_BE_INTEGRATION')).toBeTruthy();
+      });
     });
 
-    render(<ExploreToursPage />);
+    it('DEMO-2: NODE_ENV=development + flag missing + ?demo=1 -> NO fixture', async () => {
+      setNodeEnv('development');
+      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+      currentSearch = 'demo=1';
 
-    await waitFor(() => {
-      expect(screen.getByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeTruthy();
-      expect(screen.getByText(/Match 92%/)).toBeTruthy();
+      render(<ExploreToursPage />);
+
+      await waitFor(() => {
+        expect(getTourRecommendations).toHaveBeenCalledWith(
+          expect.objectContaining({ allowDemo: false }),
+        );
+        expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeNull();
+      });
+    });
+
+    it('DEMO-3: NODE_ENV=development + flag=false + ?demo=1 -> NO fixture', async () => {
+      setNodeEnv('development');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'false';
+      currentSearch = 'demo=1';
+
+      render(<ExploreToursPage />);
+
+      await waitFor(() => {
+        expect(getTourRecommendations).toHaveBeenCalledWith(
+          expect.objectContaining({ allowDemo: false }),
+        );
+        expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeNull();
+      });
+    });
+
+    it('DEMO-4: NODE_ENV=development + flag=true + ?demo=1 -> fixture allowed + visible DEMO ONLY state', async () => {
+      setNodeEnv('development');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+      currentSearch = 'demo=1';
+
+      vi.mocked(getTourRecommendations).mockResolvedValue({
+        items: [
+          {
+            tour: mockToursResponse.items[0],
+            matchingScore: 92,
+            matchingReasons: ['Phù hợp với sở thích Văn hóa'],
+          },
+        ],
+        isPendingBe: false,
+        isDemo: true,
+      });
+
+      render(<ExploreToursPage />);
+
+      await waitFor(() => {
+        expect(getTourRecommendations).toHaveBeenCalledWith(
+          expect.objectContaining({ allowDemo: true }),
+        );
+        expect(screen.getByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeTruthy();
+        expect(screen.getByText(/Match 92%/)).toBeTruthy();
+      });
     });
   });
 
