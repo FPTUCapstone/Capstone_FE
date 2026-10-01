@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { pendingChangePasswordCapability } from '@/features/account/security/changePasswordCapability';
 import { ChangePasswordForm } from '@/features/account/security/ChangePasswordForm';
 import { ROUTES } from '@/lib/routes';
 
@@ -21,15 +22,13 @@ export function AdminChangePasswordView() {
       </nav>
 
       <ChangePasswordForm
+        capability={pendingChangePasswordCapability}
         userDisplay={{
           name: 'Administrator',
           email: 'admin@tripmate.vn',
           role: 'Administrator',
         }}
         onCancel={() => router.push(ROUTES.admin.dashboard)}
-        onUnauthorized={() => {
-          router.replace(ROUTES.admin.login);
-        }}
       />
     </main>
   );

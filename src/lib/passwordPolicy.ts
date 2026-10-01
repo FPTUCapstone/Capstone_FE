@@ -8,23 +8,42 @@
 
 const PASSWORD_MAX_LENGTH = 72;
 
+export type PasswordPolicyIssue =
+  | 'required'
+  | 'whitespace'
+  | 'tooShort'
+  | 'tooLong'
+  | 'missingAllCharacterClasses'
+  | 'missingUpperNumberAndSpecial'
+  | 'missingUpperAndSpecial'
+  | 'missingSpecial'
+  | 'missingCharacterClasses';
+
+const PASSWORD_POLICY_MESSAGES: Record<PasswordPolicyIssue, string> = {
+  required: 'Please enter your password.',
+  whitespace: 'Password cannot contain whitespace.',
+  tooShort: 'Password must be at least 8 characters.',
+  tooLong: 'Password must not exceed 72 characters.',
+  missingAllCharacterClasses:
+    'Password must contain uppercase, lowercase, number, and special character.',
+  missingUpperNumberAndSpecial:
+    'Password must contain uppercase, number, and special character.',
+  missingUpperAndSpecial: 'Password must contain uppercase and special character.',
+  missingSpecial: 'Password must contain at least one special character.',
+  missingCharacterClasses:
+    'Password must contain uppercase, lowercase, number, and special character.',
+};
+
 /**
- * Validate one password against the canonical FE policy.
- * Returns the user-facing error message, or null when the password is valid.
+ * Return the stable policy issue without choosing a presentation language.
+ * All consumers share this one rule implementation; individual screens may
+ * translate the issue for their own locale.
  */
-export function validatePassword(password: string): string | null {
-  if (!password) {
-    return 'Please enter your password.';
-  }
-  if (/\s/u.test(password)) {
-    return 'Password cannot contain whitespace.';
-  }
-  if (password.length < 8) {
-    return 'Password must be at least 8 characters.';
-  }
-  if (password.length > PASSWORD_MAX_LENGTH) {
-    return 'Password must not exceed 72 characters.';
-  }
+export function getPasswordPolicyIssue(password: string): PasswordPolicyIssue | null {
+  if (!password) return 'required';
+  if (/\s/u.test(password)) return 'whitespace';
+  if (password.length < 8) return 'tooShort';
+  if (password.length > PASSWORD_MAX_LENGTH) return 'tooLong';
 
   const hasUpper = /[A-Z]/.test(password);
   const hasLower = /[a-z]/.test(password);
@@ -33,19 +52,28 @@ export function validatePassword(password: string): string | null {
 
   if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
     if (!hasUpper && !hasLower && !hasDigit && !hasSpecial) {
-      return 'Password must contain uppercase, lowercase, number, and special character.';
+      return 'missingAllCharacterClasses';
     }
     if (!hasUpper && !hasDigit && !hasSpecial) {
-      return 'Password must contain uppercase, number, and special character.';
+      return 'missingUpperNumberAndSpecial';
     }
     if (!hasUpper && !hasSpecial) {
-      return 'Password must contain uppercase and special character.';
+      return 'missingUpperAndSpecial';
     }
     if (!hasSpecial) {
-      return 'Password must contain at least one special character.';
+      return 'missingSpecial';
     }
-    return 'Password must contain uppercase, lowercase, number, and special character.';
+    return 'missingCharacterClasses';
   }
 
   return null;
+}
+
+/**
+ * Validate one password against the canonical FE policy.
+ * Returns the user-facing error message, or null when the password is valid.
+ */
+export function validatePassword(password: string): string | null {
+  const issue = getPasswordPolicyIssue(password);
+  return issue ? PASSWORD_POLICY_MESSAGES[issue] : null;
 }

@@ -1,30 +1,33 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import * as api from '../changePasswordApi';
+import type { AvailableChangePasswordCapability } from '../changePasswordCapability';
 import { ChangePasswordForm } from '../ChangePasswordForm';
 
-vi.mock('../changePasswordApi', () => ({
-  changePassword: vi.fn(),
-}));
+function availableCapability(
+  execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockResolvedValue(undefined),
+): AvailableChangePasswordCapability {
+  return { status: 'available', execute };
+}
+
+function fillValidForm() {
+  fireEvent.change(screen.getByLabelText('Mật khẩu hiện tại'), {
+    target: { value: 'CurrentPass123!' },
+  });
+  fireEvent.change(screen.getByLabelText('Mật khẩu mới'), {
+    target: { value: 'NewSecurePass456@' },
+  });
+  fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu mới'), {
+    target: { value: 'NewSecurePass456@' },
+  });
+}
 
 describe('ChangePasswordForm', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
-  it('renders the form with title, subtitle, and input fields', () => {
-    render(<ChangePasswordForm />);
-
-    expect(screen.getByRole('heading', { name: 'Đổi mật khẩu' })).toBeDefined();
-    expect(screen.getByText(/Nhập mật khẩu hiện tại và mật khẩu mới/)).toBeDefined();
-    expect(screen.getByLabelText('Mật khẩu hiện tại')).toBeDefined();
-    expect(screen.getByLabelText('Mật khẩu mới')).toBeDefined();
-    expect(screen.getByLabelText('Xác nhận mật khẩu mới')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Đổi mật khẩu' })).toBeDefined();
-  });
-
-  it('renders user display information and role badge when provided', () => {
+  it('renders the completed form and user identity', () => {
     render(
       <ChangePasswordForm
         userDisplay={{
@@ -35,102 +38,96 @@ describe('ChangePasswordForm', () => {
       />,
     );
 
+    expect(screen.getByRole('heading', { name: 'Đổi mật khẩu' })).toBeDefined();
     expect(screen.getByText('Nguyen Van A')).toBeDefined();
     expect(screen.getByText('vana@example.com')).toBeDefined();
     expect(screen.getByText('Traveler')).toBeDefined();
-    expect(screen.getByText('NA')).toBeDefined(); // Initials
+    expect(screen.getByLabelText('Mật khẩu hiện tại')).toBeDefined();
+    expect(screen.getByLabelText('Mật khẩu mới')).toBeDefined();
+    expect(screen.getByLabelText('Xác nhận mật khẩu mới')).toBeDefined();
   });
 
-  it('displays inline validation errors when submitted empty', async () => {
-    render(<ChangePasswordForm />);
+  it('shows the pending-backend notice, disables submission accessibly, and never calls fetch', () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const { container } = render(<ChangePasswordForm />);
+
+    expect(screen.getByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeDefined();
+    expect(screen.getByText('Bạn chưa thể cập nhật mật khẩu ở thời điểm hiện tại.')).toBeDefined();
+    expect(container.querySelector('[data-integration-status="PENDING_BE_INTEGRATION"]')).not.toBeNull();
+
+    const submitButton = screen.getByRole('button', {
+      name: 'Đổi mật khẩu',
+    }) as HTMLButtonElement;
+    expect(submitButton.disabled).toBe(true);
+    expect(submitButton.getAttribute('aria-describedby')).toBe(
+      'change-password-pending-description',
+    );
+
+    fireEvent.submit(container.querySelector('form')!);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Mật khẩu đã được cập nhật thành công/)).toBeNull();
+  });
+
+  it('keeps the action available only for an injected available capability', () => {
+    render(<ChangePasswordForm capability={availableCapability()} />);
+
+    expect(screen.queryByText(/đang chờ tích hợp máy chủ/)).toBeNull();
+    expect(
+      (screen.getByRole('button', { name: 'Đổi mật khẩu' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  it('presents Vietnamese validation without executing the capability', async () => {
+    const capability = availableCapability();
+    render(<ChangePasswordForm capability={capability} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+
+    expect(await screen.findByText('Vui lòng nhập mật khẩu hiện tại.')).toBeDefined();
+    expect(screen.getByText('Vui lòng nhập mật khẩu mới.')).toBeDefined();
+    expect(screen.getByText('Vui lòng xác nhận mật khẩu mới.')).toBeDefined();
+    expect(capability.execute).not.toHaveBeenCalled();
+  });
+
+  it('shows real success only after an injected capability resolves', async () => {
+    const capability = availableCapability();
+    render(<ChangePasswordForm capability={capability} />);
+    fillValidForm();
 
     fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Vui lòng nhập mật khẩu hiện tại.')).toBeDefined();
-      expect(screen.getByText('Vui lòng nhập mật khẩu mới.')).toBeDefined();
-      expect(screen.getByText('Vui lòng xác nhận mật khẩu mới.')).toBeDefined();
+      expect(capability.execute).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/Mật khẩu đã được cập nhật thành công/)).toBeDefined();
     });
   });
 
-  it('displays success feedback alert after successful submission (MSG18)', async () => {
-    vi.mocked(api.changePassword).mockResolvedValueOnce({
-      accessToken: 'mock-new-token',
-    });
-
-    render(<ChangePasswordForm />);
-
-    fireEvent.change(screen.getByLabelText('Mật khẩu hiện tại'), {
-      target: { value: 'CurrentPass123!' },
-    });
-    fireEvent.change(screen.getByLabelText('Mật khẩu mới'), {
-      target: { value: 'NewSecurePass456@' },
-    });
-    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu mới'), {
-      target: { value: 'NewSecurePass456@' },
-    });
+  it('shows a safe error when an injected capability rejects', async () => {
+    const capability = availableCapability(
+      vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(new Error('failed')),
+    );
+    render(<ChangePasswordForm capability={capability} />);
+    fillValidForm();
 
     fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
 
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Mật khẩu đã được cập nhật thành công/),
-      ).toBeDefined();
-    });
+    expect(await screen.findByText('Không thể đổi mật khẩu. Vui lòng thử lại.')).toBeDefined();
+    expect(screen.queryByText(/Mật khẩu đã được cập nhật thành công/)).toBeNull();
   });
 
-  it('displays form-level feedback alert when an API error occurs', async () => {
-    vi.mocked(api.changePassword).mockRejectedValueOnce({
-      code: 'MSG127',
-      status: 500,
-    });
-
-    render(<ChangePasswordForm />);
-
-    fireEvent.change(screen.getByLabelText('Mật khẩu hiện tại'), {
-      target: { value: 'CurrentPass123!' },
-    });
-    fireEvent.change(screen.getByLabelText('Mật khẩu mới'), {
-      target: { value: 'NewSecurePass456@' },
-    });
-    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu mới'), {
-      target: { value: 'NewSecurePass456@' },
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(
-          /TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại./,
-        ),
-      ).toBeDefined();
-    });
-  });
-
-  it('triggers onCancel callback when Cancel button is clicked', () => {
+  it('preserves cancel navigation and password visibility controls', () => {
     const onCancel = vi.fn();
     render(<ChangePasswordForm onCancel={onCancel} />);
 
-    const cancelButton = screen.getByRole('button', { name: 'Hủy' });
-    fireEvent.click(cancelButton);
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
 
-    expect(onCancel).toHaveBeenCalled();
-  });
-
-  it('toggles password visibility when the visibility button is clicked', () => {
-    render(<ChangePasswordForm />);
-
-    const currentPasswordInput = screen.getByLabelText(
-      'Mật khẩu hiện tại',
-    ) as HTMLInputElement;
+    const currentPasswordInput = screen.getByLabelText('Mật khẩu hiện tại') as HTMLInputElement;
     expect(currentPasswordInput.type).toBe('password');
-
-    const toggleButton = screen.getByRole('button', {
-      name: 'Show Mật khẩu hiện tại',
-    });
-    fireEvent.click(toggleButton);
-
+    fireEvent.click(screen.getByRole('button', { name: 'Show Mật khẩu hiện tại' }));
     expect(currentPasswordInput.type).toBe('text');
   });
 });
