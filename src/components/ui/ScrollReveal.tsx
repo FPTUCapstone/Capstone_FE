@@ -103,6 +103,7 @@ export function ScrollReveal({
   return (
     <Component
       ref={elementRef}
+      data-revealed={isRevealed}
       style={{
         transitionDuration: `${duration}ms`,
         transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',

@@ -485,23 +485,23 @@ export const COMPARISON_DATA: FeatureComparison[] = [
   {
     feature: 'Tự động tối ưu lịch trình 1 ngày (CSP Engine)',
     description: 'Tính toán giải bài toán thỏa mãn ràng buộc (thời gian mở/đóng cửa, sự kiện hoàng hôn, ngân sách).',
-    tripmate: 'Có (Thuật toán CSP tối ưu trong 3s)',
+    tripmate: 'Có (Thuật toán tối ưu đa ràng buộc CSP)',
     googleMaps: 'Không (Chỉ tìm đường theo thứ tự người dùng nhập)',
     tripAdvisor: 'Không (Chỉ bookmark lưu danh sách tĩnh)',
     klook: 'Không (Chỉ bán tour đóng gói cố định)',
   },
   {
-    feature: 'Cứu nguy thời tiết & FSM Rerouting tức thì',
-    description: 'Phát hiện mưa giông (>7mm/h) hoặc kẹt xe, tự động đề xuất đổi điểm tham quan trong nhà < 3km.',
-    tripmate: 'Có (FSM phản hồi sau 3 giây)',
+    feature: 'Cảnh báo thời tiết & Đề xuất điều chỉnh lộ trình',
+    description: 'Phát hiện mưa giông (>7mm/h) hoặc thời tiết xấu, tự động đề xuất điểm tham quan trong nhà để du khách duyệt.',
+    tripmate: 'Có (FSM phát hiện gián đoạn & đề xuất phương án)',
     googleMaps: 'Không (Chỉ cảnh báo tắc đường giao thông)',
-    tripAdvisor: 'Không (Không hỗ trợ khi đang đi)',
+    tripAdvisor: 'Không (Không hỗ trợ khi đang di chuyển)',
     klook: 'Không (Không hỗ trợ đổi điểm do thời tiết)',
   },
   {
     feature: 'Tích hợp sự kiện thiên văn (Bình minh/Hoàng hôn)',
     description: 'Thuật toán tự động sắp xếp điểm ngắm hoàng hôn khớp chính xác khung giờ vàng trong ngày.',
-    tripmate: 'Có (Tích hợp API thiên văn thực tế)',
+    tripmate: 'Có (Tích hợp tính toán thời điểm thiên văn)',
     googleMaps: 'Không hỗ trợ',
     tripAdvisor: 'Không hỗ trợ',
     klook: 'Không hỗ trợ',
@@ -509,15 +509,15 @@ export const COMPARISON_DATA: FeatureComparison[] = [
   {
     feature: 'Vé điện tử Dynamic QR Code chống giả mạo',
     description: 'Mã QR động tự làm mới định kỳ trên ứng dụng, quét check-in bằng mobile scanner của đối tác.',
-    tripmate: 'Có (Dynamic QR mã hóa)',
+    tripmate: 'Có (Dynamic QR mã hóa bảo mật)',
     googleMaps: 'Không có vé',
     tripAdvisor: 'Vé đối tác ngoài',
     klook: 'Mã QR tĩnh / PDF voucher',
   },
   {
-    feature: 'Thanh toán ký quỹ (Escrow) & Hoàn tiền bão lũ',
-    description: 'Bảo vệ nguồn tiền du khách, hoàn trả 100% tự động khi có thiên tai hoặc hủy tour khẩn cấp.',
-    tripmate: 'Có (Hợp đồng Escrow bảo vệ 2 chiều)',
+    feature: 'Thanh toán ký quỹ (Escrow) & Chính sách hủy do bão lũ',
+    description: 'Bảo vệ nguồn tiền du khách, hoàn trả tự động theo chính sách khi có thiên tai hoặc hủy tour khẩn cấp.',
+    tripmate: 'Có (Cơ chế ký quỹ Escrow bảo vệ 2 chiều)',
     googleMaps: 'Không áp dụng',
     tripAdvisor: 'Quy trình đối tác ngoài',
     klook: 'Xét duyệt thủ công 7 - 14 ngày',
@@ -527,22 +527,22 @@ export const COMPARISON_DATA: FeatureComparison[] = [
 export const FAQS = [
   {
     q: 'TripMate khác gì so với Google Maps hay TripAdvisor?',
-    a: 'Google Maps chỉ dẫn đường theo thứ tự bạn tự nhập, còn TripAdvisor chỉ là nơi đọc review. TripMate là nền tảng thông minh đầu tiên tại Việt Nam áp dụng thuật toán tối ưu ràng buộc (CSP) để tự động sắp xếp một ngày du lịch hoàn hảo dựa trên giờ mở cửa của các điểm, thời gian di chuyển thực tế và cả thời điểm mặt trời lặn, đồng thời cứu nguy đổi lịch trình tức thì khi gặp thời tiết xấu.',
+    a: 'Google Maps chỉ dẫn đường theo thứ tự bạn tự nhập, còn TripAdvisor chỉ là nơi đọc đánh giá. TripMate áp dụng thuật toán tối ưu ràng buộc (CSP) để tự động sắp xếp một ngày du lịch tối ưu dựa trên giờ mở cửa của các điểm đến, thời gian di chuyển thực tế và thời điểm mặt trời lặn, đồng thời chủ động phát hiện gián đoạn thời tiết để đề xuất phương án thay thế.',
   },
   {
     q: 'Thuật toán CSP giải quyết vấn đề gì cho chuyến đi?',
-    a: 'Trong thực tế, du khách thường tốn 4-8 giờ tra cứu để ghép lịch trình và dễ gặp sự cố: đến nơi thì bảo tàng đóng cửa, phải chạy ngược đường, hoặc bị dầm mưa lúc trưa chiều. Thuật toán CSP (Constraint Satisfaction Problem) của TripMate giải quyết đồng thời hàng chục biến số ràng buộc trong vài giây để đưa ra phương án khả thi và tiết kiệm sức nhất.',
+    a: 'Trong thực tế, du khách thường tốn nhiều giờ tra cứu để ghép lịch trình và dễ gặp sự cố: đến nơi thì bảo tàng đóng cửa, phải chạy ngược đường, hoặc bị dầm mưa lúc trưa chiều. Thuật toán CSP (Constraint Satisfaction Problem) của TripMate giải quyết đồng thời các biến số ràng buộc về thời gian, địa điểm và nhịp độ để đưa ra phương án khả thi và thoải mái nhất.',
   },
   {
     q: 'Tính năng cứu nguy thời tiết FSM hoạt động như thế nào?',
-    a: 'Khi du khách đang di chuyển, hệ thống FSM (Finite State Machine) liên tục giám sát tọa độ và trạm thời tiết. Nếu phát hiện mưa to (>7mm/h) hoặc giông lốc, hệ thống sẽ lập tức cảnh báo và tự động quét các điểm tham quan văn hóa / bảo tàng / café trong nhà trong bán kính dưới 3km để đề xuất điều chỉnh lộ trình chỉ trong 3 giây.',
+    a: 'Khi du khách đang di chuyển, hệ thống FSM (Finite State Machine) liên tục giám sát điều kiện thời tiết trên tuyến. Nếu phát hiện mưa to (>7mm/h) hoặc giông lốc có nguy cơ ảnh hưởng, hệ thống sẽ gửi cảnh báo và đề xuất các điểm tham quan văn hóa / bảo tàng / café trong nhà trong bán kính gần. Du khách toàn quyền xem xét và xác nhận có áp dụng phương án mới hay không trước khi cập nhật lịch trình.',
   },
   {
-    q: 'Chính sách hoàn tiền khi tour bị hủy do bão lũ thời tiết ra sao?',
-    a: 'Theo chính sách bảo vệ quyền lợi du khách của TripMate, khi xảy ra thiên tai hoặc bão lũ khiến Tour Operator phải tuyên bố hủy chuyến khẩn cấp, hệ thống TripMate sẽ tự động kích hoạt hoàn tiền 100% qua cơ chế tài khoản ký quỹ (Escrow) minh bạch mà du khách không cần phải làm đơn khiếu nại phức tạp.',
+    q: 'Chính sách bảo vệ khi tour bị hủy do bão lũ thời tiết ra sao?',
+    a: 'Theo chính sách bảo vệ quyền lợi du khách của TripMate, khi xảy ra thiên tai hoặc bão lũ khiến Tour Operator phải tuyên bố hủy chuyến khẩn cấp, hệ thống TripMate hỗ trợ kích hoạt quy trình hoàn tiền qua tài khoản ký quỹ (Escrow) minh bạch, bảo vệ quyền lợi của cả du khách lẫn đơn vị tổ chức.',
   },
   {
     q: 'Ứng dụng Web và Ứng dụng Mobile hỗ trợ khác nhau như thế nào?',
-    a: 'TripMate hoạt động đồng bộ trên 2 nền tảng: Phiên bản Web tối ưu cho việc nghiên cứu, lập kế hoạch chi tiết trên màn hình lớn và đặt dịch vụ; trong khi Ứng dụng Di động (hỗ trợ iOS & Android) là bạn đồng hành trên đường với tính năng Bản đồ ngoại tuyến (Offline), dẫn đường GPS, ví vé điện tử QR động và kết nối nhóm du lịch.',
+    a: 'TripMate hoạt động đồng bộ trên 2 nền tảng: Phiên bản Web tối ưu cho việc nghiên cứu, lập kế hoạch chi tiết trên màn hình lớn và đặt dịch vụ; trong khi Ứng dụng Di động là người bạn đồng hành hỗ trợ bản đồ ngoại tuyến, dẫn đường GPS, ví vé điện tử QR động và kết nối nhóm du lịch trên từng cung đường.',
   },
 ];
