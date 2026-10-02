@@ -10,6 +10,9 @@ export const ROUTES = {
   itinerary: (id: string | number) => `/itinerary/${id}`,
   tours: '/tours',
   tour: (id: string | number) => `/tours/${id}`,
+  tourBooking: (id: string | number) => `/tours/${id}/book`,
+  checkoutResult: '/checkout/result',
+  bookingTicket: (id: string | number) => `/bookings/${id}/ticket`,
   partner: {
     dashboard: '/partner',
     register: '/partner/register',
