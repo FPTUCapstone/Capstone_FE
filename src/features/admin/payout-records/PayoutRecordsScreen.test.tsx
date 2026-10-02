@@ -57,10 +57,9 @@ describe('PayoutRecordsScreen', () => {
     expect(screen.getByText('Not available')).toBeTruthy();
     expect(screen.getAllByText('Requested').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Confirmed').length).toBeGreaterThan(0);
-    const action = screen.getAllByRole('button', { name: /View Details for PO-/ })[0];
+    const action = screen.getAllByRole('link', { name: /View Details for PO-/ })[0];
     expect(action).toBeTruthy();
-    expect((action as HTMLButtonElement).disabled).toBe(true);
-    expect((action as HTMLButtonElement).title).toContain('UC-64');
+    expect(action.getAttribute('href')).toBe('/admin/payouts/12');
   });
 
   it('shows MSG128 and keeps the filters on an empty match', async () => {

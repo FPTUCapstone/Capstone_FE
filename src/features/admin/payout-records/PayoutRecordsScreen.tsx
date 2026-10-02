@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import Link from 'next/link';
+
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import {
@@ -139,9 +141,9 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
               <td className="px-4 py-3 whitespace-nowrap">{formatRequestedAt(payout.requestedAtUtc)}</td>
               <td className="px-4 py-3"><Badge alert={payout.status === 'Rejected'}>{payout.status}</Badge></td>
               <td className="px-4 py-3">
-                <button type="button" disabled title={PAYOUT_MESSAGES.viewDetailsDisabled} aria-label={`${PAYOUT_MESSAGES.viewDetails} for ${payout.payoutCode}`} className="rounded-lg border border-[#9fb3c8] px-3 py-1.5 text-xs font-bold text-[#64748b] disabled:cursor-not-allowed disabled:opacity-50">
+                <Link href={ROUTES.admin.payoutDetails(payout.payoutId)} aria-label={`${PAYOUT_MESSAGES.viewDetails} for ${payout.payoutCode}`} className="inline-block rounded-lg border border-[#9fb3c8] px-3 py-1.5 text-xs font-bold text-[#243b53] hover:border-[#006b5f] hover:text-[#006b5f]">
                   {PAYOUT_MESSAGES.viewDetails}
-                </button>
+                </Link>
               </td>
             </tr>)}</tbody>
           </table>
