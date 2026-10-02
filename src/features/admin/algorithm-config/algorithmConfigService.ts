@@ -1,7 +1,11 @@
 import { CONFIG_MESSAGES, isAlgorithmConfig, type AlgorithmConfig, type AlgorithmParameters } from './algorithmConfig';
 
 export class AlgorithmConfigError extends Error {
-  constructor(public readonly status: number, public readonly errorCode?: string) {
+  constructor(
+    public readonly status: number,
+    public readonly errorCode?: string,
+    public readonly serverMessage?: string,
+  ) {
     super(status === 400 || status === 422 ? CONFIG_MESSAGES.invalid : status === 403 ? CONFIG_MESSAGES.forbidden : CONFIG_MESSAGES.unavailable);
   }
 }
@@ -22,7 +26,8 @@ async function request(method: 'GET' | 'PUT', values?: AlgorithmParameters): Pro
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const code = body && typeof body === 'object' && 'errorCode' in body && typeof body.errorCode === 'string' ? body.errorCode : undefined;
-    throw new AlgorithmConfigError(response.status, code);
+    const serverMessage = body && typeof body === 'object' && 'title' in body && typeof body.title === 'string' ? body.title : undefined;
+    throw new AlgorithmConfigError(response.status, code, serverMessage);
   }
   if (!isAlgorithmConfig(body)) throw new AlgorithmConfigError(0);
   return body;
