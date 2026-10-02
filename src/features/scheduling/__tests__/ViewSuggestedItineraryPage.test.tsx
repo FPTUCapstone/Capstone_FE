@@ -266,6 +266,50 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
   });
 
   describe('TRUTH: truthful rendering & actions', () => {
+    it('renders owner-only mutation controls and never exposes them to read-only members', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
+
+      const { rerender } = render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /Chấp nhận lịch trình/i })).toBeDefined());
+      expect(screen.getByRole('button', { name: /Tạo lại lịch trình/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Chỉnh sửa thứ tự/i })).toBeDefined();
+
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({ ...mockItinerary, canManage: false });
+      rerender(<ViewSuggestedItineraryPage itineraryId="790" />);
+
+      await waitFor(() => expect(screen.getByText('Chỉ xem')).toBeDefined());
+      expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Tạo lại lịch trình/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Chỉnh sửa thứ tự/i })).toBeNull();
+    });
+
+    it('updates the visible itinerary after the owner accepts it', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
+      const acceptSpy = vi
+        .spyOn(schedulingApi, 'acceptItinerary')
+        .mockResolvedValueOnce({ ...mockItinerary, status: 'Accepted' });
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /Chấp nhận lịch trình/i })).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: /Chấp nhận lịch trình/i }));
+
+      await waitFor(() => expect(acceptSpy).toHaveBeenCalledWith(789));
+      expect(screen.getByText('Accepted')).toBeDefined();
+    });
+
+    it('does not offer accept again for an already accepted itinerary', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
+        ...mockItinerary,
+        status: 'Accepted',
+      });
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => expect(screen.getByText('Accepted')).toBeDefined());
+      expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
+    });
     it('TRUTH-1: does NOT render misleading "Chia sẻ" / Copy Link button', async () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
 

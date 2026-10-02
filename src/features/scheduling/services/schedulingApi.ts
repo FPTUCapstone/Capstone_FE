@@ -554,3 +554,105 @@ export async function getItineraryById(
     'server.error',
   );
 }
+
+type ItineraryMutationOptions = {
+  accessToken?: string;
+  idempotencyKey?: string;
+};
+
+async function mutateItinerary(
+  itineraryId: number,
+  path: string,
+  method: 'POST' | 'PUT',
+  options?: ItineraryMutationOptions,
+  body?: unknown,
+): Promise<ItineraryDetailDto> {
+  if (!isValidItineraryId(itineraryId)) {
+    throw new ItineraryHttpError(404, 'Không tìm thấy lịch trình.', 'itinerary.invalid_id');
+  }
+
+  const context = AuthStorage.getContext();
+  const token = options?.accessToken ?? context?.accessToken;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (options?.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey;
+
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBase()}/itineraries/${itineraryId}${path}`, {
+      method,
+      credentials: 'include',
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new ItineraryHttpError(
+      503,
+      'Không thể kết nối đến máy chủ TripMate. Vui lòng thử lại sau.',
+      'network.unavailable',
+    );
+  }
+
+  if (response.status >= 200 && response.status < 300) {
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new ItineraryHttpError(502, 'Dữ liệu phản hồi từ máy chủ không hợp lệ.', 'server.malformed_response');
+    }
+    if (!isValidItineraryDetailDto(data)) {
+      throw new ItineraryHttpError(502, 'Cấu trúc dữ liệu lịch trình không khớp hợp đồng TripMate.', 'server.invalid_contract');
+    }
+    return data;
+  }
+
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = (await response.json()) as Record<string, unknown>;
+  } catch {
+    // Preserve a safe generic message for non-JSON failures.
+  }
+  const detail = typeof payload.detail === 'string' ? payload.detail : undefined;
+  const code = typeof payload.errorCode === 'string'
+    ? payload.errorCode
+    : typeof payload.code === 'string'
+      ? payload.code
+      : 'itinerary.mutation_failed';
+  throw new ItineraryHttpError(
+    response.status,
+    detail ?? 'Không thể cập nhật lịch trình. Vui lòng thử lại sau.',
+    code,
+  );
+}
+
+export function acceptItinerary(
+  itineraryId: number,
+  options?: Pick<ItineraryMutationOptions, 'accessToken'>,
+): Promise<ItineraryDetailDto> {
+  return mutateItinerary(itineraryId, '/accept', 'POST', options);
+}
+
+export function regenerateItinerary(
+  itineraryId: number,
+  options?: ItineraryMutationOptions,
+): Promise<ItineraryDetailDto> {
+  return mutateItinerary(itineraryId, '/regenerate', 'POST', {
+    ...options,
+    idempotencyKey: options?.idempotencyKey ?? generateIdempotencyKey(),
+  });
+}
+
+export function adjustItineraryItems(
+  itineraryId: number,
+  orderedVisitPoiIds: number[],
+  options?: ItineraryMutationOptions,
+): Promise<ItineraryDetailDto> {
+  return mutateItinerary(
+    itineraryId,
+    '/items',
+    'PUT',
+    { ...options, idempotencyKey: options?.idempotencyKey ?? generateIdempotencyKey() },
+    { orderedVisitPoiIds },
+  );
+}

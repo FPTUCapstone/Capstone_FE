@@ -3,6 +3,9 @@ import {
   generateIdempotencyKey,
   generateDemoItineraryFixture,
   createSchedulingRequest,
+  acceptItinerary,
+  regenerateItinerary,
+  adjustItineraryItems,
   getItineraryById,
   isDemoAllowedInCurrentEnv,
 } from '../services/schedulingApi';
@@ -535,6 +538,59 @@ describe('UC-10 Scheduling API Service', () => {
 
         expect(fetchSpy).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('UC-11 itinerary mutations', () => {
+    const mutationResponse: ItineraryDetailDto = {
+      itineraryId: 790,
+      schedulingRequestId: 55,
+      title: 'Lịch trình phiên bản mới',
+      version: 2,
+      status: 'OptimalGenerated',
+      validFrom: null,
+      validTo: null,
+      canManage: true,
+      totalEstimatedCost: 0,
+      totalDurationMinutes: 120,
+      items: [],
+    };
+
+    it('accepts an itinerary with the traveler bearer token', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({ status: 200, json: async () => mutationResponse });
+
+      await expect(acceptItinerary(789, { accessToken: 'traveler-token' })).resolves.toEqual(mutationResponse);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/itineraries/789/accept'),
+        expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer traveler-token' }) }),
+      );
+    });
+
+    it('regenerates with a new idempotency key and returns the successor version', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({ status: 200, json: async () => mutationResponse });
+
+      const result = await regenerateItinerary(789, { accessToken: 'traveler-token', idempotencyKey: 'operation-key' });
+
+      expect(result.itineraryId).toBe(790);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/itineraries/789/regenerate'),
+        expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ 'Idempotency-Key': 'operation-key' }) }),
+      );
+    });
+
+    it('adjusts only the requested visit POI order with an idempotency key', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({ status: 200, json: async () => mutationResponse });
+
+      await adjustItineraryItems(789, [102, 101], { accessToken: 'traveler-token', idempotencyKey: 'operation-key' });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/itineraries/789/items'),
+        expect.objectContaining({
+          method: 'PUT',
+          headers: expect.objectContaining({ 'Idempotency-Key': 'operation-key' }),
+          body: JSON.stringify({ orderedVisitPoiIds: [102, 101] }),
+        }),
+      );
     });
   });
 });
