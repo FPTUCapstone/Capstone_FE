@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { TourOperatorApplicationDetailDto } from '@/types/tour-operator-application';
 
 interface CompanyInfoCardProps {
@@ -7,6 +8,9 @@ interface CompanyInfoCardProps {
 }
 
 export function CompanyInfoCard({ detail }: CompanyInfoCardProps) {
+  const [isReasonExpanded, setIsReasonExpanded] = useState(false);
+  const hasLongRejectionReason = (detail.rejectionReason?.length ?? 0) > 240;
+
   return (
     <div className="mb-6 rounded-2xl border-2 border-slate-300 bg-white p-6 shadow-sm">
       <h2 className="mb-5 flex items-center justify-between border-b-2 border-slate-100 pb-3.5 text-lg font-extrabold text-slate-900">
@@ -90,11 +94,29 @@ export function CompanyInfoCard({ detail }: CompanyInfoCardProps) {
         )}
 
         {detail.rejectionReason && (
-          <div className="mt-2 rounded-xl border-2 border-rose-300 bg-rose-50 p-4 md:col-span-3 shadow-xs">
+          <div className="mt-2 min-w-0 overflow-hidden rounded-xl border-2 border-rose-300 bg-rose-50 p-4 shadow-xs md:col-span-3">
             <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-rose-800">
               Rejection Reason
             </span>
-            <p className="text-sm font-semibold text-rose-950">{detail.rejectionReason}</p>
+            <p
+              id="rejection-reason-content"
+              className={`whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-rose-950 [overflow-wrap:anywhere] ${
+                hasLongRejectionReason && !isReasonExpanded ? 'line-clamp-4' : ''
+              }`}
+            >
+              {detail.rejectionReason}
+            </p>
+            {hasLongRejectionReason && (
+              <button
+                type="button"
+                aria-controls="rejection-reason-content"
+                aria-expanded={isReasonExpanded}
+                onClick={() => setIsReasonExpanded((expanded) => !expanded)}
+                className="mt-2 rounded-md px-1 py-1 text-xs font-bold text-rose-800 underline decoration-rose-300 underline-offset-4 hover:text-rose-950 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              >
+                {isReasonExpanded ? 'Show less' : 'Show full reason'}
+              </button>
+            )}
           </div>
         )}
       </div>
