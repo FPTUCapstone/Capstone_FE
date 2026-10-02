@@ -613,6 +613,31 @@ body {
     stroke-dashoffset: 0 !important;
     animation: none !important;
   }
+  .animate-ping,
+  .animate-pulse,
+  .animate-pulse-glow,
+  .animate-pulse-subtle,
+  .pulse-marker,
+  .pulse-coral {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-spin {
+    animation: none !important;
+    transform: none !important;
+  }
+  .animate-in,
+  .fade-in,
+  .zoom-in-95,
+  .zoom-in-75,
+  .slide-in-from-top-1,
+  .animate-fade-in,
+  .animate-scale-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
   .animate-ambient-float,
   .animate-float-gentle,
   .animate-float-1,
@@ -623,13 +648,12 @@ body {
   .hero-float-3,
   .animate-float,
   .animate-waypoint-beacon,
-  .animate-pulse-glow,
-  .animate-radar,
-  .animate-pulse-subtle {
+  .animate-radar {
     animation: none !important;
     transform: none !important;
   }
-  .tilt-card:hover {
+  .tilt-card:hover,
+  .card-hover-lift:hover {
     transform: none !important;
   }
   .btn-press:active {

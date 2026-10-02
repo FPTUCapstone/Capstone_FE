@@ -36,7 +36,11 @@ export function ScrollReveal({
 
   useEffect(() => {
     // Graceful fallback for reduced motion preference
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
       queueMicrotask(() => {
         setIsRevealed(true);
       });
@@ -45,6 +49,14 @@ export function ScrollReveal({
 
     const element = elementRef.current;
     if (!element) return;
+
+    // Fallback if IntersectionObserver is not available
+    if (typeof IntersectionObserver === 'undefined') {
+      queueMicrotask(() => {
+        setIsRevealed(true);
+      });
+      return;
+    }
 
     // Check if element is already in viewport on mount (e.g. Hero section above the fold)
     const rect = element.getBoundingClientRect();
@@ -55,17 +67,17 @@ export function ScrollReveal({
       return () => clearTimeout(timer);
     }
 
+    let observerTimer: NodeJS.Timeout | undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          const timer = setTimeout(() => {
+          observerTimer = setTimeout(() => {
             setIsRevealed(true);
           }, delay);
 
           if (triggerOnce) {
             observer.unobserve(entry.target);
           }
-          return () => clearTimeout(timer);
         } else if (!triggerOnce) {
           setIsRevealed(false);
         }
@@ -78,6 +90,9 @@ export function ScrollReveal({
 
     observer.observe(element);
     return () => {
+      if (observerTimer) {
+        clearTimeout(observerTimer);
+      }
       observer.disconnect();
     };
   }, [delay, threshold, triggerOnce]);
