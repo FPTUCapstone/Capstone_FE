@@ -1,14 +1,36 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { signInDestination } from '@/features/auth/routing/signInDestination';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
-export function PublicNavigation() {
+interface PublicNavigationProps {
+  isLanding?: boolean;
+}
+
+export function PublicNavigation({ isLanding = false }: PublicNavigationProps = {}) {
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!isLanding) return;
+    function handleScroll() {
+      const scrollY = window.scrollY;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      setIsScrolled(scrollY > 24);
+      if (maxScroll > 0) {
+        setScrollProgress(Math.min(1, Math.max(0, scrollY / maxScroll)));
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isLanding]);
+
   // An empty in-memory context is NOT considered Guest until the
   // cookie-backed session restore has completed.
   //
@@ -45,7 +67,22 @@ export function PublicNavigation() {
       : ROUTES.partner.register;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-xs backdrop-blur-md md:px-8">
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 md:px-8 px-4 py-3 ${
+        isLanding && isScrolled
+          ? 'border-b border-slate-200/80 bg-white/90 backdrop-blur-md shadow-xs'
+          : 'border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-xs'
+      }`}
+    >
+      {/* Landing Scroll Progress Indicator */}
+      {isLanding && (
+        <div
+          className="absolute bottom-0 left-0 h-[2.5px] bg-[#007d6e] transition-transform duration-75 origin-left"
+          style={{ transform: `scaleX(${scrollProgress})`, width: '100%' }}
+          aria-hidden="true"
+        />
+      )}
+
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <Link
           href={ROUTES.home}
@@ -65,12 +102,12 @@ export function PublicNavigation() {
             Khám phá
           </Link>
 
-          <a
-            href="#destinations"
+          <Link
+            href="/#destinations"
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
             Điểm đến
-          </a>
+          </Link>
 
           <Link
             href={ROUTES.plan}
@@ -79,12 +116,12 @@ export function PublicNavigation() {
             Lịch trình Tối ưu
           </Link>
 
-          <a
-            href="#weather-rerouting"
+          <Link
+            href="/#weather-rerouting"
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
             Cứu nguy Thời tiết
-          </a>
+          </Link>
 
           <Link
             href={ROUTES.tours}

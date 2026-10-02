@@ -1,8 +1,12 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/lib/routes';
 import { VERIFIED_TOURS, VerifiedTour } from '@/data/landingData';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { LandingEyebrow } from './LandingEyebrow';
 
 export function FeaturedToursSection() {
   const [filterCity, setFilterCity] = useState<'all' | 'Đà Nẵng' | 'Hội An' | 'Huế'>('all');
@@ -43,70 +47,78 @@ export function FeaturedToursSection() {
   return (
     <section id="tours" className="scroll-mt-20 py-16 sm:py-24 bg-[#f4f7fc] px-4 sm:px-8 border-b border-slate-200">
       <div className="mx-auto max-w-7xl">
-        
         {/* Section Header */}
         <ScrollReveal animation="fade-up">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-widest text-[#007d6e] mb-3">
-                <span className="material-symbols-outlined text-base">verified</span>
-                <span>Sàn Giao Dịch Tour Bản Địa Được Bảo Chứng</span>
-              </div>
+              <LandingEyebrow icon="verified" className="mb-3">
+                Tour bản địa được bảo chứng
+              </LandingEyebrow>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#00152a] tracking-tight">
                 Tour Trải Nghiệm Bản Địa <span className="text-[#007d6e]">Đã Kiểm Duyệt</span>
               </h2>
-              <p className="mt-3 text-slate-500 text-sm sm:text-base max-w-2xl leading-relaxed">
+              <p className="mt-3 text-slate-500 text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
                 Trực tiếp từ các nhà tổ chức tour (Tour Operators) uy tín tại Miền Trung. 
-                Tích hợp vé điện tử Dynamic QR, thanh toán ký quỹ an toàn và gợi ý tour tương thích trên 80%.
+                Tích hợp vé điện tử Dynamic QR và thanh toán ký quỹ Escrow minh bạch.
               </p>
             </div>
 
-            {/* Filter Pills */}
+            {/* Filter Pills & View All Link */}
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setFilterCity('all')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  filterCity === 'all'
-                    ? 'bg-[#00152a] text-white shadow-sm'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                }`}
+              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-white rounded-2xl border border-slate-200 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setFilterCity('all')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer btn-press ${
+                    filterCity === 'all'
+                      ? 'bg-[#00152a] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tất cả ({VERIFIED_TOURS.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterCity('Đà Nẵng')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer btn-press ${
+                    filterCity === 'Đà Nẵng'
+                      ? 'bg-[#007d6e] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Đà Nẵng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterCity('Hội An')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer btn-press ${
+                    filterCity === 'Hội An'
+                      ? 'bg-[#d97706] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Hội An
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterCity('Huế')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer btn-press ${
+                    filterCity === 'Huế'
+                      ? 'bg-[#7c3aed] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Cố Đô Huế
+                </button>
+              </div>
+
+              <Link
+                href={ROUTES.tours}
+                className="inline-flex items-center gap-1 px-4 py-2 text-xs font-bold text-[#007d6e] hover:text-teal-800 transition"
               >
-                Tất cả ({VERIFIED_TOURS.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterCity('Đà Nẵng')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  filterCity === 'Đà Nẵng'
-                    ? 'bg-[#007d6e] text-white shadow-sm'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                Đà Nẵng
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterCity('Hội An')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  filterCity === 'Hội An'
-                    ? 'bg-[#d97706] text-white shadow-sm'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                Hội An
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterCity('Huế')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  filterCity === 'Huế'
-                    ? 'bg-[#7c3aed] text-white shadow-sm'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                Cố Đô Huế
-              </button>
+                <span>Xem tất cả tour</span>
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </Link>
             </div>
           </div>
         </ScrollReveal>
@@ -120,22 +132,22 @@ export function FeaturedToursSection() {
               delay={idx * 120}
               duration={700}
             >
-              <div
-                className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-teal-300 card-hover-lift transition-all duration-300 flex flex-col group h-full"
-              >
+              <div className="tilt-card bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-teal-300 card-hover-lift transition-all duration-300 flex flex-col group h-full">
                 {/* Tour Hero Image */}
                 <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
                   <img
                     src={tour.image}
                     alt={tour.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
                   />
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/95 text-slate-900 backdrop-blur-md shadow-xs">
                     {tour.tag}
                   </span>
-                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-teal-600 text-white backdrop-blur-md shadow-xs flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">auto_awesome</span>
-                    <span>Match {tour.aiMatchScore}%</span>
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#00152a]/80 text-teal-300 backdrop-blur-md shadow-xs flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs text-teal-300">verified</span>
+                    <span>Đã kiểm duyệt</span>
                   </span>
                 </div>
 
@@ -186,7 +198,7 @@ export function FeaturedToursSection() {
                     <button
                       type="button"
                       onClick={() => handleOpenTour(tour)}
-                      className="px-3.5 py-2 rounded-xl bg-[#00152a] hover:bg-[#007d6e] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                      className="px-3.5 py-2 rounded-xl bg-[#00152a] hover:bg-[#007d6e] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 btn-press"
                     >
                       Xem chi tiết
                     </button>
@@ -202,16 +214,20 @@ export function FeaturedToursSection() {
       {selectedTour && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-            
             {!ticketIssued ? (
               <>
                 {/* Modal Header Image */}
                 <div className="relative aspect-video overflow-hidden rounded-t-3xl bg-slate-100">
-                  <img src={selectedTour.image} alt={selectedTour.title} className="w-full h-full object-cover" />
+                  <img
+                    src={selectedTour.image}
+                    alt={selectedTour.title}
+                    className="w-full h-full object-cover"
+                  />
                   <button
                     type="button"
                     onClick={handleCloseModal}
                     className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center transition cursor-pointer"
+                    aria-label="Đóng cửa sổ"
                   >
                     <span className="material-symbols-outlined text-lg">close</span>
                   </button>
@@ -219,13 +235,14 @@ export function FeaturedToursSection() {
                     <span className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase bg-teal-600 text-white shadow-xs">
                       {selectedTour.operatorBadge}
                     </span>
-                    <h3 className="text-lg font-black mt-2 leading-tight drop-shadow-md">{selectedTour.title}</h3>
+                    <h3 className="text-lg font-black mt-2 leading-tight drop-shadow-md">
+                      {selectedTour.title}
+                    </h3>
                   </div>
                 </div>
 
                 {/* Modal Body */}
                 <div className="p-6 flex flex-col gap-5">
-                  
                   {/* Meta stats */}
                   <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
                     <div>
@@ -238,16 +255,23 @@ export function FeaturedToursSection() {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">Đánh giá:</span>
-                      <strong className="text-amber-600 font-bold">★ {selectedTour.rating} ({selectedTour.reviewCount})</strong>
+                      <strong className="text-amber-600 font-bold">
+                        ★ {selectedTour.rating} ({selectedTour.reviewCount})
+                      </strong>
                     </div>
                   </div>
 
                   {/* Highlights */}
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Trải nghiệm bao gồm:</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Trải nghiệm bao gồm:
+                    </h4>
                     <div className="grid grid-cols-2 gap-2 text-xs text-slate-700">
                       {selectedTour.highlights.map((h) => (
-                        <div key={h} className="flex items-center gap-1.5 p-2 rounded-xl bg-teal-50/60 border border-teal-100 font-medium">
+                        <div
+                          key={h}
+                          className="flex items-center gap-1.5 p-2 rounded-xl bg-teal-50/60 border border-teal-100 font-medium"
+                        >
                           <span className="material-symbols-outlined text-sm text-[#007d6e]">check_circle</span>
                           <span>{h}</span>
                         </div>
@@ -261,7 +285,9 @@ export function FeaturedToursSection() {
                       <span className="material-symbols-outlined text-3xl text-teal-300">qr_code_2</span>
                       <div>
                         <p className="text-xs font-bold text-white">Dynamic QR E-Ticket &amp; Escrow</p>
-                        <p className="text-[11px] text-slate-300">Mã hóa chống vé giả • Hoàn 100% nếu hủy do bão lũ thời tiết</p>
+                        <p className="text-[11px] text-slate-300">
+                          Mã hóa chống vé giả • Hoàn 100% nếu hủy do bão lũ thời tiết
+                        </p>
                       </div>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-1 rounded bg-teal-400/20 text-teal-300 border border-teal-400/30 shrink-0">
@@ -287,14 +313,13 @@ export function FeaturedToursSection() {
                       <button
                         type="button"
                         onClick={handleConfirmBooking}
-                        className="px-6 py-2.5 rounded-xl bg-[#007d6e] hover:bg-[#006b5f] text-white text-xs font-bold transition shadow-md shadow-teal-700/25 cursor-pointer flex items-center gap-2"
+                        className="px-6 py-2.5 rounded-xl bg-[#007d6e] hover:bg-[#006b5f] text-white text-xs font-bold transition shadow-md shadow-teal-700/25 cursor-pointer flex items-center gap-2 btn-press"
                       >
                         <span>Xác nhận Đặt tour &amp; Cấp vé QR</span>
                         <span className="material-symbols-outlined text-sm">confirmation_number</span>
                       </button>
                     </div>
                   </div>
-
                 </div>
               </>
             ) : (
@@ -312,6 +337,7 @@ export function FeaturedToursSection() {
                     type="button"
                     onClick={handleCloseModal}
                     className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+                    aria-label="Đóng cửa sổ"
                   >
                     <span className="material-symbols-outlined text-base">close</span>
                   </button>
@@ -334,7 +360,9 @@ export function FeaturedToursSection() {
 
                   <div className="w-full text-center">
                     <h4 className="font-black text-sm text-slate-900 line-clamp-1">{selectedTour.title}</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">{selectedTour.operator} • {selectedTour.duration}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {selectedTour.operator} • {selectedTour.duration}
+                    </p>
                   </div>
 
                   {/* QR Code Graphics Simulation */}
@@ -343,7 +371,7 @@ export function FeaturedToursSection() {
                       {/* Corner markers */}
                       <rect x="5" y="5" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" rx="4" />
                       <rect x="12" y="12" width="11" height="11" />
-                      
+
                       <rect x="70" y="5" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" rx="4" />
                       <rect x="77" y="12" width="11" height="11" />
 
@@ -397,7 +425,7 @@ export function FeaturedToursSection() {
                     <button
                       type="button"
                       onClick={handleCloseModal}
-                      className="px-5 py-2.5 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-black transition cursor-pointer"
+                      className="px-5 py-2.5 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-black transition cursor-pointer btn-press"
                     >
                       Hoàn tất &amp; Đóng
                     </button>
@@ -405,7 +433,6 @@ export function FeaturedToursSection() {
                 </div>
               </div>
             )}
-
           </div>
         </div>
       )}
