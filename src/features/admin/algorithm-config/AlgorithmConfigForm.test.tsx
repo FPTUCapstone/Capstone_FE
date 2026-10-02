@@ -76,6 +76,22 @@ describe('AlgorithmConfigForm', () => {
     expect((speed as HTMLInputElement).value).toBe('30');
   });
 
+  it('states configuration-only scope: no claim that services consume the values yet', async () => {
+    render(<AlgorithmConfigForm />);
+    const description = await screen.findByText(/Store the four approved algorithm configuration values/);
+    expect(description.textContent).toContain('do not consume these values yet');
+    expect(description.textContent).not.toContain('used by scheduling');
+  });
+
+  it('surfaces the server not-initialized message when the managed rows are missing', async () => {
+    vi.mocked(service.getAlgorithmParameters).mockRejectedValue(new service.AlgorithmConfigError(
+      503, 'admin.algorithm_config_not_initialized',
+      'Algorithm configuration is not initialized. Please contact the system administrator.'));
+    render(<AlgorithmConfigForm />);
+    expect(await screen.findByText(/configuration is not initialized/)).toBeDefined();
+    expect(screen.queryByDisplayValue('15')).toBeNull();
+  });
+
   it('offers retry after load failure', async () => {
     vi.mocked(service.getAlgorithmParameters)
       .mockRejectedValueOnce(new service.AlgorithmConfigError(500))

@@ -40,6 +40,7 @@ export function AlgorithmConfigForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof AlgorithmParameters, string>>>({});
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export function AlgorithmConfigForm() {
           setViewState('forbidden');
           return;
         }
+        setLoadErrorMessage(error instanceof AlgorithmConfigError ? (error.serverMessage ?? null) : null);
         setViewState('load-error');
       });
     return () => {
@@ -70,6 +72,7 @@ export function AlgorithmConfigForm() {
   }, [refreshKey, router]);
 
   const handleRetry = () => {
+    setLoadErrorMessage(null);
     setViewState('loading');
     setRefreshKey((k) => k + 1);
   };
@@ -114,8 +117,8 @@ export function AlgorithmConfigForm() {
       }
       setFeedback({
         tone: 'error',
-        message: error instanceof AlgorithmConfigError && [400, 422].includes(error.status)
-          ? CONFIG_MESSAGES.invalid
+        message: error instanceof AlgorithmConfigError
+          ? (error.serverMessage ?? ([400, 422].includes(error.status) ? CONFIG_MESSAGES.invalid : CONFIG_MESSAGES.unavailable))
           : CONFIG_MESSAGES.unavailable,
       });
     } finally {
@@ -144,7 +147,7 @@ export function AlgorithmConfigForm() {
       <div className="mx-auto max-w-4xl p-4 md:p-8">
         <FeedbackAlert tone="error" title="Unable to Load Algorithm Parameters">
           <div className="flex flex-wrap items-center gap-3">
-            <span>{CONFIG_MESSAGES.unavailable}</span>
+            <span>{loadErrorMessage ?? CONFIG_MESSAGES.unavailable}</span>
             <ActionButton type="button" variant="outline" onClick={handleRetry}>
               Retry
             </ActionButton>
@@ -164,7 +167,7 @@ export function AlgorithmConfigForm() {
           Algorithm Parameters
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[#59616b]">
-          Configure the four approved values used by scheduling, rerouting, and weather-related services. Changes apply to subsequent processing by services that consume these settings.
+          Store the four approved algorithm configuration values. This screen manages saved configuration only: the scheduling, rerouting, and weather services do not consume these values yet, so changes do not affect algorithm behavior until that integration is delivered.
         </p>
       </header>
 
