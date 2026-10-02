@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import type { TourDetailDto, TourScheduleDto } from '../types/tour';
 import { formatDateDisplay, formatVndPrice } from '../utils/tourQuery';
+import { ROUTES } from '@/lib/routes';
 
 interface TourDetailViewProps {
   tour: TourDetailDto;
@@ -446,28 +447,37 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             {/* Booking CTA Button (PC-02: Enabled only when schedule available) */}
             <div className="space-y-2">
               {isCurrentScheduleAvailable ? (
-                isAuthenticated ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      alert(
-                        'Tính năng Đặt tour (UC-27) thuộc lộ trình phát triển tiếp theo. Cảm ơn bạn đã lựa chọn TripMate!',
-                      );
-                    }}
-                    className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
-                  >
-                    <span>Đặt tour ngay (UC-27)</span>
-                    <span className="material-symbols-outlined text-base">arrow_forward</span>
-                  </button>
-                ) : (
-                  <Link
-                    href={`/sign-in?redirect=${encodeURIComponent(`/tours/${tour.tourId}`)}`}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
-                  >
-                    <span>Đăng nhập để đặt tour</span>
-                    <span className="material-symbols-outlined text-base">login</span>
-                  </Link>
-                )
+                (() => {
+                  const bookingUrl = `${ROUTES.tourBooking(tour.tourId)}?scheduleId=${encodeURIComponent(
+                    selectedScheduleId,
+                  )}${tour.isDemo ? '&demo=1' : ''}`;
+
+                  if (isAuthenticated) {
+                    return (
+                      <Link
+                        href={bookingUrl}
+                        className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+                      >
+                        <span>Đặt tour ngay (UC-27)</span>
+                        <span className="material-symbols-outlined text-base">arrow_forward</span>
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      href={
+                        tour.isDemo
+                          ? bookingUrl
+                          : `${ROUTES.signIn}?returnUrl=${encodeURIComponent(bookingUrl)}`
+                      }
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+                    >
+                      <span>Đăng nhập để đặt tour</span>
+                      <span className="material-symbols-outlined text-base">login</span>
+                    </Link>
+                  );
+                })()
               ) : (
                 <button
                   type="button"
