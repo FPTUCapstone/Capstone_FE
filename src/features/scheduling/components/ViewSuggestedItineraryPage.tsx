@@ -317,7 +317,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                   </Link>
                   {itinerary.canManage && (
                     <>
-                      {itinerary.status !== 'Accepted' && (
+                      {itinerary.status === 'Draft' && (
                         <button
                           type="button"
                           onClick={() => void applyMutation(() => acceptItinerary(itinerary.itineraryId))}

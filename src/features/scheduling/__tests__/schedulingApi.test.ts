@@ -547,7 +547,7 @@ describe('UC-10 Scheduling API Service', () => {
       schedulingRequestId: 55,
       title: 'Lịch trình phiên bản mới',
       version: 2,
-      status: 'OptimalGenerated',
+      status: 'Draft',
       validFrom: null,
       validTo: null,
       canManage: true,

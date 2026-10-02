@@ -62,7 +62,7 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
     itineraryId: 789,
     title: 'Lịch trình khám phá Đà Nẵng (8 giờ)',
     version: 1,
-    status: 'OptimalGenerated',
+    status: 'Draft',
     validFrom: '2026-10-20T08:00:00+07:00',
     validTo: '2026-10-20T17:00:00+07:00',
     canManage: true,
@@ -288,7 +288,7 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
       const acceptSpy = vi
         .spyOn(schedulingApi, 'acceptItinerary')
-        .mockResolvedValueOnce({ ...mockItinerary, status: 'Accepted' });
+        .mockResolvedValueOnce({ ...mockItinerary, status: 'Active' });
 
       render(<ViewSuggestedItineraryPage itineraryId="789" />);
 
@@ -296,18 +296,19 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Chấp nhận lịch trình/i }));
 
       await waitFor(() => expect(acceptSpy).toHaveBeenCalledWith(789));
-      expect(screen.getByText('Accepted')).toBeDefined();
+      expect(screen.getByText('Active')).toBeDefined();
+      expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
     });
 
-    it('does not offer accept again for an already accepted itinerary', async () => {
+    it('does not offer accept for an active itinerary', async () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
         ...mockItinerary,
-        status: 'Accepted',
+        status: 'Active',
       });
 
       render(<ViewSuggestedItineraryPage itineraryId="789" />);
 
-      await waitFor(() => expect(screen.getByText('Accepted')).toBeDefined());
+      await waitFor(() => expect(screen.getByText('Active')).toBeDefined());
       expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
     });
     it('TRUTH-1: does NOT render misleading "Chia sẻ" / Copy Link button', async () => {
