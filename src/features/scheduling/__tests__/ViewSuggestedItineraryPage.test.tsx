@@ -62,7 +62,7 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
     itineraryId: 789,
     title: 'Lịch trình khám phá Đà Nẵng (8 giờ)',
     version: 1,
-    status: 'OptimalGenerated',
+    status: 'Draft',
     validFrom: '2026-10-20T08:00:00+07:00',
     validTo: '2026-10-20T17:00:00+07:00',
     canManage: true,
@@ -266,6 +266,51 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
   });
 
   describe('TRUTH: truthful rendering & actions', () => {
+    it('renders owner-only mutation controls and never exposes them to read-only members', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
+
+      const { rerender } = render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /Chấp nhận lịch trình/i })).toBeDefined());
+      expect(screen.getByRole('button', { name: /Tạo lại lịch trình/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Chỉnh sửa thứ tự/i })).toBeDefined();
+
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({ ...mockItinerary, canManage: false });
+      rerender(<ViewSuggestedItineraryPage itineraryId="790" />);
+
+      await waitFor(() => expect(screen.getByText('Chỉ xem')).toBeDefined());
+      expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Tạo lại lịch trình/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Chỉnh sửa thứ tự/i })).toBeNull();
+    });
+
+    it('updates the visible itinerary after the owner accepts it', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
+      const acceptSpy = vi
+        .spyOn(schedulingApi, 'acceptItinerary')
+        .mockResolvedValueOnce({ ...mockItinerary, status: 'Active' });
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /Chấp nhận lịch trình/i })).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: /Chấp nhận lịch trình/i }));
+
+      await waitFor(() => expect(acceptSpy).toHaveBeenCalledWith(789));
+      expect(screen.getByText('Active')).toBeDefined();
+      expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
+    });
+
+    it('does not offer accept for an active itinerary', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
+        ...mockItinerary,
+        status: 'Active',
+      });
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => expect(screen.getByText('Active')).toBeDefined());
+      expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
+    });
     it('TRUTH-1: does NOT render misleading "Chia sẻ" / Copy Link button', async () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
 

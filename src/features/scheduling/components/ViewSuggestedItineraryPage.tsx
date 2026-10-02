@@ -8,7 +8,13 @@ import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
-import { getItineraryById, ItineraryHttpError } from '../services/schedulingApi';
+import {
+  acceptItinerary,
+  adjustItineraryItems,
+  getItineraryById,
+  ItineraryHttpError,
+  regenerateItinerary,
+} from '../services/schedulingApi';
 import { formatVietnamTime, ItineraryDetailDto } from '../types/schedulingTypes';
 import { ItineraryRouteMapPreview } from './ItineraryRouteMapPreview';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
@@ -39,6 +45,10 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   const [itinerary, setItinerary] = useState<ItineraryDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ status?: number; message: string } | null>(null);
+  const [mutationPending, setMutationPending] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [editingOrder, setEditingOrder] = useState(false);
+  const [orderedVisitPoiIds, setOrderedVisitPoiIds] = useState<number[]>([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -97,6 +107,55 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
       window.print();
     }
   };
+
+  const applyMutation = async (operation: () => Promise<ItineraryDetailDto>) => {
+    if (!itinerary || mutationPending) return;
+    setMutationPending(true);
+    setMutationError(null);
+    try {
+      const successor = await operation();
+      setEditingOrder(false);
+      setItinerary(successor);
+      if (successor.itineraryId !== itinerary.itineraryId) {
+        router.replace(ROUTES.itinerary(successor.itineraryId));
+      }
+    } catch (mutationFailure) {
+      setMutationError(
+        mutationFailure instanceof Error
+          ? mutationFailure.message
+          : 'Không thể cập nhật lịch trình. Vui lòng thử lại sau.',
+      );
+    } finally {
+      setMutationPending(false);
+    }
+  };
+
+  const startAdjustingOrder = () => {
+    if (!itinerary) return;
+    setOrderedVisitPoiIds(
+      itinerary.items
+        .filter((item) => item.kind === 'Visit' && item.poiId !== null)
+        .map((item) => item.poiId!),
+    );
+    setMutationError(null);
+    setEditingOrder(true);
+  };
+
+  const moveVisit = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= orderedVisitPoiIds.length) return;
+    setOrderedVisitPoiIds((current) => {
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  };
+
+  const editVisitItems = itinerary
+    ? orderedVisitPoiIds
+        .map((poiId) => itinerary.items.find((item) => item.kind === 'Visit' && item.poiId === poiId))
+        .filter((item): item is ItineraryDetailDto['items'][number] => item !== undefined)
+    : [];
 
   if (status === 'restoring') {
     return (
@@ -256,8 +315,72 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     <span className="material-symbols-outlined text-sm">tune</span>
                     <span>Tùy chỉnh lại</span>
                   </Link>
+                  {itinerary.canManage && (
+                    <>
+                      {itinerary.status === 'Draft' && (
+                        <button
+                          type="button"
+                          onClick={() => void applyMutation(() => acceptItinerary(itinerary.itineraryId))}
+                          disabled={mutationPending}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2 text-xs font-bold text-[#007d6e] transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <span className="material-symbols-outlined text-sm">task_alt</span>
+                          <span>Chấp nhận lịch trình</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Tạo một phiên bản lịch trình mới từ các ràng buộc hiện tại?')) {
+                            void applyMutation(() => regenerateItinerary(itinerary.itineraryId));
+                          }
+                        }}
+                        disabled={mutationPending}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <span className="material-symbols-outlined text-sm">refresh</span>
+                        <span>Tạo lại lịch trình</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={startAdjustingOrder}
+                        disabled={mutationPending || editingOrder}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <span className="material-symbols-outlined text-sm">reorder</span>
+                        <span>Chỉnh sửa thứ tự</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
+
+              {mutationError && (
+                <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  {mutationError}
+                </div>
+              )}
+
+              {editingOrder && itinerary.canManage && (
+                <section className="rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
+                  <h2 className="text-base font-bold text-slate-900">Sắp xếp lại các điểm tham quan</h2>
+                  <p className="mt-1 text-sm text-slate-600">Điểm nghỉ được hệ thống giữ nguyên; bạn chỉ thay đổi thứ tự các điểm tham quan.</p>
+                  <ol className="mt-4 space-y-2">
+                    {editVisitItems.map((item, index) => (
+                      <li key={item.itemId} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm shadow-2xs">
+                        <span className="w-5 font-bold text-[#007d6e]">{index + 1}</span>
+                        <span className="min-w-0 flex-1 truncate font-medium text-slate-800">{item.poiName ?? 'Điểm tham quan'}</span>
+                        <button type="button" aria-label={`Di chuyển ${item.poiName ?? index + 1} lên`} onClick={() => moveVisit(index, -1)} disabled={index === 0 || mutationPending} className="rounded border px-2 py-1 disabled:opacity-40">↑</button>
+                        <button type="button" aria-label={`Di chuyển ${item.poiName ?? index + 1} xuống`} onClick={() => moveVisit(index, 1)} disabled={index === editVisitItems.length - 1 || mutationPending} className="rounded border px-2 py-1 disabled:opacity-40">↓</button>
+                      </li>
+                    ))}
+                  </ol>
+                  <div className="mt-4 flex gap-2">
+                    <button type="button" onClick={() => void applyMutation(() => adjustItineraryItems(itinerary.itineraryId, orderedVisitPoiIds))} disabled={mutationPending || orderedVisitPoiIds.length === 0} className="rounded-xl bg-[#007d6e] px-4 py-2 text-sm font-bold text-white disabled:opacity-60">Lưu thứ tự mới</button>
+                    <button type="button" onClick={() => setEditingOrder(false)} disabled={mutationPending} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">Hủy</button>
+                  </div>
+                </section>
+              )}
 
               {/* Summary Stats Cards */}
               <ItinerarySummaryCards itinerary={itinerary} />
