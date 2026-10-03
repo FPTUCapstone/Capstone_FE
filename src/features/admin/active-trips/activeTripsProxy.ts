@@ -6,7 +6,7 @@ import { ADMIN_ACCESS_TOKEN_COOKIE, clearAdminSession, jsonNoStore } from '@/lib
 import { fetchBackend } from '@/lib/server/backend';
 
 const ALLOWED_QUERY_KEYS = new Set([
-  'keyword', 'tripType', 'destination', 'startDateFrom', 'startDateTo', 'alertState', 'pageNumber', 'pageSize',
+  'keyword', 'tripType', 'destination', 'startDateFrom', 'startDateTo', 'alertState', 'pageNumber',
 ]);
 
 export async function proxyActiveTrips(request: Request): Promise<Response> {
@@ -18,7 +18,8 @@ export async function proxyActiveTrips(request: Request): Promise<Response> {
   source.forEach((value, key) => {
     if (ALLOWED_QUERY_KEYS.has(key)) query.append(key, value);
   });
-  const path = `/api/v1/admin/trips/active${query.size ? `?${query.toString()}` : ''}`;
+  query.set('pageSize', '20');
+  const path = `/api/v1/admin/trips/active?${query.toString()}`;
 
   try {
     const upstream = await fetchBackend(path, {

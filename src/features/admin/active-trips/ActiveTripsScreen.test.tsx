@@ -71,4 +71,19 @@ describe('ActiveTripsScreen', () => {
     render(<ActiveTripsScreen />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Ftrips%2Factive'));
   });
+
+  it.each([
+    'startDateFrom=2026-09-30&startDateTo=2026-09-29',
+    'startDateFrom=2099-01-01',
+    'startDateTo=2026-02-30',
+    'startDateFrom=invalid-date',
+  ])('shows the date error and does not fetch for invalid URL query %s', (invalidQuery) => {
+    query = invalidQuery;
+    render(<ActiveTripsScreen />);
+    expect(screen.getByRole('alert').textContent).toContain('logically invalid');
+    expect(screen.getByLabelText('Start Date From').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText('Start Date To').getAttribute('aria-invalid')).toBe('true');
+    expect(fetchActiveTrips).not.toHaveBeenCalled();
+    expect(screen.queryByText('Loading active trips…')).toBeNull();
+  });
 });
