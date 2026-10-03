@@ -18,7 +18,7 @@ import {
 } from './activeTrips';
 import { ActiveTripsError, fetchActiveTrips } from './activeTripsService';
 
-type LoadState = 'loading' | 'ready' | 'forbidden' | 'unavailable';
+type LoadState = 'loading' | 'ready' | 'forbidden' | 'unavailable' | 'invalid';
 
 export function ActiveTripsScreen() {
   const searchParams = useSearchParams();
@@ -29,14 +29,16 @@ export function ActiveTripsScreen() {
 function ActiveTripsContent({ queryKey }: { queryKey: string }) {
   const { push, replace } = useRouter();
   const applied = useMemo(() => parseActiveTripsSearch(new URLSearchParams(queryKey)), [queryKey]);
+  const validAppliedDates = useMemo(() => validateDateRange(applied.startDateFrom, applied.startDateTo), [applied]);
   const [draft, setDraft] = useState<ActiveTripsSearch>(applied);
   const [data, setData] = useState<ActiveTripsResponse | null>(null);
-  const [state, setState] = useState<LoadState>('loading');
-  const [dateError, setDateError] = useState('');
+  const [state, setState] = useState<LoadState>(validAppliedDates ? 'loading' : 'invalid');
+  const [dateError, setDateError] = useState(validAppliedDates ? '' : ACTIVE_TRIPS_MESSAGES.invalidDates);
   const [retryKey, setRetryKey] = useState(0);
   const maximumStartDate = useMemo(() => getVietnamTodayDate(), []);
 
   useEffect(() => {
+    if (!validAppliedDates) return;
     const controller = new AbortController();
     fetchActiveTrips(applied, controller.signal)
       .then((response) => {
@@ -51,7 +53,7 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
         setState(error instanceof ActiveTripsError && error.status === 403 ? 'forbidden' : 'unavailable');
       });
     return () => controller.abort();
-  }, [applied, retryKey, replace]);
+  }, [applied, retryKey, replace, validAppliedDates]);
 
   const navigate = (next: ActiveTripsSearch) => {
     const query = serializeActiveTripsSearch(next).toString();
@@ -90,8 +92,8 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
           <Field label="Keyword"><input aria-label="Keyword" value={draft.keyword} maxLength={200} onChange={(e) => field('keyword', e.target.value)} className={inputClass} placeholder="Trip code, group, or tour" /></Field>
           <Field label="Trip Type"><select aria-label="Trip Type" value={draft.tripType} onChange={(e) => field('tripType', e.target.value as ActiveTripsSearch['tripType'])} className={inputClass}><option value="">All</option><option value="SelfPlanned">Self-Planned</option><option value="Tour">Tour</option></select></Field>
           <Field label="Destination"><input aria-label="Destination" value={draft.destination} maxLength={300} onChange={(e) => field('destination', e.target.value)} className={inputClass} /></Field>
-          <Field label="Start Date From"><input aria-label="Start Date From" aria-describedby={dateError ? 'date-error' : undefined} type="date" max={maximumStartDate} value={draft.startDateFrom} onChange={(e) => field('startDateFrom', e.target.value)} className={inputClass} /></Field>
-          <Field label="Start Date To"><input aria-label="Start Date To" aria-describedby={dateError ? 'date-error' : undefined} type="date" max={maximumStartDate} value={draft.startDateTo} onChange={(e) => field('startDateTo', e.target.value)} className={inputClass} /></Field>
+          <Field label="Start Date From"><input aria-label="Start Date From" aria-describedby={dateError ? 'date-error' : undefined} aria-invalid={Boolean(dateError)} type="date" max={maximumStartDate} value={draft.startDateFrom} onChange={(e) => field('startDateFrom', e.target.value)} className={inputClass} /></Field>
+          <Field label="Start Date To"><input aria-label="Start Date To" aria-describedby={dateError ? 'date-error' : undefined} aria-invalid={Boolean(dateError)} type="date" max={maximumStartDate} value={draft.startDateTo} onChange={(e) => field('startDateTo', e.target.value)} className={inputClass} /></Field>
           <Field label="Alert State"><select aria-label="Alert State" value={draft.alertState} onChange={(e) => field('alertState', e.target.value as ActiveTripsSearch['alertState'])} className={inputClass}><option value="">All</option><option value="WithOpenAlerts">With Open Alerts</option><option value="WithoutOpenAlerts">Without Open Alerts</option></select></Field>
         </div>
         {dateError ? <p id="date-error" role="alert" className="mt-3 text-sm font-semibold text-[#8c1030]">{dateError}</p> : null}

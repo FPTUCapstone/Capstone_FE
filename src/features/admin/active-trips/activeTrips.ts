@@ -107,7 +107,12 @@ export function formatVietnamDateTime(value: string | null): string {
   return `${get('day')}/${get('month')}/${get('year')} ${get('hour')}:${get('minute')}`;
 }
 
-const isDateOnly = (value: string) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+const isDateOnly = (value: string) => {
+  if (!value) return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith('0000-')) return false;
+  const timestamp = Date.parse(`${value}T00:00:00Z`);
+  return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value;
+};
 export function validateDateRange(from: string, to: string, today = getVietnamTodayDate()): boolean {
   return isDateOnly(from) && isDateOnly(to) &&
     (!from || from <= today) && (!to || to <= today) && (!from || !to || from <= to);
@@ -119,13 +124,12 @@ export function parseActiveTripsSearch(params: URLSearchParams): ActiveTripsSear
   const rawPage = Number(params.get('pageNumber'));
   const from = params.get('startDateFrom') ?? '';
   const to = params.get('startDateTo') ?? '';
-  const today = getVietnamTodayDate();
   return {
     keyword: (params.get('keyword') ?? '').trim().slice(0, 200),
     tripType: ACTIVE_TRIP_TYPES.includes(tripType as ActiveTripType) ? tripType as ActiveTripType : '',
     destination: (params.get('destination') ?? '').trim().slice(0, 300),
-    startDateFrom: isDateOnly(from) && (!from || from <= today) ? from : '',
-    startDateTo: isDateOnly(to) && (!to || to <= today) ? to : '',
+    startDateFrom: from,
+    startDateTo: to,
     alertState: ALERT_STATES.includes(alertState as AlertState) ? alertState as AlertState : '',
     pageNumber: Number.isSafeInteger(rawPage) && rawPage >= 1 ? rawPage : 1,
   };

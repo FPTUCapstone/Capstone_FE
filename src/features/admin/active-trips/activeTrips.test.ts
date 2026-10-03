@@ -62,4 +62,15 @@ describe('active trips contract', () => {
     expect(validateDateRange('2026-09-27', '', '2026-09-26')).toBe(false);
     expect(validateDateRange('', '2026-09-27', '2026-09-26')).toBe(false);
   });
+
+  it('preserves invalid URL dates so the page can report them instead of silently dropping them', () => {
+    for (const date of ['0000-01-01', '2026-02-30', '2026-09-31', 'not-a-date', '2099-01-01']) {
+      const parsed = parseActiveTripsSearch(new URLSearchParams(`startDateFrom=${date}`));
+      expect(parsed.startDateFrom).toBe(date);
+      expect(validateDateRange(parsed.startDateFrom, parsed.startDateTo, '2026-10-03')).toBe(false);
+    }
+    const reversed = parseActiveTripsSearch(new URLSearchParams('startDateFrom=2026-09-30&startDateTo=2026-09-29'));
+    expect(validateDateRange(reversed.startDateFrom, reversed.startDateTo, '2026-10-03')).toBe(false);
+    expect(validateDateRange('2024-02-29', '', '2026-10-03')).toBe(true);
+  });
 });

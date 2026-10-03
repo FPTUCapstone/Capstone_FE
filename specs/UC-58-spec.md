@@ -71,7 +71,7 @@ Display rules:
 
 ### Pagination
 
-- 20 records per page by default.
+- A fixed 20 records per page.
 - Show total record count and current/total pages.
 - Previous and Next controls are disabled at the corresponding boundary.
 - URL state preserves page and filters.
@@ -80,7 +80,7 @@ Display rules:
 
 `GET /api/admin/trips/active`
 
-The proxy forwards only the allowlisted UC-58 query parameters to `GET /api/v1/admin/trips/active`, attaches the server-held Administrator bearer token, disables caching, and never exposes the token to client JavaScript.
+The proxy forwards only the allowlisted UC-58 filter and `pageNumber` query parameters to `GET /api/v1/admin/trips/active` and always sets `pageSize=20`, ignoring caller-supplied page sizes. It attaches the server-held Administrator bearer token, disables caching, and never exposes the token to client JavaScript.
 
 `tripId` is a non-empty decimal string, not a JSON number. This preserves every SQL Server `BIGINT` value without JavaScript precision loss. Future UC-59 routes use that string unchanged.
 
@@ -96,7 +96,7 @@ The proxy forwards only the allowlisted UC-58 query parameters to `GET /api/v1/a
 1. Loading: an accessible status without stale rows presented as current.
 2. Success: counters, criteria, rows, and pagination.
 3. Empty: MSG128, with filters preserved and no empty table body.
-4. Invalid date range: MSG29 inline at the date fields; do not send the request.
+4. Invalid date range, future date, or malformed calendar date in the URL or form: MSG29 inline at the date fields; do not send the request.
 5. Forbidden: MSG126.
 6. Unavailable: MSG127 with Retry; previous submitted criteria remain.
 
@@ -112,7 +112,7 @@ The proxy forwards only the allowlisted UC-58 query parameters to `GET /api/v1/a
 1. An authenticated Administrator can open `/admin/trips/active` and retrieve data through the HttpOnly Admin-session proxy without `useWebSession()` as the authorization gate.
 2. Summary cards and all approved list fields render from the validated Backend response.
 3. Search executes only on submit; filters compose and are represented in the URL.
-4. Client validation blocks an inverted date range or either future date and renders MSG29 inline.
+4. Client validation blocks an inverted date range, either future date, or malformed calendar date from the URL or form and renders MSG29 inline without fetching.
 5. Empty, `401`, `403`, malformed success, and unavailable states follow this specification.
 6. Pagination preserves all submitted criteria and displays the total count.
 7. The screen performs no trip, itinerary, group, booking, alert, or rerouting mutation.
