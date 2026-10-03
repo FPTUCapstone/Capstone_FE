@@ -83,7 +83,7 @@ Production changes:
 - Add `src/features/admin/active-trips/activeTripsProxy.ts` and `activeTripsService.ts`.
 - Add `app/api/admin/trips/active/route.ts` as a thin GET route.
 - Reuse `ADMIN_ACCESS_TOKEN_COOKIE`, `clearAdminSession`, `jsonNoStore`, and `fetchBackend`.
-- Forward only `keyword`, `tripType`, `destination`, `startDateFrom`, `startDateTo`, `alertState`, `pageNumber`, and `pageSize`.
+- Forward only `keyword`, `tripType`, `destination`, `startDateFrom`, `startDateTo`, `alertState`, and `pageNumber` from the request; always set upstream `pageSize=20`, ignoring caller-supplied values.
 - Clear the Admin cookie only for upstream `401/403`; never expose token or private upstream errors.
 
 Verification:
@@ -99,7 +99,7 @@ Exit: proxy behavior matches the clarified session rules.
 
 Tests first:
 
-- Add `src/features/admin/active-trips/ActiveTripsScreen.test.tsx` with Vitest/Testing Library, covering initial load, explicit search, no fetch while typing, clear, URL state, page navigation, date error MSG29, empty MSG128, forbidden MSG126, unavailable MSG127/retry, stale response ordering, unmount safety, and absence of View Details.
+- Add `src/features/admin/active-trips/ActiveTripsScreen.test.tsx` with Vitest/Testing Library, covering initial load, explicit search, no fetch while typing, clear, URL state, page navigation, date error MSG29 (including invalid URL dates without a fetch), empty MSG128, forbidden MSG126, unavailable MSG127/retry, stale response ordering, unmount safety, and absence of View Details.
 
 Production changes:
 

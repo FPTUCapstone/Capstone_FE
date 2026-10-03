@@ -24,13 +24,23 @@ test('requires the HttpOnly Administrator cookie', async () => {
 
 test('forwards only approved query parameters and bearer token', async () => {
   const proxy = setup('secret', async (path, init) => {
-    assert.equal(path, '/api/v1/admin/trips/active?keyword=trip&pageNumber=2');
+    assert.equal(path, '/api/v1/admin/trips/active?keyword=trip&pageNumber=2&pageSize=20');
     assert.equal(init.headers.Authorization, 'Bearer secret');
     return Response.json({ items: [] });
   });
   const response = await proxy(request('?keyword=trip&pageNumber=2&private=x'));
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
+});
+
+test('enforces pageSize 20 even when the caller supplies a larger or duplicate value', async () => {
+  const proxy = setup('secret', async (path) => {
+    const query = new URL(path, 'http://backend.local').searchParams;
+    assert.deepEqual(query.getAll('pageSize'), ['20']);
+    return Response.json({ items: [] });
+  });
+  const response = await proxy(request('?pageSize=100&pageSize=500&pageNumber=2'));
+  assert.equal(response.status, 200);
 });
 
 test('clears the local session for upstream 401 and 403 without leaking details', async () => {
