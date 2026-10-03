@@ -1,0 +1,491 @@
+'use client';
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { AuditLogDetailDto } from '../types/auditLogAdmin';
+import { getAuditLogDetail, AuditLogServiceError } from '../services/auditLogAdminService';
+import { ROUTES } from '@/lib/routes';
+
+interface AuditLogDetailDrawerProps {
+  logId: number | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
+  const router = useRouter();
+  const [detail, setDetail] = useState<AuditLogDetailDto | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copiedBefore, setCopiedBefore] = useState<boolean>(false);
+  const [copiedAfter, setCopiedAfter] = useState<boolean>(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<Element | null>(null);
+
+  // Loading is derived: an open drawer with neither data nor error is fetching.
+  const isLoading = isOpen && logId !== null && detail === null && error === null;
+
+  const handleClose = useCallback(() => {
+    setDetail(null);
+    setError(null);
+    setCopyError(null);
+    setCopiedBefore(false);
+    setCopiedAfter(false);
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen || logId === null) {
+      return;
+    }
+
+    const controller = new AbortController();
+    let isCurrentRequest = true;
+
+    getAuditLogDetail(logId, controller.signal)
+      .then((data) => {
+        if (isCurrentRequest) {
+          setDetail(data);
+        }
+      })
+      .catch((err: unknown) => {
+        if (isCurrentRequest) {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          if (err instanceof AuditLogServiceError && err.statusCode === 401) {
+            const returnUrl = encodeURIComponent(ROUTES.admin.auditLogs);
+            router.replace(`${ROUTES.admin.login}?returnUrl=${returnUrl}`);
+            return;
+          }
+          if (err instanceof AuditLogServiceError && (err.statusCode === 404 || err.errorCode === 'admin.audit_log_not_found')) {
+            setError('System audit log entry not found.');
+          } else if (err instanceof AuditLogServiceError && (err.statusCode === 403 || err.errorCode === 'admin.audit_log_forbidden')) {
+            setError('You do not have permission to access this function.');
+          } else if (err instanceof Error && err.message) {
+            setError(err.message);
+          } else {
+            setError('TripMate is temporarily unable to process your request. Please check your connection and try again.');
+          }
+        }
+      });
+
+
+    return () => {
+      isCurrentRequest = false;
+      controller.abort();
+    };
+  }, [isOpen, logId, router]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocusedRef.current = document.activeElement;
+    window.setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
+
+    return () => {
+      const previouslyFocused = previouslyFocusedRef.current;
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus();
+      }
+      previouslyFocusedRef.current = null;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+        return;
+      }
+
+      if (e.key !== 'Tab' || !isOpen) {
+        return;
+      }
+
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ) ?? []);
+
+      if (focusable.length === 0) {
+        e.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose, isOpen]);
+
+  if (!isOpen) return null;
+
+  const formatJson = (dataStr: string | null) => {
+    if (!dataStr) return null;
+    try {
+      const parsed = JSON.parse(dataStr);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return dataStr;
+    }
+  };
+
+  const handleCopy = async (text: string, type: 'before' | 'after') => {
+    setCopyError(null);
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API is unavailable.');
+      }
+
+      await navigator.clipboard.writeText(text);
+      if (type === 'before') {
+        setCopiedBefore(true);
+        setTimeout(() => setCopiedBefore(false), 2000);
+      } else {
+        setCopiedAfter(true);
+        setTimeout(() => setCopiedAfter(false), 2000);
+      }
+    } catch {
+      setCopyError('Unable to copy audit data. Please select and copy the text manually.');
+    }
+  };
+
+  const formatUtcTimestamp = (value: string): string => {
+    const timestamp = new Date(value);
+    return Number.isNaN(timestamp.getTime()) ? '-' : timestamp.toISOString();
+  };
+
+  const getRoleBadgeClass = (role: string | null) => {
+    switch (role) {
+      case 'Administrator':
+        return 'bg-purple-900/40 text-purple-300 border-purple-700/50';
+      case 'TourOperator':
+        return 'bg-blue-900/40 text-blue-300 border-blue-700/50';
+      case 'Traveler':
+        return 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50';
+      default:
+        return 'bg-slate-800 text-slate-400 border-slate-700';
+    }
+  };
+
+  const extractReason = (detail: AuditLogDetailDto): string | null => {
+    if (typeof detail.reason === 'string' && detail.reason.trim()) {
+      return detail.reason;
+    }
+
+    const pickString = (value: unknown): string | null => (
+      typeof value === 'string' && value.trim() ? value : null
+    );
+
+    const tryExtract = (jsonStr: string | null): string | null => {
+      if (!jsonStr) return null;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (typeof parsed === 'object' && parsed !== null) {
+          const record = parsed as Record<string, unknown>;
+          return (
+            pickString(record.reason) ||
+            pickString(record.rejectionReason) ||
+            pickString(record.suppliedReason) ||
+            pickString(record.note)
+          );
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    };
+    return tryExtract(detail.afterData) || tryExtract(detail.beforeData);
+  };
+
+  const reasonText = detail ? extractReason(detail) : null;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200 flex items-center justify-center p-4">
+      {/* Backdrop overlay click to close */}
+      <div className="fixed inset-0" onClick={handleClose} aria-hidden="true" />
+
+      {/* Modal Dialog Box Centered */}
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="audit-log-detail-title"
+        aria-describedby="audit-log-detail-description"
+        tabIndex={-1}
+        className="relative w-full max-w-3xl max-h-[85vh] my-auto rounded-2xl border border-[#314863] bg-[#00152a] text-[#d1e4ff] shadow-2xl flex flex-col z-10 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/90 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-2xl text-[#71f8e4]">
+              read_more
+            </span>
+            <div>
+              <h2 id="audit-log-detail-title" className="text-lg font-bold text-white flex items-center gap-2">
+                Audit Log Details
+                {logId && (
+                  <span className="rounded bg-[#314863] px-2 py-0.5 font-mono text-xs text-[#71f8e4]">
+                    #{logId}
+                  </span>
+                )}
+              </h2>
+              <p id="audit-log-detail-description" className="text-xs text-[#9edbd2]">UC-69 Detailed Event Audit Trail</p>
+            </div>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={handleClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-[#314863] hover:text-white transition-colors"
+            title="Close (ESC)"
+            aria-label="Close audit log details"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
+          </button>
+        </div>
+
+        {/* Body Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
+              <span className="material-symbols-outlined text-4xl animate-spin text-[#71f8e4]">
+                progress_activity
+              </span>
+              <p className="text-sm font-medium">Fetching log entry details...</p>
+            </div>
+          ) : error ? (
+            <div className="rounded-xl border border-red-800/60 bg-red-950/40 p-5 text-red-200 space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-red-400">
+                <span className="material-symbols-outlined text-xl">error</span>
+                <span>Unable to Load Log Details</span>
+              </div>
+              <p className="text-sm text-red-300">{error}</p>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="mt-3 rounded-lg border border-red-700 bg-red-900/40 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800"
+              >
+                Close Dialog
+              </button>
+            </div>
+          ) : detail ? (
+            <>
+              {/* Event Overview Card */}
+              <div className="rounded-xl border border-[#314863] bg-[#102a43]/50 p-4 space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2]">
+                  Event Info
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 block mb-1">Action Type</span>
+                    <span className="inline-block rounded border border-[#71f8e4]/30 bg-[#71f8e4]/10 px-2.5 py-1 font-semibold text-[#71f8e4]">
+                      {detail.actionType}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">IP Address</span>
+                    <span className="font-mono text-slate-200">
+                      {detail.ipAddress || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">Timestamp (UTC+7)</span>
+                    <span className="font-mono text-slate-200 font-semibold">
+                      {detail.createdAtLocal}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">Timestamp (UTC)</span>
+                    <span className="font-mono text-slate-400">
+                      {formatUtcTimestamp(detail.createdAtUtc)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actor Card */}
+              <div className="rounded-xl border border-[#314863] bg-[#102a43]/50 p-4 space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2]">
+                  Actor Details
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 block mb-1">Actor Name</span>
+                    {detail.actorUserId === null ? (
+                      <span className="inline-flex items-center gap-1 rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300">
+                        <span className="material-symbols-outlined text-xs">settings</span>
+                        System
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-slate-200 text-sm">
+                        {detail.actorFullName}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">Role</span>
+                    {detail.actorRole ? (
+                      <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(detail.actorRole)}`}>
+                        {detail.actorRole}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">Email</span>
+                    <span className="text-slate-300">
+                      {detail.actorEmail || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">User ID</span>
+                    <span className="font-mono text-slate-300">
+                      {detail.actorUserId ?? 'System Action'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Affected Entity Card */}
+              <div className="rounded-xl border border-[#314863] bg-[#102a43]/50 p-4 space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2]">
+                  Target Object
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 block mb-1">Affected Entity</span>
+                    <span className="font-medium text-slate-200">
+                      {detail.affectedEntity}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-1">Entity ID</span>
+                    <span className="font-mono text-slate-300 font-semibold">
+                      {detail.affectedEntityId ?? 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Context / Reason Panel (SRS section: supplied reason) */}
+              {reasonText && (
+                <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 space-y-2">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base">comment</span>
+                    Supplied Reason / Action Note
+                  </div>
+                  <p className="text-xs text-amber-100 italic bg-amber-950/60 p-3 rounded-lg border border-amber-800/40">
+                    &ldquo;{reasonText}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {/* Before & After State Changes */}
+              <div className="space-y-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2] flex items-center justify-between">
+                  <span>State Audit Data</span>
+                </div>
+
+                {copyError && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-amber-700/60 bg-amber-950/40 px-3 py-2 text-xs text-amber-200"
+                  >
+                    {copyError}
+                  </p>
+                )}
+
+                {/* Before Data */}
+                <div className="rounded-xl border border-[#314863] bg-[#00152a] overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/70 px-4 py-2.5 text-xs">
+                    <span className="font-semibold text-amber-300 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base">history</span>
+                      Before Data State
+                    </span>
+                    {detail.beforeData && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(formatJson(detail.beforeData) || '', 'before')}
+                        className="flex items-center gap-1 rounded bg-[#314863]/60 px-2 py-1 text-[11px] text-[#71f8e4] hover:bg-[#314863] transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-xs">
+                          {copiedBefore ? 'check' : 'content_copy'}
+                        </span>
+                        {copiedBefore ? 'Copied' : 'Copy'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    {detail.beforeData ? (
+                      <pre className="overflow-x-auto font-mono text-xs text-amber-200/90 whitespace-pre-wrap break-all bg-black/40 p-3 rounded-lg border border-amber-900/30 max-h-60">
+                        {formatJson(detail.beforeData)}
+                      </pre>
+                    ) : (
+                      <p className="text-xs italic text-slate-500 py-1">(No prior state record)</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* After Data */}
+                <div className="rounded-xl border border-[#314863] bg-[#00152a] overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/70 px-4 py-2.5 text-xs">
+                    <span className="font-semibold text-emerald-300 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base">update</span>
+                      After Data State
+                    </span>
+                    {detail.afterData && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(formatJson(detail.afterData) || '', 'after')}
+                        className="flex items-center gap-1 rounded bg-[#314863]/60 px-2 py-1 text-[11px] text-[#71f8e4] hover:bg-[#314863] transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-xs">
+                          {copiedAfter ? 'check' : 'content_copy'}
+                        </span>
+                        {copiedAfter ? 'Copied' : 'Copy'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    {detail.afterData ? (
+                      <pre className="overflow-x-auto font-mono text-xs text-emerald-200/90 whitespace-pre-wrap break-all bg-black/40 p-3 rounded-lg border border-emerald-900/30 max-h-60">
+                        {formatJson(detail.afterData)}
+                      </pre>
+                    ) : (
+                      <p className="text-xs italic text-slate-500 py-1">(No post state record)</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-[#314863] bg-[#102a43]/90 px-6 py-3.5 flex justify-end">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-lg border border-[#314863] bg-[#00152a] px-4 py-2 text-xs font-semibold text-slate-200 hover:border-[#71f8e4] hover:text-white transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
