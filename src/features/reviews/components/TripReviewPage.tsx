@@ -23,6 +23,11 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
   const { status, context } = useWebSession();
   const [loading, setLoading] = useState(true);
   const [trip, setTrip] = useState<TripCardDto | null>(null);
+  const [fetchError, setFetchError] = useState<{
+    type: 'NOT_FOUND' | 'FORBIDDEN' | 'NETWORK';
+    message: string;
+  } | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -37,12 +42,39 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
   }, [status, context, router, tripId]);
 
   useEffect(() => {
+    // Do not fire request until session resolution completes
+    if (status !== 'authenticated' || context?.role !== 'Traveler') {
+      return;
+    }
+
     let isMounted = true;
 
     getTripById(tripId, { allowDemo: isDemo })
       .then((data) => {
         if (!isMounted) return;
-        setTrip(data);
+        if (!data) {
+          setFetchError({
+            type: 'NOT_FOUND',
+            message: `Chuyến đi #${tripId} không tồn tại trên hệ thống.`,
+          });
+        } else {
+          setTrip(data);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        if (typeof err === 'object' && err !== null && 'statusCode' in err && (err as { statusCode: number }).statusCode === 403) {
+          setFetchError({
+            type: 'FORBIDDEN',
+            message: 'Bạn không có quyền đánh giá chuyến đi này (MSG126).',
+          });
+        } else {
+          setFetchError({
+            type: 'NETWORK',
+            message:
+              'TripMate tạm thời không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
+          });
+        }
       })
       .finally(() => {
         if (!isMounted) return;
@@ -52,7 +84,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
     return () => {
       isMounted = false;
     };
-  }, [tripId, isDemo]);
+  }, [tripId, isDemo, status, context, retryCount]);
 
   if (status === 'restoring' || loading) {
     return (
@@ -109,7 +141,45 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
         </div>
 
         {/* Eligibility Guard checks */}
-        {!trip ? (
+        {fetchError ? (
+          <div
+            role={fetchError.type === 'NETWORK' ? 'alert' : 'status'}
+            className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs"
+          >
+            <span className="material-symbols-outlined mx-auto mb-2 text-[32px] text-slate-400">
+              {fetchError.type === 'NETWORK' ? 'cloud_off' : 'search_off'}
+            </span>
+            <h3 className="text-base font-bold text-[#00152A]">
+              {fetchError.type === 'NOT_FOUND'
+                ? 'Không tìm thấy chuyến đi'
+                : fetchError.type === 'FORBIDDEN'
+                ? 'Không có quyền truy cập'
+                : 'Lỗi kết nối máy chủ'}
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">{fetchError.message}</p>
+            <div className="mt-5 flex items-center justify-center gap-3">
+              {fetchError.type === 'NETWORK' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoading(true);
+                    setFetchError(null);
+                    setRetryCount((c) => c + 1);
+                  }}
+                  className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                >
+                  Thử lại
+                </button>
+              )}
+              <Link
+                href={ROUTES.account.trips}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+              >
+                Quay lại danh sách chuyến đi
+              </Link>
+            </div>
+          </div>
+        ) : !trip ? (
           <div
             role="status"
             className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs"

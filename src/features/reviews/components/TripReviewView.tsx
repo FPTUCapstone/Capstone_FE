@@ -41,7 +41,8 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
   const isDemo = searchParams.get('demo') === '1';
 
   const [rating, setRating] = useState<number>(0);
-  const [routeSatisfaction, setRouteSatisfaction] = useState<'tight' | 'well_paced' | 'loose'>('well_paced');
+  const [title, setTitle] = useState<string>('');
+  const [routeSatisfaction, setRouteSatisfaction] = useState<'tight' | 'well_paced' | 'loose' | undefined>(undefined);
   const [poiFeedbacks, setPoiFeedbacks] = useState<PoiReviewFeedback[]>([]);
   const [comment, setComment] = useState<string>('');
   const [photos, setPhotos] = useState<ReviewPhotoItem[]>([]);
@@ -49,16 +50,17 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [ratingError, setRatingError] = useState<string | null>(null);
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [submissionResult, setSubmissionResult] = useState<ReviewSubmissionResult | null>(null);
 
   const commentLength = comment.trim().length;
-  const isCommentTooShort = commentLength > 0 && commentLength < 20;
   const isCommentTooLong = commentLength > 500;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRatingError(null);
+    setTitleError(null);
     setCommentError(null);
     setSubmissionResult(null);
 
@@ -69,11 +71,17 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
       hasError = true;
     }
 
+    const titleTrimmed = title.trim();
+    if (titleTrimmed.length === 0) {
+      setTitleError('Tiêu đề đánh giá là bắt buộc (MSG01).');
+      hasError = true;
+    } else if (titleTrimmed.length > 150) {
+      setTitleError('Tiêu đề đánh giá không được vượt quá 150 ký tự.');
+      hasError = true;
+    }
+
     if (commentLength === 0) {
       setCommentError('Nội dung đánh giá là bắt buộc (MSG01).');
-      hasError = true;
-    } else if (commentLength < 20) {
-      setCommentError('Nội dung đánh giá phải có ít nhất 20 ký tự.');
       hasError = true;
     } else if (commentLength > 500) {
       setCommentError('Nội dung đánh giá không được vượt quá 500 ký tự (MSG123).');
@@ -88,11 +96,12 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
       tripId: trip.tripId,
       bookingId: trip.bookingId,
       rating,
+      title: titleTrimmed,
       comment: comment.trim(),
       publishWithDisplayName,
-      routeSatisfaction,
-      poiFeedbacks,
-      photos,
+      ...(isDemo && routeSatisfaction ? { routeSatisfaction } : {}),
+      ...(isDemo && poiFeedbacks.length > 0 ? { poiFeedbacks } : {}),
+      ...(isDemo && photos.length > 0 ? { photos } : {}),
     };
 
     try {
@@ -141,16 +150,14 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           </h2>
           <p className="truncate text-xs text-slate-500">
             {trip.tripType === 'SelfPlannedItinerary'
-              ? `${trip.stopCount || 4} Điểm dừng • Lộ trình tối ưu hóa CSP Engine`
+              ? [
+                  trip.stopCount != null ? `${trip.stopCount} Điểm dừng` : null,
+                  trip.distanceKm != null ? `${trip.distanceKm} km di chuyển` : null,
+                  trip.durationLabel || null,
+                ].filter(Boolean).join(' • ') || 'Lộ trình tự lập'
               : `${trip.operatorName || 'Tour bản địa'} • Mã đặt: ${trip.bookingCode || trip.tripId}`}
           </p>
         </div>
-        <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[#E6F4F1] px-2.5 py-1 text-xs font-bold text-[#006B5F] sm:inline-flex">
-          <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
-            verified_user
-          </span>
-          TripMate Verified
-        </span>
       </div>
 
       {/* Submission Result Notice Banner */}
@@ -214,7 +221,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             </div>
           )}
 
-          {/* Section 1: Overall Experience Rating (Mandatory) */}
+          {/* Section 1: Overall Experience Rating (Mandatory per BR-93) */}
           <StarRatingInput
             value={rating}
             onChange={(val) => {
@@ -224,56 +231,97 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             error={ratingError || undefined}
           />
 
-          {/* Section 2: AI CSP Route / Pacing Satisfaction (Stitch Prototype) */}
-          <section aria-labelledby="pacing-title" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div>
-                <h3 id="pacing-title" className="text-sm font-extrabold text-[#00152A] flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[18px] text-[#006B5F]" aria-hidden="true">
-                    psychology
-                  </span>
-                  Mức độ hợp lý về thời gian & phân bổ điểm đến
-                </h3>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Đánh giá tốc độ di chuyển và tính thích nghi của lộ trình (Tùy chọn)
-                </p>
-              </div>
-              <span className="rounded bg-[#E6F4F1] px-1.5 py-0.5 text-[10px] font-bold text-[#006B5F] uppercase shrink-0">
-                AI CSP
+          {/* Section: Review Title (Mandatory per Report 3 §3.7.2) */}
+          <section aria-labelledby="title-label" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="review-title" id="title-label" className="text-sm font-extrabold text-[#00152A]">
+                Tiêu đề đánh giá <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-xs font-semibold text-slate-400">
+                {title.trim().length} / 150 ký tự
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              {(
-                [
-                  { key: 'tight', label: 'Lịch quá dày' },
-                  { key: 'well_paced', label: 'Vừa vặn, hợp lý' },
-                  { key: 'loose', label: 'Lịch quá thưa' },
-                ] as const
-              ).map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setRouteSatisfaction(item.key)}
-                  className={`rounded-xl py-2 px-2 text-center text-xs font-bold transition ${
-                    routeSatisfaction === item.key
-                      ? 'border border-[#006B5F] bg-[#E6F4F1] text-[#006B5F] shadow-2xs'
-                      : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            <input
+              id="review-title"
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (titleError) setTitleError(null);
+              }}
+              placeholder="Tóm tắt ngắn gọn trải nghiệm của bạn (ví dụ: Chuyến đi tuyệt vời)"
+              className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 sm:text-sm ${
+                titleError
+                  ? 'border-rose-400 focus:border-rose-500'
+                  : 'border-slate-300 focus:border-[#006B5F]'
+              }`}
+            />
+
+            {titleError && (
+              <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">
+                {titleError}
+              </p>
+            )}
           </section>
 
-          {/* Section 3: POI Quick Feedback */}
-          {trip.stopsSummary && trip.stopsSummary.length > 0 && (
-            <PoiQuickFeedback
-              stops={trip.stopsSummary}
-              feedbacks={poiFeedbacks}
-              onChange={setPoiFeedbacks}
-            />
+          {/* Section 2: AI CSP Route / Pacing Satisfaction (Demo Prototype Only) */}
+          {isDemo && (
+            <section aria-labelledby="pacing-title" className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 shadow-xs sm:p-5">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div>
+                  <h3 id="pacing-title" className="text-sm font-extrabold text-[#00152A] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-[#006B5F]" aria-hidden="true">
+                      psychology
+                    </span>
+                    Mức độ hợp lý về thời gian & phân bổ điểm đến
+                  </h3>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Đánh giá tốc độ di chuyển và tính thích nghi của lộ trình (Tùy chọn)
+                  </p>
+                </div>
+                <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase shrink-0">
+                  DEMO ONLY
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {(
+                  [
+                    { key: 'tight', label: 'Lịch quá dày' },
+                    { key: 'well_paced', label: 'Vừa vặn, hợp lý' },
+                    { key: 'loose', label: 'Lịch quá thưa' },
+                  ] as const
+                ).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setRouteSatisfaction(item.key)}
+                    className={`rounded-xl py-2 px-2 text-center text-xs font-bold transition ${
+                      routeSatisfaction === item.key
+                        ? 'border border-[#006B5F] bg-[#E6F4F1] text-[#006B5F] shadow-2xs'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 3: POI Quick Feedback (Demo Prototype Only) */}
+          {isDemo && trip.stopsSummary && trip.stopsSummary.length > 0 && (
+            <div className="relative">
+              <div className="absolute right-3 top-3 z-10 rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase">
+                DEMO ONLY
+              </div>
+              <PoiQuickFeedback
+                stops={trip.stopsSummary}
+                feedbacks={poiFeedbacks}
+                onChange={setPoiFeedbacks}
+              />
+            </div>
           )}
 
           {/* Section 4: Detailed Review Commentary */}
@@ -284,11 +332,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
               </label>
               <span
                 className={`text-xs font-semibold ${
-                  isCommentTooLong
-                    ? 'text-rose-600'
-                    : isCommentTooShort
-                    ? 'text-amber-600'
-                    : 'text-[#006B5F]'
+                  isCommentTooLong ? 'text-rose-600' : 'text-[#006B5F]'
                 }`}
               >
                 {commentLength} / 500 ký tự
@@ -303,7 +347,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 setComment(e.target.value);
                 if (commentError) setCommentError(null);
               }}
-              placeholder="Chia sẻ cảm nhận chi tiết của bạn về chuyến đi, hướng dẫn viên, ẩm thực, phương tiện... (Tối thiểu 20 ký tự)"
+              placeholder="Chia sẻ cảm nhận chi tiết của bạn về chuyến đi, hướng dẫn viên, ẩm thực, phương tiện... (Tối đa 500 ký tự)"
               className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 sm:text-sm ${
                 commentError
                   ? 'border-rose-400 focus:border-rose-500'
@@ -313,21 +357,12 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
 
             {/* Live helper badge */}
             <div className="mt-2 flex items-center justify-between text-xs">
-              {isCommentTooShort ? (
-                <span className="text-amber-600 font-medium">
-                  Cần nhập thêm ít nhất {20 - commentLength} ký tự nữa.
-                </span>
-              ) : commentLength >= 20 && !isCommentTooLong ? (
-                <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
-                  <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  Đã đạt yêu cầu độ dài tối thiểu
-                </span>
-              ) : isCommentTooLong ? (
+              {isCommentTooLong ? (
                 <span className="text-rose-600 font-medium">
                   Đã vượt quá {commentLength - 500} ký tự cho phép (MSG123).
                 </span>
               ) : (
-                <span className="text-slate-400">Tối thiểu 20 ký tự.</span>
+                <span className="text-slate-400">Tối đa 500 ký tự (MSG123).</span>
               )}
             </div>
 
@@ -338,8 +373,22 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             )}
           </section>
 
-          {/* Section 5: Photo Upload Preview */}
-          <PhotoUploadPreview photos={photos} onChange={setPhotos} />
+          {/* Section 5: Photo Upload Preview (Demo only preview; real mode truthful capability notice) */}
+          {isDemo ? (
+            <PhotoUploadPreview photos={photos} onChange={setPhotos} />
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs text-xs text-slate-500 sm:p-5">
+              <div className="flex items-center gap-2 font-bold text-slate-700">
+                <span className="material-symbols-outlined text-[18px] text-slate-400" aria-hidden="true">
+                  photo_library
+                </span>
+                <span>Hình ảnh chuyến đi</span>
+              </div>
+              <p className="mt-1 text-slate-500 leading-relaxed">
+                Tính năng đính kèm ảnh đánh giá đang chờ kích hoạt dịch vụ lưu trữ máy chủ và tạm thời chưa khả dụng trong chế độ sản phẩm.
+              </p>
+            </div>
+          )}
 
           {/* Section 6: Privacy Control */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">

@@ -22,13 +22,25 @@ export interface GetTripHistoryOptions {
   allowDemo?: boolean;
 }
 
+function parseVietnamDateBoundaryMs(dateStr: string, isEndOfDay: boolean): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
+  if (match) {
+    const [, y, m, d] = match;
+    const timePart = isEndOfDay ? '23:59:59.999' : '00:00:00.000';
+    return new Date(`${y}-${m}-${d}T${timePart}+07:00`).getTime();
+  }
+  return new Date(dateStr).getTime();
+}
+
 export async function getTripHistory(
   filter: TripHistoryFilter,
   options?: GetTripHistoryOptions
 ): Promise<TripHistoryResponseDto> {
   const allowDemo = Boolean(options?.allowDemo) && isTripDemoAllowedInCurrentEnv();
+  const page = filter.page && filter.page > 0 ? filter.page : 1;
+  const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
 
-  // DEMO MODE: filtered fixture evaluation
+  // DEMO MODE: filtered and paginated fixture evaluation
   if (allowDemo) {
     let result = DEMO_TRIP_CARDS.filter((t) => t.status === filter.tab);
 
@@ -48,26 +60,35 @@ export async function getTripHistory(
     }
 
     if (filter.fromDate) {
-      const fromTime = new Date(filter.fromDate).getTime();
+      const fromTime = parseVietnamDateBoundaryMs(filter.fromDate, false);
       if (!Number.isNaN(fromTime)) {
         result = result.filter((t) => new Date(t.departureDatetime).getTime() >= fromTime);
       }
     }
 
     if (filter.toDate) {
-      const toTime = new Date(filter.toDate).getTime();
+      const toTime = parseVietnamDateBoundaryMs(filter.toDate, true);
       if (!Number.isNaN(toTime)) {
         result = result.filter((t) => new Date(t.departureDatetime).getTime() <= toTime);
       }
     }
 
+    // Default sorting by departure date descending (Report 3 §3.7.1)
+    result.sort(
+      (a, b) => new Date(b.departureDatetime).getTime() - new Date(a.departureDatetime).getTime()
+    );
+
+    const totalCount = result.length;
+    const startIndex = (page - 1) * pageSize;
+    const paginatedTrips = result.slice(startIndex, startIndex + pageSize);
+
     return {
       status: 'SUCCESS',
-      trips: result,
+      trips: paginatedTrips,
       summary: filter.tab === 'Completed' ? DEMO_TRIP_SUMMARY : undefined,
-      totalCount: result.length,
-      page: filter.page ?? 1,
-      pageSize: filter.pageSize ?? 10,
+      totalCount,
+      page,
+      pageSize,
       isDemo: true,
     };
   }
@@ -76,6 +97,8 @@ export async function getTripHistory(
   try {
     const params = new URLSearchParams();
     params.set('status', filter.tab);
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
     if (filter.tripType && filter.tripType !== 'ALL') params.set('tripType', filter.tripType);
     if (filter.searchQuery) params.set('query', filter.searchQuery);
     if (filter.fromDate) params.set('fromDate', filter.fromDate);
@@ -88,20 +111,22 @@ export async function getTripHistory(
       cache: 'no-store',
     });
 
-    if (response.status === 404 || response.status === 501 || response.status === 502 || response.status === 503) {
-      // Truthful pending backend notification
+    if (response.status === 404 || response.status === 501) {
+      // Truthful pending backend capability notification (only 404/501 indicate missing endpoint)
       return {
         status: 'PENDING_BE_INTEGRATION',
         message: 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
         trips: [],
         totalCount: 0,
-        page: filter.page ?? 1,
-        pageSize: filter.pageSize ?? 10,
+        page,
+        pageSize,
       };
     }
 
     if (!response.ok) {
-      throw new TripApiError('Không thể tải lịch sử chuyến đi từ máy chủ.', response.status);
+      const errorData = await response.json().catch(() => null);
+      const msg = errorData?.title || 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).';
+      throw new TripApiError(msg, response.status, errorData);
     }
 
     const data = await response.json();
@@ -110,22 +135,18 @@ export async function getTripHistory(
       trips: data.trips ?? [],
       summary: data.summary,
       totalCount: data.totalCount ?? 0,
-      page: data.page ?? 1,
-      pageSize: data.pageSize ?? 10,
+      page: data.page ?? page,
+      pageSize: data.pageSize ?? pageSize,
     };
   } catch (err) {
     if (err instanceof TripApiError) {
       throw err;
     }
-    // Network or server connection failure in real mode
-    return {
-      status: 'PENDING_BE_INTEGRATION',
-      message: 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
-      trips: [],
-      totalCount: 0,
-      page: filter.page ?? 1,
-      pageSize: filter.pageSize ?? 10,
-    };
+    // Network or server connection failure in real mode is an ERROR with MSG127, NOT pending integration
+    throw new TripApiError(
+      'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
+      0
+    );
   }
 }
 
@@ -146,12 +167,29 @@ export async function getTripById(
       cache: 'no-store',
     });
 
-    if (response.status === 404 || !response.ok) {
+    if (response.status === 404) {
       return null;
     }
 
+    if (response.status === 403) {
+      throw new TripApiError('Bạn không có quyền xem chuyến đi này (MSG126).', 403);
+    }
+
+    if (!response.ok) {
+      throw new TripApiError(
+        'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
+        response.status
+      );
+    }
+
     return await response.json();
-  } catch {
-    return null;
+  } catch (err) {
+    if (err instanceof TripApiError) {
+      throw err;
+    }
+    throw new TripApiError(
+      'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
+      0
+    );
   }
 }

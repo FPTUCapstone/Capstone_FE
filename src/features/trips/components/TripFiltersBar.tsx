@@ -6,7 +6,7 @@ interface TripFiltersBarProps {
   tripType: 'ALL' | 'TourBooking' | 'SelfPlannedItinerary';
   onTripTypeChange: (type: 'ALL' | 'TourBooking' | 'SelfPlannedItinerary') => void;
   searchQuery: string;
-  onSearchChange: (query: string) => void;
+  onSearchSubmit: (query: string) => void;
   fromDate: string;
   toDate: string;
   onDateRangeChange: (from: string, to: string) => void;
@@ -16,12 +16,24 @@ export function TripFiltersBar({
   tripType,
   onTripTypeChange,
   searchQuery,
-  onSearchChange,
+  onSearchSubmit,
   fromDate,
   toDate,
   onDateRangeChange,
 }: TripFiltersBarProps) {
+  const [draftSearch, setDraftSearch] = useState(searchQuery);
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
   const [dateError, setDateError] = useState<string | null>(null);
+
+  if (searchQuery !== prevSearchQuery) {
+    setPrevSearchQuery(searchQuery);
+    setDraftSearch(searchQuery);
+  }
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    onSearchSubmit(draftSearch.trim());
+  };
 
   const handleFromDateChange = (newFrom: string) => {
     if (toDate && newFrom && new Date(newFrom).getTime() > new Date(toDate).getTime()) {
@@ -44,8 +56,8 @@ export function TripFiltersBar({
   return (
     <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        {/* Search input */}
-        <div className="relative">
+        {/* Search input with submit semantics per CR-02 */}
+        <form onSubmit={handleSearchSubmit} className="relative flex items-center">
           <label htmlFor="trip-search" className="sr-only">
             Tìm kiếm chuyến đi
           </label>
@@ -58,12 +70,19 @@ export function TripFiltersBar({
           <input
             id="trip-search"
             type="search"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={draftSearch}
+            onChange={(e) => setDraftSearch(e.target.value)}
             placeholder="Tìm theo tên tour, điểm đến, mã đặt..."
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#006B5F] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-14 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#006B5F] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
           />
-        </div>
+          <button
+            type="submit"
+            className="absolute right-1.5 rounded-lg bg-[#006B5F] px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-[#00574D] active:scale-95"
+            aria-label="Tìm kiếm"
+          >
+            Tìm
+          </button>
+        </form>
 
         {/* Trip type selector */}
         <div>

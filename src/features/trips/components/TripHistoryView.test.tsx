@@ -76,7 +76,7 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
       trips: [],
       totalCount: 0,
       page: 1,
-      pageSize: 10,
+      pageSize: 20,
     });
 
     render(<TripHistoryView />);
@@ -88,5 +88,28 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
 
     expect(screen.getByRole('link', { name: /Lên lịch trình thông minh/i })).toBeDefined();
     expect(screen.getByRole('link', { name: /Khám phá tour bản địa/i })).toBeDefined();
+  });
+
+  it('CR-02: Search triggers upon explicit submission (button click / form submit)', async () => {
+    const getTripHistorySpy = vi.spyOn(tripHistoryApi, 'getTripHistory');
+    render(<TripHistoryView />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Tìm kiếm chuyến đi/i)).toBeDefined();
+    });
+
+    const searchInput = screen.getByLabelText(/Tìm kiếm chuyến đi/i);
+    fireEvent.change(searchInput, { target: { value: 'Đà Nẵng' } });
+
+    // typing should not yet invoke search with new query
+    const submitBtn = screen.getByRole('button', { name: /Tìm/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(getTripHistorySpy).toHaveBeenCalledWith(
+        expect.objectContaining({ searchQuery: 'Đà Nẵng' }),
+        expect.anything()
+      );
+    });
   });
 });

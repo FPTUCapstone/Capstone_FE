@@ -40,19 +40,21 @@ describe('TripReviewView Component (REVIEW-7, REVIEW-10)', () => {
     const textarea = screen.getByPlaceholderText(/Chia sẻ cảm nhận chi tiết của bạn/i);
     expect(screen.getByText('0 / 500 ký tự')).toBeDefined();
 
-    // Type 25 characters
+    // Type 33 characters
     fireEvent.change(textarea, { target: { value: 'Chuyến đi này rất tuyệt vời luôn!' } });
 
     expect(screen.getByText(/33 \/ 500 ký tự/i)).toBeDefined();
-    expect(screen.getByText('Đã đạt yêu cầu độ dài tối thiểu')).toBeDefined();
   });
 
   it('Displays error when submitted with missing rating (MSG66)', async () => {
     render(<TripReviewView trip={mockTrip} />);
 
+    const titleInput = screen.getByRole('textbox', { name: /Tiêu đề đánh giá/i });
+    fireEvent.change(titleInput, { target: { value: 'Chuyến đi thú vị' } });
+
     const textarea = screen.getByPlaceholderText(/Chia sẻ cảm nhận chi tiết của bạn/i);
     fireEvent.change(textarea, {
-      target: { value: 'Nội dung đánh giá hợp lệ và đủ trên hai mươi ký tự.' },
+      target: { value: 'Nội dung đánh giá hợp lệ.' },
     });
 
     const submitBtn = screen.getByRole('button', { name: /Gửi đánh giá/i });
@@ -63,7 +65,7 @@ describe('TripReviewView Component (REVIEW-7, REVIEW-10)', () => {
     });
   });
 
-  it('Displays error when submitted with comment less than 20 characters', async () => {
+  it('Displays error when submitted with empty title (MSG01)', async () => {
     render(<TripReviewView trip={mockTrip} />);
 
     // Select 5 stars
@@ -71,13 +73,31 @@ describe('TripReviewView Component (REVIEW-7, REVIEW-10)', () => {
     fireEvent.click(star5);
 
     const textarea = screen.getByPlaceholderText(/Chia sẻ cảm nhận chi tiết của bạn/i);
-    fireEvent.change(textarea, { target: { value: 'Ngắn quá' } });
+    fireEvent.change(textarea, { target: { value: 'Chuyến đi rất tốt.' } });
 
     const submitBtn = screen.getByRole('button', { name: /Gửi đánh giá/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Nội dung đánh giá phải có ít nhất 20 ký tự/i)).toBeDefined();
+      expect(screen.getByText(/Tiêu đề đánh giá là bắt buộc/i)).toBeDefined();
+    });
+  });
+
+  it('Displays error when submitted with empty comment (MSG01)', async () => {
+    render(<TripReviewView trip={mockTrip} />);
+
+    // Select 5 stars
+    const star5 = screen.getByRole('radio', { name: '5 sao' });
+    fireEvent.click(star5);
+
+    const titleInput = screen.getByRole('textbox', { name: /Tiêu đề đánh giá/i });
+    fireEvent.change(titleInput, { target: { value: 'Tiêu đề đánh giá' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Gửi đánh giá/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Nội dung đánh giá là bắt buộc/i)).toBeDefined();
     });
   });
 
@@ -116,6 +136,12 @@ describe('TripReviewView Component (REVIEW-7, REVIEW-10)', () => {
     // Select 5 stars
     const star5 = screen.getByRole('radio', { name: '5 sao' });
     fireEvent.click(star5);
+
+    // Enter valid title
+    const titleInput = screen.getByRole('textbox', { name: /Tiêu đề đánh giá/i });
+    fireEvent.change(titleInput, {
+      target: { value: 'Chuyến đi tuyệt vời' },
+    });
 
     // Enter valid comment
     const textarea = screen.getByPlaceholderText(/Chia sẻ cảm nhận chi tiết của bạn/i);

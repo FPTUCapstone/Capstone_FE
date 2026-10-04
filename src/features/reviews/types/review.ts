@@ -15,10 +15,11 @@ export interface CreateReviewPayload {
   tripId: string;
   bookingId?: string;
   rating: number; // 1 to 5 integer, mandatory per BR-93
-  comment: string; // 20 to 500 characters
+  title: string; // Review Title per Report 3 §3.7.2, mandatory
+  comment: string; // 1 to 500 characters per Report 3 §3.7.2 & MSG123
   publishWithDisplayName: boolean;
 
-  // Optional preview ratings (Stitch / local feedback)
+  // Optional preview ratings (Stitch / demo-only feedback)
   routeSatisfaction?: 'tight' | 'well_paced' | 'loose' | number;
   poiFeedbacks?: PoiReviewFeedback[];
   photos?: ReviewPhotoItem[];
@@ -29,6 +30,7 @@ export interface ReviewDto {
   tripId: string;
   bookingId?: string;
   rating: number;
+  title?: string;
   comment: string;
   authorDisplayName?: string;
   publishWithDisplayName: boolean;
