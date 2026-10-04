@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { ROUTES } from '@/lib/routes';
 
-export type AccountTabKey = 'profile' | 'preferences' | 'security';
+export type AccountTabKey = 'profile' | 'preferences' | 'security' | 'trips';
 
 interface AccountWorkspaceNavProps {
   activeTab: AccountTabKey;
@@ -38,6 +38,13 @@ const TABS: NavTabItem[] = [
     label: 'Bảo mật & Mật khẩu',
     href: ROUTES.account.security,
     icon: 'lock',
+  },
+  {
+    key: 'trips',
+    label: 'Chuyến đi của tôi',
+    href: ROUTES.account.trips,
+    icon: 'route',
+    badge: 'UC-32',
   },
 ];
 

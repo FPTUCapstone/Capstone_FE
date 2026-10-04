@@ -23,6 +23,8 @@ export const ROUTES = {
     profile: '/account/profile',
     preferences: '/account/preferences',
     security: '/account/security',
+    trips: '/account/trips',
+    tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
   },
   admin: {
     login: '/admin/login',
