@@ -11,13 +11,16 @@ import { ROUTES } from '@/lib/routes';
 import { BookingTicketView } from './BookingTicketView';
 
 interface BookingTicketPageProps {
-  id: string;
+  id?: string;
+  ticketId?: string;
 }
 
-export function BookingTicketPage({ id }: BookingTicketPageProps) {
+export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTicketPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, context } = useWebSession();
+
+  const ticketId = (explicitTicketId || id || '').trim();
 
   const isDemo =
     searchParams.get('demo') === '1' && isBookingDemoAllowedInCurrentEnv();
@@ -27,12 +30,12 @@ export function BookingTicketPage({ id }: BookingTicketPageProps) {
     if (status === 'restoring') return;
 
     if (status === 'unauthenticated' && !isDemo) {
-      const returnUrl = `/bookings/${id}/ticket${
+      const returnUrl = `/bookings/${ticketId}/ticket${
         searchParams.toString() ? `?${searchParams.toString()}` : ''
       }`;
       router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(returnUrl)}`);
     }
-  }, [status, isDemo, id, searchParams, router]);
+  }, [status, isDemo, ticketId, searchParams, router]);
 
   if (status === 'restoring') {
     return (
@@ -98,7 +101,7 @@ export function BookingTicketPage({ id }: BookingTicketPageProps) {
     <div className="min-h-screen bg-[#f8fafc]">
       <PublicNavigation />
       <main className="pb-16 pt-4">
-        <BookingTicketView bookingId={id} />
+        <BookingTicketView ticketId={ticketId} />
       </main>
     </div>
   );

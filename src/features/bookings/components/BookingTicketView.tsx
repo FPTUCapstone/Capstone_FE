@@ -10,7 +10,7 @@ import type { TicketDto } from '../types/ticket';
 import { QrCodeDisplay } from './QrCodeDisplay';
 
 interface BookingTicketViewProps {
-  bookingId: string;
+  ticketId: string;
 }
 
 function formatCurrency(amount: number, currency: string = 'VND'): string {
@@ -36,7 +36,7 @@ function formatDatetime(isoString: string): string {
   }
 }
 
-export function BookingTicketView({ bookingId }: BookingTicketViewProps) {
+export function BookingTicketView({ ticketId }: BookingTicketViewProps) {
   const searchParams = useSearchParams();
   const isDemo = searchParams.get('demo') === '1';
 
@@ -47,7 +47,7 @@ export function BookingTicketView({ bookingId }: BookingTicketViewProps) {
   useEffect(() => {
     let isMounted = true;
 
-    getTicket(bookingId, { allowDemo: isDemo })
+    getTicket(ticketId, { allowDemo: isDemo })
       .then((data) => {
         if (!isMounted) return;
         setTicket(data);
@@ -64,7 +64,7 @@ export function BookingTicketView({ bookingId }: BookingTicketViewProps) {
     return () => {
       isMounted = false;
     };
-  }, [bookingId, isDemo]);
+  }, [ticketId, isDemo]);
 
   if (loading) {
     return (
@@ -106,7 +106,7 @@ export function BookingTicketView({ bookingId }: BookingTicketViewProps) {
                 Bạn có thể xem trước giao diện vé điện tử QR hoàn chỉnh đã phê duyệt (UC-29) bằng tham số demo:
               </p>
               <Link
-                href={`/bookings/${bookingId}/ticket?demo=1`}
+                href={`${ROUTES.bookingTicket(ticketId || 'tkt-demo-03')}?demo=1`}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2 text-xs font-bold text-white hover:bg-[#006b5f] transition"
               >
                 <span className="material-symbols-outlined text-sm">science</span>

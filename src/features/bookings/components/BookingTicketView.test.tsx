@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as bookingApi from '../services/bookingApi';
 import { BookingTicketView } from './BookingTicketView';
 
 const mockSearchParams = new URLSearchParams();
@@ -16,16 +17,16 @@ function setNodeEnv(val?: string) {
 
 describe('BookingTicketView (UC-29 QR E-ticket)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     mockSearchParams.delete('demo');
   });
 
-  it('renders complete QR e-ticket details in demo mode', async () => {
+  it('renders complete QR e-ticket details in demo mode with ticketId', async () => {
     setNodeEnv('development');
     process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
     mockSearchParams.set('demo', '1');
 
-    render(<BookingTicketView bookingId="bk-demo-0148" />);
+    render(<BookingTicketView ticketId="tkt-demo-03" />);
 
     await waitFor(() => {
       expect(screen.getByText('Vé điện tử QR (UC-29)')).toBeTruthy();
@@ -38,6 +39,21 @@ describe('BookingTicketView (UC-29 QR E-ticket)', () => {
     });
   });
 
+  it('TICKET-2: calls getTicket with ticketId and never bookingId', async () => {
+    setNodeEnv('development');
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    mockSearchParams.set('demo', '1');
+
+    const getTicketSpy = vi.spyOn(bookingApi, 'getTicket');
+
+    render(<BookingTicketView ticketId="ticket-456" />);
+
+    await waitFor(() => {
+      expect(getTicketSpy).toHaveBeenCalledWith('ticket-456', expect.objectContaining({ allowDemo: true }));
+      expect(getTicketSpy).not.toHaveBeenCalledWith('booking-123', expect.anything());
+    });
+  });
+
   it('triggers window.print when print button is clicked', async () => {
     setNodeEnv('development');
     process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
@@ -45,7 +61,7 @@ describe('BookingTicketView (UC-29 QR E-ticket)', () => {
 
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
 
-    render(<BookingTicketView bookingId="bk-demo-0148" />);
+    render(<BookingTicketView ticketId="tkt-demo-03" />);
 
     await waitFor(() => {
       expect(screen.getByText('In vé / Lưu file PDF')).toBeTruthy();
@@ -58,7 +74,7 @@ describe('BookingTicketView (UC-29 QR E-ticket)', () => {
   it('renders PENDING_BE_INTEGRATION notice in real mode without demo opt-in', async () => {
     setNodeEnv('production');
 
-    render(<BookingTicketView bookingId="bk-real-0148" />);
+    render(<BookingTicketView ticketId="tkt-real-03" />);
 
     await waitFor(() => {
       expect(screen.getByText('Vé điện tử QR: PENDING_BE_INTEGRATION')).toBeTruthy();
