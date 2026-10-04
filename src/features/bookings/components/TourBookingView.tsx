@@ -91,8 +91,8 @@ export function TourBookingView({
   );
   const [couponError, setCouponError] = useState<string | null>(null);
 
-  // Terms agreement
-  const [agreedTerms, setAgreedTerms] = useState<boolean>(true);
+  // Terms agreement (explicit opt-in required)
+  const [agreedTerms, setAgreedTerms] = useState<boolean>(false);
 
   // Booking Flow Steps: 1 = Form & Confirmation, 2 = Payment Handoff
   const [activeStep, setActiveStep] = useState<1 | 2>(1);
@@ -676,8 +676,12 @@ export function TourBookingView({
 
               {/* Agreement checkbox */}
               <div className="pt-2">
-                <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer">
+                <label
+                  htmlFor="agreed-terms-checkbox"
+                  className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer"
+                >
                   <input
+                    id="agreed-terms-checkbox"
                     type="checkbox"
                     checked={agreedTerms}
                     onChange={(e) => setAgreedTerms(e.target.checked)}

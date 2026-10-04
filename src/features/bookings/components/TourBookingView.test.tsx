@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as bookingApi from '@/features/bookings/services/bookingApi';
 import { DEMO_TOUR_DETAIL_HOI_AN } from '@/features/public/tours/data/tourDemoFixtures';
 import { TourBookingView } from './TourBookingView';
 
@@ -15,7 +16,7 @@ function setNodeEnv(val?: string) {
 
 describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     setNodeEnv('development');
     process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
   });
@@ -91,7 +92,7 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
     expect(screen.getByText('-15%')).toBeTruthy();
   });
 
-  it('transitions to Step 2 (Payment Handoff) after successful booking creation in demo mode', async () => {
+  it('TERMS-1 & TERMS-6: terms consent checkbox defaults unchecked in both real and demo modes', () => {
     render(
       <TourBookingView
         tour={DEMO_TOUR_DETAIL_HOI_AN}
@@ -101,7 +102,81 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       />,
     );
 
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
+    }) as HTMLInputElement;
+
+    expect(checkbox.checked).toBe(false);
+  });
+
+  it('TERMS-2, TERMS-3 & TERMS-4: submit button is disabled before consent, enabled after check, disabled again on uncheck', () => {
+    render(
+      <TourBookingView
+        tour={DEMO_TOUR_DETAIL_HOI_AN}
+        initialScheduleId="9007199254740997"
+        isDemo={true}
+        userContext={null}
+      />,
+    );
+
+    const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
+    }) as HTMLInputElement;
+
+    // TERMS-2: Before consent, submit button is disabled
+    expect(submitBtn.disabled).toBe(true);
+
+    // TERMS-3: Traveler checks consent -> eligible to submit
+    fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(true);
+    expect(submitBtn.disabled).toBe(false);
+
+    // TERMS-4: Traveler unchecks consent -> disabled again
+    fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(false);
+    expect(submitBtn.disabled).toBe(true);
+  });
+
+  it('TERMS-5: defensive submission guard prevents calling createBooking when agreedTerms is false', async () => {
+    const createBookingSpy = vi.spyOn(bookingApi, 'createBooking');
+
+    render(
+      <TourBookingView
+        tour={DEMO_TOUR_DETAIL_HOI_AN}
+        initialScheduleId="9007199254740997"
+        isDemo={true}
+        userContext={null}
+      />,
+    );
+
+    const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(true);
+
+    // Attempt click on disabled button (or simulate click)
+    fireEvent.click(submitBtn);
+
+    expect(createBookingSpy).not.toHaveBeenCalled();
+  });
+
+  it('transitions to Step 2 (Payment Handoff) after agreeing to terms and submitting in demo mode', async () => {
+    render(
+      <TourBookingView
+        tour={DEMO_TOUR_DETAIL_HOI_AN}
+        initialScheduleId="9007199254740997"
+        isDemo={true}
+        userContext={null}
+      />,
+    );
+
+    // Must check terms consent explicitly
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
+    });
+    fireEvent.click(checkbox);
+
     const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(submitBtn);
 
     await waitFor(() => {

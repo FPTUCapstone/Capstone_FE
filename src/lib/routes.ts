@@ -12,7 +12,7 @@ export const ROUTES = {
   tour: (id: string | number) => `/tours/${id}`,
   tourBooking: (id: string | number) => `/tours/${id}/book`,
   checkoutResult: '/checkout/result',
-  bookingTicket: (id: string | number) => `/bookings/${id}/ticket`,
+  bookingTicket: (ticketId: string | number) => `/bookings/${encodeURIComponent(ticketId)}/ticket`,
   partner: {
     dashboard: '/partner',
     register: '/partner/register',

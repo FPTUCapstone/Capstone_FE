@@ -133,8 +133,9 @@ export function CheckoutResultView() {
 
   // Payment Success
   if (result?.isSuccess) {
-    const bookingId = result.bookingId || 'bk-demo-0148';
-    const ticketUrl = `${ROUTES.bookingTicket(bookingId)}${isDemo ? '?demo=1' : ''}`;
+    const rawTicketId = result.ticketId?.trim();
+    const ticketId = rawTicketId && rawTicketId.length > 0 ? rawTicketId : null;
+    const ticketUrl = ticketId ? `${ROUTES.bookingTicket(ticketId)}${isDemo ? '?demo=1' : ''}` : null;
 
     return (
       <div className="mx-auto max-w-xl px-4 py-12 font-sans" lang="vi">
@@ -159,7 +160,10 @@ export function CheckoutResultView() {
 
           <h2 className="text-xl font-bold text-slate-900 mb-1">Thanh toán thành công!</h2>
           <p className="text-xs text-slate-500 mb-6">
-            Đơn đặt tour của bạn đã được ghi nhận. Vé điện tử QR đã được phát hành tự động.
+            Đơn đặt tour của bạn đã được ghi nhận.{' '}
+            {ticketUrl
+              ? 'Vé điện tử QR đã được phát hành tự động.'
+              : 'Hệ thống đang chuẩn bị phát hành vé điện tử QR.'}
           </p>
 
           {/* Transaction Summary Details */}
@@ -198,15 +202,27 @@ export function CheckoutResultView() {
             </div>
           </div>
 
-          {/* Next Action: Go to Ticket */}
+          {/* Next Action: Go to Ticket or Pending Ticket issuance */}
           <div className="space-y-3">
-            <Link
-              href={ticketUrl}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3.5 px-4 text-xs font-bold text-white shadow-md transition hover:bg-[#006b5f]"
-            >
-              <span>Xem vé điện tử QR ngay (UC-29)</span>
-              <span className="material-symbols-outlined text-base">qr_code_2</span>
-            </Link>
+            {ticketUrl ? (
+              <Link
+                href={ticketUrl}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3.5 px-4 text-xs font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+              >
+                <span>Xem vé điện tử QR ngay (UC-29)</span>
+                <span className="material-symbols-outlined text-base">qr_code_2</span>
+              </Link>
+            ) : (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-xs text-amber-900 text-left space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                  <span className="material-symbols-outlined text-amber-700 text-base">hourglass_top</span>
+                  <span>Vé điện tử chưa sẵn sàng</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-800">
+                  Thanh toán đã được xác nhận, nhưng vé điện tử chưa sẵn sàng để mở. Vui lòng kiểm tra lại sau hoặc theo dõi thông báo qua email xác nhận của bạn.
+                </p>
+              </div>
+            )}
 
             <Link
               href={ROUTES.tours}

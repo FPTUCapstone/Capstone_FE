@@ -22,7 +22,7 @@ export default async function BookingTicketRoute({ params }: BookingTicketRouteP
         </div>
       }
     >
-      <BookingTicketPage id={id} />
+      <BookingTicketPage ticketId={id} />
     </Suspense>
   );
 }

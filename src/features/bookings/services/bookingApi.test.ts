@@ -197,6 +197,33 @@ describe('bookingApi service (UC-27, UC-28, UC-29)', () => {
       expect(ticket.qrPayload).toBe('TRIPMATE-TKT-8F4K29QX-03-VERIFIED');
     });
 
+    it('calls /api/tickets/{ticketId} with ticketId in real mode', async () => {
+      setNodeEnv('production');
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ticketId: 'ticket-456',
+            ticketCode: 'TKT-TEST-456',
+            bookingId: 'booking-123',
+            status: 'Valid',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+      vi.stubGlobal('fetch', mockFetch);
+
+      const ticket = await getTicket('ticket-456');
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/tickets/ticket-456',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Accept: 'application/json',
+          }),
+        }),
+      );
+      expect(ticket.ticketId).toBe('ticket-456');
+    });
+
     it('throws 501 PENDING_BE_INTEGRATION in real mode', async () => {
       setNodeEnv('production');
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })));
