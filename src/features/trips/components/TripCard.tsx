@@ -36,6 +36,18 @@ function formatTripDate(isoString: string): string {
 
 export function TripCard({ trip, onViewReview }: TripCardProps) {
   const [showRefundModal, setShowRefundModal] = useState(false);
+
+  React.useEffect(() => {
+    if (!showRefundModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowRefundModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showRefundModal]);
+
   const formattedDate = formatTripDate(trip.departureDatetime);
   const isCompleted = trip.status === 'Completed';
   const isCancelled = trip.status === 'Cancelled';
@@ -126,7 +138,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             )}
 
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {trip.memberCount && (
+              {trip.memberCount != null && trip.memberCount > 0 && (
                 <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
                   <span className="material-symbols-outlined text-[13px] text-[#006B5F]" aria-hidden="true">
                     group
@@ -279,6 +291,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
       {showRefundModal && (
         <div
           role="dialog"
+          aria-modal="true"
           aria-labelledby="refund-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
         >

@@ -43,7 +43,7 @@ describe('tripHistoryApi Service (TRIP-5, TRIP-7, TRIP-8)', () => {
   });
 
   describe('Real-mode truthfulness (TRIP-7)', () => {
-    it('returns PENDING_BE_INTEGRATION and zero trips in real mode when backend is unavailable', async () => {
+    it('returns PENDING_BE_INTEGRATION and zero trips in real mode when backend returns 404 or 501', async () => {
       // Mock fetch returning 404 (endpoint not implemented)
       global.fetch = vi.fn().mockResolvedValue({
         status: 404,
@@ -54,14 +54,56 @@ describe('tripHistoryApi Service (TRIP-5, TRIP-7, TRIP-8)', () => {
       expect(result.status).toBe('PENDING_BE_INTEGRATION');
       expect(result.trips).toHaveLength(0);
       expect(result.message).toContain('chờ kích hoạt dịch vụ máy chủ');
+
+      // Mock fetch returning 501 Not Implemented
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 501,
+        ok: false,
+      });
+
+      const result501 = await getTripHistory({ tab: 'Completed' }, { allowDemo: false });
+      expect(result501.status).toBe('PENDING_BE_INTEGRATION');
+      expect(result501.trips).toHaveLength(0);
     });
 
-    it('returns PENDING_BE_INTEGRATION when fetch throws a network failure', async () => {
+    it('throws TripApiError (MSG127) when server returns 502 or 503', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 502,
+        ok: false,
+      });
+
+      await expect(
+        getTripHistory({ tab: 'Completed' }, { allowDemo: false })
+      ).rejects.toThrow(/MSG127/i);
+
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 503,
+        ok: false,
+      });
+
+      await expect(
+        getTripHistory({ tab: 'Completed' }, { allowDemo: false })
+      ).rejects.toThrow(/MSG127/i);
+    });
+
+    it('throws TripApiError (MSG127) when fetch throws a network failure', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-      const result = await getTripHistory({ tab: 'Completed' }, { allowDemo: false });
-      expect(result.status).toBe('PENDING_BE_INTEGRATION');
-      expect(result.trips).toHaveLength(0);
+      await expect(
+        getTripHistory({ tab: 'Completed' }, { allowDemo: false })
+      ).rejects.toThrow(/MSG127/i);
+    });
+
+    it('getTripById returns null for 404, throws MSG126 for 403, and throws MSG127 on network failure', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 404, ok: false });
+      const nullTrip = await getTripById('missing-trip', { allowDemo: false });
+      expect(nullTrip).toBeNull();
+
+      global.fetch = vi.fn().mockResolvedValue({ status: 403, ok: false });
+      await expect(getTripById('forbidden-trip', { allowDemo: false })).rejects.toThrow(/MSG126/i);
+
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network offline'));
+      await expect(getTripById('network-fail', { allowDemo: false })).rejects.toThrow(/MSG127/i);
     });
   });
 
@@ -128,6 +170,28 @@ describe('tripHistoryApi Service (TRIP-5, TRIP-7, TRIP-8)', () => {
     it('returns null for non-existent trip id in demo mode', async () => {
       const trip = await getTripById('non-existent-id', { allowDemo: true });
       expect(trip).toBeNull();
+    });
+
+    it('implements CR-01 pagination with canonical default pageSize 20 and calculates totalCount', async () => {
+      const pageResult = await getTripHistory({ tab: 'Completed', page: 1, pageSize: 2 }, { allowDemo: true });
+      expect(pageResult.status).toBe('SUCCESS');
+      expect(pageResult.trips.length).toBeLessThanOrEqual(2);
+      expect(pageResult.totalCount).toBe(4);
+      expect(pageResult.page).toBe(1);
+      expect(pageResult.pageSize).toBe(2);
+
+      const defaultSizeResult = await getTripHistory({ tab: 'Completed' }, { allowDemo: true });
+      expect(defaultSizeResult.pageSize).toBe(20);
+      expect(defaultSizeResult.page).toBe(1);
+    });
+
+    it('filters trips by date range using Asia/Ho_Chi_Minh boundary (toDate end-of-day)', async () => {
+      // Completed demo trips departure dates: 2026-05-24, 2026-04-15, 2026-08-28, 2026-07-15
+      const rangeResult = await getTripHistory(
+        { tab: 'Completed', fromDate: '2026-04-01', toDate: '2026-05-24' },
+        { allowDemo: true }
+      );
+      expect(rangeResult.trips.length).toBe(2); // April 15 and May 24 trips included
     });
   });
 });

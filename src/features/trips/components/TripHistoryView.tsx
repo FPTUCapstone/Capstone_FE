@@ -22,9 +22,12 @@ export function TripHistoryView() {
 
   const [activeTab, setActiveTab] = useState<TripState>('Completed');
   const [tripType, setTripType] = useState<'ALL' | 'TourBooking' | 'SelfPlannedItinerary'>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [submittedSearchQuery, setSubmittedSearchQuery] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [page, setPage] = useState<number>(1);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const pageSize = 20;
 
   const [loading, setLoading] = useState(true);
   const [trips, setTrips] = useState<TripCardDto[]>([]);
@@ -37,15 +40,29 @@ export function TripHistoryView() {
 
   const [retryIndex, setRetryIndex] = useState(0);
 
+  // Accessible Escape key handler for review dialog
+  useEffect(() => {
+    if (!selectedReviewTrip) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedReviewTrip(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedReviewTrip]);
+
   useEffect(() => {
     let isMounted = true;
 
     const filter: TripHistoryFilter = {
       tab: activeTab,
       tripType,
-      searchQuery,
+      searchQuery: submittedSearchQuery,
       fromDate,
       toDate,
+      page,
+      pageSize,
     };
 
     getTripHistory(filter, { allowDemo: isDemo })
@@ -56,9 +73,11 @@ export function TripHistoryView() {
             response.message || 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.'
           );
           setTrips([]);
+          setTotalCount(0);
           setSummary(undefined);
         } else {
           setTrips(response.trips);
+          setTotalCount(response.totalCount);
           setSummary(response.summary);
           setPendingNotice(null);
         }
@@ -81,18 +100,49 @@ export function TripHistoryView() {
     return () => {
       isMounted = false;
     };
-  }, [activeTab, tripType, searchQuery, fromDate, toDate, isDemo, retryIndex]);
+  }, [activeTab, tripType, submittedSearchQuery, fromDate, toDate, page, isDemo, retryIndex]);
 
   const handleRetry = () => {
     setLoading(true);
     setRetryIndex((prev) => prev + 1);
   };
 
+  const handleTabChange = (newTab: TripState) => {
+    if (newTab === activeTab) return;
+    setLoading(true);
+    setTrips([]);
+    setActiveTab(newTab);
+    setPage(1);
+  };
+
+  const handleTripTypeChange = (newType: 'ALL' | 'TourBooking' | 'SelfPlannedItinerary') => {
+    setLoading(true);
+    setTrips([]);
+    setTripType(newType);
+    setPage(1);
+  };
+
+  const handleSearchSubmit = (newQuery: string) => {
+    setLoading(true);
+    setTrips([]);
+    setSubmittedSearchQuery(newQuery);
+    setPage(1);
+  };
+
   const handleDateRangeChange = (newFrom: string, newTo: string) => {
     setLoading(true);
+    setTrips([]);
     setFromDate(newFrom);
     setToDate(newTo);
+    setPage(1);
   };
+
+  const handlePageChange = (newPage: number) => {
+    setLoading(true);
+    setPage(newPage);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="space-y-6">
@@ -117,7 +167,7 @@ export function TripHistoryView() {
       <div className="flex items-center rounded-2xl bg-slate-200/70 p-1.5 shadow-2xs">
         <button
           type="button"
-          onClick={() => setActiveTab('Upcoming')}
+          onClick={() => handleTabChange('Upcoming')}
           className={`flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm ${
             activeTab === 'Upcoming'
               ? 'bg-white text-[#00152A] shadow-xs'
@@ -129,7 +179,7 @@ export function TripHistoryView() {
 
         <button
           type="button"
-          onClick={() => setActiveTab('Completed')}
+          onClick={() => handleTabChange('Completed')}
           className={`flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm flex ${
             activeTab === 'Completed'
               ? 'bg-white text-[#00152A] shadow-xs'
@@ -138,16 +188,16 @@ export function TripHistoryView() {
         >
           <span className="inline-block h-2 w-2 rounded-full bg-[#006B5F]" />
           <span>Đã hoàn thành</span>
-          {activeTab === 'Completed' && trips.length > 0 && (
+          {activeTab === 'Completed' && totalCount > 0 && (
             <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.2 text-[10px] font-extrabold text-[#006B5F]">
-              {trips.length}
+              {totalCount}
             </span>
           )}
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab('Cancelled')}
+          onClick={() => handleTabChange('Cancelled')}
           className={`flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm ${
             activeTab === 'Cancelled'
               ? 'bg-white text-[#00152A] shadow-xs'
@@ -164,9 +214,9 @@ export function TripHistoryView() {
       {/* Filter and Search Bar */}
       <TripFiltersBar
         tripType={tripType}
-        onTripTypeChange={setTripType}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onTripTypeChange={handleTripTypeChange}
+        searchQuery={submittedSearchQuery}
+        onSearchSubmit={handleSearchSubmit}
         fromDate={fromDate}
         toDate={toDate}
         onDateRangeChange={handleDateRangeChange}
@@ -263,7 +313,10 @@ export function TripHistoryView() {
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
-            <span>Hiển thị {trips.length} chuyến đi</span>
+            <span>
+              Hiển thị <strong className="text-slate-800">{trips.length}</strong> /{' '}
+              <strong className="text-slate-800">{totalCount}</strong> chuyến đi
+            </span>
             <span className="text-[11px] text-slate-400">Thời gian tính theo GMT+7 (CR-07)</span>
           </div>
 
@@ -276,6 +329,47 @@ export function TripHistoryView() {
               />
             ))}
           </div>
+
+          {/* Pagination controls per CR-01 */}
+          {totalCount > 0 && (
+            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+              <p className="text-xs text-slate-500">
+                Trang <span className="font-bold text-slate-800">{page}</span> /{' '}
+                <span className="font-bold text-slate-800">{totalPages}</span> (Tổng số {totalCount} chuyến đi)
+              </p>
+              <div
+                className="flex items-center gap-1.5"
+                role="navigation"
+                aria-label="Phân trang danh sách chuyến đi"
+              >
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Trang trước"
+                >
+                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                  <span>Trước</span>
+                </button>
+
+                <span className="px-2 text-xs font-bold text-slate-800">
+                  {page} / {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Trang sau"
+                >
+                  <span>Sau</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -283,6 +377,7 @@ export function TripHistoryView() {
       {selectedReviewTrip && (
         <div
           role="dialog"
+          aria-modal="true"
           aria-labelledby="review-dialog-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
         >

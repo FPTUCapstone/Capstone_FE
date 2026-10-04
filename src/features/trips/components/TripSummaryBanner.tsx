@@ -31,15 +31,8 @@ export function TripSummaryBanner({ summary, isDemo }: TripSummaryBannerProps) {
             )}
           </div>
           <h2 className="mt-1 text-lg font-extrabold text-white sm:text-xl">
-            {summary.totalCompletedTrips} Chuyến đi hoàn hảo
+            {summary.totalCompletedTrips} Chuyến đi đã hoàn thành
           </h2>
-        </div>
-
-        <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-amber-300 backdrop-blur-md">
-          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-            military_tech
-          </span>
-          <span>Hạng Explorer</span>
         </div>
       </div>
 
@@ -63,12 +56,12 @@ export function TripSummaryBanner({ summary, isDemo }: TripSummaryBannerProps) {
           </div>
         )}
 
-        {summary.cspMatchRate !== undefined && (
+        {isDemo && summary.cspMatchRate !== undefined && (
           <div className="border-l-0 sm:border-l border-white/10 p-1">
             <p className="text-xl font-black text-amber-300 sm:text-2xl">
               {summary.cspMatchRate}%
             </p>
-            <p className="text-[11px] font-medium text-slate-300">Khớp lịch trình CSP</p>
+            <p className="text-[11px] font-medium text-slate-300">Khớp lộ trình (Demo)</p>
           </div>
         )}
 

@@ -85,4 +85,20 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
     const reviewLink = screen.getByRole('link', { name: /Viết đánh giá/i });
     expect(reviewLink.getAttribute('href')).toBe('/account/trips/trip-demo-01/review');
   });
+
+  it('Does not render stray "0" when memberCount is 0 or undefined', () => {
+    const tripWithZeroMembers: TripCardDto = {
+      tripId: 'trip-demo-zero',
+      tripType: 'TourBooking',
+      title: 'Tour Đi Bộ',
+      departureDatetime: '2026-05-24T08:00:00Z',
+      status: 'Upcoming',
+      statusLabel: 'Sắp tới',
+      memberCount: 0,
+      isReviewed: false,
+    };
+
+    const { container } = render(<TripCard trip={tripWithZeroMembers} />);
+    expect(container.textContent).not.toContain('0 người');
+  });
 });

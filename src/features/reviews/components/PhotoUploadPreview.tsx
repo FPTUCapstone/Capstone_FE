@@ -18,18 +18,21 @@ export function PhotoUploadPreview({
   maxPhotos = 5,
 }: PhotoUploadPreviewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const createdUrlsRef = useRef<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  // Revoke object URLs on component unmount
+  // Revoke all created object URLs strictly on component unmount
   useEffect(() => {
+    const createdUrls = createdUrlsRef.current;
     return () => {
-      photos.forEach((p) => {
-        if (p.url.startsWith('blob:')) {
-          URL.revokeObjectURL(p.url);
+      createdUrls.forEach((url) => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
         }
       });
+      createdUrls.clear();
     };
-  }, [photos]);
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -58,6 +61,7 @@ export function PhotoUploadPreview({
       }
 
       const blobUrl = URL.createObjectURL(file);
+      createdUrlsRef.current.add(blobUrl);
       newPhotos.push({
         id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         name: file.name,
@@ -79,6 +83,7 @@ export function PhotoUploadPreview({
   const handleRemovePhoto = (id: string) => {
     const target = photos.find((p) => p.id === id);
     if (target && target.url.startsWith('blob:')) {
+      createdUrlsRef.current.delete(target.url);
       URL.revokeObjectURL(target.url);
     }
     onChange(photos.filter((p) => p.id !== id));
@@ -168,7 +173,7 @@ export function PhotoUploadPreview({
         <span className="material-symbols-outlined text-[14px] text-[#006B5F]" aria-hidden="true">
           info
         </span>
-        <span>Ảnh được xử lý xem trước trên trình duyệt trước khi tải lên máy chủ.</span>
+        <span>Ảnh chỉ được xem trước cục bộ trong bản demo và chưa được tải lên máy chủ.</span>
       </div>
     </section>
   );
