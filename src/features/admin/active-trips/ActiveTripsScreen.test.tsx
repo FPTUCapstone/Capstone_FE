@@ -66,6 +66,15 @@ describe('ActiveTripsScreen', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it('shows the server MSG29 date error at the form controls on 400', async () => {
+    vi.mocked(fetchActiveTrips).mockRejectedValueOnce(
+      new ActiveTripsError(400, 'The submitted Start Date range is logically invalid.'));
+    render(<ActiveTripsScreen />);
+    expect(await screen.findByRole('alert').then(el => el.textContent)).toContain('logically invalid');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(screen.getByLabelText('Keyword')).toBeTruthy();
+  });
+
   it('redirects a missing or expired Administrator session to login', async () => {
     vi.mocked(fetchActiveTrips).mockRejectedValue(new ActiveTripsError(401));
     render(<ActiveTripsScreen />);

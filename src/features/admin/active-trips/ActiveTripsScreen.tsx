@@ -33,7 +33,7 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
   const [draft, setDraft] = useState<ActiveTripsSearch>(applied);
   const [data, setData] = useState<ActiveTripsResponse | null>(null);
   const [state, setState] = useState<LoadState>(validAppliedDates ? 'loading' : 'invalid');
-  const [dateError, setDateError] = useState(validAppliedDates ? '' : ACTIVE_TRIPS_MESSAGES.invalidDates);
+  const [periodError, setPeriodError] = useState(validAppliedDates ? '' : ACTIVE_TRIPS_MESSAGES.invalidDates);
   const [retryKey, setRetryKey] = useState(0);
   const maximumStartDate = useMemo(() => getVietnamTodayDate(), []);
 
@@ -50,6 +50,13 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
           replace(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.activeTrips)}`);
           return;
         }
+        if (error instanceof ActiveTripsError && error.status === 400) {
+          // The BE rejected the submitted filters (MSG29 / invalid range / future date) —
+          // surface the date error at the form controls instead of a system-failure alert.
+          setPeriodError(error.serverMessage ?? ACTIVE_TRIPS_MESSAGES.invalidDates);
+          setState('invalid');
+          return;
+        }
         setState(error instanceof ActiveTripsError && error.status === 403 ? 'forbidden' : 'unavailable');
       });
     return () => controller.abort();
@@ -63,10 +70,10 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!validateDateRange(draft.startDateFrom, draft.startDateTo)) {
-      setDateError(ACTIVE_TRIPS_MESSAGES.invalidDates);
+      setPeriodError(ACTIVE_TRIPS_MESSAGES.invalidDates);
       return;
     }
-    setDateError('');
+    setPeriodError('');
     navigate({ ...draft, keyword: draft.keyword.trim(), destination: draft.destination.trim(), pageNumber: 1 });
   };
 
@@ -92,14 +99,14 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
           <Field label="Keyword"><input aria-label="Keyword" value={draft.keyword} maxLength={200} onChange={(e) => field('keyword', e.target.value)} className={inputClass} placeholder="Trip code, group, or tour" /></Field>
           <Field label="Trip Type"><select aria-label="Trip Type" value={draft.tripType} onChange={(e) => field('tripType', e.target.value as ActiveTripsSearch['tripType'])} className={inputClass}><option value="">All</option><option value="SelfPlanned">Self-Planned</option><option value="Tour">Tour</option></select></Field>
           <Field label="Destination"><input aria-label="Destination" value={draft.destination} maxLength={300} onChange={(e) => field('destination', e.target.value)} className={inputClass} /></Field>
-          <Field label="Start Date From"><input aria-label="Start Date From" aria-describedby={dateError ? 'date-error' : undefined} aria-invalid={Boolean(dateError)} type="date" max={maximumStartDate} value={draft.startDateFrom} onChange={(e) => field('startDateFrom', e.target.value)} className={inputClass} /></Field>
-          <Field label="Start Date To"><input aria-label="Start Date To" aria-describedby={dateError ? 'date-error' : undefined} aria-invalid={Boolean(dateError)} type="date" max={maximumStartDate} value={draft.startDateTo} onChange={(e) => field('startDateTo', e.target.value)} className={inputClass} /></Field>
+          <Field label="Start Date From"><input aria-label="Start Date From" aria-describedby={periodError ? 'period-error' : undefined} aria-invalid={Boolean(periodError)} type="date" max={maximumStartDate} value={draft.startDateFrom} onChange={(e) => field('startDateFrom', e.target.value)} className={inputClass} /></Field>
+          <Field label="Start Date To"><input aria-label="Start Date To" aria-describedby={periodError ? 'period-error' : undefined} aria-invalid={Boolean(periodError)} type="date" max={maximumStartDate} value={draft.startDateTo} onChange={(e) => field('startDateTo', e.target.value)} className={inputClass} /></Field>
           <Field label="Alert State"><select aria-label="Alert State" value={draft.alertState} onChange={(e) => field('alertState', e.target.value as ActiveTripsSearch['alertState'])} className={inputClass}><option value="">All</option><option value="WithOpenAlerts">With Open Alerts</option><option value="WithoutOpenAlerts">Without Open Alerts</option></select></Field>
         </div>
-        {dateError ? <p id="date-error" role="alert" className="mt-3 text-sm font-semibold text-[#8c1030]">{dateError}</p> : null}
+        {periodError ? <p id="period-error" role="alert" className="mt-3 text-sm font-semibold text-[#8c1030]">{periodError}</p> : null}
         <div className="mt-4 flex flex-wrap gap-3">
           <button type="submit" className="rounded-xl bg-[#006b5f] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#005048]">Apply Filters</button>
-          <button type="button" onClick={() => { const next = defaultActiveTripsSearch(); setDraft(next); setDateError(''); navigate(next); }} className="rounded-xl border border-[#9fb3c8] px-5 py-2.5 text-sm font-bold text-[#243b53] hover:bg-[#edf2f7]">Clear</button>
+          <button type="button" onClick={() => { const next = defaultActiveTripsSearch(); setDraft(next); setPeriodError(''); navigate(next); }} className="rounded-xl border border-[#9fb3c8] px-5 py-2.5 text-sm font-bold text-[#243b53] hover:bg-[#edf2f7]">Clear</button>
         </div>
       </form>
 

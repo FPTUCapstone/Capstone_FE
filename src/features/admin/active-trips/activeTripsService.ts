@@ -7,7 +7,7 @@ import {
 } from './activeTrips';
 
 export class ActiveTripsError extends Error {
-  constructor(public readonly status: number) {
+  constructor(public readonly status: number, public readonly serverMessage?: string) {
     super('Unable to load active trips.');
     this.name = 'ActiveTripsError';
   }
@@ -31,7 +31,12 @@ export async function fetchActiveTrips(
   }
 
   const body: unknown = await response.json().catch(() => null);
-  if (!response.ok) throw new ActiveTripsError(response.status);
+  if (!response.ok) {
+    const serverMessage = body && typeof body === 'object' && typeof (body as { title?: unknown }).title === 'string'
+      ? (body as { title: string }).title
+      : undefined;
+    throw new ActiveTripsError(response.status, serverMessage);
+  }
   try {
     return parseActiveTripsResponse(body);
   } catch {
