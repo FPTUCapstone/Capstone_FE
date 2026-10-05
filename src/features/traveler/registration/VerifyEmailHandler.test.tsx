@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VerifyEmailHandler } from './VerifyEmailHandler';
 
 const firebaseMocks = vi.hoisted(() => ({ applyActionCode: vi.fn(), checkActionCode: vi.fn() }));
-const apiMocks = vi.hoisted(() => ({ saveTokens: vi.fn(), verifyEmail: vi.fn() }));
+const apiMocks = vi.hoisted(() => ({ saveTokens: vi.fn(), verifyEmail: vi.fn(), webVerifyEmail: vi.fn() }));
 const authState = vi.hoisted(() => ({
   currentUser: null as null | {
     email: string | null;
@@ -36,6 +36,7 @@ describe('VerifyEmailHandler', () => {
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     });
+    apiMocks.webVerifyEmail.mockResolvedValue({ emailVerified: true });
   });
 
   it('shows success only after Firebase and Backend verification both succeed', async () => {
@@ -52,6 +53,14 @@ describe('VerifyEmailHandler', () => {
     expect(await screen.findByText('Verification Incomplete')).toBeDefined();
     expect(screen.queryByText('Email Verified!')).toBeNull();
     expect(apiMocks.verifyEmail).not.toHaveBeenCalled();
+  });
+
+  it('syncs an operator with web verification without issuing traveler tokens', async () => {
+    render(<VerifyEmailHandler mode="verifyEmail" oobCode="valid-code" flow="operator" />);
+    expect(await screen.findByText('Email Verified!')).toBeDefined();
+    expect(apiMocks.webVerifyEmail).toHaveBeenCalledWith('verified-token');
+    expect(apiMocks.verifyEmail).not.toHaveBeenCalled();
+    expect(apiMocks.saveTokens).not.toHaveBeenCalled();
   });
 
   it('does not show success when Backend synchronization fails', async () => {

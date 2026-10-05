@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { sendEmailVerification } from 'firebase/auth';
+import { sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
 
 import { getFirebaseAuth } from '@/lib/firebase';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
@@ -15,9 +15,9 @@ type Feedback = {
   message: string;
 };
 
-type VerifyAccountFormProps = { deliveryFailed?: boolean; email?: string };
+type VerifyAccountFormProps = { deliveryFailed?: boolean; email?: string; flow?: string };
 
-export function VerifyAccountForm({ deliveryFailed = false, email = '' }: VerifyAccountFormProps) {
+export function VerifyAccountForm({ deliveryFailed = false, email = '', flow }: VerifyAccountFormProps) {
   const [feedback, setFeedback] = useState<Feedback | null>(
     deliveryFailed
       ? {
@@ -28,6 +28,8 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
       : null,
   );
   const [resending, setResending] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState(email);
+  const [recoveryPassword, setRecoveryPassword] = useState('');
 
   // 60-second cooldown for resending verification email
   const { secondsLeft, isOnCooldown, startCooldown } = useVerificationEmailCooldown(60);
@@ -38,8 +40,17 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
     setResending(true);
 
     try {
-      const user = getFirebaseAuth().currentUser;
-      if (!user) {
+      if (flow === 'operator' && !recoveryEmail.trim()) {
+        setFeedback({ tone: 'error', message: 'Enter the registration email before requesting a new link.' });
+        return;
+      }
+      let user = getFirebaseAuth().currentUser;
+      if (flow === 'operator' && recoveryEmail.trim() &&
+          user?.email?.toLowerCase() !== recoveryEmail.trim().toLowerCase() && recoveryPassword) {
+        user = (await signInWithEmailAndPassword(getFirebaseAuth(), recoveryEmail.trim(), recoveryPassword)).user;
+      }
+      if (!user || (flow === 'operator' && recoveryEmail.trim() &&
+          user.email?.toLowerCase() !== recoveryEmail.trim().toLowerCase())) {
         setFeedback({
           tone: 'info',
           message: 'Your registration session has expired. Please sign in to request a new verification link.',
@@ -48,7 +59,7 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
       }
 
       const actionCodeSettings = {
-        url: `${window.location.origin}/verify-email`,
+        url: `${window.location.origin}/verify-email${flow === 'operator' ? '?flow=operator' : ''}`,
         handleCodeInApp: true,
       };
 
@@ -110,6 +121,22 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '' }: Verify
       ) : null}
 
       <div className="space-y-3">
+        {flow === 'operator' ? (
+          <>
+            <label className="block text-left text-sm font-semibold text-brand-navy">
+              Registration email
+              <input type="email" autoComplete="email" value={recoveryEmail}
+                onChange={(event) => setRecoveryEmail(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2" />
+            </label>
+            <label className="block text-left text-sm font-semibold text-brand-navy">
+              Password to restore your registration session
+              <input type="password" autoComplete="current-password" value={recoveryPassword}
+                onChange={(event) => setRecoveryPassword(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2" />
+            </label>
+          </>
+        ) : null}
         <button
           type="button"
           disabled={isOnCooldown || resending}
