@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as tripHistoryApi from '../services/tripHistoryApi';
+import { TripApiError, type TripCardDto } from '../types/tripHistory';
 import { TripHistoryView } from './TripHistoryView';
 
 // Mock useSearchParams
@@ -110,6 +111,142 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
         expect.objectContaining({ searchQuery: 'Đà Nẵng' }),
         expect.anything()
       );
+    });
+  });
+
+  it('State transition: clears stale pendingNotice when a retry fails with 5xx/network error (surfaces MSG127)', async () => {
+    const getTripHistorySpy = vi.spyOn(tripHistoryApi, 'getTripHistory');
+
+    // First call: returns 404/501 PENDING_BE_INTEGRATION
+    getTripHistorySpy.mockResolvedValueOnce({
+      status: 'PENDING_BE_INTEGRATION',
+      message: 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+      trips: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+    });
+
+    render(<TripHistoryView />);
+
+    // First state: Pending integration notice is visible
+    await waitFor(() => {
+      expect(screen.getByText('Dịch vụ lịch sử chuyến đi')).toBeDefined();
+      expect(screen.getByText(/chờ kích hoạt dịch vụ máy chủ/i)).toBeDefined();
+    });
+
+    // Retry fails with 500 / network error (MSG127)
+    getTripHistorySpy.mockRejectedValueOnce(
+      new TripApiError(
+        'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
+        500
+      )
+    );
+
+    // Click retry
+    const retryBtn = screen.getByRole('button', { name: /Thử lại kết nối/i });
+    fireEvent.click(retryBtn);
+
+    // Second state: Pending notice MUST disappear, and MSG127 error state MUST appear
+    await waitFor(() => {
+      expect(screen.getByText('Không thể tải dữ liệu')).toBeDefined();
+      expect(screen.getByText(/MSG127/i)).toBeDefined();
+    });
+
+    // Assert stale pending banner is strictly NOT rendered
+    expect(screen.queryByText('Dịch vụ lịch sử chuyến đi')).toBeNull();
+    expect(screen.queryByText(/chờ kích hoạt dịch vụ máy chủ/i)).toBeNull();
+  });
+
+  describe('Submitted Review modal accessibility & focus trap', () => {
+    const mockReviewedTrip: TripCardDto = {
+      tripId: 'trip-reviewed-01',
+      tripType: 'TourBooking',
+      title: 'Tour Đã Đánh Giá Xong',
+      departureDatetime: '2026-05-24T08:00:00Z',
+      status: 'Completed',
+      statusLabel: 'Đã hoàn thành',
+      isReviewed: true,
+      rating: 5,
+      reviewComment: 'Trải nghiệm du lịch tuyệt vời cùng gia đình!',
+      reviewedAtUtc: '2026-05-25T10:00:00Z',
+    };
+
+    beforeEach(() => {
+      vi.spyOn(tripHistoryApi, 'getTripHistory').mockResolvedValue({
+        status: 'SUCCESS',
+        trips: [mockReviewedTrip],
+        totalCount: 1,
+        page: 1,
+        pageSize: 20,
+      });
+    });
+
+    it('opens review modal, establishes initial focus, traps focus with Tab/Shift+Tab, and restores focus on Escape', async () => {
+      render(<TripHistoryView />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Xem đánh giá/i })).toBeDefined();
+      });
+
+      const triggerBtn = screen.getByRole('button', { name: /Xem đánh giá/i });
+      triggerBtn.focus();
+      expect(document.activeElement).toBe(triggerBtn);
+
+      fireEvent.click(triggerBtn);
+
+      // Verify dialog is open and accessible
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeDefined();
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(dialog.getAttribute('aria-labelledby')).toBe('review-dialog-title');
+      expect(dialog.querySelector('#review-dialog-title')?.textContent).toBe('Tour Đã Đánh Giá Xong');
+
+      // The dialog has two close buttons: top close button and bottom close button
+      const closeButtons = screen.getAllByRole('button', { name: /đóng/i });
+      expect(closeButtons.length).toBe(2);
+      const topCloseBtn = closeButtons[0];
+      const bottomCloseBtn = closeButtons[1];
+
+      // Initial focus placed on top close button
+      expect(document.activeElement).toBe(topCloseBtn);
+
+      // Focus trap: Tab moves from top close button to bottom close button
+      bottomCloseBtn.focus();
+      expect(document.activeElement).toBe(bottomCloseBtn);
+
+      // Tab on last element wraps to first element
+      fireEvent.keyDown(window, { key: 'Tab' });
+      expect(document.activeElement).toBe(topCloseBtn);
+
+      // Shift+Tab on first element wraps to last element
+      fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+      expect(document.activeElement).toBe(bottomCloseBtn);
+
+      // Escape key closes modal and restores focus to original trigger
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(triggerBtn);
+    });
+
+    it('closing modal via Close button restores focus to trigger button', async () => {
+      render(<TripHistoryView />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Xem đánh giá/i })).toBeDefined();
+      });
+
+      const triggerBtn = screen.getByRole('button', { name: /Xem đánh giá/i });
+      triggerBtn.focus();
+      fireEvent.click(triggerBtn);
+
+      expect(screen.getByRole('dialog')).toBeDefined();
+
+      const closeButtons = screen.getAllByRole('button', { name: /đóng/i });
+      fireEvent.click(closeButtons[1]); // Click bottom close button
+
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(triggerBtn);
     });
   });
 });

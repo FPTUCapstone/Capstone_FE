@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
 import type { TripCardDto } from '../types/tripHistory';
@@ -100,5 +100,68 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
 
     const { container } = render(<TripCard trip={tripWithZeroMembers} />);
     expect(container.textContent).not.toContain('0 người');
+  });
+
+  describe('Refund modal accessibility & focus trap', () => {
+    const cancelledTripWithRefund: TripCardDto = {
+      tripId: 'trip-demo-refund',
+      tripType: 'TourBooking',
+      title: 'Tour Hủy Hoàn Tiền',
+      departureDatetime: '2026-05-24T08:00:00Z',
+      status: 'Cancelled',
+      statusLabel: 'Đã hủy',
+      refundStatus: 'Đã hoàn tiền thành công',
+      refundAmount: 500000,
+      refundChannel: 'Ví điện tử',
+      isReviewed: false,
+    };
+
+    it('opens refund modal, establishes initial focus on close button, traps focus, and closes via Escape', () => {
+      render(<TripCard trip={cancelledTripWithRefund} />);
+
+      const triggerBtn = screen.getByRole('button', { name: /Chi tiết hoàn tiền/i });
+      triggerBtn.focus();
+      expect(document.activeElement).toBe(triggerBtn);
+
+      fireEvent.click(triggerBtn);
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeDefined();
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(dialog.getAttribute('aria-labelledby')).toBe('refund-modal-title');
+      expect(screen.getByText('Thông tin hoàn tiền chuyến đi').id).toBe('refund-modal-title');
+
+      const closeBtn = screen.getByRole('button', { name: /Đóng/i });
+      // Initial focus placed inside modal onto close button
+      expect(document.activeElement).toBe(closeBtn);
+
+      // Focus trap: Tab wraps and stays on close button
+      fireEvent.keyDown(window, { key: 'Tab' });
+      expect(document.activeElement).toBe(closeBtn);
+
+      // Focus trap: Shift+Tab wraps and stays on close button
+      fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+      expect(document.activeElement).toBe(closeBtn);
+
+      // Escape key closes modal and restores focus to original trigger
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(triggerBtn);
+    });
+
+    it('closing modal via Close button restores focus to trigger button', () => {
+      render(<TripCard trip={cancelledTripWithRefund} />);
+
+      const triggerBtn = screen.getByRole('button', { name: /Chi tiết hoàn tiền/i });
+      triggerBtn.focus();
+      fireEvent.click(triggerBtn);
+
+      const closeBtn = screen.getByRole('button', { name: /Đóng/i });
+      expect(document.activeElement).toBe(closeBtn);
+
+      fireEvent.click(closeBtn);
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(triggerBtn);
+    });
   });
 });

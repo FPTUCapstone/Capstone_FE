@@ -5,6 +5,10 @@ import type {
   TripHistoryResponseDto,
 } from '../types/tripHistory';
 import { TripApiError } from '../types/tripHistory';
+export { TripApiError };
+
+export const MSG127_SYSTEM_ERROR =
+  'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).';
 
 /**
  * Production gate for trip history demo fixtures.
@@ -125,7 +129,11 @@ export async function getTripHistory(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      const msg = errorData?.title || 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).';
+      // For HTTP 5xx (500-599), ALWAYS standardize to canonical MSG127 copy; never expose ProblemDetails title
+      const msg =
+        response.status >= 500 && response.status <= 599
+          ? MSG127_SYSTEM_ERROR
+          : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
       throw new TripApiError(msg, response.status, errorData);
     }
 
@@ -143,10 +151,7 @@ export async function getTripHistory(
       throw err;
     }
     // Network or server connection failure in real mode is an ERROR with MSG127, NOT pending integration
-    throw new TripApiError(
-      'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
-      0
-    );
+    throw new TripApiError(MSG127_SYSTEM_ERROR, 0);
   }
 }
 
@@ -176,10 +181,12 @@ export async function getTripById(
     }
 
     if (!response.ok) {
-      throw new TripApiError(
-        'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
-        response.status
-      );
+      const errorData = await response.json().catch(() => null);
+      const msg =
+        response.status >= 500 && response.status <= 599
+          ? MSG127_SYSTEM_ERROR
+          : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
+      throw new TripApiError(msg, response.status, errorData);
     }
 
     return await response.json();
@@ -187,9 +194,6 @@ export async function getTripById(
     if (err instanceof TripApiError) {
       throw err;
     }
-    throw new TripApiError(
-      'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
-      0
-    );
+    throw new TripApiError(MSG127_SYSTEM_ERROR, 0);
   }
 }
