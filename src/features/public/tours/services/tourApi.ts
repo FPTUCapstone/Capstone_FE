@@ -36,7 +36,9 @@ export function parseTourSearchItem(value: unknown): TourSearchItemDto {
     !isNullableString(value.representativeScheduleId) ||
     !isNullableString(value.departureAtUtc) ||
     typeof value.availabilityStatus !== 'string' ||
-    !isNullableNumber(value.remainingSlots)
+    !isNullableNumber(value.remainingSlots) ||
+    !('thumbnailUrl' in value) ||
+    !isNullableString(value.thumbnailUrl)
   ) {
     throw new Error('Dữ liệu gói tour không hợp lệ.');
   }
@@ -53,7 +55,7 @@ export function parseTourSearchItem(value: unknown): TourSearchItemDto {
     departureAtUtc: value.departureAtUtc,
     availabilityStatus: value.availabilityStatus,
     remainingSlots: value.remainingSlots,
-    thumbnailUrl: typeof value.thumbnailUrl === 'string' ? value.thumbnailUrl : null,
+    thumbnailUrl: value.thumbnailUrl,
   };
 }
 

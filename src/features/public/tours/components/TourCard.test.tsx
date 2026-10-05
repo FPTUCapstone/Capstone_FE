@@ -127,4 +127,59 @@ describe('TourCard component', () => {
       expect(screen.queryByText(/Còn.*chỗ/)).toBeNull();
     });
   });
+
+  describe('thumbnail rendering (TM-209)', () => {
+    it('renders the real tour image with src and meaningful alt when thumbnailUrl is provided', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        thumbnailUrl: 'https://cdn.example.com/tour-danang-hoian.webp',
+        title: 'Hành Trình Di Sản Phố Cổ Hội An',
+      };
+      render(<TourCard tour={tour} />);
+
+      const img = screen.getByRole('img');
+      expect(img).toBeDefined();
+      expect(img.getAttribute('src')).toBe(
+        'https://cdn.example.com/tour-danang-hoian.webp',
+      );
+      expect(img.getAttribute('alt')).toBe('Hành Trình Di Sản Phố Cổ Hội An');
+    });
+
+    it('renders the neutral placeholder when thumbnailUrl is null without an img element', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        thumbnailUrl: null,
+      };
+      const { container } = render(<TourCard tour={tour} />);
+
+      expect(screen.queryByRole('img')).toBeNull();
+      const placeholder = container.querySelector('[aria-hidden="true"]');
+      expect(placeholder).not.toBeNull();
+      expect(placeholder?.textContent).toContain('tour');
+    });
+
+    it('ensures decorative placeholder content does not create noisy accessibility output', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        thumbnailUrl: null,
+      };
+      render(<TourCard tour={tour} />);
+
+      expect(screen.queryByRole('img')).toBeNull();
+    });
+
+    it('does not fall back to POI images or hardcoded mock images when thumbnailUrl is null', () => {
+      const tour: TourSearchItemDto = {
+        ...mockTour,
+        thumbnailUrl: null,
+      };
+      const { container } = render(<TourCard tour={tour} />);
+
+      const images = container.querySelectorAll('img');
+      expect(images.length).toBe(0);
+      expect(container.innerHTML).not.toContain('unsplash.com');
+      expect(container.innerHTML).not.toContain('/poi/');
+      expect(container.innerHTML).not.toContain('poi-image');
+    });
+  });
 });
