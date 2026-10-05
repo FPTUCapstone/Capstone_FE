@@ -46,7 +46,11 @@ export function OperatorProfileView({
   const [pendingIntegrationMessage, setPendingIntegrationMessage] = useState<string | null>(null);
   const [serverErrorMessage, setServerErrorMessage] = useState<string | null>(null);
 
+  // Single editability invariant (P2 Remediation: production profile is read-only)
+  const canEdit = isDemo && !submitting;
+
   const handleLogoChange = (file: File | null, previewUrl: string | null) => {
+    if (!canEdit) return;
     setLogoFile(file);
     setLogoPreviewUrl(previewUrl);
     if (errors.logo) {
@@ -55,6 +59,7 @@ export function OperatorProfileView({
   };
 
   const handleCancel = () => {
+    if (!canEdit) return;
     // Restores last loaded baseline values (Section 22)
     setBusinessName(initialProfile.businessName || '');
     setBusinessDescription(initialProfile.businessDescription || '');
@@ -72,6 +77,12 @@ export function OperatorProfileView({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isDemo) {
+      // Production mutation unavailable while Backend is NO_BACKEND
+      // Defensive guard: fail closed without validating or executing service mutations
+      return;
+    }
+
     setSaveSuccessMessage(null);
     setPendingIntegrationMessage(null);
     setServerErrorMessage(null);
@@ -252,14 +263,15 @@ export function OperatorProfileView({
                   type="text"
                   value={businessName}
                   onChange={(e) => {
+                    if (!canEdit) return;
                     setBusinessName(e.target.value);
                     if (errors.businessName) setErrors((prev) => ({ ...prev, businessName: undefined }));
                   }}
-                  disabled={!isDemo && submitting}
+                  disabled={!canEdit}
                   placeholder="Ví dụ: Han River Travel Co., Ltd"
                   aria-invalid={Boolean(errors.businessName)}
                   aria-describedby={errors.businessName ? 'err-businessName' : undefined}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                     errors.businessName
                       ? 'border-rose-400 focus:border-rose-500'
                       : 'border-slate-300 focus:border-[#006B5F]'
@@ -287,14 +299,15 @@ export function OperatorProfileView({
                     type="email"
                     value={contactEmail}
                     onChange={(e) => {
+                      if (!canEdit) return;
                       setContactEmail(e.target.value);
                       if (errors.contactEmail) setErrors((prev) => ({ ...prev, contactEmail: undefined }));
                     }}
-                    disabled={!isDemo && submitting}
+                    disabled={!canEdit}
                     placeholder="contact@hanrivertravel.vn"
                     aria-invalid={Boolean(errors.contactEmail)}
                     aria-describedby={errors.contactEmail ? 'err-contactEmail' : undefined}
-                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
+                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                       errors.contactEmail
                         ? 'border-rose-400 focus:border-rose-500'
                         : 'border-slate-300 focus:border-[#006B5F]'
@@ -320,14 +333,15 @@ export function OperatorProfileView({
                     type="tel"
                     value={contactPhone}
                     onChange={(e) => {
+                      if (!canEdit) return;
                       setContactPhone(e.target.value);
                       if (errors.contactPhone) setErrors((prev) => ({ ...prev, contactPhone: undefined }));
                     }}
-                    disabled={!isDemo && submitting}
+                    disabled={!canEdit}
                     placeholder="0236 388 1234"
                     aria-invalid={Boolean(errors.contactPhone)}
                     aria-describedby={errors.contactPhone ? 'err-contactPhone' : undefined}
-                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
+                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                       errors.contactPhone
                         ? 'border-rose-400 focus:border-rose-500'
                         : 'border-slate-300 focus:border-[#006B5F]'
@@ -354,14 +368,15 @@ export function OperatorProfileView({
                   type="text"
                   value={businessAddress}
                   onChange={(e) => {
+                    if (!canEdit) return;
                     setBusinessAddress(e.target.value);
                     if (errors.businessAddress) setErrors((prev) => ({ ...prev, businessAddress: undefined }));
                   }}
-                  disabled={!isDemo && submitting}
+                  disabled={!canEdit}
                   placeholder="02 Nguyễn Văn Linh, Hải Châu, Đà Nẵng"
                   aria-invalid={Boolean(errors.businessAddress)}
                   aria-describedby={errors.businessAddress ? 'err-businessAddress' : undefined}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                     errors.businessAddress
                       ? 'border-rose-400 focus:border-rose-500'
                       : 'border-slate-300 focus:border-[#006B5F]'
@@ -387,12 +402,13 @@ export function OperatorProfileView({
                   type="text"
                   value={website}
                   onChange={(e) => {
+                    if (!canEdit) return;
                     setWebsite(e.target.value);
                     if (errors.website) setErrors((prev) => ({ ...prev, website: undefined }));
                   }}
-                  disabled={!isDemo && submitting}
+                  disabled={!canEdit}
                   placeholder="https://hanrivertravel.vn"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -414,14 +430,15 @@ export function OperatorProfileView({
                   rows={4}
                   value={businessDescription}
                   onChange={(e) => {
+                    if (!canEdit) return;
                     setBusinessDescription(e.target.value);
                     if (errors.businessDescription) setErrors((prev) => ({ ...prev, businessDescription: undefined }));
                   }}
-                  disabled={!isDemo && submitting}
+                  disabled={!canEdit}
                   placeholder="Giới thiệu kinh nghiệm, lĩnh vực thế mạnh và cam kết chất lượng tour của doanh nghiệp..."
                   aria-invalid={Boolean(errors.businessDescription)}
                   aria-describedby={errors.businessDescription ? 'err-businessDescription' : undefined}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                     errors.businessDescription
                       ? 'border-rose-400 focus:border-rose-500'
                       : 'border-slate-300 focus:border-[#006B5F]'
@@ -443,7 +460,7 @@ export function OperatorProfileView({
           <OperatorLogoUpload
             logoUrl={logoPreviewUrl || undefined}
             onLogoChange={handleLogoChange}
-            disabled={submitting}
+            disabled={!canEdit}
             isDemo={isDemo}
             error={errors.logo}
           />
@@ -516,20 +533,20 @@ export function OperatorProfileView({
         <button
           type="button"
           onClick={handleCancel}
-          disabled={submitting}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+          disabled={!canEdit}
+          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Hủy
         </button>
 
         <button
           type="submit"
-          disabled={submitting || (!isDemo && true /* Section 21: disabled production mutation for maximum truthfulness */)}
+          disabled={!canEdit}
           title={!isDemo ? 'Tính năng lưu đang chờ kết nối dịch vụ máy chủ' : undefined}
           className={`rounded-xl px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 ${
             !isDemo
-              ? 'bg-slate-400 cursor-not-allowed'
-              : 'bg-[#006B5F] hover:bg-[#00574D]'
+              ? 'bg-slate-400 cursor-not-allowed opacity-60'
+              : 'bg-[#006B5F] hover:bg-[#00574D] disabled:opacity-50'
           }`}
         >
           {submitting ? 'Đang lưu...' : !isDemo ? 'Lưu thông tin (Chờ máy chủ)' : 'Lưu thông tin'}
