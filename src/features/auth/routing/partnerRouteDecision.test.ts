@@ -19,6 +19,9 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
     it('denies /partner/application to the public sign-in destination', () => {
       expect(partnerRouteDecision('application', null)).toEqual({ action: 'redirect', href: '/sign-in' });
     });
+    it('denies /partner/profile to the public sign-in destination', () => {
+      expect(partnerRouteDecision('profile', null)).toEqual({ action: 'redirect', href: '/sign-in' });
+    });
   });
 
   describe('B. Traveler (never sees "Please sign in", lands on own destination)', () => {
@@ -26,6 +29,7 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
       ['register', '/'],
       ['dashboard', '/'],
       ['application', '/'],
+      ['profile', '/'],
     ] as const)('denies %s by redirecting to %s', (route, href) => {
       expect(partnerRouteDecision(route, ctx())).toEqual({ action: 'redirect', href });
     });
@@ -36,6 +40,7 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
       ['register', '/admin'],
       ['dashboard', '/admin'],
       ['application', '/admin'],
+      ['profile', '/admin'],
     ] as const)('denies %s by redirecting to %s', (route, href) => {
       expect(partnerRouteDecision(route, ctx({ role: 'Administrator' }))).toEqual({ action: 'redirect', href });
     });
@@ -45,6 +50,9 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
     const approved = ctx({ role: 'TourOperator', applicationStatus: 'Approved' });
     it('allows /partner', () => {
       expect(partnerRouteDecision('dashboard', approved)).toEqual({ action: 'allow' });
+    });
+    it('allows /partner/profile (UC-34)', () => {
+      expect(partnerRouteDecision('profile', approved)).toEqual({ action: 'allow' });
     });
     it('denies registration, redirects to /partner', () => {
       expect(partnerRouteDecision('register', approved)).toEqual({ action: 'redirect', href: '/partner' });
@@ -65,6 +73,9 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
     it('redirects /partner to /partner/application', () => {
       expect(partnerRouteDecision('dashboard', operator)).toEqual({ action: 'redirect', href: '/partner/application' });
     });
+    it('redirects /partner/profile to /partner/application (UC-34 access guard)', () => {
+      expect(partnerRouteDecision('profile', operator)).toEqual({ action: 'redirect', href: '/partner/application' });
+    });
     it('denies registration, redirects to /partner/application', () => {
       expect(partnerRouteDecision('register', operator)).toEqual({ action: 'redirect', href: '/partner/application' });
     });
@@ -77,6 +88,9 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
     });
     it('redirects /partner to /partner/application without inferring a state', () => {
       expect(partnerRouteDecision('dashboard', unresolved)).toEqual({ action: 'redirect', href: '/partner/application' });
+    });
+    it('redirects /partner/profile to /partner/application without inferring a state', () => {
+      expect(partnerRouteDecision('profile', unresolved)).toEqual({ action: 'redirect', href: '/partner/application' });
     });
     it('denies registration toward /partner/application', () => {
       expect(partnerRouteDecision('register', unresolved)).toEqual({ action: 'redirect', href: '/partner/application' });
