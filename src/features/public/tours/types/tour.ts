@@ -10,7 +10,7 @@ export interface TourSearchItemDto {
   departureAtUtc: string | null;
   availabilityStatus: string;
   remainingSlots: number | null;
-  thumbnailUrl?: string | null;
+  thumbnailUrl: string | null;
 }
 
 export interface PagedToursResponseDto {
