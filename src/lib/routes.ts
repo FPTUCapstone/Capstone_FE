@@ -15,6 +15,7 @@ export const ROUTES = {
   bookingTicket: (ticketId: string | number) => `/bookings/${encodeURIComponent(ticketId)}/ticket`,
   partner: {
     dashboard: '/partner',
+    profile: '/partner/profile',
     register: '/partner/register',
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',
