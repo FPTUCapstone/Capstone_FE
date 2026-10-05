@@ -164,8 +164,7 @@ export function OperatorProfileView({
                 Tính năng hồ sơ đối tác đang chờ kết nối máy chủ
               </h3>
               <p className="mt-1 leading-relaxed text-amber-900">
-                Giao diện và các quy tắc kiểm tra tính hợp lệ (tên doanh nghiệp, email, số điện thoại, định dạng logo) đã sẵn sàng.
-                Dữ liệu hiện tại chưa được lưu trữ vào hệ thống máy chủ (Capstone_BE).
+                Giao diện và các quy tắc kiểm tra tính hợp lệ đã được xác thực (định dạng email liên hệ, tệp hình ảnh logo dung lượng tối đa 5MB) đã sẵn sàng. Dữ liệu hiện tại chưa được lưu trữ vào hệ thống máy chủ (Capstone_BE).
               </p>
             </div>
           </div>
@@ -506,7 +505,7 @@ export function OperatorProfileView({
 
             {/* Legal Notice note from Screen #76 */}
             <p className="mt-4 rounded-xl bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-600 border border-slate-100">
-              <span className="font-bold text-[#00152A]">Lưu ý:</span> Số giấy phép kinh doanh và mã số thuế là duy nhất và không thể tự chỉnh sửa qua chức năng này (BR-08). Mọi thay đổi thông tin pháp lý cần gửi hồ sơ để Quản trị viên xét duyệt lại.
+              <span className="font-bold text-[#00152A]">Lưu ý:</span> Số giấy phép kinh doanh và mã số thuế là duy nhất và không thể chỉnh sửa qua chức năng này (BR-08). Các thay đổi pháp lý cần xác minh lại phải tuân theo quy trình và quy tắc nghiệp vụ tương ứng của TripMate.
             </p>
           </section>
         </div>
