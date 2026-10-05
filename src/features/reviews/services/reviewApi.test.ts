@@ -141,6 +141,26 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       global.fetch = vi.fn().mockResolvedValue({
         status: 502,
         ok: false,
+        json: async () => ({}),
+      });
+
+      await expect(
+        submitTripReview(
+          {
+            tripId: 'trip-1',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        )
+      ).rejects.toThrow(/MSG127/i);
+
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 503,
+        ok: false,
+        json: async () => ({}),
       });
 
       await expect(
@@ -170,6 +190,56 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
           { allowDemo: false }
         )
       ).rejects.toThrow(/MSG127/i);
+    });
+
+    it('standardizes HTTP 500 with ProblemDetails title to MSG127 and does NOT leak raw server title', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 500,
+        ok: false,
+        json: async () => ({ title: 'Internal Server Error' }),
+      });
+
+      try {
+        await submitTripReview(
+          {
+            tripId: 'trip-1',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        );
+        expect.fail('Should have thrown ReviewApiError');
+      } catch (err: unknown) {
+        expect((err as Error).message).not.toContain('Internal Server Error');
+        expect((err as Error).message).toContain('MSG127');
+      }
+    });
+
+    it('standardizes HTTP 503 with arbitrary ProblemDetails title to MSG127', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 503,
+        ok: false,
+        json: async () => ({ title: 'Service Unavailable', detail: 'Database unreachable' }),
+      });
+
+      try {
+        await submitTripReview(
+          {
+            tripId: 'trip-1',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        );
+        expect.fail('Should have thrown ReviewApiError');
+      } catch (err: unknown) {
+        expect((err as Error).message).not.toContain('Service Unavailable');
+        expect((err as Error).message).toContain('MSG127');
+      }
     });
   });
 

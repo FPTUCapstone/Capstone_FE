@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
 import { getTripHistory } from '../services/tripHistoryApi';
@@ -15,6 +15,7 @@ import type {
 import { TripCard } from './TripCard';
 import { TripFiltersBar } from './TripFiltersBar';
 import { TripSummaryBanner } from './TripSummaryBanner';
+import { useModalFocusTrap } from './useModalFocusTrap';
 
 export function TripHistoryView() {
   const searchParams = useSearchParams();
@@ -35,22 +36,17 @@ export function TripHistoryView() {
   const [pendingNotice, setPendingNotice] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Review modal state
+  // Review modal state & accessibility focus trap
   const [selectedReviewTrip, setSelectedReviewTrip] = useState<TripCardDto | null>(null);
+  const reviewCloseButtonRef = useRef<HTMLButtonElement>(null);
+
+  const reviewDialogRef = useModalFocusTrap<HTMLDivElement>({
+    isOpen: Boolean(selectedReviewTrip),
+    onClose: () => setSelectedReviewTrip(null),
+    initialFocusRef: reviewCloseButtonRef,
+  });
 
   const [retryIndex, setRetryIndex] = useState(0);
-
-  // Accessible Escape key handler for review dialog
-  useEffect(() => {
-    if (!selectedReviewTrip) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSelectedReviewTrip(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedReviewTrip]);
 
   useEffect(() => {
     let isMounted = true;
@@ -85,6 +81,7 @@ export function TripHistoryView() {
       })
       .catch((err: unknown) => {
         if (!isMounted) return;
+        setPendingNotice(null);
         setErrorMessage(
           err instanceof Error
             ? err.message
@@ -104,6 +101,8 @@ export function TripHistoryView() {
 
   const handleRetry = () => {
     setLoading(true);
+    setErrorMessage(null);
+    setPendingNotice(null);
     setRetryIndex((prev) => prev + 1);
   };
 
@@ -111,6 +110,8 @@ export function TripHistoryView() {
     if (newTab === activeTab) return;
     setLoading(true);
     setTrips([]);
+    setErrorMessage(null);
+    setPendingNotice(null);
     setActiveTab(newTab);
     setPage(1);
   };
@@ -118,6 +119,8 @@ export function TripHistoryView() {
   const handleTripTypeChange = (newType: 'ALL' | 'TourBooking' | 'SelfPlannedItinerary') => {
     setLoading(true);
     setTrips([]);
+    setErrorMessage(null);
+    setPendingNotice(null);
     setTripType(newType);
     setPage(1);
   };
@@ -125,6 +128,8 @@ export function TripHistoryView() {
   const handleSearchSubmit = (newQuery: string) => {
     setLoading(true);
     setTrips([]);
+    setErrorMessage(null);
+    setPendingNotice(null);
     setSubmittedSearchQuery(newQuery);
     setPage(1);
   };
@@ -132,6 +137,8 @@ export function TripHistoryView() {
   const handleDateRangeChange = (newFrom: string, newTo: string) => {
     setLoading(true);
     setTrips([]);
+    setErrorMessage(null);
+    setPendingNotice(null);
     setFromDate(newFrom);
     setToDate(newTo);
     setPage(1);
@@ -139,6 +146,8 @@ export function TripHistoryView() {
 
   const handlePageChange = (newPage: number) => {
     setLoading(true);
+    setErrorMessage(null);
+    setPendingNotice(null);
     setPage(newPage);
   };
 
@@ -376,6 +385,7 @@ export function TripHistoryView() {
       {/* Submitted Review Modal */}
       {selectedReviewTrip && (
         <div
+          ref={reviewDialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="review-dialog-title"
@@ -392,6 +402,7 @@ export function TripHistoryView() {
                 </h4>
               </div>
               <button
+                ref={reviewCloseButtonRef}
                 type="button"
                 onClick={() => setSelectedReviewTrip(null)}
                 className="text-slate-400 hover:text-slate-600"

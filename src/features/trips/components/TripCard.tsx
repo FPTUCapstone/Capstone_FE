@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
 import type { TripCardDto } from '../types/tripHistory';
+import { useModalFocusTrap } from './useModalFocusTrap';
 
 interface TripCardProps {
   trip: TripCardDto;
@@ -36,17 +37,15 @@ function formatTripDate(isoString: string): string {
 
 export function TripCard({ trip, onViewReview }: TripCardProps) {
   const [showRefundModal, setShowRefundModal] = useState(false);
+  const refundCloseButtonRef = React.useRef<HTMLButtonElement>(null);
+  const refundTriggerButtonRef = React.useRef<HTMLButtonElement>(null);
 
-  React.useEffect(() => {
-    if (!showRefundModal) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowRefundModal(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showRefundModal]);
+  const refundDialogRef = useModalFocusTrap<HTMLDivElement>({
+    isOpen: showRefundModal,
+    onClose: () => setShowRefundModal(false),
+    initialFocusRef: refundCloseButtonRef,
+    triggerRef: refundTriggerButtonRef,
+  });
 
   const formattedDate = formatTripDate(trip.departureDatetime);
   const isCompleted = trip.status === 'Completed';
@@ -275,6 +274,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
         {/* Action 6: Cancelled tour refund modal toggle */}
         {isCancelled && trip.refundStatus && (
           <button
+            ref={refundTriggerButtonRef}
             type="button"
             onClick={() => setShowRefundModal(true)}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
@@ -290,6 +290,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
       {/* Refund details dialog (Report 3 Alternative Flow 3.7.1) */}
       {showRefundModal && (
         <div
+          ref={refundDialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="refund-modal-title"
@@ -314,6 +315,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             </div>
             <div className="mt-5 flex justify-end">
               <button
+                ref={refundCloseButtonRef}
                 type="button"
                 onClick={() => setShowRefundModal(false)}
                 className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"

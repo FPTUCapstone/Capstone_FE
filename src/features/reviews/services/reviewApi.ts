@@ -1,3 +1,4 @@
+import { MSG127_SYSTEM_ERROR } from '@/features/trips/services/tripHistoryApi';
 import type { CreateReviewPayload, ReviewSubmissionResult } from '../types/review';
 import { ReviewApiError } from '../types/review';
 
@@ -80,7 +81,11 @@ export async function submitTripReview(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      const msg = errorData?.title || 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).';
+      // For HTTP 5xx (500-599), ALWAYS standardize to canonical MSG127 copy; never expose ProblemDetails title
+      const msg =
+        response.status >= 500 && response.status <= 599
+          ? MSG127_SYSTEM_ERROR
+          : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
       throw new ReviewApiError(msg, response.status, errorData);
     }
 
@@ -95,9 +100,6 @@ export async function submitTripReview(
       throw err;
     }
     // Network or connection failure is an ERROR with MSG127, NOT pending integration
-    throw new ReviewApiError(
-      'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
-      0
-    );
+    throw new ReviewApiError(MSG127_SYSTEM_ERROR, 0);
   }
 }
