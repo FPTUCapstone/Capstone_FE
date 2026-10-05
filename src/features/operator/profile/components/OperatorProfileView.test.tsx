@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as operatorProfileService from '../services/operatorProfileService';
 import type { OperatorProfileDto } from '../types/operatorProfile';
 import { OperatorProfileView } from './OperatorProfileView';
 
@@ -128,6 +129,89 @@ describe('OperatorProfileView Component (UC-34 Field Contract & Truthfulness)', 
 
       expect(screen.getByText(/DEMO ONLY/i)).toBeDefined();
       expect(screen.getByText(/Bản xem trước DEMO/i)).toBeDefined();
+    });
+  });
+
+  describe('Production Read-Only Hardening (P2 Remediation)', () => {
+    it('Strictly disables all 6 profile mutation fields in real mode (isDemo = false)', () => {
+      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
+
+      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
+      const descInput = screen.getByLabelText(/Mô tả giới thiệu doanh nghiệp/i) as HTMLTextAreaElement;
+      const addrInput = screen.getByLabelText(/Địa chỉ trụ sở chính/i) as HTMLInputElement;
+      const phoneInput = screen.getByLabelText(/Số điện thoại liên hệ/i) as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/Email liên hệ công việc/i) as HTMLInputElement;
+      const websiteInput = screen.getByLabelText(/Website chính thức/i) as HTMLInputElement;
+
+      expect(nameInput.disabled).toBe(true);
+      expect(descInput.disabled).toBe(true);
+      expect(addrInput.disabled).toBe(true);
+      expect(phoneInput.disabled).toBe(true);
+      expect(emailInput.disabled).toBe(true);
+      expect(websiteInput.disabled).toBe(true);
+    });
+
+    it('Ignores input change events in real mode (inputs remain unchanged)', () => {
+      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
+
+      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
+      fireEvent.change(nameInput, { target: { value: 'Attempted Name Change' } });
+      expect(nameInput.value).toBe('');
+
+      const phoneInput = screen.getByLabelText(/Số điện thoại liên hệ/i) as HTMLInputElement;
+      fireEvent.change(phoneInput, { target: { value: '0909000111' } });
+      expect(phoneInput.value).toBe('');
+    });
+
+    it('Disables both Save and Cancel buttons in real mode', () => {
+      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
+
+      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin \(Chờ máy chủ\)/i });
+      const cancelBtn = screen.getByRole('button', { name: /Hủy/i });
+
+      expect(saveBtn.hasAttribute('disabled')).toBe(true);
+      expect(cancelBtn.hasAttribute('disabled')).toBe(true);
+    });
+
+    it('Omits interactive logo upload/remove buttons in real mode', () => {
+      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
+
+      expect(screen.queryByRole('button', { name: /Tải lên logo/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Thay đổi logo/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Xóa/i })).toBeNull();
+      expect(screen.getByText(/Tính năng tải logo đang chờ kết nối máy chủ/i)).toBeDefined();
+    });
+
+    it('Fails closed on programmatic form submit in real mode without calling mutation service', () => {
+      const updateSpy = vi.spyOn(operatorProfileService, 'updateOperatorProfile');
+      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
+
+      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin \(Chờ máy chủ\)/i });
+      const form = saveBtn.closest('form')!;
+
+      fireEvent.submit(form);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(screen.queryByText(/Cập nhật thông tin hồ sơ đối tác thành công/i)).toBeNull();
+    });
+
+    it('Enables all fields and interactive actions in demo mode (isDemo = true)', () => {
+      render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
+
+      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
+      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin/i });
+      const cancelBtn = screen.getByRole('button', { name: /Hủy/i });
+
+      expect(nameInput.disabled).toBe(false);
+      expect(saveBtn.hasAttribute('disabled')).toBe(false);
+      expect(cancelBtn.hasAttribute('disabled')).toBe(false);
+      expect(screen.getByRole('button', { name: /Tải lên logo/i })).toBeDefined();
+
+      fireEvent.change(nameInput, { target: { value: 'New Test Name' } });
+      expect(nameInput.value).toBe('New Test Name');
+
+      fireEvent.click(cancelBtn);
+      expect(nameInput.value).toBe('Han River Travel Co., Ltd');
     });
   });
 

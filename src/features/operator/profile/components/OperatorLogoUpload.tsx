@@ -41,6 +41,7 @@ export function OperatorLogoUpload({
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isDemo || disabled) return;
     setLocalError(null);
     const file = e.target.files?.[0];
     if (!file) return;
@@ -61,6 +62,7 @@ export function OperatorLogoUpload({
   };
 
   const handleRemove = () => {
+    if (!isDemo || disabled) return;
     if (logoUrl && logoUrl.startsWith('blob:')) {
       URL.revokeObjectURL(logoUrl);
       createdUrlsRef.current.delete(logoUrl);
