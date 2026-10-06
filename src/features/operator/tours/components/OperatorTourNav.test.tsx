@@ -23,4 +23,18 @@ describe('OperatorTourNav', () => {
     const tourLink = screen.getByRole('link', { name: /Gói tour/i });
     expect(tourLink.getAttribute('href')).toBe('/partner/tours');
   });
+
+  it('appends demo=1 to bookings link when isDemo is true', () => {
+    render(<OperatorTourNav activeTab="bookings" isDemo={true} />);
+
+    const bookingLink = screen.getByRole('link', { name: /Đơn đặt chỗ/i });
+    expect(bookingLink.getAttribute('href')).toBe('/partner/bookings?demo=1');
+  });
+
+  it('keeps bookings link clean when isDemo is false', () => {
+    render(<OperatorTourNav activeTab="bookings" isDemo={false} />);
+
+    const bookingLink = screen.getByRole('link', { name: /Đơn đặt chỗ/i });
+    expect(bookingLink.getAttribute('href')).toBe('/partner/bookings');
+  });
 });

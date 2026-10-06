@@ -45,7 +45,7 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     key: 'bookings',
     label: 'Đơn đặt chỗ',
     icon: 'receipt_long',
-    disabled: true,
+    href: ROUTES.partner.bookings,
   },
   {
     key: 'revenue',
