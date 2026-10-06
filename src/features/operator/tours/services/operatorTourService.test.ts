@@ -1,10 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createTourPackage,
   evaluateTourCompleteness,
   getOperatorTourById,
   getOperatorTours,
-  OperatorTourValidationError,
   resetDemoToursStore,
   submitTourForApproval,
   updateTourPackage,
@@ -356,6 +355,412 @@ describe('operatorTourService', () => {
       });
       expect(res.status).toBe('PENDING_BE_INTEGRATION');
       expect(res.isDemo).toBe(false);
+    });
+  });
+
+  describe('BR-103 Version Preservation on Approved Edit (UC-36)', () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+      resetDemoToursStore();
+    });
+
+    afterEach(() => {
+      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    });
+
+    it('A. returns error and leaves original unchanged when editing Approved with createNewVersion=false', async () => {
+      const approvedTour: TourPackageDto = {
+        id: 'tour-approved-1',
+        tourCode: 'TP-APP1',
+        operatorUserId: 101,
+        title: 'Original Approved Tour',
+        destination: 'Đà Nẵng',
+        category: 'Di sản & Thiên nhiên',
+        durationDays: 1,
+        basePrice: 1000000,
+        maxCapacity: 20,
+        description: 'Original Description',
+        cancellationPolicy: 'Hủy trước 24h',
+        status: 'Approved',
+        version: 2,
+        itinerary: validPayload.itinerary,
+        schedules: validPayload.schedules,
+        media: [],
+        createdAt: '2026-10-01',
+        updatedAt: '2026-10-01',
+      };
+
+      const res = await updateTourPackage(
+        { ...validPayload, title: 'Updated Title', id: 'tour-approved-1' },
+        { allowDemo: true, currentTour: approvedTour, createNewVersion: false }
+      );
+
+      expect(res.status).toBe('ERROR');
+      expect(res.message).toBe(OPERATOR_TOUR_MESSAGES.APPROVED_DIRECT_EDIT);
+    });
+
+    it('B-H. creates a distinct Draft vN+1 with new ID without replacing or mutating original Approved version', async () => {
+      const approvedTour: TourPackageDto = {
+        id: 'tour-approved-1',
+        tourCode: 'TP-APP1',
+        operatorUserId: 101,
+        title: 'Original Approved Tour',
+        destination: 'Đà Nẵng',
+        category: 'Di sản & Thiên nhiên',
+        durationDays: 1,
+        basePrice: 1000000,
+        maxCapacity: 20,
+        description: 'Original Description',
+        cancellationPolicy: 'Hủy trước 24h',
+        status: 'Approved',
+        version: 2,
+        itinerary: validPayload.itinerary,
+        schedules: validPayload.schedules,
+        media: [],
+        createdAt: '2026-10-01',
+        updatedAt: '2026-10-01',
+      };
+
+      // Put approvedTour into store
+      const listBefore = await getOperatorTours({ allowDemo: true });
+      expect(listBefore.status).toBe('SUCCESS');
+
+      const res = await updateTourPackage(
+        { ...validPayload, title: 'Brand New Itinerary Title', id: 'tour-approved-1' },
+        { allowDemo: true, currentTour: approvedTour, createNewVersion: true }
+      );
+
+      expect(res.status).toBe('SUCCESS');
+      const draft = res.data!;
+
+      // C. New Draft has different ID
+      expect(draft.id).not.toBe('tour-approved-1');
+      expect(draft.id).toContain('draft');
+
+      // G. Draft version is N+1
+      expect(draft.version).toBe(3);
+      expect(draft.status).toBe('Draft');
+
+      // Preserves logical tour code identity
+      expect(draft.tourCode).toBe('TP-APP1');
+      expect(draft.title).toBe('Brand New Itinerary Title');
+
+      // D, E, F. Original Approved tour remains in store, unchanged status and version
+      const origLookup = await getOperatorTourById('tour-approved-1', { allowDemo: true });
+      expect(origLookup).toBeDefined();
+      expect(approvedTour.status).toBe('Approved');
+      expect(approvedTour.version).toBe(2);
+      expect(approvedTour.title).toBe('Original Approved Tour');
+
+      // Check draft lookup
+      const draftLookup = await getOperatorTourById(draft.id, { allowDemo: true });
+      expect(draftLookup.status).toBe('SUCCESS');
+      expect(draftLookup.data?.version).toBe(3);
+      expect(draftLookup.data?.status).toBe('Draft');
+    });
+
+    it('I-J. submitting Draft vN+1 transitions Draft to Pending while Approved remains Approved', async () => {
+      // Create initial approved tour in store
+      const approvedTour: TourPackageDto = {
+        id: 'tour-bana-app',
+        tourCode: 'TP-BANA',
+        operatorUserId: 101,
+        title: 'Ba Na Hills Approved',
+        destination: 'Đà Nẵng',
+        category: 'Di sản & Thiên nhiên',
+        durationDays: 1,
+        basePrice: 1000000,
+        maxCapacity: 20,
+        description: 'Mô tả',
+        cancellationPolicy: 'Chính sách',
+        status: 'Approved',
+        version: 2,
+        itinerary: validPayload.itinerary,
+        schedules: validPayload.schedules,
+        media: [],
+        createdAt: '2026-10-01',
+        updatedAt: '2026-10-01',
+      };
+
+      // Update approved tour creating new version
+      const updateRes = await updateTourPackage(
+        { ...validPayload, title: 'Ba Na Hills Revision', id: 'tour-bana-app' },
+        { allowDemo: true, currentTour: approvedTour, createNewVersion: true }
+      );
+      const draftTour = updateRes.data!;
+
+      // I. Submit the new draft version
+      const submitRes = await submitTourForApproval(draftTour.id, {
+        allowDemo: true,
+        currentTour: draftTour,
+      });
+
+      expect(submitRes.status).toBe('SUCCESS');
+      expect(submitRes.data?.status).toBe('Pending');
+      expect(submitRes.data?.version).toBe(3);
+
+      // J. Approved version remains Approved
+      expect(approvedTour.status).toBe('Approved');
+      expect(approvedTour.version).toBe(2);
+    });
+
+    it('K. direct editing Pending tour remains blocked', async () => {
+      const pendingTour: TourPackageDto = {
+        id: 'tour-pending-1',
+        tourCode: 'TP-PEND',
+        operatorUserId: 101,
+        title: 'Pending Tour',
+        destination: 'Đà Nẵng',
+        category: 'Di sản & Thiên nhiên',
+        durationDays: 1,
+        basePrice: 1000000,
+        maxCapacity: 20,
+        description: 'Mô tả',
+        cancellationPolicy: 'Chính sách',
+        status: 'Pending',
+        version: 1,
+        itinerary: validPayload.itinerary,
+        schedules: validPayload.schedules,
+        media: [],
+        createdAt: '2026-10-01',
+        updatedAt: '2026-10-01',
+      };
+
+      const res = await updateTourPackage(
+        { ...validPayload, id: 'tour-pending-1' },
+        { allowDemo: true, currentTour: pendingTour }
+      );
+
+      expect(res.status).toBe('ERROR');
+      expect(res.message).toBe(OPERATOR_TOUR_MESSAGES.PENDING_READ_ONLY);
+    });
+
+    it('L. editing Draft keeps the same ID and updates in place', async () => {
+      const draftTour: TourPackageDto = {
+        id: 'tour-draft-1',
+        tourCode: 'TP-DRF1',
+        operatorUserId: 101,
+        title: 'Old Draft Title',
+        destination: 'Đà Nẵng',
+        category: 'Di sản & Thiên nhiên',
+        durationDays: 1,
+        basePrice: 1000000,
+        maxCapacity: 20,
+        description: 'Mô tả',
+        cancellationPolicy: 'Chính sách',
+        status: 'Draft',
+        version: 1,
+        itinerary: validPayload.itinerary,
+        schedules: validPayload.schedules,
+        media: [],
+        createdAt: '2026-10-01',
+        updatedAt: '2026-10-01',
+      };
+
+      const res = await updateTourPackage(
+        { ...validPayload, title: 'New Draft Title', id: 'tour-draft-1' },
+        { allowDemo: true, currentTour: draftTour }
+      );
+
+      expect(res.status).toBe('SUCCESS');
+      expect(res.data?.id).toBe('tour-draft-1');
+      expect(res.data?.version).toBe(1);
+      expect(res.data?.title).toBe('New Draft Title');
+      expect(res.data?.status).toBe('Draft');
+    });
+
+    it('M. editing Rejected tour keeps canonical semantics and same ID', async () => {
+      const rejectedTour: TourPackageDto = {
+        id: 'tour-rej-1',
+        tourCode: 'TP-REJ1',
+        operatorUserId: 101,
+        title: 'Rejected Tour',
+        destination: 'Đà Nẵng',
+        category: 'Di sản & Thiên nhiên',
+        durationDays: 1,
+        basePrice: 1000000,
+        maxCapacity: 20,
+        description: 'Mô tả',
+        cancellationPolicy: 'Chính sách',
+        status: 'Rejected',
+        version: 1,
+        itinerary: validPayload.itinerary,
+        schedules: validPayload.schedules,
+        media: [],
+        createdAt: '2026-10-01',
+        updatedAt: '2026-10-01',
+      };
+
+      const res = await updateTourPackage(
+        { ...validPayload, title: 'Remediated Tour Title', id: 'tour-rej-1' },
+        { allowDemo: true, currentTour: rejectedTour }
+      );
+
+      expect(res.status).toBe('SUCCESS');
+      expect(res.data?.id).toBe('tour-rej-1');
+      expect(res.data?.version).toBe(1);
+      expect(res.data?.title).toBe('Remediated Tour Title');
+    });
+  });
+
+  describe('BR-104 Submission Allow-List (UC-37)', () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+      resetDemoToursStore();
+    });
+
+    afterEach(() => {
+      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    });
+
+    const makeTour = (status: TourPackageDto['status']): TourPackageDto => ({
+      id: `tour-${status.toLowerCase()}`,
+      tourCode: `TP-${status.toUpperCase()}`,
+      operatorUserId: 101,
+      title: validPayload.title,
+      destination: validPayload.destination,
+      category: 'Di sản & Thiên nhiên',
+      durationDays: validPayload.durationDays,
+      basePrice: validPayload.basePrice,
+      maxCapacity: validPayload.maxCapacity,
+      description: validPayload.description,
+      cancellationPolicy: validPayload.cancellationPolicy,
+      status,
+      version: 1,
+      itinerary: validPayload.itinerary,
+      schedules: validPayload.schedules,
+      media: [],
+      createdAt: '2026-10-01',
+      updatedAt: '2026-10-01',
+    });
+
+    it('allows Draft tour to be submitted', async () => {
+      const draft = makeTour('Draft');
+      const res = await submitTourForApproval(draft.id, {
+        allowDemo: true,
+        currentTour: draft,
+      });
+      expect(res.status).toBe('SUCCESS');
+      expect(res.data?.status).toBe('Pending');
+    });
+
+    it('allows Rejected tour to be submitted', async () => {
+      const rejected = makeTour('Rejected');
+      const res = await submitTourForApproval(rejected.id, {
+        allowDemo: true,
+        currentTour: rejected,
+      });
+      expect(res.status).toBe('SUCCESS');
+      expect(res.data?.status).toBe('Pending');
+    });
+
+    it('blocks Pending tour with MSG122', async () => {
+      const pending = makeTour('Pending');
+      const res = await submitTourForApproval(pending.id, {
+        allowDemo: true,
+        currentTour: pending,
+      });
+      expect(res.status).toBe('ERROR');
+      expect(res.message).toContain('MSG122');
+    });
+
+    it('blocks Approved tour with MSG110', async () => {
+      const approved = makeTour('Approved');
+      const res = await submitTourForApproval(approved.id, {
+        allowDemo: true,
+        currentTour: approved,
+      });
+      expect(res.status).toBe('ERROR');
+      expect(res.message).toContain('MSG110');
+    });
+
+    it('blocks Inactive tour with BR-104 allow-list error', async () => {
+      const inactive = makeTour('Inactive');
+      const res = await submitTourForApproval(inactive.id, {
+        allowDemo: true,
+        currentTour: inactive,
+      });
+      expect(res.status).toBe('ERROR');
+      expect(res.message).toContain('BR-104');
+      expect(res.message).toContain('Bản nháp hoặc Bị từ chối');
+    });
+
+    it('blocks Inactive tour BEFORE completeness evaluation even when fully complete', async () => {
+      const fullyCompleteInactive: TourPackageDto = {
+        ...makeTour('Inactive'),
+        media: [{ id: 'm1', url: 'https://example.com/photo.jpg', isPrimary: true }],
+      };
+
+      // Completeness check returns true
+      const completeness = evaluateTourCompleteness(fullyCompleteInactive);
+      expect(completeness.isEligibleForSubmission).toBe(true);
+
+      // But submission is strictly blocked by BR-104 status allow-list
+      const res = await submitTourForApproval(fullyCompleteInactive.id, {
+        allowDemo: true,
+        currentTour: fullyCompleteInactive,
+      });
+      expect(res.status).toBe('ERROR');
+      expect(res.message).toContain('BR-104');
+    });
+  });
+
+  describe('Deterministic Tour Lookup with Multiple Versions', () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+      resetDemoToursStore();
+    });
+
+    afterEach(() => {
+      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    });
+
+    it('returns exact requested record by unique record ID', async () => {
+      // Initial Banahills is tour-142 (v2, Approved)
+      const res = await getOperatorTourById('tour-142', { allowDemo: true });
+      expect(res.status).toBe('SUCCESS');
+      expect(res.data?.id).toBe('tour-142');
+      expect(res.data?.version).toBe(2);
+      expect(res.data?.status).toBe('Approved');
+    });
+
+    it('returns latest version when looking up by tourCode with multiple versions in store', async () => {
+      const approvedTour: TourPackageDto = {
+        id: 'tour-multi-v1',
+        tourCode: 'TP-MULTI',
+        operatorUserId: 101,
+        title: 'Multi Version Tour v1',
+        destination: 'Đà Nẵng',
+        category: 'Di sản & Thiên nhiên',
+        durationDays: 1,
+        basePrice: 1000000,
+        maxCapacity: 20,
+        description: 'Mô tả',
+        cancellationPolicy: 'Chính sách',
+        status: 'Approved',
+        version: 1,
+        itinerary: validPayload.itinerary,
+        schedules: validPayload.schedules,
+        media: [],
+        createdAt: '2026-10-01',
+        updatedAt: '2026-10-01',
+      };
+
+      // Create v2 draft
+      const updateRes = await updateTourPackage(
+        { ...validPayload, title: 'Multi Version Tour v2', id: 'tour-multi-v1' },
+        { allowDemo: true, currentTour: approvedTour, createNewVersion: true }
+      );
+      const draftV2 = updateRes.data!;
+
+      // Lookup by ID returns exact version
+      const v2ById = await getOperatorTourById(draftV2.id, { allowDemo: true });
+      expect(v2ById.data?.version).toBe(2);
+
+      // Lookup by tourCode returns latest version (v2)
+      const byCode = await getOperatorTourById('TP-MULTI', { allowDemo: true });
+      expect(byCode.status).toBe('SUCCESS');
+      expect(byCode.data?.version).toBe(2);
     });
   });
 });

@@ -17,12 +17,12 @@ const createMockContext = (overrides: Partial<WebAuthContext>): WebAuthContext =
 });
 
 describe('tourRouteDecision (BR-07 Access Boundary)', () => {
-  it('redirects unauthenticated users to sign-in', () => {
+  it('A. redirects unauthenticated users (null context) to sign-in', () => {
     const decision = tourRouteDecision(null);
     expect(decision).toEqual({ action: 'redirect', href: ROUTES.signIn });
   });
 
-  it('redirects travelers to home', () => {
+  it('B. redirects travelers to home', () => {
     const context = createMockContext({
       role: 'Traveler',
       applicationStatus: null,
@@ -31,7 +31,7 @@ describe('tourRouteDecision (BR-07 Access Boundary)', () => {
     expect(decision).toEqual({ action: 'redirect', href: ROUTES.home });
   });
 
-  it('redirects administrators to admin dashboard', () => {
+  it('C. redirects administrators to admin dashboard', () => {
     const context = createMockContext({
       role: 'Administrator',
       applicationStatus: null,
@@ -40,7 +40,7 @@ describe('tourRouteDecision (BR-07 Access Boundary)', () => {
     expect(decision).toEqual({ action: 'redirect', href: ROUTES.admin.dashboard });
   });
 
-  it('redirects unapproved tour operators to partner application status', () => {
+  it('D. redirects TourOperator with PendingApproval to partner application status', () => {
     const contextPending = createMockContext({
       role: 'TourOperator',
       applicationStatus: 'PendingApproval',
@@ -49,7 +49,9 @@ describe('tourRouteDecision (BR-07 Access Boundary)', () => {
       action: 'redirect',
       href: ROUTES.partner.application,
     });
+  });
 
+  it('E. redirects TourOperator with Rejected to partner application status', () => {
     const contextRejected = createMockContext({
       role: 'TourOperator',
       applicationStatus: 'Rejected',
@@ -60,10 +62,36 @@ describe('tourRouteDecision (BR-07 Access Boundary)', () => {
     });
   });
 
-  it('allows approved tour operators', () => {
+  it('F. redirects TourOperator with unresolved application state to partner application status', () => {
+    const contextUnresolved = createMockContext({
+      role: 'TourOperator',
+      applicationStatus: null,
+      applicationUnresolved: true,
+    });
+    expect(tourRouteDecision(contextUnresolved)).toEqual({
+      action: 'redirect',
+      href: ROUTES.partner.application,
+    });
+  });
+
+  it('fails closed when TourOperator has non-Active status', () => {
+    const contextInactive = createMockContext({
+      role: 'TourOperator',
+      status: 'Inactive' as unknown as 'Active',
+      applicationStatus: 'Approved',
+    });
+    expect(tourRouteDecision(contextInactive)).toEqual({
+      action: 'redirect',
+      href: ROUTES.signIn,
+    });
+  });
+
+  it('G. allows TourOperator with Active status and Approved application status', () => {
     const contextApproved = createMockContext({
       role: 'TourOperator',
+      status: 'Active',
       applicationStatus: 'Approved',
+      applicationUnresolved: false,
     });
     expect(tourRouteDecision(contextApproved)).toEqual({ action: 'allow' });
   });
