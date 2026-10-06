@@ -16,6 +16,7 @@ export const ROUTES = {
   partner: {
     dashboard: '/partner',
     profile: '/partner/profile',
+    bookings: '/partner/bookings',
     register: '/partner/register',
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',

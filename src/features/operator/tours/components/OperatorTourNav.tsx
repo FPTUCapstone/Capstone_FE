@@ -23,7 +23,7 @@ export function OperatorTourNav({
     { key: 'dashboard', label: 'Bảng điều khiển', icon: 'dashboard', href: ROUTES.partner.dashboard },
     { key: 'tours', label: 'Gói tour', icon: 'tour', href: withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo) },
     { key: 'coupons', label: 'Mã giảm giá', icon: 'confirmation_number', href: '/partner/coupons', disabled: true },
-    { key: 'bookings', label: 'Đơn đặt chỗ', icon: 'receipt_long', href: '/partner/bookings', disabled: true },
+    { key: 'bookings', label: 'Đơn đặt chỗ', icon: 'receipt_long', href: withTourDemoMode(ROUTES.partner.bookings, isDemo) },
     { key: 'revenue', label: 'Doanh thu', icon: 'monitoring', href: '/partner/revenue', disabled: true },
     { key: 'payouts', label: 'Thanh toán', icon: 'payments', href: '/partner/payouts', disabled: true },
   ];
