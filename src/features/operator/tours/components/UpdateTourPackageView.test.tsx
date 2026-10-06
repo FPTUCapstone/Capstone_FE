@@ -169,4 +169,48 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
       ).toBeDefined();
     });
   });
+
+  describe('Demo Mode (?demo=1 continuity)', () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    });
+
+    it('preserves demo=1 on back links when isDemo is true', () => {
+      render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={true} />);
+
+      const backLinks = screen.getAllByRole('link', { name: /Quay lại danh sách|Quay lại/i });
+      for (const link of backLinks) {
+        expect(link.getAttribute('href')).toBe('/partner/tours?demo=1');
+      }
+    });
+
+    it('keeps back links clean when isDemo is false', () => {
+      render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={false} />);
+
+      const backLinks = screen.getAllByRole('link', { name: /Quay lại danh sách|Quay lại/i });
+      for (const link of backLinks) {
+        expect(link.getAttribute('href')).toBe('/partner/tours');
+      }
+    });
+
+    it('preserves demo=1 on router.push when clicking Gửi xét duyệt in demo mode', () => {
+      render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={true} />);
+
+      const submitBtn = screen.getByRole('button', { name: /Gửi xét duyệt/i });
+      fireEvent.click(submitBtn);
+
+      expect(mocks.push).toHaveBeenCalledWith(`/partner/tours/${mockTourDraft.id}/submit?demo=1`);
+    });
+
+    it('preserves demo=1 on router.push after saving changes in demo mode', async () => {
+      render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={true} />);
+
+      const saveBtn = screen.getByRole('button', { name: /Lưu thay đổi/i });
+      fireEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(mocks.push).toHaveBeenCalledWith('/partner/tours?demo=1');
+      });
+    });
+  });
 });

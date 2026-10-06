@@ -73,4 +73,60 @@ describe('CreateTourPackageView (UC-35 Screen #41)', () => {
     const scheduleCards = screen.getAllByText(/Khởi hành #/i);
     expect(scheduleCards.length).toBe(2);
   });
+
+  describe('Demo Mode (?demo=1 continuity)', () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    });
+
+    it('preserves demo=1 on back and cancel links when isDemo is true', () => {
+      render(<CreateTourPackageView isDemo={true} />);
+
+      const backLinks = screen.getAllByRole('link', { name: /Quay lại danh sách|Hủy/i });
+      for (const link of backLinks) {
+        expect(link.getAttribute('href')).toBe('/partner/tours?demo=1');
+      }
+    });
+
+    it('keeps back and cancel links clean when isDemo is false', () => {
+      render(<CreateTourPackageView isDemo={false} />);
+
+      const backLinks = screen.getAllByRole('link', { name: /Quay lại danh sách|Hủy/i });
+      for (const link of backLinks) {
+        expect(link.getAttribute('href')).toBe('/partner/tours');
+      }
+    });
+
+    it('preserves demo=1 on router.push after creating draft in demo mode', async () => {
+      render(<CreateTourPackageView isDemo={true} />);
+
+      // Fill in required fields
+      fireEvent.change(screen.getByLabelText(/Tên gói tour/i), { target: { value: 'Tour Demo Mới' } });
+      fireEvent.change(screen.getByLabelText(/Điểm đến chính/i), { target: { value: 'Đà Nẵng' } });
+      fireEvent.change(screen.getByLabelText(/Mô tả chi tiết gói tour/i), { target: { value: 'Mô tả chi tiết' } });
+
+      const saveDraftBtn = screen.getByRole('button', { name: /Lưu bản nháp/i });
+      fireEvent.click(saveDraftBtn);
+
+      await waitFor(() => {
+        expect(mocks.push).toHaveBeenCalledWith('/partner/tours?demo=1');
+      });
+    });
+
+    it('preserves demo=1 on router.push to submit approval in demo mode', async () => {
+      render(<CreateTourPackageView isDemo={true} />);
+
+      // Fill in required fields
+      fireEvent.change(screen.getByLabelText(/Tên gói tour/i), { target: { value: 'Tour Demo Duyệt' } });
+      fireEvent.change(screen.getByLabelText(/Điểm đến chính/i), { target: { value: 'Đà Nẵng' } });
+      fireEvent.change(screen.getByLabelText(/Mô tả chi tiết gói tour/i), { target: { value: 'Mô tả chi tiết' } });
+
+      const saveAndSubmitBtn = screen.getByRole('button', { name: /Lưu và gửi xét duyệt/i });
+      fireEvent.click(saveAndSubmitBtn);
+
+      await waitFor(() => {
+        expect(mocks.push).toHaveBeenCalledWith(expect.stringMatching(/^\/partner\/tours\/tour-new-\d+\/submit\?demo=1$/));
+      });
+    });
+  });
 });
