@@ -207,4 +207,49 @@ describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
     const submitBtn = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
     expect((submitBtn as HTMLButtonElement).disabled).toBe(false);
   });
+
+  describe('Demo Mode (?demo=1 continuity)', () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    });
+
+    it('preserves demo=1 on back link when isDemo is true', () => {
+      render(<SubmitTourApprovalView tour={mockCompleteTour} isDemo={true} />);
+
+      const backLink = screen.getByRole('link', { name: /Quay lại danh sách/i });
+      expect(backLink.getAttribute('href')).toBe('/partner/tours?demo=1');
+    });
+
+    it('keeps back link clean when isDemo is false', () => {
+      render(<SubmitTourApprovalView tour={mockCompleteTour} isDemo={false} />);
+
+      const backLink = screen.getByRole('link', { name: /Quay lại danh sách/i });
+      expect(backLink.getAttribute('href')).toBe('/partner/tours');
+    });
+
+    it('preserves demo=1 on router.push when clicking Quay lại chỉnh sửa in demo mode', () => {
+      render(<SubmitTourApprovalView tour={mockCompleteTour} isDemo={true} />);
+
+      const editBtn = screen.getByRole('button', { name: /Quay lại chỉnh sửa/i });
+      fireEvent.click(editBtn);
+
+      expect(mocks.push).toHaveBeenCalledWith(`/partner/tours/${mockCompleteTour.id}/edit?demo=1`);
+    });
+
+    it('preserves demo=1 on redirect after confirmation in demo mode', async () => {
+      vi.useFakeTimers();
+      render(<SubmitTourApprovalView tour={mockCompleteTour} isDemo={true} />);
+
+      const submitBtn = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
+      fireEvent.click(submitBtn);
+
+      const confirmBtn = screen.getByRole('button', { name: /Xác nhận gửi/i });
+      fireEvent.click(confirmBtn);
+
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(mocks.push).toHaveBeenCalledWith('/partner/tours?demo=1');
+      vi.useRealTimers();
+    });
+  });
 });

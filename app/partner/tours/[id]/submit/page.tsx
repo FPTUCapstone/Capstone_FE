@@ -6,7 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { OperatorTourNav } from '@/features/operator/tours/components/OperatorTourNav';
 import { SubmitTourApprovalView } from '@/features/operator/tours/components/SubmitTourApprovalView';
 import { isTourDemoAllowedInCurrentEnv } from '@/features/operator/tours/data/operatorTourDemoFixtures';
-import { OPERATOR_TOUR_ROUTES } from '@/features/operator/tours/routes';
+import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '@/features/operator/tours/routes';
 import { getOperatorTourById } from '@/features/operator/tours/services/operatorTourService';
 import {
   OPERATOR_TOUR_MESSAGES,
@@ -116,7 +116,7 @@ function SubmitTourContent() {
                 </p>
                 <div className="mt-6">
                   <Link
-                    href={`${OPERATOR_TOUR_ROUTES.list}?demo=1`}
+                    href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
                     className="inline-flex items-center gap-2 rounded-xl bg-red-800 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-700"
                   >
                     <span className="material-symbols-outlined text-sm">arrow_back</span>

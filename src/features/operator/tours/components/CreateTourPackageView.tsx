@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
-import { OPERATOR_TOUR_ROUTES } from '../routes';
+import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
   createTourPackage,
   OperatorTourValidationError,
@@ -199,9 +199,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       if (result.status === 'SUCCESS' && result.data) {
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.CREATE_SUCCESS);
         if (andSubmitApproval) {
-          router.push(OPERATOR_TOUR_ROUTES.submit(result.data.id));
+          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(result.data.id), isDemo));
         } else {
-          router.push(OPERATOR_TOUR_ROUTES.list);
+          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
         }
       } else if (result.status === 'PENDING_BE_INTEGRATION') {
         setPendingMessage(result.message || OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
@@ -236,7 +236,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
         </div>
 
         <Link
-          href={OPERATOR_TOUR_ROUTES.list}
+          href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
           className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại danh sách
@@ -833,7 +833,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       {/* Bottom Action Bar */}
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <Link
-          href={OPERATOR_TOUR_ROUTES.list}
+          href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
           className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Hủy

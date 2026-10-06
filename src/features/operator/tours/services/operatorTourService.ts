@@ -392,15 +392,82 @@ export async function updateTourPackage(
     const allowDemo = Boolean(options?.allowDemo) && isTourDemoAllowedInCurrentEnv();
 
     if (allowDemo) {
-      // BR-103: An Approved tour must NEVER be edited in place.
-      // Retain the original Approved version N unchanged.
-      // Create a NEW Draft version N+1 with a distinct record ID.
-      const newDraftId = `${currentTour.id}-draft-v${currentTour.version + 1}`;
+      // BR-103 Lineage Resolution:
+      // An Approved tour must NEVER be edited in place. Retain the original Approved record unchanged.
+      if (!demoToursStore.some((t) => t.id === currentTour.id)) {
+        demoToursStore = [...demoToursStore, currentTour];
+      }
+
+      // Search the store for all records belonging to the same tourCode lineage.
+      const lineage = demoToursStore.filter((t) => t.tourCode === currentTour.tourCode);
+      const successors = lineage.filter((t) => t.version > currentTour.version);
+
+      // 1. Fail closed if any successor is currently Pending approval (MSG122)
+      const pendingSuccessor = successors.find((t) => t.status === 'Pending');
+      if (pendingSuccessor) {
+        return {
+          status: 'ERROR',
+          message: OPERATOR_TOUR_MESSAGES.PENDING_READ_ONLY,
+          isDemo: true,
+        };
+      }
+
+      // 2. Reuse / update existing editable Draft or Rejected successor if one exists
+      const editableSuccessor = successors.find(
+        (t) => t.status === 'Draft' || t.status === 'Rejected'
+      );
+      if (editableSuccessor) {
+        const updatedSuccessor: TourPackageDto = {
+          ...editableSuccessor,
+          title: payload.title,
+          destination: payload.destination,
+          category: payload.category || editableSuccessor.category,
+          durationDays: payload.durationDays,
+          basePrice: payload.basePrice,
+          childPrice: payload.childPrice,
+          maxCapacity: payload.maxCapacity,
+          description: payload.description,
+          inclusions: payload.inclusions,
+          exclusions: payload.exclusions,
+          cancellationPolicy: payload.cancellationPolicy,
+          itinerary: payload.itinerary,
+          schedules: payload.schedules,
+          status: 'Draft',
+          updatedAt: new Date().toISOString(),
+          isDemo: true,
+        };
+
+        demoToursStore = demoToursStore.map((t) =>
+          t.id === editableSuccessor.id ? updatedSuccessor : t
+        );
+
+        return {
+          status: 'SUCCESS',
+          data: updatedSuccessor,
+          message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
+          isDemo: true,
+        };
+      }
+
+      // 3. Otherwise allocate maxVersion + 1 with guaranteed store-wide unique record ID
+      const maxVersion = lineage.reduce(
+        (max, t) => Math.max(max, t.version),
+        currentTour.version
+      );
+      const nextVersion = maxVersion + 1;
+
+      let candidateId = `${currentTour.id}-draft-v${nextVersion}`;
+      let counter = 1;
+      while (demoToursStore.some((t) => t.id === candidateId)) {
+        candidateId = `${currentTour.id}-draft-v${nextVersion}-${counter++}`;
+      }
+      const newDraftId = candidateId;
+
       const draftTour: TourPackageDto = {
         ...currentTour,
         id: newDraftId,
         tourCode: currentTour.tourCode, // preserve logical tour/package identity
-        version: currentTour.version + 1,
+        version: nextVersion,
         status: 'Draft',
         title: payload.title,
         destination: payload.destination,

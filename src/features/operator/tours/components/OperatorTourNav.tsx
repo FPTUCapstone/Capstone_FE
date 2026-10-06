@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
-import { OPERATOR_TOUR_ROUTES } from '../routes';
+import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 
 export type OperatorNavKey = 'dashboard' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts' | 'profile' | 'settings';
 
@@ -21,7 +21,7 @@ export function OperatorTourNav({
 }: OperatorTourNavProps) {
   const navItems = [
     { key: 'dashboard', label: 'Bảng điều khiển', icon: 'dashboard', href: ROUTES.partner.dashboard },
-    { key: 'tours', label: 'Gói tour', icon: 'tour', href: OPERATOR_TOUR_ROUTES.list },
+    { key: 'tours', label: 'Gói tour', icon: 'tour', href: withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo) },
     { key: 'coupons', label: 'Mã giảm giá', icon: 'confirmation_number', href: '/partner/coupons', disabled: true },
     { key: 'bookings', label: 'Đơn đặt chỗ', icon: 'receipt_long', href: '/partner/bookings', disabled: true },
     { key: 'revenue', label: 'Doanh thu', icon: 'monitoring', href: '/partner/revenue', disabled: true },

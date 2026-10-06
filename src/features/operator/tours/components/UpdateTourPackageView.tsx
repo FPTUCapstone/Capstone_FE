@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
-import { OPERATOR_TOUR_ROUTES } from '../routes';
+import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
   OperatorTourValidationError,
   updateTourPackage,
@@ -129,9 +129,9 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       if (result.status === 'SUCCESS' && result.data) {
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
         if (andSubmit) {
-          router.push(OPERATOR_TOUR_ROUTES.submit(result.data.id));
+          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(result.data.id), isDemo));
         } else {
-          router.push(OPERATOR_TOUR_ROUTES.list);
+          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
         }
       } else if (result.status === 'PENDING_BE_INTEGRATION') {
         setPendingMessage(result.message || OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
@@ -174,7 +174,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         </div>
 
         <Link
-          href={OPERATOR_TOUR_ROUTES.list}
+          href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
           className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại danh sách
@@ -646,7 +646,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       {/* Bottom Action Bar */}
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <Link
-          href={OPERATOR_TOUR_ROUTES.list}
+          href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
           className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại
@@ -664,7 +664,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
             {(initialTour.status === 'Draft' || initialTour.status === 'Rejected') && (
               <button
                 type="button"
-                onClick={() => router.push(OPERATOR_TOUR_ROUTES.submit(initialTour.id))}
+                onClick={() => router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(initialTour.id), isDemo))}
                 disabled={submitting}
                 className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
               >

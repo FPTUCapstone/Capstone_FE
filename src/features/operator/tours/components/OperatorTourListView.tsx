@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
-import { OPERATOR_TOUR_ROUTES } from '../routes';
+import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
   type TourLifecycleStatus,
   type TourPackageDto,
@@ -44,7 +44,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
         </div>
 
         <Link
-          href={OPERATOR_TOUR_ROUTES.create}
+          href={withTourDemoMode(OPERATOR_TOUR_ROUTES.create, isDemo)}
           className="flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
@@ -164,7 +164,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                           </div>
                           <div>
                             <Link
-                              href={OPERATOR_TOUR_ROUTES.edit(t.id)}
+                              href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(t.id), isDemo)}
                               className="font-bold text-[#00152A] hover:text-[#006B5F] transition"
                             >
                               {t.title}
@@ -187,7 +187,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                         <div className="flex items-center justify-end gap-2">
                           {canEdit && (
                             <Link
-                              href={OPERATOR_TOUR_ROUTES.edit(t.id)}
+                              href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(t.id), isDemo)}
                               className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition"
                             >
                               Chỉnh sửa
@@ -195,7 +195,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                           )}
                           {t.status === 'Pending' && (
                             <Link
-                              href={OPERATOR_TOUR_ROUTES.edit(t.id)}
+                              href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(t.id), isDemo)}
                               className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-50 transition"
                             >
                               Xem chi tiết
@@ -203,7 +203,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                           )}
                           {canSubmit && (
                             <Link
-                              href={OPERATOR_TOUR_ROUTES.submit(t.id)}
+                              href={withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(t.id), isDemo)}
                               className="rounded-lg bg-[#006B5F] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#005249] transition shadow-2xs"
                             >
                               Gửi duyệt

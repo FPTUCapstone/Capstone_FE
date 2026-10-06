@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { OPERATOR_TOUR_ROUTES } from '../routes';
+import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import {
   evaluateTourCompleteness,
@@ -58,7 +58,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         setShowConfirmModal(false);
         // After 1.5s redirect back to tour list
         setTimeout(() => {
-          router.push(OPERATOR_TOUR_ROUTES.list);
+          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
         }, 1200);
       } else if (result.status === 'PENDING_BE_INTEGRATION') {
         setPendingMessage(result.message || OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
@@ -91,7 +91,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         </div>
 
         <Link
-          href={OPERATOR_TOUR_ROUTES.list}
+          href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
           className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại danh sách
@@ -293,7 +293,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <button
           type="button"
-          onClick={() => router.push(OPERATOR_TOUR_ROUTES.edit(tour.id))}
+          onClick={() => router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(tour.id), isDemo))}
           className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại chỉnh sửa
