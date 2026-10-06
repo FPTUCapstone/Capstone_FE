@@ -19,6 +19,7 @@ export const ROUTES = {
     register: '/partner/register',
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',
+    createCoupon: '/partner/coupons/create',
   },
   account: {
     profile: '/account/profile',

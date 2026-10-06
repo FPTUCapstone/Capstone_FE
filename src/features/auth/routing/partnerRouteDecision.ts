@@ -1,7 +1,7 @@
 import { ROUTES } from '@/lib/routes';
 import type { WebAuthContext } from '../session/authSession';
 
-export type PartnerRoute = 'register' | 'dashboard' | 'application' | 'resubmit' | 'profile';
+export type PartnerRoute = 'register' | 'dashboard' | 'application' | 'resubmit' | 'profile' | 'couponCreate';
 export type PartnerRouteDecision = { action: 'allow' } | { action: 'redirect'; href: string };
 
 /**
@@ -33,6 +33,7 @@ export function partnerRouteDecision(route: PartnerRoute, context: WebAuthContex
   switch (route) {
     case 'dashboard':
     case 'profile':
+    case 'couponCreate':
       return approved ? { action: 'allow' } : { action: 'redirect', href: ROUTES.partner.application };
     case 'application':
       return approved ? { action: 'redirect', href: ROUTES.partner.dashboard } : { action: 'allow' };

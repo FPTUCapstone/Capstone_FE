@@ -22,6 +22,9 @@ export function PartnerShell({ children, description, title }: PartnerShellProps
             <Link href={ROUTES.partner.application} className="rounded-lg px-3 py-2 text-[#006b5f] hover:bg-[#e8f7f4]">
               Application Status
             </Link>
+            <Link href={ROUTES.partner.createCoupon} className="rounded-lg px-3 py-2 text-[#006b5f] hover:bg-[#e8f7f4]">
+              Create coupon
+            </Link>
             <Link href={ROUTES.signIn} className="rounded-lg px-3 py-2 text-[#00152a] hover:bg-[#eceef1]">
               Sign In
             </Link>
