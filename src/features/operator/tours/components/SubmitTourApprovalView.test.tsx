@@ -149,4 +149,62 @@ describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
       ).toBeGreaterThan(0);
     });
   });
+
+  it('disables submit button and shows BR-104 notice when tour status is Inactive', () => {
+    const inactiveTour: TourPackageDto = {
+      ...mockCompleteTour,
+      status: 'Inactive',
+    };
+
+    render(<SubmitTourApprovalView tour={inactiveTour} isDemo={false} />);
+
+    const submitBtn = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
+
+    expect(
+      screen.getByText(/Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt \(BR-104\)/i)
+    ).toBeDefined();
+  });
+
+  it('disables submit button and shows MSG122 notice when tour status is Pending', () => {
+    const pendingTour: TourPackageDto = {
+      ...mockCompleteTour,
+      status: 'Pending',
+    };
+
+    render(<SubmitTourApprovalView tour={pendingTour} isDemo={false} />);
+
+    const submitBtn = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
+
+    expect(screen.getByText(/Gói tour đã ở trạng thái chờ duyệt \(MSG122\)/i)).toBeDefined();
+  });
+
+  it('disables submit button and shows MSG110 notice when tour status is Approved', () => {
+    const approvedTour: TourPackageDto = {
+      ...mockCompleteTour,
+      status: 'Approved',
+    };
+
+    render(<SubmitTourApprovalView tour={approvedTour} isDemo={false} />);
+
+    const submitBtn = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
+
+    expect(
+      screen.getByText(/Gói tour đã được phê duyệt\. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa \(MSG110\)/i)
+    ).toBeDefined();
+  });
+
+  it('allows Rejected tour to be submitted when completeness criteria are met', () => {
+    const rejectedTour: TourPackageDto = {
+      ...mockCompleteTour,
+      status: 'Rejected',
+    };
+
+    render(<SubmitTourApprovalView tour={rejectedTour} isDemo={false} />);
+
+    const submitBtn = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(false);
+  });
 });

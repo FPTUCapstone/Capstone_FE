@@ -246,6 +246,7 @@ export async function getOperatorTours(options?: {
 
 /**
  * Retrieves a single Tour Package by ID.
+ * Returns exact record by ID, or latest version when querying by tourCode.
  */
 export async function getOperatorTourById(
   id: string,
@@ -254,14 +255,28 @@ export async function getOperatorTourById(
   const allowDemo = Boolean(options?.allowDemo) && isTourDemoAllowedInCurrentEnv();
 
   if (allowDemo) {
-    const tour = demoToursStore.find((t) => t.id === id || t.tourCode === id);
-    if (tour) {
+    // 1. Primary lookup: deterministic unique record ID
+    const exactMatch = demoToursStore.find((t) => t.id === id);
+    if (exactMatch) {
       return {
         status: 'SUCCESS',
-        data: { ...tour },
+        data: { ...exactMatch },
         isDemo: true,
       };
     }
+
+    // 2. Secondary fallback lookup by tourCode:
+    // If multiple versions share the same tourCode, deterministically return the latest version
+    const codeMatches = demoToursStore.filter((t) => t.tourCode === id);
+    if (codeMatches.length > 0) {
+      const latestVersion = [...codeMatches].sort((a, b) => b.version - a.version)[0];
+      return {
+        status: 'SUCCESS',
+        data: { ...latestVersion },
+        isDemo: true,
+      };
+    }
+
     return {
       status: 'ERROR',
       message: 'Không tìm thấy gói tour trong bộ dữ liệu mẫu.',
@@ -338,7 +353,9 @@ export async function createTourPackage(
 
 /**
  * UC-36: Updates an existing Tour Package.
- * Adheres to BR-103 versioning and BR-61 capacity constraints.
+ * Adheres to BR-103 version preservation and BR-61 capacity constraints.
+ * Editing an Approved tour creates a distinct Draft vN+1 record while keeping
+ * the original Approved version intact in the demo store.
  */
 export async function updateTourPackage(
   payload: UpdateTourPackagePayload,
@@ -364,19 +381,67 @@ export async function updateTourPackage(
     };
   }
 
-  if (currentTour.status === 'Approved' && !createNewVersion) {
+  if (currentTour.status === 'Approved') {
+    if (!createNewVersion) {
+      return {
+        status: 'ERROR',
+        message: OPERATOR_TOUR_MESSAGES.APPROVED_DIRECT_EDIT,
+      };
+    }
+
+    const allowDemo = Boolean(options?.allowDemo) && isTourDemoAllowedInCurrentEnv();
+
+    if (allowDemo) {
+      // BR-103: An Approved tour must NEVER be edited in place.
+      // Retain the original Approved version N unchanged.
+      // Create a NEW Draft version N+1 with a distinct record ID.
+      const newDraftId = `${currentTour.id}-draft-v${currentTour.version + 1}`;
+      const draftTour: TourPackageDto = {
+        ...currentTour,
+        id: newDraftId,
+        tourCode: currentTour.tourCode, // preserve logical tour/package identity
+        version: currentTour.version + 1,
+        status: 'Draft',
+        title: payload.title,
+        destination: payload.destination,
+        category: payload.category || currentTour.category,
+        durationDays: payload.durationDays,
+        basePrice: payload.basePrice,
+        childPrice: payload.childPrice,
+        maxCapacity: payload.maxCapacity,
+        description: payload.description,
+        inclusions: payload.inclusions,
+        exclusions: payload.exclusions,
+        cancellationPolicy: payload.cancellationPolicy,
+        itinerary: payload.itinerary,
+        schedules: payload.schedules,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isDemo: true,
+      };
+
+      // Add the new Draft version to the demo store without replacing the Approved tour
+      demoToursStore = [draftTour, ...demoToursStore];
+
+      return {
+        status: 'SUCCESS',
+        data: draftTour,
+        message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
+        isDemo: true,
+      };
+    }
+
     return {
-      status: 'ERROR',
-      message: OPERATOR_TOUR_MESSAGES.APPROVED_DIRECT_EDIT,
+      status: 'PENDING_BE_INTEGRATION',
+      message: OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION,
+      isDemo: false,
     };
   }
 
   const allowDemo = Boolean(options?.allowDemo) && isTourDemoAllowedInCurrentEnv();
 
   if (allowDemo) {
-    const updatedVersion = createNewVersion ? currentTour.version + 1 : currentTour.version;
-    const updatedStatus = createNewVersion ? 'Draft' : currentTour.status;
-
+    // Draft or Rejected tour editing: update the existing editable record in place
     const updatedTour: TourPackageDto = {
       ...currentTour,
       title: payload.title,
@@ -390,8 +455,8 @@ export async function updateTourPackage(
       inclusions: payload.inclusions,
       exclusions: payload.exclusions,
       cancellationPolicy: payload.cancellationPolicy,
-      status: updatedStatus,
-      version: updatedVersion,
+      status: currentTour.status,
+      version: currentTour.version,
       itinerary: payload.itinerary,
       schedules: payload.schedules,
       updatedAt: new Date().toISOString(),
@@ -417,7 +482,8 @@ export async function updateTourPackage(
 
 /**
  * UC-37: Submits a Tour Package for Administrator approval.
- * Adheres to BR-104 (Draft or Rejected only) and BR-101 completeness.
+ * Adheres to BR-104 allow-list (ONLY Draft or Rejected) and BR-101 completeness.
+ * Status eligibility is strictly evaluated BEFORE completeness checks.
  */
 export async function submitTourForApproval(
   tourId: string,
@@ -429,7 +495,8 @@ export async function submitTourForApproval(
 ): Promise<TourActionResult<TourPackageDto>> {
   const { currentTour } = options;
 
-  // Status eligibility (BR-104)
+  // 1. Status eligibility (BR-104 allow-list: ONLY Draft or Rejected)
+  // Check BEFORE evaluateTourCompleteness so non-submittable tours fail immediately
   if (currentTour.status === 'Pending') {
     return {
       status: 'ERROR',
@@ -442,8 +509,16 @@ export async function submitTourForApproval(
       message: 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa (MSG110).',
     };
   }
+  const isSubmittableStatus =
+    currentTour.status === 'Draft' || currentTour.status === 'Rejected';
+  if (!isSubmittableStatus) {
+    return {
+      status: 'ERROR',
+      message: 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt (BR-104).',
+    };
+  }
 
-  // Completeness check (BR-101)
+  // 2. Completeness check (BR-101)
   const completeness = evaluateTourCompleteness(currentTour);
   if (!completeness.isEligibleForSubmission) {
     throw new Error('Vui lòng hoàn thành tất cả các mục bắt buộc trước khi gửi xét duyệt (BR-101, MSG01).');

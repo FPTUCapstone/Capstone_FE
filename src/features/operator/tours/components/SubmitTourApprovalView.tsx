@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OPERATOR_TOUR_ROUTES } from '../routes';
+import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import {
   evaluateTourCompleteness,
   submitTourForApproval,
@@ -21,6 +22,16 @@ interface SubmitTourApprovalViewProps {
 export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourApprovalViewProps) {
   const router = useRouter();
   const completeness = evaluateTourCompleteness(tour);
+  const isSubmittableStatus = tour.status === 'Draft' || tour.status === 'Rejected';
+
+  let nonSubmittableReason = '';
+  if (tour.status === 'Pending') {
+    nonSubmittableReason = 'Gói tour đã ở trạng thái chờ duyệt (MSG122).';
+  } else if (tour.status === 'Approved') {
+    nonSubmittableReason = 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa (MSG110).';
+  } else if (!isSubmittableStatus) {
+    nonSubmittableReason = 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt (BR-104).';
+  }
 
   const [reviewerNote, setReviewerNote] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -152,6 +163,14 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           {errorMessage}
         </div>
       )}
+      {nonSubmittableReason && (
+        <div
+          role="alert"
+          className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs font-bold text-amber-900 shadow-xs"
+        >
+          {nonSubmittableReason}
+        </div>
+      )}
 
       {/* Tour Summary Card (Screen #43 header) */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
@@ -167,9 +186,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
               </p>
             </div>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-            Chưa mở bán (Draft)
-          </span>
+          <OperatorTourStatusBadge status={tour.status} />
         </div>
       </div>
 
@@ -284,7 +301,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         <button
           type="button"
           onClick={() => setShowConfirmModal(true)}
-          disabled={!completeness.isEligibleForSubmission || submitting}
+          disabled={!isSubmittableStatus || !completeness.isEligibleForSubmission || submitting}
           className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
         >
           Gửi yêu cầu xét duyệt (UC-37)
