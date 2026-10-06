@@ -30,7 +30,7 @@ describe('CreateCouponForm', () => {
     fireEvent.change(screen.getByLabelText('Discount (%)'), { target: { value: '10' } });
     fireEvent.change(screen.getByLabelText('Maximum discount (VND)'), { target: { value: '100000' } });
     fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: 'Create coupon' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create and activate coupon' }));
 
     fireEvent.click(await screen.findByRole('button', { name: 'Create another coupon' }));
 
@@ -50,5 +50,14 @@ describe('CreateCouponForm', () => {
 
     expect(await screen.findByRole('checkbox')).toBeDefined();
     expect(mocks.getEligibleCouponTours).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses the Stitch coupon-creation layout with accessible discount cards', async () => {
+    render(<CreateCouponForm />);
+
+    expect(await screen.findByRole('heading', { name: 'Create a new promotional coupon' })).toBeDefined();
+    expect((screen.getByRole('radio', { name: 'Percentage discount' }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('radio', { name: 'Fixed amount' }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole('button', { name: 'Generate code' })).toBeDefined();
   });
 });
