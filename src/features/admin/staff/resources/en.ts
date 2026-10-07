@@ -26,6 +26,7 @@ export const adminStaffEn = {
     staffDashboard: 'Staff Workspace',
     tourReviews: 'Tour Reviews',
     createPoi: 'POI Catalog',
+    statisticalReports: 'Statistical Reports',
     algorithmSettings: 'Algorithm Settings',
     auditLogs: 'Audit Logs',
     securityLabel: 'Security',
