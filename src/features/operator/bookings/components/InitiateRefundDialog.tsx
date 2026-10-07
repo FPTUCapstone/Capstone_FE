@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { BookingDto, InitiateRefundPayload } from '../types/bookingLifecycle';
-import { calculateBookingRefundPreview } from '../services/operatorBookingService';
+import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
 
 interface InitiateRefundDialogProps {
@@ -88,7 +88,7 @@ function InitiateRefundModalContent({
     };
   }, [handleClose]);
 
-  const refundPreview = calculateBookingRefundPreview(booking);
+  const refundPreview = calculateDemoBookingRefundPreview(booking);
   const channel = booking.paymentTransaction?.paymentChannel || 'VNPay';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,11 +159,11 @@ function InitiateRefundModalContent({
           </div>
         </div>
 
-        {/* Refund Computation Section */}
+        {/* Refund Computation Section (Demo fixture policy; Production uses Backend-calculated amounts) */}
         <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50/60 p-4 text-xs space-y-2">
           <div className="flex items-center gap-1.5 font-bold text-[#006B5F]">
             <span className="material-symbols-outlined text-[18px]">calculate</span>
-            <span>Hạch toán hoàn tiền (BR-107 & BR-77)</span>
+            <span>Hạch toán hoàn tiền (BR-107 & BR-77 — Mẫu thử Demo)</span>
           </div>
           <div className="text-[11px] text-slate-600">
             Chính sách: <span className="font-medium text-slate-800">{refundPreview.policyApplied}</span>
@@ -181,7 +181,7 @@ function InitiateRefundModalContent({
             </span>
           </div>
           <p className="mt-1 text-[11px] text-slate-500 italic">
-            * Giao dịch thanh toán gốc giữ nguyên tính toàn vẹn (BR-77). Hoàn tiền tạo bản ghi độc lập.
+            * Giao dịch thanh toán gốc giữ nguyên tính toàn vẹn (BR-77). Hoàn tiền tạo bản ghi độc lập (trên Production số tiền hoàn do Backend hạch toán).
           </p>
         </div>
 

@@ -9,7 +9,7 @@ import {
   type CancellationReasonValue,
   type CancelBookingPayload,
 } from '../types/bookingLifecycle';
-import { calculateBookingRefundPreview } from '../services/operatorBookingService';
+import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
 
 interface CancelBookingDialogProps {
@@ -96,7 +96,7 @@ function CancelBookingModalContent({
     };
   }, [handleClose]);
 
-  const refundPreview = calculateBookingRefundPreview(booking);
+  const refundPreview = calculateDemoBookingRefundPreview(booking);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,11 +176,11 @@ function CancelBookingModalContent({
           </div>
         </div>
 
-        {/* Refund Policy Preview */}
+        {/* Refund Policy Preview (Demo fixture policy; Production uses Backend-calculated amounts) */}
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs">
           <div className="flex items-center gap-1.5 font-bold text-amber-900">
             <span className="material-symbols-outlined text-[18px]">currency_exchange</span>
-            <span>Chính sách hoàn tiền dự kiến (BR-107)</span>
+            <span>Chính sách hoàn tiền dự kiến (BR-107 — Mẫu thử Demo)</span>
           </div>
           <p className="mt-1 text-amber-800 font-medium">{refundPreview.policyApplied}</p>
           <div className="mt-2 flex items-center justify-between border-t border-amber-200/60 pt-2 text-xs">
@@ -191,7 +191,7 @@ function CancelBookingModalContent({
           </div>
           {booking.paidAmount > 0 && refundPreview.refundableAmount > 0 && (
             <p className="mt-1 text-[11px] text-slate-600">
-              * Khoản tiền sẽ được hoàn trả tự động về kênh thanh toán ban đầu ({booking.paymentTransaction?.paymentChannel || 'VNPay'}) theo BR-76.
+              * Khoản tiền sẽ được hoàn trả tự động về kênh thanh toán ban đầu ({booking.paymentTransaction?.paymentChannel || 'VNPay'}) theo BR-76. Trên môi trường Production, số tiền hoàn do Backend hạch toán chính thức.
             </p>
           )}
         </div>

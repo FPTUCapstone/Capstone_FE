@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useWebSession } from '@/features/auth/session/useWebSession';
 import {
   cancelCustomerBooking,
   getOperatorBookings,
@@ -9,10 +10,10 @@ import {
 } from '../services/operatorBookingService';
 import {
   DEMO_OPERATOR_TOURS,
-  DEMO_OPERATOR_USER_ID,
   isBookingDemoAllowedInCurrentEnv,
 } from '../data/operatorBookingDemoFixtures';
 import {
+  OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
   OPERATOR_BOOKING_MESSAGES,
   type BookingDto,
   type BookingFilterParams,
@@ -31,22 +32,57 @@ import { ROUTES } from '@/lib/routes';
 interface OperatorBookingListViewProps {
   initialParams?: BookingFilterParams;
   isDemo?: boolean;
+  demoActorUserId?: number;
+}
+
+interface FilterFormState {
+  tourId: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  searchKeyword: string;
 }
 
 export function OperatorBookingListView({
   initialParams = {},
   isDemo = false,
+  demoActorUserId,
 }: OperatorBookingListViewProps) {
   const isDemoPermitted = isDemo && isBookingDemoAllowedInCurrentEnv();
+  const { status: sessionStatus, context: sessionContext } = useWebSession();
 
-  // Filters state
-  const [tourId, setTourId] = useState<string>(initialParams.tourId || 'ALL');
-  const [status, setStatus] = useState<string>(initialParams.status || 'ALL');
-  const [startDate, setStartDate] = useState<string>(initialParams.startDate || '');
-  const [endDate, setEndDate] = useState<string>(initialParams.endDate || '');
-  const [searchKeyword, setSearchKeyword] = useState<string>(initialParams.searchKeyword || '');
+  const isAuthorizedOperator =
+    sessionStatus === 'authenticated' &&
+    sessionContext !== null &&
+    sessionContext.role === 'TourOperator' &&
+    sessionContext.status === 'Active' &&
+    sessionContext.applicationStatus === 'Approved' &&
+    !sessionContext.applicationUnresolved;
+
+  const resolvedDemoActorUserId =
+    demoActorUserId !== undefined
+      ? demoActorUserId
+      : isAuthorizedOperator
+        ? sessionContext.userId
+        : undefined;
+
+  const isSessionRestoring =
+    isDemoPermitted && demoActorUserId === undefined && sessionStatus === 'restoring';
+
+  const initialFilterState: FilterFormState = {
+    tourId: initialParams.tourId || 'ALL',
+    status: initialParams.status || 'ALL',
+    startDate: initialParams.startDate || '',
+    endDate: initialParams.endDate || '',
+    searchKeyword: initialParams.searchKeyword || '',
+  };
+
+  // CR-02: Separate draft filter inputs from applied query filters
+  const [draftFilters, setDraftFilters] = useState<FilterFormState>(initialFilterState);
+  const [appliedFilters, setAppliedFilters] = useState<FilterFormState>(initialFilterState);
   const [page, setPage] = useState<number>(initialParams.page || 1);
-  const [refreshCount, setRefreshCount] = useState<number>(0);
+  const [mutationRefreshVersion, setMutationRefreshVersion] = useState<number>(0);
+  const pageSize = initialParams.pageSize || OPERATOR_BOOKING_DEFAULT_PAGE_SIZE;
 
   // Data state
   const [loading, setLoading] = useState<boolean>(true);
@@ -68,23 +104,27 @@ export function OperatorBookingListView({
   const [refundTargetBooking, setRefundTargetBooking] = useState<BookingDto | null>(null);
   const [refundDialogOpen, setRefundDialogOpen] = useState<boolean>(false);
 
-  // Load bookings effect
+  // Load bookings effect (triggers only on appliedFilters, page, or mutation refresh)
   useEffect(() => {
+    if (isSessionRestoring) return;
     let isMounted = true;
     async function fetchBookings() {
       setLoading(true);
       try {
         const res = await getOperatorBookings(
           {
-            tourId: tourId === 'ALL' ? undefined : tourId,
-            status: status === 'ALL' ? undefined : (status as BookingStatus),
-            startDate: startDate || undefined,
-            endDate: endDate || undefined,
-            searchKeyword: searchKeyword || undefined,
+            tourId: appliedFilters.tourId === 'ALL' ? undefined : appliedFilters.tourId,
+            status:
+              appliedFilters.status === 'ALL'
+                ? undefined
+                : (appliedFilters.status as BookingStatus),
+            startDate: appliedFilters.startDate || undefined,
+            endDate: appliedFilters.endDate || undefined,
+            searchKeyword: appliedFilters.searchKeyword || undefined,
             page,
-            pageSize: 10,
+            pageSize,
           },
-          { isDemo: isDemoPermitted, operatorUserId: DEMO_OPERATOR_USER_ID }
+          { isDemo: isDemoPermitted, demoActorUserId: resolvedDemoActorUserId }
         );
         if (isMounted) {
           setResult(res);
@@ -100,23 +140,35 @@ export function OperatorBookingListView({
     return () => {
       isMounted = false;
     };
-  }, [tourId, status, startDate, endDate, searchKeyword, page, isDemoPermitted, refreshCount]);
+  }, [
+    appliedFilters,
+    page,
+    pageSize,
+    isDemoPermitted,
+    resolvedDemoActorUserId,
+    isSessionRestoring,
+    mutationRefreshVersion,
+  ]);
 
-  // Handle filter submission
+  // CR-02: Apply draft filters on explicit form submission (button click or Enter in search input)
   const handleApplyFilter = (e: React.FormEvent) => {
     e.preventDefault();
+    setAppliedFilters({ ...draftFilters });
     setPage(1);
-    setRefreshCount((c) => c + 1);
   };
 
+  // CR-02: Reset both draft and applied filters to defaults and reset page to 1
   const handleResetFilter = () => {
-    setTourId('ALL');
-    setStatus('ALL');
-    setStartDate('');
-    setEndDate('');
-    setSearchKeyword('');
+    const defaultFilters: FilterFormState = {
+      tourId: 'ALL',
+      status: 'ALL',
+      startDate: '',
+      endDate: '',
+      searchKeyword: '',
+    };
+    setDraftFilters(defaultFilters);
+    setAppliedFilters({ ...defaultFilters });
     setPage(1);
-    setRefreshCount((c) => c + 1);
   };
 
   // Open detail panel
@@ -144,7 +196,7 @@ export function OperatorBookingListView({
     try {
       const res = await cancelCustomerBooking(cancelTargetBooking.id, payload, {
         isDemo: isDemoPermitted,
-        operatorUserId: DEMO_OPERATOR_USER_ID,
+        demoActorUserId: resolvedDemoActorUserId,
       });
 
       if (res.success) {
@@ -153,7 +205,7 @@ export function OperatorBookingListView({
         if (selectedBooking?.id === cancelTargetBooking.id && res.booking) {
           setSelectedBooking(res.booking);
         }
-        setRefreshCount((c) => c + 1);
+        setMutationRefreshVersion((v) => v + 1);
       } else {
         setFeedback({ type: 'error', message: res.message });
       }
@@ -169,7 +221,7 @@ export function OperatorBookingListView({
     try {
       const res = await initiateBookingRefund(refundTargetBooking.id, payload, {
         isDemo: isDemoPermitted,
-        operatorUserId: DEMO_OPERATOR_USER_ID,
+        demoActorUserId: resolvedDemoActorUserId,
       });
 
       if (res.success) {
@@ -181,7 +233,7 @@ export function OperatorBookingListView({
             refund: res.refund,
           });
         }
-        setRefreshCount((c) => c + 1);
+        setMutationRefreshVersion((v) => v + 1);
       } else {
         setFeedback({ type: 'error', message: res.message });
       }
@@ -347,8 +399,10 @@ export function OperatorBookingListView({
               </label>
               <select
                 id="filter-tour"
-                value={tourId}
-                onChange={(e) => setTourId(e.target.value)}
+                value={draftFilters.tourId}
+                onChange={(e) =>
+                  setDraftFilters((prev) => ({ ...prev, tourId: e.target.value }))
+                }
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
               >
@@ -368,8 +422,10 @@ export function OperatorBookingListView({
               </label>
               <select
                 id="filter-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                value={draftFilters.status}
+                onChange={(e) =>
+                  setDraftFilters((prev) => ({ ...prev, status: e.target.value }))
+                }
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
               >
@@ -389,8 +445,10 @@ export function OperatorBookingListView({
               <input
                 id="filter-start-date"
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                value={draftFilters.startDate}
+                onChange={(e) =>
+                  setDraftFilters((prev) => ({ ...prev, startDate: e.target.value }))
+                }
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
               />
@@ -404,8 +462,10 @@ export function OperatorBookingListView({
               <input
                 id="filter-end-date"
                 type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                value={draftFilters.endDate}
+                onChange={(e) =>
+                  setDraftFilters((prev) => ({ ...prev, endDate: e.target.value }))
+                }
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
               />
@@ -420,8 +480,10 @@ export function OperatorBookingListView({
               </span>
               <input
                 type="text"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
+                value={draftFilters.searchKeyword}
+                onChange={(e) =>
+                  setDraftFilters((prev) => ({ ...prev, searchKeyword: e.target.value }))
+                }
                 placeholder="Tìm mã đơn (BK-...) hoặc tên người liên hệ"
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
