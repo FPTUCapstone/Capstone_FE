@@ -30,11 +30,20 @@ describe('UC-68 protected route', () => {
     );
   });
 
-  it('renders the route when the HttpOnly Admin cookie is present', async () => {
+  it('renders the route when the HttpOnly Admin cookie is present for Administrator', async () => {
     mocks.getCookie.mockReturnValue({ value: 'server-only-token' });
 
     await AuditLogsPage();
 
     expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it('renders the Administrator-only access denied view when accessed with a Staff session token', async () => {
+    mocks.getCookie.mockReturnValue({ value: 'staff-only-token' });
+
+    const view = await AuditLogsPage();
+
+    expect(mocks.redirect).not.toHaveBeenCalled();
+    expect(view).toBeTruthy();
   });
 });
