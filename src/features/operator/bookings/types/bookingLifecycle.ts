@@ -22,6 +22,13 @@ export const OPERATOR_BOOKING_MESSAGES = {
 
 export type OperatorBookingMessageKey = keyof typeof OPERATOR_BOOKING_MESSAGES;
 
+/**
+ * CR-01 / BR-52: Canonical default pagination size for customer booking list.
+ */
+export const OPERATOR_BOOKING_DEFAULT_PAGE_SIZE = 20;
+
+export type BookingPaymentChannel = 'VNPay' | 'PayOS';
+
 export type BookingStatus = 'Confirmed' | 'PendingPayment' | 'Cancelled' | 'Completed';
 
 export type CheckInStatus = 'NotCheckedIn' | 'CheckedIn';
@@ -42,7 +49,7 @@ export interface ParticipantDto {
 export interface PaymentTransactionDto {
   id: string;
   amount: number;
-  paymentChannel: 'VNPay' | 'MoMo' | 'BankTransfer' | 'CreditCard';
+  paymentChannel: BookingPaymentChannel;
   transactionReference: string;
   status: 'Success' | 'Pending' | 'Failed';
   paidAt?: string;
@@ -59,7 +66,7 @@ export interface BookingRefundDto {
   refundableAmount: number;
   deductionAmount: number;
   policyApplied: string;
-  paymentChannel: string;
+  paymentChannel: BookingPaymentChannel;
   status: 'Pending' | 'Success' | 'Failed';
   gatewayReference?: string;
   attemptCount: number;
@@ -147,7 +154,6 @@ export interface CancelBookingResult {
 
 export interface InitiateRefundPayload {
   notes?: string;
-  simulateFailureMode?: 'timeout' | 'retry' | 'system';
 }
 
 export interface InitiateRefundResult {

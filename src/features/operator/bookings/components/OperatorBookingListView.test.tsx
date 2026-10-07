@@ -1,9 +1,38 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AuthStorage, type WebAuthContext } from '@/features/auth/session/authSession';
 import { OperatorBookingListView } from './OperatorBookingListView';
-import { resetDemoBookingsState } from '../services/operatorBookingService';
-import { OPERATOR_BOOKING_MESSAGES } from '../types/bookingLifecycle';
+import * as bookingService from '../services/operatorBookingService';
+import {
+  OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
+  OPERATOR_BOOKING_MESSAGES,
+} from '../types/bookingLifecycle';
+
+const mocks = vi.hoisted(() => ({
+  webRefresh: vi.fn(),
+}));
+
+vi.mock('@/lib/authApi', () => ({
+  webRefresh: mocks.webRefresh,
+}));
+
+function seedOperatorSession(userId = 101) {
+  AuthStorage.accept(
+    {
+      userId,
+      email: `operator${userId}@example.com`,
+      fullName: `Operator ${userId}`,
+      role: 'TourOperator',
+      status: 'Active',
+      applicationStatus: 'Approved',
+      applicationUnresolved: false,
+      accessToken: 'test-operator-token',
+      accessTokenExpiresAtUtc: new Date(Date.now() + 3600_000).toISOString(),
+    } as unknown as WebAuthContext,
+    false
+  );
+}
 
 describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
   const originalEnv = process.env;
@@ -14,11 +43,17 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       NODE_ENV: 'test',
       NEXT_PUBLIC_ENABLE_DEMO_FIXTURES: 'true',
     };
-    resetDemoBookingsState();
+    mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
+    bookingService.resetDemoBookingsState();
+    seedOperatorSession(101);
   });
 
   afterEach(() => {
     cleanup();
+    AuthStorage.clear();
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.restoreAllMocks();
     process.env = originalEnv;
   });
 
@@ -42,8 +77,182 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
     });
   });
 
-  describe('Demo Mode Workspace', () => {
-    it('renders Demo banner, summary KPI cards, and booking items list', async () => {
+  describe('CR-01 Default Page Size & CR-02 Draft vs Applied Filter Behavior', () => {
+    it('requests default pageSize = 20 (OPERATOR_BOOKING_DEFAULT_PAGE_SIZE)', async () => {
+      const spy = vi.spyOn(bookingService, 'getOperatorBookings');
+      render(<OperatorBookingListView isDemo={true} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
+      });
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page: 1,
+          pageSize: 20,
+        }),
+        expect.objectContaining({
+          isDemo: true,
+          demoActorUserId: 101,
+        })
+      );
+      expect(OPERATOR_BOOKING_DEFAULT_PAGE_SIZE).toBe(20);
+    });
+
+    it('does NOT call getOperatorBookings while typing search or changing tour/status/date inputs before submit', async () => {
+      const spy = vi.spyOn(bookingService, 'getOperatorBookings');
+      render(<OperatorBookingListView isDemo={true} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
+      });
+
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Mutate all draft filter inputs without submitting
+      fireEvent.change(screen.getByPlaceholderText(/Tìm mã đơn/i), {
+        target: { value: '0148' },
+      });
+      fireEvent.change(screen.getByLabelText(/Gói tour/i), {
+        target: { value: 'tour-142' },
+      });
+      fireEvent.change(screen.getByLabelText(/Trạng thái đơn/i), {
+        target: { value: 'Confirmed' },
+      });
+      fireEvent.change(screen.getByLabelText(/Khởi hành từ ngày/i), {
+        target: { value: '2026-09-01' },
+      });
+      fireEvent.change(screen.getByLabelText(/Đến ngày/i), {
+        target: { value: '2026-09-30' },
+      });
+
+      // Still only the initial retrieval call
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Submit via "Áp dụng lọc" button -> triggers exactly ONE new call with appliedFilters and page=1
+      fireEvent.click(screen.getByRole('button', { name: /Áp dụng lọc/i }));
+
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledTimes(2);
+      });
+
+      expect(spy).toHaveBeenLastCalledWith(
+        {
+          tourId: 'tour-142',
+          status: 'Confirmed',
+          startDate: '2026-09-01',
+          endDate: '2026-09-30',
+          searchKeyword: '0148',
+          page: 1,
+          pageSize: 20,
+        },
+        {
+          isDemo: true,
+          demoActorUserId: 101,
+        }
+      );
+
+      // Reset via "Đặt lại" button -> resets draft & applied filters and page=1 in a single retrieval
+      fireEvent.click(screen.getByRole('button', { name: /Đặt lại/i }));
+
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledTimes(3);
+      });
+
+      expect(spy).toHaveBeenLastCalledWith(
+        {
+          tourId: undefined,
+          status: undefined,
+          startDate: undefined,
+          endDate: undefined,
+          searchKeyword: undefined,
+          page: 1,
+          pageSize: 20,
+        },
+        {
+          isDemo: true,
+          demoActorUserId: 101,
+        }
+      );
+    });
+
+    it('keeps appliedFilters when paginating and resets page to 1 when applying new filters', async () => {
+      const spy = vi.spyOn(bookingService, 'getOperatorBookings');
+      // Use initialParams.pageSize = 2 so 6 items span 3 pages
+      render(<OperatorBookingListView isDemo={true} initialParams={{ pageSize: 2 }} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Hiển thị trang/i)).toBeDefined();
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Edit draft search WITHOUT clicking Apply
+      fireEvent.change(screen.getByPlaceholderText(/Tìm mã đơn/i), {
+        target: { value: 'UNAPPLIED-DRAFT' },
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Click "Sau" pagination button -> changes page to 2 while keeping appliedFilters (searchKeyword still undefined)
+      fireEvent.click(screen.getByRole('button', { name: 'Sau' }));
+
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledTimes(2);
+      });
+      expect(spy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          searchKeyword: undefined,
+          page: 2,
+          pageSize: 2,
+        }),
+        expect.objectContaining({ isDemo: true, demoActorUserId: 101 })
+      );
+
+      // Now change draft search to '0141' and submit form (e.g. pressing Enter / submit) -> resets page to 1
+      const searchInput = screen.getByPlaceholderText(/Tìm mã đơn/i);
+      fireEvent.change(searchInput, { target: { value: '0141' } });
+      fireEvent.submit(searchInput.closest('form')!);
+
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledTimes(3);
+      });
+      expect(spy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          searchKeyword: '0141',
+          page: 1,
+          pageSize: 2,
+        }),
+        expect.objectContaining({ isDemo: true, demoActorUserId: 101 })
+      );
+    });
+  });
+
+  describe('BR-105 Session Identity & Fail-Closed Authorization', () => {
+    it('fails closed with MSG126 when Demo mode is rendered without an authenticated operator session', async () => {
+      AuthStorage.clear();
+      render(<OperatorBookingListView isDemo={true} demoActorUserId={undefined} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(OPERATOR_BOOKING_MESSAGES.MSG126)).toBeDefined();
+      });
+
+      expect(screen.queryByText('BK-20260919-0141')).toBeNull();
+    });
+
+    it('prevents operator 999 from viewing operator 101 fixtures', async () => {
+      seedOperatorSession(999);
+      render(<OperatorBookingListView isDemo={true} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20260925-9999').length).toBeGreaterThan(0);
+      });
+
+      expect(screen.queryByText('BK-20260919-0141')).toBeNull();
+    });
+  });
+
+  describe('Demo Mode Workspace & UC-40 / UC-41 / UC-42 Flows', () => {
+    it('renders Demo banner, summary KPI cards, and booking items list for signed-in operator 101', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -55,13 +264,14 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       expect(screen.getByText('Tổng số hành khách')).toBeDefined();
       expect(screen.getByText('Doanh thu xác nhận')).toBeDefined();
 
-      // Items present in document
+      // Owned items present in document; foreign booking-9999 excluded
       expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Nguyễn Văn An').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Ba Na Hills full-day tour').length).toBeGreaterThan(0);
+      expect(screen.queryByText('BK-20260925-9999')).toBeNull();
     });
 
-    it('filters bookings by tour package', async () => {
+    it('filters bookings by tour package on Apply', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -80,7 +290,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('filters bookings by status', async () => {
+    it('filters bookings by status on Apply', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -99,7 +309,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('searches by booking code', async () => {
+    it('searches by booking code on Apply', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -118,7 +328,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('shows MSG29 when date range is invalid', async () => {
+    it('shows MSG29 when date range is invalid on Apply', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -139,7 +349,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('shows MSG128 when no bookings match filter criteria', async () => {
+    it('shows MSG128 when no bookings match filter criteria on Apply', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -202,7 +412,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('executes refund initiation flow and updates refund record (UC-42)', async () => {
+    it('executes refund initiation flow even when notes contain "timeout", "retry", or "system" (UC-42)', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -217,17 +427,21 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       const refundDrawerBtn = await screen.findByRole('button', { name: /Hoàn tiền \(UC-42\)/i });
       fireEvent.click(refundDrawerBtn);
 
-      // Refund dialog opens
+      // Refund dialog opens; enter notes containing words that previously triggered hidden failures
       const textarea = await screen.findByLabelText(/Ghi chú hoàn tiền/i);
-      fireEvent.change(textarea, { target: { value: 'Khởi tạo đối soát hoàn trả' } });
+      fireEvent.change(textarea, {
+        target: { value: 'Khách báo timeout khi retry trên system cũ' },
+      });
 
       const submitRefundBtn = screen.getByRole('button', { name: /Khởi tạo hoàn tiền/i });
       fireEvent.click(submitRefundBtn);
 
-      // Verify feedback banner
+      // Verify feedback banner succeeds normally with MSG83
       await waitFor(() => {
         expect(screen.getByRole('alert')).toBeDefined();
-        expect(screen.getByText(/Yêu cầu hoàn tiền đã được khởi tạo thành công/i)).toBeDefined();
+        expect(
+          screen.getByText(/Yêu cầu hoàn tiền đã được khởi tạo thành công/i)
+        ).toBeDefined();
       });
     });
   });
