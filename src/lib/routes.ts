@@ -35,6 +35,7 @@ export const ROUTES = {
     forgotPassword: '/admin/forgot-password',
     accountSecurity: '/admin/account/security',
     dashboard: '/admin',
+    staffDashboard: '/admin/staff',
     auditLogs: '/admin/audit-logs',
     tourReviews: '/admin/tours/reviews',
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,

@@ -6,6 +6,7 @@ export const partnerUnresolvedMessage = 'Ch\u01b0a th\u1ec3 x\u00e1c \u0111\u1ec
 export function signInDestination(context: WebAuthContext): string | null {
   if (context.status !== 'Active') return null;
   if (context.role === 'Administrator') return ROUTES.admin.dashboard;
+  if (context.role === 'Staff') return ROUTES.admin.staffDashboard;
   if (context.role === 'Traveler') return ROUTES.home;
   if (context.role !== 'TourOperator' || context.applicationUnresolved) return null;
   if (context.applicationStatus === 'Approved') return ROUTES.partner.dashboard;
