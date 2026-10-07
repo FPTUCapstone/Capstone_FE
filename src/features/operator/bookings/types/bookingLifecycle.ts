@@ -82,14 +82,25 @@ export interface BookingRefundDto {
   createdAt: string;
 }
 
+export const CANCELLATION_REASON_VALUES = [
+  'CUSTOMER_REQUEST',
+  'TOUR_ITINERARY_CHANGE',
+  'FORCE_MAJEURE',
+  'OTHER',
+] as const;
+
+export type CancellationReasonValue = (typeof CANCELLATION_REASON_VALUES)[number];
+
+export function isCancellationReasonValue(val: unknown): val is CancellationReasonValue {
+  return typeof val === 'string' && (CANCELLATION_REASON_VALUES as readonly string[]).includes(val);
+}
+
 export const CANCELLATION_REASONS = [
   { value: 'CUSTOMER_REQUEST', label: 'Customer requested cancellation' },
   { value: 'TOUR_ITINERARY_CHANGE', label: 'Tour itinerary change' },
   { value: 'FORCE_MAJEURE', label: 'Weather condition / force majeure' },
   { value: 'OTHER', label: 'Other reason' },
 ] as const;
-
-export type CancellationReasonValue = (typeof CANCELLATION_REASONS)[number]['value'];
 
 export interface BookingDto {
   id: string;
@@ -115,6 +126,7 @@ export interface BookingDto {
   };
   paymentTransaction?: PaymentTransactionDto;
   refund?: BookingRefundDto;
+  cancellationReasonType?: CancellationReasonValue;
   cancellationReason?: string;
   cancelledAt?: string;
   createdAt: string;

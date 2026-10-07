@@ -120,4 +120,33 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
 
     expect(screen.getByText(/Refund follow-up: Report 3 V2 contains conflicting requirements/i)).toBeDefined();
   });
+
+  it('4. Existing cancelled fixture without reason type: BookingDetailPanel renders safely without crashing', () => {
+    const legacyCancelled: BookingDto = {
+      ...cancellableBooking,
+      status: 'Cancelled',
+      cancellationReason: 'Legacy free-text reason without enum type',
+      cancellationReasonType: undefined,
+      cancelledAt: '2026-09-10T08:00:00Z',
+    };
+    render(<TestDrawerHarness booking={legacyCancelled} />);
+
+    expect(screen.getByText('Legacy free-text reason without enum type')).toBeDefined();
+    expect(screen.queryByText(/CUSTOMER_REQUEST/i)).toBeNull();
+  });
+
+  it('5. Detail panel: stored type code maps to English resource label (raw code not shown)', () => {
+    const typedCancelled: BookingDto = {
+      ...cancellableBooking,
+      status: 'Cancelled',
+      cancellationReasonType: 'TOUR_ITINERARY_CHANGE',
+      cancellationReason: 'Road landslide forced itinerary adjustment',
+      cancelledAt: '2026-09-10T08:00:00Z',
+    };
+    render(<TestDrawerHarness booking={typedCancelled} />);
+
+    expect(screen.getByText('Tour itinerary change')).toBeDefined();
+    expect(screen.getByText('Road landslide forced itinerary adjustment')).toBeDefined();
+    expect(screen.queryByText('TOUR_ITINERARY_CHANGE')).toBeNull();
+  });
 });

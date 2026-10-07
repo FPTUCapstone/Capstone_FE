@@ -5,6 +5,7 @@ import {
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import {
   BOOKING_ERROR_CODES,
+  isCancellationReasonValue,
   OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
   OPERATOR_BOOKING_MESSAGES,
   type BookingDto,
@@ -281,7 +282,15 @@ export async function cancelCustomerBooking(
     };
   }
 
-  // BR-106: Reason required
+  // BR-106: Reason category and detail required
+  if (!payload.reasonType || !isCancellationReasonValue(payload.reasonType)) {
+    return {
+      success: false,
+      messageCode: 'VALIDATION_ERROR',
+      message: 'A valid cancellation reason category is required.',
+    };
+  }
+
   if (!payload.reasonDetail || !payload.reasonDetail.trim()) {
     return {
       success: false,
@@ -322,6 +331,7 @@ export async function cancelCustomerBooking(
   // Apply state transitions
   booking.status = 'Cancelled';
   booking.qrTicketValid = false; // BR-86
+  booking.cancellationReasonType = payload.reasonType;
   booking.cancellationReason = payload.reasonDetail.trim();
   booking.cancelledAt = new Date().toISOString();
 

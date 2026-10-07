@@ -114,6 +114,8 @@ export const bookingEn = {
     gatewayRef: 'Gateway Reference',
     refundNotes: 'Notes',
     cancellationRecord: 'Cancellation Record',
+    cancellationReasonType: 'Reason Category',
+    cancellationReasonDetail: 'Reason Details',
     cancellationReason: 'Cancellation Reason',
     cancelledAt: 'Cancelled At',
     refundClarificationNotice:
@@ -124,6 +126,12 @@ export const bookingEn = {
     notCancellableTooltip: 'This booking is not eligible for cancellation',
     notRefundableTooltip: 'This booking is not eligible for refund',
     productionLockedTooltip: 'Action is locked pending Backend API integration',
+  },
+  cancelReasons: {
+    CUSTOMER_REQUEST: 'Customer requested cancellation',
+    TOUR_ITINERARY_CHANGE: 'Tour itinerary change',
+    FORCE_MAJEURE: 'Weather condition / force majeure',
+    OTHER: 'Other reason',
   },
   cancelDialog: {
     title: 'Cancel Booking',

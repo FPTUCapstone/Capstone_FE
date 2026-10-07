@@ -173,6 +173,7 @@ export const INITIAL_DEMO_BOOKINGS: BookingDto[] = [
     status: 'Cancelled',
     checkInStatus: 'NotCheckedIn',
     qrTicketValid: false,
+    cancellationReasonType: 'CUSTOMER_REQUEST',
     cancellationReason: 'Khách hàng có việc gia đình đột xuất',
     cancelledAt: '2026-08-15T10:00:00+07:00',
     paymentTransaction: {
