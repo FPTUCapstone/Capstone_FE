@@ -8,26 +8,56 @@ import type { FormEvent } from 'react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { PasswordField, TextField } from '@/components/ui/FormControls';
+import { adminStaffEn } from '@/features/admin/staff/resources/en';
+import type { AdministrationRole } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
 
 interface AdminSignInFormProps {
   returnUrl?: string;
 }
 
-export function getSafeAdminReturnUrl(returnUrl?: string): string {
+const ADMINISTRATOR_ONLY_EXACT_ROUTES = new Set<string>([
+  ROUTES.admin.dashboard,
+  ROUTES.admin.auditLogs,
+  ROUTES.admin.algorithmParameters,
+]);
+
+export function isAdministratorOnlyPathname(pathname: string): boolean {
+  if (ADMINISTRATOR_ONLY_EXACT_ROUTES.has(pathname)) return true;
+  if (pathname.startsWith(`${ROUTES.admin.auditLogs}/`)) return true;
+  if (pathname.startsWith(`${ROUTES.admin.algorithmParameters}/`)) return true;
+  if (pathname.startsWith('/admin/settings/')) return true;
+  return false;
+}
+
+export function getSafeAdminReturnUrl(
+  returnUrl?: string,
+  role: AdministrationRole = 'Administrator',
+): string {
+  const defaultDestination =
+    role === 'Staff' ? ROUTES.admin.staffDashboard : ROUTES.admin.dashboard;
+
   if (!returnUrl || !returnUrl.startsWith('/') || returnUrl.startsWith('//') || returnUrl.includes('\\')) {
-    return ROUTES.admin.createPoi;
+    return defaultDestination;
   }
 
   try {
     const baseUrl = 'http://tripmate.local';
     const candidate = new URL(returnUrl, baseUrl);
-    const isAdminRoute = candidate.pathname === ROUTES.admin.dashboard || candidate.pathname.startsWith('/admin/');
-    const isLoginRoute = candidate.pathname === ROUTES.admin.login;
-    if (candidate.origin !== baseUrl || !isAdminRoute || isLoginRoute) return ROUTES.admin.createPoi;
+    const isAdminRoute =
+      candidate.pathname === ROUTES.admin.dashboard || candidate.pathname.startsWith('/admin/');
+    const isLoginRoute =
+      candidate.pathname === ROUTES.admin.login ||
+      candidate.pathname === ROUTES.admin.forgotPassword;
+    if (candidate.origin !== baseUrl || !isAdminRoute || isLoginRoute) {
+      return defaultDestination;
+    }
+    if (role === 'Staff' && isAdministratorOnlyPathname(candidate.pathname)) {
+      return ROUTES.admin.staffDashboard;
+    }
     return `${candidate.pathname}${candidate.search}${candidate.hash}`;
   } catch {
-    return ROUTES.admin.createPoi;
+    return defaultDestination;
   }
 }
 
@@ -44,8 +74,8 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
     event.preventDefault();
     if (submitting.current) return;
     const nextErrors: typeof errors = {};
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = 'Enter a valid email address.';
-    if (!password.trim()) nextErrors.password = 'This field is required.';
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = adminStaffEn.login.invalidEmailError;
+    if (!password.trim()) nextErrors.password = adminStaffEn.login.requiredFieldError;
     setErrors(nextErrors);
     setMessage(null);
     if (Object.keys(nextErrors).length) return;
@@ -60,17 +90,24 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
         signal: AbortSignal.timeout(35000),
         body: JSON.stringify({ email: email.trim(), password }),
       });
+      const result: unknown = await response.json().catch(() => null);
       if (!response.ok) {
-        const result: unknown = await response.json().catch(() => null);
-        setMessage(result && typeof result === 'object' && 'message' in result && typeof result.message === 'string'
-          ? result.message : 'Sign in is temporarily unavailable. Please try again.');
+        setMessage(
+          result && typeof result === 'object' && 'message' in result && typeof result.message === 'string'
+            ? result.message
+            : adminStaffEn.login.unavailableError,
+        );
         return;
       }
+      const authenticatedRole: AdministrationRole =
+        result && typeof result === 'object' && 'role' in result && result.role === 'Staff'
+          ? 'Staff'
+          : 'Administrator';
       setPassword('');
-      router.replace(getSafeAdminReturnUrl(returnUrl));
+      router.replace(getSafeAdminReturnUrl(returnUrl, authenticatedRole));
       router.refresh();
     } catch {
-      setMessage('Unable to connect. Please check your connection and try again.');
+      setMessage(adminStaffEn.login.connectionError);
     } finally {
       submitting.current = false;
       setLoading(false);
@@ -80,18 +117,39 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
   return (
     <div>
       <form className="space-y-5" noValidate onSubmit={handleSubmit}>
-        <TextField label="Email Address" name="email" type="email" autoComplete="email" placeholder="admin@tripmate.com"
-          value={email} disabled={loading} error={errors.email} onChange={(event) => setEmail(event.target.value)} />
-        <PasswordField label="Password" name="password" autoComplete="current-password" placeholder="Enter your password"
-          value={password} disabled={loading} error={errors.password} onChange={(event) => setPassword(event.target.value)} />
+        <TextField
+          label={adminStaffEn.login.emailLabel}
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder={adminStaffEn.login.emailPlaceholder}
+          value={email}
+          disabled={loading}
+          error={errors.email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <PasswordField
+          label={adminStaffEn.login.passwordLabel}
+          name="password"
+          autoComplete="current-password"
+          placeholder={adminStaffEn.login.passwordPlaceholder}
+          value={password}
+          disabled={loading}
+          error={errors.password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
         <div className="flex justify-end">
-          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#006b5f] hover:underline">Forgot Password</Link>
+          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#006b5f] hover:underline">
+            {adminStaffEn.login.forgotPassword}
+          </Link>
         </div>
-        <ActionButton type="submit" loading={loading} className="w-full">Sign In</ActionButton>
+        <ActionButton type="submit" loading={loading} className="w-full">
+          {adminStaffEn.login.submitButton}
+        </ActionButton>
       </form>
       {message ? <div className="mt-6"><FeedbackAlert tone="error">{message}</FeedbackAlert></div> : null}
       <p className="mt-6 rounded-lg bg-[#f2f4f7] px-3 py-2 text-center text-[11px] leading-relaxed text-[#59616b]">
-        Sign in with an active Administrator account. You will be asked to sign in again when your session expires.
+        {adminStaffEn.login.footerNote}
       </p>
     </div>
   );

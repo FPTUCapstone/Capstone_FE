@@ -46,17 +46,17 @@ export async function signInAdmin(request: Request): Promise<NextResponse> {
       typeof data.accessTokenExpiresAtUtc !== 'string') {
       return failure(502, unavailableMessage);
     }
-    if (data.role !== 'Administrator' || data.status !== 'Active') {
-      return failure(403, 'An active Administrator account is required.');
+    if ((data.role !== 'Administrator' && data.role !== 'Staff') || data.status !== 'Active') {
+      return failure(403, 'An active Administrator or Staff account is required.');
     }
     const expiresAt = new Date(data.accessTokenExpiresAtUtc);
     if (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) return failure(502, unavailableMessage);
 
-    // /api/v1/auth/web/admin/login is Administrator-specific: the Backend has
+    // /api/v1/auth/web/admin/login is Administration-specific: the Backend has
     // already authenticated the credentials and authorized the role/status
     // before issuing this session, so no secondary authorization probe is
     // needed (and /api/v1/admin/pois/catalogue no longer exists upstream).
-    return setAdminSession(jsonNoStore({ authenticated: true }), data.accessToken, expiresAt);
+    return setAdminSession(jsonNoStore({ authenticated: true, role: data.role }), data.accessToken, expiresAt);
   } catch {
     return failure(503, unavailableMessage);
   }

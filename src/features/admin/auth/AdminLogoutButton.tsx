@@ -4,9 +4,10 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoutDialog from "@/components/LogoutDialog";
 import { ROUTES } from "@/lib/routes";
+import { adminStaffEn } from "@/features/admin/staff/resources/en";
 import { signOutAdminSession } from "./services/adminSessionClient";
 
-const logoutErrorMessage = "Không thể đăng xuất. Vui lòng thử lại.";
+const logoutErrorMessage = adminStaffEn.login.logoutError;
 
 export default function AdminLogoutButton() {
   const router = useRouter();
