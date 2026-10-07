@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InitiateRefundDialog } from './InitiateRefundDialog';
 import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
+import { bookingEn } from '../resources/en';
 import type { InitiateRefundPayload } from '../types/bookingLifecycle';
 
 const sampleBooking = INITIAL_DEMO_BOOKINGS[0]; // BK-20260919-0141
@@ -19,7 +20,7 @@ function TestHarness({
   return (
     <div>
       <button data-testid="open-refund-btn" onClick={() => setOpen(true)}>
-        Mở hoàn tiền
+        Open Refund
       </button>
       <InitiateRefundDialog
         open={open}
@@ -36,13 +37,15 @@ afterEach(() => {
 });
 
 describe('InitiateRefundDialog (UC-42 Accessibility & Behavior)', () => {
-  it('renders modal dialog with aria-modal="true" and accessible title/description', () => {
+  it('renders modal dialog with aria-modal="true" and accessible title/description in English', () => {
     render(<TestHarness />);
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeDefined();
     expect(dialog.getAttribute('aria-modal')).toBe('true');
-    expect(screen.getByRole('heading', { level: 2, name: /Khởi tạo hoàn tiền đơn/i })).toBeDefined();
+    expect(
+      screen.getByRole('heading', { level: 2, name: new RegExp(bookingEn.refundDialog.title, 'i') })
+    ).toBeDefined();
   });
 
   it('sets initial focus to close button and restores trigger focus on close', () => {
@@ -54,7 +57,7 @@ describe('InitiateRefundDialog (UC-42 Accessibility & Behavior)', () => {
 
     fireEvent.click(trigger);
 
-    const closeBtn = screen.getByRole('button', { name: 'Đóng' });
+    const closeBtn = screen.getByRole('button', { name: bookingEn.refundDialog.closeBtn });
     expect(document.activeElement).toBe(closeBtn);
 
     fireEvent.click(closeBtn);
@@ -101,14 +104,16 @@ describe('InitiateRefundDialog (UC-42 Accessibility & Behavior)', () => {
     const handleConfirm = vi.fn();
     render(<TestHarness onConfirm={handleConfirm} />);
 
-    const textarea = screen.getByLabelText(/Ghi chú hoàn tiền/i);
-    fireEvent.change(textarea, { target: { value: 'Hoàn tiền đối soát tự động' } });
+    const textarea = screen.getByLabelText(/Refund Notes/i);
+    fireEvent.change(textarea, { target: { value: 'Automated audit refund' } });
 
-    const submitBtn = screen.getByRole('button', { name: /Khởi tạo hoàn tiền/i });
+    const submitBtn = screen.getByRole('button', {
+      name: new RegExp(bookingEn.refundDialog.confirmBtn, 'i'),
+    });
     fireEvent.click(submitBtn);
 
     expect(handleConfirm).toHaveBeenCalledWith({
-      notes: 'Hoàn tiền đối soát tự động',
+      notes: 'Automated audit refund',
     });
   });
 });

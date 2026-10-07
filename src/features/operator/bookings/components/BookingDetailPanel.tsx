@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import type { BookingDto } from '../types/bookingLifecycle';
 import { BookingStatusBadge, CheckInStatusBadge } from './OperatorBookingStatusBadge';
 import { formatCurrencyVND, formatVietnamDate, formatVietnamDateTime } from '../utils/dateFormat';
+import { bookingEn } from '../resources/en';
 
 interface BookingDetailPanelProps {
   open: boolean;
@@ -122,12 +123,12 @@ export function BookingDetailPanel({
           <div>
             <div className="flex items-center gap-2">
               <h2 id={titleId} className="text-base font-bold text-[#00152A]">
-                Chi tiết đơn đặt chỗ {booking.bookingCode}
+                {bookingEn.detail.title} {booking.bookingCode}
               </h2>
               <BookingStatusBadge status={booking.status} />
             </div>
             <p id={descId} className="text-xs text-slate-500 mt-0.5">
-              Khởi hành ngày {formatVietnamDate(booking.departureDate)} (CR-07)
+              {bookingEn.detail.departureDate}: {formatVietnamDate(booking.departureDate)}
             </p>
           </div>
           <button
@@ -135,7 +136,7 @@ export function BookingDetailPanel({
             type="button"
             onClick={handleClose}
             className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition"
-            aria-label="Đóng bảng chi tiết"
+            aria-label={bookingEn.detail.closeAria}
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -146,28 +147,28 @@ export function BookingDetailPanel({
           {/* Tour info card */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Thông tin tour
+              {bookingEn.detail.tourInfo}
             </span>
             <h3 className="mt-1 text-sm font-bold text-[#00152A]">{booking.tourName}</h3>
             <div className="mt-3 grid grid-cols-2 gap-3 text-slate-600">
               <div>
-                <span className="text-slate-400 block">Ngày khởi hành:</span>
+                <span className="text-slate-400 block">{bookingEn.detail.departureDate}:</span>
                 <span className="font-semibold text-slate-800">
                   {formatVietnamDate(booking.departureDate)}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 block">Trạng thái check-in:</span>
+                <span className="text-slate-400 block">{bookingEn.detail.checkInStatus}:</span>
                 <CheckInStatusBadge status={booking.checkInStatus} />
               </div>
               <div>
-                <span className="text-slate-400 block">Vé QR e-ticket:</span>
+                <span className="text-slate-400 block">{bookingEn.detail.qrTicket}:</span>
                 <span className="font-semibold text-slate-800">
-                  {booking.qrTicketValid ? 'Hợp lệ (Hiệu lực)' : 'Không khả dụng / Đã hủy'}
+                  {booking.qrTicketValid ? bookingEn.detail.qrValid : bookingEn.detail.qrInvalid}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 block">Ngày tạo đơn:</span>
+                <span className="text-slate-400 block">{bookingEn.detail.createdAt}:</span>
                 <span className="font-semibold text-slate-800">
                   {formatVietnamDateTime(booking.createdAt)}
                 </span>
@@ -178,19 +179,19 @@ export function BookingDetailPanel({
           {/* Contact info card */}
           <div className="rounded-2xl border border-slate-200 p-4">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Thông tin liên hệ
+              {bookingEn.detail.contactInfo}
             </span>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700">
               <div>
-                <span className="text-slate-400 block">Họ và tên:</span>
+                <span className="text-slate-400 block">{bookingEn.detail.fullName}:</span>
                 <span className="font-bold text-slate-800">{booking.contactName}</span>
               </div>
               <div>
-                <span className="text-slate-400 block">Số điện thoại:</span>
+                <span className="text-slate-400 block">{bookingEn.detail.phone}:</span>
                 <span className="font-semibold text-slate-800">{booking.contactPhone}</span>
               </div>
               <div>
-                <span className="text-slate-400 block">Email:</span>
+                <span className="text-slate-400 block">{bookingEn.detail.email}:</span>
                 <span className="font-semibold text-slate-800 truncate block">{booking.contactEmail}</span>
               </div>
             </div>
@@ -200,7 +201,7 @@ export function BookingDetailPanel({
           <div className="rounded-2xl border border-slate-200 p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Danh sách hành khách ({booking.participantsCount} người)
+                {bookingEn.detail.participantsList} ({booking.participantsCount} {bookingEn.detail.personCount})
               </span>
             </div>
             <div className="space-y-2">
@@ -221,51 +222,51 @@ export function BookingDetailPanel({
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-slate-500">
-                    <span>{pax.paxType === 'Adult' ? 'Người lớn' : 'Trẻ em'}</span>
-                    {pax.age && <span>({pax.age} tuổi)</span>}
+                    <span>{pax.paxType === 'Adult' ? bookingEn.paxTypes.Adult : bookingEn.paxTypes.Child}</span>
+                    {pax.age && <span>({pax.age} {bookingEn.paxTypes.yearsOld})</span>}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Payment info (BR-77: Read-only) */}
+          {/* Payment info (Read-only) */}
           <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/30">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Thông tin thanh toán (BR-77 Chỉ xem)
+                {bookingEn.detail.paymentInfo}
               </span>
               <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                Bất biến
+                {bookingEn.detail.immutableBadge}
               </span>
             </div>
             <div className="space-y-2 text-slate-600">
               <div className="flex justify-between">
-                <span>Tổng giá trị đơn:</span>
+                <span>{bookingEn.detail.totalAmount}:</span>
                 <span className="font-semibold text-slate-800">{formatCurrencyVND(booking.totalAmount)}</span>
               </div>
               {booking.coupon && (
                 <div className="flex justify-between text-emerald-700">
-                  <span>Mã ưu đãi đã dùng ({booking.coupon.code}):</span>
+                  <span>{bookingEn.detail.couponUsed} ({booking.coupon.code}):</span>
                   <span className="font-semibold">-{formatCurrencyVND(booking.coupon.discountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-slate-200/60 pt-2 font-bold text-slate-800">
-                <span>Số tiền đã thanh toán:</span>
+                <span>{bookingEn.detail.paidAmount}:</span>
                 <span className="text-emerald-700">{formatCurrencyVND(booking.paidAmount)}</span>
               </div>
               {booking.paymentTransaction && (
                 <div className="mt-2 rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-[11px]">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Kênh thanh toán:</span>
+                    <span className="text-slate-400">{bookingEn.detail.paymentChannel}:</span>
                     <span className="font-bold text-slate-700">{booking.paymentTransaction.paymentChannel}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Mã giao dịch:</span>
+                    <span className="text-slate-400">{bookingEn.detail.transactionRef}:</span>
                     <span className="font-mono text-slate-700">{booking.paymentTransaction.transactionReference}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Thời gian xác thực:</span>
+                    <span className="text-slate-400">{bookingEn.detail.verifiedAt}:</span>
                     <span className="text-slate-700">{formatVietnamDateTime(booking.paymentTransaction.paidAt)}</span>
                   </div>
                 </div>
@@ -278,7 +279,7 @@ export function BookingDetailPanel({
             <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
-                  Hồ sơ hoàn tiền (BR-107 & BR-74)
+                  {bookingEn.detail.refundRecord}
                 </span>
                 <span className="rounded bg-teal-100 px-2 py-0.5 text-[10px] font-extrabold text-teal-800">
                   {booking.refund.status}
@@ -286,20 +287,20 @@ export function BookingDetailPanel({
               </div>
               <div className="space-y-1.5 text-xs text-slate-700">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Số tiền hoàn:</span>
+                  <span className="text-slate-500">{bookingEn.detail.refundAmount}:</span>
                   <span className="font-bold text-[#006B5F]">{formatCurrencyVND(booking.refund.refundableAmount)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Kênh hoàn tiền:</span>
+                  <span className="text-slate-500">{bookingEn.detail.refundChannel}:</span>
                   <span className="font-semibold text-slate-800">{booking.refund.paymentChannel}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Mã đối soát:</span>
+                  <span className="text-slate-500">{bookingEn.detail.gatewayRef}:</span>
                   <span className="font-mono text-slate-800">{booking.refund.gatewayReference || 'N/A'}</span>
                 </div>
                 {booking.refund.notes && (
                   <div className="pt-1 text-[11px] text-slate-500 italic">
-                    Ghi chú: {booking.refund.notes}
+                    {bookingEn.detail.refundNotes}: {booking.refund.notes}
                   </div>
                 )}
               </div>
@@ -310,12 +311,12 @@ export function BookingDetailPanel({
           {booking.cancellationReason && (
             <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 text-xs text-rose-900">
               <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block mb-1">
-                Lý do hủy đơn (BR-106)
+                {bookingEn.detail.cancellationRecord}
               </span>
               <p className="font-medium">{booking.cancellationReason}</p>
               {booking.cancelledAt && (
                 <span className="block mt-1 text-[10px] text-slate-500">
-                  Thời gian hủy: {formatVietnamDateTime(booking.cancelledAt)}
+                  {bookingEn.detail.cancelledAt}: {formatVietnamDateTime(booking.cancelledAt)}
                 </span>
               )}
             </div>
@@ -329,7 +330,7 @@ export function BookingDetailPanel({
             onClick={handleClose}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
           >
-            Đóng
+            {bookingEn.detail.closeBtn}
           </button>
 
           <div className="flex items-center gap-2">
@@ -340,15 +341,15 @@ export function BookingDetailPanel({
               disabled={!isCancellable}
               title={
                 !isDemo
-                  ? 'Tính năng đang chờ tích hợp Backend'
+                  ? bookingEn.detail.productionLockedTooltip
                   : !isCancellable
-                  ? 'Đơn đặt chỗ không đủ điều kiện hủy'
-                  : 'Mở hộp thoại hủy đơn'
+                  ? bookingEn.detail.notCancellableTooltip
+                  : bookingEn.detail.cancelBookingBtn
               }
               className="rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">cancel</span>
-              <span>Hủy đặt chỗ (UC-41)</span>
+              <span>{bookingEn.detail.cancelBookingBtn}</span>
             </button>
 
             {/* Initiate refund action (UC-42) */}
@@ -358,15 +359,15 @@ export function BookingDetailPanel({
               disabled={!isRefundable}
               title={
                 !isDemo
-                  ? 'Tính năng đang chờ tích hợp Backend'
+                  ? bookingEn.detail.productionLockedTooltip
                   : !isRefundable
-                  ? 'Đơn đặt chỗ không đủ điều kiện hoàn tiền'
-                  : 'Mở hộp thoại hoàn tiền'
+                  ? bookingEn.detail.notRefundableTooltip
+                  : bookingEn.detail.refundBtn
               }
               className="rounded-xl bg-[#006B5F] px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">currency_exchange</span>
-              <span>Hoàn tiền (UC-42)</span>
+              <span>{bookingEn.detail.refundBtn}</span>
             </button>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import {
   cancelCustomerBooking,
@@ -27,6 +28,8 @@ import { BookingDetailPanel } from './BookingDetailPanel';
 import { CancelBookingDialog } from './CancelBookingDialog';
 import { InitiateRefundDialog } from './InitiateRefundDialog';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
+import { buildBookingListUrl, withBookingDemoMode } from '../routes';
+import { bookingEn } from '../resources/en';
 import { ROUTES } from '@/lib/routes';
 
 interface OperatorBookingListViewProps {
@@ -48,6 +51,8 @@ export function OperatorBookingListView({
   isDemo = false,
   demoActorUserId,
 }: OperatorBookingListViewProps) {
+  const router = useRouter();
+
   const isDemoPermitted = isDemo && isBookingDemoAllowedInCurrentEnv();
   const { status: sessionStatus, context: sessionContext } = useWebSession();
 
@@ -104,6 +109,25 @@ export function OperatorBookingListView({
   const [refundTargetBooking, setRefundTargetBooking] = useState<BookingDto | null>(null);
   const [refundDialogOpen, setRefundDialogOpen] = useState<boolean>(false);
 
+  // Helper to sync URL search params on query changes (CR-01 context preservation)
+  const syncUrlParams = (newPage: number, filters: FilterFormState) => {
+    if (!router) return;
+    try {
+      const url = buildBookingListUrl({
+        page: newPage,
+        status: filters.status,
+        tourId: filters.tourId,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        searchKeyword: filters.searchKeyword,
+        isDemo: isDemoPermitted,
+      });
+      router.replace(url, { scroll: false });
+    } catch {
+      // safe fallback if not supported
+    }
+  };
+
   // Load bookings effect (triggers only on appliedFilters, page, or mutation refresh)
   useEffect(() => {
     if (isSessionRestoring) return;
@@ -150,11 +174,12 @@ export function OperatorBookingListView({
     mutationRefreshVersion,
   ]);
 
-  // CR-02: Apply draft filters on explicit form submission (button click or Enter in search input)
+  // CR-02: Apply draft filters on explicit form submission
   const handleApplyFilter = (e: React.FormEvent) => {
     e.preventDefault();
     setAppliedFilters({ ...draftFilters });
-    setPage(1);
+    setPage(1); // CR-01: changing filters resets page to 1
+    syncUrlParams(1, draftFilters);
   };
 
   // CR-02: Reset both draft and applied filters to defaults and reset page to 1
@@ -169,6 +194,13 @@ export function OperatorBookingListView({
     setDraftFilters(defaultFilters);
     setAppliedFilters({ ...defaultFilters });
     setPage(1);
+    syncUrlParams(1, defaultFilters);
+  };
+
+  // Pagination page change
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    syncUrlParams(newPage, appliedFilters);
   };
 
   // Open detail panel
@@ -248,6 +280,13 @@ export function OperatorBookingListView({
     totalConfirmedAmount: 0,
   };
 
+  const startDisplay =
+    result && result.totalCount > 0 ? (result.page - 1) * result.pageSize + 1 : 0;
+  const endDisplay =
+    result && result.totalCount > 0
+      ? Math.min(result.page * result.pageSize, result.totalCount)
+      : 0;
+
   return (
     <div className="space-y-6">
       {/* Workspace Header & Title */}
@@ -255,32 +294,32 @@ export function OperatorBookingListView({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-[#00152A] sm:text-2xl">
-              Quản lý đơn đặt chỗ khách hàng
+              {bookingEn.header.title}
             </h1>
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
-              UC-40
+              {bookingEn.header.useCaseTag}
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Theo dõi, tra cứu đơn đặt chỗ trên các gói tour thuộc quyền quản trị (BR-105).
+            {bookingEn.header.subtitle}
           </p>
         </div>
 
         {/* Workspace Quick Links */}
         <div className="flex items-center gap-2">
           <Link
-            href={isDemoPermitted ? '/partner/tours?demo=1' : '/partner/tours'}
+            href={isDemoPermitted ? withBookingDemoMode('/partner/tours', true) : '/partner/tours'}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
           >
             <span className="material-symbols-outlined text-[18px]">tour</span>
-            <span>Gói tour</span>
+            <span>{bookingEn.header.toursLink}</span>
           </Link>
           <Link
             href={ROUTES.partner.dashboard}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
           >
             <span className="material-symbols-outlined text-[18px]">dashboard</span>
-            <span>Bảng điều khiển</span>
+            <span>{bookingEn.header.dashboardLink}</span>
           </Link>
         </div>
       </div>
@@ -300,8 +339,7 @@ export function OperatorBookingListView({
                 {OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION}
               </p>
               <p className="text-amber-800">
-                Giao diện hiển thị trạng thái chờ tích hợp. Các thao tác hủy đặt chỗ (UC-41) và hoàn
-                tiền (UC-42) được khóa an toàn để đảm bảo tính toàn vẹn dữ liệu tài chính.
+                {bookingEn.notices.pendingBackendDescription}
               </p>
             </div>
           </div>
@@ -314,11 +352,11 @@ export function OperatorBookingListView({
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">experiment</span>
             <span className="font-semibold">
-              Chế độ xem trước giao diện (Demo Fixtures) — Dữ liệu phục vụ kiểm thử UI (UC-40, UC-41, UC-42).
+              {bookingEn.notices.demoTitle}
             </span>
           </div>
           <span className="rounded bg-teal-200/80 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-teal-900">
-            Demo Active
+            {bookingEn.notices.demoBadge}
           </span>
         </div>
       )}
@@ -343,7 +381,7 @@ export function OperatorBookingListView({
             type="button"
             onClick={() => setFeedback(null)}
             className="text-slate-400 hover:text-slate-600 transition"
-            aria-label="Đóng thông báo"
+            aria-label="Close notification"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
@@ -354,29 +392,29 @@ export function OperatorBookingListView({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">Tổng đơn đặt chỗ</span>
+            <span className="text-xs font-bold text-slate-500">{bookingEn.summary.totalBookings}</span>
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
               <span className="material-symbols-outlined text-[18px]">receipt_long</span>
             </span>
           </div>
           <div className="mt-2 text-2xl font-black text-[#00152A]">{summary.totalBookings}</div>
-          <p className="mt-1 text-[11px] text-slate-400">Theo bộ lọc hiện tại</p>
+          <p className="mt-1 text-[11px] text-slate-400">{bookingEn.summary.totalBookingsSubtitle}</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">Tổng số hành khách</span>
+            <span className="text-xs font-bold text-slate-500">{bookingEn.summary.totalParticipants}</span>
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
               <span className="material-symbols-outlined text-[18px]">group</span>
             </span>
           </div>
           <div className="mt-2 text-2xl font-black text-[#00152A]">{summary.totalParticipants}</div>
-          <p className="mt-1 text-[11px] text-slate-400">Lượt khách tham gia</p>
+          <p className="mt-1 text-[11px] text-slate-400">{bookingEn.summary.totalParticipantsSubtitle}</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">Doanh thu xác nhận</span>
+            <span className="text-xs font-bold text-slate-500">{bookingEn.summary.confirmedRevenue}</span>
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
               <span className="material-symbols-outlined text-[18px]">payments</span>
             </span>
@@ -384,7 +422,7 @@ export function OperatorBookingListView({
           <div className="mt-2 text-2xl font-black text-[#006B5F]">
             {formatCurrencyVND(summary.totalConfirmedAmount)}
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Đơn đã xác nhận & hoàn tất</p>
+          <p className="mt-1 text-[11px] text-slate-400">{bookingEn.summary.confirmedRevenueSubtitle}</p>
         </div>
       </div>
 
@@ -395,7 +433,7 @@ export function OperatorBookingListView({
             {/* Tour Filter */}
             <div>
               <label htmlFor="filter-tour" className="block text-[11px] font-bold text-slate-600 mb-1">
-                Gói tour
+                {bookingEn.filters.tour}
               </label>
               <select
                 id="filter-tour"
@@ -406,7 +444,7 @@ export function OperatorBookingListView({
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
               >
-                <option value="ALL">Tất cả gói tour</option>
+                <option value="ALL">{bookingEn.filters.allTours}</option>
                 {DEMO_OPERATOR_TOURS.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.title}
@@ -418,7 +456,7 @@ export function OperatorBookingListView({
             {/* Status Filter */}
             <div>
               <label htmlFor="filter-status" className="block text-[11px] font-bold text-slate-600 mb-1">
-                Trạng thái đơn
+                {bookingEn.filters.status}
               </label>
               <select
                 id="filter-status"
@@ -429,18 +467,18 @@ export function OperatorBookingListView({
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
               >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="Confirmed">Đã xác nhận</option>
-                <option value="PendingPayment">Chờ thanh toán</option>
-                <option value="Cancelled">Đã hủy</option>
-                <option value="Completed">Đã hoàn thành</option>
+                <option value="ALL">{bookingEn.filters.allStatuses}</option>
+                <option value="Confirmed">{bookingEn.statuses.Confirmed}</option>
+                <option value="PendingPayment">{bookingEn.statuses.PendingPayment}</option>
+                <option value="Cancelled">{bookingEn.statuses.Cancelled}</option>
+                <option value="Completed">{bookingEn.statuses.Completed}</option>
               </select>
             </div>
 
             {/* Departure Start Date */}
             <div>
               <label htmlFor="filter-start-date" className="block text-[11px] font-bold text-slate-600 mb-1">
-                Khởi hành từ ngày
+                {bookingEn.filters.departureStartDate}
               </label>
               <input
                 id="filter-start-date"
@@ -457,7 +495,7 @@ export function OperatorBookingListView({
             {/* Departure End Date */}
             <div>
               <label htmlFor="filter-end-date" className="block text-[11px] font-bold text-slate-600 mb-1">
-                Đến ngày
+                {bookingEn.filters.departureEndDate}
               </label>
               <input
                 id="filter-end-date"
@@ -484,7 +522,8 @@ export function OperatorBookingListView({
                 onChange={(e) =>
                   setDraftFilters((prev) => ({ ...prev, searchKeyword: e.target.value }))
                 }
-                placeholder="Tìm mã đơn (BK-...) hoặc tên người liên hệ"
+                placeholder={bookingEn.filters.searchPlaceholder}
+                aria-label={bookingEn.filters.searchAriaLabel}
                 disabled={!isDemoPermitted}
                 className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
               />
@@ -497,7 +536,7 @@ export function OperatorBookingListView({
                 disabled={!isDemoPermitted}
                 className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
               >
-                Đặt lại
+                {bookingEn.filters.reset}
               </button>
               <button
                 type="submit"
@@ -505,7 +544,7 @@ export function OperatorBookingListView({
                 className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50 flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[16px]">filter_alt</span>
-                <span>Áp dụng lọc</span>
+                <span>{bookingEn.filters.apply}</span>
               </button>
             </div>
           </div>
@@ -530,7 +569,7 @@ export function OperatorBookingListView({
             <span className="material-symbols-outlined text-[24px] animate-spin text-[#006B5F]">
               progress_activity
             </span>
-            <p className="mt-2">Đang tải danh sách đơn đặt chỗ...</p>
+            <p className="mt-2">{bookingEn.list.loading}</p>
           </div>
         ) : !result || result.items.length === 0 ? (
           <div className="p-12 text-center text-xs text-slate-500">
@@ -542,7 +581,7 @@ export function OperatorBookingListView({
             </p>
             {!isDemoPermitted && (
               <p className="mt-1 text-slate-400">
-                Hệ thống chưa kết nối dữ liệu từ Backend.
+                {bookingEn.list.emptyNoBackend}
               </p>
             )}
           </div>
@@ -553,15 +592,15 @@ export function OperatorBookingListView({
               <table className="w-full text-left text-xs text-slate-600">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th scope="col" className="px-4 py-3.5">Mã đơn đặt chỗ</th>
-                    <th scope="col" className="px-4 py-3.5">Gói tour</th>
-                    <th scope="col" className="px-4 py-3.5">Khởi hành (CR-07)</th>
-                    <th scope="col" className="px-4 py-3.5">Người liên hệ</th>
-                    <th scope="col" className="px-4 py-3.5 text-center">Số khách</th>
-                    <th scope="col" className="px-4 py-3.5 text-right">Tổng tiền</th>
-                    <th scope="col" className="px-4 py-3.5">Trạng thái</th>
-                    <th scope="col" className="px-4 py-3.5">Check-in</th>
-                    <th scope="col" className="px-4 py-3.5 text-center">Thao tác</th>
+                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.bookingCode}</th>
+                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.tourName}</th>
+                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.departureDate}</th>
+                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.contact}</th>
+                    <th scope="col" className="px-4 py-3.5 text-center">{bookingEn.list.tableHeaders.paxCount}</th>
+                    <th scope="col" className="px-4 py-3.5 text-right">{bookingEn.list.tableHeaders.totalAmount}</th>
+                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.status}</th>
+                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.checkIn}</th>
+                    <th scope="col" className="px-4 py-3.5 text-center">{bookingEn.list.tableHeaders.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -598,7 +637,7 @@ export function OperatorBookingListView({
                           onClick={() => handleViewDetail(b)}
                           className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#006B5F] hover:bg-slate-50 transition"
                         >
-                          Chi tiết
+                          {bookingEn.list.viewDetail}
                         </button>
                       </td>
                     </tr>
@@ -621,26 +660,26 @@ export function OperatorBookingListView({
 
                   <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <div>
-                      <span className="text-slate-400 text-[11px] block">Khởi hành:</span>
+                      <span className="text-slate-400 text-[11px] block">{bookingEn.list.tableHeaders.departureDate}:</span>
                       <span className="font-semibold text-slate-800">{formatVietnamDate(b.departureDate)}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 text-[11px] block">Số khách:</span>
-                      <span className="font-semibold text-slate-800">{b.participantsCount} người</span>
+                      <span className="text-slate-400 text-[11px] block">{bookingEn.list.tableHeaders.paxCount}:</span>
+                      <span className="font-semibold text-slate-800">{b.participantsCount} {bookingEn.detail.personCount}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 text-[11px] block">Người liên hệ:</span>
+                      <span className="text-slate-400 text-[11px] block">{bookingEn.list.tableHeaders.contact}:</span>
                       <span className="font-semibold text-slate-800 truncate block">{b.contactName}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 text-[11px] block">Check-in:</span>
+                      <span className="text-slate-400 text-[11px] block">{bookingEn.list.tableHeaders.checkIn}:</span>
                       <CheckInStatusBadge status={b.checkInStatus} />
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
                     <div>
-                      <span className="text-[11px] text-slate-400 block">Tổng tiền:</span>
+                      <span className="text-[11px] text-slate-400 block">{bookingEn.list.tableHeaders.totalAmount}:</span>
                       <span className="font-bold text-sm text-[#006B5F]">{formatCurrencyVND(b.totalAmount)}</span>
                     </div>
                     <button
@@ -648,35 +687,35 @@ export function OperatorBookingListView({
                       onClick={() => handleViewDetail(b)}
                       className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-[#006B5F] hover:bg-slate-50 transition shadow-2xs"
                     >
-                      Chi tiết đơn
+                      {bookingEn.list.viewDetail}
                     </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Pagination Controls (CR-01 / BR-52) */}
+            {/* Pagination Controls (CR-01: 20 per page, total count, context preservation) */}
             {result.totalPages > 1 && (
               <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 bg-slate-50/50 text-xs">
                 <span className="text-slate-500">
-                  Hiển thị trang <strong>{result.page}</strong> / <strong>{result.totalPages}</strong> ({result.totalCount} đơn đặt chỗ)
+                  {bookingEn.list.pagination.showing} <strong>{startDisplay}</strong> {bookingEn.list.pagination.to} <strong>{endDisplay}</strong> {bookingEn.list.pagination.of} <strong>{result.totalCount}</strong> {bookingEn.list.pagination.bookings} ({bookingEn.list.pagination.page} <strong>{result.page}</strong> / <strong>{result.totalPages}</strong>)
                 </span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => handlePageChange(Math.max(1, result.page - 1))}
                     disabled={result.page <= 1}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-40"
                   >
-                    Trước
+                    {bookingEn.list.pagination.previous}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPage((p) => Math.min(result.totalPages, p + 1))}
+                    onClick={() => handlePageChange(Math.min(result.totalPages, result.page + 1))}
                     disabled={result.page >= result.totalPages}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-40"
                   >
-                    Sau
+                    {bookingEn.list.pagination.next}
                   </button>
                 </div>
               </div>

@@ -6,6 +6,49 @@ export const OPERATOR_BOOKING_ROUTES = {
   list: '/partner/bookings',
 } as const;
 
+export interface BookingListUrlParams {
+  page?: number;
+  status?: string;
+  tourId?: string;
+  startDate?: string;
+  endDate?: string;
+  searchKeyword?: string;
+  isDemo?: boolean;
+}
+
+/**
+ * Builds the canonical customer booking list URL preserving pagination, filters, and demo mode.
+ * Satisfies CR-01 context preservation across refreshes and return links.
+ */
+export function buildBookingListUrl(params: BookingListUrlParams = {}): string {
+  const query = new URLSearchParams();
+
+  if (params.page && params.page > 1) {
+    query.set('page', String(params.page));
+  }
+  if (params.status && params.status !== 'ALL') {
+    query.set('status', params.status);
+  }
+  if (params.tourId && params.tourId !== 'ALL') {
+    query.set('tourId', params.tourId);
+  }
+  if (params.startDate) {
+    query.set('startDate', params.startDate);
+  }
+  if (params.endDate) {
+    query.set('endDate', params.endDate);
+  }
+  if (params.searchKeyword && params.searchKeyword.trim()) {
+    query.set('searchKeyword', params.searchKeyword.trim());
+  }
+  if (params.isDemo) {
+    query.set('demo', '1');
+  }
+
+  const queryString = query.toString();
+  return queryString ? `${OPERATOR_BOOKING_ROUTES.list}?${queryString}` : OPERATOR_BOOKING_ROUTES.list;
+}
+
 /**
  * Appends or preserves ?demo=1 on internal booking route URLs when isDemo is true.
  * Returns the URL unchanged when isDemo is false or href is empty.

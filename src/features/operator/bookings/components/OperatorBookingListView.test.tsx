@@ -8,13 +8,23 @@ import {
   OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
   OPERATOR_BOOKING_MESSAGES,
 } from '../types/bookingLifecycle';
+import { bookingEn } from '../resources/en';
 
 const mocks = vi.hoisted(() => ({
   webRefresh: vi.fn(),
+  push: vi.fn(),
+  replace: vi.fn(),
 }));
 
 vi.mock('@/lib/authApi', () => ({
   webRefresh: mocks.webRefresh,
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mocks.push,
+    replace: mocks.replace,
+  }),
 }));
 
 function seedOperatorSession(userId = 101) {
@@ -68,8 +78,12 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
 
       // Filter controls disabled
-      expect(screen.getByLabelText(/Gói tour/i).getAttribute('disabled')).toBeDefined();
-      expect(screen.getByLabelText(/Trạng thái đơn/i).getAttribute('disabled')).toBeDefined();
+      expect(
+        screen.getByLabelText(/Tour Package/i).getAttribute('disabled')
+      ).toBeDefined();
+      expect(
+        screen.getByLabelText(/Booking Status/i).getAttribute('disabled')
+      ).toBeDefined();
 
       // Zero summaries
       expect(screen.getAllByText('0').length).toBeGreaterThan(0);
@@ -111,27 +125,27 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       expect(spy).toHaveBeenCalledTimes(1);
 
       // Mutate all draft filter inputs without submitting
-      fireEvent.change(screen.getByPlaceholderText(/Tìm mã đơn/i), {
+      fireEvent.change(screen.getByPlaceholderText(/Search booking code/i), {
         target: { value: '0148' },
       });
-      fireEvent.change(screen.getByLabelText(/Gói tour/i), {
+      fireEvent.change(screen.getByLabelText(/Tour Package/i), {
         target: { value: 'tour-142' },
       });
-      fireEvent.change(screen.getByLabelText(/Trạng thái đơn/i), {
+      fireEvent.change(screen.getByLabelText(/Booking Status/i), {
         target: { value: 'Confirmed' },
       });
-      fireEvent.change(screen.getByLabelText(/Khởi hành từ ngày/i), {
+      fireEvent.change(screen.getByLabelText(/Departure from date/i), {
         target: { value: '2026-09-01' },
       });
-      fireEvent.change(screen.getByLabelText(/Đến ngày/i), {
+      fireEvent.change(screen.getByLabelText(/To date/i), {
         target: { value: '2026-09-30' },
       });
 
       // Still only the initial retrieval call
       expect(spy).toHaveBeenCalledTimes(1);
 
-      // Submit via "Áp dụng lọc" button -> triggers exactly ONE new call with appliedFilters and page=1
-      fireEvent.click(screen.getByRole('button', { name: /Áp dụng lọc/i }));
+      // Submit via "Apply Filter" button -> triggers exactly ONE new call with appliedFilters and page=1
+      fireEvent.click(screen.getByRole('button', { name: /Apply Filter/i }));
 
       await waitFor(() => {
         expect(spy).toHaveBeenCalledTimes(2);
@@ -153,8 +167,8 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         }
       );
 
-      // Reset via "Đặt lại" button -> resets draft & applied filters and page=1 in a single retrieval
-      fireEvent.click(screen.getByRole('button', { name: /Đặt lại/i }));
+      // Reset via "Reset" button -> resets draft & applied filters and page=1 in a single retrieval
+      fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
 
       await waitFor(() => {
         expect(spy).toHaveBeenCalledTimes(3);
@@ -183,18 +197,18 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       render(<OperatorBookingListView isDemo={true} initialParams={{ pageSize: 2 }} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Hiển thị trang/i)).toBeDefined();
+        expect(screen.getByText(/Showing/i)).toBeDefined();
       });
       expect(spy).toHaveBeenCalledTimes(1);
 
       // Edit draft search WITHOUT clicking Apply
-      fireEvent.change(screen.getByPlaceholderText(/Tìm mã đơn/i), {
+      fireEvent.change(screen.getByPlaceholderText(/Search booking code/i), {
         target: { value: 'UNAPPLIED-DRAFT' },
       });
       expect(spy).toHaveBeenCalledTimes(1);
 
-      // Click "Sau" pagination button -> changes page to 2 while keeping appliedFilters (searchKeyword still undefined)
-      fireEvent.click(screen.getByRole('button', { name: 'Sau' }));
+      // Click "Next" pagination button -> changes page to 2 while keeping appliedFilters
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
       await waitFor(() => {
         expect(spy).toHaveBeenCalledTimes(2);
@@ -209,7 +223,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       );
 
       // Now change draft search to '0141' and submit form (e.g. pressing Enter / submit) -> resets page to 1
-      const searchInput = screen.getByPlaceholderText(/Tìm mã đơn/i);
+      const searchInput = screen.getByPlaceholderText(/Search booking code/i);
       fireEvent.change(searchInput, { target: { value: '0141' } });
       fireEvent.submit(searchInput.closest('form')!);
 
@@ -256,13 +270,13 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Chế độ xem trước giao diện/i)).toBeDefined();
+        expect(screen.getByText(/Demo Active/i)).toBeDefined();
       });
 
       // KPI summary cards
-      expect(screen.getByText('Tổng đơn đặt chỗ')).toBeDefined();
-      expect(screen.getByText('Tổng số hành khách')).toBeDefined();
-      expect(screen.getByText('Doanh thu xác nhận')).toBeDefined();
+      expect(screen.getByText(bookingEn.summary.totalBookings)).toBeDefined();
+      expect(screen.getByText(bookingEn.summary.totalParticipants)).toBeDefined();
+      expect(screen.getByText(bookingEn.summary.confirmedRevenue)).toBeDefined();
 
       // Owned items present in document; foreign booking-9999 excluded
       expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
@@ -278,10 +292,10 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       });
 
-      const selectTour = screen.getByLabelText(/Gói tour/i);
+      const selectTour = screen.getByLabelText(/Tour Package/i);
       fireEvent.change(selectTour, { target: { value: 'tour-55' } });
 
-      const applyBtn = screen.getByRole('button', { name: /Áp dụng lọc/i });
+      const applyBtn = screen.getByRole('button', { name: /Apply Filter/i });
       fireEvent.click(applyBtn);
 
       await waitFor(() => {
@@ -297,10 +311,10 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       });
 
-      const selectStatus = screen.getByLabelText(/Trạng thái đơn/i);
+      const selectStatus = screen.getByLabelText(/Booking Status/i);
       fireEvent.change(selectStatus, { target: { value: 'PendingPayment' } });
 
-      const applyBtn = screen.getByRole('button', { name: /Áp dụng lọc/i });
+      const applyBtn = screen.getByRole('button', { name: /Apply Filter/i });
       fireEvent.click(applyBtn);
 
       await waitFor(() => {
@@ -316,10 +330,10 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       });
 
-      const searchInput = screen.getByPlaceholderText(/Tìm mã đơn/i);
+      const searchInput = screen.getByPlaceholderText(/Search booking code/i);
       fireEvent.change(searchInput, { target: { value: '0148' } });
 
-      const applyBtn = screen.getByRole('button', { name: /Áp dụng lọc/i });
+      const applyBtn = screen.getByRole('button', { name: /Apply Filter/i });
       fireEvent.click(applyBtn);
 
       await waitFor(() => {
@@ -335,13 +349,13 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       });
 
-      const startDateInput = screen.getByLabelText(/Khởi hành từ ngày/i);
-      const endDateInput = screen.getByLabelText(/Đến ngày/i);
+      const startDateInput = screen.getByLabelText(/Departure from date/i);
+      const endDateInput = screen.getByLabelText(/To date/i);
 
       fireEvent.change(startDateInput, { target: { value: '2026-09-30' } });
       fireEvent.change(endDateInput, { target: { value: '2026-09-01' } });
 
-      const applyBtn = screen.getByRole('button', { name: /Áp dụng lọc/i });
+      const applyBtn = screen.getByRole('button', { name: /Apply Filter/i });
       fireEvent.click(applyBtn);
 
       await waitFor(() => {
@@ -356,10 +370,10 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       });
 
-      const searchInput = screen.getByPlaceholderText(/Tìm mã đơn/i);
+      const searchInput = screen.getByPlaceholderText(/Search booking code/i);
       fireEvent.change(searchInput, { target: { value: 'MA-DON-KHONG-CO' } });
 
-      const applyBtn = screen.getByRole('button', { name: /Áp dụng lọc/i });
+      const applyBtn = screen.getByRole('button', { name: /Apply Filter/i });
       fireEvent.click(applyBtn);
 
       await waitFor(() => {
@@ -367,19 +381,19 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('opens detail drawer when clicking Chi tiết button', async () => {
+    it('opens detail drawer when clicking Details button', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
         expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       });
 
-      const detailButtons = screen.getAllByRole('button', { name: /Chi tiết/i });
+      const detailButtons = screen.getAllByRole('button', { name: /Details/i });
       fireEvent.click(detailButtons[0]);
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeDefined();
-        expect(screen.getByText(/Chi tiết đơn đặt chỗ/i)).toBeDefined();
+        expect(screen.getByText(/Booking Details/i)).toBeDefined();
       });
     });
 
@@ -391,24 +405,28 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
 
       // Open detail drawer
-      const detailButtons = screen.getAllByRole('button', { name: /Chi tiết/i });
+      const detailButtons = screen.getAllByRole('button', { name: /Details/i });
       fireEvent.click(detailButtons[0]);
 
       // Click cancel action in drawer
-      const cancelDrawerBtn = await screen.findByRole('button', { name: /Hủy đặt chỗ \(UC-41\)/i });
+      const cancelDrawerBtn = await screen.findByRole('button', {
+        name: /Cancel Booking/i,
+      });
       fireEvent.click(cancelDrawerBtn);
 
       // Cancel dialog opens
-      const textarea = await screen.findByLabelText(/Chi tiết lý do hủy/i);
-      fireEvent.change(textarea, { target: { value: 'Khách hàng có lịch bận đột xuất' } });
+      const textarea = await screen.findByLabelText(/Cancellation Reason Details/i);
+      fireEvent.change(textarea, { target: { value: 'Customer has unexpected personal conflict' } });
 
-      const submitCancelBtn = screen.getByRole('button', { name: /Xác nhận hủy đặt chỗ/i });
+      const submitCancelBtn = screen.getByRole('button', {
+        name: /Confirm Cancellation/i,
+      });
       fireEvent.click(submitCancelBtn);
 
       // Verify feedback banner
       await waitFor(() => {
         expect(screen.getByRole('alert')).toBeDefined();
-        expect(screen.getByText(/Đã hủy đơn đặt chỗ thành công/i)).toBeDefined();
+        expect(screen.getByText(new RegExp(bookingEn.messages.MSG81, 'i'))).toBeDefined();
       });
     });
 
@@ -420,27 +438,31 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
 
       // Open detail drawer
-      const detailButtons = screen.getAllByRole('button', { name: /Chi tiết/i });
+      const detailButtons = screen.getAllByRole('button', { name: /Details/i });
       fireEvent.click(detailButtons[0]);
 
       // Click refund action in drawer
-      const refundDrawerBtn = await screen.findByRole('button', { name: /Hoàn tiền \(UC-42\)/i });
+      const refundDrawerBtn = await screen.findByRole('button', {
+        name: /Initiate Refund \(UC-42\)/i,
+      });
       fireEvent.click(refundDrawerBtn);
 
       // Refund dialog opens; enter notes containing words that previously triggered hidden failures
-      const textarea = await screen.findByLabelText(/Ghi chú hoàn tiền/i);
+      const textarea = await screen.findByLabelText(/Refund Notes/i);
       fireEvent.change(textarea, {
-        target: { value: 'Khách báo timeout khi retry trên system cũ' },
+        target: { value: 'Customer reported timeout during retry on old system' },
       });
 
-      const submitRefundBtn = screen.getByRole('button', { name: /Khởi tạo hoàn tiền/i });
+      const submitRefundBtn = screen.getByRole('button', {
+        name: /send.*Initiate Refund/i,
+      });
       fireEvent.click(submitRefundBtn);
 
       // Verify feedback banner succeeds normally with MSG83
       await waitFor(() => {
         expect(screen.getByRole('alert')).toBeDefined();
         expect(
-          screen.getByText(/Yêu cầu hoàn tiền đã được khởi tạo thành công/i)
+          screen.getByText(new RegExp(bookingEn.messages.MSG83, 'i'))
         ).toBeDefined();
       });
     });
