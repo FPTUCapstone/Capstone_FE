@@ -10,6 +10,7 @@ import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPo
 import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
 import {
   BOOKING_ERROR_CODES,
+  CancellationReasonValue,
   OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
   OPERATOR_BOOKING_MESSAGES,
 } from '../types/bookingLifecycle';
@@ -352,12 +353,62 @@ describe('operatorBookingService', () => {
       expect(res.booking?.status).toBe('Cancelled');
       expect(res.booking?.qrTicketValid).toBe(false); // BR-86 invalidated
       expect(res.booking?.cancellationReason).toBe('Customer requested early cancellation');
+      expect(res.booking?.cancellationReasonType).toBe('CUSTOMER_REQUEST');
       // Under safe implementation for SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER,
       // cancellation does NOT auto-create a refund record
       expect(res.booking?.refund).toBeUndefined();
       // Original transaction remains immutable (BR-77)
       expect(res.booking?.paymentTransaction?.status).toBe('Success');
       expect(res.booking?.paymentTransaction?.amount).toBe(5600000);
+    });
+
+    it('cancels booking with FORCE_MAJEURE reason type and preserves both category and detail', async () => {
+      const res = await cancelCustomerBooking(
+        'booking-0141',
+        { reasonType: 'FORCE_MAJEURE', reasonDetail: 'Severe weather alert in Mekong delta' },
+        { isDemo: true, demoActorUserId: 101 }
+      );
+      expect(res.success).toBe(true);
+      expect(res.messageCode).toBe('MSG81');
+      expect(res.booking?.status).toBe('Cancelled');
+      expect(res.booking?.cancellationReasonType).toBe('FORCE_MAJEURE');
+      expect(res.booking?.cancellationReason).toBe('Severe weather alert in Mekong delta');
+    });
+
+    it('persists cancellationReasonType in demo store across subsequent getOperatorBookingById retrieval', async () => {
+      const cancelRes = await cancelCustomerBooking(
+        'booking-0141',
+        { reasonType: 'TOUR_ITINERARY_CHANGE', reasonDetail: 'Schedule conflict due to maintenance' },
+        { isDemo: true, demoActorUserId: 101 }
+      );
+      expect(cancelRes.success).toBe(true);
+      expect(cancelRes.booking?.cancellationReasonType).toBe('TOUR_ITINERARY_CHANGE');
+
+      const detailRes = await getOperatorBookingById('booking-0141', {
+        isDemo: true,
+        demoActorUserId: 101,
+      });
+      expect(detailRes.booking?.status).toBe('Cancelled');
+      expect(detailRes.booking?.cancellationReasonType).toBe('TOUR_ITINERARY_CHANGE');
+      expect(detailRes.booking?.cancellationReason).toBe('Schedule conflict due to maintenance');
+    });
+
+    it('rejects cancellation when reason type is missing or unsupported', async () => {
+      const resInvalidType = await cancelCustomerBooking(
+        'booking-0141',
+        { reasonType: 'INVALID_TYPE' as unknown as CancellationReasonValue, reasonDetail: 'Some reason' },
+        { isDemo: true, demoActorUserId: 101 }
+      );
+      expect(resInvalidType.success).toBe(false);
+      expect(resInvalidType.messageCode).toBe('VALIDATION_ERROR');
+
+      const resMissingType = await cancelCustomerBooking(
+        'booking-0141',
+        { reasonType: undefined as unknown as CancellationReasonValue, reasonDetail: 'Some reason' },
+        { isDemo: true, demoActorUserId: 101 }
+      );
+      expect(resMissingType.success).toBe(false);
+      expect(resMissingType.messageCode).toBe('VALIDATION_ERROR');
     });
   });
 

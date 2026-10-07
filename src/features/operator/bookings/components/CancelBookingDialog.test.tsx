@@ -136,4 +136,25 @@ describe('CancelBookingDialog (UC-41 Accessibility & Behavior)', () => {
       reasonDetail: 'Customer requested cancellation due to personal reasons',
     });
   });
+
+  it('1. Dialog: selects TOUR_ITINERARY_CHANGE, enters detail, submits -> payload includes exact reasonType and reasonDetail', () => {
+    const handleConfirm = vi.fn();
+    render(<TestHarness onConfirm={handleConfirm} />);
+
+    const select = screen.getByLabelText(new RegExp(bookingEn.cancelDialog.reasonTypeLabel, 'i'));
+    fireEvent.change(select, { target: { value: 'TOUR_ITINERARY_CHANGE' } });
+
+    const textarea = screen.getByLabelText(new RegExp(bookingEn.cancelDialog.reasonDetailLabel, 'i'));
+    fireEvent.change(textarea, { target: { value: 'Tour schedule changed due to route closure' } });
+
+    const submitBtn = screen.getByRole('button', {
+      name: new RegExp(bookingEn.cancelDialog.confirmBtn, 'i'),
+    });
+    fireEvent.click(submitBtn);
+
+    expect(handleConfirm).toHaveBeenCalledWith({
+      reasonType: 'TOUR_ITINERARY_CHANGE',
+      reasonDetail: 'Tour schedule changed due to route closure',
+    });
+  });
 });

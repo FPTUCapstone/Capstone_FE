@@ -308,12 +308,31 @@ export function BookingDetailPanel({
           )}
 
           {/* Cancellation reason if cancelled */}
-          {booking.cancellationReason && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 text-xs text-rose-900">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block mb-1">
+          {(booking.cancellationReason || booking.cancellationReasonType) && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 text-xs text-rose-900 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block">
                 {bookingEn.detail.cancellationRecord}
               </span>
-              <p className="font-medium">{booking.cancellationReason}</p>
+              {booking.cancellationReasonType && (
+                <div>
+                  <span className="text-[11px] font-bold text-slate-500 block">
+                    {bookingEn.detail.cancellationReasonType}:
+                  </span>
+                  <p className="font-semibold text-rose-950">
+                    {bookingEn.cancelReasons[booking.cancellationReasonType] || booking.cancellationReasonType}
+                  </p>
+                </div>
+              )}
+              {booking.cancellationReason && (
+                <div>
+                  {booking.cancellationReasonType && (
+                    <span className="text-[11px] font-bold text-slate-500 block">
+                      {bookingEn.detail.cancellationReasonDetail}:
+                    </span>
+                  )}
+                  <p className="font-medium text-slate-900">{booking.cancellationReason}</p>
+                </div>
+              )}
               {booking.cancelledAt && (
                 <span className="block mt-1 text-[10px] text-slate-500">
                   {bookingEn.detail.cancelledAt}: {formatVietnamDateTime(booking.cancelledAt)}
