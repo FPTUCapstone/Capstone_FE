@@ -2,22 +2,77 @@ import { statisticalReportsEn } from '../resources/en';
 import type {
   AppliedStatisticalReportCriteria,
   DemoExportArtifact,
+  DemoReportingPeriodFixture,
   ExportFormat,
   GeneratedStatisticalReport,
   PeriodGranularity,
   PlatformRevenueFormulaBreakdown,
+  ProductionReportingPeriodOption,
   ReportingPeriodOption,
   StatisticalBreakdownRow,
   StatisticalChartPoint,
   StatisticalReportCriteria,
   StatisticalSummaryMetric,
+  StatisticalWorkspaceMode,
 } from '../types/statisticalReports';
 
-export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
+export const PRODUCTION_PERIOD_OPTIONS: readonly ProductionReportingPeriodOption[] = [
   {
     key: '2026-09',
     granularity: 'CLOSED_MONTH',
-    label: 'September 2026 (01/09/2026 – 30/09/2026 • Closed)',
+    label: statisticalReportsEn.periods.production['2026-09'],
+    startDateDisplay: '01/09/2026',
+    endDateDisplay: '30/09/2026',
+  },
+  {
+    key: '2026-08',
+    granularity: 'CLOSED_MONTH',
+    label: statisticalReportsEn.periods.production['2026-08'],
+    startDateDisplay: '01/08/2026',
+    endDateDisplay: '31/08/2026',
+  },
+  {
+    key: '2026-07',
+    granularity: 'CLOSED_MONTH',
+    label: statisticalReportsEn.periods.production['2026-07'],
+    startDateDisplay: '01/07/2026',
+    endDateDisplay: '31/07/2026',
+  },
+  {
+    key: '2026-Q3',
+    granularity: 'CLOSED_QUARTER',
+    label: statisticalReportsEn.periods.production['2026-Q3'],
+    startDateDisplay: '01/07/2026',
+    endDateDisplay: '30/09/2026',
+  },
+  {
+    key: '2026-Q2',
+    granularity: 'CLOSED_QUARTER',
+    label: statisticalReportsEn.periods.production['2026-Q2'],
+    startDateDisplay: '01/04/2026',
+    endDateDisplay: '30/06/2026',
+  },
+  {
+    key: '2025',
+    granularity: 'CLOSED_YEAR',
+    label: statisticalReportsEn.periods.production['2025'],
+    startDateDisplay: '01/01/2025',
+    endDateDisplay: '31/12/2025',
+  },
+  {
+    key: '2024',
+    granularity: 'CLOSED_YEAR',
+    label: statisticalReportsEn.periods.production['2024'],
+    startDateDisplay: '01/01/2024',
+    endDateDisplay: '31/12/2024',
+  },
+] as const;
+
+export const DEMO_PERIOD_FIXTURES: readonly DemoReportingPeriodFixture[] = [
+  {
+    key: '2026-09',
+    granularity: 'CLOSED_MONTH',
+    label: statisticalReportsEn.periods.demo['2026-09'],
     startDateDisplay: '01/09/2026',
     endDateDisplay: '30/09/2026',
     isClosed: true,
@@ -25,7 +80,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2026-08',
     granularity: 'CLOSED_MONTH',
-    label: 'August 2026 (01/08/2026 – 31/08/2026 • Closed)',
+    label: statisticalReportsEn.periods.demo['2026-08'],
     startDateDisplay: '01/08/2026',
     endDateDisplay: '31/08/2026',
     isClosed: true,
@@ -33,7 +88,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2026-07',
     granularity: 'CLOSED_MONTH',
-    label: 'July 2026 (01/07/2026 – 31/07/2026 • Closed)',
+    label: statisticalReportsEn.periods.demo['2026-07'],
     startDateDisplay: '01/07/2026',
     endDateDisplay: '31/07/2026',
     isClosed: true,
@@ -41,7 +96,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2026-10-OPEN',
     granularity: 'CLOSED_MONTH',
-    label: 'October 2026 (01/10/2026 – Present • Current Open Month)',
+    label: statisticalReportsEn.periods.demo['2026-10-OPEN'],
     startDateDisplay: '01/10/2026',
     endDateDisplay: '31/10/2026',
     isClosed: false,
@@ -49,7 +104,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2026-Q3',
     granularity: 'CLOSED_QUARTER',
-    label: 'Q3 2026 (01/07/2026 – 30/09/2026 • Closed)',
+    label: statisticalReportsEn.periods.demo['2026-Q3'],
     startDateDisplay: '01/07/2026',
     endDateDisplay: '30/09/2026',
     isClosed: true,
@@ -57,7 +112,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2026-Q2',
     granularity: 'CLOSED_QUARTER',
-    label: 'Q2 2026 (01/04/2026 – 30/06/2026 • Closed)',
+    label: statisticalReportsEn.periods.demo['2026-Q2'],
     startDateDisplay: '01/04/2026',
     endDateDisplay: '30/06/2026',
     isClosed: true,
@@ -65,7 +120,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2026-Q4-OPEN',
     granularity: 'CLOSED_QUARTER',
-    label: 'Q4 2026 (01/10/2026 – Present • Current Open Quarter)',
+    label: statisticalReportsEn.periods.demo['2026-Q4-OPEN'],
     startDateDisplay: '01/10/2026',
     endDateDisplay: '31/12/2026',
     isClosed: false,
@@ -73,7 +128,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2025',
     granularity: 'CLOSED_YEAR',
-    label: 'FY 2025 (01/01/2025 – 31/12/2025 • Closed)',
+    label: statisticalReportsEn.periods.demo['2025'],
     startDateDisplay: '01/01/2025',
     endDateDisplay: '31/12/2025',
     isClosed: true,
@@ -81,7 +136,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2024',
     granularity: 'CLOSED_YEAR',
-    label: 'FY 2024 (01/01/2024 – 31/12/2024 • Closed)',
+    label: statisticalReportsEn.periods.demo['2024'],
     startDateDisplay: '01/01/2024',
     endDateDisplay: '31/12/2024',
     isClosed: true,
@@ -89,7 +144,7 @@ export const REPORTING_PERIOD_OPTIONS: readonly ReportingPeriodOption[] = [
   {
     key: '2026-OPEN',
     granularity: 'CLOSED_YEAR',
-    label: 'FY 2026 (01/01/2026 – Present • Current Open Year)',
+    label: statisticalReportsEn.periods.demo['2026-OPEN'],
     startDateDisplay: '01/01/2026',
     endDateDisplay: '31/12/2026',
     isClosed: false,
@@ -105,14 +160,39 @@ export const DEFAULT_DRAFT_CRITERIA: StatisticalReportCriteria = {
   bookingType: 'ALL',
 };
 
-export function getPeriodsByGranularity(
+export function getProductionPeriodsByGranularity(
   granularity: PeriodGranularity,
-): readonly ReportingPeriodOption[] {
-  return REPORTING_PERIOD_OPTIONS.filter((option) => option.granularity === granularity);
+): readonly ProductionReportingPeriodOption[] {
+  return PRODUCTION_PERIOD_OPTIONS.filter((option) => option.granularity === granularity);
 }
 
-export function findPeriodOption(periodKey: string): ReportingPeriodOption | undefined {
-  return REPORTING_PERIOD_OPTIONS.find((option) => option.key === periodKey);
+export function getDemoPeriodFixturesByGranularity(
+  granularity: PeriodGranularity,
+): readonly DemoReportingPeriodFixture[] {
+  return DEMO_PERIOD_FIXTURES.filter((option) => option.granularity === granularity);
+}
+
+export function getPeriodsByGranularity(
+  granularity: PeriodGranularity,
+  mode: StatisticalWorkspaceMode = 'DEMO',
+): readonly ReportingPeriodOption[] {
+  return mode === 'PRODUCTION'
+    ? getProductionPeriodsByGranularity(granularity)
+    : getDemoPeriodFixturesByGranularity(granularity);
+}
+
+export function findProductionPeriodOption(
+  periodKey: string,
+): ProductionReportingPeriodOption | undefined {
+  return PRODUCTION_PERIOD_OPTIONS.find((option) => option.key === periodKey);
+}
+
+export function findDemoPeriodFixture(periodKey: string): DemoReportingPeriodFixture | undefined {
+  return DEMO_PERIOD_FIXTURES.find((option) => option.key === periodKey);
+}
+
+export function findPeriodOption(periodKey: string): DemoReportingPeriodFixture | undefined {
+  return findDemoPeriodFixture(periodKey);
 }
 
 export function formatVndCurrency(amountVnd: number): string {
@@ -121,7 +201,8 @@ export function formatVndCurrency(amountVnd: number): string {
     maximumFractionDigits: 0,
     minimumFractionDigits: 0,
   });
-  return rounded < 0 ? `-${absFormatted} VND` : `${absFormatted} VND`;
+  const suffix = statisticalReportsEn.units.vndSuffix;
+  return rounded < 0 ? `-${absFormatted} ${suffix}` : `${absFormatted} ${suffix}`;
 }
 
 export function formatIntegerCount(value: number): string {
@@ -166,7 +247,11 @@ function getScaleFactor(criteria: AppliedStatisticalReportCriteria): number {
   if (criteria.periodGranularity === 'CLOSED_QUARTER') factor *= 3;
   if (criteria.periodGranularity === 'CLOSED_YEAR') factor *= 12;
 
-  if (criteria.periodKey === '2026-08' || criteria.periodKey === '2026-Q2' || criteria.periodKey === '2024') {
+  if (
+    criteria.periodKey === '2026-08' ||
+    criteria.periodKey === '2026-Q2' ||
+    criteria.periodKey === '2024'
+  ) {
     factor *= 0.9;
   } else if (criteria.periodKey === '2026-07') {
     factor *= 0.85;
@@ -192,7 +277,13 @@ export function isNoDataCriteria(criteria: AppliedStatisticalReportCriteria): bo
 }
 
 function buildChartPoints(
-  rawItems: ReadonlyArray<{ id: string; label: string; value: number; isCurrency?: boolean; secondaryLabel?: string }>,
+  rawItems: ReadonlyArray<{
+    id: string;
+    label: string;
+    value: number;
+    isCurrency?: boolean;
+    secondaryLabel?: string;
+  }>,
 ): readonly StatisticalChartPoint[] {
   const total = rawItems.reduce((sum, item) => sum + item.value, 0) || 1;
   return rawItems.map((item) => ({
@@ -211,7 +302,7 @@ export function generateDemoStatisticalReport(
   criteria: AppliedStatisticalReportCriteria,
   generatedDate: Date = new Date('2026-10-08T09:30:00+07:00'),
 ): GeneratedStatisticalReport | null {
-  const period = findPeriodOption(criteria.periodKey);
+  const period = findDemoPeriodFixture(criteria.periodKey);
   if (!period || !period.isClosed) return null;
   if (isNoDataCriteria(criteria)) {
     return {
@@ -221,16 +312,18 @@ export function generateDemoStatisticalReport(
       summaryMetrics: [],
       chartUnitLabel: '',
       chartPoints: [],
-      tableHeaders: ['Segment', 'Primary Metric', 'Secondary Metric', 'Status / Share'],
+      tableHeaders: statisticalReportsEn.reportTemplates.emptyTableHeaders,
       breakdownRows: [],
     };
   }
 
   const scale = getScaleFactor(criteria);
   const generatedAtDisplay = formatVietnamDateDdMmYyyy(generatedDate);
+  const templates = statisticalReportsEn.reportTemplates;
 
   switch (criteria.reportType) {
     case 'PLATFORM_REVENUE': {
+      const tpl = templates.PLATFORM_REVENUE;
       const confirmedBookingsGrossVnd = Math.round(640_000_000 * scale);
       const completedBookingsGrossVnd = Math.round(910_000_000 * scale);
       const recordedRefundsVnd = Math.round(130_000_000 * scale);
@@ -251,55 +344,79 @@ export function generateDemoStatisticalReport(
       const summaryMetrics: readonly StatisticalSummaryMetric[] = [
         {
           id: 'net-platform-revenue',
-          label: 'Net Platform Revenue',
+          label: tpl.metrics.netPlatformRevenue.label,
           formattedValue: formatVndCurrency(netPlatformRevenueVnd),
-          contextNote: 'Confirmed + Completed bookings minus recorded refunds (Demo)',
+          contextNote: tpl.metrics.netPlatformRevenue.contextNote,
         },
         {
           id: 'confirmed-gross',
-          label: 'Confirmed Bookings Gross',
+          label: tpl.metrics.confirmedGross.label,
           formattedValue: formatVndCurrency(confirmedBookingsGrossVnd),
-          contextNote: 'Verified confirmed booking settlements in period',
+          contextNote: tpl.metrics.confirmedGross.contextNote,
         },
         {
           id: 'completed-gross',
-          label: 'Completed Bookings Gross',
+          label: tpl.metrics.completedGross.label,
           formattedValue: formatVndCurrency(completedBookingsGrossVnd),
-          contextNote: 'Fulfilled completed trip and tour settlements',
+          contextNote: tpl.metrics.completedGross.contextNote,
         },
         {
           id: 'recorded-refunds',
-          label: 'Recorded Refunds Deducted',
+          label: tpl.metrics.recordedRefunds.label,
           formattedValue: formatVndCurrency(recordedRefundsVnd),
-          contextNote: 'Processed traveler refund deductions in period',
+          contextNote: tpl.metrics.recordedRefunds.contextNote,
         },
       ];
 
       const chartPoints = buildChartPoints([
-        { id: 'rev-seg-1', label: 'Cultural & Heritage Tours', value: seg1, isCurrency: true, secondaryLabel: 'Confirmed + Completed Net' },
-        { id: 'rev-seg-2', label: 'Coastal & Island Packages', value: seg2, isCurrency: true, secondaryLabel: 'Confirmed + Completed Net' },
-        { id: 'rev-seg-3', label: 'Highland & Eco Experiences', value: seg3, isCurrency: true, secondaryLabel: 'Confirmed + Completed Net' },
+        {
+          id: 'rev-seg-1',
+          label: tpl.segments.culturalHeritage,
+          value: seg1,
+          isCurrency: true,
+          secondaryLabel: tpl.segmentSecondaryLabel,
+        },
+        {
+          id: 'rev-seg-2',
+          label: tpl.segments.coastalIsland,
+          value: seg2,
+          isCurrency: true,
+          secondaryLabel: tpl.segmentSecondaryLabel,
+        },
+        {
+          id: 'rev-seg-3',
+          label: tpl.segments.highlandEco,
+          value: seg3,
+          isCurrency: true,
+          secondaryLabel: tpl.segmentSecondaryLabel,
+        },
       ]);
 
       const breakdownRows: readonly StatisticalBreakdownRow[] = [
         {
           id: 'row-rev-1',
-          segmentLabel: 'Cultural & Heritage Tours',
-          primaryMetricLabel: formatVndCurrency(Math.round((confirmedBookingsGrossVnd + completedBookingsGrossVnd) * 0.44)),
+          segmentLabel: tpl.segments.culturalHeritage,
+          primaryMetricLabel: formatVndCurrency(
+            Math.round((confirmedBookingsGrossVnd + completedBookingsGrossVnd) * 0.44),
+          ),
           secondaryMetricLabel: formatVndCurrency(Math.round(recordedRefundsVnd * 0.44)),
           tertiaryMetricLabel: formatVndCurrency(seg1),
         },
         {
           id: 'row-rev-2',
-          segmentLabel: 'Coastal & Island Packages',
-          primaryMetricLabel: formatVndCurrency(Math.round((confirmedBookingsGrossVnd + completedBookingsGrossVnd) * 0.34)),
+          segmentLabel: tpl.segments.coastalIsland,
+          primaryMetricLabel: formatVndCurrency(
+            Math.round((confirmedBookingsGrossVnd + completedBookingsGrossVnd) * 0.34),
+          ),
           secondaryMetricLabel: formatVndCurrency(Math.round(recordedRefundsVnd * 0.34)),
           tertiaryMetricLabel: formatVndCurrency(seg2),
         },
         {
           id: 'row-rev-3',
-          segmentLabel: 'Highland & Eco Experiences',
-          primaryMetricLabel: formatVndCurrency(Math.round((confirmedBookingsGrossVnd + completedBookingsGrossVnd) * 0.22)),
+          segmentLabel: tpl.segments.highlandEco,
+          primaryMetricLabel: formatVndCurrency(
+            Math.round((confirmedBookingsGrossVnd + completedBookingsGrossVnd) * 0.22),
+          ),
           secondaryMetricLabel: formatVndCurrency(Math.round(recordedRefundsVnd * 0.22)),
           tertiaryMetricLabel: formatVndCurrency(seg3),
         },
@@ -311,48 +428,47 @@ export function generateDemoStatisticalReport(
         generatedAtDisplay,
         summaryMetrics,
         revenueBreakdown,
-        chartUnitLabel: 'Net Revenue (VND)',
+        chartUnitLabel: tpl.chartUnitLabel,
         chartPoints,
-        tableHeaders: [
-          'Revenue Segment',
-          'Confirmed + Completed Gross (VND)',
-          'Recorded Refunds (VND)',
-          'Net Revenue (VND)',
-        ],
+        tableHeaders: tpl.tableHeaders,
         breakdownRows,
       };
     }
 
     case 'USER_GROWTH': {
+      const tpl = templates.USER_GROWTH;
       const newTravelers = Math.max(12, Math.round(1_840 * scale));
       const newOperators = Math.max(2, Math.round(48 * scale));
-      const verifiedActiveAccounts = Math.max(10, Math.round((newTravelers + newOperators) * 0.92));
+      const verifiedActiveAccounts = Math.max(
+        10,
+        Math.round((newTravelers + newOperators) * 0.92),
+      );
       const totalNewAccounts = newTravelers + newOperators;
 
       const summaryMetrics: readonly StatisticalSummaryMetric[] = [
         {
           id: 'total-new-accounts',
-          label: 'Total New Registrations',
+          label: tpl.metrics.totalNewAccounts.label,
           formattedValue: formatIntegerCount(totalNewAccounts),
-          contextNote: 'Combined Traveler and Tour Operator sign-ups (Demo)',
+          contextNote: tpl.metrics.totalNewAccounts.contextNote,
         },
         {
           id: 'new-travelers',
-          label: 'New Traveler Accounts',
+          label: tpl.metrics.newTravelers.label,
           formattedValue: formatIntegerCount(newTravelers),
-          contextNote: 'Registered travelers during closed period',
+          contextNote: tpl.metrics.newTravelers.contextNote,
         },
         {
           id: 'new-operators',
-          label: 'New Tour Operator Accounts',
+          label: tpl.metrics.newOperators.label,
           formattedValue: formatIntegerCount(newOperators),
-          contextNote: 'Partner onboarding registrations in period',
+          contextNote: tpl.metrics.newOperators.contextNote,
         },
         {
           id: 'verified-active',
-          label: 'Verified Active Accounts',
+          label: tpl.metrics.verifiedActive.label,
           formattedValue: formatIntegerCount(verifiedActiveAccounts),
-          contextNote: 'Completed email verification and active status',
+          contextNote: tpl.metrics.verifiedActive.contextNote,
         },
       ];
 
@@ -361,32 +477,48 @@ export function generateDemoStatisticalReport(
       const w3 = totalNewAccounts - w1 - w2;
 
       const chartPoints = buildChartPoints([
-        { id: 'ug-1', label: 'Direct Web Registrations', value: w1, secondaryLabel: 'Verified Accounts' },
-        { id: 'ug-2', label: 'Mobile App Registrations', value: w2, secondaryLabel: 'Verified Accounts' },
-        { id: 'ug-3', label: 'Partner & Referral Sign-Ups', value: w3, secondaryLabel: 'Verified Accounts' },
+        {
+          id: 'ug-1',
+          label: tpl.segments.directWeb,
+          value: w1,
+          secondaryLabel: tpl.segmentSecondaryLabel,
+        },
+        {
+          id: 'ug-2',
+          label: tpl.segments.mobileApp,
+          value: w2,
+          secondaryLabel: tpl.segmentSecondaryLabel,
+        },
+        {
+          id: 'ug-3',
+          label: tpl.segments.partnerReferral,
+          value: w3,
+          secondaryLabel: tpl.segmentSecondaryLabel,
+        },
       ]);
 
+      const shareSuffix = statisticalReportsEn.results.shareOfTotalSuffix;
       const breakdownRows: readonly StatisticalBreakdownRow[] = [
         {
           id: 'row-ug-1',
-          segmentLabel: 'Direct Web Registrations',
+          segmentLabel: tpl.segments.directWeb,
           primaryMetricLabel: formatIntegerCount(w1),
           secondaryMetricLabel: formatIntegerCount(Math.round(w1 * 0.94)),
-          tertiaryMetricLabel: '32% of period total',
+          tertiaryMetricLabel: `32% ${shareSuffix}`,
         },
         {
           id: 'row-ug-2',
-          segmentLabel: 'Mobile App Registrations',
+          segmentLabel: tpl.segments.mobileApp,
           primaryMetricLabel: formatIntegerCount(w2),
           secondaryMetricLabel: formatIntegerCount(Math.round(w2 * 0.91)),
-          tertiaryMetricLabel: '36% of period total',
+          tertiaryMetricLabel: `36% ${shareSuffix}`,
         },
         {
           id: 'row-ug-3',
-          segmentLabel: 'Partner & Referral Sign-Ups',
+          segmentLabel: tpl.segments.partnerReferral,
           primaryMetricLabel: formatIntegerCount(w3),
           secondaryMetricLabel: formatIntegerCount(Math.round(w3 * 0.9)),
-          tertiaryMetricLabel: '32% of period total',
+          tertiaryMetricLabel: `32% ${shareSuffix}`,
         },
       ];
 
@@ -395,19 +527,15 @@ export function generateDemoStatisticalReport(
         period,
         generatedAtDisplay,
         summaryMetrics,
-        chartUnitLabel: 'Registered Accounts',
+        chartUnitLabel: tpl.chartUnitLabel,
         chartPoints,
-        tableHeaders: [
-          'Registration Channel',
-          'New Accounts',
-          'Verified Active Accounts',
-          'Period Share',
-        ],
+        tableHeaders: tpl.tableHeaders,
         breakdownRows,
       };
     }
 
     case 'BOOKING_VOLUME': {
+      const tpl = templates.BOOKING_VOLUME;
       const confirmedCount = Math.max(8, Math.round(620 * scale));
       const completedCount = Math.max(12, Math.round(980 * scale));
       const refundedCount = Math.max(2, Math.round(95 * scale));
@@ -417,57 +545,57 @@ export function generateDemoStatisticalReport(
       const summaryMetrics: readonly StatisticalSummaryMetric[] = [
         {
           id: 'total-bookings',
-          label: 'Total Recorded Bookings',
+          label: tpl.metrics.totalBookings.label,
           formattedValue: formatIntegerCount(totalBookings),
-          contextNote: 'All booking transactions in closed period (Demo)',
+          contextNote: tpl.metrics.totalBookings.contextNote,
         },
         {
           id: 'completed-bookings',
-          label: 'Completed Bookings',
+          label: tpl.metrics.completedBookings.label,
           formattedValue: formatIntegerCount(completedCount),
-          contextNote: 'Fulfilled departures and services',
+          contextNote: tpl.metrics.completedBookings.contextNote,
         },
         {
           id: 'confirmed-bookings',
-          label: 'Confirmed Bookings',
+          label: tpl.metrics.confirmedBookings.label,
           formattedValue: formatIntegerCount(confirmedCount),
-          contextNote: 'Paid and scheduled confirmed bookings',
+          contextNote: tpl.metrics.confirmedBookings.contextNote,
         },
         {
           id: 'settled-booking-value',
-          label: 'Net Settled Booking Value',
+          label: tpl.metrics.settledBookingValue.label,
           formattedValue: formatVndCurrency(settledValueVnd),
-          contextNote: 'Net VND booking value after refunds',
+          contextNote: tpl.metrics.settledBookingValue.contextNote,
         },
       ];
 
       const chartPoints = buildChartPoints([
-        { id: 'bv-completed', label: 'Completed Bookings', value: completedCount },
-        { id: 'bv-confirmed', label: 'Confirmed Bookings', value: confirmedCount },
-        { id: 'bv-refunded', label: 'Cancelled & Refunded', value: refundedCount },
+        { id: 'bv-completed', label: tpl.segments.completed, value: completedCount },
+        { id: 'bv-confirmed', label: tpl.segments.confirmed, value: confirmedCount },
+        { id: 'bv-refunded', label: tpl.segments.cancelledRefunded, value: refundedCount },
       ]);
 
       const breakdownRows: readonly StatisticalBreakdownRow[] = [
         {
           id: 'row-bv-1',
-          segmentLabel: 'Completed Bookings',
+          segmentLabel: tpl.segments.completed,
           primaryMetricLabel: formatIntegerCount(completedCount),
           secondaryMetricLabel: formatVndCurrency(Math.round(910_000_000 * scale)),
-          tertiaryMetricLabel: 'Fulfilled',
+          tertiaryMetricLabel: tpl.settlementStates.fulfilled,
         },
         {
           id: 'row-bv-2',
-          segmentLabel: 'Confirmed Bookings',
+          segmentLabel: tpl.segments.confirmed,
           primaryMetricLabel: formatIntegerCount(confirmedCount),
           secondaryMetricLabel: formatVndCurrency(Math.round(640_000_000 * scale)),
-          tertiaryMetricLabel: 'Active Confirmed',
+          tertiaryMetricLabel: tpl.settlementStates.activeConfirmed,
         },
         {
           id: 'row-bv-3',
-          segmentLabel: 'Cancelled & Refunded',
+          segmentLabel: tpl.segments.cancelledRefunded,
           primaryMetricLabel: formatIntegerCount(refundedCount),
           secondaryMetricLabel: formatVndCurrency(Math.round(130_000_000 * scale)),
-          tertiaryMetricLabel: 'Refund Recorded',
+          tertiaryMetricLabel: tpl.settlementStates.refundRecorded,
         },
       ];
 
@@ -476,19 +604,15 @@ export function generateDemoStatisticalReport(
         period,
         generatedAtDisplay,
         summaryMetrics,
-        chartUnitLabel: 'Bookings Count',
+        chartUnitLabel: tpl.chartUnitLabel,
         chartPoints,
-        tableHeaders: [
-          'Booking Status Category',
-          'Booking Count',
-          'Associated Value (VND)',
-          'Settlement State',
-        ],
+        tableHeaders: tpl.tableHeaders,
         breakdownRows,
       };
     }
 
     case 'OPERATOR_PERFORMANCE': {
+      const tpl = templates.OPERATOR_PERFORMANCE;
       const activeOperators = criteria.operatorId === 'ALL' ? 24 : 1;
       const fulfilledDepartures = Math.max(6, Math.round(310 * scale));
       const netOperatorRevenueVnd = Math.round(1_420_000_000 * scale);
@@ -496,27 +620,27 @@ export function generateDemoStatisticalReport(
       const summaryMetrics: readonly StatisticalSummaryMetric[] = [
         {
           id: 'active-operators',
-          label: 'Evaluated Tour Operators',
+          label: tpl.metrics.activeOperators.label,
           formattedValue: formatIntegerCount(activeOperators),
-          contextNote: 'Approved operators included in report scope (Demo)',
+          contextNote: tpl.metrics.activeOperators.contextNote,
         },
         {
           id: 'fulfilled-departures',
-          label: 'Fulfilled Tour Departures',
+          label: tpl.metrics.fulfilledDepartures.label,
           formattedValue: formatIntegerCount(fulfilledDepartures),
-          contextNote: 'Departures completed without operational incident',
+          contextNote: tpl.metrics.fulfilledDepartures.contextNote,
         },
         {
           id: 'completion-rate',
-          label: 'Average Completion Rate',
+          label: tpl.metrics.completionRate.label,
           formattedValue: '96%',
-          contextNote: 'Ratio of completed to scheduled departures',
+          contextNote: tpl.metrics.completionRate.contextNote,
         },
         {
           id: 'operator-net-revenue',
-          label: 'Net Settled Tour Volume',
+          label: tpl.metrics.operatorNetRevenue.label,
           formattedValue: formatVndCurrency(netOperatorRevenueVnd),
-          contextNote: 'Confirmed + Completed bookings net of refunds',
+          contextNote: tpl.metrics.operatorNetRevenue.contextNote,
         },
       ];
 
@@ -525,31 +649,37 @@ export function generateDemoStatisticalReport(
       const op3 = netOperatorRevenueVnd - op1 - op2;
 
       const chartPoints = buildChartPoints([
-        { id: 'op-101', label: 'Central Heritage Journeys', value: op1, isCurrency: true },
-        { id: 'op-102', label: 'Danang Coastal Expeditions', value: op2, isCurrency: true },
-        { id: 'op-103', label: 'Highland Eco Trails', value: op3, isCurrency: true },
+        { id: 'op-101', label: tpl.segments.op101, value: op1, isCurrency: true },
+        { id: 'op-102', label: tpl.segments.op102, value: op2, isCurrency: true },
+        { id: 'op-103', label: tpl.segments.op103, value: op3, isCurrency: true },
       ]);
 
       const breakdownRows: readonly StatisticalBreakdownRow[] = [
         {
           id: 'row-op-1',
-          segmentLabel: 'Central Heritage Journeys',
-          primaryMetricLabel: formatIntegerCount(Math.max(2, Math.round(fulfilledDepartures * 0.42))),
-          secondaryMetricLabel: '97% Completion',
+          segmentLabel: tpl.segments.op101,
+          primaryMetricLabel: formatIntegerCount(
+            Math.max(2, Math.round(fulfilledDepartures * 0.42)),
+          ),
+          secondaryMetricLabel: `97% ${tpl.completionSuffix}`,
           tertiaryMetricLabel: formatVndCurrency(op1),
         },
         {
           id: 'row-op-2',
-          segmentLabel: 'Danang Coastal Expeditions',
-          primaryMetricLabel: formatIntegerCount(Math.max(2, Math.round(fulfilledDepartures * 0.35))),
-          secondaryMetricLabel: '96% Completion',
+          segmentLabel: tpl.segments.op102,
+          primaryMetricLabel: formatIntegerCount(
+            Math.max(2, Math.round(fulfilledDepartures * 0.35)),
+          ),
+          secondaryMetricLabel: `96% ${tpl.completionSuffix}`,
           tertiaryMetricLabel: formatVndCurrency(op2),
         },
         {
           id: 'row-op-3',
-          segmentLabel: 'Highland Eco Trails',
-          primaryMetricLabel: formatIntegerCount(Math.max(2, Math.round(fulfilledDepartures * 0.23))),
-          secondaryMetricLabel: '95% Completion',
+          segmentLabel: tpl.segments.op103,
+          primaryMetricLabel: formatIntegerCount(
+            Math.max(2, Math.round(fulfilledDepartures * 0.23)),
+          ),
+          secondaryMetricLabel: `95% ${tpl.completionSuffix}`,
           tertiaryMetricLabel: formatVndCurrency(op3),
         },
       ];
@@ -559,19 +689,15 @@ export function generateDemoStatisticalReport(
         period,
         generatedAtDisplay,
         summaryMetrics,
-        chartUnitLabel: 'Net Settled Volume (VND)',
+        chartUnitLabel: tpl.chartUnitLabel,
         chartPoints,
-        tableHeaders: [
-          'Tour Operator',
-          'Fulfilled Departures',
-          'Completion Rate',
-          'Net Settled Volume (VND)',
-        ],
+        tableHeaders: tpl.tableHeaders,
         breakdownRows,
       };
     }
 
     case 'DESTINATION_POPULARITY': {
+      const tpl = templates.DESTINATION_POPULARITY;
       const totalVisits = Math.max(25, Math.round(4_250 * scale));
       const itineraryInclusions = Math.max(40, Math.round(6_800 * scale));
       const destinationRevenueVnd = Math.round(1_420_000_000 * scale);
@@ -579,27 +705,27 @@ export function generateDemoStatisticalReport(
       const summaryMetrics: readonly StatisticalSummaryMetric[] = [
         {
           id: 'completed-destination-visits',
-          label: 'Completed Traveler Visits',
+          label: tpl.metrics.completedVisits.label,
           formattedValue: formatIntegerCount(totalVisits),
-          contextNote: 'Verified completed trip visits across POIs (Demo)',
+          contextNote: tpl.metrics.completedVisits.contextNote,
         },
         {
           id: 'itinerary-inclusions',
-          label: 'Itinerary POI Inclusions',
+          label: tpl.metrics.itineraryInclusions.label,
           formattedValue: formatIntegerCount(itineraryInclusions),
-          contextNote: 'Times destination POIs were scheduled in itineraries',
+          contextNote: tpl.metrics.itineraryInclusions.contextNote,
         },
         {
           id: 'top-destination',
-          label: 'Leading Destination',
-          formattedValue: 'Da Nang',
-          contextNote: 'Highest combined booking and itinerary share',
+          label: tpl.metrics.topDestination.label,
+          formattedValue: tpl.segments.daNang,
+          contextNote: tpl.metrics.topDestination.contextNote,
         },
         {
           id: 'destination-associated-revenue',
-          label: 'Associated Net Booking Value',
+          label: tpl.metrics.associatedRevenue.label,
           formattedValue: formatVndCurrency(destinationRevenueVnd),
-          contextNote: 'Confirmed + Completed bookings net of refunds',
+          contextNote: tpl.metrics.associatedRevenue.contextNote,
         },
       ];
 
@@ -609,37 +735,37 @@ export function generateDemoStatisticalReport(
       const d4 = totalVisits - d1 - d2 - d3;
 
       const chartPoints = buildChartPoints([
-        { id: 'dest-dad', label: 'Da Nang', value: d1 },
-        { id: 'dest-hoi', label: 'Hoi An', value: d2 },
-        { id: 'dest-hue', label: 'Hue', value: d3 },
-        { id: 'dest-dli', label: 'Da Lat', value: d4 },
+        { id: 'dest-dad', label: tpl.segments.daNang, value: d1 },
+        { id: 'dest-hoi', label: tpl.segments.hoiAn, value: d2 },
+        { id: 'dest-hue', label: tpl.segments.hue, value: d3 },
+        { id: 'dest-dli', label: tpl.segments.daLat, value: d4 },
       ]);
 
       const breakdownRows: readonly StatisticalBreakdownRow[] = [
         {
           id: 'row-dest-1',
-          segmentLabel: 'Da Nang',
+          segmentLabel: tpl.segments.daNang,
           primaryMetricLabel: formatIntegerCount(d1),
           secondaryMetricLabel: formatIntegerCount(Math.round(itineraryInclusions * 0.38)),
           tertiaryMetricLabel: formatVndCurrency(Math.round(destinationRevenueVnd * 0.38)),
         },
         {
           id: 'row-dest-2',
-          segmentLabel: 'Hoi An',
+          segmentLabel: tpl.segments.hoiAn,
           primaryMetricLabel: formatIntegerCount(d2),
           secondaryMetricLabel: formatIntegerCount(Math.round(itineraryInclusions * 0.32)),
           tertiaryMetricLabel: formatVndCurrency(Math.round(destinationRevenueVnd * 0.32)),
         },
         {
           id: 'row-dest-3',
-          segmentLabel: 'Hue',
+          segmentLabel: tpl.segments.hue,
           primaryMetricLabel: formatIntegerCount(d3),
           secondaryMetricLabel: formatIntegerCount(Math.round(itineraryInclusions * 0.18)),
           tertiaryMetricLabel: formatVndCurrency(Math.round(destinationRevenueVnd * 0.18)),
         },
         {
           id: 'row-dest-4',
-          segmentLabel: 'Da Lat',
+          segmentLabel: tpl.segments.daLat,
           primaryMetricLabel: formatIntegerCount(d4),
           secondaryMetricLabel: formatIntegerCount(Math.round(itineraryInclusions * 0.12)),
           tertiaryMetricLabel: formatVndCurrency(Math.round(destinationRevenueVnd * 0.12)),
@@ -651,14 +777,9 @@ export function generateDemoStatisticalReport(
         period,
         generatedAtDisplay,
         summaryMetrics,
-        chartUnitLabel: 'Completed Traveler Visits',
+        chartUnitLabel: tpl.chartUnitLabel,
         chartPoints,
-        tableHeaders: [
-          'Destination',
-          'Completed Visits',
-          'Itinerary Inclusions',
-          'Associated Net Revenue (VND)',
-        ],
+        tableHeaders: tpl.tableHeaders,
         breakdownRows,
       };
     }
@@ -686,26 +807,32 @@ export function buildDemoExportArtifact(
   };
 
   const { ext, mime } = extMap[format];
-  const fileName = `DEMO-TripMate-${report.criteria.reportType}-${report.criteria.periodKey}.${ext}`;
+  const exportCopy = statisticalReportsEn.exportArtifact;
+  const fileName = `${exportCopy.fileNamePrefix}-${report.criteria.reportType}-${report.criteria.periodKey}.${ext}`;
   const exportedAtDisplay = formatVietnamDateDdMmYyyy(exportedAt);
   const reportTypeLabel = statisticalReportsEn.reportTypes[report.criteria.reportType].label;
+  const colSep = exportCopy.columnSeparator;
 
   const headerLines = [
-    '[DEMO FIXTURE EXPORT — NOT PRODUCTION ACCOUNTING DATA]',
-    `Report Type: ${reportTypeLabel} (${report.criteria.reportType})`,
-    `Closed Period: ${report.period.startDateDisplay} - ${report.period.endDateDisplay} (${report.criteria.periodKey})`,
-    `Applied Filters: Operator=${report.criteria.operatorId}, Destination=${report.criteria.destinationId}, BookingType=${report.criteria.bookingType}`,
-    `Export Format: ${format} (.${ext})`,
-    `Exported Date (Asia/Ho_Chi_Minh): ${exportedAtDisplay}`,
-    '---',
-    report.tableHeaders.join(' | '),
-    ...report.breakdownRows.map(
-      (row) =>
-        `${row.segmentLabel} | ${row.primaryMetricLabel} | ${row.secondaryMetricLabel} | ${row.tertiaryMetricLabel}`,
+    exportCopy.watermarkHeader,
+    `${exportCopy.reportTypePrefix}: ${reportTypeLabel} (${report.criteria.reportType})`,
+    `${exportCopy.closedPeriodPrefix}: ${report.period.startDateDisplay} - ${report.period.endDateDisplay} (${report.criteria.periodKey})`,
+    `${exportCopy.appliedFiltersPrefix}: ${exportCopy.operatorKeyLabel}=${report.criteria.operatorId}, ${exportCopy.destinationKeyLabel}=${report.criteria.destinationId}, ${exportCopy.bookingTypeKeyLabel}=${report.criteria.bookingType}`,
+    `${exportCopy.exportFormatPrefix}: ${format} (.${ext})`,
+    `${exportCopy.exportedDatePrefix}: ${exportedAtDisplay}`,
+    exportCopy.sectionDivider,
+    report.tableHeaders.join(colSep),
+    ...report.breakdownRows.map((row) =>
+      [
+        row.segmentLabel,
+        row.primaryMetricLabel,
+        row.secondaryMetricLabel,
+        row.tertiaryMetricLabel,
+      ].join(colSep),
     ),
   ];
 
-  const auditEventSummary = `DEMO Audit Record: StatisticalReportExported (ReportType=${report.criteria.reportType}, Period=${report.criteria.periodKey}, Format=${format}, Date=${exportedAtDisplay})`;
+  const auditEventSummary = `${exportCopy.auditRecordPrefix} (${exportCopy.auditReportTypeKey}=${report.criteria.reportType}, ${exportCopy.auditPeriodKey}=${report.criteria.periodKey}, ${exportCopy.auditFormatKey}=${format}, ${exportCopy.auditDateKey}=${exportedAtDisplay})`;
 
   return {
     fileName,

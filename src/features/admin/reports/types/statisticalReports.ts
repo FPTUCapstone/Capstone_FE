@@ -13,14 +13,19 @@ export type ExportFormat = 'EXCEL' | 'CSV' | 'PDF';
 
 export type StatisticalWorkspaceMode = 'PRODUCTION' | 'DEMO';
 
-export interface ReportingPeriodOption {
+export interface ProductionReportingPeriodOption {
   readonly key: string;
   readonly granularity: PeriodGranularity;
   readonly label: string;
   readonly startDateDisplay: string;
   readonly endDateDisplay: string;
+}
+
+export interface DemoReportingPeriodFixture extends ProductionReportingPeriodOption {
   readonly isClosed: boolean;
 }
+
+export type ReportingPeriodOption = ProductionReportingPeriodOption | DemoReportingPeriodFixture;
 
 export interface StatisticalReportCriteria {
   readonly reportType: StatisticalReportType | '';
@@ -73,7 +78,7 @@ export interface StatisticalBreakdownRow {
 
 export interface GeneratedStatisticalReport {
   readonly criteria: AppliedStatisticalReportCriteria;
-  readonly period: ReportingPeriodOption;
+  readonly period: DemoReportingPeriodFixture;
   readonly generatedAtDisplay: string;
   readonly summaryMetrics: readonly StatisticalSummaryMetric[];
   readonly revenueBreakdown?: PlatformRevenueFormulaBreakdown;

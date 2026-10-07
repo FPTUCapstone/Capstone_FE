@@ -1,5 +1,8 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
@@ -14,12 +17,54 @@ import { statisticalReportsEn } from '../resources/en';
 const VIETNAMESE_DIACRITIC_REGEX =
   /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
+const RAW_CODE_REGEX = /\b(?:BR-\d+|MSG\d+)\b/;
+
+function collectAllStrings(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.flatMap(collectAllStrings);
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).flatMap(collectAllStrings);
+  }
+  return [];
+}
+
 describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)', () => {
   beforeEach(() => {
     AuthStorage.clear();
   });
 
-  describe('1. Authorization & CR-09 English Resource Compliance', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  describe('1. Fail-Closed Authorization & CR-09 English Resource Architecture', () => {
+    it('denies access when actorRole is omitted and no session exists (fail-closed)', () => {
+      render(<StatisticalReportsView />);
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: statisticalReportsEn.accessDenied.title }),
+      ).toBeTruthy();
+      expect(screen.getByText(statisticalReportsEn.accessDenied.message)).toBeTruthy();
+      expect(
+        screen.queryByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
+      ).toBeNull();
+    });
+
+    it.each(['Traveler', 'TourOperator', 'Staff', 'Unknown', ''])(
+      'denies access when actorRole is %s and displays semantic permission denied state',
+      (unauthorizedRole) => {
+        render(<StatisticalReportsView actorRole={unauthorizedRole} />);
+
+        expect(
+          screen.getByRole('heading', { level: 1, name: statisticalReportsEn.accessDenied.title }),
+        ).toBeTruthy();
+        expect(screen.getByText(statisticalReportsEn.accessDenied.message)).toBeTruthy();
+        expect(
+          screen.queryByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
+        ).toBeNull();
+      },
+    );
+
     it('allows Administrator access and renders 100% English copy with zero Vietnamese or raw BR/MSG codes', () => {
       const { container } = render(
         <>
@@ -32,32 +77,75 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         screen.getByRole('heading', { level: 1, name: statisticalReportsEn.header.title }),
       ).toBeTruthy();
       expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
-      expect(container.textContent ?? '').not.toMatch(/\b(?:BR-\d+|MSG\d+)\b/);
+      expect(container.textContent ?? '').not.toMatch(RAW_CODE_REGEX);
     });
 
-    it.each(['Traveler', 'TourOperator', 'Staff'])(
-      'denies access when actorRole is %s and displays semantic permission denied state',
-      (unauthorizedRole) => {
-        render(<StatisticalReportsView actorRole={unauthorizedRole} />);
+    it('verifies CR-09 resource centralization across resources/en.ts, StatisticalReportsView.tsx, and statisticalReportService.ts', () => {
+      const allResourceStrings = collectAllStrings(statisticalReportsEn);
+      expect(allResourceStrings.length).toBeGreaterThan(80);
+      for (const entry of allResourceStrings) {
+        expect(entry).not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
+        expect(entry).not.toMatch(RAW_CODE_REGEX);
+      }
 
-        expect(
-          screen.getByRole('heading', { level: 1, name: statisticalReportsEn.accessDenied.title }),
-        ).toBeTruthy();
-        expect(screen.getByText(statisticalReportsEn.accessDenied.message)).toBeTruthy();
-        expect(screen.queryByRole('button', { name: 'Generate Report' })).toBeNull();
-      },
-    );
+      const reportsDir = path.resolve(__dirname, '..');
+      const viewSource = fs.readFileSync(
+        path.join(reportsDir, 'components', 'StatisticalReportsView.tsx'),
+        'utf8',
+      );
+      const serviceSource = fs.readFileSync(
+        path.join(reportsDir, 'services', 'statisticalReportService.ts'),
+        'utf8',
+      );
+
+      expect(viewSource).not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
+      expect(serviceSource).not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
+      expect(viewSource).not.toMatch(RAW_CODE_REGEX);
+      expect(serviceSource).not.toMatch(RAW_CODE_REGEX);
+
+      // Verify previously flagged hardcoded presentation literals are centralized into resources/en.ts
+      const forbiddenHardcodedLiterals = [
+        'Draft report criteria reset to last applied configuration.',
+        'Net Platform Revenue',
+        'Confirmed Bookings Gross',
+        'Completed Bookings Gross',
+        'Recorded Refunds Deducted',
+        'Total New Registrations',
+        'Direct Web Registrations',
+        'Mobile App Registrations',
+        'Total Recorded Bookings',
+        'Evaluated Tour Operators',
+        'Completed Traveler Visits',
+        '[DEMO FIXTURE EXPORT — NOT PRODUCTION ACCOUNTING DATA]',
+        'September 2026 (01/09/2026',
+      ];
+
+      for (const literal of forbiddenHardcodedLiterals) {
+        expect(viewSource).not.toContain(literal);
+        expect(serviceSource).not.toContain(literal);
+      }
+    });
   });
 
-  describe('2. Production Truthfulness (NO_BACKEND / PENDING_BE_INTEGRATION)', () => {
-    it('does not fabricate statistics or enable Export in Production mode and preserves selected criteria on Generate Report', () => {
-      render(<StatisticalReportsView actorRole="Administrator" initialMode="PRODUCTION" />);
+  describe('2. Production Truthfulness Default & Environment Lockdown (NO_BACKEND / PENDING_BE_INTEGRATION)', () => {
+    it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to PRODUCTION mode with PENDING_BE_INTEGRATION and no user-facing Demo toggle', () => {
+      render(<StatisticalReportsView actorRole="Administrator" />);
 
       expect(
         screen.getByRole('heading', {
           name: statisticalReportsEn.states.pendingBackendTitle,
         }),
       ).toBeTruthy();
+
+      // Verify no user-facing Production/Demo switcher button exists
+      expect(screen.queryByRole('button', { name: /Demo Mode/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Fixtures/i })).toBeNull();
+
+      // Verify zero fabricated statistics, zero charts, and disabled export
+      expect(screen.queryByRole('table')).toBeNull();
+      expect(
+        screen.queryByRole('img', { name: statisticalReportsEn.results.chartSvgAriaLabel }),
+      ).toBeNull();
 
       const exportButton = screen.getByRole('button', {
         name: statisticalReportsEn.exportPanel.exportButton,
@@ -67,10 +155,13 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         screen.getByText(statisticalReportsEn.exportPanel.disabledProductionReason),
       ).toBeTruthy();
 
-      // Change criteria in Production mode and click Generate Report
-      fireEvent.change(screen.getByLabelText(statisticalReportsEn.criteriaForm.reportTypeSelectLabel), {
-        target: { value: 'USER_GROWTH' },
-      });
+      // Change criteria in Production mode and click Generate Report -> preserves criteria in PENDING_BE_INTEGRATION
+      fireEvent.change(
+        screen.getByLabelText(statisticalReportsEn.criteriaForm.reportTypeSelectLabel),
+        {
+          target: { value: 'USER_GROWTH' },
+        },
+      );
       fireEvent.click(
         screen.getByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
       );
@@ -83,11 +174,34 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       expect(exportButton.disabled).toBe(true);
       expect(screen.queryByRole('table')).toBeNull();
     });
+
+    it('forces PRODUCTION mode and blocks fixture data when NODE_ENV is production even if initialMode="DEMO" is passed', () => {
+      vi.stubEnv('NODE_ENV', 'production');
+
+      render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
+
+      expect(
+        screen.getByRole('heading', {
+          name: statisticalReportsEn.states.pendingBackendTitle,
+        }),
+      ).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
+      expect(screen.queryByRole('table')).toBeNull();
+      expect(
+        (
+          screen.getByRole('button', {
+            name: statisticalReportsEn.exportPanel.exportButton,
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+    });
   });
 
   describe('3. Demo Mode — Report Types, Closed Periods, Open Period Rejection & Draft vs Applied', () => {
-    it('supports all five report types and renders summary figures, SVG chart, and accessible tabular fallback', () => {
-      render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
+    it('supports all five report types and renders summary figures, SVG chart, and accessible tabular fallback with zero Vietnamese or raw codes', () => {
+      const { container } = render(
+        <StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />,
+      );
 
       const reportTypes = [
         { value: 'USER_GROWTH', expectedHeading: 'User Growth' },
@@ -111,21 +225,27 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
           screen.getByRole('img', { name: statisticalReportsEn.results.chartSvgAriaLabel }),
         ).toBeTruthy();
         expect(screen.getByRole('table')).toBeTruthy();
+        expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
+        expect(container.textContent ?? '').not.toMatch(RAW_CODE_REGEX);
       }
     });
 
-    it('supports Closed Month, Closed Quarter, and Closed Year and rejects open periods', () => {
+    it('supports Closed Month, Closed Quarter, and Closed Year and rejects open periods in Demo mode', () => {
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
 
       // Switch to Closed Quarter -> generates Q3 2026
-      fireEvent.click(screen.getByRole('button', { name: 'Closed Quarter' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: statisticalReportsEn.granularities.CLOSED_QUARTER }),
+      );
       fireEvent.click(
         screen.getByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
       );
       expect(screen.getByText(/01\/07\/2026 – 30\/09\/2026 \(2026-Q3\)/)).toBeTruthy();
 
       // Switch to Closed Year -> generates FY 2025
-      fireEvent.click(screen.getByRole('button', { name: 'Closed Year' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: statisticalReportsEn.granularities.CLOSED_YEAR }),
+      );
       fireEvent.click(
         screen.getByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
       );
@@ -171,6 +291,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       expect(
         screen.queryByText(statisticalReportsEn.criteriaForm.draftModifiedNotice),
       ).toBeNull();
+      expect(screen.getByText(statisticalReportsEn.criteriaForm.draftResetAnnouncement)).toBeTruthy();
 
       // Now change to Destination Popularity and click Generate Report
       fireEvent.change(

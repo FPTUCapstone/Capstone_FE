@@ -1,4 +1,9 @@
 export const statisticalReportsEn = {
+  metadata: {
+    title: 'Statistical Reports | TripMate Admin Console',
+    description:
+      'Generate and export aggregated platform statistics from closed reporting periods.',
+  },
   navigation: {
     brandAriaLabel: 'TripMate Admin Dashboard',
     navAriaLabel: 'Admin navigation',
@@ -29,15 +34,15 @@ export const statisticalReportsEn = {
     currencyBadge: 'Currency: VND',
   },
   modeBanner: {
-    groupAriaLabel: 'Reporting data source mode',
-    productionTab: 'Production Mode (Live API)',
-    demoTab: 'Interactive Demo Mode (Fixtures)',
+    groupAriaLabel: 'Reporting data source status',
+    productionModeHeading: 'Production Reporting Workspace',
+    demoModeHeading: 'Non-Production Demo Fixture Workspace (?demo=true)',
     productionBadge: 'Pending Backend Integration',
     demoBadge: 'DEMO FIXTURE DATA — Not Production Authority',
     productionNotice:
-      'Backend statistical aggregation and report export endpoints are not yet connected on this environment. Production mode preserves your selected criteria without fabricating platform statistics or generating synthetic export files.',
+      'Backend statistical aggregation, accounting-period closure verification, and report export endpoints are not yet connected on this environment. Production mode preserves your requested criteria without fabricating platform statistics or generating synthetic export files.',
     demoNotice:
-      'Interactive Demo mode uses deterministic closed-period fixture datasets to preview all five report types, closed-period validation, chart/table rendering, and DEMO-watermarked export workflows.',
+      'Development-only Demo mode (?demo=true) uses deterministic closed and open period fixtures to preview all five report types, closed-period validation, chart/table rendering, and DEMO-watermarked export workflows.',
   },
   criteriaForm: {
     sectionTitle: 'Report Criteria & Period Selection',
@@ -57,6 +62,8 @@ export const statisticalReportsEn = {
     cancelButton: 'Cancel',
     draftModifiedNotice:
       'Draft criteria have been modified. The currently displayed report below still reflects your previously generated criteria until you select Generate Report again.',
+    draftResetAnnouncement:
+      'Draft report criteria reset to last applied configuration.',
     simulationHeading: 'Demo Failure Simulation Controls',
     simulateGenerationErrorLabel: 'Simulate system/network failure on next Generate Report',
     simulateExportErrorLabel: 'Simulate file generation failure on next Export',
@@ -88,6 +95,32 @@ export const statisticalReportsEn = {
     CLOSED_MONTH: 'Closed Month',
     CLOSED_QUARTER: 'Closed Quarter',
     CLOSED_YEAR: 'Closed Year',
+  },
+  periods: {
+    production: {
+      '2026-09': 'September 2026 (01/09/2026 – 30/09/2026)',
+      '2026-08': 'August 2026 (01/08/2026 – 31/08/2026)',
+      '2026-07': 'July 2026 (01/07/2026 – 31/07/2026)',
+      '2026-Q3': 'Q3 2026 (01/07/2026 – 30/09/2026)',
+      '2026-Q2': 'Q2 2026 (01/04/2026 – 30/06/2026)',
+      '2025': 'FY 2025 (01/01/2025 – 31/12/2025)',
+      '2024': 'FY 2024 (01/01/2024 – 31/12/2024)',
+    },
+    demo: {
+      '2026-09': 'September 2026 (01/09/2026 – 30/09/2026 • Closed Fixture)',
+      '2026-08': 'August 2026 (01/08/2026 – 31/08/2026 • Closed Fixture)',
+      '2026-07': 'July 2026 (01/07/2026 – 31/07/2026 • Closed Fixture)',
+      '2026-10-OPEN': 'October 2026 (01/10/2026 – Present • Current Open Month Fixture)',
+      '2026-Q3': 'Q3 2026 (01/07/2026 – 30/09/2026 • Closed Fixture)',
+      '2026-Q2': 'Q2 2026 (01/04/2026 – 30/06/2026 • Closed Fixture)',
+      '2026-Q4-OPEN': 'Q4 2026 (01/10/2026 – Present • Current Open Quarter Fixture)',
+      '2025': 'FY 2025 (01/01/2025 – 31/12/2025 • Closed Fixture)',
+      '2024': 'FY 2024 (01/01/2024 – 31/12/2024 • Closed Fixture)',
+      '2026-OPEN': 'FY 2026 (01/01/2026 – Present • Current Open Year Fixture)',
+    },
+  },
+  units: {
+    vndSuffix: 'VND',
   },
   filters: {
     operators: [
@@ -122,7 +155,7 @@ export const statisticalReportsEn = {
       'Configure your report type, closed period, and optional filters above, then select Generate Report to view aggregated summary figures and charts.',
     pendingBackendTitle: 'Pending Backend Statistical Aggregation Contract',
     pendingBackendDescription:
-      'Your report criteria have been validated and preserved. Live platform statistical aggregation and file export will become active once the Backend reporting endpoint is deployed. No synthetic figures are displayed in Production mode.',
+      'Your requested report criteria have been preserved. Authoritative accounting-period closure verification, live platform statistical aggregation, and file export will become active once the Backend reporting endpoint is deployed. No synthetic figures are displayed in Production mode.',
     noDataTitle: 'No Statistical Data Available',
     noDataMessage: 'No records found matching your criteria.',
     noDataDescription:
@@ -136,6 +169,10 @@ export const statisticalReportsEn = {
     appliedHeaderTitle: 'Generated Report Result',
     demoWatermarkBadge: 'DEMO STATISTICAL DATASET',
     appliedCriteriaSummaryLabel: 'Applied Report Scope',
+    appliedPeriodPrefix: 'Period:',
+    appliedOperatorPrefix: 'Operator:',
+    appliedDestinationPrefix: 'Destination:',
+    appliedBookingTypePrefix: 'Booking Type:',
     periodWindowLabel: 'Closed Period Window',
     generatedTimestampLabel: 'Generated On',
     summarySectionTitle: 'Aggregated Summary Figures',
@@ -151,6 +188,202 @@ export const statisticalReportsEn = {
     tableFallbackTitle: 'Accessible Tabular Data Breakdown',
     tableCaptionPrefix: 'Detailed tabular breakdown for',
     shareOfTotalSuffix: 'of period total',
+  },
+  reportTemplates: {
+    emptyTableHeaders: [
+      'Segment',
+      'Primary Metric',
+      'Secondary Metric',
+      'Status / Share',
+    ] as const,
+    PLATFORM_REVENUE: {
+      chartUnitLabel: 'Net Revenue (VND)',
+      tableHeaders: [
+        'Revenue Segment',
+        'Confirmed + Completed Gross (VND)',
+        'Recorded Refunds (VND)',
+        'Net Revenue (VND)',
+      ] as const,
+      segmentSecondaryLabel: 'Confirmed + Completed Net',
+      segments: {
+        culturalHeritage: 'Cultural & Heritage Tours',
+        coastalIsland: 'Coastal & Island Packages',
+        highlandEco: 'Highland & Eco Experiences',
+      },
+      metrics: {
+        netPlatformRevenue: {
+          label: 'Net Platform Revenue',
+          contextNote: 'Confirmed + Completed bookings minus recorded refunds (Demo)',
+        },
+        confirmedGross: {
+          label: 'Confirmed Bookings Gross',
+          contextNote: 'Verified confirmed booking settlements in period',
+        },
+        completedGross: {
+          label: 'Completed Bookings Gross',
+          contextNote: 'Fulfilled completed trip and tour settlements',
+        },
+        recordedRefunds: {
+          label: 'Recorded Refunds Deducted',
+          contextNote: 'Processed traveler refund deductions in period',
+        },
+      },
+    },
+    USER_GROWTH: {
+      chartUnitLabel: 'Registered Accounts',
+      tableHeaders: [
+        'Registration Channel',
+        'New Accounts',
+        'Verified Active Accounts',
+        'Period Share',
+      ] as const,
+      segmentSecondaryLabel: 'Verified Accounts',
+      segments: {
+        directWeb: 'Direct Web Registrations',
+        mobileApp: 'Mobile App Registrations',
+        partnerReferral: 'Partner & Referral Sign-Ups',
+      },
+      metrics: {
+        totalNewAccounts: {
+          label: 'Total New Registrations',
+          contextNote: 'Combined Traveler and Tour Operator sign-ups (Demo)',
+        },
+        newTravelers: {
+          label: 'New Traveler Accounts',
+          contextNote: 'Registered travelers during closed period',
+        },
+        newOperators: {
+          label: 'New Tour Operator Accounts',
+          contextNote: 'Partner onboarding registrations in period',
+        },
+        verifiedActive: {
+          label: 'Verified Active Accounts',
+          contextNote: 'Completed email verification and active status',
+        },
+      },
+    },
+    BOOKING_VOLUME: {
+      chartUnitLabel: 'Bookings Count',
+      tableHeaders: [
+        'Booking Status Category',
+        'Booking Count',
+        'Associated Value (VND)',
+        'Settlement State',
+      ] as const,
+      segments: {
+        completed: 'Completed Bookings',
+        confirmed: 'Confirmed Bookings',
+        cancelledRefunded: 'Cancelled & Refunded',
+      },
+      settlementStates: {
+        fulfilled: 'Fulfilled',
+        activeConfirmed: 'Active Confirmed',
+        refundRecorded: 'Refund Recorded',
+      },
+      metrics: {
+        totalBookings: {
+          label: 'Total Recorded Bookings',
+          contextNote: 'All booking transactions in closed period (Demo)',
+        },
+        completedBookings: {
+          label: 'Completed Bookings',
+          contextNote: 'Fulfilled departures and services',
+        },
+        confirmedBookings: {
+          label: 'Confirmed Bookings',
+          contextNote: 'Paid and scheduled confirmed bookings',
+        },
+        settledBookingValue: {
+          label: 'Net Settled Booking Value',
+          contextNote: 'Net VND booking value after refunds',
+        },
+      },
+    },
+    OPERATOR_PERFORMANCE: {
+      chartUnitLabel: 'Net Settled Volume (VND)',
+      tableHeaders: [
+        'Tour Operator',
+        'Fulfilled Departures',
+        'Completion Rate',
+        'Net Settled Volume (VND)',
+      ] as const,
+      completionSuffix: 'Completion',
+      segments: {
+        op101: 'Central Heritage Journeys',
+        op102: 'Danang Coastal Expeditions',
+        op103: 'Highland Eco Trails',
+      },
+      metrics: {
+        activeOperators: {
+          label: 'Evaluated Tour Operators',
+          contextNote: 'Approved operators included in report scope (Demo)',
+        },
+        fulfilledDepartures: {
+          label: 'Fulfilled Tour Departures',
+          contextNote: 'Departures completed without operational incident',
+        },
+        completionRate: {
+          label: 'Average Completion Rate',
+          contextNote: 'Ratio of completed to scheduled departures',
+        },
+        operatorNetRevenue: {
+          label: 'Net Settled Tour Volume',
+          contextNote: 'Confirmed + Completed bookings net of refunds',
+        },
+      },
+    },
+    DESTINATION_POPULARITY: {
+      chartUnitLabel: 'Completed Traveler Visits',
+      tableHeaders: [
+        'Destination',
+        'Completed Visits',
+        'Itinerary Inclusions',
+        'Associated Net Revenue (VND)',
+      ] as const,
+      segments: {
+        daNang: 'Da Nang',
+        hoiAn: 'Hoi An',
+        hue: 'Hue',
+        daLat: 'Da Lat',
+      },
+      metrics: {
+        completedVisits: {
+          label: 'Completed Traveler Visits',
+          contextNote: 'Verified completed trip visits across POIs (Demo)',
+        },
+        itineraryInclusions: {
+          label: 'Itinerary POI Inclusions',
+          contextNote: 'Times destination POIs were scheduled in itineraries',
+        },
+        topDestination: {
+          label: 'Leading Destination',
+          contextNote: 'Highest combined booking and itinerary share',
+        },
+        associatedRevenue: {
+          label: 'Associated Net Booking Value',
+          contextNote: 'Confirmed + Completed bookings net of refunds',
+        },
+      },
+    },
+  },
+  exportArtifact: {
+    fileNamePrefix: 'DEMO-TripMate',
+    watermarkHeader: '[DEMO FIXTURE EXPORT — NOT PRODUCTION ACCOUNTING DATA]',
+    reportTypePrefix: 'Report Type',
+    closedPeriodPrefix: 'Closed Period',
+    appliedFiltersPrefix: 'Applied Filters',
+    operatorKeyLabel: 'Operator',
+    destinationKeyLabel: 'Destination',
+    bookingTypeKeyLabel: 'BookingType',
+    exportFormatPrefix: 'Export Format',
+    exportedDatePrefix: 'Exported Date (Asia/Ho_Chi_Minh)',
+    sectionDivider: '---',
+    columnSeparator: ' | ',
+    auditRecordPrefix: 'DEMO Audit Record: StatisticalReportExported',
+    auditReportTypeKey: 'ReportType',
+    auditPeriodKey: 'Period',
+    auditFormatKey: 'Format',
+    auditDateKey: 'Date',
   },
   exportPanel: {
     sectionTitle: 'Export Statistical Report',

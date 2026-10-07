@@ -7,16 +7,22 @@ import type { FormEvent } from 'react';
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
 
-import { canAccessStatisticalReports } from '../guards/statisticalReportAuth';
+import {
+  canAccessStatisticalReports,
+  isStatisticalDemoAllowedInEnv,
+} from '../guards/statisticalReportAuth';
 import { statisticalReportsEn } from '../resources/en';
 import {
   DEFAULT_DRAFT_CRITERIA,
   areCriteriaEqual,
   buildDemoExportArtifact,
-  findPeriodOption,
+  findDemoPeriodFixture,
+  findProductionPeriodOption,
   formatVndCurrency,
   generateDemoStatisticalReport,
+  getDemoPeriodFixturesByGranularity,
   getPeriodsByGranularity,
+  getProductionPeriodsByGranularity,
 } from '../services/statisticalReportService';
 import type {
   AppliedStatisticalReportCriteria,
@@ -31,7 +37,7 @@ import type {
 } from '../types/statisticalReports';
 
 export interface StatisticalReportsViewProps {
-  readonly actorRole?: string;
+  readonly actorRole?: string | null;
   readonly initialMode?: StatisticalWorkspaceMode;
 }
 
@@ -60,23 +66,25 @@ const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['EXCEL', 'CSV', 'PDF'];
 
 export function StatisticalReportsView({
   actorRole,
-  initialMode = 'DEMO',
+  initialMode = 'PRODUCTION',
 }: StatisticalReportsViewProps) {
   const copy = statisticalReportsEn;
   const sessionContext = AuthStorage.getContext();
-  const effectiveRole = actorRole ?? sessionContext?.role ?? 'Administrator';
+  const effectiveRole = actorRole ?? sessionContext?.role ?? null;
+  const effectiveMode: StatisticalWorkspaceMode = isStatisticalDemoAllowedInEnv()
+    ? initialMode
+    : 'PRODUCTION';
 
-  const [mode, setMode] = useState<StatisticalWorkspaceMode>(initialMode);
   const [draftCriteria, setDraftCriteria] =
     useState<StatisticalReportCriteria>(DEFAULT_DRAFT_CRITERIA);
   const [appliedCriteria, setAppliedCriteria] =
     useState<AppliedStatisticalReportCriteria | null>(null);
   const [resultState, setResultState] = useState<ResultLifecycleState>(() => {
-    if (initialMode === 'PRODUCTION') return 'PENDING_BE_INTEGRATION';
+    if (effectiveMode === 'PRODUCTION') return 'PENDING_BE_INTEGRATION';
     return 'GENERATED';
   });
   const [generatedReport, setGeneratedReport] = useState<GeneratedStatisticalReport | null>(() => {
-    if (initialMode === 'PRODUCTION') return null;
+    if (effectiveMode === 'PRODUCTION') return null;
     const initialApplied: AppliedStatisticalReportCriteria = {
       reportType: 'PLATFORM_REVENUE',
       periodGranularity: 'CLOSED_MONTH',
@@ -88,10 +96,8 @@ export function StatisticalReportsView({
     return generateDemoStatisticalReport(initialApplied);
   });
 
-  // Initialize appliedCriteria for Demo default so draft vs applied comparison works immediately
   const resolvedAppliedCriteria: AppliedStatisticalReportCriteria | null =
-    appliedCriteria ??
-    (generatedReport ? generatedReport.criteria : null);
+    appliedCriteria ?? (generatedReport ? generatedReport.criteria : null);
 
   const [fieldErrors, setFieldErrors] = useState<{
     reportType?: string;
@@ -113,9 +119,18 @@ export function StatisticalReportsView({
           className="w-full rounded-2xl border border-[#d0d7de] bg-white p-6 shadow-sm sm:p-8"
         >
           <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold tracking-wide text-rose-800">
-            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-              lock
-            </span>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-4 w-4 shrink-0"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                clipRule="evenodd"
+              />
+            </svg>
             <span>{copy.accessDenied.eyebrow}</span>
           </div>
           <h1
@@ -145,43 +160,26 @@ export function StatisticalReportsView({
     );
   }
 
-  const availablePeriods = getPeriodsByGranularity(draftCriteria.periodGranularity);
+  const availablePeriods = getPeriodsByGranularity(
+    draftCriteria.periodGranularity,
+    effectiveMode,
+  );
   const isDraftDirty =
     resolvedAppliedCriteria !== null && !areCriteriaEqual(draftCriteria, resolvedAppliedCriteria);
 
-  function handleModeSwitch(nextMode: StatisticalWorkspaceMode) {
-    setMode(nextMode);
-    setFieldErrors({});
-    setExportStatus('IDLE');
-    setExportedArtifact(null);
-
-    if (nextMode === 'PRODUCTION') {
-      setResultState('PENDING_BE_INTEGRATION');
-      setLiveAnnouncement(copy.states.pendingBackendTitle);
-    } else {
-      const targetCriteria: AppliedStatisticalReportCriteria =
-        resolvedAppliedCriteria ?? {
-          reportType: 'PLATFORM_REVENUE',
-          periodGranularity: 'CLOSED_MONTH',
-          periodKey: '2026-09',
-          operatorId: 'ALL',
-          destinationId: 'ALL',
-          bookingType: 'ALL',
-        };
-      const nextReport = generateDemoStatisticalReport(targetCriteria);
-      if (nextReport && nextReport.breakdownRows.length > 0) {
-        setGeneratedReport(nextReport);
-        setAppliedCriteria(targetCriteria);
-        setResultState('GENERATED');
-      } else {
-        setResultState('IDLE');
-      }
-    }
-  }
-
   function handleGranularityChange(nextGranularity: PeriodGranularity) {
-    const periodsForGranularity = getPeriodsByGranularity(nextGranularity);
-    const firstClosed = periodsForGranularity.find((p) => p.isClosed);
+    if (effectiveMode === 'PRODUCTION') {
+      const productionPeriods = getProductionPeriodsByGranularity(nextGranularity);
+      setDraftCriteria((prev) => ({
+        ...prev,
+        periodGranularity: nextGranularity,
+        periodKey: productionPeriods[0]?.key ?? '',
+      }));
+      return;
+    }
+
+    const demoPeriods = getDemoPeriodFixturesByGranularity(nextGranularity);
+    const firstClosed = demoPeriods.find((p) => p.isClosed);
     setDraftCriteria((prev) => ({
       ...prev,
       periodGranularity: nextGranularity,
@@ -204,17 +202,6 @@ export function StatisticalReportsView({
       return;
     }
 
-    const selectedPeriod = findPeriodOption(draftCriteria.periodKey);
-    if (!selectedPeriod || !selectedPeriod.isClosed) {
-      setFieldErrors({ periodKey: copy.validation.openPeriodRejected });
-      setLiveAnnouncement(copy.validation.openPeriodRejected);
-      return;
-    }
-
-    setFieldErrors({});
-    setExportStatus('IDLE');
-    setExportedArtifact(null);
-
     const nextApplied: AppliedStatisticalReportCriteria = {
       reportType: draftCriteria.reportType as StatisticalReportType,
       periodGranularity: draftCriteria.periodGranularity,
@@ -224,13 +211,34 @@ export function StatisticalReportsView({
       bookingType: draftCriteria.bookingType,
     };
 
-    if (mode === 'PRODUCTION') {
+    if (effectiveMode === 'PRODUCTION') {
+      const requestedProductionPeriod = findProductionPeriodOption(draftCriteria.periodKey);
+      if (!requestedProductionPeriod) {
+        setFieldErrors({ periodKey: copy.validation.requiredField });
+        setLiveAnnouncement(copy.validation.requiredField);
+        return;
+      }
+
+      setFieldErrors({});
+      setExportStatus('IDLE');
+      setExportedArtifact(null);
       setAppliedCriteria(nextApplied);
       setGeneratedReport(null);
       setResultState('PENDING_BE_INTEGRATION');
       setLiveAnnouncement(copy.states.pendingBackendTitle);
       return;
     }
+
+    const selectedDemoPeriod = findDemoPeriodFixture(draftCriteria.periodKey);
+    if (!selectedDemoPeriod || !selectedDemoPeriod.isClosed) {
+      setFieldErrors({ periodKey: copy.validation.openPeriodRejected });
+      setLiveAnnouncement(copy.validation.openPeriodRejected);
+      return;
+    }
+
+    setFieldErrors({});
+    setExportStatus('IDLE');
+    setExportedArtifact(null);
 
     if (simulateGenerationError) {
       setResultState('GENERATION_ERROR');
@@ -251,7 +259,7 @@ export function StatisticalReportsView({
     setGeneratedReport(demoReport);
     setResultState('GENERATED');
     setLiveAnnouncement(
-      `${copy.results.appliedHeaderTitle}: ${copy.reportTypes[nextApplied.reportType].label} (${selectedPeriod.label})`,
+      `${copy.results.appliedHeaderTitle}: ${copy.reportTypes[nextApplied.reportType].label} (${selectedDemoPeriod.label})`,
     );
   }
 
@@ -268,11 +276,11 @@ export function StatisticalReportsView({
     } else {
       setDraftCriteria(DEFAULT_DRAFT_CRITERIA);
     }
-    setLiveAnnouncement('Draft report criteria reset to last applied configuration.');
+    setLiveAnnouncement(copy.criteriaForm.draftResetAnnouncement);
   }
 
   function handleExportReport() {
-    if (mode === 'PRODUCTION' || resultState !== 'GENERATED' || !generatedReport) {
+    if (effectiveMode === 'PRODUCTION' || resultState !== 'GENERATED' || !generatedReport) {
       return;
     }
 
@@ -290,13 +298,13 @@ export function StatisticalReportsView({
   }
 
   const canExport =
-    mode === 'DEMO' &&
+    effectiveMode === 'DEMO' &&
     resultState === 'GENERATED' &&
     generatedReport !== null &&
     generatedReport.breakdownRows.length > 0;
 
   const exportDisabledExplanation =
-    mode === 'PRODUCTION'
+    effectiveMode === 'PRODUCTION'
       ? copy.exportPanel.disabledProductionReason
       : copy.exportPanel.disabledNoGeneratedReportReason;
 
@@ -334,52 +342,35 @@ export function StatisticalReportsView({
           </div>
         </header>
 
-        {/* Data Source Mode Banner (Production Truthfulness vs Demo Fixtures) */}
+        {/* Read-Only Data Source Status Banner (No User-Facing Production->Demo Toggle) */}
         <section
           aria-label={copy.modeBanner.groupAriaLabel}
           className="mb-8 rounded-2xl border border-[#d0d7de] bg-white p-4 shadow-xs sm:p-5"
         >
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div className="flex flex-wrap items-center gap-2" role="group" aria-label={copy.modeBanner.groupAriaLabel}>
-              <button
-                type="button"
-                aria-pressed={mode === 'PRODUCTION'}
-                onClick={() => handleModeSwitch('PRODUCTION')}
-                className={`rounded-xl px-4 py-2 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f] ${
-                  mode === 'PRODUCTION'
-                    ? 'bg-[#00152a] text-white'
-                    : 'border border-[#cbd5e1] bg-[#f8fafc] text-[#334155] hover:bg-[#f1f5f9]'
-                }`}
-              >
-                {copy.modeBanner.productionTab}
-              </button>
-              <button
-                type="button"
-                aria-pressed={mode === 'DEMO'}
-                onClick={() => handleModeSwitch('DEMO')}
-                className={`rounded-xl px-4 py-2 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f] ${
-                  mode === 'DEMO'
-                    ? 'bg-[#006b5f] text-white'
-                    : 'border border-[#cbd5e1] bg-[#f8fafc] text-[#334155] hover:bg-[#f1f5f9]'
-                }`}
-              >
-                {copy.modeBanner.demoTab}
-              </button>
-            </div>
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+            <h2 className="text-sm font-extrabold tracking-tight text-[#00152a]">
+              {effectiveMode === 'PRODUCTION'
+                ? copy.modeBanner.productionModeHeading
+                : copy.modeBanner.demoModeHeading}
+            </h2>
 
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
-                mode === 'PRODUCTION'
+                effectiveMode === 'PRODUCTION'
                   ? 'border border-amber-300 bg-amber-50 text-amber-900'
                   : 'border border-teal-300 bg-teal-50 text-teal-900'
               }`}
             >
-              {mode === 'PRODUCTION' ? copy.modeBanner.productionBadge : copy.modeBanner.demoBadge}
+              {effectiveMode === 'PRODUCTION'
+                ? copy.modeBanner.productionBadge
+                : copy.modeBanner.demoBadge}
             </span>
           </div>
 
-          <p className="mt-3 text-xs leading-relaxed text-[#475467]">
-            {mode === 'PRODUCTION' ? copy.modeBanner.productionNotice : copy.modeBanner.demoNotice}
+          <p className="mt-2.5 text-xs leading-relaxed text-[#475467]">
+            {effectiveMode === 'PRODUCTION'
+              ? copy.modeBanner.productionNotice
+              : copy.modeBanner.demoNotice}
           </p>
         </section>
 
@@ -475,7 +466,11 @@ export function StatisticalReportsView({
                   ))}
                 </select>
                 {fieldErrors.reportType ? (
-                  <p id="report-type-error" role="alert" className="mt-1.5 text-xs font-semibold text-rose-700">
+                  <p
+                    id="report-type-error"
+                    role="alert"
+                    className="mt-1.5 text-xs font-semibold text-rose-700"
+                  >
                     {fieldErrors.reportType}
                   </p>
                 ) : null}
@@ -627,8 +622,8 @@ export function StatisticalReportsView({
               </div>
             </fieldset>
 
-            {/* Demo Failure Simulation Controls */}
-            {mode === 'DEMO' ? (
+            {/* Demo Failure Simulation Controls (Non-Production Demo Only) */}
+            {effectiveMode === 'DEMO' ? (
               <fieldset className="rounded-xl border border-dashed border-[#cbd5e1] bg-[#fcfcfd] p-3.5">
                 <legend className="px-1 text-xs font-bold text-[#475467]">
                   {copy.criteriaForm.simulationHeading}
@@ -692,16 +687,25 @@ export function StatisticalReportsView({
           </h2>
 
           {/* Production Mode: PENDING_BE_INTEGRATION */}
-          {mode === 'PRODUCTION' || resultState === 'PENDING_BE_INTEGRATION' ? (
+          {effectiveMode === 'PRODUCTION' || resultState === 'PENDING_BE_INTEGRATION' ? (
             <div
               role="region"
               aria-label={copy.states.pendingBackendTitle}
               className="rounded-2xl border border-amber-300 bg-amber-50/70 p-6 sm:p-8"
             >
               <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-                  cloud_off
-                </span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-4 w-4 shrink-0"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
                 <span>{copy.modeBanner.productionBadge}</span>
               </div>
               <h3 className="text-lg font-extrabold text-[#00152a]">
@@ -714,10 +718,12 @@ export function StatisticalReportsView({
                 <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4 text-xs text-[#344054]">
                   <span className="font-bold">{copy.results.appliedCriteriaSummaryLabel}: </span>
                   <span>
-                    {copy.reportTypes[resolvedAppliedCriteria.reportType].label} • Period:{' '}
-                    {resolvedAppliedCriteria.periodKey} • Operator:{' '}
-                    {resolvedAppliedCriteria.operatorId} • Destination:{' '}
-                    {resolvedAppliedCriteria.destinationId} • Booking Type:{' '}
+                    {copy.reportTypes[resolvedAppliedCriteria.reportType].label} •{' '}
+                    {copy.results.appliedPeriodPrefix} {resolvedAppliedCriteria.periodKey} •{' '}
+                    {copy.results.appliedOperatorPrefix} {resolvedAppliedCriteria.operatorId} •{' '}
+                    {copy.results.appliedDestinationPrefix}{' '}
+                    {resolvedAppliedCriteria.destinationId} •{' '}
+                    {copy.results.appliedBookingTypePrefix}{' '}
                     {resolvedAppliedCriteria.bookingType}
                   </span>
                 </div>
@@ -726,7 +732,7 @@ export function StatisticalReportsView({
           ) : null}
 
           {/* Generation Error State (4.a2) */}
-          {mode === 'DEMO' && resultState === 'GENERATION_ERROR' ? (
+          {effectiveMode === 'DEMO' && resultState === 'GENERATION_ERROR' ? (
             <div
               role="alert"
               className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900 sm:p-8"
@@ -744,7 +750,7 @@ export function StatisticalReportsView({
           ) : null}
 
           {/* No Data State (4.a1) */}
-          {mode === 'DEMO' && resultState === 'NO_DATA' ? (
+          {effectiveMode === 'DEMO' && resultState === 'NO_DATA' ? (
             <div
               role="status"
               className="rounded-2xl border border-[#d0d7de] bg-white p-6 text-center sm:p-8"
@@ -758,7 +764,7 @@ export function StatisticalReportsView({
           ) : null}
 
           {/* Generated Report Result (Summary Figures + Revenue Formula + SVG Chart + Accessible Table) */}
-          {mode === 'DEMO' &&
+          {effectiveMode === 'DEMO' &&
           resultState === 'GENERATED' &&
           generatedReport &&
           generatedReport.breakdownRows.length > 0 ? (
@@ -844,7 +850,7 @@ export function StatisticalReportsView({
                     {copy.results.revenueFormulaNote}
                   </p>
                   <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl bg-white p-3.5 border border-[#e0f2fe]">
+                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
                       <dt className="text-xs font-semibold text-[#475467]">
                         {copy.results.confirmedGrossLabel}
                       </dt>
@@ -854,7 +860,7 @@ export function StatisticalReportsView({
                         )}
                       </dd>
                     </div>
-                    <div className="rounded-xl bg-white p-3.5 border border-[#e0f2fe]">
+                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
                       <dt className="text-xs font-semibold text-[#475467]">
                         {copy.results.completedGrossLabel}
                       </dt>
@@ -864,7 +870,7 @@ export function StatisticalReportsView({
                         )}
                       </dd>
                     </div>
-                    <div className="rounded-xl bg-white p-3.5 border border-[#e0f2fe]">
+                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
                       <dt className="text-xs font-semibold text-[#475467]">
                         {copy.results.recordedRefundsLabel}
                       </dt>
