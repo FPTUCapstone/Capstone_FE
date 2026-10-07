@@ -37,14 +37,28 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
     vi.unstubAllEnvs();
   });
 
-  describe('1. Fail-Closed Authorization & CR-09 English Resource Architecture', () => {
-    it('denies access when actorRole is omitted and no session exists (fail-closed)', () => {
+  describe('1. Trusted Server Authorization & CR-09 English Resource Architecture', () => {
+    it('denies access when actorRole is omitted even if client sessionStorage contains an Administrator role (fail-closed server boundary)', () => {
       render(<StatisticalReportsView />);
 
       expect(
         screen.getByRole('heading', { level: 1, name: statisticalReportsEn.accessDenied.title }),
       ).toBeTruthy();
       expect(screen.getByText(statisticalReportsEn.accessDenied.message)).toBeTruthy();
+      expect(
+        screen.queryByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
+      ).toBeNull();
+    });
+
+    it('denies access when actorRole is PENDING_AUTH_SESSION_VERIFICATION (forged or unverified Admin token) and renders verification notice', () => {
+      render(<StatisticalReportsView actorRole="PENDING_AUTH_SESSION_VERIFICATION" />);
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: statisticalReportsEn.accessDenied.title }),
+      ).toBeTruthy();
+      expect(
+        screen.getByText(statisticalReportsEn.accessDenied.unverifiedSessionNotice),
+      ).toBeTruthy();
       expect(
         screen.queryByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
       ).toBeNull();
@@ -65,7 +79,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       },
     );
 
-    it('allows Administrator access and renders 100% English copy with zero Vietnamese or raw BR/MSG codes', () => {
+    it('allows verified Administrator access and renders 100% English copy with zero Vietnamese or raw BR/MSG codes', () => {
       const { container } = render(
         <>
           <AdminNavigation />
@@ -103,9 +117,10 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       expect(viewSource).not.toMatch(RAW_CODE_REGEX);
       expect(serviceSource).not.toMatch(RAW_CODE_REGEX);
 
-      // Verify previously flagged hardcoded presentation literals are centralized into resources/en.ts
+      // Verify presentation literals are centralized into resources/en.ts
       const forbiddenHardcodedLiterals = [
         'Draft report criteria reset to last applied configuration.',
+        'Dynamic Tour Operator and Destination filters will become available after Backend reporting integration.',
         'Net Platform Revenue',
         'Confirmed Bookings Gross',
         'Completed Bookings Gross',
@@ -118,6 +133,9 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         'Completed Traveler Visits',
         '[DEMO FIXTURE EXPORT — NOT PRODUCTION ACCOUNTING DATA]',
         'September 2026 (01/09/2026',
+        'Central Heritage Journeys',
+        'Danang Coastal Expeditions',
+        'Highland Eco Trails',
       ];
 
       for (const literal of forbiddenHardcodedLiterals) {
@@ -127,8 +145,8 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
     });
   });
 
-  describe('2. Production Truthfulness Default & Environment Lockdown (NO_BACKEND / PENDING_BE_INTEGRATION)', () => {
-    it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to PRODUCTION mode with PENDING_BE_INTEGRATION and no user-facing Demo toggle', () => {
+  describe('2. Production Truthfulness Default, Filter Truthfulness & Environment Lockdown', () => {
+    it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to PRODUCTION mode with PENDING_BE_INTEGRATION, zero fixture filter options, and zero fabricated report data', () => {
       render(<StatisticalReportsView actorRole="Administrator" />);
 
       expect(
@@ -140,6 +158,46 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       // Verify no user-facing Production/Demo switcher button exists
       expect(screen.queryByRole('button', { name: /Demo Mode/i })).toBeNull();
       expect(screen.queryByRole('button', { name: /Fixtures/i })).toBeNull();
+
+      // Verify Production filter truthfulness:
+      // 1. Tour Operator select contains ONLY "All Tour Operators" and NO fixture operator names
+      const operatorSelect = screen.getByLabelText(
+        statisticalReportsEn.criteriaForm.operatorFilterLabel,
+      ) as HTMLSelectElement;
+      const operatorLabels = Array.from(operatorSelect.options).map((o) => o.textContent);
+      expect(operatorLabels).toEqual([statisticalReportsEn.filters.allOperatorsLabel]);
+      expect(operatorLabels).not.toContain('Central Heritage Journeys');
+      expect(operatorLabels).not.toContain('Danang Coastal Expeditions');
+      expect(operatorLabels).not.toContain('Highland Eco Trails');
+      expect(operatorLabels).not.toContain('Mekong Artisan Tours (Zero Activity Period)');
+
+      // 2. Destination select contains ONLY "All Destinations" and NO fixture destination names
+      const destinationSelect = screen.getByLabelText(
+        statisticalReportsEn.criteriaForm.destinationFilterLabel,
+      ) as HTMLSelectElement;
+      const destinationLabels = Array.from(destinationSelect.options).map((o) => o.textContent);
+      expect(destinationLabels).toEqual([statisticalReportsEn.filters.allDestinationsLabel]);
+      expect(destinationLabels).not.toContain('Da Nang');
+      expect(destinationLabels).not.toContain('Hoi An');
+      expect(destinationLabels).not.toContain('Hue');
+      expect(destinationLabels).not.toContain('Da Lat');
+      expect(destinationLabels).not.toContain('Con Dao (No Recorded Activity)');
+
+      // 3. Booking Type select contains the 3 canonical static domain enum options
+      const bookingTypeSelect = screen.getByLabelText(
+        statisticalReportsEn.criteriaForm.bookingTypeFilterLabel,
+      ) as HTMLSelectElement;
+      const bookingTypeLabels = Array.from(bookingTypeSelect.options).map((o) => o.textContent);
+      expect(bookingTypeLabels).toEqual([
+        statisticalReportsEn.filters.bookingTypes.ALL,
+        statisticalReportsEn.filters.bookingTypes.TOUR_PACKAGE,
+        statisticalReportsEn.filters.bookingTypes.COMMERCIAL_SERVICE,
+      ]);
+
+      // 4. Semantic notice explaining dynamic filter availability is shown
+      expect(
+        screen.getByText(statisticalReportsEn.filters.productionDynamicFiltersNotice),
+      ).toBeTruthy();
 
       // Verify zero fabricated statistics, zero charts, and disabled export
       expect(screen.queryByRole('table')).toBeNull();
@@ -175,7 +233,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       expect(screen.queryByRole('table')).toBeNull();
     });
 
-    it('forces PRODUCTION mode and blocks fixture data when NODE_ENV is production even if initialMode="DEMO" is passed', () => {
+    it('forces PRODUCTION mode and blocks fixture filters and fixture report data when NODE_ENV is production even if initialMode="DEMO" is passed', () => {
       vi.stubEnv('NODE_ENV', 'production');
 
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
@@ -187,6 +245,17 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       ).toBeTruthy();
       expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
       expect(screen.queryByRole('table')).toBeNull();
+
+      const operatorSelect = screen.getByLabelText(
+        statisticalReportsEn.criteriaForm.operatorFilterLabel,
+      ) as HTMLSelectElement;
+      expect(operatorSelect.options.length).toBe(1);
+
+      const destinationSelect = screen.getByLabelText(
+        statisticalReportsEn.criteriaForm.destinationFilterLabel,
+      ) as HTMLSelectElement;
+      expect(destinationSelect.options.length).toBe(1);
+
       expect(
         (
           screen.getByRole('button', {
@@ -197,11 +266,21 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
     });
   });
 
-  describe('3. Demo Mode — Report Types, Closed Periods, Open Period Rejection & Draft vs Applied', () => {
-    it('supports all five report types and renders summary figures, SVG chart, and accessible tabular fallback with zero Vietnamese or raw codes', () => {
+  describe('3. Demo Mode — Fixture Filters, Report Types, Closed Periods, Open Period Rejection & Draft vs Applied', () => {
+    it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with SVG chart and tabular fallback', () => {
       const { container } = render(
         <StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />,
       );
+
+      const operatorSelect = screen.getByLabelText(
+        statisticalReportsEn.criteriaForm.operatorFilterLabel,
+      ) as HTMLSelectElement;
+      expect(operatorSelect.options.length).toBe(5);
+
+      const destinationSelect = screen.getByLabelText(
+        statisticalReportsEn.criteriaForm.destinationFilterLabel,
+      ) as HTMLSelectElement;
+      expect(destinationSelect.options.length).toBe(6);
 
       const reportTypes = [
         { value: 'USER_GROWTH', expectedHeading: 'User Growth' },

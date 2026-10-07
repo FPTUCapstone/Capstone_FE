@@ -9,12 +9,54 @@ import type {
   PlatformRevenueFormulaBreakdown,
   ProductionReportingPeriodOption,
   ReportingPeriodOption,
+  StatisticalBookingTypeOption,
   StatisticalBreakdownRow,
   StatisticalChartPoint,
+  StatisticalFilterOptionSet,
   StatisticalReportCriteria,
   StatisticalSummaryMetric,
   StatisticalWorkspaceMode,
 } from '../types/statisticalReports';
+
+const CANONICAL_BOOKING_TYPE_OPTIONS: readonly StatisticalBookingTypeOption[] = [
+  { id: 'ALL', label: statisticalReportsEn.filters.bookingTypes.ALL },
+  { id: 'TOUR_PACKAGE', label: statisticalReportsEn.filters.bookingTypes.TOUR_PACKAGE },
+  {
+    id: 'COMMERCIAL_SERVICE',
+    label: statisticalReportsEn.filters.bookingTypes.COMMERCIAL_SERVICE,
+  },
+] as const;
+
+export const PRODUCTION_FILTER_OPTIONS: StatisticalFilterOptionSet = {
+  operators: [{ id: 'ALL', label: statisticalReportsEn.filters.allOperatorsLabel }],
+  destinations: [{ id: 'ALL', label: statisticalReportsEn.filters.allDestinationsLabel }],
+  bookingTypes: CANONICAL_BOOKING_TYPE_OPTIONS,
+} as const;
+
+export const DEMO_FILTER_FIXTURES: StatisticalFilterOptionSet = {
+  operators: [
+    { id: 'ALL', label: statisticalReportsEn.filters.allOperatorsLabel },
+    { id: 'OP-101', label: statisticalReportsEn.filters.demoOperators['OP-101'] },
+    { id: 'OP-102', label: statisticalReportsEn.filters.demoOperators['OP-102'] },
+    { id: 'OP-103', label: statisticalReportsEn.filters.demoOperators['OP-103'] },
+    { id: 'OP-104', label: statisticalReportsEn.filters.demoOperators['OP-104'] },
+  ],
+  destinations: [
+    { id: 'ALL', label: statisticalReportsEn.filters.allDestinationsLabel },
+    { id: 'DEST-DAD', label: statisticalReportsEn.filters.demoDestinations['DEST-DAD'] },
+    { id: 'DEST-HOI', label: statisticalReportsEn.filters.demoDestinations['DEST-HOI'] },
+    { id: 'DEST-HUE', label: statisticalReportsEn.filters.demoDestinations['DEST-HUE'] },
+    { id: 'DEST-DLI', label: statisticalReportsEn.filters.demoDestinations['DEST-DLI'] },
+    { id: 'DEST-VCS', label: statisticalReportsEn.filters.demoDestinations['DEST-VCS'] },
+  ],
+  bookingTypes: CANONICAL_BOOKING_TYPE_OPTIONS,
+} as const;
+
+export function getFilterOptionsByMode(
+  mode: StatisticalWorkspaceMode = 'PRODUCTION',
+): StatisticalFilterOptionSet {
+  return mode === 'PRODUCTION' ? PRODUCTION_FILTER_OPTIONS : DEMO_FILTER_FIXTURES;
+}
 
 export const PRODUCTION_PERIOD_OPTIONS: readonly ProductionReportingPeriodOption[] = [
   {

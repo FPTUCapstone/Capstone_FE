@@ -27,6 +27,22 @@ export interface DemoReportingPeriodFixture extends ProductionReportingPeriodOpt
 
 export type ReportingPeriodOption = ProductionReportingPeriodOption | DemoReportingPeriodFixture;
 
+export interface StatisticalFilterOption {
+  readonly id: string;
+  readonly label: string;
+}
+
+export interface StatisticalBookingTypeOption {
+  readonly id: BookingTypeFilter;
+  readonly label: string;
+}
+
+export interface StatisticalFilterOptionSet {
+  readonly operators: readonly StatisticalFilterOption[];
+  readonly destinations: readonly StatisticalFilterOption[];
+  readonly bookingTypes: readonly StatisticalBookingTypeOption[];
+}
+
 export interface StatisticalReportCriteria {
   readonly reportType: StatisticalReportType | '';
   readonly periodGranularity: PeriodGranularity;

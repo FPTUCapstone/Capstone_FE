@@ -21,7 +21,9 @@ export const statisticalReportsEn = {
     title: 'Access Restricted',
     message: 'You do not have permission to access this function.',
     detail:
-      'Only an active Administrator account may generate and export platform statistical reports.',
+      'Only a verified active Administrator session may generate and export platform statistical reports.',
+    unverifiedSessionNotice:
+      'Your administration session could not be verified against the Backend authentication boundary. Please sign in again with an active Administrator account.',
     returnToSignIn: 'Return to Administrator Sign In',
     returnToDashboard: 'Return to Workspace',
   },
@@ -123,26 +125,28 @@ export const statisticalReportsEn = {
     vndSuffix: 'VND',
   },
   filters: {
-    operators: [
-      { id: 'ALL', label: 'All Tour Operators' },
-      { id: 'OP-101', label: 'Central Heritage Journeys' },
-      { id: 'OP-102', label: 'Danang Coastal Expeditions' },
-      { id: 'OP-103', label: 'Highland Eco Trails' },
-      { id: 'OP-104', label: 'Mekong Artisan Tours (Zero Activity Period)' },
-    ],
-    destinations: [
-      { id: 'ALL', label: 'All Destinations' },
-      { id: 'DEST-DAD', label: 'Da Nang' },
-      { id: 'DEST-HOI', label: 'Hoi An' },
-      { id: 'DEST-HUE', label: 'Hue' },
-      { id: 'DEST-DLI', label: 'Da Lat' },
-      { id: 'DEST-VCS', label: 'Con Dao (No Recorded Activity)' },
-    ],
-    bookingTypes: [
-      { id: 'ALL', label: 'All Booking Types' },
-      { id: 'TOUR_PACKAGE', label: 'Tour Package Bookings' },
-      { id: 'COMMERCIAL_SERVICE', label: 'Commercial Service Bookings' },
-    ],
+    allOperatorsLabel: 'All Tour Operators',
+    allDestinationsLabel: 'All Destinations',
+    productionDynamicFiltersNotice:
+      'Dynamic Tour Operator and Destination filters will become available after Backend reporting integration.',
+    demoOperators: {
+      'OP-101': 'Central Heritage Journeys',
+      'OP-102': 'Danang Coastal Expeditions',
+      'OP-103': 'Highland Eco Trails',
+      'OP-104': 'Mekong Artisan Tours (Zero Activity Period)',
+    },
+    demoDestinations: {
+      'DEST-DAD': 'Da Nang',
+      'DEST-HOI': 'Hoi An',
+      'DEST-HUE': 'Hue',
+      'DEST-DLI': 'Da Lat',
+      'DEST-VCS': 'Con Dao (No Recorded Activity)',
+    },
+    bookingTypes: {
+      ALL: 'All Booking Types',
+      TOUR_PACKAGE: 'Tour Package Bookings',
+      COMMERCIAL_SERVICE: 'Commercial Service Bookings',
+    },
   },
   validation: {
     requiredField: 'This field is required.',

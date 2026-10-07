@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { AuthStorage } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
 
 import {
@@ -21,6 +20,7 @@ import {
   formatVndCurrency,
   generateDemoStatisticalReport,
   getDemoPeriodFixturesByGranularity,
+  getFilterOptionsByMode,
   getPeriodsByGranularity,
   getProductionPeriodsByGranularity,
 } from '../services/statisticalReportService';
@@ -69,8 +69,7 @@ export function StatisticalReportsView({
   initialMode = 'PRODUCTION',
 }: StatisticalReportsViewProps) {
   const copy = statisticalReportsEn;
-  const sessionContext = AuthStorage.getContext();
-  const effectiveRole = actorRole ?? sessionContext?.role ?? null;
+  const effectiveRole = actorRole ?? null;
   const effectiveMode: StatisticalWorkspaceMode = isStatisticalDemoAllowedInEnv()
     ? initialMode
     : 'PRODUCTION';
@@ -141,6 +140,11 @@ export function StatisticalReportsView({
           </h1>
           <p className="mt-2 text-sm font-semibold text-rose-700">{copy.accessDenied.message}</p>
           <p className="mt-1 text-sm leading-relaxed text-[#475467]">{copy.accessDenied.detail}</p>
+          {effectiveRole === 'PENDING_AUTH_SESSION_VERIFICATION' ? (
+            <p className="mt-2 text-xs leading-relaxed text-[#475467]">
+              {copy.accessDenied.unverifiedSessionNotice}
+            </p>
+          ) : null}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href={ROUTES.admin.login}
@@ -164,6 +168,7 @@ export function StatisticalReportsView({
     draftCriteria.periodGranularity,
     effectiveMode,
   );
+  const activeFilterOptions = getFilterOptionsByMode(effectiveMode);
   const isDraftDirty =
     resolvedAppliedCriteria !== null && !areCriteriaEqual(draftCriteria, resolvedAppliedCriteria);
 
@@ -206,8 +211,8 @@ export function StatisticalReportsView({
       reportType: draftCriteria.reportType as StatisticalReportType,
       periodGranularity: draftCriteria.periodGranularity,
       periodKey: draftCriteria.periodKey,
-      operatorId: draftCriteria.operatorId,
-      destinationId: draftCriteria.destinationId,
+      operatorId: effectiveMode === 'PRODUCTION' ? 'ALL' : draftCriteria.operatorId,
+      destinationId: effectiveMode === 'PRODUCTION' ? 'ALL' : draftCriteria.destinationId,
       bookingType: draftCriteria.bookingType,
     };
 
@@ -542,7 +547,7 @@ export function StatisticalReportsView({
               </div>
             </div>
 
-            {/* Optional Filters (Tour Operator, Destination, Booking Type) */}
+            {/* Optional Filters (PRODUCTION_FILTER_OPTIONS vs DEMO_FILTER_FIXTURES) */}
             <fieldset className="rounded-xl border border-[#eaecf0] bg-[#f8fafc] p-4">
               <legend className="px-1 text-xs font-bold tracking-wider text-[#475467] uppercase">
                 {copy.criteriaForm.optionalFiltersHeading}
@@ -563,7 +568,7 @@ export function StatisticalReportsView({
                     }
                     className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3 py-2 text-sm text-[#0f172a]"
                   >
-                    {copy.filters.operators.map((op) => (
+                    {activeFilterOptions.operators.map((op) => (
                       <option key={op.id} value={op.id}>
                         {op.label}
                       </option>
@@ -586,7 +591,7 @@ export function StatisticalReportsView({
                     }
                     className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3 py-2 text-sm text-[#0f172a]"
                   >
-                    {copy.filters.destinations.map((dest) => (
+                    {activeFilterOptions.destinations.map((dest) => (
                       <option key={dest.id} value={dest.id}>
                         {dest.label}
                       </option>
@@ -612,7 +617,7 @@ export function StatisticalReportsView({
                     }
                     className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3 py-2 text-sm text-[#0f172a]"
                   >
-                    {copy.filters.bookingTypes.map((bt) => (
+                    {activeFilterOptions.bookingTypes.map((bt) => (
                       <option key={bt.id} value={bt.id}>
                         {bt.label}
                       </option>
@@ -620,6 +625,11 @@ export function StatisticalReportsView({
                   </select>
                 </div>
               </div>
+              {effectiveMode === 'PRODUCTION' ? (
+                <p className="mt-3 text-xs text-[#475467]">
+                  {copy.filters.productionDynamicFiltersNotice}
+                </p>
+              ) : null}
             </fieldset>
 
             {/* Demo Failure Simulation Controls (Non-Production Demo Only) */}

@@ -3,12 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getCookie: vi.fn(),
   redirect: vi.fn(),
+  fetchBackend: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: mocks.getCookie }),
 }));
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
+vi.mock('@/lib/server/backend', () => ({
+  fetchBackend: mocks.fetchBackend,
+}));
 vi.mock('@/features/admin/reports/components/StatisticalReportsView', () => ({
   StatisticalReportsView: ({
     actorRole,
@@ -23,14 +27,15 @@ vi.mock('@/features/admin/reports/components/StatisticalReportsView', () => ({
 }));
 
 import StatisticalReportsPage from './page';
+import { canAccessStatisticalReports } from '@/features/admin/reports/guards/statisticalReportAuth';
 
-function createJwt(payload: Record<string, unknown>): string {
+function createJwt(payload: Record<string, unknown>, signature = 'fake-signature'): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  return `${header}.${body}.sig`;
+  return `${header}.${body}.${signature}`;
 }
 
-describe('UC-67 /admin/reports protected route & mode gate', () => {
+describe('UC-67 /admin/reports protected route & trusted server session boundary', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
@@ -49,25 +54,53 @@ describe('UC-67 /admin/reports protected route & mode gate', () => {
     );
   });
 
-  it('defaults normal /admin/reports route navigation to PRODUCTION mode with an Administrator JWT', async () => {
+  it('CRITICAL REGRESSION: denies a forged JWT payload with role="Administrator" when Backend session verification is absent or fails', async () => {
+    const forgedAdminToken = createJwt({ sub: 'attacker', role: 'Administrator' }, 'fake-signature');
+    mocks.getCookie.mockReturnValue({ value: forgedAdminToken });
+
+    // Case 1: Backend rejects forged signature with 401 Unauthorized
+    mocks.fetchBackend.mockResolvedValueOnce({ ok: false, status: 401 });
+    const rejectedResult = (await StatisticalReportsPage({})) as unknown as {
+      props: { actorRole: string; initialMode: string };
+    };
+    expect(rejectedResult.props.actorRole).toBe('Unknown');
+    expect(canAccessStatisticalReports(rejectedResult.props.actorRole)).toBe(false);
+
+    // Case 2: Backend session verification infrastructure is unconfigured/unavailable
+    mocks.fetchBackend.mockRejectedValueOnce(new Error('BackendConfigurationError'));
+    const unverifiedResult = (await StatisticalReportsPage({})) as unknown as {
+      props: { actorRole: string; initialMode: string };
+    };
+    expect(unverifiedResult.props.actorRole).toBe('PENDING_AUTH_SESSION_VERIFICATION');
+    expect(canAccessStatisticalReports(unverifiedResult.props.actorRole)).toBe(false);
+  });
+
+  it('allows Administrator access ONLY when the server-side Backend session verifier confirms 200 OK, and defaults to PRODUCTION mode', async () => {
     mocks.getCookie.mockReturnValue({
-      value: createJwt({ sub: 'admin-1', role: 'Administrator' }),
+      value: createJwt({ sub: 'admin-1', role: 'Administrator' }, 'verified-by-backend'),
     });
+    mocks.fetchBackend.mockResolvedValueOnce({ ok: true, status: 200 });
 
     const result = (await StatisticalReportsPage({})) as unknown as {
       props: { actorRole: string; initialMode: string };
     };
 
     expect(mocks.redirect).not.toHaveBeenCalled();
+    expect(mocks.fetchBackend).toHaveBeenCalledWith(
+      '/api/v1/admin/system-configs/algorithm-parameters',
+      expect.objectContaining({ method: 'GET' }),
+    );
     expect(result.props.actorRole).toBe('Administrator');
+    expect(canAccessStatisticalReports(result.props.actorRole)).toBe(true);
     expect(result.props.initialMode).toBe('PRODUCTION');
   });
 
-  it('enables DEMO mode only when explicit ?demo=true is provided in a non-production environment', async () => {
+  it('enables DEMO mode only when explicit ?demo=true is provided in a non-production environment with a verified Administrator session', async () => {
     vi.stubEnv('NODE_ENV', 'development');
     mocks.getCookie.mockReturnValue({
-      value: createJwt({ sub: 'admin-1', role: 'Administrator' }),
+      value: createJwt({ sub: 'admin-1', role: 'Administrator' }, 'verified-by-backend'),
     });
+    mocks.fetchBackend.mockResolvedValueOnce({ ok: true, status: 200 });
 
     const result = (await StatisticalReportsPage({
       searchParams: Promise.resolve({ demo: 'true' }),
@@ -82,8 +115,9 @@ describe('UC-67 /admin/reports protected route & mode gate', () => {
   it('locks mode to PRODUCTION when NODE_ENV=production even if ?demo=true is passed', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     mocks.getCookie.mockReturnValue({
-      value: createJwt({ sub: 'admin-1', role: 'Administrator' }),
+      value: createJwt({ sub: 'admin-1', role: 'Administrator' }, 'verified-by-backend'),
     });
+    mocks.fetchBackend.mockResolvedValueOnce({ ok: true, status: 200 });
 
     const result = (await StatisticalReportsPage({
       searchParams: Promise.resolve({ demo: 'true' }),
@@ -95,7 +129,7 @@ describe('UC-67 /admin/reports protected route & mode gate', () => {
     expect(result.props.initialMode).toBe('PRODUCTION');
   });
 
-  it('fails closed (resolves Unknown role) when an arbitrary opaque token or malformed JWT is present', async () => {
+  it('fails closed (resolves Unknown role without trusting token) when an opaque token, malformed JWT, or JWT without role is present', async () => {
     for (const invalidToken of [
       'server-only-token',
       'random-opaque-token',
@@ -109,12 +143,14 @@ describe('UC-67 /admin/reports protected route & mode gate', () => {
       };
 
       expect(result.props.actorRole).toBe('Unknown');
+      expect(canAccessStatisticalReports(result.props.actorRole)).toBe(false);
       expect(result.props.initialMode).toBe('PRODUCTION');
     }
+    expect(mocks.fetchBackend).not.toHaveBeenCalled();
   });
 
   it.each(['Staff', 'Traveler', 'TourOperator'] as const)(
-    'passes non-Administrator role (%s) from JWT so StatisticalReportsView denies access',
+    'resolves non-Administrator role (%s) and denies access without authorizing UC-67',
     async (nonAdminRole) => {
       mocks.getCookie.mockReturnValue({
         value: createJwt({ sub: 'user-2', role: nonAdminRole }),
@@ -125,7 +161,9 @@ describe('UC-67 /admin/reports protected route & mode gate', () => {
       };
 
       expect(mocks.redirect).not.toHaveBeenCalled();
+      expect(mocks.fetchBackend).not.toHaveBeenCalled();
       expect(result.props.actorRole).toBe(nonAdminRole);
+      expect(canAccessStatisticalReports(result.props.actorRole)).toBe(false);
     },
   );
 });
