@@ -3,6 +3,10 @@
  * Follows Report 3 SRS V2 CR-09 (English UI & resource file requirement).
  */
 export const bookingEn = {
+  metadata: {
+    title: 'Customer Booking Management | Tour Operator Workspace',
+    description: 'Monitor, search, and manage customer bookings for tour packages under your management (UC-40, UC-41, UC-42).',
+  },
   header: {
     title: 'Customer Booking Management',
     useCaseTag: 'UC-40',
@@ -112,6 +116,8 @@ export const bookingEn = {
     cancellationRecord: 'Cancellation Record',
     cancellationReason: 'Cancellation Reason',
     cancelledAt: 'Cancelled At',
+    refundClarificationNotice:
+      'Refund follow-up: Report 3 V2 contains conflicting requirements regarding automatic cancellation refunds vs. separate refund requests. You can explicitly initiate a refund using the button below (UC-42).',
     closeBtn: 'Close',
     cancelBookingBtn: 'Cancel Booking (UC-41)',
     refundBtn: 'Initiate Refund (UC-42)',
@@ -133,7 +139,7 @@ export const bookingEn = {
     refundPreviewHeader: 'Estimated Refund Policy (Demo preview)',
     estimatedRefundLabel: 'Estimated Refund Amount:',
     refundNotice:
-      '* Refund will be automatically issued to the original payment channel in accordance with policy. In production, final refund amounts are determined by the Backend.',
+      '* Cancellation updates booking status, releases held slots, and invalidates the QR ticket. Refund handling is pending clarification under SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER; explicit refund initiation is available via UC-42.',
     reasonTypeLabel: 'Cancellation Reason Category',
     reasonDetailLabel: 'Cancellation Reason Details',
     reasonDetailRequired: '* (Required)',

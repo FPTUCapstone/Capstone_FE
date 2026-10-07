@@ -4,6 +4,7 @@ import {
 } from '../data/operatorBookingDemoFixtures';
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import {
+  BOOKING_ERROR_CODES,
   OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
   OPERATOR_BOOKING_MESSAGES,
   type BookingDto,
@@ -200,7 +201,10 @@ export async function getOperatorBookingById(
 
   // BR-105 fail-closed when actor identity is missing
   if (!isValidDemoActorUserId(options.demoActorUserId)) {
-    return { error: OPERATOR_BOOKING_MESSAGES.MSG126, messageCode: 'MSG126' };
+    return {
+      error: OPERATOR_BOOKING_MESSAGES.MSG126,
+      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
+    };
   }
 
   const booking = inMemoryDemoBookings.find((b) => b.id === bookingId);
@@ -211,7 +215,10 @@ export async function getOperatorBookingById(
 
   // BR-105 ownership check
   if (booking.operatorUserId !== options.demoActorUserId) {
-    return { error: OPERATOR_BOOKING_MESSAGES.MSG126, messageCode: 'MSG126' };
+    return {
+      error: OPERATOR_BOOKING_MESSAGES.MSG126,
+      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
+    };
   }
 
   return { booking: JSON.parse(JSON.stringify(booking)) };
@@ -251,7 +258,7 @@ export async function cancelCustomerBooking(
   if (!isValidDemoActorUserId(options.demoActorUserId)) {
     return {
       success: false,
-      messageCode: 'MSG126',
+      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
       message: OPERATOR_BOOKING_MESSAGES.MSG126,
     };
   }
@@ -269,7 +276,7 @@ export async function cancelCustomerBooking(
   if (booking.operatorUserId !== options.demoActorUserId) {
     return {
       success: false,
-      messageCode: 'MSG126',
+      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
       message: OPERATOR_BOOKING_MESSAGES.MSG126,
     };
   }
@@ -301,8 +308,8 @@ export async function cancelCustomerBooking(
     };
   }
 
-  // Per approved detailed UC-41 SRS (§3.8.4.2), normal operator cancellation is blocked
-  // with MSG82 when the tour cancellation window has passed (< 24h before departure).
+  // Per approved detailed UC-41 SRS, cancellation is blocked when the cancellation window defined
+  // by the policy has passed (the 24h cutoff in fixtures is a test case, not canonical TripMate policy).
   // Emergency tour cancellation belongs to UC-70 (out of scope for UC-41 / PR #53).
   if (booking.cancellationWindowExpired) {
     return {
@@ -318,37 +325,20 @@ export async function cancelCustomerBooking(
   booking.cancellationReason = payload.reasonDetail.trim();
   booking.cancelledAt = new Date().toISOString();
 
-  let refundTriggered = false;
-
-  // If verified payment exists, trigger separate refund (BR-76, BR-77, BR-107)
-  if (booking.paidAmount > 0) {
-    const preview = calculateDemoBookingRefundPreview(booking);
-    if (preview.eligible && preview.refundableAmount > 0) {
-      booking.refund = {
-        id: `rf-${Date.now()}`,
-        bookingId: booking.id,
-        refundableAmount: preview.refundableAmount,
-        deductionAmount: preview.deductionAmount,
-        policyApplied: preview.policyApplied,
-        paymentChannel: booking.paymentTransaction?.paymentChannel || 'VNPay',
-        status: 'Success',
-        gatewayReference: `REFUND-${booking.bookingCode}-${Math.floor(1000 + Math.random() * 9000)}`,
-        attemptCount: 1,
-        notes: `Automatic refund upon cancellation: ${payload.reasonDetail.trim()}`,
-        createdAt: new Date().toISOString(),
-      };
-      refundTriggered = true;
-    }
-  }
+  // Preferred safe implementation under SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER:
+  // Cancellation marks the booking as Cancelled, releases held slots (BR-66), and invalidates QR ticket (BR-86).
+  // For verified paid bookings, cancellation does NOT automatically create a definitive refund record.
+  // Instead, it exposes semantic state refundFollowUpRequired so the operator can explicitly review and
+  // initiate the refund via UC-42, avoiding unadjudicated automated financial mutation in NO_BACKEND mode.
+  const refundFollowUpRequired = booking.paidAmount > 0;
 
   return {
     success: true,
     messageCode: 'MSG81',
-    message: refundTriggered
-      ? `${OPERATOR_BOOKING_MESSAGES.MSG81} ${OPERATOR_BOOKING_MESSAGES.MSG83}`
-      : OPERATOR_BOOKING_MESSAGES.MSG81,
+    message: OPERATOR_BOOKING_MESSAGES.MSG81,
     booking: JSON.parse(JSON.stringify(booking)),
-    refundTriggered,
+    refundTriggered: false,
+    refundFollowUpRequired,
   };
 }
 
@@ -383,7 +373,7 @@ export async function initiateBookingRefund(
   if (!isValidDemoActorUserId(options.demoActorUserId)) {
     return {
       success: false,
-      messageCode: 'MSG126',
+      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
       message: OPERATOR_BOOKING_MESSAGES.MSG126,
     };
   }
@@ -401,7 +391,7 @@ export async function initiateBookingRefund(
   if (booking.operatorUserId !== options.demoActorUserId) {
     return {
       success: false,
-      messageCode: 'MSG126',
+      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
       message: OPERATOR_BOOKING_MESSAGES.MSG126,
     };
   }

@@ -321,6 +321,12 @@ export function BookingDetailPanel({
               )}
             </div>
           )}
+
+          {booking.status === 'Cancelled' && booking.paidAmount > 0 && !booking.refund && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-[11px] text-amber-900">
+              <p className="font-medium">{bookingEn.detail.refundClarificationNotice}</p>
+            </div>
+          )}
         </div>
 
         {/* Drawer Footer Actions */}
