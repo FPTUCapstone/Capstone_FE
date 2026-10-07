@@ -22,6 +22,8 @@ export const ROUTES = {
     application: '/partner/application',
     resubmitApplication: '/partner/application/resubmit',
     createCoupon: '/partner/coupons/create',
+    revenue: '/partner/revenue',
+    payouts: '/partner/payouts',
   },
   account: {
     profile: '/account/profile',
