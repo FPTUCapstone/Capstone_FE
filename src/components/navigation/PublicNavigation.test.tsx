@@ -67,7 +67,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     render(<PublicNavigation />);
     await waitFor(() => expect(screen.getByText('Restored Traveler')).toBeDefined());
     expect(screen.queryByRole('link', { name: 'Đăng nhập' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Đăng xuất' })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Log out|Đăng xuất/i })).toBeDefined();
   });
 
   it('restores an authenticated Administrator with no Partner entry', async () => {
@@ -125,8 +125,8 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     });
     render(<PublicNavigation />);
     expect(screen.getByText('Warm Context')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Đăng xuất' }));
+    fireEvent.click(screen.getByRole('button', { name: /Log out|Đăng xuất/i }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /Log out|Đăng xuất/i }));
     await waitFor(() => expect(screen.getByRole('link', { name: 'Đăng nhập' })).toBeDefined());
     expect(screen.queryByRole('status')).toBeNull();
     expect(mocks.webRefresh).not.toHaveBeenCalled();

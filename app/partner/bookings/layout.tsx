@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { BookingRouteGuard } from '@/features/operator/bookings/guards/BookingRouteGuard';
+import { bookingEn } from '@/features/operator/bookings/resources/en';
 
 export const metadata: Metadata = {
-  title: 'Quản lý Đơn đặt chỗ | Tour Operator Workspace | TripMate',
-  description: 'Quản lý, tra cứu và xử lý đơn đặt chỗ của khách hàng (UC-40, UC-41, UC-42).',
+  title: `${bookingEn.metadata.title} | TripMate`,
+  description: bookingEn.metadata.description,
 };
 
 export default function PartnerBookingsLayout({ children }: { children: ReactNode }) {

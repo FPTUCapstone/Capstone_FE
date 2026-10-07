@@ -9,8 +9,9 @@ export interface DemoBookingRefundPreview {
 
 /**
  * DEMO-ONLY FIXTURE POLICY (UC-41 / UC-42 UI review only).
- * The "100% refund before 24h cutoff" rule is a deterministic Demo fixture calculation
- * used exclusively for non-production UI preview.
+ * Report 3 SRS V2 detailed UC-41 specifies "cancellation window defined by the policy"
+ * without dictating a universal 24-hour cutoff. The policy evaluation below is exclusively
+ * a deterministic Demo fixture rule for UI preview purposes.
  * In production, the browser NEVER calculates authoritative monetary refund amounts locally;
  * production flows must display Backend-calculated refund policy and amounts (BR-107).
  */
@@ -28,16 +29,16 @@ export function calculateDemoBookingRefundPreview(booking: BookingDto): DemoBook
     return {
       refundableAmount: 0,
       deductionAmount: booking.paidAmount,
-      policyApplied: 'Cancellation deadline passed (< 24 hours before departure — Demo fixture)',
+      policyApplied: 'Cancellation deadline passed (Demo fixture policy cutoff)',
       eligible: false,
     };
   }
 
-  // Demo fixture policy: 100% refund for cancellations prior to the 24h cutoff window
+  // Demo fixture policy: 100% refund for cancellations prior to the policy cutoff window
   return {
     refundableAmount: booking.paidAmount,
     deductionAmount: 0,
-    policyApplied: '100% refund when cancelled at least 24 hours before departure (Demo fixture policy)',
+    policyApplied: '100% refund when cancelled before policy cutoff (Demo fixture policy)',
     eligible: true,
   };
 }

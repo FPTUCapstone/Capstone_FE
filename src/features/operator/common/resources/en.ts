@@ -24,6 +24,17 @@ export const operatorCommonEn = {
     closeMenuAria: 'Close navigation menu',
     demoBadge: 'Demo',
   },
+  logout: {
+    button: 'Log out',
+    confirmTitle: 'Confirm logout',
+    confirmMessage: 'Are you sure you want to log out of TripMate?',
+    cancelButton: 'Cancel',
+    confirmButton: 'Log out',
+    loading: 'Logging out...',
+    errorMessage: 'Unable to end your session. Please try again.',
+    dialogAriaTitle: 'Confirm logout',
+    dialogAriaDesc: 'Are you sure you want to log out of TripMate?',
+  },
   accessibility: {
     closeDialog: 'Close dialog',
   },

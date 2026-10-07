@@ -107,4 +107,17 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('displays refund clarification notice for cancelled booking with paid amount awaiting refund', () => {
+    const unrefundedCancelled: BookingDto = {
+      ...cancellableBooking,
+      status: 'Cancelled',
+      cancellationReason: 'Customer requested cancellation',
+      cancelledAt: '2026-09-10T08:00:00Z',
+      refund: undefined,
+    };
+    render(<TestDrawerHarness booking={unrefundedCancelled} />);
+
+    expect(screen.getByText(/Refund follow-up: Report 3 V2 contains conflicting requirements/i)).toBeDefined();
+  });
 });

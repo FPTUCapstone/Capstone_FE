@@ -24,6 +24,13 @@ export const OPERATOR_BOOKING_MESSAGES = {
 export type OperatorBookingMessageKey = keyof typeof OPERATOR_BOOKING_MESSAGES;
 
 /**
+ * Semantic internal status codes for booking operations (decoupled from contradictory numeric IDs).
+ */
+export const BOOKING_ERROR_CODES = {
+  BOOKING_OWNERSHIP_DENIED: 'BOOKING_OWNERSHIP_DENIED',
+} as const;
+
+/**
  * CR-01 / BR-52: Canonical default pagination size for customer booking list.
  */
 export const OPERATOR_BOOKING_DEFAULT_PAGE_SIZE = 20;
@@ -151,6 +158,7 @@ export interface CancelBookingResult {
   message: string;
   booking?: BookingDto;
   refundTriggered?: boolean;
+  refundFollowUpRequired?: boolean;
 }
 
 export interface InitiateRefundPayload {

@@ -9,6 +9,7 @@ import {
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
 import {
+  BOOKING_ERROR_CODES,
   OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
   OPERATOR_BOOKING_MESSAGES,
 } from '../types/bookingLifecycle';
@@ -196,7 +197,7 @@ describe('operatorBookingService', () => {
       it('fails closed with MSG126 when demoActorUserId is missing', async () => {
         const res = await getOperatorBookingById('booking-0141', { isDemo: true });
         expect(res.booking).toBeUndefined();
-        expect(res.messageCode).toBe('MSG126');
+        expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
         expect(res.error).toBe(OPERATOR_BOOKING_MESSAGES.MSG126);
       });
 
@@ -206,7 +207,7 @@ describe('operatorBookingService', () => {
           demoActorUserId: 101,
         });
         expect(res.booking).toBeUndefined();
-        expect(res.messageCode).toBe('MSG126');
+        expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
         expect(res.error).toBe(OPERATOR_BOOKING_MESSAGES.MSG126);
       });
 
@@ -216,7 +217,7 @@ describe('operatorBookingService', () => {
           demoActorUserId: 999,
         });
         expect(res.booking).toBeUndefined();
-        expect(res.messageCode).toBe('MSG126');
+        expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
         expect(res.error).toBe(OPERATOR_BOOKING_MESSAGES.MSG126);
       });
 
@@ -238,7 +239,7 @@ describe('operatorBookingService', () => {
         { isDemo: true }
       );
       expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG126');
+      expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
       expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG126);
     });
 
@@ -260,7 +261,7 @@ describe('operatorBookingService', () => {
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG126');
+      expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
       expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG126);
 
       const foreignActorAttempt = await cancelCustomerBooking(
@@ -269,7 +270,7 @@ describe('operatorBookingService', () => {
         { isDemo: true, demoActorUserId: 999 }
       );
       expect(foreignActorAttempt.success).toBe(false);
-      expect(foreignActorAttempt.messageCode).toBe('MSG126');
+      expect(foreignActorAttempt.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
     });
 
     it('rejects cancellation of already cancelled booking -> MSG133', async () => {
@@ -338,7 +339,7 @@ describe('operatorBookingService', () => {
       expect(res.booking?.qrTicketValid).toBe(false); // BR-86
     });
 
-    it('cancels paid booking successfully and triggers separate refund record (BR-86, BR-106, BR-107, BR-77)', async () => {
+    it('cancels paid booking successfully and marks refund follow-up required (BR-86, BR-106, BR-77, SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER)', async () => {
       const res = await cancelCustomerBooking(
         'booking-0141', // Confirmed, paid 5600000
         { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Customer requested early cancellation' },
@@ -346,14 +347,14 @@ describe('operatorBookingService', () => {
       );
       expect(res.success).toBe(true);
       expect(res.messageCode).toBe('MSG81');
-      expect(res.refundTriggered).toBe(true);
+      expect(res.refundTriggered).toBe(false);
+      expect(res.refundFollowUpRequired).toBe(true);
       expect(res.booking?.status).toBe('Cancelled');
       expect(res.booking?.qrTicketValid).toBe(false); // BR-86 invalidated
       expect(res.booking?.cancellationReason).toBe('Customer requested early cancellation');
-      // Refund is a separate record
-      expect(res.booking?.refund).toBeDefined();
-      expect(res.booking?.refund?.refundableAmount).toBe(5600000);
-      expect(res.booking?.refund?.status).toBe('Success');
+      // Under safe implementation for SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER,
+      // cancellation does NOT auto-create a refund record
+      expect(res.booking?.refund).toBeUndefined();
       // Original transaction remains immutable (BR-77)
       expect(res.booking?.paymentTransaction?.status).toBe('Success');
       expect(res.booking?.paymentTransaction?.amount).toBe(5600000);
@@ -364,7 +365,7 @@ describe('operatorBookingService', () => {
     it('fails closed with MSG126 when demoActorUserId is missing (BR-105)', async () => {
       const res = await initiateBookingRefund('booking-0141', {}, { isDemo: true });
       expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG126');
+      expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
       expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG126);
     });
 
@@ -375,7 +376,7 @@ describe('operatorBookingService', () => {
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG126');
+      expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
 
       const foreignActorAttempt = await initiateBookingRefund(
         'booking-0141',
@@ -383,7 +384,7 @@ describe('operatorBookingService', () => {
         { isDemo: true, demoActorUserId: 999 }
       );
       expect(foreignActorAttempt.success).toBe(false);
-      expect(foreignActorAttempt.messageCode).toBe('MSG126');
+      expect(foreignActorAttempt.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
     });
 
     it('rejects refund if booking has no verified paid transaction -> MSG84', async () => {
