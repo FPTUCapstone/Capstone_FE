@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthStorage, parseWebAuthContext } from './authSession';
+import { AuthStorage, isAdministrationRole, isAdministrator, isStaff, parseWebAuthContext } from './authSession';
+import { signInDestination } from '../routing/signInDestination';
 const data = { userId: 42, email: 'user@example.com', fullName: '', role: 'Traveler', status: 'Active', applicationStatus: null, accessToken: 'test-access', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z' };
 describe('Web authentication session', () => {
   beforeEach(() => { AuthStorage.clear(); localStorage.clear(); sessionStorage.clear(); });
@@ -36,7 +37,24 @@ describe('Web authentication session', () => {
   it.each(['Approved', 'PendingApproval', 'Rejected'])('uses current operator profile %s', (applicationStatus) => {
     expect(parseWebAuthContext({ ...data, role: 'TourOperator', applicationStatus }).applicationStatus).toBe(applicationStatus);
   });
-  it.each([{ role: 1 }, { status: 'PendingApproval' }, { accessToken: '' }, { userId: '42' }, { fullName: null }, { accessTokenExpiresAtUtc: 'bad' }, { refreshToken: 'forbidden' }])('rejects invalid auth context %j', (change) => {
+  it('parses Staff and Administrator roles and classifies administration actors accurately', () => {
+    const staffContext = parseWebAuthContext({ ...data, role: 'Staff' });
+    const adminContext = parseWebAuthContext({ ...data, role: 'Administrator' });
+    expect(staffContext.role).toBe('Staff');
+    expect(staffContext.applicationStatus).toBeNull();
+    expect(staffContext.applicationUnresolved).toBe(false);
+    expect(signInDestination(staffContext)).toBe('/admin/staff');
+    expect(signInDestination(adminContext)).toBe('/admin');
+    expect(isAdministrationRole('Staff')).toBe(true);
+    expect(isAdministrationRole('Administrator')).toBe(true);
+    expect(isAdministrationRole('Traveler')).toBe(false);
+    expect(isAdministrationRole('TourOperator')).toBe(false);
+    expect(isStaff('Staff')).toBe(true);
+    expect(isStaff('Administrator')).toBe(false);
+    expect(isAdministrator('Administrator')).toBe(true);
+    expect(isAdministrator('Staff')).toBe(false);
+  });
+  it.each([{ role: 1 }, { role: 'SuperUser' }, { status: 'PendingApproval' }, { accessToken: '' }, { userId: '42' }, { fullName: null }, { accessTokenExpiresAtUtc: 'bad' }, { refreshToken: 'forbidden' }])('rejects invalid auth context %j', (change) => {
     AuthStorage.accept(data, false); expect(() => AuthStorage.accept({ ...data, ...change }, false)).toThrow('INVALID_AUTH_CONTEXT'); expect(AuthStorage.getContext()).toBeNull(); expect(AuthStorage.getAccessToken()).toBeNull();
   });
 });

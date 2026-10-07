@@ -78,7 +78,7 @@ describe('AdminLogoutButton', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
     expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'Không thể đăng xuất. Vui lòng thử lại.',
+      'Unable to sign out of the administration workspace. Please try again.',
     );
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe('AdminLogoutButton', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
     expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'Không thể đăng xuất. Vui lòng thử lại.',
+      'Unable to sign out of the administration workspace. Please try again.',
     );
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();

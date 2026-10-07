@@ -48,7 +48,7 @@ test('login forwards credentials, issues the session after the validated admin l
   });
   const response = await route.POST(request());
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { authenticated: true });
+  assert.deepEqual(await response.json(), { authenticated: true, role: 'Administrator' });
   assert.deepEqual(JSON.parse(calls[0].init.body), { email: 'admin@example.com', password: 'secret', keepMeSignedIn: false });
   assert.equal(calls[0].path, '/api/v1/auth/web/admin/login');
   assert.equal(calls.length, 1, 'the validated admin login response alone must issue the session');
@@ -60,8 +60,21 @@ test('login forwards credentials, issues the session after the validated admin l
   assert.equal(response.headers.get('cache-control'), 'no-store');
 });
 
+test('login accepts active Staff role and returns Staff role context without exposing tokens', async () => {
+  const route = loadRoute(async () =>
+    Response.json({
+      ...loginResult(),
+      data: { ...loginResult().data, role: 'Staff', accessToken: 'staff-token' },
+    }),
+  );
+  const response = await route.POST(request());
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { authenticated: true, role: 'Staff' });
+  assert.match(response.headers.get('set-cookie'), /tripmate_admin_access_token=staff-token/);
+});
+
 test('login denies non-admin, inactive, invalid expiry or invalid token response', async () => {
-  for (const change of [{ role: 'TourOperator' }, { status: 'Inactive' }, { accessTokenExpiresAtUtc: 'invalid' }, { accessTokenExpiresAtUtc: '2000-01-01T00:00:00Z' }, { accessToken: '' }]) {
+  for (const change of [{ role: 'TourOperator' }, { role: 'Traveler' }, { status: 'Inactive' }, { accessTokenExpiresAtUtc: 'invalid' }, { accessTokenExpiresAtUtc: '2000-01-01T00:00:00Z' }, { accessToken: '' }]) {
     const route = loadRoute(async () => Response.json({ ...loginResult(), data: { ...loginResult().data, ...change } }));
     const response = await route.POST(request());
     assert.ok([403, 502].includes(response.status));

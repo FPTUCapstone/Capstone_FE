@@ -89,9 +89,25 @@ describe('Admin BFF sign-in contract (POST /api/v1/auth/web/admin/login)', () =>
     const result = await signInAdmin(adminRequest()) as unknown as HandlerResult;
 
     expect(result.body.authenticated).toBe(true);
+    expect(result.body.role).toBe('Administrator');
   });
 
-  it.each(['TourOperator', 'Traveler', 3, null])('rejects non-administrator role %s with 403', async (role) => {
+  it('accepts a Staff member with Active status and returns role=Staff', async () => {
+    fetchBackendMock.fetchBackend.mockImplementationOnce(async () =>
+      backendLoginResponse({
+        ...loginEnvelope,
+        data: { ...envelopeData, role: 'Staff', accessToken: 'staff-access-token' },
+      }),
+    );
+
+    const result = await signInAdmin(adminRequest()) as unknown as HandlerResult;
+
+    expect(result.body.authenticated).toBe(true);
+    expect(result.body.role).toBe('Staff');
+    expect(result.token).toBe('staff-access-token');
+  });
+
+  it.each(['TourOperator', 'Traveler', 3, 4, null])('rejects non-administration role %s with 403', async (role) => {
     fetchBackendMock.fetchBackend.mockImplementationOnce(async () =>
       backendLoginResponse({ ...loginEnvelope, data: { ...envelopeData, role } }),
     );
@@ -99,10 +115,10 @@ describe('Admin BFF sign-in contract (POST /api/v1/auth/web/admin/login)', () =>
     const result = await signInAdmin(adminRequest()) as unknown as HandlerResult;
 
     expect(result.status).toBe(403);
-    expect(result.body.message).toBe('An active Administrator account is required.');
+    expect(result.body.message).toBe('An active Administrator or Staff account is required.');
   });
 
-  it.each(['Inactive', 'Locked', 'PendingEmailVerification'])('rejects an administrator with %s status with 403', async (status) => {
+  it.each(['Inactive', 'Locked', 'PendingEmailVerification'])('rejects an administration account with %s status with 403', async (status) => {
     fetchBackendMock.fetchBackend.mockImplementationOnce(async () =>
       backendLoginResponse({ ...loginEnvelope, data: { ...envelopeData, status } }),
     );
@@ -110,7 +126,7 @@ describe('Admin BFF sign-in contract (POST /api/v1/auth/web/admin/login)', () =>
     const result = await signInAdmin(adminRequest()) as unknown as HandlerResult;
 
     expect(result.status).toBe(403);
-    expect(result.body.message).toBe('An active Administrator account is required.');
+    expect(result.body.message).toBe('An active Administrator or Staff account is required.');
   });
 
   it.each([

@@ -18,16 +18,33 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('Administrator return URL', () => {
-  it('returns only local Admin routes and rejects open redirects or login loops', () => {
-    expect(getSafeAdminReturnUrl('/admin/audit-logs')).toBe('/admin/audit-logs');
-    expect(getSafeAdminReturnUrl('/admin/audit-logs?pageNumber=2')).toBe('/admin/audit-logs?pageNumber=2');
-    expect(getSafeAdminReturnUrl('https://attacker.example/admin')).toBe('/admin/catalogue/points-of-interest/new');
-    expect(getSafeAdminReturnUrl('//attacker.example/admin')).toBe('/admin/catalogue/points-of-interest/new');
-    expect(getSafeAdminReturnUrl('/admin/login')).toBe('/admin/catalogue/points-of-interest/new');
+describe('Administration return URL and role-aware routing', () => {
+  it('returns only local Admin routes for Administrator and defaults to /admin instead of /admin/catalogue/points-of-interest/new', () => {
+    expect(getSafeAdminReturnUrl(undefined, 'Administrator')).toBe('/admin');
+    expect(getSafeAdminReturnUrl('/admin/audit-logs', 'Administrator')).toBe('/admin/audit-logs');
+    expect(getSafeAdminReturnUrl('/admin/audit-logs?pageNumber=2', 'Administrator')).toBe('/admin/audit-logs?pageNumber=2');
+    expect(getSafeAdminReturnUrl('https://attacker.example/admin', 'Administrator')).toBe('/admin');
+    expect(getSafeAdminReturnUrl('//attacker.example/admin', 'Administrator')).toBe('/admin');
+    expect(getSafeAdminReturnUrl('/admin/login', 'Administrator')).toBe('/admin');
+    expect(getSafeAdminReturnUrl('/admin/forgot-password', 'Administrator')).toBe('/admin');
   });
 
-  it('returns to the protected Admin page after successful sign-in', async () => {
+  it('routes Staff to /admin/staff by default and prevents redirect into Administrator-only routes', () => {
+    expect(getSafeAdminReturnUrl(undefined, 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/staff', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/tours/reviews', 'Staff')).toBe('/admin/tours/reviews');
+    expect(getSafeAdminReturnUrl('/admin', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/audit-logs', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/settings/algorithm-parameters', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('https://attacker.example/admin/staff', 'Staff')).toBe('/admin/staff');
+  });
+
+  it('returns Administrator to the protected Admin page after successful sign-in', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(Response.json({ authenticated: true, role: 'Administrator' })),
+    );
+
     render(<AdminSignInForm returnUrl="/admin/audit-logs" />);
     fireEvent.change(screen.getByLabelText('Email Address'), {
       target: { value: 'admin@tripmate.local' },
@@ -38,6 +55,25 @@ describe('Administrator return URL', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/admin/audit-logs'));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes Staff to /admin/staff after sign-in even when returnUrl points to an Administrator-only page', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(Response.json({ authenticated: true, role: 'Staff' })),
+    );
+
+    render(<AdminSignInForm returnUrl="/admin/audit-logs" />);
+    fireEvent.change(screen.getByLabelText('Email Address'), {
+      target: { value: 'staff@tripmate.local' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'ValidPassword!123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/admin/staff'));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 });
