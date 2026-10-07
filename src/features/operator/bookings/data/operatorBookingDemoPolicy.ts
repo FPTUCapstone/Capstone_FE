@@ -19,7 +19,7 @@ export function calculateDemoBookingRefundPreview(booking: BookingDto): DemoBook
     return {
       refundableAmount: 0,
       deductionAmount: 0,
-      policyApplied: 'Chưa thanh toán — Không phát sinh hoàn tiền (Demo fixture)',
+      policyApplied: 'Unpaid — No refund applicable (Demo fixture)',
       eligible: false,
     };
   }
@@ -28,7 +28,7 @@ export function calculateDemoBookingRefundPreview(booking: BookingDto): DemoBook
     return {
       refundableAmount: 0,
       deductionAmount: booking.paidAmount,
-      policyApplied: 'Đã quá hạn hủy theo chính sách (< 24 giờ trước giờ khởi hành — Demo fixture)',
+      policyApplied: 'Cancellation deadline passed (< 24 hours before departure — Demo fixture)',
       eligible: false,
     };
   }
@@ -37,7 +37,7 @@ export function calculateDemoBookingRefundPreview(booking: BookingDto): DemoBook
   return {
     refundableAmount: booking.paidAmount,
     deductionAmount: 0,
-    policyApplied: 'Hoàn 100% khi hủy trước ngày khởi hành ít nhất 24 giờ (Chính sách mẫu Demo)',
+    policyApplied: '100% refund when cancelled at least 24 hours before departure (Demo fixture policy)',
     eligible: true,
   };
 }

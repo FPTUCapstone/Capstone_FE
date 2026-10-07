@@ -4,20 +4,21 @@
  */
 
 export const OPERATOR_BOOKING_MESSAGES = {
-  MSG126: 'Bạn không có quyền xem hoặc thao tác trên đơn đặt chỗ này.',
-  MSG29: 'Khoảng thời gian không hợp lệ. Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
-  MSG128: 'Không tìm thấy đơn đặt chỗ nào phù hợp với bộ lọc hiện tại.',
-  MSG127: 'Hệ thống gặp sự cố. Vui lòng thử lại sau.',
-  MSG123: 'Lý do hủy đơn không được để trống.',
-  MSG133: 'Đơn đặt chỗ đã ở trạng thái đã hủy/hoàn thành hoặc yêu cầu hoàn tiền đã tồn tại.',
-  MSG95: 'Khách hàng đã check-in tham gia tour, không thể hủy đơn đặt chỗ này.',
-  MSG82: 'Đã quá thời hạn cho phép hủy đơn theo chính sách tour.',
-  MSG81: 'Đã hủy đơn đặt chỗ thành công.',
-  MSG83: 'Yêu cầu hoàn tiền đã được khởi tạo thành công.',
-  MSG84: 'Đơn đặt chỗ chưa có giao dịch thanh toán hợp lệ hoặc không đủ điều kiện hoàn tiền.',
-  MSG89: 'Cổng thanh toán phản hồi quá thời gian quy định.',
-  MSG153: 'Khởi tạo hoàn tiền không thành công, đã xếp vào hàng đợi thử lại.',
-  PENDING_BE_INTEGRATION: 'Tính năng Quản lý đơn đặt chỗ đang chờ tích hợp API từ Backend. Hiện chưa có dữ liệu từ máy chủ.',
+  MSG126: 'Access denied. You can only view and manage bookings for your own tours.',
+  MSG29: 'Invalid date range. Departure start date must be before or equal to end date.',
+  MSG128: 'No customer bookings found matching the current filter criteria.',
+  MSG127: 'System encountered an error. Please try again later.',
+  MSG123: 'Cancellation reason details cannot be empty.',
+  MSG133: 'Booking is already cancelled/completed or a refund request already exists.',
+  MSG95: 'Customer has already checked in for the tour. This booking cannot be cancelled.',
+  MSG82: 'The cancellation deadline for this tour package has passed.',
+  MSG81: 'Customer booking cancelled successfully.',
+  MSG83: 'Booking refund request has been initiated successfully.',
+  MSG84: 'Booking does not have a valid payment transaction or is not eligible for refund.',
+  MSG89: 'Payment gateway timed out. Please try again or check refund queue status.',
+  MSG153: 'Refund initiation could not be completed immediately; queued for retry.',
+  PENDING_BE_INTEGRATION:
+    'Customer booking management is awaiting Backend API integration. No live server data available.',
 } as const;
 
 export type OperatorBookingMessageKey = keyof typeof OPERATOR_BOOKING_MESSAGES;
@@ -75,10 +76,10 @@ export interface BookingRefundDto {
 }
 
 export const CANCELLATION_REASONS = [
-  { value: 'CUSTOMER_REQUEST', label: 'Khách hàng yêu cầu hủy' },
-  { value: 'TOUR_ITINERARY_CHANGE', label: 'Lịch trình tour thay đổi' },
-  { value: 'FORCE_MAJEURE', label: 'Điều kiện thời tiết / bất khả kháng' },
-  { value: 'OTHER', label: 'Lý do khác' },
+  { value: 'CUSTOMER_REQUEST', label: 'Customer requested cancellation' },
+  { value: 'TOUR_ITINERARY_CHANGE', label: 'Tour itinerary change' },
+  { value: 'FORCE_MAJEURE', label: 'Weather condition / force majeure' },
+  { value: 'OTHER', label: 'Other reason' },
 ] as const;
 
 export type CancellationReasonValue = (typeof CANCELLATION_REASONS)[number]['value'];

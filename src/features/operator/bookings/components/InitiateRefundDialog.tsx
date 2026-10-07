@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import type { BookingDto, InitiateRefundPayload } from '../types/bookingLifecycle';
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
+import { bookingEn } from '../resources/en';
 
 interface InitiateRefundDialogProps {
   open: boolean;
@@ -118,18 +119,18 @@ function InitiateRefundModalContent({
           </div>
           <div className="min-w-0 flex-1">
             <h2 id={titleId} className="text-lg font-bold text-[#00152A]">
-              Khởi tạo hoàn tiền đơn {booking.bookingCode}
+              {bookingEn.refundDialog.title} {booking.bookingCode}
             </h2>
             <p id={descId} className="text-xs text-slate-500">
-              Yêu cầu hoàn trả qua cổng thanh toán ban đầu theo chính sách hủy tour (UC-42).
+              {bookingEn.refundDialog.subtitle}
             </p>
           </div>
           <button
             type="button"
             onClick={handleClose}
             disabled={loading}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-            aria-label="Đóng hộp thoại"
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition disabled:opacity-50"
+            aria-label={bookingEn.refundDialog.closeAria}
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -138,58 +139,58 @@ function InitiateRefundModalContent({
         {/* Booking Summary Section */}
         <div className="my-4 rounded-xl bg-slate-50 p-4 border border-slate-100 text-xs space-y-2">
           <div className="flex justify-between">
-            <span className="text-slate-500">Mã đơn đặt chỗ:</span>
+            <span className="text-slate-500">{bookingEn.refundDialog.bookingCodeLabel}</span>
             <span className="font-semibold text-slate-800">{booking.bookingCode}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">Gói tour:</span>
+            <span className="text-slate-500">{bookingEn.refundDialog.tourLabel}</span>
             <span className="font-semibold text-slate-800 text-right">{booking.tourName}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">Ngày khởi hành (CR-07):</span>
+            <span className="text-slate-500">{bookingEn.refundDialog.departureLabel}</span>
             <span className="font-semibold text-slate-800">{formatVietnamDate(booking.departureDate)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">Số tiền khách đã thanh toán:</span>
+            <span className="text-slate-500">{bookingEn.refundDialog.paidLabel}</span>
             <span className="font-bold text-slate-800">{formatCurrencyVND(booking.paidAmount)}</span>
           </div>
           <div className="flex justify-between border-t border-slate-200/60 pt-2">
-            <span className="text-slate-500">Kênh thanh toán hoàn trả (BR-76):</span>
+            <span className="text-slate-500">{bookingEn.refundDialog.channelLabel}</span>
             <span className="rounded bg-slate-200/80 px-2 py-0.5 font-bold text-slate-800">{channel}</span>
           </div>
         </div>
 
-        {/* Refund Computation Section (Demo fixture policy; Production uses Backend-calculated amounts) */}
+        {/* Refund Computation Section */}
         <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50/60 p-4 text-xs space-y-2">
           <div className="flex items-center gap-1.5 font-bold text-[#006B5F]">
             <span className="material-symbols-outlined text-[18px]">calculate</span>
-            <span>Hạch toán hoàn tiền (BR-107 & BR-77 — Mẫu thử Demo)</span>
+            <span>{bookingEn.refundDialog.computationHeader}</span>
           </div>
           <div className="text-[11px] text-slate-600">
-            Chính sách: <span className="font-medium text-slate-800">{refundPreview.policyApplied}</span>
+            {bookingEn.refundDialog.policyLabel} <span className="font-medium text-slate-800">{refundPreview.policyApplied}</span>
           </div>
           <div className="flex justify-between pt-1">
-            <span className="text-slate-600">Khấu trừ / Phí hủy:</span>
+            <span className="text-slate-600">{bookingEn.refundDialog.deductionLabel}</span>
             <span className="font-semibold text-rose-600">
               {formatCurrencyVND(refundPreview.deductionAmount)}
             </span>
           </div>
           <div className="flex justify-between border-t border-teal-200/60 pt-2 text-xs">
-            <span className="font-bold text-slate-700">Số tiền hoàn thực tế:</span>
+            <span className="font-bold text-slate-700">{bookingEn.refundDialog.refundableLabel}</span>
             <span className="text-base font-extrabold text-[#006B5F]">
               {formatCurrencyVND(refundPreview.refundableAmount)}
             </span>
           </div>
           <p className="mt-1 text-[11px] text-slate-500 italic">
-            * Giao dịch thanh toán gốc giữ nguyên tính toàn vẹn (BR-77). Hoàn tiền tạo bản ghi độc lập (trên Production số tiền hoàn do Backend hạch toán).
+            {bookingEn.refundDialog.immutableNotice}
           </p>
         </div>
 
         {/* Existing refund notice if already refunding/refunded */}
         {booking.refund && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-            <div className="font-bold">Lưu ý tính toàn vẹn (BR-74):</div>
-            <div>Đơn đặt chỗ này đã có bản ghi hoàn tiền ({booking.refund.status}): mã đối soát {booking.refund.gatewayReference || 'N/A'}.</div>
+            <div className="font-bold">{bookingEn.refundDialog.existingNoticeTitle}</div>
+            <div>{bookingEn.refundDialog.existingNoticeBody} ({booking.refund.status}): {booking.refund.gatewayReference || 'N/A'}.</div>
           </div>
         )}
 
@@ -197,20 +198,20 @@ function InitiateRefundModalContent({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
             <label htmlFor="refund-note-input" className="block font-bold text-slate-700 mb-1">
-              Ghi chú hoàn tiền (Tùy chọn)
+              {bookingEn.refundDialog.notesLabel}
             </label>
             <textarea
               id="refund-note-input"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Nhập ghi chú xử lý đối soát hoặc thông tin đính kèm..."
+              placeholder={bookingEn.refundDialog.notesPlaceholder}
               disabled={loading}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F]"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:opacity-50"
             />
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons (CR-13 Idempotency: disabled during loading) */}
           <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
             <button
               ref={cancelBtnRef}
@@ -219,7 +220,7 @@ function InitiateRefundModalContent({
               disabled={loading}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
             >
-              Đóng
+              {bookingEn.refundDialog.closeBtn}
             </button>
             <button
               type="submit"
@@ -229,12 +230,12 @@ function InitiateRefundModalContent({
               {loading ? (
                 <>
                   <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                  <span>Đang khởi tạo...</span>
+                  <span>{bookingEn.refundDialog.processingBtn}</span>
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[16px]">send</span>
-                  <span>Khởi tạo hoàn tiền</span>
+                  <span>{bookingEn.refundDialog.confirmBtn}</span>
                 </>
               )}
             </button>

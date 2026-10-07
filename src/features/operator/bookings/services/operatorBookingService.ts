@@ -206,7 +206,7 @@ export async function getOperatorBookingById(
   const booking = inMemoryDemoBookings.find((b) => b.id === bookingId);
 
   if (!booking) {
-    return { error: 'Không tìm thấy đơn đặt chỗ.', messageCode: 'MSG128' };
+    return { error: 'Booking not found.', messageCode: 'MSG128' };
   }
 
   // BR-105 ownership check
@@ -334,7 +334,7 @@ export async function cancelCustomerBooking(
         status: 'Success',
         gatewayReference: `REFUND-${booking.bookingCode}-${Math.floor(1000 + Math.random() * 9000)}`,
         attemptCount: 1,
-        notes: `Tự động hoàn tiền khi hủy đơn: ${payload.reasonDetail.trim()}`,
+        notes: `Automatic refund upon cancellation: ${payload.reasonDetail.trim()}`,
         createdAt: new Date().toISOString(),
       };
       refundTriggered = true;
@@ -513,7 +513,7 @@ export async function initiateBookingRefund(
       paymentChannel: booking.paymentTransaction.paymentChannel,
       status: 'Failed',
       attemptCount: 1,
-      notes: payload.notes || 'Kết nối cổng thanh toán thất bại, đã xếp hàng đợi thử lại',
+      notes: payload.notes || 'Payment gateway connection failed; queued for retry',
       createdAt: new Date().toISOString(),
     };
     booking.refund = failedRefund;
@@ -544,7 +544,7 @@ export async function initiateBookingRefund(
     status: 'Success',
     gatewayReference: `REFUND-${booking.bookingCode}-${Math.floor(1000 + Math.random() * 9000)}`,
     attemptCount: 1,
-    notes: payload.notes || 'Khởi tạo hoàn tiền thành công',
+    notes: payload.notes || 'Refund initiated successfully',
     createdAt: new Date().toISOString(),
   };
 

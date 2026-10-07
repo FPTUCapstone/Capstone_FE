@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CancelBookingDialog } from './CancelBookingDialog';
 import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
+import { bookingEn } from '../resources/en';
 import type { CancelBookingPayload } from '../types/bookingLifecycle';
 
 const sampleBooking = INITIAL_DEMO_BOOKINGS[0]; // BK-20260919-0141
@@ -19,7 +20,7 @@ function TestHarness({
   return (
     <div>
       <button data-testid="open-trigger-btn" onClick={() => setOpen(true)}>
-        Mở hộp thoại
+        Open Dialog
       </button>
       <CancelBookingDialog
         open={open}
@@ -36,13 +37,15 @@ afterEach(() => {
 });
 
 describe('CancelBookingDialog (UC-41 Accessibility & Behavior)', () => {
-  it('renders modal dialog with aria-modal="true" and accessible title/description', () => {
+  it('renders modal dialog with aria-modal="true" and accessible title/description in English', () => {
     render(<TestHarness />);
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeDefined();
     expect(dialog.getAttribute('aria-modal')).toBe('true');
-    expect(screen.getByRole('heading', { level: 2, name: /Hủy đơn đặt chỗ/i })).toBeDefined();
+    expect(
+      screen.getByRole('heading', { level: 2, name: new RegExp(bookingEn.cancelDialog.title, 'i') })
+    ).toBeDefined();
   });
 
   it('sets initial focus to the close button inside the dialog and restores trigger focus on close', () => {
@@ -54,8 +57,8 @@ describe('CancelBookingDialog (UC-41 Accessibility & Behavior)', () => {
 
     fireEvent.click(trigger);
 
-    // Initial focus enters dialog (Đóng button)
-    const closeBtn = screen.getByRole('button', { name: 'Đóng' });
+    // Initial focus enters dialog (Close button)
+    const closeBtn = screen.getByRole('button', { name: bookingEn.cancelDialog.closeBtn });
     expect(document.activeElement).toBe(closeBtn);
 
     // Click close to test focus restoration
@@ -102,15 +105,17 @@ describe('CancelBookingDialog (UC-41 Accessibility & Behavior)', () => {
     expect(document.activeElement).toBe(last);
   });
 
-  it('validates empty reason and surfaces MSG123', () => {
+  it('validates empty reason and surfaces MSG123 inline error (CR-04)', () => {
     const handleConfirm = vi.fn();
     render(<TestHarness onConfirm={handleConfirm} />);
 
-    const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy đặt chỗ/i });
+    const submitBtn = screen.getByRole('button', {
+      name: new RegExp(bookingEn.cancelDialog.confirmBtn, 'i'),
+    });
     fireEvent.click(submitBtn);
 
     expect(screen.getByRole('alert')).toBeDefined();
-    expect(screen.getByText(/Lý do hủy đơn không được để trống/i)).toBeDefined();
+    expect(screen.getByText(bookingEn.messages.MSG123)).toBeDefined();
     expect(handleConfirm).not.toHaveBeenCalled();
   });
 
@@ -118,15 +123,17 @@ describe('CancelBookingDialog (UC-41 Accessibility & Behavior)', () => {
     const handleConfirm = vi.fn();
     render(<TestHarness onConfirm={handleConfirm} />);
 
-    const textarea = screen.getByLabelText(/Chi tiết lý do hủy/i);
-    fireEvent.change(textarea, { target: { value: 'Khách hàng có lịch bận đột xuất' } });
+    const textarea = screen.getByLabelText(new RegExp(bookingEn.cancelDialog.reasonDetailLabel, 'i'));
+    fireEvent.change(textarea, { target: { value: 'Customer requested cancellation due to personal reasons' } });
 
-    const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy đặt chỗ/i });
+    const submitBtn = screen.getByRole('button', {
+      name: new RegExp(bookingEn.cancelDialog.confirmBtn, 'i'),
+    });
     fireEvent.click(submitBtn);
 
     expect(handleConfirm).toHaveBeenCalledWith({
       reasonType: 'CUSTOMER_REQUEST',
-      reasonDetail: 'Khách hàng có lịch bận đột xuất',
+      reasonDetail: 'Customer requested cancellation due to personal reasons',
     });
   });
 });

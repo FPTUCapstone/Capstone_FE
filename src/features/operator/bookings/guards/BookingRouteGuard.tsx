@@ -29,11 +29,11 @@ export function BookingRouteGuard({ children }: { children: ReactNode }) {
     return (
       <div
         role="status"
-        aria-label="Kiểm tra quyền truy cập"
+        aria-label="Checking access permissions"
         className="flex min-h-[50vh] items-center justify-center p-8"
       >
         <div className="h-10 w-48 animate-pulse rounded-xl bg-gray-200" />
-        <span className="sr-only">Đang kiểm tra quyền truy cập…</span>
+        <span className="sr-only">Checking access permissions…</span>
       </div>
     );
   }

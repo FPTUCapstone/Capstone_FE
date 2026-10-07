@@ -67,9 +67,11 @@ describe('OperatorBookingsPage (/partner/bookings)', () => {
     render(<OperatorBookingsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Quản lý đơn đặt chỗ khách hàng/i)).toBeDefined();
       expect(
-        screen.getByText(/Tính năng Quản lý đơn đặt chỗ đang chờ tích hợp API từ Backend/i)
+        screen.getByRole('heading', { name: /Customer Booking Management/i })
+      ).toBeDefined();
+      expect(
+        screen.getByText(OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION)
       ).toBeDefined();
     });
   });
@@ -79,8 +81,10 @@ describe('OperatorBookingsPage (/partner/bookings)', () => {
     render(<OperatorBookingsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Quản lý đơn đặt chỗ khách hàng/i)).toBeDefined();
-      expect(screen.getByText(/Chế độ xem trước giao diện/i)).toBeDefined();
+      expect(
+        screen.getByRole('heading', { name: /Customer Booking Management/i })
+      ).toBeDefined();
+      expect(screen.getByText(/Demo Preview Mode/i)).toBeDefined();
       expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
       expect(screen.queryByText('BK-20260925-9999')).toBeNull();
     });

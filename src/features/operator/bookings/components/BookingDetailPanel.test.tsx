@@ -41,7 +41,7 @@ afterEach(() => {
 });
 
 describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
-  it('renders drawer with aria-modal="true" and complete booking details', () => {
+  it('renders drawer with aria-modal="true" and complete booking details in English', () => {
     render(<TestDrawerHarness booking={cancellableBooking} />);
 
     const dialog = screen.getByRole('dialog');
@@ -51,15 +51,17 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
     expect(screen.getByText('Ba Na Hills full-day tour')).toBeDefined();
     expect(screen.getAllByText('Nguyễn Văn An').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/5\.600\.000/).length).toBeGreaterThan(0);
-    // Payment is read-only (BR-77)
-    expect(screen.getByText(/Thông tin thanh toán \(BR-77 Chỉ xem\)/i)).toBeDefined();
+    // Payment is read-only
+    expect(screen.getByText(/Payment Information/i)).toBeDefined();
   });
 
   it('enables Cancel button for cancellable demo booking and triggers callback', () => {
     const handleCancel = vi.fn();
     render(<TestDrawerHarness booking={cancellableBooking} isDemo={true} onOpenCancel={handleCancel} />);
 
-    const cancelBtn = screen.getByRole('button', { name: /Hủy đặt chỗ/i });
+    const cancelBtn = screen.getByRole('button', {
+      name: /Cancel Booking/i,
+    });
     expect(cancelBtn.getAttribute('disabled')).toBeNull();
 
     fireEvent.click(cancelBtn);
@@ -69,22 +71,30 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
   it('disables Cancel button when booking is checked in (MSG95)', () => {
     render(<TestDrawerHarness booking={checkedInBooking} isDemo={true} />);
 
-    const cancelBtn = screen.getByRole('button', { name: /Hủy đặt chỗ/i });
+    const cancelBtn = screen.getByRole('button', {
+      name: /Cancel Booking/i,
+    });
     expect(cancelBtn.getAttribute('disabled')).toBeDefined();
   });
 
   it('disables Refund button when refund already exists (BR-74 idempotency)', () => {
     render(<TestDrawerHarness booking={refundedBooking} isDemo={true} />);
 
-    const refundBtn = screen.getByRole('button', { name: /Hoàn tiền/i });
+    const refundBtn = screen.getByRole('button', {
+      name: /Initiate Refund/i,
+    });
     expect(refundBtn.getAttribute('disabled')).toBeDefined();
   });
 
   it('disables all destructive mutation actions in production mode (NO_BACKEND)', () => {
     render(<TestDrawerHarness booking={cancellableBooking} isDemo={false} />);
 
-    const cancelBtn = screen.getByRole('button', { name: /Hủy đặt chỗ/i });
-    const refundBtn = screen.getByRole('button', { name: /Hoàn tiền/i });
+    const cancelBtn = screen.getByRole('button', {
+      name: /Cancel Booking/i,
+    });
+    const refundBtn = screen.getByRole('button', {
+      name: /Initiate Refund/i,
+    });
 
     expect(cancelBtn.getAttribute('disabled')).toBeDefined();
     expect(refundBtn.getAttribute('disabled')).toBeDefined();

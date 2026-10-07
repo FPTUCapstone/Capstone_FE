@@ -4,9 +4,18 @@ import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
+import { operatorCommonEn } from '../../common/resources/en';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 
-export type OperatorNavKey = 'dashboard' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts' | 'profile' | 'settings';
+export type OperatorNavKey =
+  | 'dashboard'
+  | 'tours'
+  | 'coupons'
+  | 'bookings'
+  | 'revenue'
+  | 'payouts'
+  | 'profile'
+  | 'settings';
 
 interface OperatorTourNavProps {
   activeTab: OperatorNavKey;
@@ -16,16 +25,49 @@ interface OperatorTourNavProps {
 
 export function OperatorTourNav({
   activeTab,
-  operatorName = 'Đối tác lữ hành',
+  operatorName = operatorCommonEn.navigation.defaultOperatorTitle,
   isDemo = false,
 }: OperatorTourNavProps) {
   const navItems = [
-    { key: 'dashboard', label: 'Bảng điều khiển', icon: 'dashboard', href: ROUTES.partner.dashboard },
-    { key: 'tours', label: 'Gói tour', icon: 'tour', href: withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo) },
-    { key: 'coupons', label: 'Mã giảm giá', icon: 'confirmation_number', href: '/partner/coupons', disabled: true },
-    { key: 'bookings', label: 'Đơn đặt chỗ', icon: 'receipt_long', href: withTourDemoMode(ROUTES.partner.bookings, isDemo) },
-    { key: 'revenue', label: 'Doanh thu', icon: 'monitoring', href: '/partner/revenue', disabled: true },
-    { key: 'payouts', label: 'Thanh toán', icon: 'payments', href: '/partner/payouts', disabled: true },
+    {
+      key: 'dashboard',
+      label: operatorCommonEn.navigation.dashboard,
+      icon: 'dashboard',
+      href: ROUTES.partner.dashboard,
+    },
+    {
+      key: 'tours',
+      label: operatorCommonEn.navigation.tours,
+      icon: 'tour',
+      href: withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo),
+    },
+    {
+      key: 'coupons',
+      label: operatorCommonEn.navigation.coupons,
+      icon: 'confirmation_number',
+      href: '/partner/coupons',
+      disabled: true,
+    },
+    {
+      key: 'bookings',
+      label: operatorCommonEn.navigation.bookings,
+      icon: 'receipt_long',
+      href: withTourDemoMode(ROUTES.partner.bookings, isDemo),
+    },
+    {
+      key: 'revenue',
+      label: operatorCommonEn.navigation.revenue,
+      icon: 'monitoring',
+      href: '/partner/revenue',
+      disabled: true,
+    },
+    {
+      key: 'payouts',
+      label: operatorCommonEn.navigation.payouts,
+      icon: 'payments',
+      href: '/partner/payouts',
+      disabled: true,
+    },
   ];
 
   return (
@@ -41,7 +83,7 @@ export function OperatorTourNav({
           </Link>
           {isDemo && (
             <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-800">
-              Demo
+              {operatorCommonEn.navigation.demoBadge}
             </span>
           )}
         </div>
@@ -53,14 +95,16 @@ export function OperatorTourNav({
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold text-[#00152A]">{operatorName}</p>
-            <p className="text-[11px] text-slate-500">Đối tác đã xác thực</p>
+            <p className="text-[11px] text-slate-500">
+              {operatorCommonEn.navigation.verifiedPartnerBadge}
+            </p>
           </div>
         </div>
 
         {/* Navigation Menu */}
-        <nav aria-label="Quản lý đối tác" className="mt-5 space-y-1">
+        <nav aria-label={operatorCommonEn.navigation.workspaceNavAria} className="mt-5 space-y-1">
           <p className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-            Dịch vụ & Vận hành
+            {operatorCommonEn.navigation.servicesSection}
           </p>
           {navItems.map((item) => {
             const isActive = activeTab === item.key;
@@ -69,7 +113,7 @@ export function OperatorTourNav({
                 <div
                   key={item.key}
                   className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-slate-400 cursor-not-allowed opacity-60"
-                  title="Tính năng đang được phát triển"
+                  title={operatorCommonEn.navigation.featureInDevelopment}
                 >
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
@@ -77,7 +121,9 @@ export function OperatorTourNav({
                     </span>
                     <span>{item.label}</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-400">Sắp có</span>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    {operatorCommonEn.navigation.comingSoon}
+                  </span>
                 </div>
               );
             }
@@ -102,7 +148,7 @@ export function OperatorTourNav({
 
           <div className="pt-4 border-t border-slate-100">
             <p className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-              Tài khoản
+              {operatorCommonEn.navigation.accountSection}
             </p>
             <Link
               href="/partner/profile"
@@ -115,7 +161,7 @@ export function OperatorTourNav({
               <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
                 corporate_fare
               </span>
-              <span>Hồ sơ doanh nghiệp</span>
+              <span>{operatorCommonEn.navigation.profile}</span>
             </Link>
           </div>
         </nav>

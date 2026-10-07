@@ -53,7 +53,7 @@ describe('operatorBookingService', () => {
       it('disallows cancellation in production mode without backend', async () => {
         const result = await cancelCustomerBooking(
           'booking-0141',
-          { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Khách yêu cầu' },
+          { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Customer requested' },
           { isDemo: false }
         );
         expect(result.success).toBe(false);
@@ -234,7 +234,7 @@ describe('operatorBookingService', () => {
     it('fails closed with MSG126 when demoActorUserId is missing (BR-105)', async () => {
       const res = await cancelCustomerBooking(
         'booking-0141',
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Lý do hợp lệ' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true }
       );
       expect(res.success).toBe(false);
@@ -256,7 +256,7 @@ describe('operatorBookingService', () => {
     it('rejects cancellation of booking owned by another operator -> MSG126 (BR-105)', async () => {
       const res = await cancelCustomerBooking(
         'booking-9999',
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Lý do hợp lệ' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
@@ -265,7 +265,7 @@ describe('operatorBookingService', () => {
 
       const foreignActorAttempt = await cancelCustomerBooking(
         'booking-0141',
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Lý do hợp lệ' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true, demoActorUserId: 999 }
       );
       expect(foreignActorAttempt.success).toBe(false);
@@ -275,7 +275,7 @@ describe('operatorBookingService', () => {
     it('rejects cancellation of already cancelled booking -> MSG133', async () => {
       const res = await cancelCustomerBooking(
         'booking-0110', // already Cancelled in fixture
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Lý do hợp lệ' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
@@ -286,7 +286,7 @@ describe('operatorBookingService', () => {
     it('rejects cancellation of already completed booking -> MSG133', async () => {
       const res = await cancelCustomerBooking(
         'booking-0095', // Completed
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Lý do hợp lệ' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
@@ -296,7 +296,7 @@ describe('operatorBookingService', () => {
     it('rejects cancellation of already checked-in booking -> MSG95', async () => {
       const res = await cancelCustomerBooking(
         'booking-0148', // CheckedIn
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Lý do hợp lệ' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
@@ -307,7 +307,7 @@ describe('operatorBookingService', () => {
     it('blocks normal cancellation when cancellation window has passed -> MSG82 and leaves booking/slots/refund unchanged', async () => {
       const res = await cancelCustomerBooking(
         'booking-0144', // cancellationWindowExpired: true (<24h)
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Lý do hợp lệ' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
@@ -328,7 +328,7 @@ describe('operatorBookingService', () => {
     it('cancels pending payment booking successfully without refund trigger', async () => {
       const res = await cancelCustomerBooking(
         'booking-0146', // PendingPayment, paidAmount = 0
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Khách hàng đổi kế hoạch' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Customer changed travel plans' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(true);
@@ -341,7 +341,7 @@ describe('operatorBookingService', () => {
     it('cancels paid booking successfully and triggers separate refund record (BR-86, BR-106, BR-107, BR-77)', async () => {
       const res = await cancelCustomerBooking(
         'booking-0141', // Confirmed, paid 5600000
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Khách hàng yêu cầu hủy vé sớm' },
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Customer requested early cancellation' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(true);
@@ -349,7 +349,7 @@ describe('operatorBookingService', () => {
       expect(res.refundTriggered).toBe(true);
       expect(res.booking?.status).toBe('Cancelled');
       expect(res.booking?.qrTicketValid).toBe(false); // BR-86 invalidated
-      expect(res.booking?.cancellationReason).toBe('Khách hàng yêu cầu hủy vé sớm');
+      expect(res.booking?.cancellationReason).toBe('Customer requested early cancellation');
       // Refund is a separate record
       expect(res.booking?.refund).toBeDefined();
       expect(res.booking?.refund?.refundableAmount).toBe(5600000);
@@ -422,7 +422,7 @@ describe('operatorBookingService', () => {
     it('initiates refund successfully for eligible booking and blocks duplicate initiation (BR-83, BR-74, BR-77, BR-107)', async () => {
       const res = await initiateBookingRefund(
         'booking-0141',
-        { notes: 'Hoàn tiền cho khách theo chính sách' },
+        { notes: 'Refund to customer according to policy' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(true);
@@ -434,7 +434,7 @@ describe('operatorBookingService', () => {
       // Subsequent call must be idempotent -> MSG133 without creating another record
       const duplicateRes = await initiateBookingRefund(
         'booking-0141',
-        { notes: 'Bấm lần hai' },
+        { notes: 'Second attempt' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(duplicateRes.success).toBe(false);
@@ -445,12 +445,12 @@ describe('operatorBookingService', () => {
     it('does NOT trigger hidden failure branches when user notes contain "timeout", "retry", or "system"', async () => {
       const timeoutNoteRes = await initiateBookingRefund(
         'booking-0141',
-        { notes: 'Khách báo timeout khi đặt lại vé nên hoàn tiền' },
+        { notes: 'Customer reported timeout during rebooking so refund requested' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(timeoutNoteRes.success).toBe(true);
       expect(timeoutNoteRes.messageCode).toBe('MSG83');
-      expect(timeoutNoteRes.refund?.notes).toBe('Khách báo timeout khi đặt lại vé nên hoàn tiền');
+      expect(timeoutNoteRes.refund?.notes).toBe('Customer reported timeout during rebooking so refund requested');
 
       resetDemoBookingsState();
       const retryNoteRes = await initiateBookingRefund(
@@ -512,7 +512,7 @@ describe('operatorBookingService', () => {
       // and MUST NOT create a second refund record
       const manualDuplicateAttempt = await initiateBookingRefund(
         'booking-0141',
-        { notes: 'Thử tạo bản ghi hoàn tiền mới' },
+        { notes: 'Attempt to create new refund record' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(manualDuplicateAttempt.success).toBe(false);
@@ -523,7 +523,7 @@ describe('operatorBookingService', () => {
       // 3. Explicit retry on the Failed refund updates the SAME refund record and increments attemptCount
       const retryAttemptStillFailed = await initiateBookingRefund(
         'booking-0141',
-        { notes: 'Thử lại lần 2 vẫn lỗi mạng' },
+        { notes: 'Retry 2 still network error' },
         {
           isDemo: true,
           demoActorUserId: 101,
@@ -540,7 +540,7 @@ describe('operatorBookingService', () => {
       // 4. Subsequent retry succeeds on the SAME refund record (attemptCount = 3)
       const retrySuccess = await initiateBookingRefund(
         'booking-0141',
-        { notes: 'Thử lại lần 3 thành công' },
+        { notes: 'Retry 3 success' },
         {
           isDemo: true,
           demoActorUserId: 101,
