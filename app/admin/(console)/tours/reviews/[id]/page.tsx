@@ -1,24 +1,23 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
-import { findAdminTourReview } from '@/data/adminTourQueue';
 import { TourReview } from '@/features/admin/tour-reviews/TourReview';
+import { tourModerationEn } from '@/features/admin/tour-reviews/resources/en';
 
 type TourReviewPageProps = {
   params: Promise<{ id: string }>;
 };
 
 export const metadata: Metadata = {
-  title: 'Tour Review',
+  title: tourModerationEn.metadata.detailTitle,
 };
 
 export default async function AdminTourReviewPage({ params }: TourReviewPageProps) {
   const { id } = await params;
-  const review = findAdminTourReview(id);
 
-  if (!review) {
-    notFound();
-  }
-
-  return <TourReview review={review} />;
+  return (
+    <Suspense fallback={null}>
+      <TourReview id={id} />
+    </Suspense>
+  );
 }
