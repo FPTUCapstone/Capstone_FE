@@ -403,6 +403,15 @@ export async function exportOperatorRevenueReport(
     };
   }
 
+  // Never rename CSV bytes to .xlsx or .pdf: binary formats require backend integration
+  if (payload.format !== 'csv') {
+    return {
+      success: false,
+      message: REVENUE_MESSAGES.PENDING_BINARY_EXPORT_INTEGRATION,
+      messageCode: REVENUE_ERROR_CODES.PENDING_BINARY_EXPORT_INTEGRATION,
+    };
+  }
+
   // Retrieve current report matching applied filters (BR-110)
   const report = await getOperatorRevenueReport(payload.appliedFilters, options, {
     pageSize: 1000,
@@ -433,9 +442,9 @@ export async function exportOperatorRevenueReport(
     };
   }
 
-  // Generate Demo downloadable file content
+  // Generate Demo downloadable CSV file content (.csv only)
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const fileName = `TripMate_DEMO_Revenue_Report_${timestamp}.${payload.format}`;
+  const fileName = `TripMate_DEMO_Revenue_Report_${timestamp}.csv`;
 
   const csvRows: string[] = [
     '# TRIPMATE REVENUE REPORT (DEMO MODE)',
@@ -470,6 +479,7 @@ export async function exportOperatorRevenueReport(
     success: true,
     fileName,
     fileContent,
+    mimeType: 'text/csv;charset=utf-8',
     message: REVENUE_MESSAGES.MSG116,
     messageCode: REVENUE_ERROR_CODES.EXPORT_SUCCESS,
   };

@@ -160,39 +160,69 @@ export function ExportRevenueDialog({
             </label>
             <div className="grid grid-cols-3 gap-2.5">
               {[
-                { value: 'csv', label: financeEn.exportDialog.formatCsv, icon: 'csv' },
-                { value: 'xlsx', label: financeEn.exportDialog.formatXlsx, icon: 'table_view' },
-                { value: 'pdf', label: financeEn.exportDialog.formatPdf, icon: 'picture_as_pdf' },
-              ].map((opt) => (
-                <label
-                  key={opt.value}
-                  className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border p-3 text-center transition-all ${
-                    selectedFormat === opt.value
-                      ? 'border-[#006B5F] bg-[#006B5F]/5 text-[#006B5F] ring-1 ring-[#006B5F]'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="export-format"
-                    value={opt.value}
-                    checked={selectedFormat === opt.value}
-                    onChange={() =>
-                      setSelectedFormat(opt.value as RevenueExportFormat)
-                    }
-                    className="sr-only"
-                  />
-                  <span className="text-xs font-bold uppercase">{opt.value}</span>
-                  <span className="mt-1 text-[10px] text-slate-400">
-                    {opt.value === 'csv'
-                      ? 'Plain text'
-                      : opt.value === 'xlsx'
-                      ? 'Spreadsheet'
-                      : 'Document'}
-                  </span>
-                </label>
-              ))}
+                {
+                  value: 'csv' as const,
+                  label: financeEn.exportDialog.formatCsv,
+                  icon: 'csv',
+                  supportedInDemo: true,
+                },
+                {
+                  value: 'xlsx' as const,
+                  label: financeEn.exportDialog.formatXlsx,
+                  icon: 'table_view',
+                  supportedInDemo: false,
+                },
+                {
+                  value: 'pdf' as const,
+                  label: financeEn.exportDialog.formatPdf,
+                  icon: 'picture_as_pdf',
+                  supportedInDemo: false,
+                },
+              ].map((opt) => {
+                const isOptionDisabled = !isDemo || !opt.supportedInDemo;
+                return (
+                  <label
+                    key={opt.value}
+                    aria-disabled={isOptionDisabled}
+                    className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-all ${
+                      isOptionDisabled
+                        ? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-75'
+                        : selectedFormat === opt.value
+                        ? 'cursor-pointer border-[#006B5F] bg-[#006B5F]/5 text-[#006B5F] ring-1 ring-[#006B5F]'
+                        : 'cursor-pointer border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="export-format"
+                      value={opt.value}
+                      disabled={isOptionDisabled}
+                      checked={selectedFormat === opt.value}
+                      onChange={() => {
+                        if (!isOptionDisabled) {
+                          setSelectedFormat(opt.value);
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    <span className="text-xs font-bold uppercase">{opt.value}</span>
+                    <span className="mt-0.5 text-[10px] font-medium">
+                      {opt.label}
+                    </span>
+                    <span className="mt-1 text-[10px] text-slate-400">
+                      {opt.supportedInDemo
+                        ? 'Real CSV Download'
+                        : financeEn.exportDialog.binaryFormatPendingBadge}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
+            <p className="mt-2 text-[11px] text-slate-500">
+              {isDemo
+                ? financeEn.exportDialog.binaryFormatPendingNotice
+                : financeEn.exportDialog.productionExportDisabledNotice}
+            </p>
           </div>
 
           {/* Scope Selector */}
@@ -282,7 +312,7 @@ export function ExportRevenueDialog({
             </div>
           )}
 
-          {/* Buttons (CR-13: disabled when in-flight) */}
+          {/* Buttons (CR-13: disabled when in-flight or in Production NO_BACKEND mode) */}
           <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
             <button
               type="button"
@@ -294,8 +324,8 @@ export function ExportRevenueDialog({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:opacity-50"
+              disabled={!isDemo || isSubmitting || selectedFormat !== 'csv'}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

@@ -319,12 +319,40 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
 
       expect(res.success).toBe(true);
       expect(res.fileName).toContain('TripMate_DEMO_Revenue_Report_');
-      expect(res.fileName).toContain('.csv');
+      expect(res.fileName?.endsWith('.csv')).toBe(true);
+      expect(res.mimeType).toBe('text/csv;charset=utf-8');
       expect(res.fileContent).toContain('DEMO MODE');
       expect(res.fileContent).toContain('Gross Revenue,14000000');
       expect(res.fileContent).toContain('Net Amount,11200000');
       expect(res.fileContent).toContain('--- TOUR PACKAGE DETAILS ---');
       expect(res.fileContent).toContain('Ba Na Hills Full-Day Tour');
+    });
+
+    it('never renames CSV bytes to .xlsx or .pdf and rejects binary formats with PENDING_BINARY_EXPORT_INTEGRATION', async () => {
+      for (const binaryFormat of ['xlsx', 'pdf'] as const) {
+        const res = await exportOperatorRevenueReport(
+          {
+            format: binaryFormat,
+            scope: 'summary_and_details',
+            appliedFilters: {
+              startDate: '2026-09-01',
+              endDate: '2026-09-30',
+              granularity: 'monthly',
+            },
+          },
+          { isDemo: true, demoActorUserId: 101 }
+        );
+
+        expect(res.success).toBe(false);
+        expect(res.messageCode).toBe(
+          REVENUE_ERROR_CODES.PENDING_BINARY_EXPORT_INTEGRATION
+        );
+        expect(res.message).toBe(
+          REVENUE_MESSAGES.PENDING_BINARY_EXPORT_INTEGRATION
+        );
+        expect(res.fileName).toBeUndefined();
+        expect(res.fileContent).toBeUndefined();
+      }
     });
 
     it('supports summary-only scope without itemized tour details', async () => {
@@ -346,10 +374,10 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       expect(res.fileContent).not.toContain('--- TOUR PACKAGE DETAILS ---');
     });
 
-    it('supports asynchronous export simulation for large reports', async () => {
+    it('supports asynchronous export simulation for large CSV reports', async () => {
       const res = await exportOperatorRevenueReport(
         {
-          format: 'xlsx',
+          format: 'csv',
           scope: 'summary_and_details',
           appliedFilters: {
             startDate: '2026-09-01',

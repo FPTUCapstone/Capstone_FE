@@ -36,7 +36,7 @@ describe('ExportRevenueDialog (Screen #90)', () => {
     expect(screen.getByText(/Content Scope/i)).toBeDefined();
   });
 
-  it('submits selected format and scope to onExport handler', () => {
+  it('keeps Excel (.xlsx) and PDF (.pdf) visible as canonical options marked Pending Binary Export Integration and disabled, and submits CSV (.csv) to onExport handler', () => {
     render(
       <ExportRevenueDialog
         isOpen={true}
@@ -47,22 +47,49 @@ describe('ExportRevenueDialog (Screen #90)', () => {
       />
     );
 
-    // Select XLSX format
-    const xlsxRadio = screen.getByDisplayValue('xlsx');
-    fireEvent.click(xlsxRadio);
+    const csvRadio = screen.getByDisplayValue('csv') as HTMLInputElement;
+    const xlsxRadio = screen.getByDisplayValue('xlsx') as HTMLInputElement;
+    const pdfRadio = screen.getByDisplayValue('pdf') as HTMLInputElement;
 
-    // Click Export File
+    expect(csvRadio.disabled).toBe(false);
+    expect(xlsxRadio.disabled).toBe(true);
+    expect(pdfRadio.disabled).toBe(true);
+    expect(
+      screen.getAllByText(/Pending Binary Export Integration/i).length
+    ).toBeGreaterThanOrEqual(2);
+
+    // Click Export File (submits CSV)
     const exportBtn = screen.getByRole('button', { name: /Export File/i });
     fireEvent.click(exportBtn);
 
     expect(mockOnExport).toHaveBeenCalledWith(
       {
-        format: 'xlsx',
+        format: 'csv',
         scope: 'summary_and_details',
         appliedFilters: defaultAppliedFilters,
       },
       false
     );
+  });
+
+  it('disables export submission in Production NO_BACKEND mode (isDemo=false)', () => {
+    render(
+      <ExportRevenueDialog
+        isOpen={true}
+        appliedFilters={defaultAppliedFilters}
+        onClose={mockOnClose}
+        onExport={mockOnExport}
+        isDemo={false}
+      />
+    );
+
+    const exportBtn = screen.getByRole('button', {
+      name: /Export File/i,
+    }) as HTMLButtonElement;
+    expect(exportBtn.disabled).toBe(true);
+    expect(
+      screen.getByText(/Export is unavailable in Production mode/i)
+    ).toBeDefined();
   });
 
   it('calls onClose when Cancel button or Escape key is pressed', () => {

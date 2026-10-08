@@ -101,6 +101,11 @@ export const financeEn = {
     formatXlsx: 'Excel Spreadsheet (.xlsx)',
     formatCsv: 'CSV Document (.csv)',
     formatPdf: 'PDF Document (.pdf)',
+    binaryFormatPendingBadge: 'Pending Binary Export Integration',
+    binaryFormatPendingNotice:
+      'Binary Excel (.xlsx) and PDF (.pdf) generation is pending backend export integration. In Demo mode, only CSV (.csv) triggers a downloadable file.',
+    productionExportDisabledNotice:
+      'Export is unavailable in Production mode until backend revenue export integration is complete.',
     scopeLabel: 'Content Scope',
     scopeSummary: 'Summary metrics only',
     scopeDetailed: 'Summary and tour package details',

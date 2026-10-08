@@ -74,6 +74,7 @@ export interface ExportRevenueResult {
   success: boolean;
   fileName?: string;
   fileContent?: string;
+  mimeType?: 'text/csv;charset=utf-8';
   downloadUrl?: string;
   isAsyncQueued?: boolean;
   asyncStatus?: AsyncExportStatus;
@@ -94,11 +95,14 @@ export const REVENUE_ERROR_CODES = {
   SYSTEM_FAILURE: 'MSG127',
   DOWNLOAD_INTERRUPTED: 'MSG106',
   PENDING_BE_INTEGRATION: 'PENDING_BE_INTEGRATION',
+  PENDING_BINARY_EXPORT_INTEGRATION: 'PENDING_BINARY_EXPORT_INTEGRATION',
 } as const;
 
 export const REVENUE_MESSAGES = {
   PENDING_BE_INTEGRATION:
     'Revenue calculation and reporting backend integration is pending. No financial figures are fabricated in production.',
+  PENDING_BINARY_EXPORT_INTEGRATION:
+    'Binary export (.xlsx and .pdf) is pending backend export integration. In Demo mode, only CSV (.csv) file download is supported.',
   MSG126: 'Access denied. You can only view revenue for tour packages you own.',
   MSG29: 'End date must be on or after start date.',
   MSG128: 'No revenue records found for the selected period.',

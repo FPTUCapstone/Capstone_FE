@@ -110,10 +110,15 @@ export function OperatorRevenueView() {
     );
 
     if (result.success) {
-      if (result.fileContent && result.fileName) {
-        // Trigger client download of demo file
+      if (
+        payload.format === 'csv' &&
+        result.fileContent &&
+        result.fileName &&
+        result.fileName.toLowerCase().endsWith('.csv')
+      ) {
+        // Trigger client download of real CSV demo file only
         const blob = new Blob([result.fileContent], {
-          type: 'text/csv;charset=utf-8;',
+          type: result.mimeType || 'text/csv;charset=utf-8',
         });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
