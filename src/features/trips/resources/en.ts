@@ -62,7 +62,6 @@ export const tripReviewEn = {
   },
 
   tripHistory: {
-    navTabLabel: 'My Trips',
     loadingAccount: 'Loading account information…',
     breadcrumbHome: 'Home',
     breadcrumbAccount: 'My Account',

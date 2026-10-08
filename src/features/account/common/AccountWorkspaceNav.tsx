@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { accountCommonEn } from './resources/en';
 import { ROUTES } from '@/lib/routes';
 
 export type AccountTabKey = 'profile' | 'preferences' | 'security' | 'trips';
@@ -23,36 +23,36 @@ interface NavTabItem {
 const TABS: NavTabItem[] = [
   {
     key: 'profile',
-    label: 'Hồ sơ cá nhân',
+    label: accountCommonEn.navigation.tabs.profile,
     href: ROUTES.account.profile,
     icon: 'account_circle',
   },
   {
     key: 'preferences',
-    label: 'Sở thích du lịch',
+    label: accountCommonEn.navigation.tabs.preferences,
     href: ROUTES.account.preferences,
     icon: 'tune',
-    badge: 'UC-09',
+    badge: accountCommonEn.navigation.tabs.preferencesBadge,
   },
   {
     key: 'security',
-    label: 'Bảo mật & Mật khẩu',
+    label: accountCommonEn.navigation.tabs.security,
     href: ROUTES.account.security,
     icon: 'lock',
   },
   {
     key: 'trips',
-    label: tripReviewEn.tripHistory.navTabLabel,
+    label: accountCommonEn.navigation.tabs.trips,
     href: ROUTES.account.trips,
     icon: 'route',
-    badge: tripReviewEn.tripHistory.badgeCode,
+    badge: accountCommonEn.navigation.tabs.tripsBadge,
   },
 ];
 
 export function AccountWorkspaceNav({ activeTab, className = '' }: AccountWorkspaceNavProps) {
   return (
     <nav
-      aria-label="Điều hướng tài khoản"
+      aria-label={accountCommonEn.navigation.workspaceNavAria}
       className={`mb-6 flex border-b border-[#D8E1E4] overflow-x-auto ${className}`}
     >
       <div className="flex gap-2 min-w-full sm:min-w-0" role="tablist">

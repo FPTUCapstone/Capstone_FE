@@ -1,7 +1,10 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { publicNavigationEn } from '@/components/navigation/resources/en';
+import { accountCommonEn } from '@/features/account/common/resources/en';
 import * as useWebSessionModule from '@/features/auth/session/useWebSession';
+import { ROUTES } from '@/lib/routes';
 import { tripReviewEn } from '../resources/en';
 import { TripHistoryPage } from './TripHistoryPage';
 
@@ -15,7 +18,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-describe('TripHistoryPage Access Control (TRIP-2, TRIP-3)', () => {
+describe('TripHistoryPage Access Control (TRIP-2, TRIP-3, CR-09)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -75,7 +78,7 @@ describe('TripHistoryPage Access Control (TRIP-2, TRIP-3)', () => {
     expect(mockReplace).toHaveBeenCalledWith('/admin');
   });
 
-  it('Allows authenticated Traveler to render page with English title', () => {
+  it('Allows authenticated Traveler to render page with English title and English shared navigation (CR-09)', () => {
     vi.spyOn(useWebSessionModule, 'useWebSession').mockReturnValue({
       status: 'authenticated',
       context: {
@@ -96,5 +99,32 @@ describe('TripHistoryPage Access Control (TRIP-2, TRIP-3)', () => {
     expect(container.querySelector('h1')?.textContent).toContain(
       tripReviewEn.tripHistory.pageTitle
     );
+
+    // PublicNavigation rendered in English
+    expect(screen.getByRole('navigation', { name: publicNavigationEn.navAria })).toBeDefined();
+    expect(screen.getByRole('link', { name: publicNavigationEn.links.explore })).toBeDefined();
+    expect(screen.getByRole('link', { name: publicNavigationEn.links.destinations })).toBeDefined();
+    expect(screen.getByRole('link', { name: publicNavigationEn.links.smartItinerary })).toBeDefined();
+    expect(screen.getByRole('link', { name: publicNavigationEn.links.weatherRerouting })).toBeDefined();
+    expect(screen.getByRole('link', { name: publicNavigationEn.links.localTours })).toBeDefined();
+
+    // AccountWorkspaceNav rendered in English
+    expect(
+      screen.getByRole('navigation', { name: accountCommonEn.navigation.workspaceNavAria })
+    ).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Personal Profile/i })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Travel Preferences/i })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Security & Password/i })).toBeDefined();
+    expect(
+      screen.getByRole('tab', { name: new RegExp(accountCommonEn.navigation.tabs.trips, 'i') })
+    ).toBeDefined();
+  });
+
+  it('Preserves all partner and account route definitions after develop reconciliation', () => {
+    expect(ROUTES.partner.profile).toBe('/partner/profile');
+    expect(ROUTES.partner.bookings).toBe('/partner/bookings');
+    expect(ROUTES.partner.createCoupon).toBe('/partner/coupons/create');
+    expect(ROUTES.account.trips).toBe('/account/trips');
+    expect(ROUTES.account.tripReview('trip-01')).toBe('/account/trips/trip-01/review');
   });
 });

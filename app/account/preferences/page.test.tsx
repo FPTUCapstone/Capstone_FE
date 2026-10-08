@@ -64,9 +64,10 @@ describe('/account/preferences production route', () => {
       expect(screen.getByRole('heading', { name: /Sở thích du lịch \(UC-09\)/ })).toBeDefined();
     });
 
-    expect(screen.getByRole('tab', { name: /Hồ sơ cá nhân/ })).toBeDefined();
-    expect(screen.getByRole('tab', { name: /Sở thích du lịch/ })).toBeDefined();
-    expect(screen.getByRole('tab', { name: /Bảo mật & Mật khẩu/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Personal Profile/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Travel Preferences/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Security & Password/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /My Trips/ })).toBeDefined();
     expect(screen.getByRole('button', { name: /Lưu sở thích/ })).toBeDefined();
   });
 
