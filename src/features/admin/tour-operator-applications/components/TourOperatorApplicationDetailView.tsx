@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import {
   ApproveOperatorApplicationResponseDto,
   TourOperatorApplicationDetailDto,
 } from '@/types/tour-operator-application';
-import { fetchOperatorApplicationDetail, ApiError } from '../api/tourOperatorApplicationApi';
+import { ROUTES } from '@/lib/routes';
+import { fetchOperatorApplicationDetail } from '../api/tourOperatorApplicationApi';
+import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { ApplicationErrorView, describeApplicationError } from '../utils/applicationErrors';
+import { usableDecisionMessage } from '../utils/decisionMessage';
+import { hasUsableBusinessLicense } from '../utils/documents';
 import { ApplicationHeader } from './ApplicationHeader';
 import { CompanyInfoCard } from './CompanyInfoCard';
 import { DocumentsGrid } from './DocumentsGrid';
@@ -17,16 +23,21 @@ interface TourOperatorApplicationDetailViewProps {
   userId: number;
 }
 
+const TOAST_DURATION_MS = 8000;
+
 export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplicationDetailViewProps) {
   const [detail, setDetail] = useState<TourOperatorApplicationDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApplicationErrorView | null>(null);
 
   const [isApproveOpen, setIsApproveOpen] = useState(false);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Set when a decision succeeded and the screen is waiting for the authoritative state.
+  const [pendingReconciliation, setPendingReconciliation] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -38,20 +49,12 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
         const data = await fetchOperatorApplicationDetail(userId);
         if (!ignore) {
           setDetail(data);
+          setPendingReconciliation(null);
         }
       } catch (err) {
         if (!ignore) {
-          if (err instanceof ApiError) {
-            if (err.statusCode === 404) {
-              setError(`Tour Operator application #${userId} was not found.`);
-            } else if (err.statusCode === 401 || err.statusCode === 403) {
-              setError('Administrator authorization is required to view this application.');
-            } else {
-              setError(err.message);
-            }
-          } else {
-            setError('Could not reach the application service. Please try again.');
-          }
+          setDetail(null);
+          setError(describeApplicationError(err, userId));
         }
       } finally {
         if (!ignore) {
@@ -67,32 +70,37 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
     };
   }, [userId, reloadToken]);
 
-  function handleApproveSuccess(result: ApproveOperatorApplicationResponseDto) {
-    setIsApproveOpen(false);
-    setToastMessage(result.message || `Tour Operator "${detail?.companyName}" approved. Account activated.`);
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
 
-    if (detail) {
-      setDetail({
-        ...detail,
-        accountStatus: result.accountStatus,
-        applicationStatus: 'Approved',
-        reviewedBy: result.reviewedBy,
-        reviewedAt: result.reviewedAt,
-        documents: detail.documents.map((d) => ({
-          ...d,
-          status: d.status === 'Submitted' ? 'Approved' : d.status,
-        })),
-      });
-    }
-
-    setTimeout(() => setToastMessage(null), 8000);
+  function showToast(message: string) {
+    setToastMessage(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMessage(null), TOAST_DURATION_MS);
   }
 
-  function handleRejectSuccess(msg: string) {
-    setIsRejectOpen(false);
-    setToastMessage(msg);
+  /** A decision succeeded on the Backend: reload instead of inferring the new state locally. */
+  function reconcileAfterDecision(message: string) {
+    setPendingReconciliation(message);
+    showToast(message);
     setReloadToken((token) => token + 1);
-    setTimeout(() => setToastMessage(null), 8000);
+  }
+
+  function handleApproveSuccess(result: ApproveOperatorApplicationResponseDto) {
+    setIsApproveOpen(false);
+    reconcileAfterDecision(
+      usableDecisionMessage(result.message) ?? copy.approve.successFallback(detail?.companyName ?? ''),
+    );
+  }
+
+  function handleRejectSuccess(message: string) {
+    setIsRejectOpen(false);
+    reconcileAfterDecision(message);
+  }
+
+  function retry() {
+    setReloadToken((token) => token + 1);
   }
 
   if (loading) {
@@ -103,46 +111,81 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
     );
   }
 
-  if (error || !detail) {
+  if (error && pendingReconciliation) {
     return (
-      <div className="mx-auto max-w-6xl p-6">
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center text-rose-900 shadow-sm">
-          <div className="text-3xl mb-2">⚠️</div>
-          <h3 className="text-xl font-bold mb-2 text-rose-900">Application Load Error</h3>
-          <p className="text-sm text-rose-700 max-w-md mx-auto mb-6">{error}</p>
+      <div className="mx-auto max-w-6xl p-4 sm:p-6">
+        <section
+          className="rounded-2xl border border-amber-300 bg-amber-50 p-6 text-amber-950 shadow-sm sm:p-8"
+          aria-labelledby="application-reconcile-title"
+        >
+          <h2 id="application-reconcile-title" className="mb-2 text-xl font-bold">
+            {copy.reconcile.title}
+          </h2>
+          <p className="mb-2 text-sm font-semibold">{pendingReconciliation}</p>
+          <p className="mb-6 max-w-2xl text-sm">{copy.reconcile.body}</p>
           <button
             type="button"
-            onClick={() => setReloadToken((t) => t + 1)}
-            className="inline-flex items-center gap-2 rounded-xl bg-white border border-rose-300 px-4 py-2 text-sm font-bold text-rose-800 shadow-sm hover:bg-rose-100 transition"
+            onClick={retry}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400 bg-white px-4 py-2 text-sm font-bold text-amber-900 shadow-sm transition hover:bg-amber-100"
           >
-            🔄 Retry Loading
+            {copy.reconcile.retry}
           </button>
+        </section>
+      </div>
+    );
+  }
+
+  if (error || !detail) {
+    const canRetry = error?.kind !== 'sessionExpired' && error?.kind !== 'forbidden';
+    const loginHref = `${ROUTES.admin.login}?returnUrl=${encodeURIComponent(`/admin/tour-operator-applications/${userId}`)}`;
+
+    return (
+      <div className="mx-auto max-w-6xl p-4 sm:p-6">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-900 shadow-sm sm:p-8">
+          <div className="text-3xl mb-2" aria-hidden="true">⚠️</div>
+          <h2 className="text-xl font-bold mb-2 text-rose-900">{copy.errors.loadTitle}</h2>
+          <p className="text-sm text-rose-700 max-w-md mx-auto mb-6">{error?.message ?? copy.errors.unexpected}</p>
+          {error?.kind === 'sessionExpired' && (
+            <Link
+              href={loginHref}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white border border-rose-300 px-4 py-2 text-sm font-bold text-rose-800 shadow-sm hover:bg-rose-100 transition"
+            >
+              {copy.errors.signIn}
+            </Link>
+          )}
+          {canRetry && (
+            <button
+              type="button"
+              onClick={retry}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white border border-rose-300 px-4 py-2 text-sm font-bold text-rose-800 shadow-sm hover:bg-rose-100 transition"
+            >
+              <span aria-hidden="true">🔄</span> {copy.errors.retry}
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
-  const hasBusinessLicense = detail.documents.some(
-    (d) => d.documentType === 'BusinessLicense' && d.status !== 'Rejected'
-  );
-  const isMissingMandatory = !hasBusinessLicense;
+  const isMissingMandatory = !hasUsableBusinessLicense(detail.documents);
 
   return (
-    <div className="mx-auto max-w-6xl p-6 animate-fade-in">
+    <div className="mx-auto max-w-6xl p-4 sm:p-6 animate-fade-in">
       {toastMessage && (
         <div
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-900 p-4 text-sm font-bold text-white shadow-2xl backdrop-blur-md"
+          className="fixed bottom-6 left-4 right-4 z-50 flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-900 p-4 text-sm font-bold text-white shadow-2xl backdrop-blur-md sm:left-auto sm:right-6"
           role="status"
           aria-live="polite"
         >
-          <span className="text-xl">✅</span>
+          <span className="text-xl" aria-hidden="true">✅</span>
           <span>{toastMessage}</span>
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="ml-4 text-emerald-200 hover:text-white"
+            aria-label={copy.toast.dismiss}
+            className="ml-auto text-emerald-200 hover:text-white"
           >
-            ✕
+            <span aria-hidden="true">✕</span>
           </button>
         </div>
       )}
