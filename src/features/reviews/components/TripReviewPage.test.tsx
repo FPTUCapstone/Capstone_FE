@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as useWebSessionModule from '@/features/auth/session/useWebSession';
+import { tripReviewEn } from '@/features/trips/resources/en';
 import * as tripHistoryApi from '@/features/trips/services/tripHistoryApi';
 import type { TripCardDto } from '@/features/trips/types/tripHistory';
 import { TripReviewPage } from './TripReviewPage';
@@ -17,7 +18,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-describe('TripReviewPage Eligibility (REVIEW-1)', () => {
+describe('TripReviewPage Eligibility (REVIEW-1, CR-09)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(useWebSessionModule, 'useWebSession').mockReturnValue({
@@ -36,66 +37,80 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
     });
   });
 
-  it('REVIEW-1: Shows error when trip does not exist', async () => {
+  it('REVIEW-1: Shows English error when trip does not exist without raw MSG codes', async () => {
     vi.spyOn(tripHistoryApi, 'getTripById').mockResolvedValue(null);
 
-    render(<TripReviewPage tripId="non-existent" />);
+    const { container } = render(<TripReviewPage tripId="non-existent" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Không tìm thấy chuyến đi')).toBeDefined();
+      expect(screen.getByText(tripReviewEn.reviewPage.notFoundTitle)).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.errors.tripByIdNotFound('non-existent'))
+      ).toBeDefined();
     });
+    expect(container.textContent).not.toMatch(/MSG\d+|BR-\d+/);
   });
 
-  it('REVIEW-1: Rejects review if trip is not completed (MSG121)', async () => {
+  it('REVIEW-1: Rejects review if trip is not completed using English resource without raw MSG121/BR-91', async () => {
     const upcomingTrip: TripCardDto = {
       tripId: 'trip-upcoming-01',
       tripType: 'TourBooking',
-      title: 'Khám Phá Cố Đô Huế 1 Ngày',
+      title: 'Hue Imperial Citadel 1-Day Discovery',
       departureDatetime: '2026-11-20T07:00:00Z',
       status: 'Upcoming',
-      statusLabel: 'Sắp khởi hành',
+      statusLabel: 'Upcoming',
       isReviewed: false,
     };
     vi.spyOn(tripHistoryApi, 'getTripById').mockResolvedValue(upcomingTrip);
 
-    render(<TripReviewPage tripId="trip-upcoming-01" />);
+    const { container } = render(<TripReviewPage tripId="trip-upcoming-01" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Chuyến đi chưa hoàn thành')).toBeDefined();
-      expect(screen.getByText(/MSG121/i)).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.tripReview.notCompletedTitle)
+      ).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.tripReview.notCompletedDetail)
+      ).toBeDefined();
     });
+    expect(container.textContent).not.toMatch(/MSG\d+|BR-\d+/);
   });
 
-  it('REVIEW-1: Rejects review if trip was already reviewed (MSG122)', async () => {
+  it('REVIEW-1: Rejects review if trip was already reviewed using English resource without raw MSG122/BR-92', async () => {
     const reviewedTrip: TripCardDto = {
       tripId: 'trip-reviewed-01',
       tripType: 'TourBooking',
-      title: 'Hành Trình Di Sản Phố Cổ Hội An',
+      title: 'Hoi An Heritage Tour',
       departureDatetime: '2026-04-15T07:30:00Z',
       status: 'Completed',
-      statusLabel: 'Đã hoàn thành',
+      statusLabel: 'Completed',
       isReviewed: true,
       rating: 5,
-      reviewComment: 'Chuyến đi rất tuyệt vời!',
+      reviewComment: 'Wonderful trip!',
     };
     vi.spyOn(tripHistoryApi, 'getTripById').mockResolvedValue(reviewedTrip);
 
-    render(<TripReviewPage tripId="trip-reviewed-01" />);
+    const { container } = render(<TripReviewPage tripId="trip-reviewed-01" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Chuyến đi này đã được đánh giá')).toBeDefined();
-      expect(screen.getByText(/MSG122/i)).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.tripReview.alreadyReviewedTitle)
+      ).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.tripReview.alreadyReviewedDetail(5))
+      ).toBeDefined();
     });
+    expect(container.textContent).not.toMatch(/MSG\d+|BR-\d+/);
   });
 
   it('Renders review form when trip is completed and unreviewed', async () => {
     const eligibleTrip: TripCardDto = {
       tripId: 'trip-eligible-01',
       tripType: 'SelfPlannedItinerary',
-      title: 'Hành trình Đà Nẵng - Hội An',
+      title: 'Da Nang - Hoi An Itinerary',
       departureDatetime: '2026-05-24T08:00:00Z',
       status: 'Completed',
-      statusLabel: 'Đã hoàn thành',
+      statusLabel: 'Completed',
       isReviewed: false,
     };
     vi.spyOn(tripHistoryApi, 'getTripById').mockResolvedValue(eligibleTrip);
@@ -103,15 +118,23 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
     render(<TripReviewPage tripId="trip-eligible-01" />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Trải nghiệm chung về chuyến đi/i)).toBeDefined();
-      expect(screen.getByRole('button', { name: /Gửi đánh giá/i })).toBeDefined();
+      expect(
+        screen.getByText(
+          new RegExp(tripReviewEn.tripReview.ratingSectionTitle, 'i')
+        )
+      ).toBeDefined();
+      expect(
+        screen.getByRole('button', {
+          name: new RegExp(tripReviewEn.actions.submitReview, 'i'),
+        })
+      ).toBeDefined();
     });
   });
 
   it('Renders PENDING_BE_INTEGRATION status when BFF returns verified 501 instead of NOT_FOUND or NETWORK error', async () => {
     vi.spyOn(tripHistoryApi, 'getTripById').mockRejectedValue(
       new tripHistoryApi.TripApiError(
-        'Trip history service is pending backend integration.',
+        tripReviewEn.bff.tripHistoryPendingDetail,
         501,
         { errorCode: 'PENDING_BE_INTEGRATION' }
       )
@@ -121,7 +144,7 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Trip review service is pending backend integration')
+        screen.getByText(tripReviewEn.reviewPage.pendingTitle)
       ).toBeDefined();
       expect(
         screen.getByText(/Trip history service is pending backend integration/i)
@@ -132,7 +155,7 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
   it('Renders NETWORK error when a generic 501 without PENDING_BE_INTEGRATION errorCode is returned', async () => {
     vi.spyOn(tripHistoryApi, 'getTripById').mockRejectedValue(
       new tripHistoryApi.TripApiError(
-        'TripMate is temporarily unable to process your request. Please check your connection and try again.',
+        tripReviewEn.errors.systemError,
         501,
         { errorCode: 'MSG127' }
       )
@@ -141,7 +164,9 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
     render(<TripReviewPage tripId="trip-prod-02" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Lỗi kết nối máy chủ')).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.reviewPage.networkErrorTitle)
+      ).toBeDefined();
       expect(
         screen.getByText(/TripMate is temporarily unable to process your request/i)
       ).toBeDefined();

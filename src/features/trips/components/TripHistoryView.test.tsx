@@ -1,6 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { tripReviewEn } from '../resources/en';
 import * as tripHistoryApi from '../services/tripHistoryApi';
 import { TripApiError, type TripCardDto } from '../types/tripHistory';
 import { TripHistoryView } from './TripHistoryView';
@@ -13,7 +16,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
+describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6, CR-09)', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -30,7 +33,11 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     render(<TripHistoryView />);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Đã hoàn thành/i })).toBeDefined();
+      expect(
+        screen.getByRole('button', {
+          name: new RegExp(tripReviewEn.tripHistory.tabs.completed, 'i'),
+        })
+      ).toBeDefined();
     });
 
     // Check that cards are rendered
@@ -49,7 +56,9 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     });
 
     // Switch to Cancelled tab
-    const cancelledTabBtn = screen.getByRole('button', { name: /Đã hủy \/ Hoàn tiền/i });
+    const cancelledTabBtn = screen.getByRole('button', {
+      name: new RegExp(tripReviewEn.tripHistory.tabs.cancelled, 'i'),
+    });
     fireEvent.click(cancelledTabBtn);
 
     await waitFor(() => {
@@ -60,7 +69,9 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     });
 
     // Switch to Upcoming tab
-    const upcomingTabBtn = screen.getByRole('button', { name: /Sắp tới/i });
+    const upcomingTabBtn = screen.getByRole('button', {
+      name: new RegExp(tripReviewEn.tripHistory.tabs.upcoming, 'i'),
+    });
     fireEvent.click(upcomingTabBtn);
 
     await waitFor(() => {
@@ -71,7 +82,7 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     });
   });
 
-  it('TRIP-6: Empty state displays truthful message MSG128 and action links', async () => {
+  it('TRIP-6: Empty state displays truthful English message without raw MSG128 and renders action links', async () => {
     vi.spyOn(tripHistoryApi, 'getTripHistory').mockResolvedValue({
       status: 'SUCCESS',
       trips: [],
@@ -80,15 +91,26 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
       pageSize: 20,
     });
 
-    render(<TripHistoryView />);
+    const { container } = render(<TripHistoryView />);
 
     await waitFor(() => {
-      expect(screen.getByText('Chưa có chuyến đi nào')).toBeDefined();
-      expect(screen.getByText(/MSG128/i)).toBeDefined();
+      expect(screen.getByText(tripReviewEn.tripHistory.empty.title)).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.tripHistory.empty.description)
+      ).toBeDefined();
     });
 
-    expect(screen.getByRole('link', { name: /Lên lịch trình thông minh/i })).toBeDefined();
-    expect(screen.getByRole('link', { name: /Khám phá tour bản địa/i })).toBeDefined();
+    expect(container.textContent).not.toMatch(/MSG\d+|BR-\d+/);
+    expect(
+      screen.getByRole('link', {
+        name: new RegExp(tripReviewEn.actions.planSmartItinerary, 'i'),
+      })
+    ).toBeDefined();
+    expect(
+      screen.getByRole('link', {
+        name: new RegExp(tripReviewEn.actions.exploreLocalTours, 'i'),
+      })
+    ).toBeDefined();
   });
 
   it('CR-02: Search triggers upon explicit submission (button click / form submit)', async () => {
@@ -96,14 +118,20 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     render(<TripHistoryView />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Tìm kiếm chuyến đi/i)).toBeDefined();
+      expect(
+        screen.getByLabelText(tripReviewEn.accessibility.searchTripsLabel)
+      ).toBeDefined();
     });
 
-    const searchInput = screen.getByLabelText(/Tìm kiếm chuyến đi/i);
+    const searchInput = screen.getByLabelText(
+      tripReviewEn.accessibility.searchTripsLabel
+    );
     fireEvent.change(searchInput, { target: { value: 'Đà Nẵng' } });
 
     // typing should not yet invoke search with new query
-    const submitBtn = screen.getByRole('button', { name: /Tìm/i });
+    const submitBtn = screen.getByRole('button', {
+      name: new RegExp(tripReviewEn.accessibility.searchButtonAria, 'i'),
+    });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
@@ -120,7 +148,7 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     // First call: returns 501 PENDING_BE_INTEGRATION
     getTripHistorySpy.mockResolvedValueOnce({
       status: 'PENDING_BE_INTEGRATION',
-      message: 'Trip history service is pending backend integration.',
+      message: tripReviewEn.bff.tripHistoryPendingDetail,
       trips: [],
       totalCount: 0,
       page: 1,
@@ -131,7 +159,9 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
 
     // First state: Pending integration notice is visible
     await waitFor(() => {
-      expect(screen.getByText('Dịch vụ lịch sử chuyến đi')).toBeDefined();
+      expect(
+        screen.getByText(tripReviewEn.tripHistory.pending.title)
+      ).toBeDefined();
       expect(
         screen.getByText(/Trip history service is pending backend integration/i)
       ).toBeDefined();
@@ -139,27 +169,29 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
 
     // Retry fails with 500 / network error
     getTripHistorySpy.mockRejectedValueOnce(
-      new TripApiError(
-        'TripMate is temporarily unable to process your request. Please check your connection and try again.',
-        500,
-        { errorCode: 'MSG127' }
-      )
+      new TripApiError(tripReviewEn.errors.systemError, 500, {
+        errorCode: 'MSG127',
+      })
     );
 
     // Click retry
-    const retryBtn = screen.getByRole('button', { name: /Thử lại kết nối/i });
+    const retryBtn = screen.getByRole('button', {
+      name: new RegExp(tripReviewEn.actions.retryConnection, 'i'),
+    });
     fireEvent.click(retryBtn);
 
     // Second state: Pending notice MUST disappear, and system error state MUST appear
     await waitFor(() => {
-      expect(screen.getByText('Không thể tải dữ liệu')).toBeDefined();
+      expect(screen.getByText(tripReviewEn.tripHistory.error.title)).toBeDefined();
       expect(
         screen.getByText(/TripMate is temporarily unable to process your request/i)
       ).toBeDefined();
     });
 
     // Assert stale pending banner is strictly NOT rendered
-    expect(screen.queryByText('Dịch vụ lịch sử chuyến đi')).toBeNull();
+    expect(
+      screen.queryByText(tripReviewEn.tripHistory.pending.title)
+    ).toBeNull();
     expect(
       screen.queryByText(/Trip history service is pending backend integration/i)
     ).toBeNull();
@@ -169,13 +201,13 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     const mockReviewedTrip: TripCardDto = {
       tripId: 'trip-reviewed-01',
       tripType: 'TourBooking',
-      title: 'Tour Đã Đánh Giá Xong',
+      title: 'Reviewed Heritage Tour',
       departureDatetime: '2026-05-24T08:00:00Z',
       status: 'Completed',
-      statusLabel: 'Đã hoàn thành',
+      statusLabel: 'Completed',
       isReviewed: true,
       rating: 5,
-      reviewComment: 'Trải nghiệm du lịch tuyệt vời cùng gia đình!',
+      reviewComment: 'Wonderful family travel experience!',
       reviewedAtUtc: '2026-05-25T10:00:00Z',
     };
 
@@ -193,10 +225,16 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
       render(<TripHistoryView />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Xem đánh giá/i })).toBeDefined();
+        expect(
+          screen.getByRole('button', {
+            name: new RegExp(tripReviewEn.actions.viewReview, 'i'),
+          })
+        ).toBeDefined();
       });
 
-      const triggerBtn = screen.getByRole('button', { name: /Xem đánh giá/i });
+      const triggerBtn = screen.getByRole('button', {
+        name: new RegExp(tripReviewEn.actions.viewReview, 'i'),
+      });
       triggerBtn.focus();
       expect(document.activeElement).toBe(triggerBtn);
 
@@ -207,10 +245,14 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
       expect(dialog).toBeDefined();
       expect(dialog.getAttribute('aria-modal')).toBe('true');
       expect(dialog.getAttribute('aria-labelledby')).toBe('review-dialog-title');
-      expect(dialog.querySelector('#review-dialog-title')?.textContent).toBe('Tour Đã Đánh Giá Xong');
+      expect(dialog.querySelector('#review-dialog-title')?.textContent).toBe(
+        'Reviewed Heritage Tour'
+      );
 
       // The dialog has two close buttons: top close button and bottom close button
-      const closeButtons = screen.getAllByRole('button', { name: /đóng/i });
+      const closeButtons = screen.getAllByRole('button', {
+        name: new RegExp(tripReviewEn.actions.close, 'i'),
+      });
       expect(closeButtons.length).toBe(2);
       const topCloseBtn = closeButtons[0];
       const bottomCloseBtn = closeButtons[1];
@@ -240,20 +282,86 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
       render(<TripHistoryView />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Xem đánh giá/i })).toBeDefined();
+        expect(
+          screen.getByRole('button', {
+            name: new RegExp(tripReviewEn.actions.viewReview, 'i'),
+          })
+        ).toBeDefined();
       });
 
-      const triggerBtn = screen.getByRole('button', { name: /Xem đánh giá/i });
+      const triggerBtn = screen.getByRole('button', {
+        name: new RegExp(tripReviewEn.actions.viewReview, 'i'),
+      });
       triggerBtn.focus();
       fireEvent.click(triggerBtn);
 
       expect(screen.getByRole('dialog')).toBeDefined();
 
-      const closeButtons = screen.getAllByRole('button', { name: /đóng/i });
+      const closeButtons = screen.getAllByRole('button', {
+        name: new RegExp(tripReviewEn.actions.close, 'i'),
+      });
       fireEvent.click(closeButtons[1]); // Click bottom close button
 
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(document.activeElement).toBe(triggerBtn);
+    });
+  });
+
+  describe('CR-09 Feature-Wide English Localization & Resource Integrity', () => {
+    it('ensures no Vietnamese diacritics remain in UC-32/33 production components, services, routes, or resources', () => {
+      const rootDir = process.cwd();
+      const targetFiles = [
+        'app/account/trips/page.tsx',
+        'app/account/trips/[id]/review/page.tsx',
+        'src/features/trips/resources/en.ts',
+        'src/features/trips/services/tripReviewBff.ts',
+        'src/features/trips/services/tripHistoryApi.ts',
+        'src/features/trips/components/TripCard.tsx',
+        'src/features/trips/components/TripFiltersBar.tsx',
+        'src/features/trips/components/TripHistoryPage.tsx',
+        'src/features/trips/components/TripHistoryView.tsx',
+        'src/features/trips/components/TripSummaryBanner.tsx',
+        'src/features/reviews/services/reviewApi.ts',
+        'src/features/reviews/components/PhotoUploadPreview.tsx',
+        'src/features/reviews/components/PoiQuickFeedback.tsx',
+        'src/features/reviews/components/StarRatingInput.tsx',
+        'src/features/reviews/components/TripReviewPage.tsx',
+        'src/features/reviews/components/TripReviewView.tsx',
+      ];
+
+      const vietnameseRegex =
+        /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
+
+      for (const relPath of targetFiles) {
+        const content = fs.readFileSync(path.join(rootDir, relPath), 'utf8');
+        expect(
+          vietnameseRegex.test(content),
+          `Expected no Vietnamese text in ${relPath}`
+        ).toBe(false);
+      }
+    });
+
+    it('ensures no raw MSGxxx or BR-xxx codes appear in any tripReviewEn user-facing string or formatter', () => {
+      const checkValue = (val: unknown, keyPath: string) => {
+        if (typeof val === 'string') {
+          expect(
+            val,
+            `Expected ${keyPath} not to contain raw MSG/BR codes`
+          ).not.toMatch(/MSG\d+|BR-\d+/);
+        } else if (typeof val === 'function') {
+          const sampleOut = String((val as (...args: unknown[]) => unknown)('sample-1', 'sample-2', 5));
+          expect(
+            sampleOut,
+            `Expected formatter ${keyPath} not to contain raw MSG/BR codes`
+          ).not.toMatch(/MSG\d+|BR-\d+/);
+        } else if (typeof val === 'object' && val !== null) {
+          for (const [k, v] of Object.entries(val)) {
+            checkValue(v, `${keyPath}.${k}`);
+          }
+        }
+      };
+
+      checkValue(tripReviewEn, 'tripReviewEn');
     });
   });
 });

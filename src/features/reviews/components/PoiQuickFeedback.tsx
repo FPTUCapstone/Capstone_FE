@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { tripReviewEn } from '@/features/trips/resources/en';
 import type { PoiReviewFeedback } from '../types/review';
 
 interface PoiQuickFeedbackProps {
@@ -38,14 +39,14 @@ export function PoiQuickFeedback({ stops, feedbacks, onChange }: PoiQuickFeedbac
             <span className="material-symbols-outlined text-[18px] text-[#006B5F]" aria-hidden="true">
               location_on
             </span>
-            Đánh giá nhanh từng điểm đến đã ghé
+            {tripReviewEn.tripReview.poiFeedbackTitle}
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Bạn có muốn giới thiệu điểm này cho du khách tiếp theo? (Tùy chọn)
+            {tripReviewEn.tripReview.poiFeedbackSubtitle}
           </p>
         </div>
         <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 shrink-0">
-          Tùy chọn
+          {tripReviewEn.tripReview.optionalBadge}
         </span>
       </div>
 
@@ -68,14 +69,16 @@ export function PoiQuickFeedback({ stops, feedbacks, onChange }: PoiQuickFeedbac
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900">{stop}</h4>
-                  <p className="text-[11px] text-slate-500">Điểm tham quan trong lộ trình</p>
+                  <p className="text-[11px] text-slate-500">
+                    {tripReviewEn.tripReview.poiStopSubtitle}
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  aria-label={`Thích ${stop}`}
+                  aria-label={tripReviewEn.accessibility.likeStopAria(stop)}
                   aria-pressed={isLiked}
                   onClick={() => handleToggle(stop, true)}
                   className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-bold transition active:scale-95 ${
@@ -87,12 +90,12 @@ export function PoiQuickFeedback({ stops, feedbacks, onChange }: PoiQuickFeedbac
                   <span className="material-symbols-outlined text-[15px]" aria-hidden="true">
                     thumb_up
                   </span>
-                  <span>Thích</span>
+                  <span>{tripReviewEn.actions.like}</span>
                 </button>
 
                 <button
                   type="button"
-                  aria-label={`Không thích ${stop}`}
+                  aria-label={tripReviewEn.accessibility.dislikeStopAria(stop)}
                   aria-pressed={isDisliked}
                   onClick={() => handleToggle(stop, false)}
                   className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-medium transition active:scale-95 ${

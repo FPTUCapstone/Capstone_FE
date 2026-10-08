@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as useWebSessionModule from '@/features/auth/session/useWebSession';
+import { tripReviewEn } from '../resources/en';
 import { TripHistoryPage } from './TripHistoryPage';
 
 const mockReplace = vi.fn();
@@ -74,7 +75,7 @@ describe('TripHistoryPage Access Control (TRIP-2, TRIP-3)', () => {
     expect(mockReplace).toHaveBeenCalledWith('/admin');
   });
 
-  it('Allows authenticated Traveler to render page', () => {
+  it('Allows authenticated Traveler to render page with English title', () => {
     vi.spyOn(useWebSessionModule, 'useWebSession').mockReturnValue({
       status: 'authenticated',
       context: {
@@ -92,6 +93,8 @@ describe('TripHistoryPage Access Control (TRIP-2, TRIP-3)', () => {
 
     const { container } = render(<TripHistoryPage />);
     expect(mockReplace).not.toHaveBeenCalled();
-    expect(container.querySelector('h1')?.textContent).toContain('Chuyến đi của tôi');
+    expect(container.querySelector('h1')?.textContent).toContain(
+      tripReviewEn.tripHistory.pageTitle
+    );
   });
 });

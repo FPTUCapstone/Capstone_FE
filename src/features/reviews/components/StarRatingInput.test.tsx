@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { tripReviewEn } from '@/features/trips/resources/en';
 import { StarRatingInput } from './StarRatingInput';
 
 describe('StarRatingInput Component (REVIEW-2, REVIEW-3)', () => {
@@ -8,7 +9,7 @@ describe('StarRatingInput Component (REVIEW-2, REVIEW-3)', () => {
     const handleChange = vi.fn();
     render(<StarRatingInput value={0} onChange={handleChange} />);
 
-    expect(screen.getByText('Chưa chọn số sao')).toBeDefined();
+    expect(screen.getByText(tripReviewEn.tripReview.noStarSelected)).toBeDefined();
 
     // Verify all 5 stars have aria-checked="false"
     const stars = screen.getAllByRole('radio');
@@ -18,23 +19,47 @@ describe('StarRatingInput Component (REVIEW-2, REVIEW-3)', () => {
     });
   });
 
-  it('Renders accessible labels for all 5 stars', () => {
+  it('Renders accessible English labels for all 5 stars', () => {
     render(<StarRatingInput value={3} onChange={vi.fn()} />);
 
-    expect(screen.getByRole('radio', { name: '1 sao' })).toBeDefined();
-    expect(screen.getByRole('radio', { name: '2 sao' })).toBeDefined();
-    expect(screen.getByRole('radio', { name: '3 sao' })).toBeDefined();
-    expect(screen.getByRole('radio', { name: '4 sao' })).toBeDefined();
-    expect(screen.getByRole('radio', { name: '5 sao' })).toBeDefined();
+    expect(
+      screen.getByRole('radio', {
+        name: tripReviewEn.accessibility.starRadioAria(1),
+      })
+    ).toBeDefined();
+    expect(
+      screen.getByRole('radio', {
+        name: tripReviewEn.accessibility.starRadioAria(2),
+      })
+    ).toBeDefined();
+    expect(
+      screen.getByRole('radio', {
+        name: tripReviewEn.accessibility.starRadioAria(3),
+      })
+    ).toBeDefined();
+    expect(
+      screen.getByRole('radio', {
+        name: tripReviewEn.accessibility.starRadioAria(4),
+      })
+    ).toBeDefined();
+    expect(
+      screen.getByRole('radio', {
+        name: tripReviewEn.accessibility.starRadioAria(5),
+      })
+    ).toBeDefined();
 
-    expect(screen.getByText('Hài lòng! 3/5 sao')).toBeDefined();
+    expect(
+      screen.getByText(tripReviewEn.tripReview.ratingLabels[3])
+    ).toBeDefined();
   });
 
   it('REVIEW-3: Keyboard navigation with ArrowRight increases rating and calls onChange', () => {
     const handleChange = vi.fn();
     render(<StarRatingInput value={2} onChange={handleChange} />);
 
-    const star2 = screen.getByRole('radio', { name: '2 sao' });
+    const star2 = screen.getByRole('radio', {
+      name: tripReviewEn.accessibility.starRadioAria(2),
+    });
     star2.focus();
 
     // Press ArrowRight -> should change to 3
@@ -46,7 +71,9 @@ describe('StarRatingInput Component (REVIEW-2, REVIEW-3)', () => {
     const handleChange = vi.fn();
     render(<StarRatingInput value={4} onChange={handleChange} />);
 
-    const star4 = screen.getByRole('radio', { name: '4 sao' });
+    const star4 = screen.getByRole('radio', {
+      name: tripReviewEn.accessibility.starRadioAria(4),
+    });
     star4.focus();
 
     // Press ArrowLeft -> should change to 3
@@ -58,7 +85,9 @@ describe('StarRatingInput Component (REVIEW-2, REVIEW-3)', () => {
     const handleChange = vi.fn();
     render(<StarRatingInput value={0} onChange={handleChange} />);
 
-    const star5 = screen.getByRole('radio', { name: '5 sao' });
+    const star5 = screen.getByRole('radio', {
+      name: tripReviewEn.accessibility.starRadioAria(5),
+    });
     fireEvent.keyDown(star5, { key: 'Enter' });
     expect(handleChange).toHaveBeenCalledWith(5);
 
@@ -70,7 +99,9 @@ describe('StarRatingInput Component (REVIEW-2, REVIEW-3)', () => {
     const handleChange = vi.fn();
     render(<StarRatingInput value={0} onChange={handleChange} />);
 
-    const star4 = screen.getByRole('radio', { name: '4 sao' });
+    const star4 = screen.getByRole('radio', {
+      name: tripReviewEn.accessibility.starRadioAria(4),
+    });
     fireEvent.click(star4);
     expect(handleChange).toHaveBeenCalledWith(4);
   });

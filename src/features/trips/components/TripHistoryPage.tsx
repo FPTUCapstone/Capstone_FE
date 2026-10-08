@@ -8,6 +8,7 @@ import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
+import { tripReviewEn } from '../resources/en';
 import { TripHistoryView } from './TripHistoryView';
 
 export function TripHistoryPage() {
@@ -32,7 +33,9 @@ export function TripHistoryPage() {
             className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-[#59616B]">Đang tải thông tin tài khoản…</p>
+          <p className="text-xs font-semibold text-[#59616B]">
+            {tripReviewEn.tripHistory.loadingAccount}
+          </p>
         </div>
       </div>
     );
@@ -43,21 +46,26 @@ export function TripHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
       <PublicNavigation />
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
+        <nav
+          aria-label={tripReviewEn.accessibility.breadcrumbAria}
+          className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]"
+        >
           <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
-            Trang chủ
+            {tripReviewEn.tripHistory.breadcrumbHome}
           </Link>
           <span aria-hidden="true">/</span>
           <Link href={ROUTES.account.profile} className="hover:text-[#006B5F] hover:underline">
-            Tài khoản cá nhân
+            {tripReviewEn.tripHistory.breadcrumbAccount}
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#00152A]">Chuyến đi của tôi</span>
+          <span className="text-[#00152A]">
+            {tripReviewEn.tripHistory.breadcrumbTrips}
+          </span>
         </nav>
 
         {/* Account Workspace Navigation Tabs */}
@@ -67,17 +75,17 @@ export function TripHistoryPage() {
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#006B5F]">
-              UC-32
+              {tripReviewEn.tripHistory.badgeCode}
             </span>
             <span className="text-xs font-semibold text-slate-500">
-              Quản lý hành trình
+              {tripReviewEn.tripHistory.badgeLabel}
             </span>
           </div>
           <h1 className="mt-1 text-2xl font-black text-[#00152A] sm:text-3xl">
-            Chuyến đi của tôi
+            {tripReviewEn.tripHistory.pageTitle}
           </h1>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Xem lại lịch sử các tour đã đặt và hành trình tự lên lịch cùng TripMate.
+            {tripReviewEn.tripHistory.pageSubtitle}
           </p>
         </div>
 

@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 import { TripReviewPage } from '@/features/reviews/components/TripReviewPage';
+import { tripReviewEn } from '@/features/trips/resources/en';
 
 export const metadata: Metadata = {
-  title: 'Đánh giá chuyến đi | TripMate',
-  description: 'Đánh giá và phản hồi chất lượng chuyến đi trên TripMate.',
+  title: tripReviewEn.metadata.tripReviewTitle,
+  description: tripReviewEn.metadata.tripReviewDescription,
 };
 
 interface AccountTripReviewPageProps {

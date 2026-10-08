@@ -1,20 +1,13 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import { tripReviewEn } from '@/features/trips/resources/en';
 
 interface StarRatingInputProps {
   value: number;
   onChange: (val: number) => void;
   error?: string;
 }
-
-const RATING_LABELS: Record<number, string> = {
-  1: 'Không hài lòng! 1/5 sao',
-  2: 'Cần cải thiện! 2/5 sao',
-  3: 'Hài lòng! 3/5 sao',
-  4: 'Rất tốt! 4/5 sao',
-  5: 'Tuyệt vời! 5/5 sao',
-};
 
 export function StarRatingInput({ value, onChange, error }: StarRatingInputProps) {
   const [hoverVal, setHoverVal] = useState<number>(0);
@@ -47,17 +40,17 @@ export function StarRatingInput({ value, onChange, error }: StarRatingInputProps
   return (
     <section aria-labelledby="rating-title" className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-xs">
       <h3 id="rating-title" className="text-sm font-extrabold text-[#00152A] sm:text-base">
-        Trải nghiệm chung về chuyến đi <span className="text-rose-500">*</span>
+        {tripReviewEn.tripReview.ratingSectionTitle} <span className="text-rose-500">*</span>
       </h3>
       <p className="mt-1 text-xs text-slate-500">
-        Chạm hoặc dùng phím mũi tên để chấm điểm mức độ hài lòng của bạn (1 đến 5 sao)
+        {tripReviewEn.tripReview.ratingSectionSubtitle}
       </p>
 
       {/* Accessible radiogroup */}
       <div
         ref={containerRef}
         role="radiogroup"
-        aria-label="Đánh giá sao trải nghiệm"
+        aria-label={tripReviewEn.accessibility.starRatingGroupAria}
         aria-required="true"
         className="mt-3 flex items-center justify-center gap-2 sm:gap-3"
       >
@@ -73,7 +66,7 @@ export function StarRatingInput({ value, onChange, error }: StarRatingInputProps
               role="radio"
               data-star={star}
               aria-checked={isSelected}
-              aria-label={`${star} sao`}
+              aria-label={tripReviewEn.accessibility.starRadioAria(star)}
               tabIndex={tabIndex}
               onClick={() => onChange(star)}
               onMouseEnter={() => setHoverVal(star)}
@@ -97,11 +90,11 @@ export function StarRatingInput({ value, onChange, error }: StarRatingInputProps
       {/* Dynamic text rating badge */}
       {displayVal > 0 ? (
         <div className="mt-2.5 inline-block rounded-full border border-amber-200/80 bg-amber-50 px-3.5 py-1 text-xs font-bold text-amber-800">
-          {RATING_LABELS[displayVal]}
+          {tripReviewEn.tripReview.ratingLabels[displayVal]}
         </div>
       ) : (
         <div className="mt-2.5 inline-block text-xs text-slate-400">
-          Chưa chọn số sao
+          {tripReviewEn.tripReview.noStarSelected}
         </div>
       )}
 

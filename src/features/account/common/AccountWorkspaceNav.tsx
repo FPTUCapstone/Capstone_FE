@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+import { tripReviewEn } from '@/features/trips/resources/en';
 import { ROUTES } from '@/lib/routes';
 
 export type AccountTabKey = 'profile' | 'preferences' | 'security' | 'trips';
@@ -41,10 +42,10 @@ const TABS: NavTabItem[] = [
   },
   {
     key: 'trips',
-    label: 'Chuyến đi của tôi',
+    label: tripReviewEn.tripHistory.navTabLabel,
     href: ROUTES.account.trips,
     icon: 'route',
-    badge: 'UC-32',
+    badge: tripReviewEn.tripHistory.badgeCode,
   },
 ];
 

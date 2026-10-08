@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 import { TripHistoryPage } from '@/features/trips/components/TripHistoryPage';
+import { tripReviewEn } from '@/features/trips/resources/en';
 
 export const metadata: Metadata = {
-  title: 'Chuyến đi của tôi | TripMate',
-  description: 'Quản lý lịch sử các chuyến đi và tour du lịch trên TripMate.',
+  title: tripReviewEn.metadata.tripHistoryTitle,
+  description: tripReviewEn.metadata.tripHistoryDescription,
 };
 
 export default function AccountTripsPage() {
