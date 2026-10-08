@@ -19,6 +19,10 @@ function isNullableString(value: unknown): value is string | null {
   return typeof value === 'string' || value === null;
 }
 
+function isOptionalNullableString(value: unknown): value is string | null | undefined {
+  return value === undefined || value === null || typeof value === 'string';
+}
+
 function isNullableNumber(value: unknown): value is number | null {
   return typeof value === 'number' || value === null;
 }
@@ -37,11 +41,15 @@ export function parseTourSearchItem(value: unknown): TourSearchItemDto {
     !isNullableString(value.departureAtUtc) ||
     typeof value.availabilityStatus !== 'string' ||
     !isNullableNumber(value.remainingSlots) ||
-    !('thumbnailUrl' in value) ||
-    !isNullableString(value.thumbnailUrl)
+    !isOptionalNullableString(value.thumbnailUrl)
   ) {
     throw new Error('Dữ liệu gói tour không hợp lệ.');
   }
+
+  const normalizedThumbnailUrl =
+    typeof value.thumbnailUrl === 'string' && value.thumbnailUrl.trim().length > 0
+      ? value.thumbnailUrl
+      : null;
 
   return {
     tourId: value.tourId,
@@ -55,7 +63,7 @@ export function parseTourSearchItem(value: unknown): TourSearchItemDto {
     departureAtUtc: value.departureAtUtc,
     availabilityStatus: value.availabilityStatus,
     remainingSlots: value.remainingSlots,
-    thumbnailUrl: value.thumbnailUrl,
+    thumbnailUrl: normalizedThumbnailUrl,
   };
 }
 

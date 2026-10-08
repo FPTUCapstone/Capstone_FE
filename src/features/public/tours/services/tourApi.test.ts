@@ -75,8 +75,8 @@ describe('tourApi service', () => {
       expect(parsed.thumbnailUrl).toBeNull();
     });
 
-    it('rejects missing thumbnailUrl property (must not silently become null)', () => {
-      const raw = {
+    it('normalizes omitted or undefined thumbnailUrl property to null so current Backend GET /api/v1/tours payloads parse cleanly', () => {
+      const rawOmitted = {
         tourId: '9007199254740995',
         title: 'Hội An Tour',
         destinations: ['Đà Nẵng', 'Hội An'],
@@ -89,9 +89,9 @@ describe('tourApi service', () => {
         availabilityStatus: 'Available',
         remainingSlots: null,
       };
-      expect(() => parseTourSearchItem(raw)).toThrow(
-        'Dữ liệu gói tour không hợp lệ.',
-      );
+      expect(parseTourSearchItem(rawOmitted).thumbnailUrl).toBeNull();
+      expect(parseTourSearchItem({ ...rawOmitted, thumbnailUrl: undefined }).thumbnailUrl).toBeNull();
+      expect(parseTourSearchItem({ ...rawOmitted, thumbnailUrl: '   ' }).thumbnailUrl).toBeNull();
     });
 
     it('rejects invalid thumbnailUrl types (must not silently become null)', () => {
@@ -134,11 +134,11 @@ describe('tourApi service', () => {
       );
     });
 
-    it('parses valid PagedToursResponseDto', () => {
+    it('parses valid PagedToursResponseDto when items include or omit thumbnailUrl', () => {
       const raw = {
         page: 1,
         pageSize: 20,
-        totalCount: 1,
+        totalCount: 2,
         totalPages: 1,
         asOfUtc: '2026-10-01T00:00:00Z',
         items: [
@@ -154,13 +154,28 @@ describe('tourApi service', () => {
             departureAtUtc: null,
             availabilityStatus: 'Available',
             remainingSlots: null,
-            thumbnailUrl: null,
+          },
+          {
+            tourId: '9007199254740996',
+            title: 'Đà Nẵng Tour',
+            destinations: ['Đà Nẵng'],
+            operatorName: 'Endpoint Travel',
+            durationDays: 3,
+            basePrice: 1200000,
+            currency: 'VND',
+            representativeScheduleId: '9007199254740998',
+            departureAtUtc: '2026-10-20T07:30:00Z',
+            availabilityStatus: 'Available',
+            remainingSlots: 5,
+            thumbnailUrl: 'https://example.com/danang.jpg',
           },
         ],
       };
       const parsed = parsePagedTours(raw);
-      expect(parsed.totalCount).toBe(1);
-      expect(parsed.items).toHaveLength(1);
+      expect(parsed.totalCount).toBe(2);
+      expect(parsed.items).toHaveLength(2);
+      expect(parsed.items[0].thumbnailUrl).toBeNull();
+      expect(parsed.items[1].thumbnailUrl).toBe('https://example.com/danang.jpg');
     });
   });
 
