@@ -41,6 +41,17 @@ describe('bookingRouteDecision (BR-07 Runtime Route Boundary)', () => {
     });
   });
 
+  it('redirects Staff to staff operations dashboard', () => {
+    const context = createMockContext({
+      role: 'Staff',
+      applicationStatus: null,
+    });
+    expect(bookingRouteDecision(context)).toEqual({
+      action: 'redirect',
+      href: ROUTES.admin.staffDashboard,
+    });
+  });
+
   it('redirects inactive TourOperator to sign-in', () => {
     const context = createMockContext({
       role: 'TourOperator',

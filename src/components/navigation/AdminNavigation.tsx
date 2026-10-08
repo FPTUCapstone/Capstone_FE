@@ -44,20 +44,20 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
           >
             {adminStaffEn.navigation.staffDashboard}
           </Link>
-          <Link
-            href={ROUTES.admin.tourReviews}
-            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
-          >
-            {adminStaffEn.navigation.tourReviews}
-          </Link>
-          <Link
-            href={ROUTES.admin.createPoi}
-            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
-          >
-            {adminStaffEn.navigation.createPoi}
-          </Link>
           {!isStaffUser ? (
             <>
+              <Link
+                href={ROUTES.admin.tourReviews}
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+              >
+                {adminStaffEn.navigation.tourReviews}
+              </Link>
+              <Link
+                href={ROUTES.admin.createPoi}
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+              >
+                {adminStaffEn.navigation.createPoi}
+              </Link>
               <Link
                 href={ROUTES.admin.algorithmParameters}
                 className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"

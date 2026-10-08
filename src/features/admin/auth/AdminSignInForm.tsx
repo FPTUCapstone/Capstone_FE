@@ -16,18 +16,15 @@ interface AdminSignInFormProps {
   returnUrl?: string;
 }
 
-const ADMINISTRATOR_ONLY_EXACT_ROUTES = new Set<string>([
-  ROUTES.admin.dashboard,
-  ROUTES.admin.auditLogs,
-  ROUTES.admin.algorithmParameters,
+const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
+  ROUTES.admin.staffDashboard,
+  ROUTES.admin.accountSecurity,
 ]);
 
 export function isAdministratorOnlyPathname(pathname: string): boolean {
-  if (ADMINISTRATOR_ONLY_EXACT_ROUTES.has(pathname)) return true;
-  if (pathname.startsWith(`${ROUTES.admin.auditLogs}/`)) return true;
-  if (pathname.startsWith(`${ROUTES.admin.algorithmParameters}/`)) return true;
-  if (pathname.startsWith('/admin/settings/')) return true;
-  return false;
+  if (STAFF_ALLOWED_EXACT_ROUTES.has(pathname)) return false;
+  if (pathname === ROUTES.admin.login || pathname === ROUTES.admin.forgotPassword) return false;
+  return pathname === ROUTES.admin.dashboard || pathname.startsWith('/admin/');
 }
 
 export function getSafeAdminReturnUrl(

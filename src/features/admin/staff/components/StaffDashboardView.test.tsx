@@ -10,10 +10,14 @@ import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { StaffDashboardView } from '@/features/admin/staff/components/StaffDashboardView';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
-import { parseAdminRoleFromToken } from '@/lib/server/adminSession';
+import { createAdminSessionSeal, parseAdminRoleFromToken } from '@/lib/server/adminSession';
 
 const VIETNAMESE_DIACRITIC_REGEX =
   /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+
+const TEST_SESSION_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString(
+  'base64url',
+);
 
 function createJwtWithRole(role: string, claimKey = 'role'): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -39,21 +43,19 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(container.textContent ?? '').not.toMatch(/\b(?:BR-\d+|MSG\d+|StaffOrAdministrator|AdministratorOnly)\b/);
   });
 
-  it('displays active operational modules with valid workspace links and marks pending modules as unavailable without fabricated counts', () => {
+  it('displays only genuinely Staff-accessible modules as active, removes hardcoded application ID links, and marks pending modules as unavailable without fabricated counts', () => {
     const { container } = render(<StaffDashboardView />);
 
     const activeSection = screen.getByRole('region', {
       name: adminStaffEn.staffDashboard.availableSectionTitle,
     });
-    expect(within(activeSection).getByRole('link', { name: /Open Review Queue/i }).getAttribute('href')).toBe(
-      '/admin/tours/reviews',
-    );
     expect(
-      within(activeSection).getByRole('link', { name: /Inspect Application Workspace/i }).getAttribute('href'),
-    ).toBe('/admin/tour-operator-applications/1');
-    expect(within(activeSection).getByRole('link', { name: /Open POI Creator/i }).getAttribute('href')).toBe(
-      '/admin/catalogue/points-of-interest/new',
-    );
+      within(activeSection).getByRole('link', { name: /Open Security Settings/i }).getAttribute('href'),
+    ).toBe('/admin/account/security');
+    expect(within(activeSection).queryByRole('link', { name: /Inspect Application Workspace/i })).toBeNull();
+    expect(within(activeSection).queryByRole('link', { name: /Open Review Queue/i })).toBeNull();
+    expect(within(activeSection).queryByRole('link', { name: /Open POI Creator/i })).toBeNull();
+    expect(container.innerHTML).not.toContain('/admin/tour-operator-applications/1');
 
     const pendingSection = screen.getByRole('region', {
       name: adminStaffEn.staffDashboard.pendingSectionTitle,
@@ -61,12 +63,12 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     const disabledButtons = within(pendingSection).getAllByRole('button', {
       name: adminStaffEn.staffDashboard.unavailableModuleLabel,
     });
-    expect(disabledButtons.length).toBe(6);
+    expect(disabledButtons.length).toBe(9);
     for (const button of disabledButtons) {
       expect((button as HTMLButtonElement).disabled).toBe(true);
     }
 
-    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(5);
+    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(8);
     expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.scheduledBatch).length).toBe(1);
     expect(screen.getByText(adminStaffEn.staffDashboard.analyticsNoticeStatus)).toBeTruthy();
 
@@ -74,14 +76,14 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(container.textContent ?? '').not.toMatch(/\b\d{1,3}(?:,\d{3})+\b/);
   });
 
-  it('hides Administrator-only navigation items when rendered for a Staff actor and shows them for an Administrator actor', () => {
+  it('hides Administrator-only and non-Staff-ready navigation items when rendered for a Staff actor and shows them for an Administrator actor', () => {
     const { unmount } = render(<AdminNavigation role="Staff" />);
     const staffNav = screen.getByRole('navigation', { name: adminStaffEn.navigation.navAriaLabel });
 
     expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeTruthy();
-    expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeTruthy();
-    expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeTruthy();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.adminDashboard })).toBeNull();
+    expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeNull();
+    expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeNull();
 
@@ -91,6 +93,8 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     const adminNav = screen.getByRole('navigation', { name: adminStaffEn.navigation.navAriaLabel });
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.adminDashboard })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeTruthy();
+    expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeTruthy();
+    expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeTruthy();
   });
@@ -108,14 +112,45 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
   });
 
-  it('parses Staff and Administrator roles from JWT claims and rejects non-administration JWT roles', () => {
-    expect(parseAdminRoleFromToken(createJwtWithRole('Staff'))).toBe('Staff');
+  it('requires a valid BFF HMAC session seal to resolve Staff or Administrator roles and rejects unsealed or non-administration tokens', () => {
+    const nowMs = Date.parse('2026-10-09T02:00:00.000Z');
+    const expiresAt = new Date(nowMs + 10 * 60 * 1000);
+    const staffToken = createJwtWithRole('Staff');
+    const adminToken = createJwtWithRole('Administrator');
+
+    const staffSeal = createAdminSessionSeal({
+      token: staffToken,
+      role: 'Staff',
+      expiresAt,
+      nowMs,
+      secret: TEST_SESSION_SECRET,
+    })!;
+    const adminSeal = createAdminSessionSeal({
+      token: adminToken,
+      role: 'Administrator',
+      expiresAt,
+      nowMs,
+      secret: TEST_SESSION_SECRET,
+    })!;
+
     expect(
-      parseAdminRoleFromToken(
-        createJwtWithRole('Staff', 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'),
-      ),
+      parseAdminRoleFromToken(staffToken, staffSeal.seal, {
+        nowMs: nowMs + 1000,
+        secret: TEST_SESSION_SECRET,
+      }),
     ).toBe('Staff');
-    expect(parseAdminRoleFromToken(createJwtWithRole('Administrator'))).toBe('Administrator');
+    expect(
+      parseAdminRoleFromToken(adminToken, adminSeal.seal, {
+        nowMs: nowMs + 1000,
+        secret: TEST_SESSION_SECRET,
+      }),
+    ).toBe('Administrator');
+
+    // Unsealed tokens, hardcoded strings, and non-administration roles fail closed
+    expect(parseAdminRoleFromToken(staffToken)).toBeNull();
+    expect(parseAdminRoleFromToken(adminToken)).toBeNull();
+    expect(parseAdminRoleFromToken('staff-only-token')).toBeNull();
+    expect(parseAdminRoleFromToken('server-only-token')).toBeNull();
     expect(parseAdminRoleFromToken(createJwtWithRole('Traveler'))).toBeNull();
     expect(parseAdminRoleFromToken(createJwtWithRole('TourOperator'))).toBeNull();
     expect(parseAdminRoleFromToken('')).toBeNull();

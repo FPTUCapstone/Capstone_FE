@@ -2,7 +2,13 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-import { ADMIN_ACCESS_TOKEN_COOKIE, clearAdminSession, isSameOriginRequest, jsonNoStore } from '@/lib/server/adminSession';
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  clearAdminSession,
+  isSameOriginRequest,
+  jsonNoStore,
+  verifyAdminSessionFromCookies,
+} from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
 import { parseApplicationId } from '../utils/applicationId';
 
@@ -20,8 +26,19 @@ export async function proxyTourOperatorApplication(
     return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
   }
 
-  const token = (await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
   if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+
+  if (typeof verifyAdminSessionFromCookies === 'function') {
+    const session = verifyAdminSessionFromCookies(cookieStore);
+    if (!session) {
+      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+    }
+    if (session.role === 'Staff') {
+      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+    }
+  }
 
   let body: string | undefined;
   if (action === 'reject') {
@@ -45,10 +62,13 @@ export async function proxyTourOperatorApplication(
     if (upstream.status >= 500) {
       return jsonNoStore({ title: 'The Tour Operator application service is unavailable.' }, 503);
     }
-    if (upstream.status === 401 || upstream.status === 403) {
-      return clearAdminSession(jsonNoStore({
-        title: upstream.status === 401 ? 'Administrator sign-in required.' : 'Administrator access is not allowed.',
-      }, upstream.status));
+    if (upstream.status === 401) {
+      return clearAdminSession(
+        jsonNoStore({ title: 'Administrator sign-in required.' }, 401),
+      );
+    }
+    if (upstream.status === 403) {
+      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
     }
     if (upstream.status === 204 || upstream.headers.get('content-length') === '0') {
       return new Response(null, { status: upstream.status, headers: { 'Cache-Control': 'no-store' } });

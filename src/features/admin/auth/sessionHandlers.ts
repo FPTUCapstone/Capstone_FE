@@ -56,7 +56,17 @@ export async function signInAdmin(request: Request): Promise<NextResponse> {
     // already authenticated the credentials and authorized the role/status
     // before issuing this session, so no secondary authorization probe is
     // needed (and /api/v1/admin/pois/catalogue no longer exists upstream).
-    return setAdminSession(jsonNoStore({ authenticated: true, role: data.role }), data.accessToken, expiresAt);
+    const userId =
+      typeof data.userId === 'number' && Number.isSafeInteger(data.userId) && data.userId > 0
+        ? data.userId
+        : null;
+    return setAdminSession(
+      jsonNoStore({ authenticated: true, role: data.role }),
+      data.accessToken,
+      expiresAt,
+      data.role,
+      { userId },
+    );
   } catch {
     return failure(503, unavailableMessage);
   }

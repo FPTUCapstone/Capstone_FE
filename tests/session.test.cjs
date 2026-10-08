@@ -4,6 +4,10 @@ const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
 
 const routePath = 'app/api/admin/session/route.ts';
+process.env.TRIPMATE_ADMIN_SESSION_SECRET = Buffer.from(
+  '0123456789abcdef0123456789abcdef',
+  'utf8',
+).toString('base64url');
 const request = (origin = 'https://web.test', body = { email: ' admin@example.com ', password: 'secret' }, method = 'POST') => new Request('https://web.test/api/admin/session', {
   method,
   headers: { ...(origin ? { Origin: origin } : {}), 'Content-Type': 'application/json' },
@@ -16,6 +20,7 @@ const loginResult = () => ({
   statusCode: 200,
   message: 'Sign in successful.',
   data: {
+    userId: 7,
     role: 'Administrator',
     status: 'Active',
     accessToken: 'test-access-token',
@@ -40,7 +45,7 @@ test('login validates credentials before sending to BE', async () => {
   }
 });
 
-test('login forwards credentials, issues the session after the validated admin login response, and returns a cookie without tokens', async () => {
+test('login forwards credentials, issues the BFF-signed session seal after the validated admin login response, and returns cookies without exposing tokens in JSON', async () => {
   const calls = [];
   const route = loadRoute(async (path, init) => {
     calls.push({ path, init });
@@ -54,23 +59,46 @@ test('login forwards credentials, issues the session after the validated admin l
   assert.equal(calls.length, 1, 'the validated admin login response alone must issue the session');
   const cookie = response.headers.get('set-cookie');
   assert.match(cookie, /tripmate_admin_access_token=test-access-token/);
+  assert.match(cookie, /tripmate_admin_session_seal=v1\./);
   assert.match(cookie, /HttpOnly/i);
   assert.match(cookie, /SameSite=strict/i);
   assert.match(cookie, /Expires=/i);
   assert.equal(response.headers.get('cache-control'), 'no-store');
 });
 
-test('login accepts active Staff role and returns Staff role context without exposing tokens', async () => {
+test('login accepts active Staff role and returns Staff role context with a BFF-signed session seal', async () => {
   const route = loadRoute(async () =>
     Response.json({
       ...loginResult(),
-      data: { ...loginResult().data, role: 'Staff', accessToken: 'staff-token' },
+      data: { ...loginResult().data, userId: 15, role: 'Staff', accessToken: 'staff-token' },
     }),
   );
   const response = await route.POST(request());
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { authenticated: true, role: 'Staff' });
-  assert.match(response.headers.get('set-cookie'), /tripmate_admin_access_token=staff-token/);
+  const cookie = response.headers.get('set-cookie');
+  assert.match(cookie, /tripmate_admin_access_token=staff-token/);
+  assert.match(cookie, /tripmate_admin_session_seal=v1\./);
+});
+
+test('login fails closed with 503 when TRIPMATE_ADMIN_SESSION_SECRET is missing or invalid', async () => {
+  const prior = process.env.TRIPMATE_ADMIN_SESSION_SECRET;
+  try {
+    for (const badSecret of [
+      '',
+      'too-short-secret',
+      'replace-with-at-least-32-bytes-of-cryptographic-random-secret',
+      '12345678901234567890123456789012',
+    ]) {
+      process.env.TRIPMATE_ADMIN_SESSION_SECRET = badSecret;
+      const route = loadRoute(async () => Response.json(loginResult()));
+      const response = await route.POST(request());
+      assert.equal(response.status, 503);
+      assert.match(response.headers.get('set-cookie'), /Max-Age=0/i);
+    }
+  } finally {
+    process.env.TRIPMATE_ADMIN_SESSION_SECRET = prior;
+  }
 });
 
 test('login denies non-admin, inactive, invalid expiry or invalid token response', async () => {
@@ -92,14 +120,16 @@ test('BE auth denial clears old cookie and never exposes upstream error', async 
   }
 });
 
-test('BE network failure is a safe 503 and DELETE expires session', async () => {
+test('BE network failure is a safe 503 and DELETE expires both session cookies', async () => {
   const route = loadRoute(async () => { throw new Error('sensitive network URL'); });
   const response = await route.POST(request());
   assert.equal(response.status, 503);
   assert.doesNotMatch(await response.text(), /sensitive network/);
   const logout = await route.DELETE(request(undefined, null, 'DELETE'));
   assert.equal(logout.status, 204);
-  assert.match(logout.headers.get('set-cookie'), /Max-Age=0/i);
+  const logoutCookie = logout.headers.get('set-cookie');
+  assert.match(logoutCookie, /tripmate_admin_access_token=.*Max-Age=0/i);
+  assert.match(logoutCookie, /tripmate_admin_session_seal=.*Max-Age=0/i);
 });
 
 test('shared CSRF accepts configured origin, does not trust forwarded host', () => {

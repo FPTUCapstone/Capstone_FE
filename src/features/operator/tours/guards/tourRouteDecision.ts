@@ -18,6 +18,9 @@ export function tourRouteDecision(context: WebAuthContext | null): TourRouteDeci
   if (context.role === 'Administrator') {
     return { action: 'redirect', href: ROUTES.admin.dashboard };
   }
+  if (context.role === 'Staff') {
+    return { action: 'redirect', href: ROUTES.admin.staffDashboard };
+  }
 
   // Fails closed if not TourOperator or not Active status
   if (context.role !== 'TourOperator' || context.status !== 'Active') {
