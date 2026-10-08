@@ -11,6 +11,8 @@ export const operatorMessages: Record<string, string> = {
   MSG158: 'The uploaded file type is not supported or the file exceeds the size limit.',
   MSG159: 'This business licence number or tax code is already registered.',
   MSG160: 'An application is already pending review for this business information.',
+  OPERATOR_TAX_CODE_INVALID: 'Tax Code must be 10 digits or 10 digits followed by a hyphen and 3 digits (e.g. 0315678901-001).',
+  OPERATOR_TRAVEL_LICENSE_INVALID: 'Travel Licence Number must follow 79-0123/2026/TCDL-GPLHQT or 01-0456/2025/SDL-GPLHND.',
   MSG127: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
   MSG_TOS: 'You must accept the Terms of Service, Privacy Policy and Partner Agreement.',
   AUTH_TOKEN_MISSING: 'Your registration session has expired. Please sign in with the same email and try again.',

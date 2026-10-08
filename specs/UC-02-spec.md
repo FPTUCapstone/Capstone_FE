@@ -25,6 +25,17 @@ separately). Implementation follows `plans/UC-02-plan.md`.
 
 ## Route and session contract
 
+### Owner-decided Tax Code and Travel Licence formats (2026-10-08)
+
+Before Firebase identity creation, validate trimmed Tax Code as 10 digits or
+10 digits-3 digits (branch). Validate the Business Licence Number as two
+province digits, a hyphen, one or more serial digits, slash, four year digits,
+slash, and `TCDL-GPLHQT` or `SDL-GPLHND`. Examples are
+`0101234567`, `0315678901-001`, `79-0123/2026/TCDL-GPLHQT`, and
+`01-0456/2025/SDL-GPLHND`. Show format guidance and field errors using BE
+codes `OPERATOR_TAX_CODE_INVALID` and `OPERATOR_TRAVEL_LICENSE_INVALID`.
+Do not filter keystrokes; the BE remains the authoritative check.
+
 - Route unchanged: `/partner/register` (public, Guest). [Back to Sign In] links to
   `/sign-in` per SRS.
 - **Registration order:** validate client fields; create the Firebase identity with

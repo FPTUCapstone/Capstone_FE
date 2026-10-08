@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import HeroPanel from '@/components/registration/HeroPanel';
 import BrandLogo from '@/components/registration/BrandLogo';
 import { VerifyEmailHandler } from '@/features/traveler/registration/VerifyEmailHandler';
+import { OperatorMobileVerifyEmailHandler } from '@/features/operator/application/OperatorMobileVerifyEmailHandler';
 
 export const metadata: Metadata = { title: 'Xác minh email' };
 
@@ -17,12 +18,16 @@ type PageProps = {
 
 export default async function VerifyEmailRoute({ searchParams }: PageProps) {
   const { mode, oobCode, flow, continueUrl } = await searchParams;
-  let operatorFlow = flow === 'operator';
-  if (!operatorFlow && continueUrl) {
+  let verificationFlow = flow === 'operator' || flow === 'operator-mobile' ? flow : undefined;
+  if (!verificationFlow && continueUrl) {
     try {
       const continued = new URL(continueUrl);
-      operatorFlow = continued.pathname === '/verify-email' &&
-        continued.searchParams.get('flow') === 'operator';
+      if (continued.pathname === '/verify-email') {
+        const continuedFlow = continued.searchParams.get('flow');
+        if (continuedFlow === 'operator' || continuedFlow === 'operator-mobile') {
+          verificationFlow = continuedFlow;
+        }
+      }
     } catch { /* Ignore malformed Firebase continue URLs. */ }
   }
 
@@ -44,7 +49,11 @@ export default async function VerifyEmailRoute({ searchParams }: PageProps) {
         </div>
 
         <div className="w-full max-w-[480px]">
-          <VerifyEmailHandler mode={mode} oobCode={oobCode} flow={operatorFlow ? 'operator' : undefined} />
+          {verificationFlow === 'operator-mobile' ? (
+            <OperatorMobileVerifyEmailHandler mode={mode} oobCode={oobCode} />
+          ) : (
+            <VerifyEmailHandler mode={mode} oobCode={oobCode} flow={verificationFlow} />
+          )}
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
             Need help? Contact TripMate Customer Support.
