@@ -4,10 +4,8 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { webLogout } from "@/lib/authApi";
 import { AuthStorage } from "@/features/auth/session/authSession";
+import { operatorCommonEn } from "@/features/operator/common/resources/en";
 import LogoutDialog from "./LogoutDialog";
-
-const logoutFailedMessage =
-  "Chưa thể hoàn tất việc kết thúc phiên đăng nhập. Vui lòng thử lại.";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -26,7 +24,7 @@ export default function LogoutButton() {
       router.replace("/sign-in");
       router.refresh();
     } catch {
-      setErrorMessage(logoutFailedMessage);
+      setErrorMessage(operatorCommonEn.logout.errorMessage);
     } finally {
       logoutInFlightRef.current = false;
     }
@@ -40,12 +38,13 @@ export default function LogoutButton() {
           setErrorMessage(null);
           setOpen(true);
         }}
+        aria-label={operatorCommonEn.logout.button}
         className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
       >
         <span className="material-symbols-outlined text-base" aria-hidden="true">
           logout
         </span>
-        Đăng xuất
+        {operatorCommonEn.logout.button}
       </button>
 
       <LogoutDialog

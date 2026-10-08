@@ -34,7 +34,7 @@ describe('tourApi service', () => {
   });
 
   describe('parsers', () => {
-    it('parses valid TourSearchItemDto', () => {
+    it('parses valid TourSearchItemDto with non-null thumbnailUrl', () => {
       const raw = {
         tourId: '9007199254740995',
         title: 'Hội An Tour',
@@ -47,11 +47,85 @@ describe('tourApi service', () => {
         departureAtUtc: '2026-10-15T07:30:00Z',
         availabilityStatus: 'Available',
         remainingSlots: 11,
+        thumbnailUrl: 'https://example.com/tour.jpg',
       };
       const parsed = parseTourSearchItem(raw);
       expect(parsed.tourId).toBe('9007199254740995');
       expect(parsed.destinations).toEqual(['Đà Nẵng', 'Hội An']);
       expect(parsed.remainingSlots).toBe(11);
+      expect(parsed.thumbnailUrl).toBe('https://example.com/tour.jpg');
+    });
+
+    it('parses valid TourSearchItemDto with explicit null thumbnailUrl', () => {
+      const raw = {
+        tourId: '9007199254740995',
+        title: 'Hội An Tour',
+        destinations: ['Đà Nẵng', 'Hội An'],
+        operatorName: 'Endpoint Travel',
+        durationDays: 2,
+        basePrice: 800000,
+        currency: 'VND',
+        representativeScheduleId: null,
+        departureAtUtc: null,
+        availabilityStatus: 'Available',
+        remainingSlots: null,
+        thumbnailUrl: null,
+      };
+      const parsed = parseTourSearchItem(raw);
+      expect(parsed.thumbnailUrl).toBeNull();
+    });
+
+    it('normalizes omitted or undefined thumbnailUrl property to null so current Backend GET /api/v1/tours payloads parse cleanly', () => {
+      const rawOmitted = {
+        tourId: '9007199254740995',
+        title: 'Hội An Tour',
+        destinations: ['Đà Nẵng', 'Hội An'],
+        operatorName: 'Endpoint Travel',
+        durationDays: 2,
+        basePrice: 800000,
+        currency: 'VND',
+        representativeScheduleId: null,
+        departureAtUtc: null,
+        availabilityStatus: 'Available',
+        remainingSlots: null,
+      };
+      expect(parseTourSearchItem(rawOmitted).thumbnailUrl).toBeNull();
+      expect(parseTourSearchItem({ ...rawOmitted, thumbnailUrl: undefined }).thumbnailUrl).toBeNull();
+      expect(parseTourSearchItem({ ...rawOmitted, thumbnailUrl: '   ' }).thumbnailUrl).toBeNull();
+    });
+
+    it('rejects invalid thumbnailUrl types (must not silently become null)', () => {
+      const base = {
+        tourId: '9007199254740995',
+        title: 'Hội An Tour',
+        destinations: ['Đà Nẵng', 'Hội An'],
+        operatorName: 'Endpoint Travel',
+        durationDays: 2,
+        basePrice: 800000,
+        currency: 'VND',
+        representativeScheduleId: null,
+        departureAtUtc: null,
+        availabilityStatus: 'Available',
+        remainingSlots: null,
+      };
+      expect(() => parseTourSearchItem({ ...base, thumbnailUrl: 12345 })).toThrow(
+        'Dữ liệu gói tour không hợp lệ.',
+      );
+      expect(() => parseTourSearchItem({ ...base, thumbnailUrl: true })).toThrow(
+        'Dữ liệu gói tour không hợp lệ.',
+      );
+      expect(() =>
+        parseTourSearchItem({
+          ...base,
+          thumbnailUrl: ['https://example.com/pic.jpg'],
+        }),
+      ).toThrow('Dữ liệu gói tour không hợp lệ.');
+      expect(() =>
+        parseTourSearchItem({
+          ...base,
+          thumbnailUrl: { url: 'https://example.com/pic.jpg' },
+        }),
+      ).toThrow('Dữ liệu gói tour không hợp lệ.');
     });
 
     it('rejects invalid item structure', () => {
@@ -60,11 +134,11 @@ describe('tourApi service', () => {
       );
     });
 
-    it('parses valid PagedToursResponseDto', () => {
+    it('parses valid PagedToursResponseDto when items include or omit thumbnailUrl', () => {
       const raw = {
         page: 1,
         pageSize: 20,
-        totalCount: 1,
+        totalCount: 2,
         totalPages: 1,
         asOfUtc: '2026-10-01T00:00:00Z',
         items: [
@@ -81,11 +155,27 @@ describe('tourApi service', () => {
             availabilityStatus: 'Available',
             remainingSlots: null,
           },
+          {
+            tourId: '9007199254740996',
+            title: 'Đà Nẵng Tour',
+            destinations: ['Đà Nẵng'],
+            operatorName: 'Endpoint Travel',
+            durationDays: 3,
+            basePrice: 1200000,
+            currency: 'VND',
+            representativeScheduleId: '9007199254740998',
+            departureAtUtc: '2026-10-20T07:30:00Z',
+            availabilityStatus: 'Available',
+            remainingSlots: 5,
+            thumbnailUrl: 'https://example.com/danang.jpg',
+          },
         ],
       };
       const parsed = parsePagedTours(raw);
-      expect(parsed.totalCount).toBe(1);
-      expect(parsed.items).toHaveLength(1);
+      expect(parsed.totalCount).toBe(2);
+      expect(parsed.items).toHaveLength(2);
+      expect(parsed.items[0].thumbnailUrl).toBeNull();
+      expect(parsed.items[1].thumbnailUrl).toBe('https://example.com/danang.jpg');
     });
   });
 
@@ -110,6 +200,7 @@ describe('tourApi service', () => {
             departureAtUtc: '2026-10-15T07:30:00Z',
             availabilityStatus: 'Available',
             remainingSlots: 11,
+            thumbnailUrl: 'https://example.com/tour.jpg',
           },
         ],
       };
