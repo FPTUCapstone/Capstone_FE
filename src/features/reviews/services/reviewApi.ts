@@ -26,8 +26,12 @@ export async function submitTripReview(
   payload: CreateReviewPayload,
   options?: SubmitReviewOptions
 ): Promise<ReviewSubmissionResult> {
-  // Validate basic constraints before network
-  if (!payload.rating || payload.rating < 1 || payload.rating > 5) {
+  // Validate basic constraints before network or demo submission
+  if (
+    !Number.isInteger(payload.rating) ||
+    payload.rating < 1 ||
+    payload.rating > 5
+  ) {
     throw new ReviewApiError(tripReviewEn.validation.ratingRequired, 400, {
       errorCode: 'MSG66',
     });
@@ -37,6 +41,12 @@ export async function submitTripReview(
   if (!titleTrimmed) {
     throw new ReviewApiError(tripReviewEn.validation.titleRequired, 400, {
       errorCode: 'MSG01',
+    });
+  }
+
+  if (titleTrimmed.length > 150) {
+    throw new ReviewApiError(tripReviewEn.validation.titleMaxLength, 400, {
+      errorCode: 'REVIEW_TITLE_TOO_LONG',
     });
   }
 

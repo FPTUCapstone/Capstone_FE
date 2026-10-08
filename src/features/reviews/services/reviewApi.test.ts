@@ -69,6 +69,147 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       });
     });
 
+    it('BR-93: Rejects fractional ratings (4.5, 1.5) and non-finite ratings (NaN, Infinity) without calling fetch in both Production and Demo modes', async () => {
+      const fetchSpy = vi.fn();
+      global.fetch = fetchSpy;
+      setNodeEnv('test');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+
+      for (const invalidRating of [4.5, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+        for (const allowDemo of [false, true]) {
+          await expect(
+            submitTripReview(
+              {
+                tripId: 'trip-1',
+                title: 'Wonderful trip',
+                rating: invalidRating,
+                comment: 'A very enjoyable and informative trip.',
+                publishWithDisplayName: true,
+              },
+              { allowDemo }
+            )
+          ).rejects.toMatchObject({
+            name: 'ReviewApiError',
+            statusCode: 400,
+            message: tripReviewEn.validation.ratingRequired,
+            details: { errorCode: 'MSG66' },
+          });
+        }
+      }
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('BR-93: Accepts integer boundary ratings 1 and 5 in both Demo and Production modes', async () => {
+      setNodeEnv('test');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+
+      for (const validRating of [1, 5]) {
+        const demoRes = await submitTripReview(
+          {
+            tripId: 'trip-demo-01',
+            title: 'Valid boundary rating',
+            rating: validRating,
+            comment: 'Valid review comment.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: true }
+        );
+        expect(demoRes.status).toBe('SUCCESS');
+
+        global.fetch = vi.fn().mockResolvedValue({
+          status: 201,
+          ok: true,
+          json: async () => ({ reviewId: `rev-${validRating}` }),
+        });
+
+        const prodRes = await submitTripReview(
+          {
+            tripId: 'trip-prod-01',
+            title: 'Valid boundary rating',
+            rating: validRating,
+            comment: 'Valid review comment.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        );
+        expect(prodRes.status).toBe('SUCCESS');
+        expect(prodRes.reviewId).toBe(`rev-${validRating}`);
+      }
+    });
+
+    it('Accepts a review title of 150 characters (including after trimming) and rejects 151 characters without calling fetch in both Production and Demo modes', async () => {
+      setNodeEnv('test');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+
+      const exact150 = 'T'.repeat(150);
+      const padded150 = `   ${exact150}   `;
+      const over151 = 'T'.repeat(151);
+
+      // 150 chars accepted in Demo
+      const demo150 = await submitTripReview(
+        {
+          tripId: 'trip-demo-01',
+          title: exact150,
+          rating: 5,
+          comment: 'Valid comment.',
+          publishWithDisplayName: true,
+        },
+        { allowDemo: true }
+      );
+      expect(demo150.status).toBe('SUCCESS');
+
+      // 150 chars after trimming accepted in Production and sent trimmed
+      const fetchMock = vi.fn().mockResolvedValue({
+        status: 201,
+        ok: true,
+        json: async () => ({ reviewId: 'rev-150' }),
+      });
+      global.fetch = fetchMock;
+
+      const prod150 = await submitTripReview(
+        {
+          tripId: 'trip-prod-01',
+          title: padded150,
+          rating: 5,
+          comment: 'Valid comment.',
+          publishWithDisplayName: true,
+        },
+        { allowDemo: false }
+      );
+      expect(prod150.status).toBe('SUCCESS');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const sentBody = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+      expect(sentBody.title).toBe(exact150);
+      expect(sentBody.title).toHaveLength(150);
+
+      // 151 chars rejected before fetch in both Production and Demo
+      const rejectFetchSpy = vi.fn();
+      global.fetch = rejectFetchSpy;
+
+      for (const allowDemo of [false, true]) {
+        await expect(
+          submitTripReview(
+            {
+              tripId: 'trip-1',
+              title: over151,
+              rating: 5,
+              comment: 'Valid comment.',
+              publishWithDisplayName: true,
+            },
+            { allowDemo }
+          )
+        ).rejects.toMatchObject({
+          name: 'ReviewApiError',
+          statusCode: 400,
+          message: tripReviewEn.validation.titleMaxLength,
+          details: { errorCode: 'REVIEW_TITLE_TOO_LONG' },
+        });
+      }
+
+      expect(rejectFetchSpy).not.toHaveBeenCalled();
+    });
+
     it('Accepts valid short comment (1-500 chars per SRS §3.7.2, removing invented 20-char limit)', async () => {
       setNodeEnv('test');
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
@@ -125,6 +266,7 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       for (const msg of [
         tripReviewEn.validation.ratingRequired,
         tripReviewEn.validation.titleRequired,
+        tripReviewEn.validation.titleMaxLength,
         tripReviewEn.validation.commentRequired,
         tripReviewEn.validation.commentMaxLength,
       ]) {
