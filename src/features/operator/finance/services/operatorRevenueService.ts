@@ -12,6 +12,7 @@ import {
   type DemoBookingRecord,
   type DemoTourPackage,
 } from '../data/operatorRevenueDemoFixtures';
+import { financeEn } from '../resources/en';
 import {
   REVENUE_DEFAULT_PAGE_SIZE,
   REVENUE_ERROR_CODES,
@@ -430,15 +431,15 @@ export async function exportOperatorRevenueReport(
     };
   }
 
-  // Alternative Flow: Async export for large reports
+  // Demo UI simulation only: never claim a real background export job or notification
   if (simulateAsync) {
     return {
-      success: true,
-      isAsyncQueued: true,
-      asyncStatus: 'queued',
-      message:
-        'Large report export queued successfully. You will be notified when ready.',
-      messageCode: 'ASYNC_QUEUED',
+      success: false,
+      isAsyncSimulated: true,
+      isAsyncQueued: false,
+      asyncStatus: 'demo_simulated',
+      message: financeEn.exportDialog.asyncDesc,
+      messageCode: REVENUE_ERROR_CODES.DEMO_ASYNC_EXPORT_SIMULATION,
     };
   }
 

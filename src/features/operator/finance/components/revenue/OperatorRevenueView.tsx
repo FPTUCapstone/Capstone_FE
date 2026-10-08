@@ -109,26 +109,28 @@ export function OperatorRevenueView() {
       simulateAsync
     );
 
-    if (result.success) {
-      if (
-        payload.format === 'csv' &&
-        result.fileContent &&
-        result.fileName &&
-        result.fileName.toLowerCase().endsWith('.csv')
-      ) {
-        // Trigger client download of real CSV demo file only
-        const blob = new Blob([result.fileContent], {
-          type: result.mimeType || 'text/csv;charset=utf-8',
-        });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = result.fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }
+    if (
+      result.success &&
+      !result.isAsyncSimulated &&
+      !result.isAsyncQueued &&
+      payload.format === 'csv' &&
+      result.fileContent &&
+      result.fileName &&
+      result.fileName.toLowerCase().endsWith('.csv')
+    ) {
+      // Trigger client download of real CSV demo file only
+      const blob = new Blob([result.fileContent], {
+        type: result.mimeType || 'text/csv;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
       setToastMessage(result.message || financeEn.messages.MSG116);
       setTimeout(() => setToastMessage(null), 5000);
     }

@@ -92,6 +92,7 @@ export const financeEn = {
     title: 'Export Revenue Report',
     subtitle:
       'Download financial report matching currently applied filters for accounting and reconciliation.',
+    closeDialogAria: 'Close dialog',
     appliedSummaryTitle: 'Applied Filter Summary',
     filterPeriod: 'Period Range',
     filterGranularity: 'Granularity',
@@ -101,6 +102,7 @@ export const financeEn = {
     formatXlsx: 'Excel Spreadsheet (.xlsx)',
     formatCsv: 'CSV Document (.csv)',
     formatPdf: 'PDF Document (.pdf)',
+    csvFormatSupportedBadge: 'Real CSV Download',
     binaryFormatPendingBadge: 'Pending Binary Export Integration',
     binaryFormatPendingNotice:
       'Binary Excel (.xlsx) and PDF (.pdf) generation is pending backend export integration. In Demo mode, only CSV (.csv) triggers a downloadable file.',
@@ -108,13 +110,19 @@ export const financeEn = {
       'Export is unavailable in Production mode until backend revenue export integration is complete.',
     scopeLabel: 'Content Scope',
     scopeSummary: 'Summary metrics only',
+    scopeSummaryHelp: 'Summary metrics cards only',
     scopeDetailed: 'Summary and tour package details',
+    scopeDetailedHelp:
+      'Includes summary metrics and full per-tour itemized breakdown',
+    simulateAsyncLabel: 'Simulate Large Async Export (Demo UI Preview)',
+    simulateAsyncHelp:
+      'Local UI preview only. Genuine background export jobs are pending backend integration.',
     exportBtn: 'Export File',
     exportingBtn: 'Generating Export…',
     cancelBtn: 'Cancel',
-    asyncTitle: 'Asynchronous Export Queued',
+    asyncTitle: 'Demo Async Export Simulation',
     asyncDesc:
-      'Your report has been queued for background generation. You will be notified when the file is available.',
+      'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
     demoWatermarkNotice:
       'DEMO: This file was generated in demo mode for UI validation purposes only.',
   },
@@ -226,5 +234,7 @@ export const financeEn = {
     MSG106: 'Download was interrupted. The file remains available in export history.',
     PENDING_BE_INTEGRATION:
       'Finance and payout services are pending backend API integration. No financial values are fabricated in production.',
+    DEMO_ASYNC_EXPORT_SIMULATION:
+      'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
   },
 } as const;

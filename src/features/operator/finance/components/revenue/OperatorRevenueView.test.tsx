@@ -107,4 +107,39 @@ describe('OperatorRevenueView (Screen #89)', () => {
       expect(screen.getByText(/Applied Filter Summary/i)).toBeDefined();
     });
   });
+
+  it('does not show a fake successful-export toast when Demo async simulation is submitted', async () => {
+    render(<OperatorRevenueView />);
+
+    const exportButtons = screen.getAllByRole('button', { name: /Export Report/i });
+    fireEvent.click(exportButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeDefined();
+    });
+
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+
+    const submitExportBtn = screen.getByRole('button', { name: /Export File/i });
+    fireEvent.click(submitExportBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Demo Async Export Simulation')
+      ).toBeDefined();
+      expect(
+        screen.getByText(
+          /No background export job was created and no notification will be sent/i
+        )
+      ).toBeDefined();
+    });
+
+    // Must keep dialog open with simulation notice and never show the green export-completed toast
+    expect(screen.getByRole('dialog')).toBeDefined();
+    expect(
+      screen.queryByText(/Revenue report exported successfully/i)
+    ).toBeNull();
+    expect(screen.queryByText(/queued successfully/i)).toBeNull();
+  });
 });

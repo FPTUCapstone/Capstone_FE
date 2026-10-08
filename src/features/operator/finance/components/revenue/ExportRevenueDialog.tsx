@@ -19,7 +19,12 @@ interface ExportRevenueDialogProps {
   onExport: (
     payload: ExportRevenuePayload,
     simulateAsync?: boolean
-  ) => Promise<{ success: boolean; message?: string; isAsyncQueued?: boolean }>;
+  ) => Promise<{
+    success: boolean;
+    message?: string;
+    isAsyncQueued?: boolean;
+    isAsyncSimulated?: boolean;
+  }>;
 }
 
 export function ExportRevenueDialog({
@@ -75,10 +80,10 @@ export function ExportRevenueDialog({
         simulateAsync
       );
 
-      if (!result.success) {
-        setErrorNotice(result.message || financeEn.messages.MSG117);
-      } else if (result.isAsyncQueued) {
+      if (result.isAsyncSimulated || result.isAsyncQueued) {
         setAsyncFeedback(result.message || financeEn.exportDialog.asyncDesc);
+      } else if (!result.success) {
+        setErrorNotice(result.message || financeEn.messages.MSG117);
       } else {
         // Successful direct export
         onClose();
@@ -114,7 +119,7 @@ export function ExportRevenueDialog({
             type="button"
             onClick={onClose}
             className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-            aria-label="Close dialog"
+            aria-label={financeEn.exportDialog.closeDialogAria}
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -211,7 +216,7 @@ export function ExportRevenueDialog({
                     </span>
                     <span className="mt-1 text-[10px] text-slate-400">
                       {opt.supportedInDemo
-                        ? 'Real CSV Download'
+                        ? financeEn.exportDialog.csvFormatSupportedBadge
                         : financeEn.exportDialog.binaryFormatPendingBadge}
                     </span>
                   </label>
@@ -245,7 +250,7 @@ export function ExportRevenueDialog({
                     {financeEn.exportDialog.scopeDetailed}
                   </div>
                   <div className="text-[10px] text-slate-400">
-                    Includes summary metrics and full per-tour itemized breakdown
+                    {financeEn.exportDialog.scopeDetailedHelp}
                   </div>
                 </div>
               </label>
@@ -264,7 +269,7 @@ export function ExportRevenueDialog({
                     {financeEn.exportDialog.scopeSummary}
                   </div>
                   <div className="text-[10px] text-slate-400">
-                    Summary metrics cards only
+                    {financeEn.exportDialog.scopeSummaryHelp}
                   </div>
                 </div>
               </label>
@@ -276,10 +281,10 @@ export function ExportRevenueDialog({
             <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-xs">
               <div>
                 <span className="font-semibold text-amber-900">
-                  Simulate Large Async Export
+                  {financeEn.exportDialog.simulateAsyncLabel}
                 </span>
                 <p className="text-[10px] text-amber-700">
-                  Tests asynchronous queued export flow per V2 §3.8.5.2
+                  {financeEn.exportDialog.simulateAsyncHelp}
                 </p>
               </div>
               <input
@@ -305,10 +310,13 @@ export function ExportRevenueDialog({
           {asyncFeedback && (
             <div
               role="status"
-              className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700"
+              className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
             >
-              <span className="material-symbols-outlined text-[16px]">info</span>
-              <span>{asyncFeedback}</span>
+              <span className="material-symbols-outlined text-[16px]">science</span>
+              <div>
+                <p className="font-semibold">{financeEn.exportDialog.asyncTitle}</p>
+                <p className="mt-0.5">{asyncFeedback}</p>
+              </div>
             </div>
           )}
 

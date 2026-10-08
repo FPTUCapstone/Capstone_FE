@@ -68,7 +68,13 @@ export interface ExportRevenuePayload {
   appliedFilters: RevenueFilterInput;
 }
 
-export type AsyncExportStatus = 'idle' | 'queued' | 'processing' | 'ready' | 'failed';
+export type AsyncExportStatus =
+  | 'idle'
+  | 'demo_simulated'
+  | 'queued'
+  | 'processing'
+  | 'ready'
+  | 'failed';
 
 export interface ExportRevenueResult {
   success: boolean;
@@ -77,6 +83,7 @@ export interface ExportRevenueResult {
   mimeType?: 'text/csv;charset=utf-8';
   downloadUrl?: string;
   isAsyncQueued?: boolean;
+  isAsyncSimulated?: boolean;
   asyncStatus?: AsyncExportStatus;
   message?: string;
   messageCode?: string;
@@ -96,6 +103,7 @@ export const REVENUE_ERROR_CODES = {
   DOWNLOAD_INTERRUPTED: 'MSG106',
   PENDING_BE_INTEGRATION: 'PENDING_BE_INTEGRATION',
   PENDING_BINARY_EXPORT_INTEGRATION: 'PENDING_BINARY_EXPORT_INTEGRATION',
+  DEMO_ASYNC_EXPORT_SIMULATION: 'DEMO_ASYNC_EXPORT_SIMULATION',
 } as const;
 
 export const REVENUE_MESSAGES = {
@@ -103,6 +111,8 @@ export const REVENUE_MESSAGES = {
     'Revenue calculation and reporting backend integration is pending. No financial figures are fabricated in production.',
   PENDING_BINARY_EXPORT_INTEGRATION:
     'Binary export (.xlsx and .pdf) is pending backend export integration. In Demo mode, only CSV (.csv) file download is supported.',
+  DEMO_ASYNC_EXPORT_SIMULATION:
+    'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
   MSG126: 'Access denied. You can only view revenue for tour packages you own.',
   MSG29: 'End date must be on or after start date.',
   MSG128: 'No revenue records found for the selected period.',

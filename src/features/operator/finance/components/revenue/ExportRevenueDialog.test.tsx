@@ -110,4 +110,64 @@ describe('ExportRevenueDialog (Screen #90)', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(mockOnClose).toHaveBeenCalledTimes(2);
   });
+
+  it('renders centralized English copy and displays Demo async simulation notice without closing dialog as a completed export', async () => {
+    const asyncMockExport = vi.fn().mockResolvedValue({
+      success: false,
+      isAsyncSimulated: true,
+      isAsyncQueued: false,
+      message:
+        'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
+    });
+
+    render(
+      <ExportRevenueDialog
+        isOpen={true}
+        appliedFilters={defaultAppliedFilters}
+        onClose={mockOnClose}
+        onExport={asyncMockExport}
+        isDemo={true}
+      />
+    );
+
+    expect(screen.getByLabelText('Close dialog')).toBeDefined();
+    expect(screen.getByText('Real CSV Download')).toBeDefined();
+    expect(
+      screen.getByText(
+        'Includes summary metrics and full per-tour itemized breakdown'
+      )
+    ).toBeDefined();
+    expect(screen.getByText('Summary metrics cards only')).toBeDefined();
+    expect(
+      screen.getByText('Simulate Large Async Export (Demo UI Preview)')
+    ).toBeDefined();
+    expect(
+      screen.getByText(
+        'Local UI preview only. Genuine background export jobs are pending backend integration.'
+      )
+    ).toBeDefined();
+
+    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    fireEvent.click(checkbox);
+
+    const exportBtn = screen.getByRole('button', { name: /Export File/i });
+    fireEvent.click(exportBtn);
+
+    expect(asyncMockExport).toHaveBeenCalledWith(
+      {
+        format: 'csv',
+        scope: 'summary_and_details',
+        appliedFilters: defaultAppliedFilters,
+      },
+      true
+    );
+
+    expect(await screen.findByText('Demo Async Export Simulation')).toBeDefined();
+    expect(
+      await screen.findByText(
+        /No background export job was created and no notification will be sent/i
+      )
+    ).toBeDefined();
+    expect(mockOnClose).not.toHaveBeenCalled();
+  });
 });

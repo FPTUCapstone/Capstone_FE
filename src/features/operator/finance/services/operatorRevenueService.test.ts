@@ -374,7 +374,7 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       expect(res.fileContent).not.toContain('--- TOUR PACKAGE DETAILS ---');
     });
 
-    it('supports asynchronous export simulation for large CSV reports', async () => {
+    it('presents asynchronous export simulation as a local Demo UI simulation without claiming a real background job or notification', async () => {
       const res = await exportOperatorRevenueReport(
         {
           format: 'csv',
@@ -389,10 +389,20 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
         true // simulateAsync
       );
 
-      expect(res.success).toBe(true);
-      expect(res.isAsyncQueued).toBe(true);
-      expect(res.asyncStatus).toBe('queued');
-      expect(res.messageCode).toBe('ASYNC_QUEUED');
+      expect(res.success).toBe(false);
+      expect(res.isAsyncSimulated).toBe(true);
+      expect(res.isAsyncQueued).toBe(false);
+      expect(res.asyncStatus).toBe('demo_simulated');
+      expect(res.messageCode).toBe(
+        REVENUE_ERROR_CODES.DEMO_ASYNC_EXPORT_SIMULATION
+      );
+      expect(res.message).toBe(
+        REVENUE_MESSAGES.DEMO_ASYNC_EXPORT_SIMULATION
+      );
+      expect(res.message).not.toMatch(/queued successfully/i);
+      expect(res.message).not.toMatch(/will be notified when ready/i);
+      expect(res.fileContent).toBeUndefined();
+      expect(res.fileName).toBeUndefined();
     });
   });
 });
