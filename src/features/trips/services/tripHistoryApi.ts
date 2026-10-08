@@ -1,4 +1,5 @@
 import { DEMO_TRIP_CARDS, DEMO_TRIP_SUMMARY } from '../data/tripDemoFixtures';
+import { tripReviewEn } from '../resources/en';
 import type {
   TripCardDto,
   TripHistoryFilter,
@@ -7,8 +8,19 @@ import type {
 import { TripApiError } from '../types/tripHistory';
 export { TripApiError };
 
-export const MSG127_SYSTEM_ERROR =
-  'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).';
+export const PENDING_BE_INTEGRATION_ERROR_CODE = 'PENDING_BE_INTEGRATION';
+
+export const MSG127_SYSTEM_ERROR = tripReviewEn.errors.systemError;
+
+function isVerifiedPendingIntegrationPayload(
+  payload: unknown
+): payload is { errorCode: string; detail?: string } {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    (payload as { errorCode?: unknown }).errorCode === PENDING_BE_INTEGRATION_ERROR_CODE
+  );
+}
 
 /**
  * Production gate for trip history demo fixtures.
@@ -97,7 +109,7 @@ export async function getTripHistory(
     };
   }
 
-  // REAL PRODUCTION MODE: Call live Backend
+  // REAL PRODUCTION MODE: Call verified Next.js BFF route
   try {
     const params = new URLSearchParams();
     params.set('status', filter.tab);
@@ -117,16 +129,23 @@ export async function getTripHistory(
 
     if (response.status === 501) {
       const pendingPayload = await response.json().catch(() => null);
-      return {
-        status: 'PENDING_BE_INTEGRATION',
-        message:
-          pendingPayload?.detail ||
-          'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
-        trips: [],
-        totalCount: 0,
-        page,
-        pageSize,
-      };
+      if (isVerifiedPendingIntegrationPayload(pendingPayload)) {
+        return {
+          status: 'PENDING_BE_INTEGRATION',
+          message:
+            typeof pendingPayload.detail === 'string' && pendingPayload.detail.trim().length > 0
+              ? pendingPayload.detail
+              : tripReviewEn.bff.tripHistoryPendingDetail,
+          trips: [],
+          totalCount: 0,
+          page,
+          pageSize,
+        };
+      }
+      throw new TripApiError(MSG127_SYSTEM_ERROR, 501, {
+        ...(typeof pendingPayload === 'object' ? pendingPayload : {}),
+        errorCode: 'MSG127',
+      });
     }
 
     if (response.status === 404) {
@@ -134,7 +153,7 @@ export async function getTripHistory(
       throw new TripApiError(
         notFoundData?.detail ||
           notFoundData?.title ||
-          'Không tìm thấy dữ liệu chuyến đi (TRIP_NOT_FOUND).',
+          tripReviewEn.errors.tripNotFound,
         404,
         { ...(typeof notFoundData === 'object' ? notFoundData : {}), errorCode: 'TRIP_NOT_FOUND' }
       );
@@ -145,20 +164,23 @@ export async function getTripHistory(
       throw new TripApiError(
         authErrorData?.detail ||
           authErrorData?.title ||
-          'Bạn không có quyền truy cập lịch sử chuyến đi này (MSG126).',
+          tripReviewEn.errors.tripHistoryAccessDenied,
         response.status,
-        authErrorData
+        { ...(typeof authErrorData === 'object' ? authErrorData : {}), errorCode: 'MSG126' }
       );
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      // For HTTP 5xx (500-599), ALWAYS standardize to canonical MSG127 copy; never expose ProblemDetails title
+      // For HTTP 5xx (500-599), ALWAYS standardize to canonical English system error copy; never expose raw server title
       const msg =
         response.status >= 500 && response.status <= 599
           ? MSG127_SYSTEM_ERROR
           : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
-      throw new TripApiError(msg, response.status, errorData);
+      throw new TripApiError(msg, response.status, {
+        ...(typeof errorData === 'object' ? errorData : {}),
+        errorCode: response.status >= 500 && response.status <= 599 ? 'MSG127' : undefined,
+      });
     }
 
     const data = await response.json();
@@ -175,7 +197,7 @@ export async function getTripHistory(
       throw err;
     }
     // Network or server connection failure (including timeout/AbortError) in real mode is an ERROR with MSG127, NOT pending integration
-    throw new TripApiError(MSG127_SYSTEM_ERROR, 0);
+    throw new TripApiError(MSG127_SYSTEM_ERROR, 0, { errorCode: 'MSG127' });
   }
 }
 
@@ -198,12 +220,19 @@ export async function getTripById(
 
     if (response.status === 501) {
       const pendingPayload = await response.json().catch(() => null);
-      throw new TripApiError(
-        pendingPayload?.detail ||
-          'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
-        501,
-        { errorCode: 'PENDING_BE_INTEGRATION' }
-      );
+      if (isVerifiedPendingIntegrationPayload(pendingPayload)) {
+        throw new TripApiError(
+          typeof pendingPayload.detail === 'string' && pendingPayload.detail.trim().length > 0
+            ? pendingPayload.detail
+            : tripReviewEn.bff.tripHistoryPendingDetail,
+          501,
+          { errorCode: PENDING_BE_INTEGRATION_ERROR_CODE }
+        );
+      }
+      throw new TripApiError(MSG127_SYSTEM_ERROR, 501, {
+        ...(typeof pendingPayload === 'object' ? pendingPayload : {}),
+        errorCode: 'MSG127',
+      });
     }
 
     if (response.status === 404) {
@@ -211,7 +240,11 @@ export async function getTripById(
     }
 
     if (response.status === 401 || response.status === 403) {
-      throw new TripApiError('Bạn không có quyền xem chuyến đi này (MSG126).', response.status);
+      throw new TripApiError(
+        tripReviewEn.errors.tripDetailAccessDenied,
+        response.status,
+        { errorCode: 'MSG126' }
+      );
     }
 
     if (!response.ok) {
@@ -220,7 +253,10 @@ export async function getTripById(
         response.status >= 500 && response.status <= 599
           ? MSG127_SYSTEM_ERROR
           : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
-      throw new TripApiError(msg, response.status, errorData);
+      throw new TripApiError(msg, response.status, {
+        ...(typeof errorData === 'object' ? errorData : {}),
+        errorCode: response.status >= 500 && response.status <= 599 ? 'MSG127' : undefined,
+      });
     }
 
     return await response.json();
@@ -228,6 +264,6 @@ export async function getTripById(
     if (err instanceof TripApiError) {
       throw err;
     }
-    throw new TripApiError(MSG127_SYSTEM_ERROR, 0);
+    throw new TripApiError(MSG127_SYSTEM_ERROR, 0, { errorCode: 'MSG127' });
   }
 }

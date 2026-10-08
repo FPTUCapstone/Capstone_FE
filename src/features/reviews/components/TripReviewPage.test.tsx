@@ -108,10 +108,10 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
     });
   });
 
-  it('Renders PENDING_BE_INTEGRATION status when BFF returns 501 instead of NOT_FOUND or NETWORK error', async () => {
+  it('Renders PENDING_BE_INTEGRATION status when BFF returns verified 501 instead of NOT_FOUND or NETWORK error', async () => {
     vi.spyOn(tripHistoryApi, 'getTripById').mockRejectedValue(
       new tripHistoryApi.TripApiError(
-        'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+        'Trip history service is pending backend integration.',
         501,
         { errorCode: 'PENDING_BE_INTEGRATION' }
       )
@@ -121,10 +121,29 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Dịch vụ đánh giá chuyến đi đang chờ tích hợp')
+        screen.getByText('Trip review service is pending backend integration')
       ).toBeDefined();
       expect(
-        screen.getByText(/Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ/i)
+        screen.getByText(/Trip history service is pending backend integration/i)
+      ).toBeDefined();
+    });
+  });
+
+  it('Renders NETWORK error when a generic 501 without PENDING_BE_INTEGRATION errorCode is returned', async () => {
+    vi.spyOn(tripHistoryApi, 'getTripById').mockRejectedValue(
+      new tripHistoryApi.TripApiError(
+        'TripMate is temporarily unable to process your request. Please check your connection and try again.',
+        501,
+        { errorCode: 'MSG127' }
+      )
+    );
+
+    render(<TripReviewPage tripId="trip-prod-02" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Lỗi kết nối máy chủ')).toBeDefined();
+      expect(
+        screen.getByText(/TripMate is temporarily unable to process your request/i)
       ).toBeDefined();
     });
   });

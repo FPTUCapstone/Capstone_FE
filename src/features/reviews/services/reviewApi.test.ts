@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { tripReviewEn } from '@/features/trips/resources/en';
 import { submitTripReview } from './reviewApi';
 
 function setNodeEnv(val?: string) {
@@ -97,15 +98,14 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
   });
 
   describe('Real mode truthfulness & BFF differentiation (REVIEW-8)', () => {
-    it('REVIEW-8: Returns PENDING_BE_INTEGRATION ONLY on 501 in real mode without reporting fake success', async () => {
+    it('REVIEW-8: Returns PENDING_BE_INTEGRATION ONLY on 501 with PENDING_BE_INTEGRATION errorCode in real mode without reporting fake success', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 501,
         ok: false,
         json: async () => ({
           status: 501,
           errorCode: 'PENDING_BE_INTEGRATION',
-          detail:
-            'Tính năng gửi đánh giá đang chờ kích hoạt API máy chủ (Capstone_BE). Đánh giá chưa thể lưu vào cơ sở dữ liệu sản phẩm.',
+          detail: tripReviewEn.bff.tripReviewPendingDetail,
         }),
       });
 
@@ -121,15 +121,42 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       );
 
       expect(result501.status).toBe('PENDING_BE_INTEGRATION');
-      expect(result501.message).toContain('chờ kích hoạt API máy chủ');
+      expect(result501.message).toBe(tripReviewEn.bff.tripReviewPendingDetail);
+      expect(result501.message).not.toMatch(/MSG\d+|BR-\d+/);
       expect(result501.reviewId).toBeUndefined();
+    });
+
+    it('rejects a generic 501 without PENDING_BE_INTEGRATION errorCode as ReviewApiError system failure', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 501,
+        ok: false,
+        json: async () => ({ title: 'Not Implemented' }),
+      });
+
+      await expect(
+        submitTripReview(
+          {
+            tripId: 'trip-1',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        )
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 501,
+        message: tripReviewEn.errors.systemError,
+        details: expect.objectContaining({ errorCode: 'MSG127' }),
+      });
     });
 
     it('does NOT misclassify 404 as PENDING_BE_INTEGRATION; throws ReviewApiError (404 TRIP_NOT_FOUND)', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 404,
         ok: false,
-        json: async () => ({ title: 'Not Found', detail: 'Trip not found' }),
+        json: async () => null,
       });
 
       await expect(
@@ -146,6 +173,7 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       ).rejects.toMatchObject({
         name: 'ReviewApiError',
         statusCode: 404,
+        message: tripReviewEn.errors.reviewTripNotFound,
         details: expect.objectContaining({ errorCode: 'TRIP_NOT_FOUND' }),
       });
     });
@@ -171,6 +199,8 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       ).rejects.toMatchObject({
         name: 'ReviewApiError',
         statusCode: 401,
+        message: tripReviewEn.errors.reviewAccessDenied,
+        details: expect.objectContaining({ errorCode: 'MSG126' }),
       });
 
       global.fetch = vi.fn().mockResolvedValue({
@@ -193,10 +223,12 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       ).rejects.toMatchObject({
         name: 'ReviewApiError',
         statusCode: 403,
+        message: tripReviewEn.errors.reviewAccessDenied,
+        details: expect.objectContaining({ errorCode: 'MSG126' }),
       });
     });
 
-    it('throws ReviewApiError (MSG127) when server returns 502, 503, timeout, or on network failure', async () => {
+    it('throws ReviewApiError when server returns 502, 503, timeout, or on network failure', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 502,
         ok: false,
@@ -214,7 +246,11 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
           },
           { allowDemo: false }
         )
-      ).rejects.toThrow(/MSG127/i);
+      ).rejects.toMatchObject({
+        message: tripReviewEn.errors.systemError,
+        statusCode: 502,
+        details: expect.objectContaining({ errorCode: 'MSG127' }),
+      });
 
       global.fetch = vi.fn().mockResolvedValue({
         status: 503,
@@ -233,7 +269,11 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
           },
           { allowDemo: false }
         )
-      ).rejects.toThrow(/MSG127/i);
+      ).rejects.toMatchObject({
+        message: tripReviewEn.errors.systemError,
+        statusCode: 503,
+        details: expect.objectContaining({ errorCode: 'MSG127' }),
+      });
 
       global.fetch = vi.fn().mockRejectedValue(new Error('Connection failed'));
 
@@ -248,7 +288,11 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
           },
           { allowDemo: false }
         )
-      ).rejects.toThrow(/MSG127/i);
+      ).rejects.toMatchObject({
+        message: tripReviewEn.errors.systemError,
+        statusCode: 0,
+        details: { errorCode: 'MSG127' },
+      });
 
       const abortErr = new Error('Timed out');
       abortErr.name = 'AbortError';
@@ -265,10 +309,14 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
           },
           { allowDemo: false }
         )
-      ).rejects.toThrow(/MSG127/i);
+      ).rejects.toMatchObject({
+        message: tripReviewEn.errors.systemError,
+        statusCode: 0,
+        details: { errorCode: 'MSG127' },
+      });
     });
 
-    it('standardizes HTTP 500 with ProblemDetails title to MSG127 and does NOT leak raw server title', async () => {
+    it('standardizes HTTP 500 with ProblemDetails title to systemError and does NOT leak raw server title or raw MSG codes', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 500,
         ok: false,
@@ -289,11 +337,12 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         expect.fail('Should have thrown ReviewApiError');
       } catch (err: unknown) {
         expect((err as Error).message).not.toContain('Internal Server Error');
-        expect((err as Error).message).toContain('MSG127');
+        expect((err as Error).message).toBe(tripReviewEn.errors.systemError);
+        expect((err as Error).message).not.toMatch(/MSG\d+/);
       }
     });
 
-    it('standardizes HTTP 503 with arbitrary ProblemDetails title to MSG127', async () => {
+    it('standardizes HTTP 503 with arbitrary ProblemDetails title to systemError', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 503,
         ok: false,
@@ -314,7 +363,7 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         expect.fail('Should have thrown ReviewApiError');
       } catch (err: unknown) {
         expect((err as Error).message).not.toContain('Service Unavailable');
-        expect((err as Error).message).toContain('MSG127');
+        expect((err as Error).message).toBe(tripReviewEn.errors.systemError);
       }
     });
   });

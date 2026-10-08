@@ -114,13 +114,13 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     });
   });
 
-  it('State transition: clears stale pendingNotice when a retry fails with 5xx/network error (surfaces MSG127)', async () => {
+  it('State transition: clears stale pendingNotice when a retry fails with 5xx/network error', async () => {
     const getTripHistorySpy = vi.spyOn(tripHistoryApi, 'getTripHistory');
 
-    // First call: returns 404/501 PENDING_BE_INTEGRATION
+    // First call: returns 501 PENDING_BE_INTEGRATION
     getTripHistorySpy.mockResolvedValueOnce({
       status: 'PENDING_BE_INTEGRATION',
-      message: 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+      message: 'Trip history service is pending backend integration.',
       trips: [],
       totalCount: 0,
       page: 1,
@@ -132,14 +132,17 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     // First state: Pending integration notice is visible
     await waitFor(() => {
       expect(screen.getByText('Dịch vụ lịch sử chuyến đi')).toBeDefined();
-      expect(screen.getByText(/chờ kích hoạt dịch vụ máy chủ/i)).toBeDefined();
+      expect(
+        screen.getByText(/Trip history service is pending backend integration/i)
+      ).toBeDefined();
     });
 
-    // Retry fails with 500 / network error (MSG127)
+    // Retry fails with 500 / network error
     getTripHistorySpy.mockRejectedValueOnce(
       new TripApiError(
-        'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
-        500
+        'TripMate is temporarily unable to process your request. Please check your connection and try again.',
+        500,
+        { errorCode: 'MSG127' }
       )
     );
 
@@ -147,15 +150,19 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6)', () => {
     const retryBtn = screen.getByRole('button', { name: /Thử lại kết nối/i });
     fireEvent.click(retryBtn);
 
-    // Second state: Pending notice MUST disappear, and MSG127 error state MUST appear
+    // Second state: Pending notice MUST disappear, and system error state MUST appear
     await waitFor(() => {
       expect(screen.getByText('Không thể tải dữ liệu')).toBeDefined();
-      expect(screen.getByText(/MSG127/i)).toBeDefined();
+      expect(
+        screen.getByText(/TripMate is temporarily unable to process your request/i)
+      ).toBeDefined();
     });
 
     // Assert stale pending banner is strictly NOT rendered
     expect(screen.queryByText('Dịch vụ lịch sử chuyến đi')).toBeNull();
-    expect(screen.queryByText(/chờ kích hoạt dịch vụ máy chủ/i)).toBeNull();
+    expect(
+      screen.queryByText(/Trip history service is pending backend integration/i)
+    ).toBeNull();
   });
 
   describe('Submitted Review modal accessibility & focus trap', () => {

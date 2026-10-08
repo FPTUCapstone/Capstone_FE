@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
+import { tripReviewEn } from '../resources/en';
 import { getTripHistory } from '../services/tripHistoryApi';
 import type {
   TripCardDto,
@@ -66,7 +67,7 @@ export function TripHistoryView() {
         if (!isMounted) return;
         if (response.status === 'PENDING_BE_INTEGRATION') {
           setPendingNotice(
-            response.message || 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.'
+            response.message || tripReviewEn.bff.tripHistoryPendingDetail
           );
           setTrips([]);
           setTotalCount(0);
@@ -85,7 +86,7 @@ export function TripHistoryView() {
         setErrorMessage(
           err instanceof Error
             ? err.message
-            : 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng thử lại (MSG127).'
+            : tripReviewEn.errors.systemError
         );
       })
       .finally(() => {
