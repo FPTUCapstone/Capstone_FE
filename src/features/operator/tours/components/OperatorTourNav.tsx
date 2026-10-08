@@ -45,8 +45,7 @@ export function OperatorTourNav({
       key: 'coupons',
       label: operatorCommonEn.navigation.coupons,
       icon: 'confirmation_number',
-      href: '/partner/coupons',
-      disabled: true,
+      href: withTourDemoMode('/partner/coupons', isDemo),
     },
     {
       key: 'bookings',
