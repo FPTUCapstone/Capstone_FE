@@ -29,7 +29,17 @@ export async function proxyTourOperatorApplication(
       return jsonNoStore({ title: 'JSON content is required.' }, 415);
     }
     try {
-      body = JSON.stringify(await request.json());
+      const payload: unknown = await request.json();
+      const reason = payload && typeof payload === 'object'
+        ? (payload as Record<string, unknown>).reason
+        : undefined;
+      if (typeof reason !== 'string' || reason.trim().length === 0) {
+        return jsonNoStore({ title: 'Rejection reason is required.' }, 422);
+      }
+      if (reason.trim().length > 500) {
+        return jsonNoStore({ title: 'Rejection reason cannot exceed 500 characters.' }, 422);
+      }
+      body = JSON.stringify({ reason: reason.trim() });
     } catch {
       return jsonNoStore({ title: 'Invalid JSON.' }, 400);
     }

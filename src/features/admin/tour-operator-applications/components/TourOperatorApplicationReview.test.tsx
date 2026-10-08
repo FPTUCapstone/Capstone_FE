@@ -105,7 +105,7 @@ describe('UC-50 application review routing and feedback', () => {
 
     render(<TourOperatorApplicationDetailView userId={3} />);
     fireEvent.click(await screen.findByRole('button', { name: /reject application/i }));
-    fireEvent.change(screen.getByLabelText('Reason for Rejection'), {
+    fireEvent.change(screen.getByLabelText('Please enter specific rejection reason to send to applicant:'), {
       target: { value: 'Business licence could not be verified.' },
     });
     fireEvent.click(screen.getByRole('button', { name: /confirm rejection/i }));
@@ -175,8 +175,8 @@ describe('UC-50 decision dialog accessibility', () => {
     trigger.focus();
     fireEvent.click(trigger);
 
-    expect(screen.getByRole('dialog', { name: 'Reject Application' })).not.toBeNull();
-    expect(document.activeElement).toBe(screen.getByLabelText('Reason for Rejection'));
+    expect(screen.getByRole('dialog', { name: 'Reject Tour Operator Application' })).not.toBeNull();
+    expect(document.activeElement).toBe(screen.getByLabelText('Please enter specific rejection reason to send to applicant:'));
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.activeElement).toBe(trigger);
