@@ -24,6 +24,20 @@ describe('OperatorTourNav', () => {
     expect(tourLink.getAttribute('href')).toBe('/partner/tours');
   });
 
+  it('enables coupons link and preserves demo mode', () => {
+    render(<OperatorTourNav activeTab="coupons" isDemo={true} />);
+
+    const couponLink = screen.getByRole('link', { name: /Coupons/i });
+    expect(couponLink.getAttribute('href')).toBe('/partner/coupons?demo=1');
+  });
+
+  it('keeps coupons link clean when isDemo is false', () => {
+    render(<OperatorTourNav activeTab="coupons" isDemo={false} />);
+
+    const couponLink = screen.getByRole('link', { name: /Coupons/i });
+    expect(couponLink.getAttribute('href')).toBe('/partner/coupons');
+  });
+
   it('appends demo=1 to bookings link when isDemo is true', () => {
     render(<OperatorTourNav activeTab="bookings" isDemo={true} />);
 

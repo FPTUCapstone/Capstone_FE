@@ -39,7 +39,7 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     key: 'coupons',
     label: 'Mã giảm giá',
     icon: 'confirmation_number',
-    disabled: true,
+    href: '/partner/coupons',
   },
   {
     key: 'bookings',
