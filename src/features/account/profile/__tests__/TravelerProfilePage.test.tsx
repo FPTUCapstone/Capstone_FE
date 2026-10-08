@@ -76,9 +76,10 @@ describe('TravelerProfilePage', () => {
 
     render(<TravelerProfilePage />);
 
-    expect(screen.getByText('Hồ sơ cá nhân')).toBeDefined();
-    expect(screen.getByText('Sở thích du lịch')).toBeDefined();
-    expect(screen.getByText('Bảo mật & Mật khẩu')).toBeDefined();
+    expect(screen.getByText('Personal Profile')).toBeDefined();
+    expect(screen.getByText('Travel Preferences')).toBeDefined();
+    expect(screen.getByText('Security & Password')).toBeDefined();
+    expect(screen.getByText('My Trips')).toBeDefined();
   });
 
   it('redirects an authenticated Tour Operator to partner dashboard without rendering traveler profile', () => {

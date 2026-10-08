@@ -128,6 +128,12 @@ describe('TripReviewPage Eligibility (REVIEW-1, CR-09)', () => {
           name: new RegExp(tripReviewEn.actions.submitReview, 'i'),
         })
       ).toBeDefined();
+      expect(screen.getByRole('navigation', { name: 'Public navigation' })).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Explore' })).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Destinations' })).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Smart Itinerary' })).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Weather Rerouting' })).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Local Tours' })).toBeDefined();
     });
   });
 

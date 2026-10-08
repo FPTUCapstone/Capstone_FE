@@ -327,6 +327,10 @@ describe('TripHistoryView Component (TRIP-1, TRIP-4, TRIP-6, CR-09)', () => {
         'src/features/reviews/components/StarRatingInput.tsx',
         'src/features/reviews/components/TripReviewPage.tsx',
         'src/features/reviews/components/TripReviewView.tsx',
+        'src/features/account/common/AccountWorkspaceNav.tsx',
+        'src/features/account/common/resources/en.ts',
+        'src/components/navigation/PublicNavigation.tsx',
+        'src/components/navigation/resources/en.ts',
       ];
 
       const vietnameseRegex =
