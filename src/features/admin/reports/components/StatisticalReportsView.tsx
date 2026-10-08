@@ -23,6 +23,7 @@ import {
   getFilterOptionsByMode,
   getPeriodsByGranularity,
   getProductionPeriodsByGranularity,
+  triggerBrowserCsvDownload,
 } from '../services/statisticalReportService';
 import type {
   AppliedStatisticalReportCriteria,
@@ -62,7 +63,7 @@ const GRANULARITY_KEYS: readonly PeriodGranularity[] = [
   'CLOSED_YEAR',
 ];
 
-const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['EXCEL', 'CSV', 'PDF'];
+const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['CSV', 'EXCEL', 'PDF'];
 
 export function StatisticalReportsView({
   actorRole,
@@ -104,8 +105,10 @@ export function StatisticalReportsView({
   }>({});
   const [simulateGenerationError, setSimulateGenerationError] = useState(false);
   const [simulateExportError, setSimulateExportError] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('EXCEL');
-  const [exportStatus, setExportStatus] = useState<'IDLE' | 'READY' | 'ERROR'>('IDLE');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('CSV');
+  const [exportStatus, setExportStatus] = useState<'IDLE' | 'READY' | 'PREVIEW_ONLY' | 'ERROR'>(
+    'IDLE',
+  );
   const [exportedArtifact, setExportedArtifact] = useState<DemoExportArtifact | null>(null);
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>('');
 
@@ -297,6 +300,21 @@ export function StatisticalReportsView({
     }
 
     const artifact = buildDemoExportArtifact(generatedReport, exportFormat);
+    if (!artifact.isDownloadable) {
+      setExportedArtifact(artifact);
+      setExportStatus('PREVIEW_ONLY');
+      setLiveAnnouncement(copy.exportPanel.previewOnlyMessage);
+      return;
+    }
+
+    const downloaded = triggerBrowserCsvDownload(artifact);
+    if (!downloaded) {
+      setExportStatus('ERROR');
+      setExportedArtifact(null);
+      setLiveAnnouncement(copy.exportPanel.exportErrorMessage);
+      return;
+    }
+
     setExportedArtifact(artifact);
     setExportStatus('READY');
     setLiveAnnouncement(`${copy.exportPanel.exportSuccessMessage} (${artifact.fileName})`);
@@ -1095,8 +1113,8 @@ export function StatisticalReportsView({
             </div>
           ) : null}
 
-          {/* Export Ready Artifact Preview (Step 6 & 7) */}
-          {exportStatus === 'READY' && exportedArtifact ? (
+          {/* Export Ready Artifact Preview — Real CSV Download Only (Step 6 & 7) */}
+          {exportStatus === 'READY' && exportedArtifact && exportedArtifact.isDownloadable ? (
             <div
               role="status"
               className="mt-5 rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 sm:p-5"
@@ -1135,6 +1153,50 @@ export function StatisticalReportsView({
                   {copy.exportPanel.previewHeading}
                 </p>
                 <pre className="max-h-48 overflow-x-auto rounded-lg border border-emerald-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-[#0f172a]">
+                  {exportedArtifact.contentPreview}
+                </pre>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Binary Format Preview Only — No File Downloaded (Excel / PDF) */}
+          {exportStatus === 'PREVIEW_ONLY' &&
+          exportedArtifact &&
+          !exportedArtifact.isDownloadable ? (
+            <div
+              role="status"
+              className="mt-5 rounded-xl border border-amber-300 bg-amber-50/70 p-4 sm:p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-extrabold text-amber-950">
+                  {copy.exportPanel.previewOnlyTitle}
+                </h3>
+                <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-950">
+                  {copy.exportPanel.previewOnlyBadge}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-amber-900">{copy.exportPanel.previewOnlyMessage}</p>
+              <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                <div>
+                  <dt className="font-semibold text-amber-900">
+                    {copy.exportPanel.targetFormatLabel}:
+                  </dt>
+                  <dd className="font-mono font-bold text-amber-950">{exportedArtifact.format}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-amber-900">
+                    {copy.exportPanel.auditEntryLabel}:
+                  </dt>
+                  <dd className="font-mono text-amber-950">
+                    {exportedArtifact.auditEventSummary}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-3">
+                <p className="mb-1 text-xs font-bold text-amber-950">
+                  {copy.exportPanel.previewHeading}
+                </p>
+                <pre className="max-h-48 overflow-x-auto rounded-lg border border-amber-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-[#0f172a]">
                   {exportedArtifact.contentPreview}
                 </pre>
               </div>

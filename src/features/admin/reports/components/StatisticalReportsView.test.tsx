@@ -385,27 +385,61 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       ).toBeTruthy();
     });
 
-    it('renders empty state when no records match, and supports generation & export failure recovery plus Excel/CSV/PDF export', () => {
+    it('triggers real browser CSV download in Demo mode, keeps Excel/PDF as preview-only without fake download or success banner, and supports failure & empty states', () => {
+      const createObjectUrlSpy = vi.fn(() => 'blob:demo-csv-report');
+      const revokeObjectUrlSpy = vi.fn();
+      vi.stubGlobal('URL', {
+        ...URL,
+        createObjectURL: createObjectUrlSpy,
+        revokeObjectURL: revokeObjectUrlSpy,
+      });
+
+      const anchorClickSpy = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {});
+
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
 
-      // Export Excel, CSV, PDF on valid generated report
-      for (const [label, expectedExt] of [
-        ['Excel (.xlsx)', '.xlsx'],
-        ['CSV (.csv)', '.csv'],
-        ['PDF (.pdf)', '.pdf'],
+      // 1. CSV (.csv) triggers a real browser download and shows exportSuccessTitle
+      fireEvent.click(screen.getByLabelText(statisticalReportsEn.exportPanel.formats.CSV));
+      fireEvent.click(
+        screen.getByRole('button', { name: statisticalReportsEn.exportPanel.exportButton }),
+      );
+
+      expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
+      expect(anchorClickSpy).toHaveBeenCalledTimes(1);
+      expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:demo-csv-report');
+      expect(screen.getByText(statisticalReportsEn.exportPanel.exportSuccessTitle)).toBeTruthy();
+      expect(
+        screen.getAllByText(/DEMO-TripMate-PLATFORM_REVENUE-2026-09\.csv/).length,
+      ).toBeGreaterThan(0);
+
+      // 2. Excel (.xlsx) and PDF (.pdf) do NOT trigger a browser download and do NOT claim file download success
+      createObjectUrlSpy.mockClear();
+      anchorClickSpy.mockClear();
+      revokeObjectUrlSpy.mockClear();
+
+      for (const previewFormatLabel of [
+        statisticalReportsEn.exportPanel.formats.EXCEL,
+        statisticalReportsEn.exportPanel.formats.PDF,
       ] as const) {
-        fireEvent.click(screen.getByLabelText(label));
+        fireEvent.click(screen.getByLabelText(previewFormatLabel));
         fireEvent.click(
           screen.getByRole('button', { name: statisticalReportsEn.exportPanel.exportButton }),
         );
+
+        expect(createObjectUrlSpy).not.toHaveBeenCalled();
+        expect(anchorClickSpy).not.toHaveBeenCalled();
+        expect(revokeObjectUrlSpy).not.toHaveBeenCalled();
         expect(
-          screen.getAllByText(
-            new RegExp(`DEMO-TripMate-PLATFORM_REVENUE-2026-09\\${expectedExt}`),
-          ).length,
-        ).toBeGreaterThan(0);
+          screen.queryByText(statisticalReportsEn.exportPanel.exportSuccessTitle),
+        ).toBeNull();
+        expect(screen.getByText(statisticalReportsEn.exportPanel.previewOnlyTitle)).toBeTruthy();
+        expect(screen.getByText(statisticalReportsEn.exportPanel.previewOnlyBadge)).toBeTruthy();
       }
 
-      // Simulate Export Error -> preserves displayed report and allows retry
+      // 3. Simulate Export Error on CSV -> preserves displayed report and allows retry
+      fireEvent.click(screen.getByLabelText(statisticalReportsEn.exportPanel.formats.CSV));
       fireEvent.click(
         screen.getByLabelText(statisticalReportsEn.criteriaForm.simulateExportErrorLabel),
       );
@@ -417,7 +451,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       ).toBeGreaterThan(0);
       expect(screen.getByRole('heading', { level: 3, name: 'Platform Revenue' })).toBeTruthy();
 
-      // Clear Export Error simulation and retry
+      // Clear Export Error simulation and retry CSV download
       fireEvent.click(
         screen.getByLabelText(statisticalReportsEn.criteriaForm.simulateExportErrorLabel),
       );
@@ -427,8 +461,9 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       expect(
         screen.getByText(statisticalReportsEn.exportPanel.exportSuccessTitle),
       ).toBeTruthy();
+      expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
 
-      // Simulate Generation Error -> renders error state and recovers on Retry
+      // 4. Simulate Generation Error -> renders error state and recovers on Retry
       fireEvent.click(
         screen.getByLabelText(statisticalReportsEn.criteriaForm.simulateGenerationErrorLabel),
       );
@@ -447,7 +482,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       );
       expect(screen.getByRole('heading', { level: 3, name: 'Platform Revenue' })).toBeTruthy();
 
-      // Select zero-activity operator filter (OP-104) -> No Data state
+      // 5. Select zero-activity operator filter (OP-104) -> No Data state
       fireEvent.change(
         screen.getByLabelText(statisticalReportsEn.criteriaForm.operatorFilterLabel),
         { target: { value: 'OP-104' } },
@@ -465,6 +500,9 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
           }) as HTMLButtonElement
         ).disabled,
       ).toBe(true);
+
+      anchorClickSpy.mockRestore();
+      vi.unstubAllGlobals();
     });
   });
 });

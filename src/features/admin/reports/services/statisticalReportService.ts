@@ -828,6 +828,13 @@ export function generateDemoStatisticalReport(
   }
 }
 
+function escapeCsvCell(value: string): string {
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
 export function buildDemoExportArtifact(
   report: GeneratedStatisticalReport,
   format: ExportFormat,
@@ -849,6 +856,7 @@ export function buildDemoExportArtifact(
   };
 
   const { ext, mime } = extMap[format];
+  const isDownloadable = format === 'CSV';
   const exportCopy = statisticalReportsEn.exportArtifact;
   const fileName = `${exportCopy.fileNamePrefix}-${report.criteria.reportType}-${report.criteria.periodKey}.${ext}`;
   const exportedAtDisplay = formatVietnamDateDdMmYyyy(exportedAt);
@@ -874,15 +882,87 @@ export function buildDemoExportArtifact(
     ),
   ];
 
-  const auditEventSummary = `${exportCopy.auditRecordPrefix} (${exportCopy.auditReportTypeKey}=${report.criteria.reportType}, ${exportCopy.auditPeriodKey}=${report.criteria.periodKey}, ${exportCopy.auditFormatKey}=${format}, ${exportCopy.auditDateKey}=${exportedAtDisplay})`;
+  const csvRows: string[] = [
+    [exportCopy.watermarkHeader].map(escapeCsvCell).join(','),
+    [exportCopy.reportTypePrefix, `${reportTypeLabel} (${report.criteria.reportType})`]
+      .map(escapeCsvCell)
+      .join(','),
+    [
+      exportCopy.closedPeriodPrefix,
+      `${report.period.startDateDisplay} - ${report.period.endDateDisplay} (${report.criteria.periodKey})`,
+    ]
+      .map(escapeCsvCell)
+      .join(','),
+    [
+      exportCopy.appliedFiltersPrefix,
+      `${exportCopy.operatorKeyLabel}=${report.criteria.operatorId}; ${exportCopy.destinationKeyLabel}=${report.criteria.destinationId}; ${exportCopy.bookingTypeKeyLabel}=${report.criteria.bookingType}`,
+    ]
+      .map(escapeCsvCell)
+      .join(','),
+    [exportCopy.exportedDatePrefix, exportedAtDisplay].map(escapeCsvCell).join(','),
+    '',
+    report.tableHeaders.map(escapeCsvCell).join(','),
+    ...report.breakdownRows.map((row) =>
+      [
+        row.segmentLabel,
+        row.primaryMetricLabel,
+        row.secondaryMetricLabel,
+        row.tertiaryMetricLabel,
+      ]
+        .map(escapeCsvCell)
+        .join(','),
+    ),
+  ];
+
+  const auditPrefix = isDownloadable
+    ? exportCopy.auditRecordPrefix
+    : exportCopy.auditPreviewPrefix;
+  const auditEventSummary = `${auditPrefix} (${exportCopy.auditReportTypeKey}=${report.criteria.reportType}, ${exportCopy.auditPeriodKey}=${report.criteria.periodKey}, ${exportCopy.auditFormatKey}=${format}, ${exportCopy.auditDateKey}=${exportedAtDisplay})`;
 
   return {
     fileName,
     format,
     mimeType: mime,
+    isDownloadable,
+    csvContent: isDownloadable ? csvRows.join('\r\n') : undefined,
     contentPreview: headerLines.join('\n'),
     exportedAtDisplay,
     auditEventSummary,
     criteriaSnapshot: report.criteria,
   };
+}
+
+export function triggerBrowserCsvDownload(artifact: DemoExportArtifact): boolean {
+  if (!artifact.isDownloadable || artifact.format !== 'CSV' || !artifact.csvContent) {
+    return false;
+  }
+  if (
+    typeof window === 'undefined' ||
+    typeof document === 'undefined' ||
+    typeof Blob === 'undefined' ||
+    typeof URL === 'undefined' ||
+    typeof URL.createObjectURL !== 'function'
+  ) {
+    return false;
+  }
+
+  let objectUrl: string | null = null;
+  try {
+    const blob = new Blob([artifact.csvContent], { type: 'text/csv;charset=utf-8' });
+    objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = artifact.fileName;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (objectUrl && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
 }

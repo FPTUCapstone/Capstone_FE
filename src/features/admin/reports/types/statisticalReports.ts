@@ -108,6 +108,8 @@ export interface DemoExportArtifact {
   readonly fileName: string;
   readonly format: ExportFormat;
   readonly mimeType: string;
+  readonly isDownloadable: boolean;
+  readonly csvContent?: string;
   readonly contentPreview: string;
   readonly exportedAtDisplay: string;
   readonly auditEventSummary: string;

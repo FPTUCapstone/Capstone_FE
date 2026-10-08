@@ -20,6 +20,7 @@ import {
   getDemoPeriodFixturesByGranularity,
   getFilterOptionsByMode,
   getProductionPeriodsByGranularity,
+  triggerBrowserCsvDownload,
 } from './statisticalReportService';
 import type {
   AppliedStatisticalReportCriteria,
@@ -293,27 +294,95 @@ describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
       );
     });
 
-    it.each(['EXCEL', 'CSV', 'PDF'] as const)(
-      'builds DEMO-watermarked export artifacts in %s format matching applied criteria (BR-110, BR-130)',
-      (format) => {
-        const report = generateDemoStatisticalReport({
-          reportType: 'BOOKING_VOLUME',
-          periodGranularity: 'CLOSED_YEAR',
-          periodKey: '2025',
-          operatorId: 'OP-102',
-          destinationId: 'DEST-HOI',
-          bookingType: 'TOUR_PACKAGE',
-        })!;
+    it('builds downloadable RFC 4180 CSV export artifacts and marks EXCEL/PDF as preview-only without fake binary content (BR-110, BR-130)', () => {
+      const report = generateDemoStatisticalReport({
+        reportType: 'BOOKING_VOLUME',
+        periodGranularity: 'CLOSED_YEAR',
+        periodKey: '2025',
+        operatorId: 'OP-102',
+        destinationId: 'DEST-HOI',
+        bookingType: 'TOUR_PACKAGE',
+      })!;
 
-        const artifact = buildDemoExportArtifact(report, format);
-        expect(artifact.fileName).toMatch(/^DEMO-TripMate-BOOKING_VOLUME-2025\.(xlsx|csv|pdf)$/);
-        expect(artifact.contentPreview).toContain(
-          '[DEMO FIXTURE EXPORT — NOT PRODUCTION ACCOUNTING DATA]',
-        );
-        expect(artifact.contentPreview).toContain('Operator=OP-102');
-        expect(artifact.contentPreview).toContain('Destination=DEST-HOI');
-        expect(artifact.auditEventSummary).toContain('StatisticalReportExported');
-      },
-    );
+      const csvArtifact = buildDemoExportArtifact(report, 'CSV');
+      expect(csvArtifact.isDownloadable).toBe(true);
+      expect(csvArtifact.fileName).toBe('DEMO-TripMate-BOOKING_VOLUME-2025.csv');
+      expect(csvArtifact.mimeType).toBe('text/csv;charset=utf-8');
+      expect(csvArtifact.csvContent).toContain(
+        '[DEMO FIXTURE EXPORT — NOT PRODUCTION ACCOUNTING DATA]',
+      );
+      expect(csvArtifact.csvContent).toContain(
+        'Booking Status Category,Booking Count,Associated Value (VND),Settlement State',
+      );
+      expect(csvArtifact.csvContent).toContain('"880,588,800 VND"');
+      expect(csvArtifact.contentPreview).toContain('Operator=OP-102');
+      expect(csvArtifact.contentPreview).toContain('Destination=DEST-HOI');
+      expect(csvArtifact.auditEventSummary).toContain('StatisticalReportExported');
+
+      for (const binaryFormat of ['EXCEL', 'PDF'] as const) {
+        const previewArtifact = buildDemoExportArtifact(report, binaryFormat);
+        expect(previewArtifact.isDownloadable).toBe(false);
+        expect(previewArtifact.csvContent).toBeUndefined();
+        expect(previewArtifact.auditEventSummary).toContain('StatisticalReportPreviewed');
+        expect(triggerBrowserCsvDownload(previewArtifact)).toBe(false);
+      }
+    });
+
+    it('triggers a real browser CSV file download using Blob, URL.createObjectURL, anchor click, and URL.revokeObjectURL cleanup', () => {
+      const report = generateDemoStatisticalReport({
+        reportType: 'PLATFORM_REVENUE',
+        periodGranularity: 'CLOSED_MONTH',
+        periodKey: '2026-09',
+        operatorId: 'ALL',
+        destinationId: 'ALL',
+        bookingType: 'ALL',
+      })!;
+
+      const csvArtifact = buildDemoExportArtifact(report, 'CSV');
+      const originalCreateObjectURL = URL.createObjectURL;
+      const originalRevokeObjectURL = URL.revokeObjectURL;
+
+      let capturedBlob: Blob | null = null;
+      let revokedUrl: string | null = null;
+      let clickedDownloadName: string | null = null;
+      let clickedHref: string | null = null;
+
+      URL.createObjectURL = (obj: Blob | MediaSource) => {
+        capturedBlob = obj as Blob;
+        return 'blob:tripmate-demo-statistical-csv';
+      };
+      URL.revokeObjectURL = (url: string) => {
+        revokedUrl = url;
+      };
+
+      const originalCreateElement = document.createElement.bind(document);
+      const createElementSpy = (tagName: string) => {
+        const el = originalCreateElement(tagName);
+        if (tagName.toLowerCase() === 'a') {
+          const anchor = el as HTMLAnchorElement;
+          anchor.click = () => {
+            clickedDownloadName = anchor.download;
+            clickedHref = anchor.href;
+          };
+        }
+        return el;
+      };
+      const originalDocCreateElement = document.createElement;
+      document.createElement = createElementSpy as typeof document.createElement;
+
+      try {
+        const result = triggerBrowserCsvDownload(csvArtifact);
+        expect(result).toBe(true);
+        expect(capturedBlob).toBeInstanceOf(Blob);
+        expect(capturedBlob!.type).toBe('text/csv;charset=utf-8');
+        expect(clickedDownloadName).toBe('DEMO-TripMate-PLATFORM_REVENUE-2026-09.csv');
+        expect(clickedHref).toContain('blob:tripmate-demo-statistical-csv');
+        expect(revokedUrl).toBe('blob:tripmate-demo-statistical-csv');
+      } finally {
+        URL.createObjectURL = originalCreateObjectURL;
+        URL.revokeObjectURL = originalRevokeObjectURL;
+        document.createElement = originalDocCreateElement;
+      }
+    });
   });
 });

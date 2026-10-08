@@ -44,7 +44,7 @@ export const statisticalReportsEn = {
     productionNotice:
       'Backend statistical aggregation, accounting-period closure verification, and report export endpoints are not yet connected on this environment. Production mode preserves your requested criteria without fabricating platform statistics or generating synthetic export files.',
     demoNotice:
-      'Development-only Demo mode (?demo=true) uses deterministic closed and open period fixtures to preview all five report types, closed-period validation, chart/table rendering, and DEMO-watermarked export workflows.',
+      'Development-only Demo mode (?demo=true) uses deterministic closed and open period fixtures to preview all five report types, closed-period validation, chart/table rendering, and real CSV file download workflows.',
   },
   criteriaForm: {
     sectionTitle: 'Report Criteria & Period Selection',
@@ -384,6 +384,7 @@ export const statisticalReportsEn = {
     sectionDivider: '---',
     columnSeparator: ' | ',
     auditRecordPrefix: 'DEMO Audit Record: StatisticalReportExported',
+    auditPreviewPrefix: 'DEMO Preview Record: StatisticalReportPreviewed',
     auditReportTypeKey: 'ReportType',
     auditPeriodKey: 'Period',
     auditFormatKey: 'Format',
@@ -392,28 +393,34 @@ export const statisticalReportsEn = {
   exportPanel: {
     sectionTitle: 'Export Statistical Report',
     sectionDescription:
-      'Export produces a file in the selected format reflecting the exact report type, closed period, and filters currently applied in the generated result.',
+      'In Demo mode, CSV (.csv) triggers a real browser file download matching the applied report scope. Excel (.xlsx) and PDF (.pdf) require Backend binary generation and are available as structured previews only.',
     formatLegend: 'Export Format',
     formatSelectLabel: 'Export Format',
     formats: {
-      EXCEL: 'Excel (.xlsx)',
-      CSV: 'CSV (.csv)',
-      PDF: 'PDF (.pdf)',
+      CSV: 'CSV (.csv) — Real Download (Demo)',
+      EXCEL: 'Excel (.xlsx) — Preview Only (Pending Binary Integration)',
+      PDF: 'PDF (.pdf) — Preview Only (Pending Binary Integration)',
     },
     exportButton: 'Export',
+    previewButton: 'Preview Format Scope',
     retryExportButton: 'Retry Export',
     disabledProductionReason:
       'Export is unavailable in Production mode until the Backend statistical reporting endpoint is connected.',
     disabledNoGeneratedReportReason:
       'Generate a valid closed-period report with available records before exporting.',
-    exportSuccessTitle: 'Demo Report Export Delivered',
+    exportSuccessTitle: 'Demo CSV Report Downloaded',
     exportSuccessMessage:
-      'The statistical report file has been generated from the currently displayed result and delivered.',
+      'The CSV statistical report file has been generated from the currently displayed result and downloaded to your device.',
+    previewOnlyTitle: 'Binary Format Pending Backend Integration — Preview Only',
+    previewOnlyMessage:
+      'Genuine Excel (.xlsx) and PDF (.pdf) binary generation requires Backend reporting integration. No file download was initiated; select CSV (.csv) to download a real file in Demo mode.',
+    previewOnlyBadge: 'PREVIEW ONLY — NO FILE DOWNLOADED',
     exportErrorTitle: 'Export File Generation Failed',
     exportErrorMessage:
       'The report file could not be generated at this time. The displayed report result remains intact; please try again.',
-    demoFileBadge: 'DEMO EXPORT FILE — NOT PRODUCTION ACCOUNTING DATA',
-    fileNameLabel: 'Delivered File',
+    demoFileBadge: 'DEMO CSV DOWNLOAD — NOT PRODUCTION ACCOUNTING DATA',
+    fileNameLabel: 'Downloaded File',
+    targetFormatLabel: 'Requested Binary Format (Pending Backend)',
     auditEntryLabel: 'Recorded Audit Log Preview',
     previewHeading: 'Exported File Content Preview',
   },
