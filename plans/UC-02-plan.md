@@ -4,6 +4,14 @@ Status: **Web implementation complete in the working tree; live Firebase/BE/SQL 
 
 Branch: `feature/linhnv-register-tour-operator`.
 
+## Task 5 — Business identifier format validation (2026-10-08)
+
+Update the existing UC-02 form validation before Firebase creation, add examples
+beside the Tax Code and Business Licence Number fields, and map new BE format
+codes to field-level messages. Test invalid identifiers cause no Firebase/API
+call and both valid Tax Code/licence variants submit. Preserve current form
+values and avoid input filtering so composition keyboards are unaffected.
+
 ## Baseline evidence (2026-10-01)
 
 - Repository: `Capstone_FE`; baseline `2170bc99ff25dbd9646c7232d7ebbd0c3f1d925d` (`origin/develop` at the recorded time). BE baseline is recorded separately in its plan.

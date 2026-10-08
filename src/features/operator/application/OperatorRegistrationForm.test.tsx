@@ -23,8 +23,8 @@ function complete() {
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password1!' } });
   fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'Password1!' } });
   fireEvent.change(screen.getByRole('textbox', { name: 'Company Name' }), { target: { value: 'Travel Co' } });
-  fireEvent.change(screen.getByRole('textbox', { name: 'Business Licence Number' }), { target: { value: 'LIC-1' } });
-  fireEvent.change(screen.getByRole('textbox', { name: 'Tax Code' }), { target: { value: 'TAX-1' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Business Licence Number' }), { target: { value: '79-0123/2026/TCDL-GPLHQT' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Tax Code' }), { target: { value: '0101234567' } });
   fireEvent.change(screen.getByRole('textbox', { name: 'Contact Person' }), { target: { value: 'Operator Name' } });
   fireEvent.change(screen.getByLabelText(/Business Licence \(required/), {
     target: { files: [new File(['%PDF-1'], 'licence.pdf', { type: 'application/pdf' })] },
@@ -40,6 +40,13 @@ describe('OperatorRegistrationForm', () => {
     auth.createUserWithEmailAndPassword.mockResolvedValue({ user: auth.user });
     auth.sendEmailVerification.mockResolvedValue(undefined);
     api.registerOperator.mockResolvedValue({ userId: 42, applicationStatus: 'PendingApproval', messageCode: 'MSG08' });
+  });
+
+  it('links existing applicants to email verification without submitting a new application', () => {
+    render(<OperatorRegistrationForm />);
+    const link = screen.getByRole('link', { name: 'Continue email verification' });
+    expect(link.getAttribute('href')).toBe('/verify-account?flow=operator');
+    expect(api.registerOperator).not.toHaveBeenCalled();
   });
 
   it('blocks invalid files before creating a Firebase account', () => {
@@ -59,13 +66,36 @@ describe('OperatorRegistrationForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit Application' }));
     await screen.findByText('Your application is under review.');
     expect(api.registerOperator).toHaveBeenCalledWith(expect.objectContaining({
-      firebaseIdToken: 'token', email: 'operator@example.com', businessLicenseNo: 'LIC-1',
+      firebaseIdToken: 'token', email: 'operator@example.com', businessLicenseNo: '79-0123/2026/TCDL-GPLHQT',
       businessAddress: '', contactPhone: '',
     }));
     expect(auth.sendEmailVerification).toHaveBeenCalledWith(auth.user, expect.objectContaining({
       url: expect.stringContaining('/verify-email?flow=operator'),
     }));
     expect(api.registerOperator.mock.invocationCallOrder[0]).toBeLessThan(auth.sendEmailVerification.mock.invocationCallOrder[0]);
+  });
+
+  it('blocks invalid tax code and travel licence before creating a Firebase identity', () => {
+    render(<OperatorRegistrationForm />);
+    complete();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tax Code' }), { target: { value: 'TAX-1' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Business Licence Number' }), { target: { value: 'LIC-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Application' }));
+    expect(screen.getByText(/Tax Code must be 10 digits or 10 digits followed by a hyphen and 3 digits/)).toBeDefined();
+    expect(screen.getByText(/Travel Licence Number must follow/)).toBeDefined();
+    expect(auth.createUserWithEmailAndPassword).not.toHaveBeenCalled();
+  });
+
+  it('accepts a branch tax code with a domestic travel licence', async () => {
+    render(<OperatorRegistrationForm />);
+    complete();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tax Code' }), { target: { value: '0315678901-001' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Business Licence Number' }), { target: { value: '01-0456/2025/SDL-GPLHND' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Application' }));
+    await screen.findByText('Your application is under review.');
+    expect(api.registerOperator).toHaveBeenCalledWith(expect.objectContaining({
+      taxCode: '0315678901-001', businessLicenseNo: '01-0456/2025/SDL-GPLHND',
+    }));
   });
 
   it('deletes a new Firebase identity after a confirmed backend rejection', async () => {

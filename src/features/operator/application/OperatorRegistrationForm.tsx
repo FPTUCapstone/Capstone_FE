@@ -51,6 +51,8 @@ function validate(values: Values, licence: File | null, supporting: File[], agre
   if (!values.confirmPassword) errors.confirmPassword = operatorMessages.MSG01;
   else if (values.confirmPassword !== values.password) errors.confirmPassword = operatorMessages.MSG06;
   if (values.contactPhone.trim() && !/^0\d{9}$/.test(values.contactPhone.replace(/\s/g, ''))) errors.contactPhone = operatorMessages.MSG04;
+  if (values.taxCode.trim() && !/^[0-9]{10}(?:-[0-9]{3})?$/.test(values.taxCode.trim())) errors.taxCode = operatorMessages.OPERATOR_TAX_CODE_INVALID;
+  if (values.licenceNumber.trim() && !/^[0-9]{2}-[0-9]+\/[0-9]{4}\/(?:TCDL-GPLHQT|SDL-GPLHND)$/.test(values.licenceNumber.trim())) errors.licenceNumber = operatorMessages.OPERATOR_TRAVEL_LICENSE_INVALID;
   for (const [key, limit] of [['companyName', 200], ['licenceNumber', 100], ['taxCode', 50], ['contactPerson', 150], ['businessAddress', 300]] as const) {
     if (values[key].trim().length > limit) errors[key] = `This field must not exceed ${limit} characters.`;
   }
@@ -177,6 +179,12 @@ export function OperatorRegistrationForm() {
     <PartnerShell title="Tour Operator Registration" description="Submit your business information and documents for Administrator review.">
       <form className="rounded-3xl border border-[#d8dadd] bg-white p-5 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8" noValidate onSubmit={handleSubmit}>
         <FeedbackAlert>Approval is required before Tour Operator workspace functions become available.</FeedbackAlert>
+        <div className="mt-5 rounded-xl border border-[#9edbd2] bg-[#f0faf8] p-4 text-sm text-[#00152a]">
+          <p>Already submitted your application but have not verified your email?</p>
+          <Link href={`${ROUTES.verifyAccount}?flow=operator`} className="mt-2 inline-flex min-h-11 items-center font-bold text-[#007d6e] underline underline-offset-2 hover:text-[#005f54]">
+            Continue email verification
+          </Link>
+        </div>
         <fieldset className="mt-8 border-0 p-0">
           <legend className="text-xl font-extrabold text-[#00152a]">1. Account Information</legend>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -190,8 +198,8 @@ export function OperatorRegistrationForm() {
           <legend className="text-xl font-extrabold text-[#00152a]">2. Company Information</legend>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <TextField label="Company Name" name="companyName" value={values.companyName} disabled={loading || retryLocked} error={errors.companyName} onChange={(event) => update('companyName', event.target.value)} />
-            <TextField label="Business Licence Number" name="licenceNumber" value={values.licenceNumber} disabled={loading || retryLocked} error={errors.licenceNumber} onChange={(event) => update('licenceNumber', event.target.value)} />
-            <TextField label="Tax Code" name="taxCode" value={values.taxCode} disabled={loading || retryLocked} error={errors.taxCode} onChange={(event) => update('taxCode', event.target.value)} />
+            <TextField label="Business Licence Number" name="licenceNumber" value={values.licenceNumber} disabled={loading || retryLocked} error={errors.licenceNumber} help="For example: 79-0123/2026/TCDL-GPLHQT or 01-0456/2025/SDL-GPLHND." onChange={(event) => update('licenceNumber', event.target.value)} />
+            <TextField label="Tax Code" name="taxCode" value={values.taxCode} disabled={loading || retryLocked} error={errors.taxCode} help="10 digits, or 10 digits-3 digits for a branch (e.g. 0315678901-001)." onChange={(event) => update('taxCode', event.target.value)} />
             <TextField label="Business Address" name="businessAddress" optional autoComplete="street-address" value={values.businessAddress} disabled={loading || retryLocked} error={errors.businessAddress} onChange={(event) => update('businessAddress', event.target.value)} />
           </div>
         </fieldset>
