@@ -1,4 +1,8 @@
-import { MSG127_SYSTEM_ERROR } from '@/features/trips/services/tripHistoryApi';
+import { tripReviewEn } from '@/features/trips/resources/en';
+import {
+  MSG127_SYSTEM_ERROR,
+  PENDING_BE_INTEGRATION_ERROR_CODE,
+} from '@/features/trips/services/tripHistoryApi';
 import type { CreateReviewPayload, ReviewSubmissionResult } from '../types/review';
 import { ReviewApiError } from '../types/review';
 
@@ -53,7 +57,7 @@ export async function submitTripReview(
     };
   }
 
-  // REAL PRODUCTION MODE: Call live Backend
+  // REAL PRODUCTION MODE: Call verified Next.js BFF route
   try {
     const response = await fetch('/api/v1/reviews', {
       method: 'POST',
@@ -73,12 +77,25 @@ export async function submitTripReview(
 
     if (response.status === 501) {
       const pendingPayload = await response.json().catch(() => null);
-      return {
-        status: 'PENDING_BE_INTEGRATION',
-        message:
-          pendingPayload?.detail ||
-          'Tính năng gửi đánh giá đang chờ kích hoạt API máy chủ (Capstone_BE). Đánh giá chưa thể lưu vào cơ sở dữ liệu sản phẩm.',
-      };
+      if (
+        pendingPayload &&
+        typeof pendingPayload === 'object' &&
+        (pendingPayload as { errorCode?: unknown }).errorCode ===
+          PENDING_BE_INTEGRATION_ERROR_CODE
+      ) {
+        return {
+          status: 'PENDING_BE_INTEGRATION',
+          message:
+            typeof (pendingPayload as { detail?: unknown }).detail === 'string' &&
+            (pendingPayload as { detail: string }).detail.trim().length > 0
+              ? (pendingPayload as { detail: string }).detail
+              : tripReviewEn.bff.tripReviewPendingDetail,
+        };
+      }
+      throw new ReviewApiError(MSG127_SYSTEM_ERROR, 501, {
+        ...(typeof pendingPayload === 'object' ? pendingPayload : {}),
+        errorCode: 'MSG127',
+      });
     }
 
     if (response.status === 404) {
@@ -86,7 +103,7 @@ export async function submitTripReview(
       throw new ReviewApiError(
         notFoundData?.detail ||
           notFoundData?.title ||
-          'Không tìm thấy chuyến đi cần đánh giá (TRIP_NOT_FOUND).',
+          tripReviewEn.errors.reviewTripNotFound,
         404,
         { ...(typeof notFoundData === 'object' ? notFoundData : {}), errorCode: 'TRIP_NOT_FOUND' }
       );
@@ -97,20 +114,23 @@ export async function submitTripReview(
       throw new ReviewApiError(
         authErrorData?.detail ||
           authErrorData?.title ||
-          'Bạn không có quyền đánh giá chuyến đi này (MSG126).',
+          tripReviewEn.errors.reviewAccessDenied,
         response.status,
-        authErrorData
+        { ...(typeof authErrorData === 'object' ? authErrorData : {}), errorCode: 'MSG126' }
       );
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      // For HTTP 5xx (500-599), ALWAYS standardize to canonical MSG127 copy; never expose ProblemDetails title
+      // For HTTP 5xx (500-599), ALWAYS standardize to canonical English system error copy; never expose raw server title
       const msg =
         response.status >= 500 && response.status <= 599
           ? MSG127_SYSTEM_ERROR
           : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
-      throw new ReviewApiError(msg, response.status, errorData);
+      throw new ReviewApiError(msg, response.status, {
+        ...(typeof errorData === 'object' ? errorData : {}),
+        errorCode: response.status >= 500 && response.status <= 599 ? 'MSG127' : undefined,
+      });
     }
 
     const data = await response.json();
@@ -124,6 +144,6 @@ export async function submitTripReview(
       throw err;
     }
     // Network or connection failure (including timeout/AbortError) is an ERROR with MSG127, NOT pending integration
-    throw new ReviewApiError(MSG127_SYSTEM_ERROR, 0);
+    throw new ReviewApiError(MSG127_SYSTEM_ERROR, 0, { errorCode: 'MSG127' });
   }
 }

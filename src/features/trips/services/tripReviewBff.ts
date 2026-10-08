@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { tripReviewEn } from '../resources/en';
+
 const PROBLEM_JSON_CONTENT_TYPE = 'application/problem+json; charset=utf-8';
 
 export const PENDING_BE_INTEGRATION_ERROR_CODE = 'PENDING_BE_INTEGRATION';
@@ -49,23 +51,23 @@ export function validateSafeTripIdSegment(rawId: string): string | null {
 }
 
 /**
- * Verified Next.js BFF handler for GET /api/v1/traveler/trips (UC-32).
- * Capstone_BE develop is verified NO_BACKEND for traveler trip history,
- * so the BFF explicitly reports 501 PENDING_BE_INTEGRATION rather than falling through to a generic Next 404.
+ * Frontend capability placeholder BFF handler for GET /api/v1/traveler/trips (UC-32).
+ * Current Capstone_BE develop does not implement this provisional endpoint (NO_BACKEND),
+ * so this handler fails closed with explicit 501 PENDING_BE_INTEGRATION without speculative upstream calls.
  */
 export async function handleTravelerTripListBffRequest(_request: Request): Promise<Response> {
   void _request;
   return problemJsonResponse(
     501,
-    'Not Implemented',
-    'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+    tripReviewEn.bff.notImplementedTitle,
+    tripReviewEn.bff.tripHistoryPendingDetail,
     PENDING_BE_INTEGRATION_ERROR_CODE
   );
 }
 
 /**
- * Verified Next.js BFF handler for GET /api/v1/traveler/trips/[tripId] (UC-32 / UC-33).
- * Validates tripId segment and explicitly reports 501 PENDING_BE_INTEGRATION in NO_BACKEND mode.
+ * Frontend capability placeholder BFF handler for GET /api/v1/traveler/trips/[tripId] (UC-32 / UC-33).
+ * Validates tripId segment and fails closed with explicit 501 PENDING_BE_INTEGRATION while Backend is NO_BACKEND.
  */
 export async function handleTravelerTripDetailBffRequest(
   _request: Request,
@@ -74,28 +76,33 @@ export async function handleTravelerTripDetailBffRequest(
   void _request;
   const safeTripId = validateSafeTripIdSegment(rawTripId);
   if (!safeTripId) {
-    return problemJsonResponse(400, 'Bad Request', 'Invalid trip identifier.', 'INVALID_TRIP_ID');
+    return problemJsonResponse(
+      400,
+      tripReviewEn.bff.badRequestTitle,
+      tripReviewEn.bff.invalidTripIdDetail,
+      'INVALID_TRIP_ID'
+    );
   }
 
   return problemJsonResponse(
     501,
-    'Not Implemented',
-    'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+    tripReviewEn.bff.notImplementedTitle,
+    tripReviewEn.bff.tripHistoryPendingDetail,
     PENDING_BE_INTEGRATION_ERROR_CODE
   );
 }
 
 /**
- * Verified Next.js BFF handler for POST /api/v1/reviews (UC-33).
- * Capstone_BE develop is verified NO_BACKEND for traveler review submission,
- * so the BFF explicitly reports 501 PENDING_BE_INTEGRATION rather than falling through to a generic Next 404.
+ * Frontend capability placeholder BFF handler for POST /api/v1/reviews (UC-33).
+ * Current Capstone_BE develop does not implement this provisional endpoint (NO_BACKEND),
+ * so this handler fails closed with explicit 501 PENDING_BE_INTEGRATION without speculative upstream calls.
  */
 export async function handleTravelerReviewCreateBffRequest(_request: Request): Promise<Response> {
   void _request;
   return problemJsonResponse(
     501,
-    'Not Implemented',
-    'Tính năng gửi đánh giá đang chờ kích hoạt API máy chủ (Capstone_BE). Đánh giá chưa thể lưu vào cơ sở dữ liệu sản phẩm.',
+    tripReviewEn.bff.notImplementedTitle,
+    tripReviewEn.bff.tripReviewPendingDetail,
     PENDING_BE_INTEGRATION_ERROR_CODE
   );
 }

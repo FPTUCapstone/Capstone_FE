@@ -6,7 +6,11 @@ import React, { useEffect, useState } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { getTripById } from '@/features/trips/services/tripHistoryApi';
+import { tripReviewEn } from '@/features/trips/resources/en';
+import {
+  getTripById,
+  PENDING_BE_INTEGRATION_ERROR_CODE,
+} from '@/features/trips/services/tripHistoryApi';
 import type { TripCardDto } from '@/features/trips/types/tripHistory';
 import { ROUTES } from '@/lib/routes';
 import { TripReviewView } from './TripReviewView';
@@ -55,7 +59,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
         if (!data) {
           setFetchError({
             type: 'NOT_FOUND',
-            message: `Chuyến đi #${tripId} không tồn tại trên hệ thống (TRIP_NOT_FOUND).`,
+            message: tripReviewEn.errors.tripByIdNotFound(tripId),
           });
         } else {
           setTrip(data);
@@ -67,24 +71,31 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
           typeof err === 'object' && err !== null && 'statusCode' in err
             ? (err as { statusCode: number }).statusCode
             : 0;
-        if (statusCode === 501) {
+        const errorCode =
+          typeof err === 'object' &&
+          err !== null &&
+          'details' in err &&
+          typeof (err as { details?: unknown }).details === 'object' &&
+          (err as { details?: { errorCode?: unknown } }).details !== null
+            ? (err as { details: { errorCode?: unknown } }).details.errorCode
+            : undefined;
+        if (statusCode === 501 && errorCode === PENDING_BE_INTEGRATION_ERROR_CODE) {
           setFetchError({
             type: 'PENDING_BE_INTEGRATION',
             message:
-              err instanceof Error
+              err instanceof Error && err.message.trim().length > 0
                 ? err.message
-                : 'Hệ thống lịch sử và đánh giá chuyến đi đang chờ kích hoạt dịch vụ máy chủ (Capstone_BE).',
+                : tripReviewEn.reviewPage.pendingDetail,
           });
         } else if (statusCode === 401 || statusCode === 403) {
           setFetchError({
             type: 'FORBIDDEN',
-            message: 'Bạn không có quyền đánh giá chuyến đi này (MSG126).',
+            message: tripReviewEn.errors.reviewAccessDenied,
           });
         } else {
           setFetchError({
             type: 'NETWORK',
-            message:
-              'TripMate tạm thời không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
+            message: tripReviewEn.errors.systemError,
           });
         }
       })
@@ -171,7 +182,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
                 : fetchError.type === 'FORBIDDEN'
                   ? 'Không có quyền truy cập'
                   : fetchError.type === 'PENDING_BE_INTEGRATION'
-                    ? 'Dịch vụ đánh giá chuyến đi đang chờ tích hợp'
+                    ? tripReviewEn.reviewPage.pendingTitle
                     : 'Lỗi kết nối máy chủ'}
             </h3>
             <p className="mt-1 text-xs text-slate-500">{fetchError.message}</p>
