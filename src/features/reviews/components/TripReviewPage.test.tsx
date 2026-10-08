@@ -107,4 +107,25 @@ describe('TripReviewPage Eligibility (REVIEW-1)', () => {
       expect(screen.getByRole('button', { name: /Gửi đánh giá/i })).toBeDefined();
     });
   });
+
+  it('Renders PENDING_BE_INTEGRATION status when BFF returns 501 instead of NOT_FOUND or NETWORK error', async () => {
+    vi.spyOn(tripHistoryApi, 'getTripById').mockRejectedValue(
+      new tripHistoryApi.TripApiError(
+        'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+        501,
+        { errorCode: 'PENDING_BE_INTEGRATION' }
+      )
+    );
+
+    render(<TripReviewPage tripId="trip-prod-01" />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Dịch vụ đánh giá chuyến đi đang chờ tích hợp')
+      ).toBeDefined();
+      expect(
+        screen.getByText(/Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ/i)
+      ).toBeDefined();
+    });
+  });
 });

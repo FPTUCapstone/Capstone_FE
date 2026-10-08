@@ -42,28 +42,66 @@ describe('tripHistoryApi Service (TRIP-5, TRIP-7, TRIP-8)', () => {
     });
   });
 
-  describe('Real-mode truthfulness (TRIP-7)', () => {
-    it('returns PENDING_BE_INTEGRATION and zero trips in real mode when backend returns 404 or 501', async () => {
-      // Mock fetch returning 404 (endpoint not implemented)
-      global.fetch = vi.fn().mockResolvedValue({
-        status: 404,
-        ok: false,
-      });
-
-      const result = await getTripHistory({ tab: 'Completed' }, { allowDemo: false });
-      expect(result.status).toBe('PENDING_BE_INTEGRATION');
-      expect(result.trips).toHaveLength(0);
-      expect(result.message).toContain('chờ kích hoạt dịch vụ máy chủ');
-
-      // Mock fetch returning 501 Not Implemented
+  describe('Real-mode truthfulness & BFF differentiation (TRIP-7)', () => {
+    it('returns PENDING_BE_INTEGRATION and zero trips in real mode ONLY when BFF returns 501', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 501,
         ok: false,
+        json: async () => ({
+          status: 501,
+          errorCode: 'PENDING_BE_INTEGRATION',
+          detail: 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+        }),
       });
 
       const result501 = await getTripHistory({ tab: 'Completed' }, { allowDemo: false });
       expect(result501.status).toBe('PENDING_BE_INTEGRATION');
       expect(result501.trips).toHaveLength(0);
+      expect(result501.message).toContain('chờ kích hoạt dịch vụ máy chủ');
+    });
+
+    it('does NOT misclassify 404 as PENDING_BE_INTEGRATION; throws TripApiError (404 TRIP_NOT_FOUND)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 404,
+        ok: false,
+        json: async () => ({ title: 'Not Found', detail: 'Trip resource not found' }),
+      });
+
+      await expect(
+        getTripHistory({ tab: 'Completed' }, { allowDemo: false })
+      ).rejects.toMatchObject({
+        name: 'TripApiError',
+        statusCode: 404,
+        details: expect.objectContaining({ errorCode: 'TRIP_NOT_FOUND' }),
+      });
+    });
+
+    it('differentiates 401 and 403 authorization errors from 501 and 5xx', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 401,
+        ok: false,
+        json: async () => ({}),
+      });
+
+      await expect(
+        getTripHistory({ tab: 'Completed' }, { allowDemo: false })
+      ).rejects.toMatchObject({
+        name: 'TripApiError',
+        statusCode: 401,
+      });
+
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 403,
+        ok: false,
+        json: async () => ({}),
+      });
+
+      await expect(
+        getTripHistory({ tab: 'Completed' }, { allowDemo: false })
+      ).rejects.toMatchObject({
+        name: 'TripApiError',
+        statusCode: 403,
+      });
     });
 
     it('throws TripApiError (MSG127) when server returns 502 or 503', async () => {
@@ -120,18 +158,46 @@ describe('tripHistoryApi Service (TRIP-5, TRIP-7, TRIP-8)', () => {
       }
     });
 
-    it('throws TripApiError (MSG127) when fetch throws a network failure', async () => {
+    it('throws TripApiError (MSG127) when fetch throws a network failure or AbortError timeout', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+      await expect(
+        getTripHistory({ tab: 'Completed' }, { allowDemo: false })
+      ).rejects.toThrow(/MSG127/i);
+
+      const abortErr = new Error('The operation was aborted');
+      abortErr.name = 'AbortError';
+      global.fetch = vi.fn().mockRejectedValue(abortErr);
 
       await expect(
         getTripHistory({ tab: 'Completed' }, { allowDemo: false })
       ).rejects.toThrow(/MSG127/i);
     });
 
-    it('getTripById returns null for 404, throws MSG126 for 403, and throws MSG127 on network failure', async () => {
+    it('getTripById differentiates 501 PENDING_BE_INTEGRATION, 404 null (TRIP_NOT_FOUND), 401/403 MSG126, and network failure MSG127', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 501,
+        ok: false,
+        json: async () => ({
+          status: 501,
+          errorCode: 'PENDING_BE_INTEGRATION',
+          detail: 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+        }),
+      });
+      await expect(getTripById('trip-1', { allowDemo: false })).rejects.toMatchObject({
+        name: 'TripApiError',
+        statusCode: 501,
+        details: { errorCode: 'PENDING_BE_INTEGRATION' },
+      });
+
       global.fetch = vi.fn().mockResolvedValue({ status: 404, ok: false });
       const nullTrip = await getTripById('missing-trip', { allowDemo: false });
       expect(nullTrip).toBeNull();
+
+      global.fetch = vi.fn().mockResolvedValue({ status: 401, ok: false });
+      await expect(getTripById('unauth-trip', { allowDemo: false })).rejects.toMatchObject({
+        statusCode: 401,
+      });
 
       global.fetch = vi.fn().mockResolvedValue({ status: 403, ok: false });
       await expect(getTripById('forbidden-trip', { allowDemo: false })).rejects.toThrow(/MSG126/i);
