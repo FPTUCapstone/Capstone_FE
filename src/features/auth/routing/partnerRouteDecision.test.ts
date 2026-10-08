@@ -46,6 +46,18 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
     });
   });
 
+  describe('C2. Staff', () => {
+    it.each([
+      ['register', '/admin/staff'],
+      ['dashboard', '/admin/staff'],
+      ['application', '/admin/staff'],
+      ['profile', '/admin/staff'],
+      ['resubmit', '/admin/staff'],
+    ] as const)('denies %s by redirecting to %s', (route, href) => {
+      expect(partnerRouteDecision(route, ctx({ role: 'Staff' }))).toEqual({ action: 'redirect', href });
+    });
+  });
+
   describe('D. TourOperator Approved', () => {
     const approved = ctx({ role: 'TourOperator', applicationStatus: 'Approved' });
     it('allows /partner', () => {

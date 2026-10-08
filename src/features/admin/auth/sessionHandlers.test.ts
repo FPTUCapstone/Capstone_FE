@@ -4,7 +4,14 @@ import { signInAdmin } from './sessionHandlers';
 
 // The mocked adminSession helpers return plain marker objects, not real
 // NextResponse instances; tests read those markers through this shape.
-type HandlerResult = { kind: string; status: number; body: Record<string, unknown>; token?: string };
+type HandlerResult = {
+  kind: string;
+  status: number;
+  body: Record<string, unknown>;
+  token?: string;
+  sealedRole?: string;
+  sealedOptions?: Record<string, unknown>;
+};
 
 vi.mock('server-only', () => ({}));
 
@@ -12,7 +19,20 @@ const adminSessionMocks = vi.hoisted(() => ({
   isSameOriginRequest: vi.fn(() => true),
   jsonNoStore: vi.fn((body: unknown, status = 200) => ({ kind: 'json', body, status })),
   clearAdminSession: vi.fn((response: unknown) => response),
-  setAdminSession: vi.fn((response: unknown, token: string) => ({ ...(response as object), token })),
+  setAdminSession: vi.fn(
+    (
+      response: unknown,
+      token: string,
+      _expiresAt: Date,
+      role?: string,
+      options?: Record<string, unknown>,
+    ) => ({
+      ...(response as object),
+      token,
+      sealedRole: role,
+      sealedOptions: options,
+    }),
+  ),
 }));
 
 vi.mock('@/lib/server/adminSession', () => adminSessionMocks);
@@ -70,6 +90,8 @@ describe('Admin BFF sign-in contract (POST /api/v1/auth/web/admin/login)', () =>
     expect(result.kind).toBe('json');
     expect(result.body.authenticated).toBe(true);
     expect(result.token).toBe('admin-access-token');
+    expect(result.sealedRole).toBe('Administrator');
+    expect(result.sealedOptions).toEqual({ userId: 7 });
   });
 
   it('issues the session directly after the validated admin login response without a secondary probe', async () => {
@@ -79,7 +101,13 @@ describe('Admin BFF sign-in contract (POST /api/v1/auth/web/admin/login)', () =>
 
     expect(fetchBackendMock.fetchBackend).toHaveBeenCalledTimes(1);
     expect(adminSessionMocks.setAdminSession).toHaveBeenCalledTimes(1);
-    expect(adminSessionMocks.setAdminSession).toHaveBeenCalledWith(expect.anything(), 'admin-access-token', expect.any(Date));
+    expect(adminSessionMocks.setAdminSession).toHaveBeenCalledWith(
+      expect.anything(),
+      'admin-access-token',
+      expect.any(Date),
+      'Administrator',
+      { userId: 7 },
+    );
     expect(result.body.authenticated).toBe(true);
   });
 
@@ -96,7 +124,7 @@ describe('Admin BFF sign-in contract (POST /api/v1/auth/web/admin/login)', () =>
     fetchBackendMock.fetchBackend.mockImplementationOnce(async () =>
       backendLoginResponse({
         ...loginEnvelope,
-        data: { ...envelopeData, role: 'Staff', accessToken: 'staff-access-token' },
+        data: { ...envelopeData, userId: 15, role: 'Staff', accessToken: 'staff-access-token' },
       }),
     );
 
@@ -105,6 +133,21 @@ describe('Admin BFF sign-in contract (POST /api/v1/auth/web/admin/login)', () =>
     expect(result.body.authenticated).toBe(true);
     expect(result.body.role).toBe('Staff');
     expect(result.token).toBe('staff-access-token');
+    expect(result.sealedRole).toBe('Staff');
+    expect(result.sealedOptions).toEqual({ userId: 15 });
+  });
+
+  it('fails closed with 503 and clears session if BFF session signing fails (e.g. missing TRIPMATE_ADMIN_SESSION_SECRET)', async () => {
+    fetchBackendMock.fetchBackend.mockImplementationOnce(async () => backendLoginResponse(loginEnvelope));
+    adminSessionMocks.setAdminSession.mockImplementationOnce(() => {
+      throw new Error('Missing TRIPMATE_ADMIN_SESSION_SECRET');
+    });
+
+    const result = await signInAdmin(adminRequest()) as unknown as HandlerResult;
+
+    expect(result.status).toBe(503);
+    expect(result.body.message).toBe('Sign in is temporarily unavailable. Please try again.');
+    expect(adminSessionMocks.clearAdminSession).toHaveBeenCalled();
   });
 
   it.each(['TourOperator', 'Traveler', 3, 4, null])('rejects non-administration role %s with 403', async (role) => {

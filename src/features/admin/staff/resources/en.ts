@@ -70,14 +70,24 @@ export const adminStaffEn = {
     },
     modules: [
       {
+        id: 'account-security',
+        title: 'Administration Account Security',
+        category: 'Account Governance',
+        description:
+          'Manage your Staff administration credentials and review password security requirements.',
+        status: 'available' as const,
+        href: '/admin/account/security',
+        actionLabel: 'Open Security Settings',
+      },
+      {
         id: 'tour-package-moderation',
         title: 'Tour Package Moderation',
         category: 'Content & Partner Quality',
         description:
           'Review submitted operator tour packages, inspect itinerary schedules, and record approval or rejection decisions.',
-        status: 'available' as const,
-        href: '/admin/tours/reviews',
-        actionLabel: 'Open Review Queue',
+        status: 'pendingBackend' as const,
+        availabilityNote:
+          'Assigned to Staff in Report 3 V2 (UC-50 / UC-51); awaiting Backend tour moderation endpoints (/api/v1/admin/tours/pending and review decision actions).',
       },
       {
         id: 'operator-application-review',
@@ -85,9 +95,9 @@ export const adminStaffEn = {
         category: 'Partner Onboarding',
         description:
           'Verify Tour Operator registration documents, business credentials, and onboarding eligibility.',
-        status: 'available' as const,
-        href: '/admin/tour-operator-applications/1',
-        actionLabel: 'Inspect Application Workspace',
+        status: 'pendingBackend' as const,
+        availabilityNote:
+          'Assigned to Staff in Report 3 V2 (UC-48 / UC-49); awaiting Backend Tour Operator application queue endpoint and Staff role authorization policy alignment.',
       },
       {
         id: 'poi-catalog-operations',
@@ -95,9 +105,9 @@ export const adminStaffEn = {
         category: 'Catalog & Spatial Data',
         description:
           'Create and configure Points of Interest with coordinates, operating hours, and visit attributes.',
-        status: 'available' as const,
-        href: '/admin/catalogue/points-of-interest/new',
-        actionLabel: 'Open POI Creator',
+        status: 'pendingBackend' as const,
+        availabilityNote:
+          'Assigned to Staff in Report 3 V2 (UC-52 / UC-53); current Backend /api/v1/admin/pois endpoints remain restricted to Administrator until Staff role policy is enabled.',
       },
       {
         id: 'user-account-management',

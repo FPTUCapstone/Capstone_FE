@@ -29,10 +29,14 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('/admin/forgot-password', 'Administrator')).toBe('/admin');
   });
 
-  it('routes Staff to /admin/staff by default and prevents redirect into Administrator-only routes', () => {
+  it('routes Staff to /admin/staff by default and prevents redirect into Administrator-only or pending routes', () => {
     expect(getSafeAdminReturnUrl(undefined, 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/staff', 'Staff')).toBe('/admin/staff');
-    expect(getSafeAdminReturnUrl('/admin/tours/reviews', 'Staff')).toBe('/admin/tours/reviews');
+    expect(getSafeAdminReturnUrl('/admin/account/security', 'Staff')).toBe('/admin/account/security');
+    expect(getSafeAdminReturnUrl('/admin/tours/reviews', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest/new', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/tour-operator-applications/1', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/reports', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/audit-logs', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/settings/algorithm-parameters', 'Staff')).toBe('/admin/staff');

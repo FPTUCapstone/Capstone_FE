@@ -23,6 +23,7 @@ export function partnerRouteDecision(route: PartnerRoute, context: WebAuthContex
   }
   if (context.role === 'Traveler') return { action: 'redirect', href: ROUTES.home };
   if (context.role === 'Administrator') return { action: 'redirect', href: ROUTES.admin.dashboard };
+  if (context.role === 'Staff') return { action: 'redirect', href: ROUTES.admin.staffDashboard };
 
   // TourOperator (Active is guaranteed by the context validator). Approved is
   // the only state that may enter the workspace; every other application state

@@ -40,6 +40,15 @@ describe('tourRouteDecision (BR-07 Access Boundary)', () => {
     expect(decision).toEqual({ action: 'redirect', href: ROUTES.admin.dashboard });
   });
 
+  it('C2. redirects staff to staff operations dashboard', () => {
+    const context = createMockContext({
+      role: 'Staff',
+      applicationStatus: null,
+    });
+    const decision = tourRouteDecision(context);
+    expect(decision).toEqual({ action: 'redirect', href: ROUTES.admin.staffDashboard });
+  });
+
   it('D. redirects TourOperator with PendingApproval to partner application status', () => {
     const contextPending = createMockContext({
       role: 'TourOperator',

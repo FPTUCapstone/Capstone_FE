@@ -29,13 +29,16 @@ test('forwards flat JSON with bearer and returns real status/body', async () => 
   const response = await proxy(req(), '/api/v1/admin/pois');
   assert.equal(response.status, 201); assert.deepEqual(await response.json(), { id: 51 });
 });
-test('BE auth denials clear session without exposing upstream details', async () => {
-  for (const status of [401, 403]) {
-    const response = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status }))(req(), '/api/v1/admin/pois');
-    assert.equal(response.status, status);
-    assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
-    assert.deepEqual(await response.json(), { title: status === 401 ? 'Administrator sign-in required.' : 'Administrator access is not allowed.' });
-  }
+test('BE 401 clears session while BE 403 preserves session without exposing upstream details', async () => {
+  const unauthenticated = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status: 401 }))(req(), '/api/v1/admin/pois');
+  assert.equal(unauthenticated.status, 401);
+  assert.match(unauthenticated.headers.get('Set-Cookie'), /Max-Age=0/);
+  assert.deepEqual(await unauthenticated.json(), { title: 'Administrator sign-in required.' });
+
+  const forbidden = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status: 403 }))(req(), '/api/v1/admin/pois');
+  assert.equal(forbidden.status, 403);
+  assert.equal(forbidden.headers.get('Set-Cookie'), null);
+  assert.deepEqual(await forbidden.json(), { title: 'Administrator access is not allowed.' });
 });
 test('upstream and network failures return safe documented 503', async () => {
   const upstream = await setup('secret', async () => Response.json({ detail: 'database-password-secret' }, { status: 500 }))(req(), '/api/v1/admin/pois');
