@@ -26,32 +26,47 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
           tripId: 'trip-1',
           title: '   ',
           rating: 5,
-          comment: 'Một chuyến đi rất thú vị và bổ ích.',
+          comment: 'A very enjoyable and informative trip.',
           publishWithDisplayName: true,
         })
-      ).rejects.toThrow(/Tiêu đề đánh giá là bắt buộc/i);
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 400,
+        message: tripReviewEn.validation.titleRequired,
+        details: { errorCode: 'MSG01' },
+      });
     });
 
     it('REVIEW-4: Rejects submission if rating is missing or invalid (0 or >5)', async () => {
       await expect(
         submitTripReview({
           tripId: 'trip-1',
-          title: 'Chuyến đi tuyệt vời',
+          title: 'Wonderful trip',
           rating: 0,
-          comment: 'Một chuyến đi rất thú vị và bổ ích.',
+          comment: 'A very enjoyable and informative trip.',
           publishWithDisplayName: true,
         })
-      ).rejects.toThrow(/Vui lòng chọn số sao đánh giá/i);
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 400,
+        message: tripReviewEn.validation.ratingRequired,
+        details: { errorCode: 'MSG66' },
+      });
 
       await expect(
         submitTripReview({
           tripId: 'trip-1',
-          title: 'Chuyến đi tuyệt vời',
+          title: 'Wonderful trip',
           rating: 6,
-          comment: 'Một chuyến đi rất thú vị và bổ ích.',
+          comment: 'A very enjoyable and informative trip.',
           publishWithDisplayName: true,
         })
-      ).rejects.toThrow(/Vui lòng chọn số sao đánh giá/i);
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 400,
+        message: tripReviewEn.validation.ratingRequired,
+        details: { errorCode: 'MSG66' },
+      });
     });
 
     it('Accepts valid short comment (1-500 chars per SRS §3.7.2, removing invented 20-char limit)', async () => {
@@ -61,9 +76,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       const result = await submitTripReview(
         {
           tripId: 'trip-demo-01',
-          title: 'Rất tốt',
+          title: 'Very good',
           rating: 5,
-          comment: 'Tuyệt vời!', // 10 chars
+          comment: 'Excellent!', // 10 chars
           publishWithDisplayName: true,
         },
         { allowDemo: true }
@@ -75,12 +90,17 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       await expect(
         submitTripReview({
           tripId: 'trip-1',
-          title: 'Chuyến đi',
+          title: 'Great trip',
           rating: 5,
           comment: '   ',
           publishWithDisplayName: true,
         })
-      ).rejects.toThrow(/Nội dung đánh giá là bắt buộc/i);
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 400,
+        message: tripReviewEn.validation.commentRequired,
+        details: { errorCode: 'MSG01' },
+      });
     });
 
     it('REVIEW-6: Rejects submission if comment exceeds 500 characters', async () => {
@@ -88,12 +108,28 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       await expect(
         submitTripReview({
           tripId: 'trip-1',
-          title: 'Tiêu đề',
+          title: 'Review Title',
           rating: 5,
           comment: longComment,
           publishWithDisplayName: true,
         })
-      ).rejects.toThrow(/không được vượt quá 500 ký tự/i);
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 400,
+        message: tripReviewEn.validation.commentMaxLength,
+        details: { errorCode: 'MSG123' },
+      });
+    });
+
+    it('CR-09: Validation error messages do not render raw MSGxxx or BR-xxx codes while preserving internal errorCode', async () => {
+      for (const msg of [
+        tripReviewEn.validation.ratingRequired,
+        tripReviewEn.validation.titleRequired,
+        tripReviewEn.validation.commentRequired,
+        tripReviewEn.validation.commentMaxLength,
+      ]) {
+        expect(msg).not.toMatch(/MSG\d+|BR-\d+/);
+      }
     });
   });
 
@@ -105,16 +141,16 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         json: async () => ({
           status: 501,
           errorCode: 'PENDING_BE_INTEGRATION',
-          detail: tripReviewEn.bff.tripReviewPendingDetail,
+          detail: 'Untrusted raw backend detail',
         }),
       });
 
       const result501 = await submitTripReview(
         {
           tripId: 'trip-1',
-          title: 'Chuyến đi tuyệt vời',
+          title: 'Wonderful trip',
           rating: 5,
-          comment: 'Chuyến đi tuyệt vời, chất lượng dịch vụ rất tốt và đúng giờ.',
+          comment: 'Great service and well-timed schedule.',
           publishWithDisplayName: true,
         },
         { allowDemo: false }
@@ -137,9 +173,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -152,20 +188,20 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       });
     });
 
-    it('does NOT misclassify 404 as PENDING_BE_INTEGRATION; throws ReviewApiError (404 TRIP_NOT_FOUND)', async () => {
+    it('does NOT misclassify 404 as PENDING_BE_INTEGRATION and does NOT expose raw Backend ProblemDetails title/detail', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 404,
         ok: false,
-        json: async () => null,
+        json: async () => ({ title: 'Not Found', detail: 'Raw DB record missing' }),
       });
 
       await expect(
         submitTripReview(
           {
             tripId: 'trip-missing',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -174,24 +210,27 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         name: 'ReviewApiError',
         statusCode: 404,
         message: tripReviewEn.errors.reviewTripNotFound,
-        details: expect.objectContaining({ errorCode: 'TRIP_NOT_FOUND' }),
+        details: expect.objectContaining({
+          detail: 'Raw DB record missing',
+          errorCode: 'TRIP_NOT_FOUND',
+        }),
       });
     });
 
-    it('differentiates 401 and 403 authorization errors from 501 and 5xx', async () => {
+    it('differentiates 401 and 403 authorization errors from 501 and 5xx and uses canonical English resource', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 401,
         ok: false,
-        json: async () => ({}),
+        json: async () => ({ detail: 'Raw JWT expired exception' }),
       });
 
       await expect(
         submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -213,9 +252,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -239,9 +278,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -262,9 +301,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -281,9 +320,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -302,9 +341,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -327,9 +366,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         await submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -353,9 +392,9 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         await submitTripReview(
           {
             tripId: 'trip-1',
-            title: 'Chuyến đi tuyệt vời',
+            title: 'Wonderful trip',
             rating: 5,
-            comment: 'Chất lượng rất tốt.',
+            comment: 'Great quality.',
             publishWithDisplayName: true,
           },
           { allowDemo: false }
@@ -366,6 +405,31 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
         expect((err as Error).message).toBe(tripReviewEn.errors.systemError);
       }
     });
+
+    it('returns English production submitSuccess message on 200/201 response', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 201,
+        ok: true,
+        json: async () => ({ reviewId: 'rev-prod-101' }),
+      });
+
+      const result = await submitTripReview(
+        {
+          tripId: 'trip-1',
+          title: 'Wonderful trip',
+          rating: 5,
+          comment: 'Great quality.',
+          publishWithDisplayName: true,
+        },
+        { allowDemo: false }
+      );
+
+      expect(result).toEqual({
+        status: 'SUCCESS',
+        message: tripReviewEn.tripReview.submitSuccess,
+        reviewId: 'rev-prod-101',
+      });
+    });
   });
 
   describe('Demo Mode (REVIEW-9)', () => {
@@ -374,13 +438,13 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
     });
 
-    it('REVIEW-9: Returns SUCCESS with isDemo: true in demo mode', async () => {
+    it('REVIEW-9: Returns SUCCESS with isDemo: true and English demoSubmitSuccess in demo mode', async () => {
       const result = await submitTripReview(
         {
           tripId: 'trip-demo-01',
-          title: 'Hài lòng',
+          title: 'Satisfied',
           rating: 5,
-          comment: 'Chuyến đi tuyệt vời, chất lượng dịch vụ rất tốt và đúng giờ.',
+          comment: 'Wonderful trip, great service and on-time schedule.',
           publishWithDisplayName: true,
         },
         { allowDemo: true }
@@ -389,7 +453,8 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       expect(result.status).toBe('SUCCESS');
       expect(result.isDemo).toBe(true);
       expect(result.reviewId).toBeDefined();
-      expect(result.message).toContain('Bản xem trước DEMO');
+      expect(result.message).toBe(tripReviewEn.tripReview.demoSubmitSuccess);
+      expect(result.message).toContain('DEMO Preview');
     });
   });
 });

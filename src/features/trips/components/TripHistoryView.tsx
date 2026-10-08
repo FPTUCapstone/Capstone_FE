@@ -164,11 +164,12 @@ export function TripHistoryView() {
               science
             </span>
             <span>
-              <strong>Bản xem trước DEMO:</strong> Dữ liệu chuyến đi mẫu đang được hiển thị theo thiết kế Stitch & Report 3.
+              <strong>{tripReviewEn.demo.tripHistoryBannerPrefix}</strong>{' '}
+              {tripReviewEn.demo.tripHistoryBannerText}
             </span>
           </div>
           <span className="rounded bg-amber-200 px-2 py-0.5 font-bold uppercase tracking-wider text-amber-800 text-[10px]">
-            DEMO ONLY
+            {tripReviewEn.demo.badgeLabel}
           </span>
         </div>
       )}
@@ -184,7 +185,7 @@ export function TripHistoryView() {
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Sắp tới
+          {tripReviewEn.tripHistory.tabs.upcoming}
         </button>
 
         <button
@@ -197,7 +198,7 @@ export function TripHistoryView() {
           }`}
         >
           <span className="inline-block h-2 w-2 rounded-full bg-[#006B5F]" />
-          <span>Đã hoàn thành</span>
+          <span>{tripReviewEn.tripHistory.tabs.completed}</span>
           {activeTab === 'Completed' && totalCount > 0 && (
             <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.2 text-[10px] font-extrabold text-[#006B5F]">
               {totalCount}
@@ -214,7 +215,7 @@ export function TripHistoryView() {
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Đã hủy / Hoàn tiền
+          {tripReviewEn.tripHistory.tabs.cancelled}
         </button>
       </div>
 
@@ -234,7 +235,10 @@ export function TripHistoryView() {
 
       {/* Main State Views */}
       {loading ? (
-        <div aria-label="Đang tải danh sách chuyến đi" className="space-y-4">
+        <div
+          aria-label={tripReviewEn.accessibility.loadingTripsAria}
+          className="space-y-4"
+        >
           <div className="h-32 animate-pulse rounded-2xl bg-slate-200" />
           <div className="h-40 animate-pulse rounded-2xl bg-slate-200" />
           <div className="h-40 animate-pulse rounded-2xl bg-slate-200" />
@@ -250,7 +254,7 @@ export function TripHistoryView() {
             </span>
           </div>
           <h3 className="text-base font-bold text-[#00152A]">
-            Dịch vụ lịch sử chuyến đi
+            {tripReviewEn.tripHistory.pending.title}
           </h3>
           <p className="mx-auto mt-2 max-w-md text-xs text-slate-600 leading-relaxed">
             {pendingNotice}
@@ -261,13 +265,13 @@ export function TripHistoryView() {
               onClick={handleRetry}
               className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
             >
-              Thử lại kết nối
+              {tripReviewEn.actions.retryConnection}
             </button>
             <Link
               href={ROUTES.plan}
               className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
             >
-              Lên lịch trình mới
+              {tripReviewEn.actions.planNewItinerary}
             </Link>
           </div>
         </div>
@@ -279,14 +283,16 @@ export function TripHistoryView() {
           <span className="material-symbols-outlined mx-auto mb-2 text-[32px] text-rose-600" aria-hidden="true">
             error
           </span>
-          <h3 className="text-base font-bold text-rose-900">Không thể tải dữ liệu</h3>
+          <h3 className="text-base font-bold text-rose-900">
+            {tripReviewEn.tripHistory.error.title}
+          </h3>
           <p className="mt-1 text-xs">{errorMessage}</p>
           <button
             type="button"
             onClick={handleRetry}
             className="mt-4 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-700"
           >
-            Thử lại
+            {tripReviewEn.actions.retry}
           </button>
         </div>
       ) : trips.length === 0 ? (
@@ -300,23 +306,23 @@ export function TripHistoryView() {
             </span>
           </div>
           <h3 className="text-base font-bold text-[#00152A]">
-            Chưa có chuyến đi nào
+            {tripReviewEn.tripHistory.empty.title}
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            Không tìm thấy chuyến đi phù hợp với tiêu chí lọc của bạn (MSG128).
+            {tripReviewEn.tripHistory.empty.description}
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={ROUTES.plan}
               className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
             >
-              Lên lịch trình thông minh
+              {tripReviewEn.actions.planSmartItinerary}
             </Link>
             <Link
               href={ROUTES.tours}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
             >
-              Khám phá tour bản địa
+              {tripReviewEn.actions.exploreLocalTours}
             </Link>
           </div>
         </div>
@@ -324,10 +330,15 @@ export function TripHistoryView() {
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
             <span>
-              Hiển thị <strong className="text-slate-800">{trips.length}</strong> /{' '}
-              <strong className="text-slate-800">{totalCount}</strong> chuyến đi
+              {tripReviewEn.tripHistory.showingPrefix}{' '}
+              <strong className="text-slate-800">{trips.length}</strong>{' '}
+              {tripReviewEn.tripHistory.showingSeparator}{' '}
+              <strong className="text-slate-800">{totalCount}</strong>{' '}
+              {tripReviewEn.tripHistory.showingSuffix}
             </span>
-            <span className="text-[11px] text-slate-400">Thời gian tính theo GMT+7 (CR-07)</span>
+            <span className="text-[11px] text-slate-400">
+              {tripReviewEn.tripHistory.timezoneNotice}
+            </span>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
@@ -344,23 +355,26 @@ export function TripHistoryView() {
           {totalCount > 0 && (
             <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
               <p className="text-xs text-slate-500">
-                Trang <span className="font-bold text-slate-800">{page}</span> /{' '}
-                <span className="font-bold text-slate-800">{totalPages}</span> (Tổng số {totalCount} chuyến đi)
+                {tripReviewEn.pagination.pagePrefix}{' '}
+                <span className="font-bold text-slate-800">{page}</span>{' '}
+                {tripReviewEn.pagination.pageSeparator}{' '}
+                <span className="font-bold text-slate-800">{totalPages}</span>{' '}
+                {tripReviewEn.pagination.totalTripsSuffix(totalCount)}
               </p>
               <div
                 className="flex items-center gap-1.5"
                 role="navigation"
-                aria-label="Phân trang danh sách chuyến đi"
+                aria-label={tripReviewEn.accessibility.paginationNavAria}
               >
                 <button
                   type="button"
                   onClick={() => handlePageChange(Math.max(1, page - 1))}
                   disabled={page <= 1}
                   className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Trang trước"
+                  aria-label={tripReviewEn.accessibility.previousPageAria}
                 >
                   <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-                  <span>Trước</span>
+                  <span>{tripReviewEn.pagination.previous}</span>
                 </button>
 
                 <span className="px-2 text-xs font-bold text-slate-800">
@@ -372,9 +386,9 @@ export function TripHistoryView() {
                   onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
                   className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Trang sau"
+                  aria-label={tripReviewEn.accessibility.nextPageAria}
                 >
-                  <span>Sau</span>
+                  <span>{tripReviewEn.pagination.next}</span>
                   <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                 </button>
               </div>
@@ -396,7 +410,7 @@ export function TripHistoryView() {
             <div className="flex items-start justify-between">
               <div>
                 <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  Đã đánh giá
+                  {tripReviewEn.dialogs.submittedReview.badge}
                 </span>
                 <h4 id="review-dialog-title" className="mt-1 text-base font-extrabold text-[#00152A]">
                   {selectedReviewTrip.title}
@@ -407,7 +421,7 @@ export function TripHistoryView() {
                 type="button"
                 onClick={() => setSelectedReviewTrip(null)}
                 className="text-slate-400 hover:text-slate-600"
-                aria-label="Đóng"
+                aria-label={tripReviewEn.accessibility.closeDialogAria}
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -417,13 +431,15 @@ export function TripHistoryView() {
               <div className="flex items-center gap-1 text-amber-500 font-bold">
                 <span className="text-sm">★ {selectedReviewTrip.rating}.0 / 5.0</span>
                 <span className="text-slate-500 font-normal">
-                  (Đánh giá trải nghiệm)
+                  {tripReviewEn.dialogs.submittedReview.ratingCaption}
                 </span>
               </div>
 
               {selectedReviewTrip.reviewComment && (
                 <div>
-                  <p className="font-semibold text-slate-700">Cảm nhận:</p>
+                  <p className="font-semibold text-slate-700">
+                    {tripReviewEn.dialogs.submittedReview.commentHeading}
+                  </p>
                   <p className="mt-1 text-slate-600 leading-relaxed italic">
                     &ldquo;{selectedReviewTrip.reviewComment}&rdquo;
                   </p>
@@ -432,7 +448,17 @@ export function TripHistoryView() {
 
               {selectedReviewTrip.reviewedAtUtc && (
                 <p className="text-[11px] text-slate-400">
-                  Gửi lúc: {new Date(selectedReviewTrip.reviewedAtUtc).toLocaleString('vi-VN')}
+                  {tripReviewEn.dialogs.submittedReview.submittedAt(
+                    new Intl.DateTimeFormat('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false,
+                      timeZone: 'Asia/Ho_Chi_Minh',
+                    }).format(new Date(selectedReviewTrip.reviewedAtUtc))
+                  )}
                 </p>
               )}
             </div>
@@ -443,7 +469,7 @@ export function TripHistoryView() {
                 onClick={() => setSelectedReviewTrip(null)}
                 className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
-                Đóng
+                {tripReviewEn.actions.close}
               </button>
             </div>
           </div>

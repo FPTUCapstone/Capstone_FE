@@ -94,11 +94,11 @@ describe('tripHistoryApi Service (TRIP-5, TRIP-7, TRIP-8)', () => {
       });
     });
 
-    it('does NOT misclassify 404 as PENDING_BE_INTEGRATION; throws TripApiError (404 TRIP_NOT_FOUND)', async () => {
+    it('does NOT misclassify 404 as PENDING_BE_INTEGRATION and does NOT expose raw ProblemDetails title/detail; throws TripApiError (404 TRIP_NOT_FOUND)', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 404,
         ok: false,
-        json: async () => null,
+        json: async () => ({ title: 'Not Found', detail: 'Raw DB detail' }),
       });
 
       await expect(
@@ -107,15 +107,18 @@ describe('tripHistoryApi Service (TRIP-5, TRIP-7, TRIP-8)', () => {
         name: 'TripApiError',
         statusCode: 404,
         message: tripReviewEn.errors.tripNotFound,
-        details: expect.objectContaining({ errorCode: 'TRIP_NOT_FOUND' }),
+        details: expect.objectContaining({
+          detail: 'Raw DB detail',
+          errorCode: 'TRIP_NOT_FOUND',
+        }),
       });
     });
 
-    it('differentiates 401 and 403 authorization errors from 501 and 5xx', async () => {
+    it('differentiates 401 and 403 authorization errors from 501 and 5xx and uses canonical English resource', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 401,
         ok: false,
-        json: async () => ({}),
+        json: async () => ({ detail: 'Raw JWT error' }),
       });
 
       await expect(

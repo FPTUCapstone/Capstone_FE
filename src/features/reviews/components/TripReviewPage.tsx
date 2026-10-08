@@ -117,7 +117,9 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-[#59616B]">Đang tải thông tin chuyến đi…</p>
+          <p className="text-xs font-semibold text-[#59616B]">
+            {tripReviewEn.tripReview.loadingTrip}
+          </p>
         </div>
       </div>
     );
@@ -128,38 +130,43 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
       <PublicNavigation />
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
+        <nav
+          aria-label={tripReviewEn.accessibility.breadcrumbAria}
+          className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]"
+        >
           <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
-            Trang chủ
+            {tripReviewEn.tripReview.breadcrumbHome}
           </Link>
           <span aria-hidden="true">/</span>
           <Link href={ROUTES.account.trips} className="hover:text-[#006B5F] hover:underline">
-            Chuyến đi của tôi
+            {tripReviewEn.tripReview.breadcrumbTrips}
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#00152A]">Đánh giá chuyến đi</span>
+          <span className="text-[#00152A]">
+            {tripReviewEn.tripReview.breadcrumbReview}
+          </span>
         </nav>
 
         {/* Title Header */}
         <div className="mb-6 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-2">
             <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#006B5F]">
-              UC-33
+              {tripReviewEn.tripReview.badgeCode}
             </span>
             <span className="text-xs font-semibold text-slate-500">
-              Đánh giá & Phản hồi
+              {tripReviewEn.tripReview.badgeLabel}
             </span>
           </div>
           <h1 className="mt-1 text-2xl font-black text-[#00152A] sm:text-3xl">
-            Đánh giá chuyến đi
+            {tripReviewEn.tripReview.pageTitle}
           </h1>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Ý kiến của bạn giúp cộng đồng du khách TripMate có những chuyến đi tuyệt vời hơn.
+            {tripReviewEn.tripReview.pageSubtitle}
           </p>
         </div>
 
@@ -178,12 +185,12 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             </span>
             <h3 className="text-base font-bold text-[#00152A]">
               {fetchError.type === 'NOT_FOUND'
-                ? 'Không tìm thấy chuyến đi'
+                ? tripReviewEn.reviewPage.notFoundTitle
                 : fetchError.type === 'FORBIDDEN'
-                  ? 'Không có quyền truy cập'
+                  ? tripReviewEn.reviewPage.forbiddenTitle
                   : fetchError.type === 'PENDING_BE_INTEGRATION'
                     ? tripReviewEn.reviewPage.pendingTitle
-                    : 'Lỗi kết nối máy chủ'}
+                    : tripReviewEn.reviewPage.networkErrorTitle}
             </h3>
             <p className="mt-1 text-xs text-slate-500">{fetchError.message}</p>
             <div className="mt-5 flex items-center justify-center gap-3">
@@ -197,14 +204,14 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
                   }}
                   className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
                 >
-                  Thử lại
+                  {tripReviewEn.actions.retry}
                 </button>
               )}
               <Link
                 href={ROUTES.account.trips}
                 className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
               >
-                Quay lại danh sách chuyến đi
+                {tripReviewEn.actions.backToTrips}
               </Link>
             </div>
           </div>
@@ -217,17 +224,17 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
               search_off
             </span>
             <h3 className="text-base font-bold text-[#00152A]">
-              Không tìm thấy chuyến đi
+              {tripReviewEn.reviewPage.notFoundTitle}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Chuyến đi #{tripId} không tồn tại hoặc bạn không có quyền xem chuyến đi này (MSG126).
+              {tripReviewEn.errors.tripNotFoundOrForbidden(tripId)}
             </p>
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
                 className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
-                Quay lại danh sách chuyến đi
+                {tripReviewEn.actions.backToTrips}
               </Link>
             </div>
           </div>
@@ -240,17 +247,17 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
               hourglass_empty
             </span>
             <h3 className="text-base font-bold text-amber-950">
-              Chuyến đi chưa hoàn thành
+              {tripReviewEn.tripReview.notCompletedTitle}
             </h3>
             <p className="mt-1 text-xs text-amber-800">
-              Bạn chỉ có thể gửi đánh giá cho những chuyến đi đã hoàn thành (MSG121 / BR-91).
+              {tripReviewEn.tripReview.notCompletedDetail}
             </p>
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
                 className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
-                Quay lại danh sách chuyến đi
+                {tripReviewEn.actions.backToTrips}
               </Link>
             </div>
           </div>
@@ -263,10 +270,10 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
               task_alt
             </span>
             <h3 className="text-base font-bold text-emerald-950">
-              Chuyến đi này đã được đánh giá
+              {tripReviewEn.tripReview.alreadyReviewedTitle}
             </h3>
             <p className="mt-1 text-xs text-emerald-800">
-              Bạn đã gửi đánh giá cho chuyến đi này ({trip.rating} sao) (MSG122 / BR-92).
+              {tripReviewEn.tripReview.alreadyReviewedDetail(trip.rating)}
             </p>
             {trip.reviewComment && (
               <p className="mt-2 text-xs italic text-emerald-700">
@@ -278,7 +285,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
                 href={ROUTES.account.trips}
                 className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
-                Quay lại danh sách chuyến đi
+                {tripReviewEn.actions.backToTrips}
               </Link>
             </div>
           </div>

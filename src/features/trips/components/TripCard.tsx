@@ -4,6 +4,7 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
+import { tripReviewEn } from '../resources/en';
 import type { TripCardDto } from '../types/tripHistory';
 import { useModalFocusTrap } from './useModalFocusTrap';
 
@@ -24,7 +25,7 @@ function formatVnd(amount?: number): string {
 function formatTripDate(isoString: string): string {
   try {
     const d = new Date(isoString);
-    return new Intl.DateTimeFormat('vi-VN', {
+    return new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -89,7 +90,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
 
                 {trip.isDemo && (
                   <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">
-                    DEMO
+                    {tripReviewEn.demo.shortBadge}
                   </span>
                 )}
               </div>
@@ -98,7 +99,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                 {trip.title}
               </h3>
               <p className="mt-0.5 text-xs text-slate-500 font-medium">
-                Khởi hành: {formattedDate}
+                {tripReviewEn.tripHistory.card.departureDate(formattedDate)}
               </p>
             </div>
           </div>
@@ -119,8 +120,12 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                 navigation
               </span>
               <span>
-                {trip.stopCount ? `${trip.stopCount} Điểm dừng` : ''}
-                {trip.distanceKm ? ` • ${trip.distanceKm} km di chuyển` : ''}
+                {trip.stopCount
+                  ? tripReviewEn.tripHistory.card.stopsCount(trip.stopCount)
+                  : ''}
+                {trip.distanceKm
+                  ? tripReviewEn.tripHistory.card.distanceTravelled(trip.distanceKm)
+                  : ''}
               </span>
               {trip.durationLabel && (
                 <span className="ml-auto text-[11px] font-semibold text-slate-500">
@@ -131,7 +136,9 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
 
             {trip.stopsSummary && trip.stopsSummary.length > 0 && (
               <p className="mt-1.5 truncate text-xs text-slate-600">
-                <strong className="text-slate-800">Đã ghé: </strong>
+                <strong className="text-slate-800">
+                  {tripReviewEn.tripHistory.card.visitedLabel}
+                </strong>
                 {trip.stopsSummary.join(', ')}
               </p>
             )}
@@ -142,7 +149,9 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                   <span className="material-symbols-outlined text-[13px] text-[#006B5F]" aria-hidden="true">
                     group
                   </span>
-                  Đã đi cùng {trip.memberCount} thành viên
+                  {tripReviewEn.tripHistory.card.travelledWithMembers(
+                    trip.memberCount
+                  )}
                 </span>
               )}
               {trip.isRerouted && (
@@ -150,7 +159,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                   <span className="material-symbols-outlined text-[13px]" aria-hidden="true">
                     alt_route
                   </span>
-                  Chấp nhận đổi tuyến do thời tiết
+                  {tripReviewEn.tripHistory.card.weatherReroutedBadge}
                 </span>
               )}
             </div>
@@ -159,11 +168,12 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
           <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
             <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
               <span className="font-semibold text-slate-700">
-                {trip.operatorName || 'Nhà tổ chức tour'}
+                {trip.operatorName ||
+                  tripReviewEn.tripHistory.card.defaultOperatorName}
               </span>
               {trip.bookingCode && (
                 <span className="font-mono text-[11px] text-slate-500">
-                  Mã: {trip.bookingCode}
+                  {tripReviewEn.tripHistory.card.bookingCode(trip.bookingCode)}
                 </span>
               )}
             </div>
@@ -176,25 +186,33 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
               )}
               {trip.paymentMethod && (
                 <span className="text-[11px] text-slate-500">
-                  Thanh toán qua {trip.paymentMethod}
+                  {tripReviewEn.tripHistory.card.paidVia(trip.paymentMethod)}
                 </span>
               )}
             </div>
 
             {trip.participantsSummary && (
               <p className="mt-1 text-[11px] text-slate-500">
-                Số người: {trip.participantsSummary}
+                {tripReviewEn.tripHistory.card.participants(
+                  trip.participantsSummary
+                )}
               </p>
             )}
 
             {isCancelled && trip.refundStatus && (
               <div className="mt-2 rounded-lg bg-slate-100 p-2 text-xs text-slate-600">
                 <p className="font-semibold text-slate-700">
-                  Hoàn tiền: {trip.refundStatus}
+                  {tripReviewEn.tripHistory.card.refundStatus(
+                    trip.refundStatus
+                  )}
                 </p>
                 {trip.refundAmount !== undefined && (
                   <p className="text-[11px]">
-                    Số tiền hoàn: {formatVnd(trip.refundAmount)} ({trip.refundChannel || 'Kênh thanh toán gốc'})
+                    {tripReviewEn.tripHistory.card.refundAmountLine(
+                      formatVnd(trip.refundAmount),
+                      trip.refundChannel ||
+                        tripReviewEn.tripHistory.card.defaultRefundChannel
+                    )}
                   </p>
                 )}
               </div>
@@ -214,7 +232,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
               map
             </span>
-            <span>Xem lại lộ trình</span>
+            <span>{tripReviewEn.actions.viewItinerary}</span>
           </Link>
         )}
 
@@ -227,7 +245,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             <span className="material-symbols-outlined text-[16px] text-[#006B5F]" aria-hidden="true">
               qr_code_2
             </span>
-            <span>Xem vé điện tử</span>
+            <span>{tripReviewEn.actions.viewETicket}</span>
           </Link>
         )}
 
@@ -240,7 +258,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
               rate_review
             </span>
-            <span>Viết đánh giá</span>
+            <span>{tripReviewEn.actions.writeReview}</span>
           </Link>
         )}
 
@@ -254,7 +272,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
               visibility
             </span>
-            <span>Xem đánh giá</span>
+            <span>{tripReviewEn.actions.viewReview}</span>
           </button>
         )}
 
@@ -267,7 +285,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">
               replay
             </span>
-            <span>Đặt lại</span>
+            <span>{tripReviewEn.actions.bookAgain}</span>
           </Link>
         )}
 
@@ -282,7 +300,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
               receipt_long
             </span>
-            <span>Chi tiết hoàn tiền</span>
+            <span>{tripReviewEn.actions.refundDetails}</span>
           </button>
         )}
       </div>
@@ -298,19 +316,34 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
         >
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <h4 id="refund-modal-title" className="text-base font-bold text-[#00152A]">
-              Thông tin hoàn tiền chuyến đi
+              {tripReviewEn.dialogs.refundDetails.title}
             </h4>
             <div className="mt-3 space-y-2 text-xs text-slate-600">
-              <p><strong>Mã đặt tour:</strong> {trip.bookingCode || trip.tripId}</p>
-              <p><strong>Trạng thái:</strong> {trip.refundStatus}</p>
+              <p>
+                <strong>{tripReviewEn.dialogs.refundDetails.bookingCodeLabel}</strong>{' '}
+                {trip.bookingCode || trip.tripId}
+              </p>
+              <p>
+                <strong>{tripReviewEn.dialogs.refundDetails.statusLabel}</strong>{' '}
+                {trip.refundStatus}
+              </p>
               {trip.refundAmount !== undefined && (
-                <p><strong>Số tiền hoàn:</strong> {formatVnd(trip.refundAmount)}</p>
+                <p>
+                  <strong>{tripReviewEn.dialogs.refundDetails.refundAmountLabel}</strong>{' '}
+                  {formatVnd(trip.refundAmount)}
+                </p>
               )}
               {trip.refundChannel && (
-                <p><strong>Kênh hoàn:</strong> {trip.refundChannel}</p>
+                <p>
+                  <strong>{tripReviewEn.dialogs.refundDetails.refundChannelLabel}</strong>{' '}
+                  {trip.refundChannel}
+                </p>
               )}
               {trip.cancelledAt && (
-                <p><strong>Thời gian hủy:</strong> {formatTripDate(trip.cancelledAt)}</p>
+                <p>
+                  <strong>{tripReviewEn.dialogs.refundDetails.cancelledAtLabel}</strong>{' '}
+                  {formatTripDate(trip.cancelledAt)}
+                </p>
               )}
             </div>
             <div className="mt-5 flex justify-end">
@@ -320,7 +353,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                 onClick={() => setShowRefundModal(false)}
                 className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
-                Đóng
+                {tripReviewEn.actions.close}
               </button>
             </div>
           </div>

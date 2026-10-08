@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { tripReviewEn } from '../resources/en';
 
 interface TripFiltersBarProps {
   tripType: 'ALL' | 'TourBooking' | 'SelfPlannedItinerary';
@@ -37,7 +38,7 @@ export function TripFiltersBar({
 
   const handleFromDateChange = (newFrom: string) => {
     if (toDate && newFrom && new Date(newFrom).getTime() > new Date(toDate).getTime()) {
-      setDateError('Khoảng thời gian không hợp lệ. Ngày bắt đầu phải trước ngày kết thúc (MSG29).');
+      setDateError(tripReviewEn.validation.invalidDateRange);
     } else {
       setDateError(null);
       onDateRangeChange(newFrom, toDate);
@@ -46,7 +47,7 @@ export function TripFiltersBar({
 
   const handleToDateChange = (newTo: string) => {
     if (fromDate && newTo && new Date(fromDate).getTime() > new Date(newTo).getTime()) {
-      setDateError('Khoảng thời gian không hợp lệ. Ngày bắt đầu phải trước ngày kết thúc (MSG29).');
+      setDateError(tripReviewEn.validation.invalidDateRange);
     } else {
       setDateError(null);
       onDateRangeChange(fromDate, newTo);
@@ -59,7 +60,7 @@ export function TripFiltersBar({
         {/* Search input with submit semantics per CR-02 */}
         <form onSubmit={handleSearchSubmit} className="relative flex items-center">
           <label htmlFor="trip-search" className="sr-only">
-            Tìm kiếm chuyến đi
+            {tripReviewEn.accessibility.searchTripsLabel}
           </label>
           <span
             className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400"
@@ -72,22 +73,22 @@ export function TripFiltersBar({
             type="search"
             value={draftSearch}
             onChange={(e) => setDraftSearch(e.target.value)}
-            placeholder="Tìm theo tên tour, điểm đến, mã đặt..."
+            placeholder={tripReviewEn.tripHistory.filters.searchPlaceholder}
             className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-14 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#006B5F] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
           />
           <button
             type="submit"
             className="absolute right-1.5 rounded-lg bg-[#006B5F] px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-[#00574D] active:scale-95"
-            aria-label="Tìm kiếm"
+            aria-label={tripReviewEn.accessibility.searchButtonAria}
           >
-            Tìm
+            {tripReviewEn.actions.search}
           </button>
         </form>
 
         {/* Trip type selector */}
         <div>
           <label htmlFor="trip-type-filter" className="sr-only">
-            Hình thức chuyến đi
+            {tripReviewEn.accessibility.tripTypeFilterLabel}
           </label>
           <select
             id="trip-type-filter"
@@ -97,9 +98,11 @@ export function TripFiltersBar({
             }
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#006B5F] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
           >
-            <option value="ALL">Tất cả hình thức</option>
-            <option value="TourBooking">Tour bản địa</option>
-            <option value="SelfPlannedItinerary">Lộ trình tự lập</option>
+            <option value="ALL">{tripReviewEn.tripHistory.filters.allTypes}</option>
+            <option value="TourBooking">{tripReviewEn.tripHistory.filters.tourBooking}</option>
+            <option value="SelfPlannedItinerary">
+              {tripReviewEn.tripHistory.filters.selfPlannedItinerary}
+            </option>
           </select>
         </div>
 
@@ -107,7 +110,7 @@ export function TripFiltersBar({
         <div className="flex items-center gap-2">
           <input
             type="date"
-            aria-label="Từ ngày"
+            aria-label={tripReviewEn.accessibility.fromDateAria}
             value={fromDate}
             onChange={(e) => handleFromDateChange(e.target.value)}
             className="w-1/2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700 focus:border-[#006B5F] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
@@ -115,7 +118,7 @@ export function TripFiltersBar({
           <span className="text-xs text-slate-400">-</span>
           <input
             type="date"
-            aria-label="Đến ngày"
+            aria-label={tripReviewEn.accessibility.toDateAria}
             value={toDate}
             onChange={(e) => handleToDateChange(e.target.value)}
             className="w-1/2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700 focus:border-[#006B5F] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"

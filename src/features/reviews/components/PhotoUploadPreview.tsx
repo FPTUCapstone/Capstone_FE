@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { tripReviewEn } from '@/features/trips/resources/en';
 import type { ReviewPhotoItem } from '../types/review';
 
 interface PhotoUploadPreviewProps {
@@ -41,7 +42,7 @@ export function PhotoUploadPreview({
 
     const remainingSlots = maxPhotos - photos.length;
     if (remainingSlots <= 0) {
-      setError(`Bạn chỉ có thể đính kèm tối đa ${maxPhotos} ảnh.`);
+      setError(tripReviewEn.validation.photosMaxCount(maxPhotos));
       return;
     }
 
@@ -51,12 +52,12 @@ export function PhotoUploadPreview({
       const file = files[i];
 
       if (!ALLOWED_TYPES.includes(file.type)) {
-        setError('Ảnh phải thuộc định dạng JPG, PNG hoặc WEBP (MSG20).');
+        setError(tripReviewEn.validation.photosInvalidType);
         continue;
       }
 
       if (file.size > MAX_FILE_SIZE_BYTES) {
-        setError(`Ảnh "${file.name}" vượt quá dung lượng tối đa 5MB (MSG20).`);
+        setError(tripReviewEn.validation.photosMaxSize(file.name));
         continue;
       }
 
@@ -93,15 +94,15 @@ export function PhotoUploadPreview({
     <section aria-labelledby="photos-title" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
       <div className="flex items-center justify-between mb-2">
         <h3 id="photos-title" className="text-sm font-extrabold text-[#00152A]">
-          Hình ảnh chuyến đi (Tùy chọn)
+          {tripReviewEn.tripReview.photosOptionalTitle}
         </h3>
         <span className="text-xs font-semibold text-slate-500">
-          {photos.length}/{maxPhotos} ảnh
+          {tripReviewEn.tripReview.photosCountBadge(photos.length, maxPhotos)}
         </span>
       </div>
 
       <p className="text-xs text-slate-500 mb-3">
-        Đính kèm ảnh kỷ niệm hoặc khoảnh khắc ấn tượng trong chuyến đi (Tối đa 5 ảnh, mỗi ảnh dưới 5MB).
+        {tripReviewEn.tripReview.photosHelperText}
       </p>
 
       {error && (
@@ -118,7 +119,7 @@ export function PhotoUploadPreview({
         multiple
         className="hidden"
         onChange={handleFileSelect}
-        aria-label="Tải lên ảnh chuyến đi"
+        aria-label={tripReviewEn.accessibility.uploadPhotosAria}
       />
 
       {/* Photos Grid */}
@@ -131,12 +132,12 @@ export function PhotoUploadPreview({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={photo.url}
-              alt={photo.name || `Ảnh chuyến đi ${index + 1}`}
+              alt={photo.name || tripReviewEn.accessibility.tripPhotoAlt(index + 1)}
               className="h-full w-full object-cover"
             />
             <button
               type="button"
-              aria-label={`Xóa ảnh ${photo.name}`}
+              aria-label={tripReviewEn.accessibility.removePhotoAria(photo.name)}
               onClick={() => handleRemovePhoto(photo.id)}
               className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-rose-600"
             >
@@ -154,16 +155,16 @@ export function PhotoUploadPreview({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-2 text-center text-slate-500 transition hover:border-[#006B5F] hover:bg-[#E6F4F1]/30 hover:text-[#006B5F] active:scale-95"
-            aria-label="Thêm ảnh chuyến đi"
+            aria-label={tripReviewEn.accessibility.addPhotoAria}
           >
             <span className="material-symbols-outlined text-[24px] text-[#006B5F]">
               add_photo_alternate
             </span>
             <span className="mt-1 text-[11px] font-bold text-slate-800">
-              + Thêm ảnh
+              {tripReviewEn.actions.addPhoto}
             </span>
             <span className="text-[9px] text-slate-400">
-              (Dưới 5MB)
+              {tripReviewEn.tripReview.photoUnder5Mb}
             </span>
           </button>
         )}
@@ -173,7 +174,7 @@ export function PhotoUploadPreview({
         <span className="material-symbols-outlined text-[14px] text-[#006B5F]" aria-hidden="true">
           info
         </span>
-        <span>Ảnh chỉ được xem trước cục bộ trong bản demo và chưa được tải lên máy chủ.</span>
+        <span>{tripReviewEn.demo.photoLocalPreviewNotice}</span>
       </div>
     </section>
   );

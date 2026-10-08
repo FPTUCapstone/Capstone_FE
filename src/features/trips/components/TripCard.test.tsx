@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
+import { tripReviewEn } from '../resources/en';
 import type { TripCardDto } from '../types/tripHistory';
 import { TripCard } from './TripCard';
 
@@ -9,10 +10,10 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
     const tourWithTicket: TripCardDto = {
       tripId: 'trip-demo-02',
       tripType: 'TourBooking',
-      title: 'Hành Trình Di Sản Phố Cổ Hội An',
+      title: 'Hoi An Heritage Tour',
       departureDatetime: '2026-04-15T07:30:00Z',
       status: 'Completed',
-      statusLabel: 'Đã hoàn thành',
+      statusLabel: 'Completed',
       bookingId: 'bk-demo-0148',
       bookingCode: 'BK-20261015-0148',
       ticketId: 'tkt-demo-03', // Distinct ticket ID per PR #43
@@ -21,7 +22,9 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
 
     render(<TripCard trip={tourWithTicket} />);
 
-    const ticketLink = screen.getByRole('link', { name: /Xem vé điện tử/i });
+    const ticketLink = screen.getByRole('link', {
+      name: new RegExp(tripReviewEn.actions.viewETicket, 'i'),
+    });
     expect(ticketLink).toBeDefined();
 
     // Verify href strictly contains the ticketId, NEVER the bookingId
@@ -33,10 +36,10 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
     const tourWithoutTicket: TripCardDto = {
       tripId: 'trip-demo-04',
       tripType: 'TourBooking',
-      title: 'Đà Nẵng City Tour',
+      title: 'Da Nang City Tour',
       departureDatetime: '2026-07-15T08:00:00Z',
       status: 'Completed',
-      statusLabel: 'Đã hoàn thành',
+      statusLabel: 'Completed',
       bookingId: 'bk-demo-0442',
       ticketId: undefined, // Truthfully absent
       isReviewed: false,
@@ -44,19 +47,21 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
 
     render(<TripCard trip={tourWithoutTicket} />);
 
-    // Link "Xem vé điện tử" must NOT be rendered
-    const ticketLink = screen.queryByRole('link', { name: /Xem vé điện tử/i });
+    // Link "View E-Ticket" must NOT be rendered
+    const ticketLink = screen.queryByRole('link', {
+      name: new RegExp(tripReviewEn.actions.viewETicket, 'i'),
+    });
     expect(ticketLink).toBeNull();
   });
 
-  it('Renders [Xem lại lộ trình] CTA for self-planned itinerary', () => {
+  it('Renders [View Itinerary] CTA for self-planned itinerary', () => {
     const itineraryTrip: TripCardDto = {
       tripId: 'trip-demo-01',
       tripType: 'SelfPlannedItinerary',
-      title: 'Hành trình Đà Nẵng - Hội An',
+      title: 'Da Nang - Hoi An Itinerary',
       departureDatetime: '2026-05-24T08:00:00Z',
       status: 'Completed',
-      statusLabel: 'Đã hoàn thành',
+      statusLabel: 'Completed',
       itineraryId: 101,
       stopCount: 4,
       distanceKm: 28,
@@ -65,24 +70,28 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
 
     render(<TripCard trip={itineraryTrip} />);
 
-    const itineraryLink = screen.getByRole('link', { name: /Xem lại lộ trình/i });
+    const itineraryLink = screen.getByRole('link', {
+      name: new RegExp(tripReviewEn.actions.viewItinerary, 'i'),
+    });
     expect(itineraryLink.getAttribute('href')).toBe('/itinerary/101');
   });
 
-  it('Renders [Viết đánh giá] CTA when completed trip is unreviewed', () => {
+  it('Renders [Write Review] CTA when completed trip is unreviewed', () => {
     const unreviewedTrip: TripCardDto = {
       tripId: 'trip-demo-01',
       tripType: 'SelfPlannedItinerary',
-      title: 'Hành trình Đà Nẵng',
+      title: 'Da Nang Itinerary',
       departureDatetime: '2026-05-24T08:00:00Z',
       status: 'Completed',
-      statusLabel: 'Đã hoàn thành',
+      statusLabel: 'Completed',
       isReviewed: false,
     };
 
     render(<TripCard trip={unreviewedTrip} />);
 
-    const reviewLink = screen.getByRole('link', { name: /Viết đánh giá/i });
+    const reviewLink = screen.getByRole('link', {
+      name: new RegExp(tripReviewEn.actions.writeReview, 'i'),
+    });
     expect(reviewLink.getAttribute('href')).toBe('/account/trips/trip-demo-01/review');
   });
 
@@ -90,36 +99,38 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
     const tripWithZeroMembers: TripCardDto = {
       tripId: 'trip-demo-zero',
       tripType: 'TourBooking',
-      title: 'Tour Đi Bộ',
+      title: 'Walking Tour',
       departureDatetime: '2026-05-24T08:00:00Z',
       status: 'Upcoming',
-      statusLabel: 'Sắp tới',
+      statusLabel: 'Upcoming',
       memberCount: 0,
       isReviewed: false,
     };
 
     const { container } = render(<TripCard trip={tripWithZeroMembers} />);
-    expect(container.textContent).not.toContain('0 người');
+    expect(container.textContent).not.toContain('0 members');
   });
 
   describe('Refund modal accessibility & focus trap', () => {
     const cancelledTripWithRefund: TripCardDto = {
       tripId: 'trip-demo-refund',
       tripType: 'TourBooking',
-      title: 'Tour Hủy Hoàn Tiền',
+      title: 'Cancelled Refunded Tour',
       departureDatetime: '2026-05-24T08:00:00Z',
       status: 'Cancelled',
-      statusLabel: 'Đã hủy',
-      refundStatus: 'Đã hoàn tiền thành công',
+      statusLabel: 'Cancelled',
+      refundStatus: '100% Refunded',
       refundAmount: 500000,
-      refundChannel: 'Ví điện tử',
+      refundChannel: 'E-Wallet',
       isReviewed: false,
     };
 
     it('opens refund modal, establishes initial focus on close button, traps focus, and closes via Escape', () => {
       render(<TripCard trip={cancelledTripWithRefund} />);
 
-      const triggerBtn = screen.getByRole('button', { name: /Chi tiết hoàn tiền/i });
+      const triggerBtn = screen.getByRole('button', {
+        name: new RegExp(tripReviewEn.actions.refundDetails, 'i'),
+      });
       triggerBtn.focus();
       expect(document.activeElement).toBe(triggerBtn);
 
@@ -129,9 +140,13 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
       expect(dialog).toBeDefined();
       expect(dialog.getAttribute('aria-modal')).toBe('true');
       expect(dialog.getAttribute('aria-labelledby')).toBe('refund-modal-title');
-      expect(screen.getByText('Thông tin hoàn tiền chuyến đi').id).toBe('refund-modal-title');
+      expect(
+        screen.getByText(tripReviewEn.dialogs.refundDetails.title).id
+      ).toBe('refund-modal-title');
 
-      const closeBtn = screen.getByRole('button', { name: /Đóng/i });
+      const closeBtn = screen.getByRole('button', {
+        name: new RegExp(tripReviewEn.actions.close, 'i'),
+      });
       // Initial focus placed inside modal onto close button
       expect(document.activeElement).toBe(closeBtn);
 
@@ -152,11 +167,15 @@ describe('TripCard Component (TRIP-9, TRIP-10)', () => {
     it('closing modal via Close button restores focus to trigger button', () => {
       render(<TripCard trip={cancelledTripWithRefund} />);
 
-      const triggerBtn = screen.getByRole('button', { name: /Chi tiết hoàn tiền/i });
+      const triggerBtn = screen.getByRole('button', {
+        name: new RegExp(tripReviewEn.actions.refundDetails, 'i'),
+      });
       triggerBtn.focus();
       fireEvent.click(triggerBtn);
 
-      const closeBtn = screen.getByRole('button', { name: /Đóng/i });
+      const closeBtn = screen.getByRole('button', {
+        name: new RegExp(tripReviewEn.actions.close, 'i'),
+      });
       expect(document.activeElement).toBe(closeBtn);
 
       fireEvent.click(closeBtn);

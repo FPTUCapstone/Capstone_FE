@@ -28,21 +28,29 @@ export async function submitTripReview(
 ): Promise<ReviewSubmissionResult> {
   // Validate basic constraints before network
   if (!payload.rating || payload.rating < 1 || payload.rating > 5) {
-    throw new ReviewApiError('Vui lòng chọn số sao đánh giá (1-5 sao) trước khi gửi (MSG66).', 400);
+    throw new ReviewApiError(tripReviewEn.validation.ratingRequired, 400, {
+      errorCode: 'MSG66',
+    });
   }
 
   const titleTrimmed = payload.title?.trim() ?? '';
   if (!titleTrimmed) {
-    throw new ReviewApiError('Tiêu đề đánh giá là bắt buộc (MSG01).', 400);
+    throw new ReviewApiError(tripReviewEn.validation.titleRequired, 400, {
+      errorCode: 'MSG01',
+    });
   }
 
   const commentTrimmed = payload.comment?.trim() ?? '';
   if (!commentTrimmed) {
-    throw new ReviewApiError('Nội dung đánh giá là bắt buộc (MSG01).', 400);
+    throw new ReviewApiError(tripReviewEn.validation.commentRequired, 400, {
+      errorCode: 'MSG01',
+    });
   }
 
   if (commentTrimmed.length > 500) {
-    throw new ReviewApiError('Nội dung đánh giá không được vượt quá 500 ký tự (MSG123).', 400);
+    throw new ReviewApiError(tripReviewEn.validation.commentMaxLength, 400, {
+      errorCode: 'MSG123',
+    });
   }
 
   const allowDemo = Boolean(options?.allowDemo) && isReviewDemoAllowedInCurrentEnv();
@@ -51,7 +59,7 @@ export async function submitTripReview(
   if (allowDemo) {
     return {
       status: 'SUCCESS',
-      message: 'Cảm ơn bạn đã phản hồi! Đánh giá của bạn đã được xuất bản (Bản xem trước DEMO).',
+      message: tripReviewEn.tripReview.demoSubmitSuccess,
       reviewId: `rev-demo-${Date.now()}`,
       isDemo: true,
     };
@@ -85,11 +93,7 @@ export async function submitTripReview(
       ) {
         return {
           status: 'PENDING_BE_INTEGRATION',
-          message:
-            typeof (pendingPayload as { detail?: unknown }).detail === 'string' &&
-            (pendingPayload as { detail: string }).detail.trim().length > 0
-              ? (pendingPayload as { detail: string }).detail
-              : tripReviewEn.bff.tripReviewPendingDetail,
+          message: tripReviewEn.bff.tripReviewPendingDetail,
         };
       }
       throw new ReviewApiError(MSG127_SYSTEM_ERROR, 501, {
@@ -101,9 +105,7 @@ export async function submitTripReview(
     if (response.status === 404) {
       const notFoundData = await response.json().catch(() => null);
       throw new ReviewApiError(
-        notFoundData?.detail ||
-          notFoundData?.title ||
-          tripReviewEn.errors.reviewTripNotFound,
+        tripReviewEn.errors.reviewTripNotFound,
         404,
         { ...(typeof notFoundData === 'object' ? notFoundData : {}), errorCode: 'TRIP_NOT_FOUND' }
       );
@@ -112,9 +114,7 @@ export async function submitTripReview(
     if (response.status === 401 || response.status === 403) {
       const authErrorData = await response.json().catch(() => null);
       throw new ReviewApiError(
-        authErrorData?.detail ||
-          authErrorData?.title ||
-          tripReviewEn.errors.reviewAccessDenied,
+        tripReviewEn.errors.reviewAccessDenied,
         response.status,
         { ...(typeof authErrorData === 'object' ? authErrorData : {}), errorCode: 'MSG126' }
       );
@@ -122,12 +122,8 @@ export async function submitTripReview(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      // For HTTP 5xx (500-599), ALWAYS standardize to canonical English system error copy; never expose raw server title
-      const msg =
-        response.status >= 500 && response.status <= 599
-          ? MSG127_SYSTEM_ERROR
-          : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
-      throw new ReviewApiError(msg, response.status, {
+      // Always standardize to canonical English system error copy; never expose raw server ProblemDetails
+      throw new ReviewApiError(MSG127_SYSTEM_ERROR, response.status, {
         ...(typeof errorData === 'object' ? errorData : {}),
         errorCode: response.status >= 500 && response.status <= 599 ? 'MSG127' : undefined,
       });
@@ -136,7 +132,7 @@ export async function submitTripReview(
     const data = await response.json();
     return {
       status: 'SUCCESS',
-      message: 'Cảm ơn bạn đã phản hồi! Đánh giá của bạn đã được xuất bản.',
+      message: tripReviewEn.tripReview.submitSuccess,
       reviewId: data.reviewId || data.id,
     };
   } catch (err) {

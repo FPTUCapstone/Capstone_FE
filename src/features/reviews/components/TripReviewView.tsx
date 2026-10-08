@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState } from 'react';
 
+import { tripReviewEn } from '@/features/trips/resources/en';
 import type { TripCardDto } from '@/features/trips/types/tripHistory';
 import { ROUTES } from '@/lib/routes';
 import { submitTripReview } from '../services/reviewApi';
@@ -24,7 +25,7 @@ interface TripReviewViewProps {
 function formatTripDate(isoString: string): string {
   try {
     const d = new Date(isoString);
-    return new Intl.DateTimeFormat('vi-VN', {
+    return new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -67,24 +68,24 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
     let hasError = false;
 
     if (!rating || rating < 1 || rating > 5) {
-      setRatingError('Vui lòng chọn số sao đánh giá (1-5 sao) trước khi gửi (MSG66).');
+      setRatingError(tripReviewEn.validation.ratingRequired);
       hasError = true;
     }
 
     const titleTrimmed = title.trim();
     if (titleTrimmed.length === 0) {
-      setTitleError('Tiêu đề đánh giá là bắt buộc (MSG01).');
+      setTitleError(tripReviewEn.validation.titleRequired);
       hasError = true;
     } else if (titleTrimmed.length > 150) {
-      setTitleError('Tiêu đề đánh giá không được vượt quá 150 ký tự.');
+      setTitleError(tripReviewEn.validation.titleMaxLength);
       hasError = true;
     }
 
     if (commentLength === 0) {
-      setCommentError('Nội dung đánh giá là bắt buộc (MSG01).');
+      setCommentError(tripReviewEn.validation.commentRequired);
       hasError = true;
     } else if (commentLength > 500) {
-      setCommentError('Nội dung đánh giá không được vượt quá 500 ký tự (MSG123).');
+      setCommentError(tripReviewEn.validation.commentMaxLength);
       hasError = true;
     }
 
@@ -110,7 +111,8 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
     } catch (err) {
       setSubmissionResult({
         status: 'ERROR',
-        message: err instanceof Error ? err.message : 'Không thể gửi đánh giá đến máy chủ (MSG127).',
+        message:
+          err instanceof Error ? err.message : tripReviewEn.errors.systemError,
       });
     } finally {
       setSubmitting(false);
@@ -123,10 +125,11 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
       {isDemo && (
         <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-900">
           <span>
-            <strong>Bản xem trước DEMO:</strong> Đánh giá chuyến đi mẫu ({trip.tripId}).
+            <strong>{tripReviewEn.demo.tripReviewBannerPrefix}</strong>{' '}
+            {tripReviewEn.demo.tripReviewBannerText(trip.tripId)}
           </span>
           <span className="rounded bg-amber-200 px-2 py-0.5 font-bold uppercase text-[10px] text-amber-800">
-            DEMO ONLY
+            {tripReviewEn.demo.badgeLabel}
           </span>
         </div>
       )}
@@ -143,7 +146,11 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
               event_available
             </span>
-            <span>Đã hoàn thành {formatTripDate(trip.departureDatetime)}</span>
+            <span>
+              {tripReviewEn.tripReview.completedOn(
+                formatTripDate(trip.departureDatetime)
+              )}
+            </span>
           </div>
           <h2 className="truncate text-sm font-extrabold text-[#00152A] sm:text-base">
             {trip.title}
@@ -151,11 +158,21 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           <p className="truncate text-xs text-slate-500">
             {trip.tripType === 'SelfPlannedItinerary'
               ? [
-                  trip.stopCount != null ? `${trip.stopCount} Điểm dừng` : null,
-                  trip.distanceKm != null ? `${trip.distanceKm} km di chuyển` : null,
+                  trip.stopCount != null
+                    ? tripReviewEn.tripReview.stopsCount(trip.stopCount)
+                    : null,
+                  trip.distanceKm != null
+                    ? tripReviewEn.tripReview.distanceTravelled(trip.distanceKm)
+                    : null,
                   trip.durationLabel || null,
-                ].filter(Boolean).join(' • ') || 'Lộ trình tự lập'
-              : `${trip.operatorName || 'Tour bản địa'} • Mã đặt: ${trip.bookingCode || trip.tripId}`}
+                ]
+                  .filter(Boolean)
+                  .join(' • ') || tripReviewEn.tripReview.selfPlannedFallback
+              : tripReviewEn.tripReview.bookedTourSummary(
+                  trip.operatorName ||
+                    tripReviewEn.tripReview.defaultTourTypeLabel,
+                  trip.bookingCode || trip.tripId
+                )}
           </p>
         </div>
       </div>
@@ -170,7 +187,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             check_circle
           </span>
           <h3 className="text-base font-extrabold text-emerald-950">
-            Đánh giá đã được ghi nhận!
+            {tripReviewEn.tripReview.submittedTitle}
           </h3>
           <p className="mt-1 text-xs text-emerald-800 leading-relaxed">
             {submissionResult.message}
@@ -180,7 +197,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
               href={isDemo ? `${ROUTES.account.trips}?demo=1` : ROUTES.account.trips}
               className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
             >
-              Quay lại danh sách chuyến đi
+              {tripReviewEn.actions.backToTrips}
             </Link>
           </div>
         </div>
@@ -198,13 +215,13 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 </span>
                 <div>
                   <h4 className="text-sm font-bold text-amber-950">
-                    Chờ kích hoạt dịch vụ lưu đánh giá
+                    {tripReviewEn.tripReview.pendingSaveTitle}
                   </h4>
                   <p className="mt-1 text-xs text-amber-800 leading-relaxed">
                     {submissionResult.message}
                   </p>
                   <p className="mt-2 text-[11px] text-amber-700">
-                    Giao diện và các quy tắc kiểm tra tính hợp lệ (độ dài, số sao, hình ảnh) đã sẵn sàng hoạt động.
+                    {tripReviewEn.tripReview.pendingSaveHint}
                   </p>
                 </div>
               </div>
@@ -235,10 +252,10 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           <section aria-labelledby="title-label" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
             <div className="flex items-center justify-between mb-1.5">
               <label htmlFor="review-title" id="title-label" className="text-sm font-extrabold text-[#00152A]">
-                Tiêu đề đánh giá <span className="text-rose-500">*</span>
+                {tripReviewEn.tripReview.titleLabel} <span className="text-rose-500">*</span>
               </label>
               <span className="text-xs font-semibold text-slate-400">
-                {title.trim().length} / 150 ký tự
+                {tripReviewEn.tripReview.characterCount(title.trim().length, 150)}
               </span>
             </div>
 
@@ -250,7 +267,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 setTitle(e.target.value);
                 if (titleError) setTitleError(null);
               }}
-              placeholder="Tóm tắt ngắn gọn trải nghiệm của bạn (ví dụ: Chuyến đi tuyệt vời)"
+              placeholder={tripReviewEn.tripReview.titlePlaceholder}
               className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 sm:text-sm ${
                 titleError
                   ? 'border-rose-400 focus:border-rose-500'
@@ -274,23 +291,23 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                     <span className="material-symbols-outlined text-[18px] text-[#006B5F]" aria-hidden="true">
                       psychology
                     </span>
-                    Mức độ hợp lý về thời gian & phân bổ điểm đến
+                    {tripReviewEn.tripReview.pacingSectionTitle}
                   </h3>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    Đánh giá tốc độ di chuyển và tính thích nghi của lộ trình (Tùy chọn)
+                    {tripReviewEn.tripReview.pacingSectionSubtitle}
                   </p>
                 </div>
                 <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase shrink-0">
-                  DEMO ONLY
+                  {tripReviewEn.demo.badgeLabel}
                 </span>
               </div>
 
               <div className="grid grid-cols-3 gap-2 mt-3">
                 {(
                   [
-                    { key: 'tight', label: 'Lịch quá dày' },
-                    { key: 'well_paced', label: 'Vừa vặn, hợp lý' },
-                    { key: 'loose', label: 'Lịch quá thưa' },
+                    { key: 'tight', label: tripReviewEn.tripReview.pacingOptions.tight },
+                    { key: 'well_paced', label: tripReviewEn.tripReview.pacingOptions.well_paced },
+                    { key: 'loose', label: tripReviewEn.tripReview.pacingOptions.loose },
                   ] as const
                 ).map((item) => (
                   <button
@@ -314,7 +331,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           {isDemo && trip.stopsSummary && trip.stopsSummary.length > 0 && (
             <div className="relative">
               <div className="absolute right-3 top-3 z-10 rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase">
-                DEMO ONLY
+                {tripReviewEn.demo.badgeLabel}
               </div>
               <PoiQuickFeedback
                 stops={trip.stopsSummary}
@@ -328,14 +345,14 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           <section aria-labelledby="comment-title" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
             <div className="flex items-center justify-between mb-1.5">
               <label htmlFor="review-comment" id="comment-title" className="text-sm font-extrabold text-[#00152A]">
-                Cảm nhận chi tiết <span className="text-rose-500">*</span>
+                {tripReviewEn.tripReview.commentLabel} <span className="text-rose-500">*</span>
               </label>
               <span
                 className={`text-xs font-semibold ${
                   isCommentTooLong ? 'text-rose-600' : 'text-[#006B5F]'
                 }`}
               >
-                {commentLength} / 500 ký tự
+                {tripReviewEn.tripReview.characterCount(commentLength, 500)}
               </span>
             </div>
 
@@ -347,7 +364,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 setComment(e.target.value);
                 if (commentError) setCommentError(null);
               }}
-              placeholder="Chia sẻ cảm nhận chi tiết của bạn về chuyến đi, hướng dẫn viên, ẩm thực, phương tiện... (Tối đa 500 ký tự)"
+              placeholder={tripReviewEn.tripReview.commentPlaceholder}
               className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 sm:text-sm ${
                 commentError
                   ? 'border-rose-400 focus:border-rose-500'
@@ -359,10 +376,12 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             <div className="mt-2 flex items-center justify-between text-xs">
               {isCommentTooLong ? (
                 <span className="text-rose-600 font-medium">
-                  Đã vượt quá {commentLength - 500} ký tự cho phép (MSG123).
+                  {tripReviewEn.tripReview.commentExceeded(commentLength - 500)}
                 </span>
               ) : (
-                <span className="text-slate-400">Tối đa 500 ký tự (MSG123).</span>
+                <span className="text-slate-400">
+                  {tripReviewEn.tripReview.commentMaxHint}
+                </span>
               )}
             </div>
 
@@ -382,10 +401,10 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 <span className="material-symbols-outlined text-[18px] text-slate-400" aria-hidden="true">
                   photo_library
                 </span>
-                <span>Hình ảnh chuyến đi</span>
+                <span>{tripReviewEn.tripReview.photosSectionTitle}</span>
               </div>
               <p className="mt-1 text-slate-500 leading-relaxed">
-                Tính năng đính kèm ảnh đánh giá đang chờ kích hoạt dịch vụ lưu trữ máy chủ và tạm thời chưa khả dụng trong chế độ sản phẩm.
+                {tripReviewEn.tripReview.photosPendingNotice}
               </p>
             </div>
           )}
@@ -401,12 +420,12 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
               />
               <div className="text-xs">
                 <span className="font-bold text-slate-800">
-                  Hiển thị với tên đầy đủ của tôi
+                  {tripReviewEn.tripReview.privacyTitle}
                 </span>
                 <p className="mt-0.5 text-slate-500">
                   {publishWithDisplayName
-                    ? 'Đánh giá sẽ được hiển thị công khai cùng tên tài khoản của bạn.'
-                    : 'Đánh giá sẽ được hiển thị công khai dưới dạng viết tắt (ví dụ: N.V.A.) để bảo vệ quyền riêng tư.'}
+                    ? tripReviewEn.tripReview.privacyPublicHint
+                    : tripReviewEn.tripReview.privacyInitialsHint}
                 </p>
               </div>
             </label>
@@ -419,7 +438,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
               onClick={() => router.back()}
               className="rounded-xl border border-slate-300 bg-white py-3 px-5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
             >
-              Hủy / Để sau
+              {tripReviewEn.actions.cancelLater}
             </button>
 
             <button
@@ -430,14 +449,14 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
               {submitting ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Đang gửi đánh giá…</span>
+                  <span>{tripReviewEn.actions.submittingReview}</span>
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                     send
                   </span>
-                  <span>Gửi đánh giá</span>
+                  <span>{tripReviewEn.actions.submitReview}</span>
                 </>
               )}
             </button>

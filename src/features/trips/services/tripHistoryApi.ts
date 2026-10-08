@@ -132,10 +132,7 @@ export async function getTripHistory(
       if (isVerifiedPendingIntegrationPayload(pendingPayload)) {
         return {
           status: 'PENDING_BE_INTEGRATION',
-          message:
-            typeof pendingPayload.detail === 'string' && pendingPayload.detail.trim().length > 0
-              ? pendingPayload.detail
-              : tripReviewEn.bff.tripHistoryPendingDetail,
+          message: tripReviewEn.bff.tripHistoryPendingDetail,
           trips: [],
           totalCount: 0,
           page,
@@ -151,9 +148,7 @@ export async function getTripHistory(
     if (response.status === 404) {
       const notFoundData = await response.json().catch(() => null);
       throw new TripApiError(
-        notFoundData?.detail ||
-          notFoundData?.title ||
-          tripReviewEn.errors.tripNotFound,
+        tripReviewEn.errors.tripNotFound,
         404,
         { ...(typeof notFoundData === 'object' ? notFoundData : {}), errorCode: 'TRIP_NOT_FOUND' }
       );
@@ -162,9 +157,7 @@ export async function getTripHistory(
     if (response.status === 401 || response.status === 403) {
       const authErrorData = await response.json().catch(() => null);
       throw new TripApiError(
-        authErrorData?.detail ||
-          authErrorData?.title ||
-          tripReviewEn.errors.tripHistoryAccessDenied,
+        tripReviewEn.errors.tripHistoryAccessDenied,
         response.status,
         { ...(typeof authErrorData === 'object' ? authErrorData : {}), errorCode: 'MSG126' }
       );
@@ -172,12 +165,8 @@ export async function getTripHistory(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      // For HTTP 5xx (500-599), ALWAYS standardize to canonical English system error copy; never expose raw server title
-      const msg =
-        response.status >= 500 && response.status <= 599
-          ? MSG127_SYSTEM_ERROR
-          : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
-      throw new TripApiError(msg, response.status, {
+      // Always standardize to canonical English system error copy; never expose raw server ProblemDetails
+      throw new TripApiError(MSG127_SYSTEM_ERROR, response.status, {
         ...(typeof errorData === 'object' ? errorData : {}),
         errorCode: response.status >= 500 && response.status <= 599 ? 'MSG127' : undefined,
       });
@@ -222,9 +211,7 @@ export async function getTripById(
       const pendingPayload = await response.json().catch(() => null);
       if (isVerifiedPendingIntegrationPayload(pendingPayload)) {
         throw new TripApiError(
-          typeof pendingPayload.detail === 'string' && pendingPayload.detail.trim().length > 0
-            ? pendingPayload.detail
-            : tripReviewEn.bff.tripHistoryPendingDetail,
+          tripReviewEn.bff.tripHistoryPendingDetail,
           501,
           { errorCode: PENDING_BE_INTEGRATION_ERROR_CODE }
         );
@@ -249,11 +236,7 @@ export async function getTripById(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      const msg =
-        response.status >= 500 && response.status <= 599
-          ? MSG127_SYSTEM_ERROR
-          : errorData?.detail || errorData?.title || MSG127_SYSTEM_ERROR;
-      throw new TripApiError(msg, response.status, {
+      throw new TripApiError(MSG127_SYSTEM_ERROR, response.status, {
         ...(typeof errorData === 'object' ? errorData : {}),
         errorCode: response.status >= 500 && response.status <= 599 ? 'MSG127' : undefined,
       });
