@@ -97,7 +97,7 @@ export const tourModerationEn = {
       'Tour approved in Demo mode. No changes were sent to the server and no notification was delivered.',
     rejectedResult:
       'Tour rejected in Demo mode. No changes were sent to the server and no notification was delivered.',
-    recordedReasonLabel: 'Recorded reason',
+    recordedReasonLabel: 'Reason (demo only)',
   },
   approveDialog: {
     title: 'Approve this tour post?',
@@ -108,11 +108,11 @@ export const tourModerationEn = {
   },
   rejectDialog: {
     title: 'Reject tour post',
-    description: 'Provide the reason the operator should act on before resubmitting this tour post.',
+    description: 'Provide a reason for this simulated rejection. No message will be sent to the operator.',
     categoryLabel: 'Reason category',
     categoryPlaceholder: 'Select a category',
     reasonLabel: 'Detailed reason / revision notes',
-    reasonHint: 'Required. The operator will see this reason.',
+    reasonHint: 'Required. This reason is recorded for this demo only.',
     reasonRequired: 'This field is required.',
     confirmRejection: 'Confirm Rejection',
     cancel: 'Cancel',
