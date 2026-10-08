@@ -24,7 +24,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
   const [loading, setLoading] = useState(true);
   const [trip, setTrip] = useState<TripCardDto | null>(null);
   const [fetchError, setFetchError] = useState<{
-    type: 'NOT_FOUND' | 'FORBIDDEN' | 'NETWORK';
+    type: 'NOT_FOUND' | 'FORBIDDEN' | 'PENDING_BE_INTEGRATION' | 'NETWORK';
     message: string;
   } | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -55,7 +55,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
         if (!data) {
           setFetchError({
             type: 'NOT_FOUND',
-            message: `Chuyến đi #${tripId} không tồn tại trên hệ thống.`,
+            message: `Chuyến đi #${tripId} không tồn tại trên hệ thống (TRIP_NOT_FOUND).`,
           });
         } else {
           setTrip(data);
@@ -63,7 +63,19 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
       })
       .catch((err: unknown) => {
         if (!isMounted) return;
-        if (typeof err === 'object' && err !== null && 'statusCode' in err && (err as { statusCode: number }).statusCode === 403) {
+        const statusCode =
+          typeof err === 'object' && err !== null && 'statusCode' in err
+            ? (err as { statusCode: number }).statusCode
+            : 0;
+        if (statusCode === 501) {
+          setFetchError({
+            type: 'PENDING_BE_INTEGRATION',
+            message:
+              err instanceof Error
+                ? err.message
+                : 'Hệ thống lịch sử và đánh giá chuyến đi đang chờ kích hoạt dịch vụ máy chủ (Capstone_BE).',
+          });
+        } else if (statusCode === 401 || statusCode === 403) {
           setFetchError({
             type: 'FORBIDDEN',
             message: 'Bạn không có quyền đánh giá chuyến đi này (MSG126).',
@@ -147,14 +159,20 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs"
           >
             <span className="material-symbols-outlined mx-auto mb-2 text-[32px] text-slate-400">
-              {fetchError.type === 'NETWORK' ? 'cloud_off' : 'search_off'}
+              {fetchError.type === 'NETWORK'
+                ? 'cloud_off'
+                : fetchError.type === 'PENDING_BE_INTEGRATION'
+                  ? 'cloud_sync'
+                  : 'search_off'}
             </span>
             <h3 className="text-base font-bold text-[#00152A]">
               {fetchError.type === 'NOT_FOUND'
                 ? 'Không tìm thấy chuyến đi'
                 : fetchError.type === 'FORBIDDEN'
-                ? 'Không có quyền truy cập'
-                : 'Lỗi kết nối máy chủ'}
+                  ? 'Không có quyền truy cập'
+                  : fetchError.type === 'PENDING_BE_INTEGRATION'
+                    ? 'Dịch vụ đánh giá chuyến đi đang chờ tích hợp'
+                    : 'Lỗi kết nối máy chủ'}
             </h3>
             <p className="mt-1 text-xs text-slate-500">{fetchError.message}</p>
             <div className="mt-5 flex items-center justify-center gap-3">

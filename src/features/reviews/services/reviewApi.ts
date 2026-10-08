@@ -71,12 +71,36 @@ export async function submitTripReview(
       }),
     });
 
-    if (response.status === 404 || response.status === 501) {
-      // Truthful pending backend capability notification (only 404/501 indicate missing endpoint)
+    if (response.status === 501) {
+      const pendingPayload = await response.json().catch(() => null);
       return {
         status: 'PENDING_BE_INTEGRATION',
-        message: 'Tính năng gửi đánh giá đang chờ kích hoạt API máy chủ (Capstone_BE). Đánh giá chưa thể lưu vào cơ sở dữ liệu sản phẩm.',
+        message:
+          pendingPayload?.detail ||
+          'Tính năng gửi đánh giá đang chờ kích hoạt API máy chủ (Capstone_BE). Đánh giá chưa thể lưu vào cơ sở dữ liệu sản phẩm.',
       };
+    }
+
+    if (response.status === 404) {
+      const notFoundData = await response.json().catch(() => null);
+      throw new ReviewApiError(
+        notFoundData?.detail ||
+          notFoundData?.title ||
+          'Không tìm thấy chuyến đi cần đánh giá (TRIP_NOT_FOUND).',
+        404,
+        { ...(typeof notFoundData === 'object' ? notFoundData : {}), errorCode: 'TRIP_NOT_FOUND' }
+      );
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      const authErrorData = await response.json().catch(() => null);
+      throw new ReviewApiError(
+        authErrorData?.detail ||
+          authErrorData?.title ||
+          'Bạn không có quyền đánh giá chuyến đi này (MSG126).',
+        response.status,
+        authErrorData
+      );
     }
 
     if (!response.ok) {
@@ -99,7 +123,7 @@ export async function submitTripReview(
     if (err instanceof ReviewApiError) {
       throw err;
     }
-    // Network or connection failure is an ERROR with MSG127, NOT pending integration
+    // Network or connection failure (including timeout/AbortError) is an ERROR with MSG127, NOT pending integration
     throw new ReviewApiError(MSG127_SYSTEM_ERROR, 0);
   }
 }

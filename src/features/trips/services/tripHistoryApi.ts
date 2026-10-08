@@ -115,16 +115,40 @@ export async function getTripHistory(
       cache: 'no-store',
     });
 
-    if (response.status === 404 || response.status === 501) {
-      // Truthful pending backend capability notification (only 404/501 indicate missing endpoint)
+    if (response.status === 501) {
+      const pendingPayload = await response.json().catch(() => null);
       return {
         status: 'PENDING_BE_INTEGRATION',
-        message: 'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+        message:
+          pendingPayload?.detail ||
+          'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
         trips: [],
         totalCount: 0,
         page,
         pageSize,
       };
+    }
+
+    if (response.status === 404) {
+      const notFoundData = await response.json().catch(() => null);
+      throw new TripApiError(
+        notFoundData?.detail ||
+          notFoundData?.title ||
+          'Không tìm thấy dữ liệu chuyến đi (TRIP_NOT_FOUND).',
+        404,
+        { ...(typeof notFoundData === 'object' ? notFoundData : {}), errorCode: 'TRIP_NOT_FOUND' }
+      );
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      const authErrorData = await response.json().catch(() => null);
+      throw new TripApiError(
+        authErrorData?.detail ||
+          authErrorData?.title ||
+          'Bạn không có quyền truy cập lịch sử chuyến đi này (MSG126).',
+        response.status,
+        authErrorData
+      );
     }
 
     if (!response.ok) {
@@ -150,7 +174,7 @@ export async function getTripHistory(
     if (err instanceof TripApiError) {
       throw err;
     }
-    // Network or server connection failure in real mode is an ERROR with MSG127, NOT pending integration
+    // Network or server connection failure (including timeout/AbortError) in real mode is an ERROR with MSG127, NOT pending integration
     throw new TripApiError(MSG127_SYSTEM_ERROR, 0);
   }
 }
@@ -172,12 +196,22 @@ export async function getTripById(
       cache: 'no-store',
     });
 
+    if (response.status === 501) {
+      const pendingPayload = await response.json().catch(() => null);
+      throw new TripApiError(
+        pendingPayload?.detail ||
+          'Hệ thống lịch sử chuyến đi đang chờ kích hoạt dịch vụ máy chủ.',
+        501,
+        { errorCode: 'PENDING_BE_INTEGRATION' }
+      );
+    }
+
     if (response.status === 404) {
       return null;
     }
 
-    if (response.status === 403) {
-      throw new TripApiError('Bạn không có quyền xem chuyến đi này (MSG126).', 403);
+    if (response.status === 401 || response.status === 403) {
+      throw new TripApiError('Bạn không có quyền xem chuyến đi này (MSG126).', response.status);
     }
 
     if (!response.ok) {

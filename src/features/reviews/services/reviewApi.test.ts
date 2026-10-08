@@ -96,31 +96,17 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
     });
   });
 
-  describe('Real mode truthfulness (REVIEW-8)', () => {
-    it('REVIEW-8: Returns PENDING_BE_INTEGRATION on 404 or 501 in real mode without reporting fake success', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        status: 404,
-        ok: false,
-      });
-
-      const result = await submitTripReview(
-        {
-          tripId: 'trip-1',
-          title: 'Chuyến đi tuyệt vời',
-          rating: 5,
-          comment: 'Chuyến đi tuyệt vời, chất lượng dịch vụ rất tốt và đúng giờ.',
-          publishWithDisplayName: true,
-        },
-        { allowDemo: false }
-      );
-
-      expect(result.status).toBe('PENDING_BE_INTEGRATION');
-      expect(result.message).toContain('chờ kích hoạt API máy chủ');
-      expect(result.reviewId).toBeUndefined();
-
+  describe('Real mode truthfulness & BFF differentiation (REVIEW-8)', () => {
+    it('REVIEW-8: Returns PENDING_BE_INTEGRATION ONLY on 501 in real mode without reporting fake success', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 501,
         ok: false,
+        json: async () => ({
+          status: 501,
+          errorCode: 'PENDING_BE_INTEGRATION',
+          detail:
+            'Tính năng gửi đánh giá đang chờ kích hoạt API máy chủ (Capstone_BE). Đánh giá chưa thể lưu vào cơ sở dữ liệu sản phẩm.',
+        }),
       });
 
       const result501 = await submitTripReview(
@@ -135,9 +121,82 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       );
 
       expect(result501.status).toBe('PENDING_BE_INTEGRATION');
+      expect(result501.message).toContain('chờ kích hoạt API máy chủ');
+      expect(result501.reviewId).toBeUndefined();
     });
 
-    it('throws ReviewApiError (MSG127) when server returns 502, 503, or on network failure', async () => {
+    it('does NOT misclassify 404 as PENDING_BE_INTEGRATION; throws ReviewApiError (404 TRIP_NOT_FOUND)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 404,
+        ok: false,
+        json: async () => ({ title: 'Not Found', detail: 'Trip not found' }),
+      });
+
+      await expect(
+        submitTripReview(
+          {
+            tripId: 'trip-missing',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        )
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 404,
+        details: expect.objectContaining({ errorCode: 'TRIP_NOT_FOUND' }),
+      });
+    });
+
+    it('differentiates 401 and 403 authorization errors from 501 and 5xx', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 401,
+        ok: false,
+        json: async () => ({}),
+      });
+
+      await expect(
+        submitTripReview(
+          {
+            tripId: 'trip-1',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        )
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 401,
+      });
+
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 403,
+        ok: false,
+        json: async () => ({}),
+      });
+
+      await expect(
+        submitTripReview(
+          {
+            tripId: 'trip-1',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        )
+      ).rejects.toMatchObject({
+        name: 'ReviewApiError',
+        statusCode: 403,
+      });
+    });
+
+    it('throws ReviewApiError (MSG127) when server returns 502, 503, timeout, or on network failure', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 502,
         ok: false,
@@ -177,6 +236,23 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       ).rejects.toThrow(/MSG127/i);
 
       global.fetch = vi.fn().mockRejectedValue(new Error('Connection failed'));
+
+      await expect(
+        submitTripReview(
+          {
+            tripId: 'trip-1',
+            title: 'Chuyến đi tuyệt vời',
+            rating: 5,
+            comment: 'Chất lượng rất tốt.',
+            publishWithDisplayName: true,
+          },
+          { allowDemo: false }
+        )
+      ).rejects.toThrow(/MSG127/i);
+
+      const abortErr = new Error('Timed out');
+      abortErr.name = 'AbortError';
+      global.fetch = vi.fn().mockRejectedValue(abortErr);
 
       await expect(
         submitTripReview(
