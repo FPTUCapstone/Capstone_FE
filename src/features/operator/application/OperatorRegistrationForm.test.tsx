@@ -60,6 +60,19 @@ describe('OperatorRegistrationForm', () => {
     expect(auth.createUserWithEmailAndPassword).not.toHaveBeenCalled();
   });
 
+  it('accepts a valid extension when the browser leaves the file MIME empty', async () => {
+    render(<OperatorRegistrationForm />);
+    complete();
+    fireEvent.change(screen.getByLabelText(/Business Licence \(required/), {
+      target: { files: [new File(['%PDF-1'], 'licence.PDF')] },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Application' }));
+    await screen.findByText('Your application is under review.');
+    expect(api.registerOperator).toHaveBeenCalledWith(expect.objectContaining({
+      businessLicenseDocument: expect.objectContaining({ name: 'licence.PDF', type: '' }),
+    }));
+  });
+
   it('registers before emailing and does not auto-login', async () => {
     render(<OperatorRegistrationForm />);
     complete();

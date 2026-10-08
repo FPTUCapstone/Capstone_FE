@@ -29,15 +29,12 @@ const initialValues: Values = {
   taxCode: '', businessAddress: '', contactPerson: '', contactPhone: '',
 };
 const maxFileSize = 5 * 1024 * 1024;
-const allowedTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+const allowedExtensions = new Set(['pdf', 'jpg', 'jpeg', 'png']);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validFile(file: File): boolean {
   const extension = file.name.split('.').pop()?.toLowerCase();
-  return file.size > 0 && file.size <= maxFileSize && allowedTypes.has(file.type) &&
-    ((file.type === 'application/pdf' && extension === 'pdf') ||
-      (file.type === 'image/jpeg' && (extension === 'jpg' || extension === 'jpeg')) ||
-      (file.type === 'image/png' && extension === 'png'));
+  return file.size > 0 && file.size <= maxFileSize && allowedExtensions.has(extension ?? '');
 }
 
 function validate(values: Values, licence: File | null, supporting: File[], agreements: boolean): Partial<Record<ErrorKey, string>> {

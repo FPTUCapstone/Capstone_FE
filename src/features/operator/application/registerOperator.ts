@@ -49,6 +49,15 @@ function fields(value: unknown): Record<string, string> {
   return result;
 }
 
+function withMultipartMime(file: File): File {
+  if (file.type) return file;
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  const mime = extension === 'pdf' ? 'application/pdf'
+    : extension === 'jpg' || extension === 'jpeg' ? 'image/jpeg'
+      : extension === 'png' ? 'image/png' : undefined;
+  return mime ? new File([file], file.name, { type: mime, lastModified: file.lastModified }) : file;
+}
+
 export async function registerOperator(input: OperatorRegistrationInput): Promise<OperatorRegistrationResult> {
   const form = new FormData();
   form.append('firebaseIdToken', input.firebaseIdToken);
@@ -61,8 +70,8 @@ export async function registerOperator(input: OperatorRegistrationInput): Promis
   form.append('contactPerson', input.contactPerson);
   if (input.businessAddress?.trim()) form.append('businessAddress', input.businessAddress.trim());
   if (input.contactPhone?.trim()) form.append('contactPhone', input.contactPhone.trim());
-  form.append('businessLicenseDocument', input.businessLicenseDocument);
-  for (const document of input.supportingDocuments) form.append('supportingDocuments', document);
+  form.append('businessLicenseDocument', withMultipartMime(input.businessLicenseDocument));
+  for (const document of input.supportingDocuments) form.append('supportingDocuments', withMultipartMime(document));
   form.append('acceptTerms', String(input.acceptTerms));
 
   const response = await fetch(`${getApiBase()}/auth/register/operator`, { method: 'POST', body: form });

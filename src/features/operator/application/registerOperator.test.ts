@@ -46,6 +46,29 @@ describe('registerOperator', () => {
     expect(body.get('businessLicenseDocument')).toBeInstanceOf(File);
   });
 
+  it('fills only missing multipart MIME from the supported extension so the backend can inspect bytes', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ success: true, data: { userId: 42, applicationStatus: 'PendingApproval', messageCode: 'MSG08' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const request = input();
+    request.businessLicenseDocument = new File(['%PDF-test'], 'licence.PDF');
+    request.supportingDocuments = [
+      new File(['image'], 'photo.JPEG'),
+      new File(['image'], 'scan.png'),
+      new File(['image'], 'photo.png', { type: 'application/octet-stream' }),
+    ];
+
+    await registerOperator(request);
+    const body = fetchMock.mock.calls[0][1].body as FormData;
+    expect((body.get('businessLicenseDocument') as File).type).toBe('application/pdf');
+    expect((body.getAll('supportingDocuments')[0] as File).type).toBe('image/jpeg');
+    expect((body.getAll('supportingDocuments')[1] as File).type).toBe('image/png');
+    expect((body.getAll('supportingDocuments')[2] as File).type).toBe('application/octet-stream');
+  });
+
   it('keeps field codes from RFC-7807 validation responses', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,
