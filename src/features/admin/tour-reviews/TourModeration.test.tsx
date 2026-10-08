@@ -246,6 +246,62 @@ describe('Tour Content & Pricing Details (Screen #14) and rejection (Screen #15)
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('describes the demo rejection consistently as local-only, never as delivered to the operator', () => {
+    render(<TourReview id={FIRST_TOUR.id} />);
+    fireEvent.click(screen.getByRole('button', { name: tourModerationEn.decision.rejectButton }));
+
+    const reasonDialog = screen.getByRole('dialog', { name: 'Reject tour post' });
+    const descriptionId = reasonDialog.getAttribute('aria-describedby') ?? '';
+    expect(document.getElementById(descriptionId)?.textContent).toBe(
+      'Provide a reason for this simulated rejection. No message will be sent to the operator.',
+    );
+    expect(within(reasonDialog).getByText('Required. This reason is recorded for this demo only.')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('The operator will see this reason');
+
+    const reason = within(reasonDialog).getByLabelText('Detailed reason / revision notes');
+    expect(reason.getAttribute('aria-describedby')).toBe('reject-tour-reason-hint');
+    expect(document.getElementById('reject-tour-reason-hint')?.textContent).toBe(
+      'Required. This reason is recorded for this demo only.',
+    );
+
+    fireEvent.change(reason, { target: { value: '   ' } });
+    fireEvent.click(within(reasonDialog).getByRole('button', { name: 'Confirm Rejection' }));
+    expect(within(reasonDialog).getByRole('alert').textContent).toBe('This field is required.');
+    expect(reason.getAttribute('aria-invalid')).toBe('true');
+    expect(screen.queryByRole('dialog', { name: 'Reject this tour post?' })).toBeNull();
+
+    fireEvent.change(reason, { target: { value: 'Itinerary timing is not feasible.' } });
+    fireEvent.click(within(reasonDialog).getByRole('button', { name: 'Confirm Rejection' }));
+
+    const confirmDialog = screen.getByRole('dialog', { name: 'Reject this tour post?' });
+    expect(confirmDialog.getAttribute('aria-modal')).toBe('true');
+    expect(confirmDialog.textContent).toContain(
+      'In Demo mode the rejection is simulated in this browser only. Nothing is stored and the operator is not notified.',
+    );
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Reject tour post' }));
+
+    const result = screen.getByRole('status');
+    expect(result.textContent).toContain(
+      'Tour rejected in Demo mode. No changes were sent to the server and no notification was delivered.',
+    );
+    expect(result.textContent).toContain('Reason (demo only)');
+    expect(result.textContent).toContain('Itinerary timing is not feasible.');
+    expect(document.body.textContent).not.toMatch(/operator will see|has been notified|notification sent|rejection saved/i);
+  });
+
+  it('discards the demo rejection reason when the dialog is closed with Escape', () => {
+    render(<TourReview id={FIRST_TOUR.id} />);
+    fireEvent.click(screen.getByRole('button', { name: tourModerationEn.decision.rejectButton }));
+    fireEvent.change(screen.getByLabelText('Detailed reason / revision notes'), {
+      target: { value: 'Missing images.' },
+    });
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(document.body.textContent).not.toContain('Missing images.');
+  });
+
   it('formats dates in Asia/Ho_Chi_Minh and money in whole VND', () => {
     render(<TourReview id={FIRST_TOUR.id} />);
     expect(screen.getByText(formatVnd(FIRST_TOUR.priceVnd))).toBeTruthy();
