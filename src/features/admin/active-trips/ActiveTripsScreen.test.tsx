@@ -12,7 +12,12 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace }),
   useSearchParams: () => new URLSearchParams(query),
 }));
-vi.mock('./activeTripsService', () => ({ fetchActiveTrips: vi.fn(), ActiveTripsError: class extends Error { constructor(public status: number) { super(); } } }));
+vi.mock('./activeTripsService', () => ({
+  fetchActiveTrips: vi.fn(),
+  ActiveTripsError: class extends Error {
+    constructor(public status: number, public serverMessage?: string, public errorCode?: string) { super(); }
+  },
+}));
 
 const response = {
   summary: { activeTrips: 1, tripsWithOpenAlerts: 0, travelersOnTrip: 2 },
@@ -66,9 +71,9 @@ describe('ActiveTripsScreen', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('shows the server MSG29 date error at the form controls on 400', async () => {
+  it('shows the server typed date error at the form controls on 400', async () => {
     vi.mocked(fetchActiveTrips).mockRejectedValueOnce(
-      new ActiveTripsError(400, 'The submitted Start Date range is logically invalid.'));
+      new ActiveTripsError(400, 'The submitted Start Date range is logically invalid.', 'ActiveTrips.InvalidDateRange'));
     render(<ActiveTripsScreen />);
     expect(await screen.findByRole('alert').then(el => el.textContent)).toContain('logically invalid');
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();

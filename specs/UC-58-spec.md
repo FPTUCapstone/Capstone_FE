@@ -6,7 +6,7 @@ Approved by the developer on 2026-09-26.
 
 ## Sources and approved decisions
 
-- SRS section 3.9.6.1, BR-51, BR-52, BR-115, BR-124, CR-01, CR-02, CR-07, MSG29, MSG126, MSG127, and MSG128.
+- SRS section 3.9.6.1, BR-51, BR-52, BR-115, BR-124, CR-01, CR-02, CR-07, MSG126, MSG127, and MSG128.
 - `docs/WEB_SCOPE_MATRIX.md` classifies UC-58 as `ADMIN_WEB_ONLY`.
 - The approved Backend contract is recorded in the colocated Backend `specs/UC-58-spec.md`.
 - A Self-Planned trip without a canonical destination is shown as `Not available`.
@@ -87,7 +87,7 @@ The proxy forwards only the allowlisted UC-58 filter and `pageNumber` query para
 - Missing local Administrator cookie: return `401`; there is no cookie to clear. The screen redirects to `/admin/login?returnUrl=...`.
 - Backend `401`: call `clearAdminSession()` and return a safe `401`; the screen redirects to the Admin login route.
 - Backend `403`: call `clearAdminSession()` and return a safe `403`; the current response renders MSG126. Clearing the stale/unauthorized cookie prevents it from being reused on a later request.
-- Backend validation `400`: preserve safe field errors needed for MSG29 without exposing private upstream content, and do not clear the Admin cookie.
+- Backend validation `400`: accept only the safe `ActiveTrips.InvalidDateRange` and `ActiveTrips.InvalidFilter` contracts from the BFF; do not expose private upstream content or clear the Admin cookie.
 - Backend/network failure: return/render MSG127 with Retry while preserving submitted criteria, and do not clear the Admin cookie.
 - Successful payloads are runtime-validated before rendering; malformed success payloads are treated as unavailable.
 
@@ -96,7 +96,7 @@ The proxy forwards only the allowlisted UC-58 filter and `pageNumber` query para
 1. Loading: an accessible status without stale rows presented as current.
 2. Success: counters, criteria, rows, and pagination.
 3. Empty: MSG128, with filters preserved and no empty table body.
-4. Invalid date range, future date, or malformed calendar date in the URL or form: MSG29 inline at the date fields; do not send the request.
+4. Invalid date range, future date, or malformed calendar date in the URL or form: render the Active Trips date-validation message inline at the date fields; do not send the request.
 5. Forbidden: MSG126.
 6. Unavailable: MSG127 with Retry; previous submitted criteria remain.
 
@@ -112,7 +112,7 @@ The proxy forwards only the allowlisted UC-58 filter and `pageNumber` query para
 1. An authenticated Administrator can open `/admin/trips/active` and retrieve data through the HttpOnly Admin-session proxy without `useWebSession()` as the authorization gate.
 2. Summary cards and all approved list fields render from the validated Backend response.
 3. Search executes only on submit; filters compose and are represented in the URL.
-4. Client validation blocks an inverted date range, either future date, or malformed calendar date from the URL or form and renders MSG29 inline without fetching.
+4. Client validation blocks an inverted date range, either future date, or malformed calendar date from the URL or form and renders the Active Trips date-validation message inline without fetching.
 5. Empty, `401`, `403`, malformed success, and unavailable states follow this specification.
 6. Pagination preserves all submitted criteria and displays the total count.
 7. The screen performs no trip, itinerary, group, booking, alert, or rerouting mutation.

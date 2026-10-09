@@ -18,7 +18,7 @@ import {
 } from './activeTrips';
 import { ActiveTripsError, fetchActiveTrips } from './activeTripsService';
 
-type LoadState = 'loading' | 'ready' | 'forbidden' | 'unavailable' | 'invalid';
+type LoadState = 'loading' | 'ready' | 'forbidden' | 'unavailable' | 'invalid' | 'invalidFilter';
 
 export function ActiveTripsScreen() {
   const searchParams = useSearchParams();
@@ -51,10 +51,12 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
           return;
         }
         if (error instanceof ActiveTripsError && error.status === 400) {
-          // The BE rejected the submitted filters (MSG29 / invalid range / future date) —
-          // surface the date error at the form controls instead of a system-failure alert.
-          setPeriodError(error.serverMessage ?? ACTIVE_TRIPS_MESSAGES.invalidDates);
-          setState('invalid');
+          if (error.errorCode === 'ActiveTrips.InvalidDateRange') {
+            setPeriodError(error.serverMessage ?? ACTIVE_TRIPS_MESSAGES.invalidDates);
+            setState('invalid');
+          } else {
+            setState('invalidFilter');
+          }
           return;
         }
         setState(error instanceof ActiveTripsError && error.status === 403 ? 'forbidden' : 'unavailable');
@@ -112,6 +114,7 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
 
       {state === 'loading' ? <div role="status" className="rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]">Loading active trips…</div> : null}
       {state === 'forbidden' ? <FeedbackAlert tone="error" title="Access denied">{ACTIVE_TRIPS_MESSAGES.forbidden}</FeedbackAlert> : null}
+      {state === 'invalidFilter' ? <FeedbackAlert tone="error" title="Invalid filters">{ACTIVE_TRIPS_MESSAGES.invalidFilter}</FeedbackAlert> : null}
       {state === 'unavailable' ? <FeedbackAlert tone="error" title="Unable to load active trips"><p>{ACTIVE_TRIPS_MESSAGES.unavailable}</p><button type="button" onClick={() => { setState('loading'); setData(null); setRetryKey((value) => value + 1); }} className="mt-2 rounded-lg border border-current px-3 py-1 font-bold">Retry</button></FeedbackAlert> : null}
       {state === 'ready' && data?.items.length === 0 ? <FeedbackAlert title="No active trips">{ACTIVE_TRIPS_MESSAGES.empty}</FeedbackAlert> : null}
       {state === 'ready' && data && data.items.length > 0 ? <>
