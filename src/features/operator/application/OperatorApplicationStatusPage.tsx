@@ -1,69 +1,72 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import { PartnerShell } from '@/components/layout/PartnerShell';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { mockOperatorApplication } from '@/data/batchOneMock';
 import { ROUTES } from '@/lib/routes';
-import type { OperatorApplicationStatus } from '@/data/batchOneMock';
+import { getOperatorApplication, OperatorApplicationError, type OperatorApplication } from './operatorApplicationApi';
+import { operatorMessage } from './operatorMessages';
 
-type Props = { status: OperatorApplicationStatus };
+function dateTime(value: string | null): string {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleString('vi-VN');
+}
 
-const variants: { id: OperatorApplicationStatus; label: string }[] = [
-  { id: 'pending', label: 'Pending Review' },
-  { id: 'rejected', label: 'Rejected' },
-  { id: 'approved', label: 'Approved' },
-];
+export function OperatorApplicationStatusPage() {
+  const [application, setApplication] = useState<OperatorApplication | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
 
-export function OperatorApplicationStatusPage({ status }: Props) {
-  const isPending = status === 'pending';
-  const isRejected = status === 'rejected';
+  useEffect(() => {
+    const controller = new AbortController();
+    void getOperatorApplication(controller.signal)
+      .then(setApplication)
+      .catch((reason: unknown) => {
+        if (controller.signal.aborted) return;
+        if (reason instanceof OperatorApplicationError && reason.status === 401) {
+          window.location.assign(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
+          return;
+        }
+        setError(reason instanceof OperatorApplicationError && reason.status === 404
+          ? 'Tour Operator application not found.' : operatorMessage('MSG127'));
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [reload]);
 
+  if (loading) {
+    return <PartnerShell title="Operator Application Status" description="Loading your current application."><div role="status" className="h-40 animate-pulse rounded-3xl bg-white"><span className="sr-only">Loading application</span></div></PartnerShell>;
+  }
+  if (error || !application) {
+    return <PartnerShell title="Operator Application Status" description="Review your application state."><FeedbackAlert tone="error" title="Unable to load application">{error ?? operatorMessage('MSG127')}</FeedbackAlert><button type="button" className="mt-4 rounded-xl bg-[#00152a] px-5 py-3 font-bold text-white" onClick={() => { setLoading(true); setError(null); setApplication(null); setReload((value) => value + 1); }}>Retry</button></PartnerShell>;
+  }
+
+  const rejected = application.approvalStatus === 'Rejected';
+  const pending = application.approvalStatus === 'PendingApproval';
   return (
-    <PartnerShell title="Operator Application Status" description="One approved page presents Pending Review, Rejected, and Approved variants while access remains governed by the latest application decision.">
-      <div className="mb-6 rounded-2xl border border-[#d8dadd] bg-white p-3" aria-label="Prototype status variants">
-        <p className="px-2 pb-2 text-[11px] font-bold uppercase tracking-wide text-[#74777e]">Prototype variant</p>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {variants.map((variant) => (
-            <Link key={variant.id} href={`${ROUTES.partner.application}?status=${variant.id}`} aria-current={status === variant.id ? 'page' : undefined} className={`rounded-xl px-4 py-2.5 text-center text-sm font-bold ${status === variant.id ? 'bg-[#00152a] text-white' : 'bg-[#f2f4f7] text-[#314863] hover:bg-[#e0e3e6]'}`}>
-              {variant.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
+    <PartnerShell title="Operator Application Status" description="Review the latest state of your Tour Operator application.">
       <section className="rounded-3xl border border-[#d8dadd] bg-white p-6 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <StatusBadge tone={isPending ? 'warning' : isRejected ? 'danger' : 'teal'}>{isPending ? 'Pending Review' : isRejected ? 'Rejected' : 'Approved'}</StatusBadge>
-            <h2 className="mt-4 text-2xl font-extrabold text-[#00152a]">{isPending ? 'Application under review' : isRejected ? 'Corrections required' : 'Application approved'}</h2>
-          </div>
-          <span className="font-mono text-xs font-bold text-[#59616b]">{mockOperatorApplication.id}</span>
+          <div><StatusBadge tone={pending ? 'warning' : rejected ? 'danger' : 'teal'}>{pending ? 'Pending Review' : application.approvalStatus}</StatusBadge><h2 className="mt-4 text-2xl font-extrabold text-[#00152a]">{application.companyName}</h2></div>
+          <span className="font-mono text-xs font-bold text-[#59616b]">Application #{application.userId}</span>
         </div>
-
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-[#59616b]">
-          {isPending ? 'Your Tour Operator account is pending verification. You will be notified once approved.' : isRejected ? 'The latest review found information that must be corrected before another submission.' : 'The business application is approved and the Tour Operator account is Active.'}
-        </p>
-
-        {isRejected ? <div className="mt-6"><FeedbackAlert tone="error" title="Latest rejection reason">{mockOperatorApplication.rejectionReason}</FeedbackAlert></div> : null}
-
-        <dl className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl bg-[#f2f4f7] p-4"><dt className="text-xs font-bold uppercase tracking-wide text-[#74777e]">Account</dt><dd className="mt-2 font-extrabold text-[#00152a]">{isPending ? 'Pending Approval' : isRejected ? 'Restricted' : 'Active'}</dd></div>
-          <div className="rounded-2xl bg-[#f2f4f7] p-4"><dt className="text-xs font-bold uppercase tracking-wide text-[#74777e]">Application</dt><dd className="mt-2 font-extrabold text-[#00152a]">{isPending ? 'Pending Review' : isRejected ? 'Rejected' : 'Approved'}</dd></div>
-          <div className="rounded-2xl bg-[#f2f4f7] p-4"><dt className="text-xs font-bold uppercase tracking-wide text-[#74777e]">Submitted</dt><dd className="mt-2 font-extrabold text-[#00152a]">{mockOperatorApplication.submittedAt}</dd></div>
-          <div className="rounded-2xl bg-[#f2f4f7] p-4"><dt className="text-xs font-bold uppercase tracking-wide text-[#74777e]">Resubmissions</dt><dd className="mt-2 font-extrabold text-[#00152a]">{mockOperatorApplication.resubmissionCount}</dd></div>
+        {rejected && <div className="mt-6"><FeedbackAlert tone="error" title="Latest rejection reason">{application.rejectionReason || 'No reason recorded.'}</FeedbackAlert><p className="mt-2 text-xs text-[#59616b]">Reviewed: {dateTime(application.reviewedAtUtc)}</p></div>}
+        {pending && <div className="mt-6"><FeedbackAlert>Partner workspace access remains locked while the application is under review.</FeedbackAlert></div>}
+        {!pending && !rejected && <div className="mt-6"><FeedbackAlert tone="success">Your application is approved.</FeedbackAlert></div>}
+        <dl className="mt-7 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl bg-[#f2f4f7] p-4"><dt className="text-xs font-bold uppercase text-[#74777e]">Account</dt><dd className="mt-2 font-extrabold text-[#00152a]">{application.userStatus}</dd></div>
+          <div className="rounded-2xl bg-[#f2f4f7] p-4"><dt className="text-xs font-bold uppercase text-[#74777e]">Application</dt><dd className="mt-2 font-extrabold text-[#00152a]">{application.approvalStatus}</dd></div>
+          <div className="rounded-2xl bg-[#f2f4f7] p-4"><dt className="text-xs font-bold uppercase text-[#74777e]">Resubmissions</dt><dd className="mt-2 font-extrabold text-[#00152a]">{application.resubmissionCount}</dd></div>
         </dl>
-
-        <div className="mt-7 border-t border-[#d8dadd] pt-6">
-          {isPending ? <FeedbackAlert>Partner workspace access remains locked. No Resubmit action is available while this application is under review.</FeedbackAlert> : null}
-          {isRejected ? <Link href={ROUTES.partner.resubmitApplication} className="flex min-h-11 items-center justify-center rounded-xl bg-[#eb5b49] px-5 py-3 text-sm font-bold text-white hover:bg-[#d94b3a] sm:ml-auto sm:w-fit">Resubmit Application</Link> : null}
-          {!isPending && !isRejected ? (
-            <div className="space-y-3">
-              <FeedbackAlert tone="success">Partner workspace access is available for an approved application.</FeedbackAlert>
-              <button type="button" disabled className="flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-xl bg-[#007d6e] px-5 py-3 text-sm font-bold text-white opacity-60 sm:ml-auto sm:w-fit" title="Tour Operator workspace route is outside Batch 1">Enter Tour Operator Workspace</button>
-              <p className="text-right text-xs text-[#74777e]">Workspace navigation awaits the approved authenticated workspace route.</p>
-            </div>
-          ) : null}
+        <div className="mt-7 space-y-3 border-t border-[#d8dadd] pt-6">
+          <h3 className="font-extrabold text-[#00152a]">Documents</h3>
+          {application.documents.map((document) => <div key={document.documentId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"><span className="font-semibold">{document.documentType} #{document.documentId} · {document.status}</span>{document.downloadUrl ? <a href={document.downloadUrl} target="_blank" rel="noreferrer" className="font-bold text-[#007d6e]">View document</a> : <span className="text-sm text-[#74777e]">Unavailable</span>}</div>)}
+          {rejected && <Link href={ROUTES.partner.resubmitApplication} className="flex min-h-11 items-center justify-center rounded-xl bg-[#eb5b49] px-5 py-3 text-sm font-bold text-white sm:ml-auto sm:w-fit">Resubmit Application</Link>}
         </div>
       </section>
     </PartnerShell>
