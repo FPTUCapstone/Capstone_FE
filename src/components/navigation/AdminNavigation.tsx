@@ -38,6 +38,12 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
               {adminStaffEn.navigation.adminDashboard}
             </Link>
           ) : null}
+          <Link
+            href={ROUTES.admin.staffDashboard}
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+          >
+            {adminStaffEn.navigation.staffDashboard}
+          </Link>
           {!isStaffUser ? (
             <>
               <Link
