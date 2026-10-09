@@ -133,7 +133,7 @@ export const financeEn = {
       'Review closed settlement periods, beneficiary bank details, and track payout request history.',
     demoNoticeTitle: 'Demo Payout Mode Active',
     demoNoticeDesc:
-      'Settlement calculations and payout requests below operate on deterministic demo fixtures. Production transactions require server-side gateway processing.',
+      'Settlement calculations and payout requests below operate on deterministic demo fixtures for testing. Local demo requests are not persisted to production or placed in the live administrator settlement queue.',
     pendingNoticeTitle: 'Backend Integration Pending',
 
     periods: {
@@ -191,14 +191,14 @@ export const financeEn = {
   requestDialog: {
     title: 'Submit Payout Request',
     subtitle:
-      'Review payable settlement amount and confirm payout submission for administrator confirmation.',
+      'Review payable settlement amount estimate and confirm payout submission for administrator confirmation (Demo simulation).',
     periodLabel: 'Selected Period',
     completedToursLabel: 'Completed Tours',
     grossRevenueLabel: 'Gross Revenue',
     commissionLabel: 'Platform Commission',
     payableAmountLabel: 'Payable Net Amount',
     payableAmountNotice:
-      'The payable payout amount is computed from verified bookings reduced by commission and completed refunds. This amount is server-authoritative and cannot be modified.',
+      'The payable payout amount is computed from bookings reduced by commission and completed refunds. In demo mode, this is a Demo-calculated estimate; authoritative calculations in production require backend verification.',
     bankConfirmationTitle: 'Destination Bank Account',
     confirmCheckbox:
       'I confirm the beneficiary bank information is correct and request settlement for this closed period.',

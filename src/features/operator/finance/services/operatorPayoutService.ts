@@ -1,7 +1,7 @@
 /**
  * Service implementation for Payout Settlement & Requests (UC-46).
  * Enforces production NO_BACKEND truthfulness, period eligibility, minimum payout thresholds,
- * server-authoritative payable amount calculations, and cancellation mechanics.
+ * Demo-calculated payable amount estimations, and cancellation mechanics.
  */
 
 import {
@@ -268,7 +268,7 @@ export async function requestPayoutSettlement(
     };
   }
 
-  // Create Payout Request DTO (server-authoritative requested amount equals payableNetAmount)
+  // Create Payout Request DTO (Demo-calculated requested amount equals payableNetAmount estimate)
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const requestCode = `PO-${dateStr}-${actorKey}-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -278,7 +278,7 @@ export async function requestPayoutSettlement(
     operatorUserId: options.demoActorUserId!,
     periodId: period.id,
     periodLabel: period.periodLabel,
-    requestedAmount: period.payableNetAmount, // Server-calculated payable net amount (BR-112)
+    requestedAmount: period.payableNetAmount, // Demo-calculated payable net amount estimate (BR-112)
     status: 'Pending Confirmation',
     requestedAt: new Date().toISOString(),
     bankSnapshot: {

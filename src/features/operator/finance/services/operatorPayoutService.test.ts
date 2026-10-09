@@ -118,7 +118,7 @@ describe('operatorPayoutService (UC-46)', () => {
       expect(res.message).toBe(PAYOUT_MESSAGES.MSG118);
       expect(res.payoutRequest).toBeDefined();
       expect(res.payoutRequest?.status).toBe('Pending Confirmation');
-      expect(res.payoutRequest?.requestedAmount).toBe(17640000); // Server-calculated payable amount
+      expect(res.payoutRequest?.requestedAmount).toBe(17640000); // Demo-calculated payable amount estimate
       expect(res.payoutRequest?.bankSnapshot.accountNumber).toBe('1029384756');
 
       // Verify that settlement period is now marked as hasPendingPayout
