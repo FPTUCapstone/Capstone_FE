@@ -1,116 +1,161 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, type FormEvent } from 'react';
 
 import { PartnerShell } from '@/components/layout/PartnerShell';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { TextField, fieldClassName } from '@/components/ui/FormControls';
-import { mockOperatorApplication, simulateMockRequest } from '@/data/batchOneMock';
+import { webRefresh } from '@/lib/authApi';
 import { ROUTES } from '@/lib/routes';
+import {
+  getOperatorApplication,
+  OperatorApplicationError,
+  resubmitOperatorApplication,
+  type OperatorApplication,
+} from './operatorApplicationApi';
+import { operatorMessage } from './operatorMessages';
 
-type EditableValues = {
-  companyName: string;
-  licenceNumber: string;
-  taxCode: string;
-  businessAddress: string;
-  contactPerson: string;
-  contactPhone: string;
+type Values = {
+  companyName: string; businessLicenseNo: string; taxCode: string;
+  businessAddress: string; contactPerson: string; contactPhone: string;
 };
+type ErrorKey = keyof Values | 'businessLicenseDocument' | 'supportingDocuments';
+
+const TAX = /^\d{10}(?:-\d{3})?$/;
+const LICENCE = /^\d{2}-\d+\/\d{4}\/(?:TCDL-GPLHQT|SDL-GPLHND)$/;
+const PHONE = /^0\d{9}$/;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const EXTENSION = /\.(?:pdf|jpe?g|png)$/i;
+
+function validFile(file: File): boolean {
+  return file.size > 0 && file.size <= MAX_FILE_SIZE && EXTENSION.test(file.name);
+}
+
+function initialValues(application: OperatorApplication): Values {
+  return {
+    companyName: application.companyName,
+    businessLicenseNo: application.businessLicenseNo,
+    taxCode: application.taxCode,
+    businessAddress: application.businessAddress ?? '',
+    contactPerson: application.contactPerson,
+    contactPhone: application.contactPhone ?? '',
+  };
+}
 
 export function ResubmitApplicationForm() {
-  const [values, setValues] = useState<EditableValues>({
-    companyName: mockOperatorApplication.companyName,
-    licenceNumber: mockOperatorApplication.businessLicenceNumber,
-    taxCode: mockOperatorApplication.taxCode,
-    businessAddress: mockOperatorApplication.businessAddress,
-    contactPerson: mockOperatorApplication.contactPerson,
-    contactPhone: mockOperatorApplication.contactPhone,
-  });
-  const [replacementSelected, setReplacementSelected] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof EditableValues | 'documents', string>>>({});
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const router = useRouter();
+  const [application, setApplication] = useState<OperatorApplication | null>(null);
+  const [values, setValues] = useState<Values | null>(null);
+  const [licence, setLicence] = useState<File | undefined>();
+  const [supporting, setSupporting] = useState<File[]>([]);
+  const [errors, setErrors] = useState<Partial<Record<ErrorKey, string>>>({});
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  function update<K extends keyof EditableValues>(key: K, value: EditableValues[K]) {
-    setValues((current) => ({ ...current, [key]: value }));
+  useEffect(() => {
+    const controller = new AbortController();
+    void getOperatorApplication(controller.signal).then((result) => {
+      if (result.approvalStatus !== 'Rejected' || result.userStatus !== 'Rejected') {
+        router.replace(ROUTES.partner.application);
+        return;
+      }
+      setApplication(result);
+      setValues(initialValues(result));
+    }).catch((reason: unknown) => {
+      if (controller.signal.aborted) return;
+      if (reason instanceof OperatorApplicationError && reason.status === 401) {
+        window.location.assign(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
+      } else setGlobalError(operatorMessage('MSG127'));
+    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [router]);
+
+  function update(key: keyof Values, value: string) {
+    setValues((current) => current ? { ...current, [key]: value } : current);
+  }
+
+  function validate(current: Values): Partial<Record<ErrorKey, string>> {
+    const next: Partial<Record<ErrorKey, string>> = {};
+    const required: Array<[keyof Values, number]> = [
+      ['companyName', 200], ['businessLicenseNo', 100], ['taxCode', 50], ['contactPerson', 150],
+    ];
+    for (const [key, max] of required) {
+      const text = current[key].trim();
+      if (!text) next[key] = operatorMessage('MSG01');
+      else if (text.length > max) next[key] = `Must not exceed ${max} characters.`;
+    }
+    if (current.businessAddress.trim().length > 300) next.businessAddress = 'Must not exceed 300 characters.';
+    if (current.taxCode.trim() && !TAX.test(current.taxCode.trim())) next.taxCode = operatorMessage('OPERATOR_TAX_CODE_INVALID');
+    if (current.businessLicenseNo.trim() && !LICENCE.test(current.businessLicenseNo.trim())) next.businessLicenseNo = operatorMessage('OPERATOR_TRAVEL_LICENSE_INVALID');
+    if (current.contactPhone.trim() && !PHONE.test(current.contactPhone.trim())) next.contactPhone = operatorMessage('MSG04');
+    if (licence && !validFile(licence)) next.businessLicenseDocument = operatorMessage('MSG158');
+    if (supporting.length > 5 || supporting.some((file) => !validFile(file))) next.supportingDocuments = operatorMessage('MSG158');
+    return next;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const nextErrors: typeof errors = {};
-    for (const key of Object.keys(values) as (keyof EditableValues)[]) {
-      if (!values[key].trim()) nextErrors[key] = 'This field is required.';
-    }
-    if (!replacementSelected) nextErrors.documents = 'Add a replacement or additional document before resubmitting.';
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (!values || submitting) return;
+    const next = validate(values);
+    setErrors(next);
+    setGlobalError(null);
+    if (Object.keys(next).length) return;
 
-    setLoading(true);
-    await simulateMockRequest();
-    setLoading(false);
-    setSuccess(true);
+    setSubmitting(true);
+    try {
+      await resubmitOperatorApplication({ ...values, businessLicenseDocument: licence, supportingDocuments: supporting });
+      await webRefresh();
+      router.replace(`${ROUTES.partner.application}?resubmitted=1`);
+      router.refresh();
+    } catch (reason) {
+      if (reason instanceof OperatorApplicationError) {
+        if (reason.status === 401) {
+          window.location.assign(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
+          return;
+        }
+        if (reason.status === 409 && reason.code === 'MSG161') {
+          await webRefresh().catch(() => undefined);
+          router.replace(ROUTES.partner.application);
+          return;
+        }
+        setErrors(reason.fields as Partial<Record<ErrorKey, string>>);
+        setGlobalError(operatorMessage(reason.code));
+      } else setGlobalError(operatorMessage('MSG127'));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  if (success) {
-    return (
-      <PartnerShell title="Resubmit Application" description="This correction task is available only when the latest application is Rejected.">
-        <section className="rounded-3xl border border-[#9edbd2] bg-white p-6 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8">
-          <FeedbackAlert tone="success" title="Application resubmitted">The existing application has returned to Pending Review. No duplicate application was created.</FeedbackAlert>
-          <Link href={`${ROUTES.partner.application}?status=pending`} className="mt-6 flex min-h-11 items-center justify-center rounded-xl bg-[#007d6e] px-5 py-3 text-sm font-bold text-white hover:bg-[#006b5f]">Return to Application Status</Link>
-        </section>
-      </PartnerShell>
-    );
+  if (loading || !application || !values) {
+    return <PartnerShell title="Correct and resubmit application" description="Loading your rejected application."><div role="status" className="h-40 animate-pulse rounded-3xl bg-white"><span className="sr-only">Loading application</span></div>{globalError && <FeedbackAlert tone="error">{globalError}</FeedbackAlert>}</PartnerShell>;
   }
 
   return (
-    <PartnerShell title="Correct and resubmit application" description="Review the rejection context, update the prefilled business information, and replace or add supporting documents.">
-      <div className="mb-6"><FeedbackAlert tone="error" title="Latest rejection reason">{mockOperatorApplication.rejectionReason}</FeedbackAlert></div>
-      <dl className="mb-6 grid gap-4 rounded-2xl border border-[#d8dadd] bg-white p-5 sm:grid-cols-3">
-        <div><dt className="text-xs font-bold uppercase tracking-wide text-[#74777e]">Application ID</dt><dd className="mt-2 font-mono text-sm font-bold text-[#00152a]">{mockOperatorApplication.id}</dd></div>
-        <div><dt className="text-xs font-bold uppercase tracking-wide text-[#74777e]">Current Status</dt><dd className="mt-2 text-sm font-bold text-[#93000a]">Rejected</dd></div>
-        <div><dt className="text-xs font-bold uppercase tracking-wide text-[#74777e]">Reviewed</dt><dd className="mt-2 text-sm font-bold text-[#00152a]">{mockOperatorApplication.reviewedAt}</dd></div>
-      </dl>
-
+    <PartnerShell title="Correct and resubmit application" description="Update the rejected application without creating another account.">
+      <div className="mb-6"><FeedbackAlert tone="error" title="Latest rejection reason">{application.rejectionReason || 'No reason recorded.'}</FeedbackAlert></div>
       <form className="rounded-3xl border border-[#d8dadd] bg-white p-5 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8" noValidate onSubmit={handleSubmit}>
-        <fieldset className="border-0 p-0">
-          <legend className="text-xl font-extrabold text-[#00152a]">Company and contact information</legend>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2">
-            <TextField label="Company Name" name="companyName" value={values.companyName} disabled={loading} error={errors.companyName} onChange={(event) => update('companyName', event.target.value)} />
-            <TextField label="Business Licence Number" name="licenceNumber" value={values.licenceNumber} disabled={loading} error={errors.licenceNumber} onChange={(event) => update('licenceNumber', event.target.value)} />
-            <TextField label="Tax Code" name="taxCode" value={values.taxCode} disabled={loading} error={errors.taxCode} onChange={(event) => update('taxCode', event.target.value)} />
-            <TextField label="Business Address" name="businessAddress" value={values.businessAddress} disabled={loading} error={errors.businessAddress} onChange={(event) => update('businessAddress', event.target.value)} />
-            <TextField label="Contact Person" name="contactPerson" value={values.contactPerson} disabled={loading} error={errors.contactPerson} onChange={(event) => update('contactPerson', event.target.value)} />
-            <TextField label="Contact Phone Number" name="contactPhone" type="tel" value={values.contactPhone} disabled={loading} error={errors.contactPhone} onChange={(event) => update('contactPhone', event.target.value)} />
-          </div>
+        <fieldset disabled={submitting} className="border-0 p-0"><legend className="text-xl font-extrabold text-[#00152a]">Company and contact information</legend><div className="mt-5 grid gap-5 sm:grid-cols-2">
+          <TextField label="Company Name" name="companyName" value={values.companyName} error={errors.companyName} onChange={(e) => update('companyName', e.target.value)} />
+          <TextField label="Business Licence Number" name="businessLicenseNo" value={values.businessLicenseNo} error={errors.businessLicenseNo} onChange={(e) => update('businessLicenseNo', e.target.value)} />
+          <TextField label="Tax Code" name="taxCode" value={values.taxCode} error={errors.taxCode} onChange={(e) => update('taxCode', e.target.value)} />
+          <TextField label="Business Address" name="businessAddress" value={values.businessAddress} error={errors.businessAddress} onChange={(e) => update('businessAddress', e.target.value)} />
+          <TextField label="Contact Person" name="contactPerson" value={values.contactPerson} error={errors.contactPerson} onChange={(e) => update('contactPerson', e.target.value)} />
+          <TextField label="Contact Phone Number" name="contactPhone" type="tel" value={values.contactPhone} error={errors.contactPhone} onChange={(e) => update('contactPhone', e.target.value)} />
+        </div></fieldset>
+
+        <fieldset disabled={submitting} className="mt-8 border-0 border-t border-[#d8dadd] p-0 pt-8"><legend className="text-xl font-extrabold text-[#00152a]">Documents</legend>
+          <div className="mt-4 space-y-2">{application.documents.map((document) => <div key={document.documentId} className="rounded-xl border p-3 text-sm font-semibold">{document.documentType} #{document.documentId} · {document.status}</div>)}</div>
+          <label className="mt-4 block font-bold text-[#00152a]">Replacement Business Licence (optional)<input className={fieldClassName} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setLicence(event.target.files?.[0])} /></label>
+          <p className="mt-1 text-xs text-[#59616b]">Leave empty to submit the latest existing licence for review again.</p>{errors.businessLicenseDocument && <p className="mt-2 text-xs font-semibold text-[#ba1a1a]">{errors.businessLicenseDocument}</p>}
+          <label className="mt-4 block font-bold text-[#00152a]">Supporting documents (optional, up to 5)<input className={fieldClassName} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setSupporting(Array.from(event.target.files ?? []))} /></label>{errors.supportingDocuments && <p className="mt-2 text-xs font-semibold text-[#ba1a1a]">{errors.supportingDocuments}</p>}
         </fieldset>
 
-        <fieldset className="mt-8 border-0 border-t border-[#d8dadd] p-0 pt-8">
-          <legend className="text-xl font-extrabold text-[#00152a]">Existing and replacement documents</legend>
-          <div className="mt-5 space-y-3">
-            {mockOperatorApplication.documents.map((document) => (
-              <div key={document.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d8dadd] p-4">
-                <div><p className="text-sm font-bold text-[#00152a]">{document.name}</p><p className="mt-1 text-xs text-[#59616b]">Existing version · {document.status}</p></div>
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${document.status === 'Current' ? 'bg-[#e8f7f4] text-[#006b5f]' : 'bg-[#fff0ed] text-[#93000a]'}`}>{document.status}</span>
-              </div>
-            ))}
-          </div>
-          <label className="mt-4 block rounded-2xl border border-dashed border-[#4fdbc8] bg-[#f3fbf9] p-6 text-center text-sm font-bold text-[#005048]">
-            <span className="material-symbols-outlined mb-2 block text-3xl" aria-hidden="true">drive_folder_upload</span>
-            Replace or add business documents
-            <input type="file" name="replacementDocuments" multiple disabled={loading} className={`${fieldClassName} text-left normal-case tracking-normal`} onChange={(event) => setReplacementSelected(Boolean(event.target.files?.length))} />
-          </label>
-          {errors.documents ? <p className="mt-2 text-xs font-semibold text-[#ba1a1a]">{errors.documents}</p> : null}
-        </fieldset>
-
-        <FeedbackAlert title="Resubmission result" tone="info">A successful submission updates this application to Pending Review and returns to Operator Application Status.</FeedbackAlert>
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Link href={`${ROUTES.partner.application}?status=rejected`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7]">Cancel</Link>
-          <ActionButton type="submit" loading={loading} variant="coral">Resubmit Application</ActionButton>
-        </div>
-        <p className="mt-6 rounded-lg bg-[#f2f4f7] px-3 py-2 text-center text-[11px] leading-relaxed text-[#59616b]">Interactive prototype: updates and document selection remain local and are not persisted.</p>
+        {globalError && <div className="mt-5"><FeedbackAlert tone="error">{globalError}</FeedbackAlert></div>}
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Link href={ROUTES.partner.application} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a]">Cancel</Link><ActionButton type="submit" loading={submitting} variant="coral">Resubmit Application</ActionButton></div>
       </form>
     </PartnerShell>
   );
