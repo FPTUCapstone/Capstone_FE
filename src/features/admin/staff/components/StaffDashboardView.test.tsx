@@ -76,6 +76,66 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(container.textContent ?? '').not.toMatch(/\b\d{1,3}(?:,\d{3})+\b/);
   });
 
+  it('maps pending Staff operational modules to their canonical Report 3 V2 Use Case identifiers and documents the UC-50/51 actor conflict while keeping them non-actionable', () => {
+    render(<StaffDashboardView />);
+
+    const pendingSection = screen.getByRole('region', {
+      name: adminStaffEn.staffDashboard.pendingSectionTitle,
+    });
+
+    const findModuleCard = (headingText: string) => {
+      const heading = within(pendingSection).getByRole('heading', { level: 3, name: headingText });
+      const card = heading.closest('article');
+      expect(card).not.toBeNull();
+      return card as HTMLElement;
+    };
+
+    const tourModerationCard = findModuleCard('Tour Package Moderation');
+    expect(tourModerationCard.textContent ?? '').toContain('UC-60 / UC-61');
+    expect(tourModerationCard.textContent ?? '').not.toContain('UC-50 / UC-51');
+    expect(tourModerationCard.textContent ?? '').toContain(
+      'SRS_INTERNAL_CONFLICT_TOUR_MODERATION_ACTOR',
+    );
+    expect(within(tourModerationCard).queryByRole('link')).toBeNull();
+    expect(
+      (
+        within(tourModerationCard).getByRole('button', {
+          name: adminStaffEn.staffDashboard.unavailableModuleLabel,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+
+    const operatorReviewCard = findModuleCard('Operator Application Review');
+    expect(operatorReviewCard.textContent ?? '').toContain('UC-50 / UC-51');
+    expect(operatorReviewCard.textContent ?? '').not.toContain('UC-48 / UC-49');
+    expect(operatorReviewCard.textContent ?? '').toContain(
+      'SRS_INTERNAL_CONFLICT_OPERATOR_REVIEW_ACTOR',
+    );
+    expect(within(operatorReviewCard).queryByRole('link')).toBeNull();
+    expect(
+      (
+        within(operatorReviewCard).getByRole('button', {
+          name: adminStaffEn.staffDashboard.unavailableModuleLabel,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+
+    const userAccountsCard = findModuleCard('User Account Management');
+    expect(userAccountsCard.textContent ?? '').toContain('UC-47 / UC-48 / UC-49');
+    expect(within(userAccountsCard).queryByRole('link')).toBeNull();
+    expect(
+      (
+        within(userAccountsCard).getByRole('button', {
+          name: adminStaffEn.staffDashboard.unavailableModuleLabel,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+
+    const poiCatalogCard = findModuleCard('POI Catalog Operations');
+    expect(poiCatalogCard.textContent ?? '').toContain('UC-52 / UC-53');
+    expect(within(poiCatalogCard).queryByRole('link')).toBeNull();
+  });
+
   it('hides Administrator-only and non-Staff-ready navigation items when rendered for a Staff actor and shows them for an Administrator actor', () => {
     const { unmount } = render(<AdminNavigation role="Staff" />);
     const staffNav = screen.getByRole('navigation', { name: adminStaffEn.navigation.navAriaLabel });

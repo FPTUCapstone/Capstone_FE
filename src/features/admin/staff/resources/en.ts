@@ -87,7 +87,7 @@ export const adminStaffEn = {
           'Review submitted operator tour packages, inspect itinerary schedules, and record approval or rejection decisions.',
         status: 'pendingBackend' as const,
         availabilityNote:
-          'Assigned to Staff in Report 3 V2 (UC-50 / UC-51); awaiting Backend tour moderation endpoints (/api/v1/admin/tours/pending and review decision actions).',
+          'Listed under Staff in the Report 3 V2 use-case catalogue (UC-60 / UC-61) while detailed §3.9.7.1–§3.9.7.2 specifies Administrator authorization (SRS_INTERNAL_CONFLICT_TOUR_MODERATION_ACTOR); awaiting specification adjudication, Backend tour moderation endpoints (/api/v1/admin/tours/pending and review decision actions), and role policy alignment.',
       },
       {
         id: 'operator-application-review',
@@ -97,7 +97,7 @@ export const adminStaffEn = {
           'Verify Tour Operator registration documents, business credentials, and onboarding eligibility.',
         status: 'pendingBackend' as const,
         availabilityNote:
-          'Assigned to Staff in Report 3 V2 (UC-48 / UC-49); awaiting Backend Tour Operator application queue endpoint and Staff role authorization policy alignment.',
+          'Listed under Staff in the Report 3 V2 use-case catalogue (UC-50 / UC-51) while detailed §3.9.2.1–§3.9.2.2 specifies Administrator authorization (SRS_INTERNAL_CONFLICT_OPERATOR_REVIEW_ACTOR); awaiting specification adjudication, Backend application queue contract, and role policy alignment.',
       },
       {
         id: 'poi-catalog-operations',
@@ -116,7 +116,8 @@ export const adminStaffEn = {
         description:
           'Search traveler and operator accounts, inspect profile details, and manage account lock or unlock states.',
         status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting user account directory and status management endpoints.',
+        availabilityNote:
+          'Assigned to Staff and Administrator in Report 3 V2 (UC-47 / UC-48 / UC-49); awaiting user account directory and lock/unlock status management endpoints.',
       },
       {
         id: 'route-segment-maintenance',
