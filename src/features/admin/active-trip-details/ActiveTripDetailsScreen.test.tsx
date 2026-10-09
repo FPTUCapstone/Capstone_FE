@@ -103,7 +103,7 @@ describe('ActiveTripDetailsScreen', () => {
     expect(fetchActiveTripDetails).toHaveBeenCalledTimes(2);
   });
 
-  it('shows MSG128 for empty sections', async () => {
+  it('shows MSG128 for empty collections and Not available for nullable panels', async () => {
     vi.mocked(fetchActiveTripDetails).mockResolvedValue({
       ...detail, groupPanel: null, currentLocation: null,
       itineraryProgress: [], locationTrail: [], stateHistory: [],
@@ -111,6 +111,7 @@ describe('ActiveTripDetailsScreen', () => {
     });
     render(<ActiveTripDetailsScreen tripId="42" />);
     expect((await screen.findAllByText('No data is available for the selected criteria.')).length)
-      .toBeGreaterThanOrEqual(7);
+      .toBe(5);
+    expect((await screen.findAllByText('Not available')).length).toBeGreaterThanOrEqual(2);
   });
 });

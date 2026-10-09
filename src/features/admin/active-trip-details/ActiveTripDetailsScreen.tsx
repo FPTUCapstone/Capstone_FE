@@ -114,7 +114,7 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
             </span>
             <span className="ml-2 text-[#486581]">as of {formatVietnamDateTime(detail.currentLocation.asOfUtc)}</span>
           </p>
-        ) : <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p>}
+        ) : <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.notAvailable}</p>}
       </section>
 
       <GroupPanelSection panels={detail.groupPanel} />
@@ -231,7 +231,7 @@ function GroupPanelSection({ panels }: { panels: GroupPanel[] | null }) {
   return (
     <section aria-label="Group panel" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
       <SectionTitle>Group Panel</SectionTitle>
-      {panels === null ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> : (
+      {panels === null ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.notAvailable}</p> : (
         <div className="mt-3 space-y-4">
           {panels.map((panel) => (
             <div key={panel.groupId} className="rounded-xl border border-[#e6edf5] p-4">

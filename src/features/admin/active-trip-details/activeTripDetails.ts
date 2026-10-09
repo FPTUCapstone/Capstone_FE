@@ -5,6 +5,7 @@ export const DETAIL_MESSAGES = {
   forbidden: 'You do not have permission to access this function.',
   unavailable: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
   empty: 'No data is available for the selected criteria.',
+  notAvailable: 'Not available',
   snapshotAvailable: 'Proposed itinerary snapshot available',
 } as const;
 
