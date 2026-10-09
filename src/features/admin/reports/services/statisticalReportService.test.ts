@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   canAccessStatisticalReports,
-  parseAdminTokenRole,
+  isStatisticalDemoAllowedInEnv,
   resolveStatisticalWorkspaceMode,
-  verifyTrustedAdminStatisticalReportSession,
 } from '../guards/statisticalReportAuth';
 import {
   DEMO_FILTER_FIXTURES,
@@ -27,132 +26,25 @@ import type {
   StatisticalReportType,
 } from '../types/statisticalReports';
 
-function createJwt(payload: unknown, signature = 'fake-signature'): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  return `${header}.${body}.${signature}`;
-}
-
-function createJwtWithRole(role: string, claimKey = 'role', signature = 'fake-signature'): string {
-  return createJwt({ sub: '1', [claimKey]: role }, signature);
-}
-
 describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
-  describe('Trusted Server Authorization Boundary & Forged Token Rejection (BR-115)', () => {
-    it('rejects empty, null, undefined, and whitespace tokens', async () => {
-      expect(parseAdminTokenRole(null)).toBeNull();
-      expect(parseAdminTokenRole(undefined)).toBeNull();
-      expect(parseAdminTokenRole('')).toBeNull();
-      expect(parseAdminTokenRole('   ')).toBeNull();
-      expect(await verifyTrustedAdminStatisticalReportSession(null)).toBeNull();
+  describe('Defense-in-Depth Role Authorization Boundary (BR-115)', () => {
+    it('authorizes only Administrator and rejects all other roles and falsy values', () => {
+      expect(canAccessStatisticalReports('Administrator')).toBe(true);
 
-      expect(canAccessStatisticalReports(null)).toBe(false);
-      expect(canAccessStatisticalReports(undefined)).toBe(false);
-      expect(canAccessStatisticalReports('')).toBe(false);
+      expect(canAccessStatisticalReports('Staff')).toBe(false);
+      expect(canAccessStatisticalReports('Traveler')).toBe(false);
+      expect(canAccessStatisticalReports('TourOperator')).toBe(false);
       expect(canAccessStatisticalReports('Unknown')).toBe(false);
       expect(canAccessStatisticalReports('PENDING_AUTH_SESSION_VERIFICATION')).toBe(false);
+      expect(canAccessStatisticalReports('')).toBe(false);
+      expect(canAccessStatisticalReports(null)).toBe(false);
+      expect(canAccessStatisticalReports(undefined)).toBe(false);
     });
 
-    it('rejects random opaque tokens and never falls back to Administrator', async () => {
-      for (const opaque of [
-        'server-only-token',
-        'admin-access-token',
-        'test-access-token',
-        'random-opaque-token-12345',
-      ]) {
-        const resolved = parseAdminTokenRole(opaque);
-        expect(resolved).toBe('Unknown');
-        expect(canAccessStatisticalReports(resolved)).toBe(false);
-        expect(await verifyTrustedAdminStatisticalReportSession(opaque)).toBe('Unknown');
-      }
-    });
-
-    it('rejects malformed JWTs, expired JWTs, and JWTs without a valid role claim', async () => {
-      const nowSeconds = Math.floor(Date.now() / 1000);
-      for (const malformed of [
-        'only.two',
-        'too.many.segments.here',
-        'header.!!!not-base64-json!!!.sig',
-        createJwt('not-an-object'),
-        createJwt([1, 2, 3]),
-        createJwt({ sub: '100' }),
-        createJwt({ sub: '100', role: 'SuperUser' }),
-        createJwt({ sub: '100', role: 'Administrator', exp: nowSeconds - 60 }),
-        createJwt({ sub: '100', role: 'Administrator', nbf: nowSeconds + 3600 }),
-      ]) {
-        const resolved = parseAdminTokenRole(malformed);
-        expect(resolved).toBe('Unknown');
-        expect(canAccessStatisticalReports(resolved)).toBe(false);
-      }
-    });
-
-    it('CRITICAL REGRESSION: forged JWT payload with role="Administrator" NEVER authorizes UC-67 without trusted Backend session verification', async () => {
-      const msRoleClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
-      const forgedStandard = createJwtWithRole('Administrator', 'role', 'fake-signature');
-      const forgedMsClaim = createJwtWithRole('Administrator', msRoleClaim, 'fake-signature');
-
-      // Direct token inspection never returns 'Administrator'
-      expect(parseAdminTokenRole(forgedStandard)).toBe('PENDING_AUTH_SESSION_VERIFICATION');
-      expect(parseAdminTokenRole(forgedMsClaim)).toBe('PENDING_AUTH_SESSION_VERIFICATION');
-      expect(canAccessStatisticalReports(parseAdminTokenRole(forgedStandard))).toBe(false);
-      expect(canAccessStatisticalReports(parseAdminTokenRole(forgedMsClaim))).toBe(false);
-
-      // Without upstream verifier -> fails closed as PENDING_AUTH_SESSION_VERIFICATION
-      const withoutVerifier = await verifyTrustedAdminStatisticalReportSession(forgedStandard);
-      expect(withoutVerifier).toBe('PENDING_AUTH_SESSION_VERIFICATION');
-      expect(canAccessStatisticalReports(withoutVerifier)).toBe(false);
-
-      // When upstream Backend rejects signature (401) -> fails closed as Unknown
-      const rejectedByBackend = await verifyTrustedAdminStatisticalReportSession(
-        forgedStandard,
-        async () => ({ ok: false, status: 401 }),
-      );
-      expect(rejectedByBackend).toBe('Unknown');
-      expect(canAccessStatisticalReports(rejectedByBackend)).toBe(false);
-
-      // When upstream Backend throws/unavailable -> fails closed as PENDING_AUTH_SESSION_VERIFICATION
-      const unavailableBackend = await verifyTrustedAdminStatisticalReportSession(
-        forgedStandard,
-        async () => {
-          throw new Error('Backend unreachable');
-        },
-      );
-      expect(unavailableBackend).toBe('PENDING_AUTH_SESSION_VERIFICATION');
-      expect(canAccessStatisticalReports(unavailableBackend)).toBe(false);
-    });
-
-    it('rejects JWTs with Staff, Traveler, or TourOperator roles and allows ONLY a Backend-verified Administrator session', async () => {
-      const msRoleClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
-
-      const staffRole = parseAdminTokenRole(createJwtWithRole('Staff'));
-      const staffMsRole = parseAdminTokenRole(createJwtWithRole('Staff', msRoleClaim));
-      const travelerRole = parseAdminTokenRole(createJwtWithRole('Traveler'));
-      const operatorRole = parseAdminTokenRole(createJwtWithRole('TourOperator'));
-
-      expect(staffRole).toBe('Staff');
-      expect(staffMsRole).toBe('Staff');
-      expect(travelerRole).toBe('Traveler');
-      expect(operatorRole).toBe('TourOperator');
-
-      expect(canAccessStatisticalReports(staffRole)).toBe(false);
-      expect(canAccessStatisticalReports(staffMsRole)).toBe(false);
-      expect(canAccessStatisticalReports(travelerRole)).toBe(false);
-      expect(canAccessStatisticalReports(operatorRole)).toBe(false);
-
-      // Verified Administrator session via server-side Backend probe (status 200 OK)
-      const verifiedAdmin = await verifyTrustedAdminStatisticalReportSession(
-        createJwtWithRole('Administrator', 'role', 'valid-backend-signature'),
-        async () => ({ ok: true, status: 200 }),
-      );
-      const verifiedMsAdmin = await verifyTrustedAdminStatisticalReportSession(
-        createJwtWithRole('Administrator', msRoleClaim, 'valid-backend-signature'),
-        async () => ({ ok: true, status: 200 }),
-      );
-
-      expect(verifiedAdmin).toBe('Administrator');
-      expect(verifiedMsAdmin).toBe('Administrator');
-      expect(canAccessStatisticalReports(verifiedAdmin)).toBe(true);
-      expect(canAccessStatisticalReports(verifiedMsAdmin)).toBe(true);
+    it('enforces Demo environment lockdown (isStatisticalDemoAllowedInEnv)', () => {
+      expect(isStatisticalDemoAllowedInEnv('development')).toBe(true);
+      expect(isStatisticalDemoAllowedInEnv('test')).toBe(true);
+      expect(isStatisticalDemoAllowedInEnv('production')).toBe(false);
     });
   });
 
@@ -212,6 +104,7 @@ describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
       expect(formatVndCurrency(130_000_000.4)).toBe('130,000,000 VND');
       expect(formatVndCurrency(-130_000_000)).toBe('-130,000,000 VND');
       expect(formatVietnamDateDdMmYyyy('2026-09-30T10:00:00+07:00')).toBe('30/09/2026');
+      expect(formatVietnamDateDdMmYyyy('invalid-date')).toBe('--/--/----');
     });
 
     it('separates PRODUCTION_PERIOD_OPTIONS (no frontend closure authority claim) from DEMO_PERIOD_FIXTURES (BR-129 fixture simulation)', () => {

@@ -256,16 +256,17 @@ export function formatIntegerCount(value: number): string {
 
 export function formatVietnamDateDdMmYyyy(dateInput: Date | string): string {
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  if (!Number.isFinite(date.getTime())) return '08/10/2026';
+  if (!Number.isFinite(date.getTime())) return '--/--/----';
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Ho_Chi_Minh',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   }).formatToParts(date);
-  const day = parts.find((p) => p.type === 'day')?.value ?? '08';
-  const month = parts.find((p) => p.type === 'month')?.value ?? '10';
-  const year = parts.find((p) => p.type === 'year')?.value ?? '2026';
+  const day = parts.find((p) => p.type === 'day')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const year = parts.find((p) => p.type === 'year')?.value;
+  if (!day || !month || !year) return '--/--/----';
   return `${day}/${month}/${year}`;
 }
 

@@ -79,10 +79,10 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       },
     );
 
-    it('allows verified Administrator access and renders 100% English copy with zero Vietnamese or raw BR/MSG codes', () => {
-      const { container } = render(
+    it('allows verified Administrator access, integrates role-aware AdminNavigation, and renders 100% English copy with zero Vietnamese or raw BR/MSG codes', () => {
+      const { container, unmount } = render(
         <>
-          <AdminNavigation />
+          <AdminNavigation role="Administrator" />
           <StatisticalReportsView actorRole="Administrator" />
         </>,
       );
@@ -90,8 +90,16 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       expect(
         screen.getByRole('heading', { level: 1, name: statisticalReportsEn.header.title }),
       ).toBeTruthy();
+      expect(screen.getByRole('link', { name: 'Statistical Reports' }).getAttribute('href')).toBe(
+        '/admin/reports',
+      );
       expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
       expect(container.textContent ?? '').not.toMatch(RAW_CODE_REGEX);
+
+      unmount();
+
+      render(<AdminNavigation role="Staff" />);
+      expect(screen.queryByRole('link', { name: 'Statistical Reports' })).toBeNull();
     });
 
     it('verifies CR-09 resource centralization across resources/en.ts, StatisticalReportsView.tsx, and statisticalReportService.ts', () => {
