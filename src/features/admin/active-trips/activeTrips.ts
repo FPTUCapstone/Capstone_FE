@@ -5,6 +5,7 @@ export const ACTIVE_TRIPS_PAGE_SIZE = 20;
 
 export const ACTIVE_TRIPS_MESSAGES = {
   invalidDates: 'The submitted Start Date range is logically invalid.',
+  invalidFilter: 'One or more filters are invalid. Please review and try again.',
   forbidden: 'You do not have permission to access this function.',
   unavailable: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
   empty: 'No data is available for the selected criteria.',

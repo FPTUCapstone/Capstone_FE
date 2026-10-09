@@ -7,7 +7,11 @@ import {
 } from './activeTrips';
 
 export class ActiveTripsError extends Error {
-  constructor(public readonly status: number, public readonly serverMessage?: string) {
+  constructor(
+    public readonly status: number,
+    public readonly serverMessage?: string,
+    public readonly errorCode?: 'ActiveTrips.InvalidDateRange' | 'ActiveTrips.InvalidFilter',
+  ) {
     super('Unable to load active trips.');
     this.name = 'ActiveTripsError';
   }
@@ -32,10 +36,15 @@ export async function fetchActiveTrips(
 
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const serverMessage = body && typeof body === 'object' && typeof (body as { title?: unknown }).title === 'string'
+    const errorCode = response.status === 400 && body && typeof body === 'object' &&
+      ((body as { errorCode?: unknown }).errorCode === 'ActiveTrips.InvalidDateRange' ||
+       (body as { errorCode?: unknown }).errorCode === 'ActiveTrips.InvalidFilter')
+      ? (body as { errorCode: 'ActiveTrips.InvalidDateRange' | 'ActiveTrips.InvalidFilter' }).errorCode
+      : undefined;
+    const serverMessage = errorCode && typeof (body as { title?: unknown }).title === 'string'
       ? (body as { title: string }).title
       : undefined;
-    throw new ActiveTripsError(response.status, serverMessage);
+    throw new ActiveTripsError(response.status, serverMessage, errorCode);
   }
   try {
     return parseActiveTripsResponse(body);
