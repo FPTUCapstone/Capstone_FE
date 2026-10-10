@@ -16,7 +16,7 @@ import {
   resubmitOperatorApplication,
   type OperatorApplication,
 } from './operatorApplicationApi';
-import { operatorMessage } from './operatorMessages';
+import { operatorMessage, operatorFieldMessage } from './operatorMessages';
 
 type Values = {
   companyName: string; businessLicenseNo: string; taxCode: string;
@@ -122,7 +122,11 @@ export function ResubmitApplicationForm() {
           router.replace(ROUTES.partner.application);
           return;
         }
-        setErrors(reason.fields as Partial<Record<ErrorKey, string>>);
+        const fieldErrors: Partial<Record<ErrorKey, string>> = {};
+        for (const [field, code] of Object.entries(reason.fields ?? {})) {
+          fieldErrors[field as ErrorKey] = operatorFieldMessage(field, code);
+        }
+        setErrors(fieldErrors);
         setGlobalError(operatorMessage(reason.code));
       } else setGlobalError(operatorMessage('MSG127'));
     } finally {
