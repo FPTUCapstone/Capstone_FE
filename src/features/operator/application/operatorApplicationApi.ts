@@ -137,4 +137,3 @@ export async function resubmitOperatorApplication(
   }
   return body as unknown as ResubmitOperatorResult;
 }
-

@@ -68,4 +68,3 @@ export async function proxyOperatorApplication(request: Request): Promise<Respon
     return safeFailure(503, null);
   }
 }
-
