@@ -88,4 +88,3 @@ After success, both `User.Status` and `approvalStatus` are `PendingApproval`. Th
 ## Non-goals
 
 Creating another account, changing Firebase/email verification, direct Cloudinary upload, changing UC-02 registration, implementing Admin approval/rejection, or implementing the missing Admin review-list endpoint.
-
