@@ -23,6 +23,8 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl(undefined, 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('/admin/audit-logs', 'Administrator')).toBe('/admin/audit-logs');
     expect(getSafeAdminReturnUrl('/admin/audit-logs?pageNumber=2', 'Administrator')).toBe('/admin/audit-logs?pageNumber=2');
+    expect(getSafeAdminReturnUrl('/admin/reports', 'Administrator')).toBe('/admin/reports');
+    expect(getSafeAdminReturnUrl('/admin/reports?demo=true', 'Administrator')).toBe('/admin/reports?demo=true');
     expect(getSafeAdminReturnUrl('https://attacker.example/admin', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('//attacker.example/admin', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('/admin/login', 'Administrator')).toBe('/admin');
@@ -37,6 +39,7 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest/new', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/tour-operator-applications/1', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/reports', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/reports?demo=true', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/audit-logs', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/settings/algorithm-parameters', 'Staff')).toBe('/admin/staff');

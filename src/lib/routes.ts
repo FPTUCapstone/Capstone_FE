@@ -36,6 +36,7 @@ export const ROUTES = {
     accountSecurity: '/admin/account/security',
     dashboard: '/admin',
     staffDashboard: '/admin/staff',
+    reports: '/admin/reports',
     auditLogs: '/admin/audit-logs',
     tourReviews: '/admin/tours/reviews',
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
