@@ -23,6 +23,25 @@ export const operatorMessages: Record<string, string> = {
   'auth.request_invalid': 'Please correct the highlighted fields.',
 };
 
+export const operatorFieldMessages: Record<string, Record<string, string>> = {
+  taxCode: {
+    MSG159: 'This tax code is already registered.',
+  },
+  businessLicenseNo: {
+    MSG159: 'This business licence number is already registered.',
+  },
+  licenceNumber: {
+    MSG159: 'This business licence number is already registered.',
+  },
+};
+
 export function operatorMessage(code: string | undefined): string {
   return code && Object.hasOwn(operatorMessages, code) ? operatorMessages[code] : operatorMessages.MSG127;
+}
+
+export function operatorFieldMessage(field: string, code: string | undefined): string {
+  if (code && operatorFieldMessages[field]?.[code]) {
+    return operatorFieldMessages[field][code];
+  }
+  return operatorMessage(code);
 }

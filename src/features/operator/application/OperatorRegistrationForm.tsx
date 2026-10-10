@@ -12,7 +12,7 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { CheckboxField, PasswordField, TextField, fieldClassName } from '@/components/ui/FormControls';
 import { ApplicationSubmitted } from '@/features/operator/application/ApplicationSubmitted';
 import { OperatorRegistrationError, registerOperator } from '@/features/operator/application/registerOperator';
-import { operatorMessage, operatorMessages } from '@/features/operator/application/operatorMessages';
+import { operatorMessage, operatorMessages, operatorFieldMessage } from '@/features/operator/application/operatorMessages';
 import { mapFirebaseAuthError } from '@/lib/authErrorMapper';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { validatePassword } from '@/lib/passwordPolicy';
@@ -138,7 +138,7 @@ export function OperatorRegistrationForm() {
         };
         for (const [field, code] of Object.entries(error.fields)) {
           const key = fieldMap[field];
-          if (key) fieldErrors[key] = operatorMessage(code);
+          if (key) fieldErrors[key] = operatorFieldMessage(field, code);
         }
         if (error.code === 'MSG03') fieldErrors.email = operatorMessages.MSG03;
         setErrors(fieldErrors);
