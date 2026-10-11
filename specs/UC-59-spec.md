@@ -11,12 +11,12 @@ Specification is `specs/UC-59-web-screen-spec.md`; implementation follows
 - Current SRS `Capstone_Docs/Report3_Software-Requirement-Specification (1).docx`
   (SHA-256 `E078E898424056BAB3D7BFF992734D7B38781483C2FA3C455AC9DB01F17DFD7D`),
   Table 3 UC-59 and Table 4 Active Trip Details / `WEB_SCOPE_MATRIX.md` row UC-59:
-  `ADMIN_WEB_ONLY`, read-oriented operational
+  `STAFF_WEB_ONLY`, read-oriented operational
   detail; no intervention actions unless separately approved.
 - BE contract: `GET /api/v1/admin/trips/active/{tripId}` (see BE spec for the full DTO and error
   semantics). Active-trip definition, trip code, trip type, group/traveler, destination, member
   and alert counts reuse the approved UC-58 calculations — this screen must not re-derive them.
-- Screen belongs to Web Batch 5 (Admin monitoring). Entry point is the approved UC-58 screen
+- Screen belongs to Web Batch 5 (Staff monitoring). Entry point is the approved UC-58 screen
   `/admin/trips/active`; each list row has a visible `View Details` link to its detail route.
 
 ## Route and session contract
@@ -38,11 +38,12 @@ Specification is `specs/UC-59-web-screen-spec.md`; implementation follows
     boundary **without calling the API**; the proxy `/api/admin/trips/active/[id]` with an
     invalid ID returns `400` **without contacting the backend**. Both boundaries use the same
     validator implementation.
-- Non-Administrator cannot load data; the backend remains the authorization authority.
+- Only Staff can load data. The BFF rejects other signed-in administration roles before contacting
+  the backend; the backend remains the final authorization authority.
 
 ## Screen content (read-only monitoring)
 
-Single-column responsive page under the existing Admin console layout, grouped into sections.
+Single-column responsive page under the existing Staff console layout, grouped into sections.
 Refresh is a read action; trip intervention controls are outside this monitoring scope:
 
 1. **Header** — trip code, trip type, current FSM state badge, group/traveler name, destination,

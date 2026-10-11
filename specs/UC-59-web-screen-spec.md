@@ -2,7 +2,7 @@
 
 ## Route and scope
 
-- Route: `/admin/trips/active/[id]` inside the existing Administrator console layout, reached
+- Route: `/admin/trips/active/[id]` inside the existing Staff console layout, reached
   from each row of the approved UC-58 Active Trips list.
 - Read-only monitoring screen. Intervention actions (incident resolution, rerouting decisions,
   itinerary/session mutation) are excluded until a separate UC is approved.
@@ -15,7 +15,7 @@
 
 ## Layout
 
-- Header: back link to `/admin/trips/active`, eyebrow `Administrator monitoring`, title
+- Header: back link to `/admin/trips/active`, eyebrow `Staff monitoring`, title
   `TRIP-{id}`, and badges for trip type (`Tour`/`SelfPlanned`) and current FSM state
   (`Navigating`/`Exploring`/`Interrupted` as colored-badge + text, never color alone).
 - Identity row: group/traveler name and destination (`Not available` when null), plus a manual

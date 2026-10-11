@@ -54,6 +54,7 @@ describe('ActiveTripDetailsScreen', () => {
     render(<ActiveTripDetailsScreen tripId="42" />);
 
     expect(await screen.findByRole('heading', { name: 'TRIP-42' })).toBeTruthy();
+    expect(screen.getByText('Staff monitoring')).toBeTruthy();
     expect(screen.getByText('Tour')).toBeTruthy();
     expect(screen.getByText('Interrupted')).toBeTruthy();
     expect(screen.getByText('Da Nang Weekend Group')).toBeTruthy();
