@@ -2,7 +2,12 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-import { ADMIN_ACCESS_TOKEN_COOKIE, clearAdminSession, jsonNoStore } from '@/lib/server/adminSession';
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  clearAdminSession,
+  jsonNoStore,
+  verifyAdminSessionFromCookies,
+} from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
 import { ACTIVE_TRIPS_MESSAGES } from './activeTrips';
 
@@ -23,8 +28,14 @@ const invalidFilter = {
 } as const;
 
 export async function proxyActiveTrips(request: Request): Promise<Response> {
-  const token = (await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return jsonNoStore({ title: 'Administration sign-in required.' }, 401);
+  const cookieStore = await cookies();
+  const session = verifyAdminSessionFromCookies(cookieStore);
+  if (!session) return clearAdminSession(jsonNoStore({ title: 'Administration sign-in required.' }, 401));
+  if (session.role !== 'Staff') {
+    return jsonNoStore({ title: 'This function is available to Staff accounts only.' }, 403);
+  }
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return clearAdminSession(jsonNoStore({ title: 'Administration sign-in required.' }, 401));
 
   const source = new URL(request.url).searchParams;
   const query = new URLSearchParams();

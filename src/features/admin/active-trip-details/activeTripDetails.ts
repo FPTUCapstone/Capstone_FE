@@ -51,12 +51,22 @@ export type TripReroutingEvent = {
 export type TripLocationPoint = {
   latitude: number; longitude: number; recordedAtUtc: string; isOfflineCaptured: boolean;
 };
+export const LOCATION_DISCLOSURE_STATES = ['Full', 'Partial', 'Redacted'] as const;
+export type LocationDisclosureState = (typeof LOCATION_DISCLOSURE_STATES)[number];
+
+export type LocationDisclosure = {
+  state: LocationDisclosureState;
+  sharedMemberCount: number;
+  hiddenMemberCount: number;
+};
+
 export type ActiveTripDetail = {
   tripId: string; tripCode: string; tripType: string; currentState: string;
   groupOrTraveler: string; destination: string | null;
   startedAtUtc: string | null; lastSyncedAtUtc: string | null;
   currentDay: number | null; members: number; openAlerts: number;
   groupPanel: GroupPanel[] | null;
+  locationDisclosure: LocationDisclosure;
   currentLocation: CurrentLocation | null;
   itineraryProgress: ItineraryProgressItem[];
   stateHistory: TripStateChange[];
@@ -138,15 +148,33 @@ export function parseActiveTripDetail(value: unknown): ActiveTripDetail {
     }
     currentLocation = location as CurrentLocation;
   }
+  let locationDisclosure: LocationDisclosure = {
+    state: 'Redacted',
+    sharedMemberCount: 0,
+    hiddenMemberCount: 0,
+  };
+  if (value.locationDisclosure !== undefined && value.locationDisclosure !== null) {
+    const disclosure = value.locationDisclosure;
+    if (
+      !isRecord(disclosure) ||
+      !(LOCATION_DISCLOSURE_STATES as readonly string[]).includes(disclosure.state as string) ||
+      !isNonNegativeInteger(disclosure.sharedMemberCount) ||
+      !isNonNegativeInteger(disclosure.hiddenMemberCount)
+    ) {
+      throw new Error('The active-trip detail response is invalid.');
+    }
+    locationDisclosure = disclosure as LocationDisclosure;
+  }
   const readArray = <T>(section: unknown, parse: (entry: unknown) => T): T[] => {
     if (!Array.isArray(section)) throw new Error('The active-trip detail response is invalid.');
     return section.map(parse);
   };
   return {
     ...value as Omit<ActiveTripDetail,
-      'groupPanel' | 'currentLocation' | 'itineraryProgress' | 'stateHistory' |
+      'groupPanel' | 'currentLocation' | 'locationDisclosure' | 'itineraryProgress' | 'stateHistory' |
       'incidents' | 'reroutingEvents' | 'locationTrail'>,
     groupPanel,
+    locationDisclosure,
     currentLocation,
     itineraryProgress: readArray(value.itineraryProgress, (entry): ItineraryProgressItem => {
       if (!isRecord(entry) || !isDecimalStringId(entry.itemId) ||

@@ -34,6 +34,7 @@ const detail = {
   reroutingEvents: [
     { reroutingId: '31', incidentId: '77', status: 'Proposed', proposedAtUtc: '2026-09-26T02:56:00Z', decidedAtUtc: null, hasProposedItinerarySnapshot: true },
   ],
+  locationDisclosure: { state: 'Partial', sharedMemberCount: 1, hiddenMemberCount: 1 },
   locationTrail: [
     { latitude: 16.0601, longitude: 108.2266, recordedAtUtc: '2026-09-26T03:10:00Z', isOfflineCaptured: false },
   ],
@@ -62,9 +63,30 @@ describe('active trip detail contract', () => {
     expect(parsed.currentLocation).toBeNull();
   });
 
+  it('parses locationDisclosure and defaults safely when absent', () => {
+    const withDisclosure = parseActiveTripDetail({
+      ...detail,
+      locationDisclosure: { state: 'Full', sharedMemberCount: 2, hiddenMemberCount: 0 },
+    });
+    expect(withDisclosure.locationDisclosure).toEqual({
+      state: 'Full',
+      sharedMemberCount: 2,
+      hiddenMemberCount: 0,
+    });
+
+    const withoutDisclosure = parseActiveTripDetail({ ...detail, locationDisclosure: undefined });
+    expect(withoutDisclosure.locationDisclosure).toEqual({
+      state: 'Redacted',
+      sharedMemberCount: 0,
+      hiddenMemberCount: 0,
+    });
+  });
+
   it.each([
     { tripId: 42 }, { tripId: '042' }, { tripCode: 42 },
     { startedAtUtc: '2026-09-25 17:00:00' }, { members: -1 },
+    { locationDisclosure: { state: 'Invalid', sharedMemberCount: 1, hiddenMemberCount: 0 } },
+    { locationDisclosure: { state: 'Full', sharedMemberCount: -1, hiddenMemberCount: 0 } },
     { itineraryProgress: [{ ...detail.itineraryProgress[0], status: 'Unknown' }] },
     { incidents: [{ ...detail.incidents[0], weatherEvent: { ...detail.incidents[0].weatherEvent, severity: 'Catastrophic' } }] },
     { reroutingEvents: [{ ...detail.reroutingEvents[0], status: 'Pending' }] },
