@@ -17,4 +17,14 @@ export const adminUserAccountsEn = {
     unlockUnavailableLabel: 'Unlock account unavailable',
     returnToStaffLabel: 'Return to Staff Workspace',
   },
+  detail: {
+    eyebrow: 'Account Governance',
+    title: 'Account details unavailable',
+    pendingBadge: 'Backend integration pending',
+    pendingDescription:
+      'Account details and account-status operations will become available after the Backend directory contract is deployed.',
+    requestedAccountIdLabel: 'Requested account ID',
+    operationsLabel: 'Account status operations unavailable',
+    backToDirectoryLabel: 'Back to User Account Management',
+  },
 } as const;
