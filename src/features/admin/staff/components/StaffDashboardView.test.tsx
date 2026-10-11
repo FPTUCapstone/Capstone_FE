@@ -136,7 +136,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(poiCatalogCard).queryByRole('link')).toBeNull();
   });
 
-  it('hides Administrator-only and non-Staff-ready navigation items when rendered for a Staff actor and shows them for an Administrator actor', () => {
+  it('shows Active Trips only for Staff and keeps Administrator-only navigation hidden for Staff', () => {
     const { unmount } = render(<AdminNavigation role="Staff" />);
     const staffNav = screen.getByRole('navigation', { name: adminStaffEn.navigation.navAriaLabel });
 
@@ -146,6 +146,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeNull();
+    expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.activeTrips })).toBeTruthy();
 
     unmount();
 
@@ -157,6 +158,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeTruthy();
+    expect(within(adminNav).queryByRole('link', { name: adminStaffEn.navigation.activeTrips })).toBeNull();
   });
 
   it('renders semantic English AdminAccessDeniedView with a link back to /admin/staff', () => {
