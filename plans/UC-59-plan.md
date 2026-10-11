@@ -25,7 +25,8 @@ DoD: `npx vitest run src/features/admin/active-trip-details` green.
 ## Task 2 — Same-origin proxy route
 
 - `activeTripDetailsProxy.ts` (server-only) + `app/api/admin/trips/active/[id]/route.ts`
-  reusing the shared admin cookie helpers: read `tripmate_admin_access_token`, forward a GET to
+  reusing the shared administration cookie helpers: verify a Staff session, read
+  `tripmate_admin_access_token`, forward a GET to
   `/api/v1/admin/trips/active/{id}`, pass upstream statuses through, clear the session cookie on
   upstream `401` (same behavior as the UC-58 list proxy).
 - Validate `[id]` server-side with the approved strict validator (shared with the page route):
@@ -76,8 +77,8 @@ spec) renders the not-found boundary without an API call; the rerouting section 
 2. `npm run typecheck`
 3. `npm test` (full suite)
 4. `npm run build` (new dynamic route appears in the manifest)
-5. Manual browser checklist against a running BE: admin login → list → row → detail; direct
-   refresh; 404 URL; non-admin rejection. Record actual evidence; do not claim E2E without it.
+5. Manual browser checklist against a running BE: Staff login → list → row → detail; direct
+   refresh; 404 URL; Administrator rejection. Record actual evidence; do not claim E2E without it.
 
 Non-goals guard: no live map, no polling, no mutation, no changes to the UC-58 list contract or
 the shared session contract.
