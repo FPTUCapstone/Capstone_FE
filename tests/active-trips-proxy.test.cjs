@@ -3,12 +3,13 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
 
-function setup(token, backend) {
+function setup(token, backend, role = 'Staff') {
   return loadTs('src/features/admin/active-trips/activeTripsProxy.ts', {
     'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
     '@/lib/server/adminSession': {
       ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
+      verifyAdminSessionFromCookies: () => token ? { role } : null,
       jsonNoStore: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
       clearAdminSession: response => { response.headers.set('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0'); return response; },
     },
@@ -17,9 +18,15 @@ function setup(token, backend) {
 
 const request = (query = '') => new Request(`http://localhost:3001/api/admin/trips/active${query}`);
 
-test('requires the HttpOnly Administrator cookie', async () => {
+test('requires a verified Staff session', async () => {
   const response = await setup(null, async () => { throw new Error('must not call backend'); })(request());
   assert.equal(response.status, 401);
+});
+
+test('rejects an Administrator session before contacting the Staff-only upstream endpoint', async () => {
+  const response = await setup('admin-token', async () => { throw new Error('must not call backend'); }, 'Administrator')(request());
+  assert.equal(response.status, 403);
+  assert.doesNotMatch(await response.text(), /admin-token/);
 });
 
 test('forwards only approved query parameters and bearer token', async () => {

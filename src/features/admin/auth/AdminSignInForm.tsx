@@ -22,9 +22,13 @@ const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
   ROUTES.admin.activeTrips,
 ]);
 
+function isStaffOnlyPathname(pathname: string): boolean {
+  return pathname === ROUTES.admin.activeTrips || pathname.startsWith(`${ROUTES.admin.activeTrips}/`);
+}
+
 export function isAdministratorOnlyPathname(pathname: string): boolean {
   if (STAFF_ALLOWED_EXACT_ROUTES.has(pathname)) return false;
-  if (pathname.startsWith(`${ROUTES.admin.activeTrips}/`)) return false;
+  if (isStaffOnlyPathname(pathname)) return false;
   if (pathname === ROUTES.admin.login || pathname === ROUTES.admin.forgotPassword) return false;
   return pathname === ROUTES.admin.dashboard || pathname.startsWith('/admin/');
 }
@@ -53,6 +57,9 @@ export function getSafeAdminReturnUrl(
     }
     if (role === 'Staff' && isAdministratorOnlyPathname(candidate.pathname)) {
       return ROUTES.admin.staffDashboard;
+    }
+    if (role === 'Administrator' && isStaffOnlyPathname(candidate.pathname)) {
+      return ROUTES.admin.dashboard;
     }
     return `${candidate.pathname}${candidate.search}${candidate.hash}`;
   } catch {

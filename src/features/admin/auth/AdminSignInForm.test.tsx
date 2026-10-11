@@ -27,6 +27,8 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('//attacker.example/admin', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('/admin/login', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('/admin/forgot-password', 'Administrator')).toBe('/admin');
+    expect(getSafeAdminReturnUrl('/admin/trips/active', 'Administrator')).toBe('/admin');
+    expect(getSafeAdminReturnUrl('/admin/trips/active/42', 'Administrator')).toBe('/admin');
   });
 
   it('routes Staff to /admin/staff by default, permits Active Trip Monitoring, and prevents redirects into Administrator-only or pending routes', () => {
