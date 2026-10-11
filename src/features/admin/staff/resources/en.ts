@@ -25,6 +25,7 @@ export const adminStaffEn = {
     adminDashboard: 'System Overview',
     staffDashboard: 'Staff Workspace',
     tourReviews: 'Tour Reviews',
+    activeTrips: 'Active Trips',
     createPoi: 'POI Catalog',
     algorithmSettings: 'Algorithm Settings',
     auditLogs: 'Audit Logs',
@@ -135,7 +136,8 @@ export const adminStaffEn = {
         description:
           'Monitor active traveler itineraries and review operational alerts across regions.',
         status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting real-time active trip monitoring endpoints.',
+        availabilityNote:
+          'Staff monitoring screens are available from navigation. Live data requires Backend Staff authorization for the active-trip endpoints.',
       },
       {
         id: 'platform-booking-oversight',

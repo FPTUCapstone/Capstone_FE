@@ -44,6 +44,14 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
           >
             {adminStaffEn.navigation.staffDashboard}
           </Link>
+          {isStaffUser ? (
+            <Link
+              href={ROUTES.admin.activeTrips}
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+            >
+              {adminStaffEn.navigation.activeTrips}
+            </Link>
+          ) : null}
           {!isStaffUser ? (
             <>
               <Link
@@ -51,12 +59,6 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
                 className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
               >
                 {adminStaffEn.navigation.tourReviews}
-              </Link>
-              <Link
-                href={ROUTES.admin.activeTrips}
-                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
-              >
-                Active Trips
               </Link>
               <Link
                 href={ROUTES.admin.createPoi}

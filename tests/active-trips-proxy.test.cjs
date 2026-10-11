@@ -43,13 +43,16 @@ test('enforces pageSize 20 even when the caller supplies a larger or duplicate v
   assert.equal(response.status, 200);
 });
 
-test('clears the local session for upstream 401 and 403 without leaking details', async () => {
-  for (const status of [401, 403]) {
-    const response = await setup('secret', async () => Response.json({ detail: 'private upstream data' }, { status }))(request());
-    assert.equal(response.status, status);
-    assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
-    assert.doesNotMatch(await response.text(), /private upstream data/);
-  }
+test('clears the local session only for upstream 401 and preserves it for 403 without leaking details', async () => {
+  const unauthenticated = await setup('secret', async () => Response.json({ detail: 'private upstream data' }, { status: 401 }))(request());
+  assert.equal(unauthenticated.status, 401);
+  assert.match(unauthenticated.headers.get('Set-Cookie'), /Max-Age=0/);
+  assert.doesNotMatch(await unauthenticated.text(), /private upstream data/);
+
+  const forbidden = await setup('secret', async () => Response.json({ detail: 'private upstream data' }, { status: 403 }))(request());
+  assert.equal(forbidden.status, 403);
+  assert.equal(forbidden.headers.get('Set-Cookie'), null);
+  assert.doesNotMatch(await forbidden.text(), /private upstream data/);
 });
 
 test('maps upstream and network failures to a safe 503', async () => {

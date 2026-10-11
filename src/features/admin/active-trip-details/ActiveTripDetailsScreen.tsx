@@ -57,7 +57,7 @@ export function ActiveTripDetailsScreen({ tripId }: { tripId: string }) {
         >
           ← Back to Active Trips
         </Link>
-        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Administrator monitoring</p>
+        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Staff monitoring</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-extrabold text-[#00152a]">{detail?.tripCode ?? `TRIP-${tripId}`}</h1>
           {detail ? <Badge>{detail.tripType === 'SelfPlanned' ? 'Self-Planned' : 'Tour'}</Badge> : null}

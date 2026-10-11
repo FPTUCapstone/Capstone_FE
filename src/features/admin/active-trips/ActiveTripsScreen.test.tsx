@@ -39,7 +39,7 @@ describe('ActiveTripsScreen', () => {
     expect(screen.getByText('View Details')).toBeTruthy();
   });
 
-  it('does not fetch while the Administrator is typing', async () => {
+  it('does not fetch while the Staff member is typing', async () => {
     render(<ActiveTripsScreen />);
     await screen.findByText('TRIP-42');
     fireEvent.change(screen.getByLabelText('Keyword'), { target: { value: 'trip' } });

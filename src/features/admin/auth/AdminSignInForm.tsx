@@ -19,10 +19,12 @@ interface AdminSignInFormProps {
 const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
   ROUTES.admin.staffDashboard,
   ROUTES.admin.accountSecurity,
+  ROUTES.admin.activeTrips,
 ]);
 
 export function isAdministratorOnlyPathname(pathname: string): boolean {
   if (STAFF_ALLOWED_EXACT_ROUTES.has(pathname)) return false;
+  if (pathname.startsWith(`${ROUTES.admin.activeTrips}/`)) return false;
   if (pathname === ROUTES.admin.login || pathname === ROUTES.admin.forgotPassword) return false;
   return pathname === ROUTES.admin.dashboard || pathname.startsWith('/admin/');
 }

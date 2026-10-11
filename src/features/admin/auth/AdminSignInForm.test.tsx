@@ -29,10 +29,12 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('/admin/forgot-password', 'Administrator')).toBe('/admin');
   });
 
-  it('routes Staff to /admin/staff by default and prevents redirect into Administrator-only or pending routes', () => {
+  it('routes Staff to /admin/staff by default, permits Active Trip Monitoring, and prevents redirects into Administrator-only or pending routes', () => {
     expect(getSafeAdminReturnUrl(undefined, 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/staff', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/account/security', 'Staff')).toBe('/admin/account/security');
+    expect(getSafeAdminReturnUrl('/admin/trips/active', 'Staff')).toBe('/admin/trips/active');
+    expect(getSafeAdminReturnUrl('/admin/trips/active/42', 'Staff')).toBe('/admin/trips/active/42');
     expect(getSafeAdminReturnUrl('/admin/tours/reviews', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest/new', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/tour-operator-applications/1', 'Staff')).toBe('/admin/staff');
@@ -62,13 +64,13 @@ describe('Administration return URL and role-aware routing', () => {
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('routes Staff to /admin/staff after sign-in even when returnUrl points to an Administrator-only page', async () => {
+  it('routes Staff to the requested Active Trips page after sign-in', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(Response.json({ authenticated: true, role: 'Staff' })),
     );
 
-    render(<AdminSignInForm returnUrl="/admin/audit-logs" />);
+    render(<AdminSignInForm returnUrl="/admin/trips/active" />);
     fireEvent.change(screen.getByLabelText('Email Address'), {
       target: { value: 'staff@tripmate.local' },
     });
@@ -77,7 +79,7 @@ describe('Administration return URL and role-aware routing', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/admin/staff'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/admin/trips/active'));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 });

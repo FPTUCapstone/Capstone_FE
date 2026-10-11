@@ -24,7 +24,7 @@ const invalidFilter = {
 
 export async function proxyActiveTrips(request: Request): Promise<Response> {
   const token = (await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+  if (!token) return jsonNoStore({ title: 'Administration sign-in required.' }, 401);
 
   const source = new URL(request.url).searchParams;
   const query = new URLSearchParams();
@@ -40,11 +40,11 @@ export async function proxyActiveTrips(request: Request): Promise<Response> {
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       signal: request.signal,
     });
-    if (upstream.status === 401 || upstream.status === 403) {
-      const title = upstream.status === 401
-        ? 'Administrator sign-in required.'
-        : 'You do not have permission to access this function.';
-      return clearAdminSession(jsonNoStore({ title }, upstream.status));
+    if (upstream.status === 401) {
+      return clearAdminSession(jsonNoStore({ title: 'Administration sign-in required.' }, 401));
+    }
+    if (upstream.status === 403) {
+      return jsonNoStore({ title: 'You do not have permission to access this function.' }, 403);
     }
     if (upstream.status >= 500) {
       return jsonNoStore({ title: 'TripMate is temporarily unable to process your request.' }, 503);

@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 
 import { ActiveTripsScreen } from '@/features/admin/active-trips/ActiveTripsScreen';
 
-export const metadata: Metadata = { title: 'Active Trips | TripMate Admin' };
+export const metadata: Metadata = { title: 'Active Trips | TripMate Staff' };
 
 export default function ActiveTripsPage() {
   return (
