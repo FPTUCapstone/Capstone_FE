@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { OperatorPayoutView } from '@/features/operator/finance/components/payouts/OperatorPayoutView';
-import { OperatorFinanceNav } from '@/features/operator/finance/components/layout/OperatorFinanceNav';
-import { FinanceRouteGuard } from '@/features/operator/finance/guards/FinanceRouteGuard';
+import { PartnerRouteGuard } from '@/features/auth/routing/PartnerRouteGuard';
+import { FinanceNavigationSlot } from '@/features/operator/finance/components/layout/FinanceNavigationSlot';
 
 export const metadata: Metadata = {
   title: 'Payout Settlement | Tour Operator | TripMate',
@@ -12,12 +12,12 @@ export const metadata: Metadata = {
 
 export default function PartnerPayoutsPage() {
   return (
-    <FinanceRouteGuard>
+    <PartnerRouteGuard route="dashboard">
       <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col gap-8 lg:flex-row">
             <Suspense fallback={<aside className="w-full shrink-0 lg:w-64" />}>
-              <OperatorFinanceNav activeTab="payouts" />
+              <FinanceNavigationSlot activeTab="payouts" />
             </Suspense>
             <main className="flex-1 min-w-0">
               <Suspense
@@ -38,6 +38,6 @@ export default function PartnerPayoutsPage() {
           </div>
         </div>
       </div>
-    </FinanceRouteGuard>
+    </PartnerRouteGuard>
   );
 }

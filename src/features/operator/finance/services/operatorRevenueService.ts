@@ -13,6 +13,7 @@ import {
   type DemoTourPackage,
 } from '../data/operatorRevenueDemoFixtures';
 import { financeEn } from '../resources/en';
+import { toCsvRow } from '@/lib/csv';
 import {
   REVENUE_DEFAULT_PAGE_SIZE,
   REVENUE_ERROR_CODES,
@@ -448,33 +449,42 @@ export async function exportOperatorRevenueReport(
   const fileName = `TripMate_DEMO_Revenue_Report_${timestamp}.csv`;
 
   const csvRows: string[] = [
-    '# TRIPMATE REVENUE REPORT (DEMO MODE)',
-    `# Applied Range: ${payload.appliedFilters.startDate} to ${payload.appliedFilters.endDate}`,
-    `# Granularity: ${payload.appliedFilters.granularity}`,
-    `# Tour Scope: ${payload.appliedFilters.tourId || 'all'}`,
+    toCsvRow(['# TRIPMATE REVENUE REPORT (DEMO MODE)']),
+    toCsvRow([`# Applied Range: ${payload.appliedFilters.startDate} to ${payload.appliedFilters.endDate}`]),
+    toCsvRow([`# Granularity: ${payload.appliedFilters.granularity}`]),
+    toCsvRow([`# Tour Scope: ${payload.appliedFilters.tourId || 'all'}`]),
     '',
-    '--- SUMMARY METRICS ---',
-    `Gross Revenue,${report.summary.grossRevenue}`,
-    `Platform Commission,${report.summary.platformCommission}`,
-    `Refunded Amount,${report.summary.refundedAmount}`,
-    `Net Amount,${report.summary.netAmount}`,
-    `Total Bookings,${report.summary.totalBookings}`,
-    `Total Participants,${report.summary.totalParticipants}`,
+    toCsvRow(['--- SUMMARY METRICS ---']),
+    toCsvRow(['Gross Revenue', report.summary.grossRevenue]),
+    toCsvRow(['Platform Commission', report.summary.platformCommission]),
+    toCsvRow(['Refunded Amount', report.summary.refundedAmount]),
+    toCsvRow(['Net Amount', report.summary.netAmount]),
+    toCsvRow(['Total Bookings', report.summary.totalBookings]),
+    toCsvRow(['Total Participants', report.summary.totalParticipants]),
   ];
 
   if (payload.scope === 'summary_and_details') {
-    csvRows.push('', '--- TOUR PACKAGE DETAILS ---');
+    csvRows.push('', toCsvRow(['--- TOUR PACKAGE DETAILS ---']));
     csvRows.push(
-      'Tour Code,Tour Name,Bookings,Participants,Gross Revenue,Refunded,Commission,Net Amount'
+      toCsvRow(['Tour Code', 'Tour Name', 'Bookings', 'Participants', 'Gross Revenue', 'Refunded', 'Commission', 'Net Amount'])
     );
     for (const t of report.tourDetails) {
       csvRows.push(
-        `"${t.tourCode}","${t.tourName}",${t.bookingsCount},${t.participantsCount},${t.grossRevenue},${t.refundedAmount},${t.commission},${t.netAmount}`
+        toCsvRow([
+          t.tourCode,
+          t.tourName,
+          t.bookingsCount,
+          t.participantsCount,
+          t.grossRevenue,
+          t.refundedAmount,
+          t.commission,
+          t.netAmount,
+        ])
       );
     }
   }
 
-  const fileContent = csvRows.join('\n');
+  const fileContent = csvRows.join('\r\n');
 
   return {
     success: true,

@@ -9,6 +9,8 @@ import {
   REVENUE_MESSAGES,
   type RevenueExportFormat,
 } from '../types/revenueLifecycle';
+import { DEMO_OPERATOR_TOURS } from '../data/operatorRevenueDemoFixtures';
+import { financeEn } from '../resources/en';
 
 describe('operatorRevenueService (UC-44 & UC-45)', () => {
   const originalEnv = process.env;
@@ -27,6 +29,12 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
   });
 
   describe('UC-44 View Revenue Report - Production NO_BACKEND Truthfulness', () => {
+    it('discloses the unresolved SRS formula conflict without claiming business approval', () => {
+      expect(financeEn.revenue.formulaDecisionStatus).toBe(
+        'SRS_FINANCIAL_FORMULA_DECISION_PENDING'
+      );
+      expect(financeEn.revenue.demoNoticeDesc).toMatch(/non-authoritative/i);
+    });
     it('returns empty figures and PENDING_BE_INTEGRATION notice when isDemo is false', async () => {
       const result = await getOperatorRevenueReport(
         {
@@ -372,6 +380,37 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       expect(res.success).toBe(true);
       expect(res.fileContent).toContain('Gross Revenue,14000000');
       expect(res.fileContent).not.toContain('--- TOUR PACKAGE DETAILS ---');
+    });
+
+    it('exports malicious and multiline tour names as injection-safe valid CSV cells', async () => {
+      const tour = DEMO_OPERATOR_TOURS.find((item) => item.operatorUserId === 101)!;
+      const originalTitle = tour.title;
+      tour.title = ' =HYPERLINK("https://attacker.example"),\r\nĐà Nẵng';
+
+      try {
+        const res = await exportOperatorRevenueReport(
+          {
+            format: 'csv',
+            scope: 'summary_and_details',
+            appliedFilters: {
+              startDate: '2026-09-01',
+              endDate: '2026-09-30',
+              granularity: 'monthly',
+            },
+          },
+          { isDemo: true, demoActorUserId: 101 }
+        );
+
+        expect(res.success).toBe(true);
+        expect(res.fileContent).toContain(
+          '"\' =HYPERLINK(""https://attacker.example""),\r\nĐà Nẵng"'
+        );
+        expect(res.fileContent).not.toContain(
+          '" =HYPERLINK("https://attacker.example")'
+        );
+      } finally {
+        tour.title = originalTitle;
+      }
     });
 
     it('presents asynchronous export simulation as a local Demo UI simulation without claiming a real background job or notification', async () => {

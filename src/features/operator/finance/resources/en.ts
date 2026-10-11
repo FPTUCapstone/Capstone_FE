@@ -19,12 +19,13 @@ export const financeEn = {
   },
 
   revenue: {
+    formulaDecisionStatus: 'SRS_FINANCIAL_FORMULA_DECISION_PENDING',
     title: 'Revenue & Analytics',
     subtitle:
       'Review gross revenue, platform commission, completed refunds, and net earnings for your tour packages.',
     demoNoticeTitle: 'Demo Finance Mode Active',
     demoNoticeDesc:
-      'Financial metrics displayed below are calculated from deterministic demo fixtures for testing. Authoritative calculations in production are server-verified.',
+      'Financial metrics displayed below are non-authoritative estimates calculated from deterministic demo fixtures for testing. The SRS formula conflict between revenue reporting and payout settlement remains pending Product/BA decision; authoritative production calculations require backend verification.',
     pendingNoticeTitle: 'Backend Integration Pending',
 
     filters: {
