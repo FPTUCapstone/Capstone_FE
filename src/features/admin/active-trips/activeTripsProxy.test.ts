@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({
+const { cookiesMock, fetchBackendMock, verifyAdminSessionMock } = vi.hoisted(() => ({
   cookiesMock: vi.fn(),
   fetchBackendMock: vi.fn(),
+  verifyAdminSessionMock: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
+vi.mock('@/lib/server/adminSession', () => ({
+  ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
+  clearAdminSession: (response: Response) => response,
+  jsonNoStore: (body: unknown, status = 200) => Response.json(body, { status }),
+  verifyAdminSessionFromCookies: verifyAdminSessionMock,
+}));
 
 import { proxyActiveTrips } from './activeTripsProxy';
 
@@ -18,7 +25,10 @@ function request(query = '') {
   return new Request(`http://localhost:3001/api/admin/trips/active${query ? `?${query}` : ''}`);
 }
 
-beforeEach(() => cookiesMock.mockResolvedValue(cookieJar('admin-token')));
+beforeEach(() => {
+  cookiesMock.mockResolvedValue(cookieJar('admin-token'));
+  verifyAdminSessionMock.mockReturnValue({ role: 'Staff' });
+});
 afterEach(() => vi.clearAllMocks());
 
 describe('active trips proxy', () => {

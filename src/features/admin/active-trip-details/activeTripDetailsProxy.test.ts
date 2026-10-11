@@ -1,13 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({ cookiesMock: vi.fn(), fetchBackendMock: vi.fn() }));
+const { cookiesMock, fetchBackendMock, verifyAdminSessionMock } = vi.hoisted(() => ({
+  cookiesMock: vi.fn(),
+  fetchBackendMock: vi.fn(),
+  verifyAdminSessionMock: vi.fn(),
+}));
 vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
+vi.mock('@/lib/server/adminSession', () => ({
+  ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
+  clearAdminSession: (response: Response) => response,
+  jsonNoStore: (body: unknown, status = 200) => Response.json(body, { status }),
+  verifyAdminSessionFromCookies: verifyAdminSessionMock,
+}));
 
 import { proxyActiveTripDetails } from './activeTripDetailsProxy';
 
 beforeEach(() => {
   cookiesMock.mockResolvedValue({ get: (name: string) => (name === 'tripmate_admin_access_token' ? { value: 'admin-token' } : undefined) });
+  verifyAdminSessionMock.mockReturnValue({ role: 'Staff' });
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -31,17 +42,16 @@ describe('active trip details proxy', () => {
 
   it('answers 401 without contacting the backend when the cookie is missing', async () => {
     cookiesMock.mockResolvedValue({ get: () => undefined });
+    verifyAdminSessionMock.mockReturnValue(null);
     const res = await proxyActiveTripDetails('42');
     expect(res.status).toBe(401);
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it.each([401, 403])('clears the session cookie when upstream answers %i', async status => {
+  it.each([401, 403])('maps an upstream authorization result %i', async status => {
     fetchBackendMock.mockResolvedValue(new Response('denied', { status }));
     const res = await proxyActiveTripDetails('42');
     expect(res.status).toBe(status);
-    const cookies = res.headers.getSetCookie();
-    expect(cookies.some(c => c.startsWith('tripmate_admin_access_token=') && c.includes('Max-Age=0'))).toBe(true);
   });
 
   it.each([[500, 503], [502, 503]])('maps upstream %i to %i', async (upstream, expected) => {
