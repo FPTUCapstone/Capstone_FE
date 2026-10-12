@@ -26,10 +26,10 @@ Consequences:
 
 ### Account directory: `/admin/users`
 
-- Only an authenticated Administrator or Staff session can open the page. A missing or invalid session redirects to the existing Admin sign-in flow. A role that is not allowed receives the existing access-denied treatment.
+- Only an authenticated Administrator session can open the page. A missing or invalid session redirects to the existing Admin sign-in flow. A Staff session or unauthorized role receives the existing access-denied treatment.
 - The page identifies its intended operations: search accounts, inspect details, and manage lock state.
 - It contains disabled search/filter controls and an unavailable-state panel while the directory API is absent. Controls explain why they are disabled.
-- The unavailable state provides a return path to the Staff workspace and avoids misleading totals, rows, or activity counts.
+- The unavailable state provides a return path to the Administration Dashboard (`/admin`) and avoids misleading totals, rows, or activity counts.
 
 ### Account detail: `/admin/users/[userId]`
 

@@ -7,8 +7,8 @@ import { UserAccountDirectoryUnavailableView } from '@/features/admin/user-accou
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
-  title: 'User Accounts Directory | TripMate Administration',
-  description: 'Manage and review traveler, operator, and administrator accounts.',
+  title: 'User Accounts Directory (Backend Integration Pending) | TripMate Administration',
+  description: 'User account directory and governance workspace pending backend contract integration.',
 };
 
 export default async function UserAccountsPage() {
@@ -29,4 +29,3 @@ export default async function UserAccountsPage() {
 
   return <UserAccountDirectoryUnavailableView />;
 }
-
