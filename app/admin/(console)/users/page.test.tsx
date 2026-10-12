@@ -12,6 +12,7 @@ vi.mock('next/headers', () => ({
 }));
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
 
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import {
   ADMIN_ACCESS_TOKEN_COOKIE,
   ADMIN_SESSION_SEAL_COOKIE,
@@ -84,12 +85,12 @@ describe('UC-47 User Accounts Directory page route', () => {
     expect(view).toBeTruthy();
   });
 
-  it('renders directory unavailable shell when valid Staff session is present', async () => {
+  it('renders access denied view when accessed with a valid Staff session', async () => {
     mockSealedCookies('Staff');
 
     const view = await UserAccountsPage();
 
     expect(mocks.redirect).not.toHaveBeenCalled();
-    expect(view).toBeTruthy();
+    expect(view?.type).toBe(AdminAccessDeniedView);
   });
 });
