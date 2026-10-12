@@ -454,7 +454,7 @@ export async function exportOperatorRevenueReport(
     toCsvRow([`# Granularity: ${payload.appliedFilters.granularity}`]),
     toCsvRow([`# Tour Scope: ${payload.appliedFilters.tourId || 'all'}`]),
     '',
-    toCsvRow(['--- SUMMARY METRICS ---']),
+    toCsvRow(['SUMMARY METRICS']),
     toCsvRow(['Gross Revenue', report.summary.grossRevenue]),
     toCsvRow(['Platform Commission', report.summary.platformCommission]),
     toCsvRow(['Refunded Amount', report.summary.refundedAmount]),
@@ -464,7 +464,7 @@ export async function exportOperatorRevenueReport(
   ];
 
   if (payload.scope === 'summary_and_details') {
-    csvRows.push('', toCsvRow(['--- TOUR PACKAGE DETAILS ---']));
+    csvRows.push('', toCsvRow(['TOUR PACKAGE DETAILS']));
     csvRows.push(
       toCsvRow(['Tour Code', 'Tour Name', 'Bookings', 'Participants', 'Gross Revenue', 'Refunded', 'Commission', 'Net Amount'])
     );

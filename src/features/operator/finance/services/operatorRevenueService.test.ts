@@ -332,8 +332,30 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       expect(res.fileContent).toContain('DEMO MODE');
       expect(res.fileContent).toContain('Gross Revenue,14000000');
       expect(res.fileContent).toContain('Net Amount,11200000');
-      expect(res.fileContent).toContain('--- TOUR PACKAGE DETAILS ---');
+      expect(res.fileContent).toContain('TOUR PACKAGE DETAILS');
       expect(res.fileContent).toContain('Ba Na Hills Full-Day Tour');
+    });
+
+    it('exports section headings as safe literal text without a visible apostrophe', async () => {
+      const res = await exportOperatorRevenueReport(
+        {
+          format: 'csv',
+          scope: 'summary_and_details',
+          appliedFilters: {
+            startDate: '2026-09-01',
+            endDate: '2026-09-30',
+            granularity: 'monthly',
+          },
+        },
+        { isDemo: true, demoActorUserId: 101 }
+      );
+
+      expect(res.success).toBe(true);
+      const rows = res.fileContent?.split('\r\n') ?? [];
+      expect(rows).toContain('SUMMARY METRICS');
+      expect(rows).toContain('TOUR PACKAGE DETAILS');
+      expect(rows).not.toContain("'--- SUMMARY METRICS ---");
+      expect(rows).not.toContain("'--- TOUR PACKAGE DETAILS ---");
     });
 
     it('never renames CSV bytes to .xlsx or .pdf and rejects binary formats with PENDING_BINARY_EXPORT_INTEGRATION', async () => {
@@ -379,7 +401,7 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
 
       expect(res.success).toBe(true);
       expect(res.fileContent).toContain('Gross Revenue,14000000');
-      expect(res.fileContent).not.toContain('--- TOUR PACKAGE DETAILS ---');
+      expect(res.fileContent).not.toContain('TOUR PACKAGE DETAILS');
     });
 
     it('exports malicious and multiline tour names as injection-safe valid CSV cells', async () => {
