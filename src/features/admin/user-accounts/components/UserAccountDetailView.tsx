@@ -10,15 +10,47 @@ interface UserAccountDetailViewProps {
 export function UserAccountDetailView({ userId }: UserAccountDetailViewProps) {
   const copy = adminUserAccountsEn.detail;
 
-  const user = mockUserAccountsList.find((u) => u.id === userId) ?? {
-    id: userId,
-    name: `User #${userId}`,
-    email: `user.${userId}@tripmate.vn`,
-    phone: '0900 000 000',
-    role: 'Traveler' as const,
-    createdAt: '01/01/2026',
-    status: 'Active' as const,
-  };
+  const user = mockUserAccountsList.find((u) => u.id === userId);
+
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-[#f7f9fc] px-4 py-6 text-[#191c1e] sm:px-6 md:px-8 md:py-8">
+        <div className="mx-auto flex max-w-5xl flex-col space-y-6">
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#64748b] uppercase">
+              <Link href="/admin/users" className="hover:text-[#006b5f] transition-colors">
+                {copy.breadcrumbs.console}
+              </Link>
+              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+              <Link href="/admin/users" className="hover:text-[#006b5f] transition-colors">
+                {copy.breadcrumbs.userAccounts}
+              </Link>
+              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+              <span className="font-normal text-[#191c1e]">{copy.breadcrumbs.detail}</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#e2e8f0] bg-white p-8 text-center shadow-xs">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#ffdad6] text-[#ba1a1a]">
+              <span className="material-symbols-outlined text-[28px]">person_off</span>
+            </div>
+            <h1 className="mt-4 text-xl font-bold text-[#00152a]">{copy.notFoundTitle}</h1>
+            <p className="mt-2 text-sm text-[#64748b] max-w-md mx-auto">
+              {copy.notFoundDescription(userId)}
+            </p>
+            <div className="mt-6">
+              <Link
+                href="/admin/users"
+                className="inline-flex items-center justify-center rounded-xl bg-[#006b5f] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#005048]"
+              >
+                {copy.backToDirectoryLabel}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const isOperator = user.role === 'Tour Operator';
   const isLocked = user.status === 'Locked';
@@ -149,7 +181,54 @@ export function UserAccountDetailView({ userId }: UserAccountDetailViewProps) {
                 </dt>
                 <dd className="mt-1 text-sm font-medium text-[#191c1e]">{user.createdAt}</dd>
               </div>
+              <div className="rounded-xl bg-[#f2f4f7] p-4">
+                <dt className="text-xs font-bold uppercase tracking-wider text-[#64748b]">
+                  {copy.lastSignInLabel}
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-[#191c1e]">
+                  {user.lastSignIn ?? 'N/A'}
+                </dd>
+              </div>
+              <div className="rounded-xl bg-[#f2f4f7] p-4">
+                <dt className="text-xs font-bold uppercase tracking-wider text-[#64748b]">
+                  {copy.totalBookingsLabel}
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-[#191c1e]">
+                  {user.bookingCount ?? 0}
+                </dd>
+              </div>
             </dl>
+          </div>
+
+          {/* Moderation History Area */}
+          <div className="pt-6 border-t border-[#e2e8f0]">
+            <h3 className="text-sm font-bold text-[#00152a] mb-3">
+              {copy.moderationHistoryTitle}
+            </h3>
+            {user.statusDetail ? (
+              <div className="rounded-xl bg-[#fff8f6] border border-[#ffdad6] p-4">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-[#ba1a1a] text-[20px] mt-0.5">
+                    gavel
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-[#93000a]">
+                      Account Status Flag: {user.status}
+                    </p>
+                    <p className="mt-1 text-xs text-[#43474d]">{user.statusDetail}</p>
+                    {user.lockedBy && (
+                      <p className="mt-1 font-mono text-[11px] text-[#64748b]">
+                        Action recorded by {user.lockedBy} on {user.lockedAt ?? user.createdAt}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-[#64748b]">
+                {copy.noModerationRecords}
+              </p>
+            )}
           </div>
 
           {/* Integration Notice & Navigation */}

@@ -76,4 +76,27 @@ describe('UserAccountDirectoryView (UC-47 View User Accounts)', () => {
     expect(screen.getByText('Governance Policy')).toBeTruthy();
     expect(screen.getByText('ISO 27001 Standard')).toBeTruthy();
   });
+
+  it('renders Last Sign-in column and supports registration date range filtering with MSG29 validation', () => {
+    render(<UserAccountDirectoryView initialAccounts={mockUserAccountsList} />);
+
+    expect(screen.getByText('Last Sign-in')).toBeTruthy();
+
+    const fromDateInput = screen.getByLabelText('Registered from');
+    const toDateInput = screen.getByLabelText('Registered to');
+
+    // Trigger MSG29 validation error when fromDate > toDate
+    fireEvent.change(fromDateInput, { target: { value: '2026-03-15' } });
+    fireEvent.change(toDateInput, { target: { value: '2026-03-01' } });
+    expect(screen.getByText('Start date cannot be after end date (MSG29)')).toBeTruthy();
+
+    // Valid date range filtering: only February 2026
+    fireEvent.change(fromDateInput, { target: { value: '2026-02-01' } });
+    fireEvent.change(toDateInput, { target: { value: '2026-02-28' } });
+    expect(screen.queryByText('Start date cannot be after end date (MSG29)')).toBeNull();
+    // Nguyễn Văn Nam registered 14/02/2026
+    expect(screen.getByText('Nguyễn Văn Nam')).toBeTruthy();
+    // Phạm Quốc Hưng registered 10/03/2026 (filtered out)
+    expect(screen.queryByText('Phạm Quốc Hưng')).toBeNull();
+  });
 });

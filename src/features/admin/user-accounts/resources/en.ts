@@ -38,6 +38,9 @@ export const adminUserAccountsEn = {
       statusPending: 'Pending (Under review)',
       statusFilterAriaLabel: 'Account status filter',
       advancedFilterTitle: 'Advanced filters',
+      dateRangeFromLabel: 'Registered from',
+      dateRangeToLabel: 'Registered to',
+      msg29InvalidDateRange: 'Start date cannot be after end date (MSG29)',
     },
     table: {
       selectAllAriaLabel: 'Select all accounts',
@@ -47,6 +50,7 @@ export const adminUserAccountsEn = {
       colPhone: 'Phone number',
       colRole: 'Role',
       colCreatedAt: 'Created date',
+      colLastSignIn: 'Last Sign-in',
       colStatus: 'Status',
       colActions: 'Actions',
       viewDetails: 'View details',
@@ -100,5 +104,13 @@ export const adminUserAccountsEn = {
     backToDirectoryLabel: 'Back to User Account Management',
     lockActionLabel: 'Lock Account',
     unlockActionLabel: 'Unlock Account',
+    notFoundTitle: 'User Account Not Found',
+    notFoundDescription: (id: number) =>
+      `No account exists with ID #${id} (MSG128: Account does not exist). The link may be broken or the account was removed.`,
+    moderationHistoryTitle: 'Moderation & Audit History',
+    noModerationRecords: 'No adverse moderation flags recorded for this account.',
+    relatedBookingsTitle: 'Related Bookings',
+    totalBookingsLabel: 'Total Bookings Processed',
+    lastSignInLabel: 'Last Sign-in',
   },
 } as const;
