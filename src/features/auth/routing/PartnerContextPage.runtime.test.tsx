@@ -1,9 +1,14 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage } from '../session/authSession';
+import { OperatorApplicationError } from '@/features/operator/application/operatorApplicationApi';
 
-const mocks = vi.hoisted(() => ({ webRefresh: vi.fn(), replace: vi.fn() }));
+const mocks = vi.hoisted(() => ({ webRefresh: vi.fn(), replace: vi.fn(), getApplication: vi.fn() }));
 vi.mock('@/lib/authApi', () => ({ webRefresh: mocks.webRefresh }));
+vi.mock('@/features/operator/application/operatorApplicationApi', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/features/operator/application/operatorApplicationApi')>(),
+  getOperatorApplication: mocks.getApplication,
+}));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace, push: vi.fn() }) }));
 vi.mock('next/font/google', () => ({
   Geist: () => ({ variable: '' }),
@@ -26,7 +31,14 @@ const operator = (applicationStatus: string | null) => ({
 });
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
-beforeEach(() => { AuthStorage.clear(); localStorage.clear(); sessionStorage.clear(); });
+beforeEach(() => {
+  AuthStorage.clear(); localStorage.clear(); sessionStorage.clear();
+  mocks.getApplication.mockImplementation(async () => {
+    const status = AuthStorage.getContext()?.applicationStatus;
+    if (!status) throw new OperatorApplicationError(404);
+    return { userId: 7, userStatus: status, approvalStatus: status, companyName: 'Restored Operator', businessLicenseNo: '79-0123/2026/TCDL-GPLHQT', taxCode: '0101234567', businessAddress: null, contactPerson: 'Operator', contactPhone: null, rejectionReason: status === 'Rejected' ? 'Fix document' : null, reviewedAtUtc: null, resubmissionCount: 0, documents: [] };
+  });
+});
 
 describe('S01 runtime wiring regression (real cold-start composition, browser failure repro)', () => {
   it('A. cold /partner/application restores PendingApproval: restoring first, no "Please sign in" before settle, refresh exactly once', async () => {
@@ -39,7 +51,7 @@ describe('S01 runtime wiring regression (real cold-start composition, browser fa
     expect(screen.getByRole('status')).toBeDefined();
     expect(mocks.webRefresh).toHaveBeenCalledTimes(1);
     settleRefresh();
-    await waitFor(() => expect(screen.getByText('PendingApproval')).toBeDefined());
+    await waitFor(() => expect(screen.getAllByText('PendingApproval').length).toBeGreaterThan(0));
     expect(screen.queryByText(/Please sign in/)).toBeNull();
     expect(mocks.webRefresh).toHaveBeenCalledTimes(1);
   });
@@ -54,7 +66,7 @@ describe('S01 runtime wiring regression (real cold-start composition, browser fa
   it('C. cold restore with applicationStatus null keeps the fail-closed unresolved UI and infers nothing', async () => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(operator(null) as never, false));
     render(<PartnerApplicationPage />);
-    await waitFor(() => expect(screen.getByText(/Partner\./)).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Tour Operator application not found.')).toBeDefined());
     expect(screen.queryByText('PendingApproval')).toBeNull();
     expect(screen.queryByText('Approved')).toBeNull();
     expect(screen.queryByText(/Please sign in/)).toBeNull();
@@ -74,10 +86,10 @@ describe('S01 runtime wiring regression (real cold-start composition, browser fa
     expect(screen.queryByText(/Please sign in/)).toBeNull();
   });
 
-  it('E. warm memory renders without any refresh call', () => {
+  it('E. warm memory renders without any refresh call', async () => {
     AuthStorage.accept(operator('PendingApproval') as never, false);
     render(<PartnerApplicationPage />);
-    expect(screen.getByText('PendingApproval')).toBeDefined();
+    await waitFor(() => expect(screen.getAllByText('PendingApproval').length).toBeGreaterThan(0));
     expect(mocks.webRefresh).not.toHaveBeenCalled();
   });
 
