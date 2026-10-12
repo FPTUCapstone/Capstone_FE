@@ -33,7 +33,7 @@ export default async function ActiveTripDetailsPage({ params }: PageProps) {
   }
 
   if (session.role !== 'Staff') {
-    return <AdminAccessDeniedView />;
+    return <AdminAccessDeniedView requiredRole="Staff" />;
   }
 
   return <ActiveTripDetailsScreen tripId={id} />;

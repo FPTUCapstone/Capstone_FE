@@ -41,6 +41,10 @@ export const adminStaffEn = {
       'Your Staff account does not have permission to view this system governance module. Please return to the Staff Operations Dashboard to continue your work.',
     returnToStaffButton: 'Return to Staff Workspace',
     returnToAdminSignInButton: 'Switch Administration Account',
+    staffOnlyTitle: 'Staff Access Required',
+    staffOnlyDescription:
+      'Your Administrator account does not have permission to view this Staff operations module. Please return to the administration dashboard or switch to a Staff account.',
+    returnToAdminDashboardButton: 'Return to System Overview',
   },
   staffDashboard: {
     eyebrow: 'Operational Administration Workspace',

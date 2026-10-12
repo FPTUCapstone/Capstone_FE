@@ -23,7 +23,7 @@ export default async function ActiveTripsPage() {
   }
 
   if (session.role !== 'Staff') {
-    return <AdminAccessDeniedView />;
+    return <AdminAccessDeniedView requiredRole="Staff" />;
   }
 
   return (

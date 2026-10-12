@@ -174,6 +174,23 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
   });
 
+  it('explains that Active Trips requires a Staff account when an Administrator is denied', () => {
+    render(<AdminAccessDeniedView requiredRole="Staff" />);
+
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: adminStaffEn.accessDenied.staffOnlyTitle,
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText(adminStaffEn.accessDenied.staffOnlyDescription)).toBeTruthy();
+    expect(
+      screen.getByRole('link', {
+        name: adminStaffEn.accessDenied.returnToAdminDashboardButton,
+      }).getAttribute('href'),
+    ).toBe('/admin');
+  });
+
   it('requires a valid BFF HMAC session seal to resolve Staff or Administrator roles and rejects unsealed or non-administration tokens', () => {
     const nowMs = Date.parse('2026-10-09T02:00:00.000Z');
     const expiresAt = new Date(nowMs + 10 * 60 * 1000);
