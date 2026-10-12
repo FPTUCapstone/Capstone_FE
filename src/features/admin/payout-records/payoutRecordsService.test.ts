@@ -4,8 +4,7 @@ import { fetchPayoutRecords, PayoutRecordsError } from './payoutRecordsService';
 import { parsePayoutsResponse } from './payoutRecords';
 
 const payload = {
-  summary: { pendingRequests: 0, totalRequestedAmount: 0, totalConfirmedAmount: 0 },
-  pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 0, items: [],
+  pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 0, totalAmount: 0, items: [],
 };
 
 afterEach(() => vi.unstubAllGlobals());

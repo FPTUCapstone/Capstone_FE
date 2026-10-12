@@ -1,13 +1,19 @@
-export const PAYOUT_STATUSES = ['Pending', 'Requested', 'Confirmed', 'Paid', 'Rejected'] as const;
+export const PAYOUT_STATUSES = ['PendingReview', 'ApprovedForSettlement', 'Rejected'] as const;
 export const PAYOUTS_PAGE_SIZE = 20;
+
+export const PAYOUT_STATUS_LABELS = {
+  PendingReview: 'Pending review',
+  ApprovedForSettlement: 'Approved for settlement',
+  Rejected: 'Rejected',
+} as const;
 
 export const PAYOUT_MESSAGES = {
   invalidRange: 'The submitted settlement period range is logically invalid.',
   forbidden: 'You do not have permission to access this function.',
   unavailable: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
   empty: 'No data is available for the selected criteria.',
-  viewDetails: 'View Details',
-  viewDetailsDisabled: 'Settlement details will become available after UC-64 is approved.',
+  review: 'Review',
+  reviewDisabled: 'Payout review details will become available after UC-64 is delivered.',
 } as const;
 
 export type PayoutStatus = (typeof PAYOUT_STATUSES)[number];
@@ -27,18 +33,12 @@ export type PayoutItem = {
   status: PayoutStatus;
 };
 
-export type PayoutSummary = {
-  pendingRequests: number;
-  totalRequestedAmount: number;
-  totalConfirmedAmount: number;
-};
-
 export type PayoutsResponse = {
-  summary: PayoutSummary;
   pageNumber: number;
   pageSize: number;
   totalCount: number;
   totalPages: number;
+  totalAmount: number;
   items: PayoutItem[];
 };
 
@@ -81,12 +81,9 @@ function parseItem(value: unknown): PayoutItem {
 }
 
 export function parsePayoutsResponse(value: unknown): PayoutsResponse {
-  if (!isRecord(value) || !isRecord(value.summary) ||
-      !isNonNegativeInteger(value.summary.pendingRequests) ||
-      !isNonNegativeMoney(value.summary.totalRequestedAmount) ||
-      !isNonNegativeMoney(value.summary.totalConfirmedAmount) ||
-      !isNonNegativeInteger(value.pageNumber) || !isNonNegativeInteger(value.pageSize) ||
-      !isNonNegativeInteger(value.totalCount) || !isNonNegativeInteger(value.totalPages) ||
+  if (!isRecord(value) || !isNonNegativeInteger(value.pageNumber) ||
+      !isNonNegativeInteger(value.pageSize) || !isNonNegativeInteger(value.totalCount) ||
+      !isNonNegativeInteger(value.totalPages) || !isNonNegativeMoney(value.totalAmount) ||
       !Array.isArray(value.items)) {
     throw new Error('The payout response is invalid.');
   }
@@ -95,6 +92,10 @@ export function parsePayoutsResponse(value: unknown): PayoutsResponse {
 
 export function formatVnd(value: number): string {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+}
+
+export function formatPayoutStatus(status: PayoutStatus): string {
+  return PAYOUT_STATUS_LABELS[status];
 }
 
 export function formatVietnamDate(dateOnly: string): string {

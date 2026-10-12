@@ -20,22 +20,21 @@ vi.mock('./payoutRecordsService', () => ({
 }));
 
 const response: PayoutsResponse = {
-  summary: { pendingRequests: 1, totalRequestedAmount: 9190000, totalConfirmedAmount: 532500 },
-  pageNumber: 1, pageSize: 20, totalCount: 2, totalPages: 1,
+  pageNumber: 1, pageSize: 20, totalCount: 2, totalPages: 1, totalAmount: 9437500,
   items: [
     {
       payoutId: '12', payoutCode: 'PO-12',
       operator: { userId: '2', companyName: 'Da Nang Tours' },
       periodStart: '2026-08-01', periodEnd: '2026-08-31',
       grossRevenue: 10000000, commissionAmount: 1000000, netAmount: 9000000,
-      requestedAtUtc: '2026-09-01T02:30:00Z', status: 'Requested',
+      requestedAtUtc: '2026-09-01T02:30:00Z', status: 'PendingReview',
     },
     {
       payoutId: '11', payoutCode: 'PO-11',
       operator: { userId: '3', companyName: 'Hoi An Walks' },
       periodStart: '2026-07-01', periodEnd: '2026-07-31',
       grossRevenue: 500000, commissionAmount: 62500, netAmount: 437500,
-      requestedAtUtc: null, status: 'Confirmed',
+      requestedAtUtc: null, status: 'ApprovedForSettlement',
     },
   ],
 };
@@ -49,24 +48,32 @@ describe('PayoutRecordsScreen', () => {
   it('renders summary cards, rows, and the disabled View Details action', async () => {
     render(<PayoutRecordsScreen />);
     expect(await screen.findByText('Da Nang Tours')).toBeTruthy();
-    expect(screen.getByText('Pending Requests')).toBeTruthy();
-    expect(screen.getByText('Total Requested Amount')).toBeTruthy();
-    expect(screen.getByText('Total Confirmed Amount')).toBeTruthy();
+    expect(screen.getByText('Staff finance')).toBeTruthy();
+    expect(screen.getByText('Review payout requests awaiting Staff assessment.')).toBeTruthy();
+    expect(screen.getByText('Records')).toBeTruthy();
+    expect(screen.getByText('Total Net Payout')).toBeTruthy();
     expect(screen.getByText('PO-12')).toBeTruthy();
     expect(screen.getByText('01/08/2026 – 31/08/2026')).toBeTruthy();
     expect(screen.getByText('Not available')).toBeTruthy();
-    expect(screen.getAllByText('Requested').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Confirmed').length).toBeGreaterThan(0);
-    const action = screen.getAllByRole('button', { name: /View Details for PO-/ })[0];
+    expect(screen.getAllByText('Pending review').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Approved for settlement').length).toBeGreaterThan(0);
+    expect(screen.getByRole('option', { name: 'Staff default: Pending review' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'All' })).toBeNull();
+    expect(screen.getByText('Payout records for Staff review')).toBeTruthy();
+    const action = screen.getAllByRole('button', { name: /Review for PO-/ })[0];
     expect(action).toBeTruthy();
     expect((action as HTMLButtonElement).disabled).toBe(true);
     expect((action as HTMLButtonElement).title).toContain('UC-64');
+    expect(action.getAttribute('aria-describedby')).toMatch(/^review-disabled-/);
+
+    const tableRegion = screen.getByLabelText('Payout records table; scroll horizontally on small screens');
+    expect(tableRegion.tabIndex).toBe(0);
+    expect(tableRegion.className).toContain('overflow-x-auto');
   });
 
   it('shows MSG128 and keeps the filters on an empty match', async () => {
     vi.mocked(fetchPayoutRecords).mockResolvedValue({
-      ...response, totalCount: 0, totalPages: 0, items: [],
-      summary: { pendingRequests: 0, totalRequestedAmount: 0, totalConfirmedAmount: 0 },
+      ...response, totalCount: 0, totalPages: 0, totalAmount: 0, items: [],
     });
     render(<PayoutRecordsScreen />);
     expect(await screen.findByText('No data is available for the selected criteria.')).toBeTruthy();
