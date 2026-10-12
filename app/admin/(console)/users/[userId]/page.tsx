@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
-import { UserAccountDetailUnavailableView } from '@/features/admin/user-accounts/components/UserAccountDetailUnavailableView';
+import { UserAccountDetailView } from '@/features/admin/user-accounts/components/UserAccountDetailView';
 import { parseUserAccountRouteId } from '@/features/admin/user-accounts/server/userAccountRouteId';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
@@ -27,5 +27,5 @@ export default async function UserAccountDetailPage({ params }: UserAccountDetai
     notFound();
   }
 
-  return <UserAccountDetailUnavailableView userId={userId} />;
+  return <UserAccountDetailView userId={userId} />;
 }
