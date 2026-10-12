@@ -15,7 +15,7 @@ export const adminUserAccountsEn = {
     operationsLabel: 'Account operations unavailable',
     lockUnavailableLabel: 'Lock account unavailable',
     unlockUnavailableLabel: 'Unlock account unavailable',
-    returnToStaffLabel: 'Return to Staff Workspace',
+    returnToDashboardLabel: 'Return to Administration Dashboard',
   },
   detail: {
     eyebrow: 'Account Governance',

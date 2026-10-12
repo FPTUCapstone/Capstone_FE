@@ -12,31 +12,33 @@ describe('UserAccountDirectoryUnavailableView', () => {
     ).toBeTruthy();
     expect(screen.getByText('Backend integration pending')).toBeTruthy();
     expect(
-      screen.getByText(
+      screen.getAllByText(
         'The account directory and account-status operations will be available after their Backend contracts are deployed.',
-      ),
-    ).toBeTruthy();
+      ).length,
+    ).toBeGreaterThanOrEqual(2);
 
     const search = screen.getByRole('searchbox', { name: 'Search accounts' }) as HTMLInputElement;
     expect(search.disabled).toBe(true);
     expect(search.getAttribute('placeholder')).toBe('Search is unavailable until Backend integration');
+    expect(search.getAttribute('aria-describedby')).toBe('account-controls-pending-desc');
 
     const filter = screen.getByRole('combobox', { name: 'Account status filter' }) as HTMLSelectElement;
     expect(filter.disabled).toBe(true);
+    expect(filter.getAttribute('aria-describedby')).toBe('account-controls-pending-desc');
 
     const operations = screen.getByRole('region', { name: 'Account operations unavailable' });
-    expect(
-      (within(operations).getByRole('button', { name: 'Lock account unavailable' }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
-    expect(
-      (within(operations).getByRole('button', { name: 'Unlock account unavailable' }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
+    const lockBtn = within(operations).getByRole('button', { name: 'Lock account unavailable' }) as HTMLButtonElement;
+    expect(lockBtn.disabled).toBe(true);
+    expect(lockBtn.getAttribute('aria-describedby')).toBe('account-controls-pending-desc');
 
-    expect(screen.getByRole('link', { name: 'Return to Staff Workspace' }).getAttribute('href')).toBe(
-      '/admin/staff',
+    const unlockBtn = within(operations).getByRole('button', { name: 'Unlock account unavailable' }) as HTMLButtonElement;
+    expect(unlockBtn.disabled).toBe(true);
+    expect(unlockBtn.getAttribute('aria-describedby')).toBe('account-controls-pending-desc');
+
+    expect(screen.getByRole('link', { name: 'Return to Administration Dashboard' }).getAttribute('href')).toBe(
+      '/admin',
     );
+    expect(container.querySelector('#account-controls-pending-desc')).toBeTruthy();
     expect(container.querySelector('tbody')).toBeNull();
     expect(container.textContent).not.toMatch(/\b\d+\s+(accounts?|users?)\b/i);
   });

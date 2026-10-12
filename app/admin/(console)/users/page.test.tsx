@@ -76,6 +76,67 @@ describe('UC-47 User Accounts Directory page route', () => {
     );
   });
 
+  it('redirects expired session seal to login', async () => {
+    const expiredSealed = createAdminSessionSeal({
+      token: 'backend-access-token',
+      role: 'Administrator',
+      expiresAt: new Date(Date.now() - 10 * 60 * 1000),
+      secret: TEST_SECRET,
+    })!;
+    mocks.getCookie.mockImplementation((name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'backend-access-token' };
+      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: expiredSealed.seal };
+      return undefined;
+    });
+
+    await UserAccountsPage();
+
+    expect(mocks.redirect).toHaveBeenCalledWith(
+      '/admin/login?returnUrl=%2Fadmin%2Fusers',
+    );
+  });
+
+  it('redirects tampered session seal to login', async () => {
+    const validSealed = createAdminSessionSeal({
+      token: 'backend-access-token',
+      role: 'Administrator',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      secret: TEST_SECRET,
+    })!;
+    const tamperedSeal = validSealed.seal.slice(0, -1) + (validSealed.seal.endsWith('a') ? 'b' : 'a');
+    mocks.getCookie.mockImplementation((name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'backend-access-token' };
+      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: tamperedSeal };
+      return undefined;
+    });
+
+    await UserAccountsPage();
+
+    expect(mocks.redirect).toHaveBeenCalledWith(
+      '/admin/login?returnUrl=%2Fadmin%2Fusers',
+    );
+  });
+
+  it('redirects access token mismatch to login', async () => {
+    const sealed = createAdminSessionSeal({
+      token: 'original-backend-token',
+      role: 'Administrator',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      secret: TEST_SECRET,
+    })!;
+    mocks.getCookie.mockImplementation((name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'different-backend-token' };
+      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: sealed.seal };
+      return undefined;
+    });
+
+    await UserAccountsPage();
+
+    expect(mocks.redirect).toHaveBeenCalledWith(
+      '/admin/login?returnUrl=%2Fadmin%2Fusers',
+    );
+  });
+
   it('renders directory unavailable shell when valid Administrator session is present', async () => {
     mockSealedCookies('Administrator');
 
