@@ -44,6 +44,14 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
           >
             {adminStaffEn.navigation.staffDashboard}
           </Link>
+          {isStaffUser ? (
+            <Link
+              href={ROUTES.admin.payouts}
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+            >
+              Payout Records
+            </Link>
+          ) : null}
           {!isStaffUser ? (
             <>
               <Link

@@ -1,0 +1,66 @@
+import 'server-only';
+
+import { cookies } from 'next/headers';
+
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  clearAdminSession,
+  jsonNoStore,
+} from '@/lib/server/adminSession';
+import { fetchBackend } from '@/lib/server/backend';
+
+const ALLOWED_QUERY_PARAMETERS = [
+  'keyword',
+  'status',
+  'periodFrom',
+  'periodTo',
+  'pageNumber',
+  'pageSize',
+] as const;
+
+function buildUpstreamPath(request: Request): string {
+  const submitted = new URL(request.url).searchParams;
+  const forwarded = new URLSearchParams();
+
+  for (const name of ALLOWED_QUERY_PARAMETERS) {
+    const value = submitted.get(name);
+    if (value !== null) forwarded.set(name, value);
+  }
+
+  const query = forwarded.toString();
+  return `/api/v1/admin/payouts${query ? `?${query}` : ''}`;
+}
+
+export async function proxyPayoutRecords(request: Request): Promise<Response> {
+  const token = (await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+
+  try {
+    const upstream = await fetchBackend(buildUpstreamPath(request), {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+      signal: request.signal,
+    });
+
+    if (upstream.status >= 500) {
+      return jsonNoStore({ title: 'The payout service is unavailable.' }, 503);
+    }
+
+    if (upstream.status === 401 || upstream.status === 403) {
+      return clearAdminSession(jsonNoStore({
+        title: upstream.status === 401
+          ? 'Administrator sign-in required.'
+          : 'Administrator access is not allowed.',
+      }, upstream.status));
+    }
+
+    const result: unknown = await upstream.json().catch(() => null);
+    if (result === null) {
+      return jsonNoStore({ title: 'The payout service returned no data.' }, 503);
+    }
+
+    return jsonNoStore(result, upstream.status);
+  } catch {
+    return jsonNoStore({ title: 'The payout service could not be reached.' }, 503);
+  }
+}
