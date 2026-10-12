@@ -34,6 +34,7 @@ export function UserAccountTable({
               <th className="px-4 py-3.5 font-semibold">{tableCopy.colPhone}</th>
               <th className="px-4 py-3.5 font-semibold">{tableCopy.colRole}</th>
               <th className="px-4 py-3.5 font-semibold">{tableCopy.colCreatedAt}</th>
+              <th className="px-4 py-3.5 font-semibold">{tableCopy.colLastSignIn}</th>
               <th className="px-4 py-3.5 font-semibold">{tableCopy.colStatus}</th>
               <th className="pl-4 pr-6 py-3.5 text-right font-semibold">{tableCopy.colActions}</th>
             </tr>
@@ -41,7 +42,7 @@ export function UserAccountTable({
           <tbody className="divide-y divide-[#f2f4f7] text-sm">
             {accounts.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-sm text-[#64748b]">
+                <td colSpan={9} className="py-8 text-center text-sm text-[#64748b]">
                   {tableCopy.emptyMessage}
                 </td>
               </tr>
@@ -126,6 +127,9 @@ export function UserAccountTable({
                     <td className="px-4 py-4 text-xs text-[#64748b]">
                       {account.createdAt}
                     </td>
+                    <td className="px-4 py-4 text-xs text-[#64748b]">
+                      {account.lastSignIn ?? 'N/A'}
+                    </td>
                     <td className="px-4 py-4">
                       {isLocked ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-[#ffdad6] px-2.5 py-1 text-xs font-semibold text-[#93000a]">
@@ -186,44 +190,29 @@ export function UserAccountTable({
       {/* Pagination Footer */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-[#e2e8f0] p-4 bg-white">
         <span className="text-xs text-[#64748b]">
-          {tableCopy.showingSummary(accounts.length, 1248)}
+          {tableCopy.showingSummary(accounts.length, accounts.length)}
         </span>
         <div className="flex items-center gap-1.5 self-center">
           <button
             disabled
             type="button"
+            aria-label="Previous page"
             className="rounded-lg bg-[#f2f4f7] p-2 text-[#64748b] transition-colors disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
           <button
             type="button"
+            aria-current="page"
             className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#006b5f] text-xs font-bold text-white shadow-2xs"
           >
             1
           </button>
           <button
+            disabled
             type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f2f4f7] text-xs font-semibold text-[#191c1e] transition-colors hover:bg-[#eceef1]"
-          >
-            2
-          </button>
-          <button
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f2f4f7] text-xs font-semibold text-[#191c1e] transition-colors hover:bg-[#eceef1]"
-          >
-            3
-          </button>
-          <span className="px-1 text-xs text-[#64748b]">...</span>
-          <button
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f2f4f7] text-xs font-semibold text-[#191c1e] transition-colors hover:bg-[#eceef1]"
-          >
-            250
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-[#f2f4f7] p-2 text-[#64748b] transition-colors hover:bg-[#eceef1]"
+            aria-label="Next page"
+            className="rounded-lg bg-[#f2f4f7] p-2 text-[#64748b] transition-colors disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>

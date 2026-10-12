@@ -13,6 +13,11 @@ export interface UserAccountItem {
   status: UserAccountStatus;
   statusDetail?: string;
   avatarUrl?: string;
+  lastSignIn?: string;
+  bookingCount?: number;
+  previousStatus?: 'Active' | 'Pending';
+  lockedBy?: string;
+  lockedAt?: string;
 }
 
 export interface UserAccountKpiStats {

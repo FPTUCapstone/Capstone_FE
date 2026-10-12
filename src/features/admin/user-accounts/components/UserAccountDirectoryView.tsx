@@ -24,6 +24,8 @@ export function UserAccountDirectoryView({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<'All' | UserAccountRole>('All');
   const [selectedStatus, setSelectedStatus] = useState<'All' | UserAccountStatus>('All');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   const filteredAccounts = useMemo(() => {
     return initialAccounts.filter((account) => {
@@ -35,6 +37,22 @@ export function UserAccountDirectoryView({
       // Status filter
       if (selectedStatus !== 'All' && account.status !== selectedStatus) {
         return false;
+      }
+
+      // Registration date range filter (DD/MM/YYYY to YYYY-MM-DD comparison)
+      if (fromDate || toDate) {
+        const parts = account.createdAt.split('/');
+        const isoDate =
+          parts.length === 3
+            ? `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+            : account.createdAt;
+
+        if (fromDate && isoDate < fromDate) {
+          return false;
+        }
+        if (toDate && isoDate > toDate) {
+          return false;
+        }
       }
 
       // Search query filter
@@ -52,7 +70,7 @@ export function UserAccountDirectoryView({
 
       return true;
     });
-  }, [initialAccounts, selectedRole, selectedStatus, searchQuery]);
+  }, [initialAccounts, selectedRole, selectedStatus, searchQuery, fromDate, toDate]);
 
   const travelerCount = useMemo(
     () => initialAccounts.filter((a) => a.role === 'Traveler').length,
@@ -96,8 +114,10 @@ export function UserAccountDirectoryView({
           {/* Right Header Tools */}
           <div className="flex items-center gap-3 shrink-0">
             <button
+              disabled
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-[#191c1e] shadow-2xs border border-[#e2e8f0] transition-colors hover:bg-[#eceef1]"
+              title="Export CSV (Available upon full backend integration)"
+              className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-[#191c1e] shadow-2xs border border-[#e2e8f0] opacity-50 cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px] text-[#64748b]">
                 file_download
@@ -105,8 +125,10 @@ export function UserAccountDirectoryView({
               <span>{copy.exportCsvLabel}</span>
             </button>
             <button
+              disabled
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#006b5f] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005048]"
+              title="Add Admin Account (Available upon full backend integration)"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#006b5f] px-4 py-2.5 text-xs font-semibold text-white shadow-xs opacity-50 cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px]">person_add</span>
               <span>{copy.addAdminLabel}</span>
@@ -125,6 +147,10 @@ export function UserAccountDirectoryView({
           onRoleChange={setSelectedRole}
           selectedStatus={selectedStatus}
           onStatusChange={setSelectedStatus}
+          fromDate={fromDate}
+          onFromDateChange={setFromDate}
+          toDate={toDate}
+          onToDateChange={setToDate}
           totalCount={initialAccounts.length}
           travelerCount={travelerCount}
           operatorCount={operatorCount}

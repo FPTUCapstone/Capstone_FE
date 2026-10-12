@@ -9,6 +9,10 @@ interface UserAccountFilterBarProps {
   onRoleChange: (role: 'All' | UserAccountRole) => void;
   selectedStatus: 'All' | UserAccountStatus;
   onStatusChange: (status: 'All' | UserAccountStatus) => void;
+  fromDate?: string;
+  onFromDateChange?: (date: string) => void;
+  toDate?: string;
+  onToDateChange?: (date: string) => void;
   totalCount: number;
   travelerCount: number;
   operatorCount: number;
@@ -21,6 +25,10 @@ export function UserAccountFilterBar({
   onRoleChange,
   selectedStatus,
   onStatusChange,
+  fromDate = '',
+  onFromDateChange,
+  toDate = '',
+  onToDateChange,
   totalCount,
   travelerCount,
   operatorCount,
@@ -112,6 +120,31 @@ export function UserAccountFilterBar({
             <span className="material-symbols-outlined text-[20px]">filter_list</span>
           </button>
         </div>
+      </div>
+
+      {/* Registration Date Range Ribbon (SRS 3.9.1.1 & BR-29) */}
+      <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[#f2f4f7] text-xs">
+        <span className="font-semibold text-[#43474d]">{filterCopy.dateRangeFromLabel}:</span>
+        <input
+          type="date"
+          aria-label={filterCopy.dateRangeFromLabel}
+          value={fromDate}
+          onChange={(e) => onFromDateChange?.(e.target.value)}
+          className="rounded-lg bg-[#f2f4f7] px-3 py-1.5 text-xs text-[#191c1e] outline-none border border-transparent focus:border-[#006b5f] focus:bg-white"
+        />
+        <span className="font-semibold text-[#43474d]">{filterCopy.dateRangeToLabel}:</span>
+        <input
+          type="date"
+          aria-label={filterCopy.dateRangeToLabel}
+          value={toDate}
+          onChange={(e) => onToDateChange?.(e.target.value)}
+          className="rounded-lg bg-[#f2f4f7] px-3 py-1.5 text-xs text-[#191c1e] outline-none border border-transparent focus:border-[#006b5f] focus:bg-white"
+        />
+        {fromDate && toDate && fromDate > toDate && (
+          <span className="text-xs font-semibold text-[#ba1a1a]">
+            {filterCopy.msg29InvalidDateRange}
+          </span>
+        )}
       </div>
     </div>
   );

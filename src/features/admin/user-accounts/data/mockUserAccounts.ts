@@ -22,6 +22,8 @@ export const mockUserAccountsList: UserAccountItem[] = [
     role: 'Tour Operator',
     createdAt: '14/02/2026',
     status: 'Active',
+    lastSignIn: '12/03/2026 14:30',
+    bookingCount: 24,
     avatarUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuCF7zlUZpBx2JuX8ZaZd0-VML4Ga3EI5SHcDSNtWKhsvwzptdoyG5BxbiK5VTwTTBaQiG_TC71tjTbxRCq-BlH-Oz2sBX5ne5fitqlIFVRTbFkxuPYCf81Om7Ye47MNH4kdBsulvyRtClqm8aPfsjhJL98U09YvfjILas6IevrXfNUlKLTrgqlCyBF7EUNFMdVMl8wblQ0TNRWXZITbTQQEd2hsVnR4EoX9xoCuY6ej-LJnVeh6IFw',
   },
@@ -34,6 +36,11 @@ export const mockUserAccountsList: UserAccountItem[] = [
     createdAt: '28/01/2026',
     status: 'Locked',
     statusDetail: 'Policy violation',
+    lastSignIn: '28/01/2026 09:15',
+    bookingCount: 2,
+    previousStatus: 'Active',
+    lockedBy: 'Admin Security Team',
+    lockedAt: '28/01/2026 10:00',
   },
   {
     id: 3108,
@@ -45,6 +52,8 @@ export const mockUserAccountsList: UserAccountItem[] = [
     role: 'Tour Operator',
     createdAt: '02/03/2026',
     status: 'Active',
+    lastSignIn: '11/03/2026 18:45',
+    bookingCount: 15,
     avatarUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuDCmPr7Depi32e31Mb4Q-5XO5Uu5aqGQMFJrNIqITwA0lZoJDpnzl8IAQ0CrGzrFZO1OMokODj_6f9byiPzPxvgfV1vKYr8PUi2LJ1nsqIa1FDZRsWgcCux2Es5NnOmuyaMF4WkogAnMRMvKS9fvOLyKeJKGfLlN-JVXTyWJ5md91kU3oRk9CIpM1hAJ0APfI6pAGMQKCZP1oM45Jz0DatwjitL_Yu7RVhwTVgpbghJwlmI15XNiIk',
   },
@@ -58,6 +67,9 @@ export const mockUserAccountsList: UserAccountItem[] = [
     createdAt: '10/03/2026',
     status: 'Pending',
     statusDetail: 'Pending phone verification',
+    lastSignIn: '10/03/2026 11:20',
+    bookingCount: 0,
+    previousStatus: 'Pending',
   },
   {
     id: 1104,
@@ -69,5 +81,7 @@ export const mockUserAccountsList: UserAccountItem[] = [
     role: 'Tour Operator',
     createdAt: '19/12/2025',
     status: 'Active',
+    lastSignIn: '12/03/2026 08:00',
+    bookingCount: 48,
   },
 ];
