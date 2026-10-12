@@ -829,11 +829,55 @@ export function generateDemoStatisticalReport(
   }
 }
 
-function escapeCsvCell(value: string): string {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+/**
+ * Evaluates whether a cell value represents a legitimate numeric metric
+ * (e.g. integer, decimal, currency, percentage, or rating score)
+ * so that legitimate negative or positive values like "-100", "+50",
+ * "-17,640,000 VND", or "-10%" are not incorrectly prepended with an apostrophe.
+ */
+export function isLegitimateNumericMetric(val: string): boolean {
+  const trimmed = val.trim();
+  if (trimmed === '' || trimmed === '-') return false;
+  // Pure integers or decimals with optional sign: "-123", "+123", "123.45", "-123.45"
+  if (/^[+-]?\d+(?:[.,]\d+)?$/.test(trimmed)) return true;
+  // Formatted numbers with thousand separators (dots or commas) and optional currency / percentage
+  // e.g. "17.640.000 ₫", "-17.640.000 ₫", "1,250", "-1,250", "+5%", "-10%", "95%"
+  if (/^[+-]?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s*(?:₫|%|VND)?$/i.test(trimmed)) return true;
+  // Score fractions: e.g. "4.8 / 5.0"
+  if (/^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(trimmed)) return true;
+  return false;
+}
+
+/**
+ * Escapes and sanitizes a cell value for RFC 4180 CSV generation,
+ * neutralizing spreadsheet formula injection (CWE-1236 / CSV Injection)
+ * while preserving multiline cells, quotes, Unicode/Vietnamese characters,
+ * and legitimate numeric metrics.
+ */
+export function escapeCsvCell(value: string): string {
+  if (!value) return '';
+
+  let cell = value;
+
+  // Formula triggers: =, +, -, @, or leading whitespace / control characters before them
+  const trimmedLeading = cell.replace(/^[\s\u0000-\u001f]+/, '');
+  const startsWithTrigger = /^[=+\-@]/.test(trimmedLeading) || /^[\t\r]/.test(cell);
+
+  if (startsWithTrigger) {
+    const isAlreadyEscaped = cell.startsWith("'");
+    const isNumeric = isLegitimateNumericMetric(cell);
+
+    if (!isAlreadyEscaped && !isNumeric) {
+      cell = `'${cell}`;
+    }
   }
-  return value;
+
+  // RFC 4180 standard CSV quoting for commas, double quotes, CR, LF
+  if (/[",\r\n]/.test(cell)) {
+    return `"${cell.replace(/"/g, '""')}"`;
+  }
+
+  return cell;
 }
 
 export function buildDemoExportArtifact(

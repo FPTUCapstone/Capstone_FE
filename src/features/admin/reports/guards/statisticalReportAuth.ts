@@ -3,6 +3,7 @@ import type { StatisticalWorkspaceMode } from '../types/statisticalReports';
 export interface ResolveStatisticalWorkspaceModeOptions {
   readonly demoQueryParam?: string | string[] | null;
   readonly nodeEnv?: string;
+  readonly enableDemoFixtures?: string;
 }
 
 /**
@@ -42,16 +43,28 @@ export function canAccessStatisticalReports(role: string | null | undefined): bo
   return role === 'Administrator';
 }
 
+/**
+ * Production environment gate for UC-67 statistical report demo fixtures.
+ * Strictly requires non-production environment AND explicit NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true'.
+ * Production environment ALWAYS wins (returns false).
+ */
 export function isStatisticalDemoAllowedInEnv(
   nodeEnv: string | undefined = process.env.NODE_ENV,
+  enableDemoFixtures: string | undefined = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES,
 ): boolean {
-  return nodeEnv !== 'production';
+  return nodeEnv !== 'production' && enableDemoFixtures === 'true';
 }
 
+/**
+ * Resolves workspace mode for UC-67 Statistical Reports.
+ * In non-production with NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true', accepts canonical "?demo=1"
+ * or backward-compatible "?demo=true".
+ * In production or without the explicit demo environment gate, strictly returns 'PRODUCTION'.
+ */
 export function resolveStatisticalWorkspaceMode(
   options?: ResolveStatisticalWorkspaceModeOptions,
 ): StatisticalWorkspaceMode {
-  if (!isStatisticalDemoAllowedInEnv(options?.nodeEnv)) {
+  if (!isStatisticalDemoAllowedInEnv(options?.nodeEnv, options?.enableDemoFixtures)) {
     return 'PRODUCTION';
   }
 
@@ -59,5 +72,5 @@ export function resolveStatisticalWorkspaceMode(
     ? options?.demoQueryParam[0]
     : options?.demoQueryParam;
 
-  return rawDemo === 'true' ? 'DEMO' : 'PRODUCTION';
+  return rawDemo === '1' || rawDemo === 'true' ? 'DEMO' : 'PRODUCTION';
 }

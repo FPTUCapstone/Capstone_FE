@@ -285,30 +285,58 @@ describe('UC-67 /admin/reports protected route & BFF-signed session boundary', (
     view.unmount();
   });
 
-  it('enables DEMO mode only when explicit ?demo=true is provided in a non-production environment with a valid signed Administrator session', async () => {
+  it('enables DEMO mode when NEXT_PUBLIC_ENABLE_DEMO_FIXTURES="true" and ?demo=1 (canonical) or ?demo=true in non-production with valid Administrator session', async () => {
     vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'true');
     mockValidSealedSession('Administrator');
 
-    const view = render(
+    // Canonical ?demo=1
+    const view1 = render(
+      await StatisticalReportsPage({
+        searchParams: Promise.resolve({ demo: '1' }),
+      }),
+    );
+    expect(mocks.redirect).not.toHaveBeenCalled();
+    const rendered1 = screen.getByTestId('statistical-reports-view-mock');
+    expect(rendered1.getAttribute('data-actor-role')).toBe('Administrator');
+    expect(rendered1.getAttribute('data-initial-mode')).toBe('DEMO');
+    view1.unmount();
+
+    // Backward-compatible ?demo=true
+    const viewTrue = render(
       await StatisticalReportsPage({
         searchParams: Promise.resolve({ demo: 'true' }),
       }),
     );
-
-    expect(mocks.redirect).not.toHaveBeenCalled();
-    const rendered = screen.getByTestId('statistical-reports-view-mock');
-    expect(rendered.getAttribute('data-actor-role')).toBe('Administrator');
-    expect(rendered.getAttribute('data-initial-mode')).toBe('DEMO');
-    view.unmount();
+    const renderedTrue = screen.getByTestId('statistical-reports-view-mock');
+    expect(renderedTrue.getAttribute('data-initial-mode')).toBe('DEMO');
+    viewTrue.unmount();
   });
 
-  it('locks mode to PRODUCTION when NODE_ENV=production even if ?demo=true is passed with a valid signed Administrator session', async () => {
-    vi.stubEnv('NODE_ENV', 'production');
+  it('locks mode to PRODUCTION when NEXT_PUBLIC_ENABLE_DEMO_FIXTURES is missing or false, even with ?demo=1 or ?demo=true in development', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'false');
     mockValidSealedSession('Administrator');
 
     const view = render(
       await StatisticalReportsPage({
-        searchParams: Promise.resolve({ demo: 'true' }),
+        searchParams: Promise.resolve({ demo: '1' }),
+      }),
+    );
+    expect(mocks.redirect).not.toHaveBeenCalled();
+    const rendered = screen.getByTestId('statistical-reports-view-mock');
+    expect(rendered.getAttribute('data-initial-mode')).toBe('PRODUCTION');
+    view.unmount();
+  });
+
+  it('locks mode to PRODUCTION when NODE_ENV=production even if NEXT_PUBLIC_ENABLE_DEMO_FIXTURES="true" and ?demo=1 or ?demo=true', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'true');
+    mockValidSealedSession('Administrator');
+
+    const view = render(
+      await StatisticalReportsPage({
+        searchParams: Promise.resolve({ demo: '1' }),
       }),
     );
 

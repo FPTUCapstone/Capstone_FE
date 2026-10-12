@@ -29,15 +29,32 @@ function collectAllStrings(value: unknown): string[] {
 }
 
 describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)', () => {
+  const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+
   beforeEach(() => {
     AuthStorage.clear();
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    if (originalDemoFlag === undefined) {
+      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    } else {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = originalDemoFlag;
+    }
   });
 
   describe('1. Trusted Server Authorization & CR-09 English Resource Architecture', () => {
+    it('locks to PRODUCTION workspace mode when NEXT_PUBLIC_ENABLE_DEMO_FIXTURES is false even if initialMode is DEMO', () => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'false';
+      render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
+
+      expect(screen.getAllByText(statisticalReportsEn.modeBanner.productionBadge).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(statisticalReportsEn.modeBanner.productionModeHeading)).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
+    });
+
     it('denies access when actorRole is omitted even if client sessionStorage contains an Administrator role (fail-closed server boundary)', () => {
       render(<StatisticalReportsView />);
 

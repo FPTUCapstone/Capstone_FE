@@ -11,6 +11,7 @@ import {
   PRODUCTION_FILTER_OPTIONS,
   PRODUCTION_PERIOD_OPTIONS,
   buildDemoExportArtifact,
+  escapeCsvCell,
   findDemoPeriodFixture,
   findProductionPeriodOption,
   formatVietnamDateDdMmYyyy,
@@ -19,6 +20,7 @@ import {
   getDemoPeriodFixturesByGranularity,
   getFilterOptionsByMode,
   getProductionPeriodsByGranularity,
+  isLegitimateNumericMetric,
   triggerBrowserCsvDownload,
 } from './statisticalReportService';
 import type {
@@ -42,39 +44,126 @@ describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
     });
 
     it('enforces Demo environment lockdown (isStatisticalDemoAllowedInEnv)', () => {
-      expect(isStatisticalDemoAllowedInEnv('development')).toBe(true);
-      expect(isStatisticalDemoAllowedInEnv('test')).toBe(true);
-      expect(isStatisticalDemoAllowedInEnv('production')).toBe(false);
+      expect(isStatisticalDemoAllowedInEnv('development', 'true')).toBe(true);
+      expect(isStatisticalDemoAllowedInEnv('test', 'true')).toBe(true);
+      expect(isStatisticalDemoAllowedInEnv('production', 'true')).toBe(false);
+      expect(isStatisticalDemoAllowedInEnv('development', 'false')).toBe(false);
+      expect(isStatisticalDemoAllowedInEnv('development', undefined)).toBe(false);
+      expect(isStatisticalDemoAllowedInEnv('development', '')).toBe(false);
     });
   });
 
-  describe('Workspace Mode Gate (resolveStatisticalWorkspaceMode)', () => {
-    it('defaults to PRODUCTION when demoQueryParam is absent or not "true"', () => {
+  describe('Workspace Mode Gate (resolveStatisticalWorkspaceMode / L2)', () => {
+    it('defaults to PRODUCTION when demoQueryParam is absent or malformed', () => {
       expect(resolveStatisticalWorkspaceMode()).toBe('PRODUCTION');
-      expect(resolveStatisticalWorkspaceMode({ nodeEnv: 'development' })).toBe('PRODUCTION');
       expect(
-        resolveStatisticalWorkspaceMode({ nodeEnv: 'development', demoQueryParam: 'false' }),
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'true',
+        }),
       ).toBe('PRODUCTION');
       expect(
-        resolveStatisticalWorkspaceMode({ nodeEnv: 'development', demoQueryParam: '1' }),
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'true',
+          demoQueryParam: 'false',
+        }),
+      ).toBe('PRODUCTION');
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'true',
+          demoQueryParam: '0',
+        }),
+      ).toBe('PRODUCTION');
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'true',
+          demoQueryParam: 'malformed',
+        }),
       ).toBe('PRODUCTION');
     });
 
-    it('enables DEMO only when nodeEnv is non-production AND demoQueryParam is "true"', () => {
+    it('enables DEMO when nodeEnv is non-production, enableDemoFixtures is "true", and demoQueryParam is canonical "1" or "true"', () => {
+      // Canonical "?demo=1" format
       expect(
-        resolveStatisticalWorkspaceMode({ nodeEnv: 'development', demoQueryParam: 'true' }),
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'true',
+          demoQueryParam: '1',
+        }),
       ).toBe('DEMO');
       expect(
-        resolveStatisticalWorkspaceMode({ nodeEnv: 'test', demoQueryParam: ['true'] }),
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'test',
+          enableDemoFixtures: 'true',
+          demoQueryParam: ['1'],
+        }),
+      ).toBe('DEMO');
+
+      // Backward-compatible "?demo=true" format
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'true',
+          demoQueryParam: 'true',
+        }),
+      ).toBe('DEMO');
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'test',
+          enableDemoFixtures: 'true',
+          demoQueryParam: ['true'],
+        }),
       ).toBe('DEMO');
     });
 
-    it('locks to PRODUCTION when nodeEnv is "production" even if demoQueryParam is "true"', () => {
+    it('locks to PRODUCTION when NEXT_PUBLIC_ENABLE_DEMO_FIXTURES is missing or false, even with ?demo=1 or ?demo=true', () => {
       expect(
-        resolveStatisticalWorkspaceMode({ nodeEnv: 'production', demoQueryParam: 'true' }),
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'false',
+          demoQueryParam: '1',
+        }),
       ).toBe('PRODUCTION');
       expect(
-        resolveStatisticalWorkspaceMode({ nodeEnv: 'production', demoQueryParam: ['true'] }),
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: undefined,
+          demoQueryParam: '1',
+        }),
+      ).toBe('PRODUCTION');
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'development',
+          enableDemoFixtures: 'false',
+          demoQueryParam: 'true',
+        }),
+      ).toBe('PRODUCTION');
+    });
+
+    it('locks to PRODUCTION when nodeEnv is "production" regardless of enableDemoFixtures and query params', () => {
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'production',
+          enableDemoFixtures: 'true',
+          demoQueryParam: '1',
+        }),
+      ).toBe('PRODUCTION');
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'production',
+          enableDemoFixtures: 'true',
+          demoQueryParam: 'true',
+        }),
+      ).toBe('PRODUCTION');
+      expect(
+        resolveStatisticalWorkspaceMode({
+          nodeEnv: 'production',
+          enableDemoFixtures: 'true',
+          demoQueryParam: ['1'],
+        }),
       ).toBe('PRODUCTION');
     });
   });
@@ -276,6 +365,150 @@ describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
         URL.revokeObjectURL = originalRevokeObjectURL;
         document.createElement = originalDocCreateElement;
       }
+    });
+  });
+
+  describe('CSV Formula Injection Defense & Secure Cell Escaping (CWE-1236 / L1)', () => {
+    describe('escapeCsvCell individual cell neutralization', () => {
+      it('neutralizes cells starting with formula trigger characters (=, +, -, @) by prepending a single quote', () => {
+        expect(escapeCsvCell('=HYPERLINK("http://evil.com","Click")')).toBe(
+          `"'=HYPERLINK(""http://evil.com"",""Click"")"`,
+        );
+        expect(escapeCsvCell('=1+1')).toBe(`'=1+1`);
+        expect(escapeCsvCell(`=cmd|' /C calc'!A0`)).toBe(`'=cmd|' /C calc'!A0`);
+        expect(escapeCsvCell(`+cmd|' /C calc'!A0`)).toBe(`'+cmd|' /C calc'!A0`);
+        expect(escapeCsvCell('@SUM(A1:A10)')).toBe(`'@SUM(A1:A10)`);
+        expect(escapeCsvCell('-@SUM(1,2)')).toBe(`"'-@SUM(1,2)"`);
+      });
+
+      it('prevents leading whitespace and control character bypasses', () => {
+        expect(escapeCsvCell('   =HYPERLINK("http://evil.com")')).toBe(
+          `"'   =HYPERLINK(""http://evil.com"")"`,
+        );
+        expect(escapeCsvCell('\t=1+1')).toBe(`'\t=1+1`);
+        expect(escapeCsvCell('\r=calc')).toBe(`"'\r=calc"`);
+        expect(escapeCsvCell('   @SUM(1)')).toBe(`'   @SUM(1)`);
+        expect(escapeCsvCell('\t@evil')).toBe(`'\t@evil`);
+      });
+
+      it('preserves legitimate numeric metrics without prepending an apostrophe', () => {
+        expect(escapeCsvCell('-100')).toBe('-100');
+        expect(escapeCsvCell('+50')).toBe('+50');
+        expect(escapeCsvCell('123.45')).toBe('123.45');
+        expect(escapeCsvCell('-123.45')).toBe('-123.45');
+        expect(escapeCsvCell('-17,640,000 VND')).toBe(`"-17,640,000 VND"`);
+        expect(escapeCsvCell('-17.640.000 ₫')).toBe('-17.640.000 ₫');
+        expect(escapeCsvCell('+5%')).toBe('+5%');
+        expect(escapeCsvCell('-10%')).toBe('-10%');
+        expect(escapeCsvCell('95%')).toBe('95%');
+        expect(escapeCsvCell('4.8 / 5.0')).toBe('4.8 / 5.0');
+      });
+
+      it('correctly classifies legitimate numeric metrics via isLegitimateNumericMetric', () => {
+        expect(isLegitimateNumericMetric('-100')).toBe(true);
+        expect(isLegitimateNumericMetric('+50')).toBe(true);
+        expect(isLegitimateNumericMetric('1,420,000,000 VND')).toBe(true);
+        expect(isLegitimateNumericMetric('-17.640.000 ₫')).toBe(true);
+        expect(isLegitimateNumericMetric('+5%')).toBe(true);
+        expect(isLegitimateNumericMetric('4.8 / 5.0')).toBe(true);
+
+        expect(isLegitimateNumericMetric('=1+1')).toBe(false);
+        expect(isLegitimateNumericMetric(`+cmd|calc`)).toBe(false);
+        expect(isLegitimateNumericMetric(`-@SUM(1)`)).toBe(false);
+        expect(isLegitimateNumericMetric(`@SUM(A1)`)).toBe(false);
+        expect(isLegitimateNumericMetric('Tour Operator')).toBe(false);
+        expect(isLegitimateNumericMetric('-')).toBe(false);
+      });
+
+      it('preserves Unicode and Vietnamese text correctly', () => {
+        expect(escapeCsvCell('Đà Nẵng & Hội An')).toBe('Đà Nẵng & Hội An');
+        expect(escapeCsvCell('Tổng doanh thu thuần')).toBe('Tổng doanh thu thuần');
+        expect(escapeCsvCell('Văn hoá & Di sản')).toBe('Văn hoá & Di sản');
+      });
+
+      it('correctly quotes commas, double quotes, and multiline text with RFC 4180 standard escaping', () => {
+        expect(escapeCsvCell('Central, Vietnam')).toBe('"Central, Vietnam"');
+        expect(escapeCsvCell('Operator "Saigontourist"')).toBe('"Operator ""Saigontourist"""');
+        expect(escapeCsvCell('Line 1\r\nLine 2')).toBe('"Line 1\r\nLine 2"');
+        expect(escapeCsvCell('Line 1\nLine 2')).toBe('"Line 1\nLine 2"');
+      });
+
+      it('avoids double-escaping values that already have a leading single quote', () => {
+        expect(escapeCsvCell(`'=ALREADY_NEUTRALIZED`)).toBe(`'=ALREADY_NEUTRALIZED`);
+        expect(escapeCsvCell(`'   =ALREADY_NEUTRALIZED`)).toBe(`'   =ALREADY_NEUTRALIZED`);
+      });
+
+      it('does not prepend unnecessary apostrophes to safe table headings and prefixes', () => {
+        expect(escapeCsvCell('Period')).toBe('Period');
+        expect(escapeCsvCell('Gross Revenue (VND)')).toBe('Gross Revenue (VND)');
+        expect(escapeCsvCell('Net Revenue (VND)')).toBe('Net Revenue (VND)');
+        expect(escapeCsvCell('Commission Rate (%)')).toBe('Commission Rate (%)');
+        expect(escapeCsvCell('Booking Status Category')).toBe('Booking Status Category');
+      });
+    });
+
+    describe('Full CSV artifact generation with untrusted / malicious data', () => {
+      it('neutralizes malicious operator and segment values in generated CSV content', () => {
+        const baseReport = generateDemoStatisticalReport({
+          reportType: 'PLATFORM_REVENUE',
+          periodGranularity: 'CLOSED_MONTH',
+          periodKey: '2026-09',
+          operatorId: 'ALL',
+          destinationId: 'ALL',
+          bookingType: 'ALL',
+        })!;
+
+        // Inject malicious segments into breakdown rows
+        const maliciousReport = {
+          ...baseReport,
+          breakdownRows: [
+            {
+              id: 'malicious-1',
+              segmentLabel: '=cmd|"/C calc"!A0',
+              primaryMetricLabel: '100,000,000 VND',
+              secondaryMetricLabel: '10,000,000 VND',
+              tertiaryMetricLabel: '90,000,000 VND',
+            },
+            {
+              id: 'malicious-2',
+              segmentLabel: '+HYPERLINK("http://evil.com","Phishing")',
+              primaryMetricLabel: '-50,000,000 VND',
+              secondaryMetricLabel: '0 VND',
+              tertiaryMetricLabel: '-50,000,000 VND',
+            },
+            {
+              id: 'malicious-3',
+              segmentLabel: '   @SUM(1+1)*cmd',
+              primaryMetricLabel: '10,000 VND',
+              secondaryMetricLabel: '1,000 VND',
+              tertiaryMetricLabel: '9,000 VND',
+            },
+            {
+              id: 'safe-row',
+              segmentLabel: 'Đà Nẵng Discovery',
+              primaryMetricLabel: '500,000,000 VND',
+              secondaryMetricLabel: '50,000,000 VND',
+              tertiaryMetricLabel: '450,000,000 VND',
+            },
+          ],
+        };
+
+        const artifact = buildDemoExportArtifact(maliciousReport, 'CSV');
+        expect(artifact.isDownloadable).toBe(true);
+        const csv = artifact.csvContent!;
+
+        // Must neutralize formula triggers with apostrophe
+        expect(csv).toContain(`"'=cmd|""/C calc""!A0"`);
+        expect(csv).toContain(`"'+HYPERLINK(""http://evil.com"",""Phishing"")"`);
+        expect(csv).toContain(`'   @SUM(1+1)*cmd`);
+
+        // Legitimate negative currency metric preserved without leading apostrophe
+        expect(csv).toContain(`"-50,000,000 VND"`);
+        expect(csv).not.toContain(`"'-50,000,000 VND"`);
+
+        // Safe Vietnamese label preserved
+        expect(csv).toContain('Đà Nẵng Discovery');
+      });
     });
   });
 });

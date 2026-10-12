@@ -38,13 +38,13 @@ export const statisticalReportsEn = {
   modeBanner: {
     groupAriaLabel: 'Reporting data source status',
     productionModeHeading: 'Production Reporting Workspace',
-    demoModeHeading: 'Non-Production Demo Fixture Workspace (?demo=true)',
+    demoModeHeading: 'Non-Production Demo Fixture Workspace (?demo=1)',
     productionBadge: 'Pending Backend Integration',
     demoBadge: 'DEMO FIXTURE DATA — Not Production Authority',
     productionNotice:
       'Backend statistical aggregation, accounting-period closure verification, and report export endpoints are not yet connected on this environment. Production mode preserves your requested criteria without fabricating platform statistics or generating synthetic export files.',
     demoNotice:
-      'Development-only Demo mode (?demo=true) uses deterministic closed and open period fixtures to preview all five report types, closed-period validation, chart/table rendering, and real CSV file download workflows.',
+      'Development-only Demo mode (?demo=1) uses deterministic closed and open period fixtures to preview all five report types, closed-period validation, chart/table rendering, and real CSV file download workflows.',
   },
   criteriaForm: {
     sectionTitle: 'Report Criteria & Period Selection',
