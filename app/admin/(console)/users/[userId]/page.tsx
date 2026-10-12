@@ -12,8 +12,8 @@ interface UserAccountDetailPageProps {
 }
 
 export const metadata: Metadata = {
-  title: 'User Account Details | TripMate Administration',
-  description: 'View administrative account status, contact details, and moderation history.',
+  title: 'User Account Details (Backend Integration Pending) | TripMate Administration',
+  description: 'View administrative account status and moderation details pending backend integration.',
 };
 
 export default async function UserAccountDetailPage({ params }: UserAccountDetailPageProps) {
@@ -40,4 +40,3 @@ export default async function UserAccountDetailPage({ params }: UserAccountDetai
 
   return <UserAccountDetailUnavailableView userId={userId} />;
 }
-

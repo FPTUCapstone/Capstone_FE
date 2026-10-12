@@ -23,7 +23,7 @@
 ## Review Focus
 
 - Invalid, zero, negative, decimal, or non-numeric detail IDs must not render a fictional account workspace.
-- A Staff session must receive the same access allowed by the currently approved role model; a non-admin role must fail closed.
+- A Staff session must receive access denied (Administrator only); a non-admin role must fail closed.
 - Pending UI must never expose enabled buttons that claim to search, lock, unlock, or save data.
 - A whitespace-only reason must keep a future operation submit control disabled.
 - Missing Backend contracts must be communicated as unavailable, not as an empty user directory or successful operation.
@@ -39,12 +39,12 @@
 - Create: `app/admin/(console)/users/page.tsx`
 
 **Interfaces:**
-- Consumes: `verifyAdminSessionFromCookies`, existing Admin login route, and Staff workspace route.
+- Consumes: `verifyAdminSessionFromCookies`, existing Admin login route, and Administration Dashboard route.
 - Produces: `UserAccountDirectoryUnavailableView` and the authenticated `/admin/users` route used by Task 2.
 
 - [ ] **Step 1: Write the failing component tests**
 
-Test that the view renders English resource copy, disabled search/filter/action controls, the Backend-pending explanation, and a link back to `/admin/staff`; assert that it contains no synthetic user rows or numeric account totals.
+Test that the view renders English resource copy, disabled search/filter/action controls, the Backend-pending explanation, and a link back to `/admin`; assert that it contains no synthetic user rows or numeric account totals.
 
 - [ ] **Step 2: Run the focused test to verify it fails**
 
