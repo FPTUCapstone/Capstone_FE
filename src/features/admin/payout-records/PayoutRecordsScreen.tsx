@@ -9,12 +9,14 @@ import {
   PAYOUT_MESSAGES,
   PAYOUT_STATUSES,
   defaultPayoutsSearch,
+  formatPayoutStatus,
   formatPeriodRange,
   formatRequestedAt,
   formatVnd,
   parsePayoutsSearch,
   serializePayoutsSearch,
   validatePeriodRange,
+  type PayoutStatus,
   type PayoutsResponse,
   type PayoutsSearch,
 } from './payoutRecords';
@@ -81,15 +83,14 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
       <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Administrator finance</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Staff finance</p>
         <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Payout Records</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[#486581]">Review backend-calculated payout records for Tour Operators. Amounts are read-only.</p>
+        <p className="mt-2 max-w-3xl text-sm text-[#486581]">Review payout requests awaiting Staff assessment.</p>
       </header>
 
-      {data ? <section aria-label="Payout summary" className="mb-6 grid gap-4 sm:grid-cols-3">
-        <SummaryCard label="Pending Requests" value={data.summary.pendingRequests} alert={data.summary.pendingRequests > 0} />
-        <SummaryCard label="Total Requested Amount" value={formatVnd(data.summary.totalRequestedAmount)} />
-        <SummaryCard label="Total Confirmed Amount" value={formatVnd(data.summary.totalConfirmedAmount)} />
+      {data ? <section aria-label="Payout summary" className="mb-6 grid gap-4 sm:grid-cols-2">
+        <SummaryCard label="Records" value={data.totalCount} alert={data.totalCount > 0} />
+        <SummaryCard label="Total Net Payout" value={formatVnd(data.totalAmount)} />
       </section> : null}
 
       <form role="search" onSubmit={submit} className="mb-6 rounded-2xl border border-[#d7e2ef] bg-white p-4 shadow-sm">
@@ -98,10 +99,11 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
             <input aria-label="Keyword" value={draft.keyword} maxLength={200} onChange={(e) => field('keyword', e.target.value)} className={inputClass} placeholder="Payout code or operator name" />
           </Field>
           <Field label="Status">
-            <select aria-label="Status" value={draft.status} onChange={(e) => field('status', e.target.value as PayoutsSearch['status'])} className={inputClass}>
-              <option value="">All</option>
-              {PAYOUT_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+            <select aria-label="Status" aria-describedby="status-filter-help" value={draft.status} onChange={(e) => field('status', e.target.value as PayoutsSearch['status'])} className={inputClass}>
+              <option value="">Staff default: Pending review</option>
+              {PAYOUT_STATUSES.map((status) => <option key={status} value={status}>{formatPayoutStatus(status)}</option>)}
             </select>
+            <span id="status-filter-help" className="sr-only">Select one Staff-visible payout status. Leaving the default applies the Staff pending-review queue.</span>
           </Field>
           <Field label="Period From">
             <input aria-label="Period From" aria-describedby={periodError ? 'period-error' : undefined} type="date" value={draft.periodFrom} onChange={(e) => field('periodFrom', e.target.value)} className={inputClass} />
@@ -126,6 +128,7 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
       {state === 'ready' && data && data.items.length > 0 ? <>
         <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0} aria-label="Payout records table; scroll horizontally on small screens">
           <table className="min-w-[1120px] w-full border-collapse text-left text-sm">
+            <caption className="sr-only">Payout records for Staff review</caption>
             <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
               <tr>{['Payout Code', 'Tour Operator', 'Settlement Period', 'Gross Revenue', 'Commission', 'Net Payout', 'Requested Date', 'Status', 'Action'].map((heading) => <th key={heading} scope="col" className="px-4 py-3">{heading}</th>)}</tr>
             </thead>
@@ -137,11 +140,12 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
               <td className="px-4 py-3 text-right whitespace-nowrap">{formatVnd(payout.commissionAmount)}</td>
               <td className="px-4 py-3 text-right whitespace-nowrap font-bold text-[#00152a]">{formatVnd(payout.netAmount)}</td>
               <td className="px-4 py-3 whitespace-nowrap">{formatRequestedAt(payout.requestedAtUtc)}</td>
-              <td className="px-4 py-3"><Badge alert={payout.status === 'Rejected'}>{payout.status}</Badge></td>
+              <td className="px-4 py-3"><Badge status={payout.status} alert={payout.status === 'Rejected'}>{formatPayoutStatus(payout.status)}</Badge></td>
               <td className="px-4 py-3">
-                <button type="button" disabled title={PAYOUT_MESSAGES.viewDetailsDisabled} aria-label={`${PAYOUT_MESSAGES.viewDetails} for ${payout.payoutCode}`} className="rounded-lg border border-[#9fb3c8] px-3 py-1.5 text-xs font-bold text-[#64748b] disabled:cursor-not-allowed disabled:opacity-50">
-                  {PAYOUT_MESSAGES.viewDetails}
+                <button type="button" disabled title={PAYOUT_MESSAGES.reviewDisabled} aria-label={`${PAYOUT_MESSAGES.review} for ${payout.payoutCode}`} aria-describedby={`review-disabled-${payout.payoutId}`} className="rounded-lg border border-[#9fb3c8] px-3 py-1.5 text-xs font-bold text-[#64748b] disabled:cursor-not-allowed disabled:opacity-50">
+                  {PAYOUT_MESSAGES.review}
                 </button>
+                <span id={`review-disabled-${payout.payoutId}`} className="sr-only">{PAYOUT_MESSAGES.reviewDisabled}</span>
               </td>
             </tr>)}</tbody>
           </table>
@@ -158,7 +162,7 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
   );
 }
 
-const inputClass = 'mt-1 w-full rounded-xl border border-[#bcccdc] bg-white px-3 py-2.5 text-sm text-[#102a43] outline-none focus:border-[#006b5f] focus:ring-2 focus:ring-[#71f8e4]/40';
+const inputClass = 'mt-1 w-full rounded-xl border border-[#bcccdc] bg-white px-3 py-2.5 text-sm text-[#102a43] outline-none focus-visible:border-[#006b5f] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">{label}{children}</label>;
@@ -171,8 +175,8 @@ function SummaryCard({ label, value, alert = false }: { label: string; value: st
   </div>;
 }
 
-function Badge({ children, alert = false }: { children: React.ReactNode; alert?: boolean }) {
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${alert ? 'bg-[#fdecef] text-[#8c1030]' : 'bg-[#e6f7f0] text-[#085b3e]'}`}>{children}</span>;
+function Badge({ children, status, alert = false }: { children: React.ReactNode; status: PayoutStatus; alert?: boolean }) {
+  return <span aria-label={`Payout status: ${formatPayoutStatus(status)}`} className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${alert ? 'bg-[#fdecef] text-[#8c1030]' : 'bg-[#e6f7f0] text-[#085b3e]'}`}>{children}</span>;
 }
 
 function PageButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {

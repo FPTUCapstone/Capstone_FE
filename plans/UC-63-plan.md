@@ -1,75 +1,77 @@
 # UC-63 View Payout Records Frontend Implementation Plan
 
-Status: **Approved 2026-10-01** (spec rewritten against SRS §3.9.9.1; decisions D1–D11
-approved). Tasks are atomic and sequenced; tests come first per task.
+## Status and baseline
 
-Branch: `feature/linhnv-view-payout-records` (baseline: latest `origin/develop`; lint/typecheck/
-test/build verified green on this baseline).
+**Replanned 2026-10-12** after the approved shared-route decision. UC-63 is the Staff
+review queue at `/admin/payouts`; UC-65 owns the separately authorized Administrator
+settlement scope. Do not infer role/scope from a URL parameter or reuse Staff data for an
+Administrator view.
 
-## Task 1 — Types, search model, and contract parsing
+Before implementation, align the FE contract with
+`Capstone_BE/specs/UC-63-spec.md`. Do not begin a visual change until the updated web-screen
+specification is approved.
 
-`src/features/admin/payout-records/`:
+## Task 1 — Replace legacy payout contract and tests
 
-- `payoutRecords.ts`: DTO types mirroring the BE response — `payoutCode` (derived string),
-  `operator { userId, companyName }` (no email/rate), `requestedAtUtc` nullable, numeric money,
-  `yyyy-MM-dd` periods; the five status constants; VND formatter; the three summary counters;
-  a runtime narrowing guard; the search model + `parsePayoutsSearch`/`serializePayoutsSearch`
-  (allow-listed keys) and `validatePeriodRange` mirroring BE rules.
-- Contract tests first: valid payload parses (derived code verbatim, null requested date,
-  numeric money); malformed statuses/periods/ids rejected; date-range validation boundaries;
-  summary counters typed as numbers.
+Update `src/features/admin/payout-records/` contracts/tests before UI code:
 
-DoD: `npx vitest run src/features/admin/payout-records` green.
+- Replace `Pending`, `Requested`, `Confirmed`, and `Paid` with Staff-visible
+  `PendingReview`, `ApprovedForSettlement`, and `Rejected`.
+- Parse string IDs and backend-provided payout codes without coercion to `number`.
+- Model persisted snapshot money values plus `totalCount` and `totalAmount` for the current
+  filtered result. Remove legacy three-summary-card assumptions.
+- Validate an inverted period range before calling the service.
 
-## Task 2 — Same-origin proxy route
+**Verification:** focused contract tests prove malformed status/date/ID data is rejected;
+allowed statuses and summary semantics are accepted.
 
-- `payoutRecordsProxy.ts` (server-only) + `app/api/admin/payouts/route.ts` reusing the shared
-  admin cookie helpers: read `tripmate_admin_access_token`, forward GET with the allow-listed
-  query keys (`keyword`, `status`, `periodFrom`, `periodTo`, `pageNumber`, `pageSize`) only,
-  pass upstream statuses through, clear the session cookie on upstream `401`.
-- Proxy tests: cookie forwarding, key allow-listing, `400`/`403`/`503` passthrough, cookie
-  clearing, backend-unreachable mapping.
+## Task 2 — Staff BFF proxy and service
 
-## Task 3 — Service client
+- Keep the Staff review BFF as same-origin `/api/admin/payouts`.
+- Allow-list only `keyword`, `status`, `periodFrom`, `periodTo`, `pageNumber`; set
+  `pageSize=20` server-side rather than trusting a browser value.
+- Reuse signed administration-session helpers. Do not add an Authorization header to browser
+  fetches or return upstream internals.
+- Map upstream `401` to session cleanup, preserve a valid session on `403`, surface safe
+  `400` validation messages, and map network/`503` to unavailable.
 
-`payoutRecordsService.ts` calling the same-origin proxy (`credentials: 'same-origin'`, no
-Authorization header) and mapping responses/errors to the screen state model
-(`loading | ready | forbidden | unavailable`; `400` surfaces the upstream payload so the
-proposed MSG134 wording from the inverted-range case is distinguishable). Tests: URL/
-credentials, status mapping, malformed-success rejection, network failure mapping.
+**Verification:** proxy/service tests cover modified, missing, expired, and token-mismatched
+sessions; query allow-listing; `401` cookie cleanup; `403` cookie preservation; safe error
+mapping; and malformed success payloads.
 
-## Task 4 — List screen (TDD per state)
+## Task 3 — Role-resolved route composition
 
-`PayoutRecordsScreen.tsx` built to `specs/UC-63-web-screen-spec.md`: header; three summary
-cards (Pending Requests, Total Requested Amount, Total Confirmed Amount); filter panel with
-client-side period validation using the proposed MSG134 wording; scrollable table in the SRS
-column order (Payout Code, Tour Operator, Settlement Period, Gross Revenue, Commission, Net
-Payout, Requested Date, Status) with the **disabled [View Details] row action**; pagination
-footer with filters persisted in the URL query (PC-03). No enabled navigation anywhere.
+- Add a server-side role guard before rendering protected payout content.
+- Staff renders the UC-63 review queue with default `PendingReview`.
+- Do not let an Administrator render Staff records or actions. The separately authorized
+  Administrator settlement composition is deferred to UC-65 rather than mocked here.
+- Preserve direct navigation and safe sign-in return URLs.
 
-Screen tests, in order: loading → success renders summary + rows with VND formatting, period
-ranges, and "Not available" requested dates; empty MSG128 with filters kept; inverted range
-blocked client-side with the MSG134 wording and no request; `403` MSG126; `401` redirect with
-`returnUrl`; `503` unavailable + retry; disabled row action present on every row and
-non-interactive; Clear resets and repaginates.
+**Verification:** route-level tests cover valid Staff, valid Administrator, missing/expired/
+modified session, and direct refresh.
 
-## Task 5 — Route wiring and navigation
+## Task 4 — Read-only Staff list UI
 
-- `app/admin/(console)/payouts/page.tsx` (+ metadata) composing the screen.
-- `ROUTES.admin.payouts = '/admin/payouts'` in `src/lib/routes.ts`.
-- Admin console navigation: add the `Payout Records` entry (active-state highlight consistent
-  with existing entries). Update navigation tests.
+- Update the header, two filtered summaries, filter options, table status labels, and empty/
+  error copy to the Staff specification.
+- Keep Review disabled until UC-64, with an accessible explanation.
+- Preserve URL filters across pagination; render a scrollable table region at narrow widths.
+- Do not add approve, reject, settlement, export, bank, gateway, or fake action behaviour.
 
-## Task 6 — Verification
+**Verification:** screen tests cover loading, success, empty MSG128, invalid client range,
+safe backend `400`, `401`, `403`, unavailable/retry, disabled Review, pagination, URL
+persistence, keyboard focus, and 320px table overflow containment.
 
-1. `npm run lint` (0 errors; pre-existing warnings noted, no new ones)
-2. `npm run typecheck`
-3. `npm test` (full suite)
-4. `npm run build` (new route appears in the manifest)
-5. Manual browser checklist against a running BE with seeded payouts: admin login → nav →
-   list; keyword on code and operator name; status/period filters; direct refresh; pagination
-   with persisted filters; non-admin rejection. Record actual evidence; do not claim E2E
-   without it.
+## Task 5 — Full verification and handoff
 
-Non-goals guard: no detail route (row action stays disabled), no settlement actions, no
-export, no changes to the shared session contract.
+1. Run focused feature tests.
+2. Run `npm run lint`, `npm run typecheck`, and `npm run build` on the exact branch head.
+3. Manually verify Staff direct navigation/filter/pagination and denied non-Staff behaviour
+   against a seeded backend.
+4. Record that Administrator settlement scope is intentionally deferred to UC-65; do not
+   claim it is integrated before its authorized backend query exists.
+
+## Non-goals
+
+UC-64 detail/review, UC-73 approval, UC-74 rejection, UC-65 authorization,
+payout-processing worker/gateway, export, and all payout mutations are out of scope.

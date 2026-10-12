@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   defaultPayoutsSearch,
+  formatPayoutStatus,
   formatPeriodRange,
   formatRequestedAt,
   formatVnd,
@@ -12,22 +13,21 @@ import {
 } from './payoutRecords';
 
 const response = {
-  summary: { pendingRequests: 2, totalRequestedAmount: 9190000, totalConfirmedAmount: 532500 },
-  pageNumber: 1, pageSize: 20, totalCount: 2, totalPages: 1,
+  pageNumber: 1, pageSize: 20, totalCount: 2, totalPages: 1, totalAmount: 9437500,
   items: [
     {
       payoutId: '12', payoutCode: 'PO-12',
       operator: { userId: '2', companyName: 'Da Nang Tours' },
       periodStart: '2026-08-01', periodEnd: '2026-08-31',
       grossRevenue: 10000000, commissionAmount: 1000000, netAmount: 9000000,
-      requestedAtUtc: '2026-09-01T02:30:00Z', status: 'Requested',
+      requestedAtUtc: '2026-09-01T02:30:00Z', status: 'PendingReview',
     },
     {
       payoutId: '11', payoutCode: 'PO-11',
       operator: { userId: '3', companyName: 'Hoi An Walks' },
       periodStart: '2026-07-01', periodEnd: '2026-07-31',
       grossRevenue: 500000, commissionAmount: 62500, netAmount: 437500,
-      requestedAtUtc: null, status: 'Confirmed',
+      requestedAtUtc: null, status: 'ApprovedForSettlement',
     },
   ],
 };
@@ -39,14 +39,14 @@ describe('payout response contract', () => {
     expect(parsed.items[0].payoutCode).toBe('PO-12');
     expect(parsed.items[0].requestedAtUtc).toContain('Z');
     expect(parsed.items[1].requestedAtUtc).toBeNull();
-    expect(parsed.summary.totalRequestedAmount).toBe(9190000);
+    expect(parsed.totalAmount).toBe(9437500);
   });
 
   it.each([
     { payoutCode: 'XO-12' },
     { payoutId: 12 },
     { grossRevenue: -1 },
-    { status: 'Approved' },
+    { status: 'Pending' },
     { periodStart: '08/01/2026' },
     { requestedAtUtc: '2026-09-01 02:30:00' },
     { operator: { userId: 'x', companyName: 'Y' } },
@@ -58,10 +58,10 @@ describe('payout response contract', () => {
 
 describe('search model', () => {
   it('parses and serializes allow-listed keys only', () => {
-    const params = new URLSearchParams('keyword=PO-12&status=Paid&periodFrom=2026-08-01&periodTo=2026-08-31&pageNumber=3&hax=1');
+    const params = new URLSearchParams('keyword=PO-12&status=ApprovedForSettlement&periodFrom=2026-08-01&periodTo=2026-08-31&pageNumber=3&hax=1');
     const search = parsePayoutsSearch(params);
-    expect(search).toEqual({ keyword: 'PO-12', status: 'Paid', periodFrom: '2026-08-01', periodTo: '2026-08-31', pageNumber: 3 });
-    expect(serializePayoutsSearch(search).toString()).toBe('keyword=PO-12&status=Paid&periodFrom=2026-08-01&periodTo=2026-08-31&pageNumber=3');
+    expect(search).toEqual({ keyword: 'PO-12', status: 'ApprovedForSettlement', periodFrom: '2026-08-01', periodTo: '2026-08-31', pageNumber: 3 });
+    expect(serializePayoutsSearch(search).toString()).toBe('keyword=PO-12&status=ApprovedForSettlement&periodFrom=2026-08-01&periodTo=2026-08-31&pageNumber=3');
     expect(serializePayoutsSearch(defaultPayoutsSearch()).toString()).toBe('');
   });
 
@@ -80,10 +80,13 @@ describe('search model', () => {
 });
 
 describe('display formatting', () => {
-  it('formats VND money, period ranges, and requested dates', () => {
+  it('formats VND money, period ranges, requested dates, and Staff-facing statuses', () => {
     expect(formatVnd(8250000)).toContain('8.250.000');
     expect(formatPeriodRange('2026-08-01', '2026-08-31')).toBe('01/08/2026 – 31/08/2026');
     expect(formatRequestedAt('2026-09-01T02:30:00Z')).toMatch(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
     expect(formatRequestedAt(null)).toBe('Not available');
+    expect(formatPayoutStatus('PendingReview')).toBe('Pending review');
+    expect(formatPayoutStatus('ApprovedForSettlement')).toBe('Approved for settlement');
+    expect(formatPayoutStatus('Rejected')).toBe('Rejected');
   });
 });

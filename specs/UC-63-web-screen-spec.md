@@ -1,77 +1,60 @@
-# UC-63 Payout Settlement (Payout Records) Web Screen Specification
+# UC-63 Payout Records — Staff Web Screen Specification
 
 ## Route and scope
 
-- Route: `/admin/payouts` inside the existing Administrator console layout, listed in the Admin
-  navigation as `Payout Records`. SRS screen name: **Payout Settlement** (§3.9.9.1).
-- Read-only finance screen. Detail (UC-64) and settlement confirmation (UC-65) are excluded;
-  the per-row **[View Details]** action renders disabled with an explanatory title and must not
-  navigate anywhere until UC-64 is approved (D11).
-- Data comes only from the same-origin `/api/admin/payouts` proxy (admin cookie session; query
-  keys allow-listed before forwarding).
-- Maintainer approval to implement without a Stitch-generated UI is recorded by developer
-  approval of this specification (Stitch is optional per `CODEBASE_RULES.md`).
+- `/admin/payouts` is a shared internal route. This specification defines only the
+  **Staff UC-63 review scope**.
+- The server-side role guard selects scope from the verified session. Staff receives the
+  review queue; Administrator settlement scope is UC-65 and is not implemented as a
+  substitute for Staff data.
+- Data comes only from same-origin `/api/admin/payouts`. The BFF forwards an allow-listed
+  search query and never exposes a backend token to the browser.
+- This is a read-only screen. UC-64 detail/review, UC-73 approval, UC-74 rejection, and
+  UC-65 settlement authorization are separate deliveries.
 
 ## Layout
 
-- Header: eyebrow `Administrator finance`, title `Payout Records`, concise description.
-- Three summary cards recomputed with the **applied filters** (SRS Data Processing):
-  `Pending Requests` (count of Pending + Requested), `Total Requested Amount` (sum of
-  `netAmount` over Pending + Requested), `Total Confirmed Amount` (sum of `netAmount` over
-  Confirmed + Paid); VND formatted (BR-79).
-- Filter panel: Keyword (Payout code or operator name), Status (All / Pending / Requested /
-  Confirmed / Paid / Rejected — the five-value superset per D3a, with the SRS three-value
-  defect recorded), Period From, Period To; Apply Filters and Clear.
-- Desktop/tablet: table in an explicitly scrollable container with columns in the SRS order —
+- Header: eyebrow `Staff finance`, title `Payout Records`, description `Review payout
+  requests awaiting Staff assessment.`
+- Two filtered-result summaries: `Records` (`totalCount`) and `Total Net Payout`
+  (`totalAmount`). They reflect the current filters; they are not global dashboard metrics.
+- Filter panel: Keyword, Status (`PendingReview`, `ApprovedForSettlement`, `Rejected`),
+  Period From/To, Apply Filters, Clear.
+- Table in a named, keyboard-focusable horizontal-scroll region on small screens:
   Payout Code, Tour Operator, Settlement Period, Gross Revenue, Commission, Net Payout,
-  Requested Date, Status, Action ([View Details], disabled).
-- At 320px: controls stack to one column and the table scrolls inside its own accessible region
-  (`tabIndex={0}`, named "Payout records table; scroll horizontally on small screens"),
-  preventing page-level horizontal overflow.
-- Footer: total record text plus Previous/Next pagination; filters persist across pages
-  (PC-03, URL query serialization).
-
-## States
-
-- Loading uses an accessible `role="status"` and does not present stale rows as current.
-- Empty shows locked MSG128: `No data is available for the selected criteria.` and keeps the
-  filters (SRS 5.a1).
-- An inverted period range is blocked **client-side** with proposed MSG134 wording:
-  `The submitted settlement period range is logically invalid.` (SRS references MSG29, whose
-  locked content is the POI-coordinates message — recorded defect, D10) and sends no request
-  (SRS 4.a1).
-- Forbidden shows locked MSG126: `You do not have permission to access this function.`
-- A `400` from invalid filter values shows the BE ProblemDetails message verbatim in an error
-  alert (no Retry) — a user-input error must never be presented as MSG127. (Amended 2026-10-01.)
-- Unavailable (`503`/network) shows locked MSG127 with a Retry button:
-  `TripMate is temporarily unable to process your request. Please check your connection and try
-  again.` (SRS 5.a2)
-- A `401` redirects to `/admin/login?returnUrl=%2Fadmin%2Fpayouts`.
+  Requested Date, Status, Action.
+- The `Review` row action is disabled with the accessible explanation `Payout review details
+  will become available after UC-64 is delivered.` It must not navigate or mutate state.
+- Footer: filtered record total and Previous/Next controls. The URL preserves all filter
+  criteria while paging.
 
 ## Field mapping
 
-| UI | API field |
+| UI element | Staff review-query field / rule |
 | --- | --- |
-| Keyword | `keyword` (matches derived Payout Code or operator company name) |
-| Status filter | `status` |
-| Period From / To | `periodFrom` / `periodTo` |
-| Current page / size | `pageNumber` / `pageSize=20` (CR-01) |
-| Summary cards | `summary.pendingRequests`, `summary.totalRequestedAmount`, `summary.totalConfirmedAmount` |
-| Table columns | `items[]`: `payoutCode`, `operator.companyName`, `periodStart`–`periodEnd`, `grossRevenue`, `commissionAmount`, `netAmount`, `requestedAtUtc`, `status` |
-| Row action | [View Details] — disabled placeholder (D11), no navigation |
+| Keyword | `keyword`, matching derived payout code or operator company name |
+| Status | `status`, one of the three Staff-visible statuses |
+| Period | `periodFrom` / `periodTo`, ISO `yyyy-MM-dd` transport format |
+| Page | `pageNumber`, with BFF-enforced `pageSize=20` |
+| Summary | `totalCount`, `totalAmount` for the filtered result |
+| Payout code | Backend-provided derived string; never reconstructed from a numeric ID |
+| Operator | `operator.companyName` only |
+| Period | `periodStart`–`periodEnd`, shown as `dd/MM/yyyy – dd/MM/yyyy` |
+| Money | Persisted snapshot fields, formatted as VND |
+| Requested date | `requestedAtUtc`, shown in `Asia/Ho_Chi_Minh`; `Not available` if null |
 
-- Money renders with `Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })`;
-  the Net Payout column is right-aligned numeric.
-- Periods render `dd/MM/yyyy – dd/MM/yyyy`; Requested Date renders `dd/MM/yyyy` in
-  `Asia/Ho_Chi_Minh` (CR-07) with `Not available` for null; the API transport format stays
-  `yyyy-MM-dd`.
-- Status renders as badge + text (`Pending`/`Requested`/`Confirmed`/`Paid`/`Rejected`);
-  meaning is never conveyed by color alone.
+String IDs remain strings. The screen never displays bank details, gateway references,
+reviewer identity, administrator authorization data, or worker execution outcomes.
 
-## Accessibility and styling
+## States and accessibility
 
-- One `h1` with per-section headings; landmarks for header/main; `<th scope>` and caption on
-  the table; every control labeled; the disabled action has an accessible name and title; the
-  filter error is associated with both date controls; visible focus retained.
-- Tailwind CSS 4 with the existing Admin navy/teal/coral palette and shared components; no new
-  dependency, CSS module, chart, or table library.
+- Loading: accessible status indicator; no stale rows represented as current.
+- Empty: MSG128 and retained filters.
+- Invalid date range: inline validation at both controls and no request.
+- `401`: redirect to sign-in with this route as `returnUrl`.
+- `403`: MSG126 and no protected records.
+- Backend `400`: safe validation message only, with no Retry.
+- Network/`503`: MSG127 and Retry.
+- Use one `h1`, semantic table caption/headers, labelled form controls, visible focus, and
+  status text alongside badges. At 320px the table scrolls within its region rather than
+  producing page-level horizontal overflow.
