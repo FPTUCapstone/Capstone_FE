@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { UserAccountDirectoryUnavailableView } from '@/features/admin/user-accounts/components/UserAccountDirectoryUnavailableView';
+import { UserAccountDirectoryView } from '@/features/admin/user-accounts/components/UserAccountDirectoryView';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export default async function UserAccountsPage() {
@@ -16,5 +16,5 @@ export default async function UserAccountsPage() {
     redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
   }
 
-  return <UserAccountDirectoryUnavailableView />;
+  return <UserAccountDirectoryView />;
 }
