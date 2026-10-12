@@ -51,5 +51,28 @@ export const adminUserAccountsEn = {
         'This dialog captures administrator lock rationale pending backend integration. When connected, locking this account will terminate active sessions and suspend marketplace listings according to platform governance policy.',
       confirmLabel: 'Confirm account lock',
     },
+    unlock: {
+      title: 'Unlock user account',
+      subtitle: 'Account restoration & compliance review',
+      description: 'This restores operational and login access for the selected account.',
+      lockHistoryTitle: 'Lock History & Context',
+      historyUnavailableLabel: 'Unavailable pending backend integration',
+      lockReasonLabel: 'Lock Reason:',
+      lockedByLabel: 'Locked By:',
+      lockedDateLabel: 'Locked Date:',
+      reasonCategoryLabel: 'Unlock reason',
+      reasonCategories: [
+        'Complaint resolved & verified with traveler',
+        'Updated KYC & valid legal identity documents verified',
+        'Appeal approved by Senior Administrator',
+        'Other justification (detailed in internal notes)',
+      ],
+      reasonLabel: 'Internal moderation notes',
+      internalNotesPlaceholder: 'Enter resolution details or approval reference (admin internal view)...',
+      noticeTitle: 'Notice:',
+      noticeBody:
+        'Unlocking this account re-enables login and restores previous platform permissions.',
+      confirmLabel: 'Confirm account unlock',
+    },
   },
 } as const;

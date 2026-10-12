@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { UserAccountStatusDialog } from '@/features/admin/user-accounts/components/UserAccountStatusDialog';
 
-describe('UserAccountStatusDialog (UC-48 Lock Account)', () => {
+describe('UserAccountStatusDialog (UC-48 Lock Account & UC-49 Unlock Account)', () => {
   it('renders nothing while closed', () => {
     const { container } = render(
       <UserAccountStatusDialog
@@ -24,6 +24,7 @@ describe('UserAccountStatusDialog (UC-48 Lock Account)', () => {
       <UserAccountStatusDialog
         accountLabel="traveler@example.com"
         isOpen
+        operation="lock"
         onCancel={onCancel}
         onConfirm={onConfirm}
       />,
@@ -56,6 +57,7 @@ describe('UserAccountStatusDialog (UC-48 Lock Account)', () => {
       <UserAccountStatusDialog
         accountLabel="first@example.com"
         isOpen
+        operation="lock"
         onCancel={vi.fn()}
         onConfirm={vi.fn()}
       />,
@@ -69,6 +71,7 @@ describe('UserAccountStatusDialog (UC-48 Lock Account)', () => {
       <UserAccountStatusDialog
         accountLabel="first@example.com"
         isOpen={false}
+        operation="lock"
         onCancel={vi.fn()}
         onConfirm={vi.fn()}
       />,
@@ -77,6 +80,7 @@ describe('UserAccountStatusDialog (UC-48 Lock Account)', () => {
       <UserAccountStatusDialog
         accountLabel="second@example.com"
         isOpen
+        operation="lock"
         onCancel={vi.fn()}
         onConfirm={vi.fn()}
       />,
@@ -97,6 +101,7 @@ describe('UserAccountStatusDialog (UC-48 Lock Account)', () => {
       <UserAccountStatusDialog
         accountLabel="traveler@example.com"
         isOpen
+        operation="lock"
         onCancel={onCancel}
         onConfirm={vi.fn()}
       />,
@@ -154,5 +159,57 @@ describe('UserAccountStatusDialog (UC-48 Lock Account)', () => {
 
     expect(document.activeElement).toBe(trigger);
     document.body.removeChild(trigger);
+  });
+
+  it('renders unlock dialog with lock history area according to SRS 3.9.1.3 and confirms unlock', () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+
+    render(
+      <UserAccountStatusDialog
+        accountLabel="Trần Văn B (tranvanb.travel@gmail.com)"
+        isOpen
+        operation="unlock"
+        onCancel={onCancel}
+        onConfirm={onConfirm}
+        lockedReason="Detected irregular payment transactions"
+        lockedBy="Admin Security Lead"
+        lockedAt="28/01/2026 10:00"
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Unlock user account' })).toBeTruthy();
+    expect(screen.getByText('Lock History & Context')).toBeTruthy();
+    expect(screen.getByText('Detected irregular payment transactions')).toBeTruthy();
+    expect(screen.getByText('Admin Security Lead')).toBeTruthy();
+    expect(screen.getByText('28/01/2026 10:00')).toBeTruthy();
+
+    const reason = screen.getByRole('textbox', { name: 'Internal moderation notes' });
+    const confirm = screen.getByRole('button', { name: 'Confirm account unlock' }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+
+    fireEvent.change(reason, { target: { value: 'Proof of address and KYC verified' } });
+    expect(confirm.disabled).toBe(false);
+
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledWith({
+      reason: 'Proof of address and KYC verified',
+      category: 'Complaint resolved & verified with traveler',
+    });
+  });
+
+  it('displays fallback pending integration label when lock history details are omitted', () => {
+    render(
+      <UserAccountStatusDialog
+        accountLabel="traveler@example.com"
+        isOpen
+        operation="unlock"
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Unlock user account' })).toBeTruthy();
+    expect(screen.getAllByText('Unavailable pending backend integration').length).toBe(3);
   });
 });
