@@ -28,6 +28,7 @@ const validPreferences = {
   travelPace: 'Moderate',
   riskTolerance: 'Medium',
   foodPreferences: ['Vegan'],
+  defaultBudgetVnd: null,
   updatedAtUtc: '2026-10-13T06:00:00Z',
 };
 
