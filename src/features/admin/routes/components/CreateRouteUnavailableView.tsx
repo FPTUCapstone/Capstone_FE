@@ -25,44 +25,38 @@ export function CreateRouteUnavailableView() {
         </section>
 
         <section className="mt-6 rounded-2xl border border-[#d0d7de] bg-white p-6 shadow-sm sm:p-8">
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-            <div>
-              <label htmlFor="route-name" className="block text-sm font-bold text-[#1d2939]">
-                {formCopy.nameLabel}
-              </label>
-              <input
-                id="route-name"
-                disabled
-                placeholder={formCopy.namePlaceholder}
-                type="text"
-                className="mt-2 w-full rounded-xl border border-[#d0d7de] bg-[#f2f4f7] px-3.5 py-2.5 text-sm text-[#667085] disabled:cursor-not-allowed"
-              />
-            </div>
-
+          <p id="route-controls-pending-desc" className="sr-only">
+            {copy.pendingDescription}
+          </p>
+          <form aria-label={copy.title} className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="route-origin" className="block text-sm font-bold text-[#1d2939]">
                   {formCopy.originLabel}
                 </label>
-                <input
+                <select
                   id="route-origin"
+                  aria-describedby="route-controls-pending-desc"
                   disabled
-                  placeholder={formCopy.originPlaceholder}
-                  type="text"
+                  defaultValue=""
                   className="mt-2 w-full rounded-xl border border-[#d0d7de] bg-[#f2f4f7] px-3.5 py-2.5 text-sm text-[#667085] disabled:cursor-not-allowed"
-                />
+                >
+                  <option value="">{formCopy.originPlaceholder}</option>
+                </select>
               </div>
               <div>
                 <label htmlFor="route-destination" className="block text-sm font-bold text-[#1d2939]">
                   {formCopy.destinationLabel}
                 </label>
-                <input
+                <select
                   id="route-destination"
+                  aria-describedby="route-controls-pending-desc"
                   disabled
-                  placeholder={formCopy.destinationPlaceholder}
-                  type="text"
+                  defaultValue=""
                   className="mt-2 w-full rounded-xl border border-[#d0d7de] bg-[#f2f4f7] px-3.5 py-2.5 text-sm text-[#667085] disabled:cursor-not-allowed"
-                />
+                >
+                  <option value="">{formCopy.destinationPlaceholder}</option>
+                </select>
               </div>
             </div>
 
@@ -73,6 +67,7 @@ export function CreateRouteUnavailableView() {
                 </label>
                 <select
                   id="route-mode"
+                  aria-describedby="route-controls-pending-desc"
                   disabled
                   defaultValue="driving"
                   className="mt-2 w-full rounded-xl border border-[#d0d7de] bg-[#f2f4f7] px-3.5 py-2.5 text-sm text-[#667085] disabled:cursor-not-allowed"
@@ -89,6 +84,7 @@ export function CreateRouteUnavailableView() {
                 </label>
                 <input
                   id="route-distance"
+                  aria-describedby="route-controls-pending-desc"
                   disabled
                   placeholder={formCopy.distancePlaceholder}
                   type="number"
@@ -102,6 +98,7 @@ export function CreateRouteUnavailableView() {
                 </label>
                 <input
                   id="route-duration"
+                  aria-describedby="route-controls-pending-desc"
                   disabled
                   placeholder={formCopy.durationPlaceholder}
                   type="number"
@@ -111,29 +108,33 @@ export function CreateRouteUnavailableView() {
             </div>
 
             <div>
-              <label htmlFor="route-description" className="block text-sm font-bold text-[#1d2939]">
-                {formCopy.descriptionLabel}
+              <label htmlFor="route-note" className="block text-sm font-bold text-[#1d2939]">
+                {formCopy.noteLabel}
               </label>
               <textarea
-                id="route-description"
+                id="route-note"
+                aria-describedby="route-controls-pending-desc"
                 disabled
                 rows={3}
-                placeholder={formCopy.descriptionPlaceholder}
+                placeholder={formCopy.notePlaceholder}
                 className="mt-2 w-full rounded-xl border border-[#d0d7de] bg-[#f2f4f7] px-3.5 py-2.5 text-sm text-[#667085] disabled:cursor-not-allowed"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                id="route-active"
-                disabled
-                defaultChecked
-                type="checkbox"
-                className="h-4 w-4 rounded border-[#d0d7de] text-[#006b5f] disabled:cursor-not-allowed"
-              />
-              <label htmlFor="route-active" className="text-sm font-semibold text-[#344054]">
-                {formCopy.activeLabel}
-              </label>
+            <div
+              role="region"
+              aria-label={formCopy.mapPreviewLabel}
+              className="rounded-xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-5"
+            >
+              <p className="text-xs font-bold tracking-wide text-[#475467] uppercase">
+                {formCopy.mapPreviewLabel}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#1e293b]">
+                {formCopy.mapPreviewPendingTitle}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-[#64748b]">
+                {formCopy.mapPreviewPendingDescription}
+              </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#e4e7ec] pt-6">
@@ -145,6 +146,7 @@ export function CreateRouteUnavailableView() {
               </Link>
               <button
                 disabled
+                aria-describedby="route-controls-pending-desc"
                 type="button"
                 className="inline-flex items-center justify-center rounded-xl border border-[#d0d7de] bg-[#f2f4f7] px-5 py-2.5 text-sm font-bold text-[#667085] shadow-sm disabled:cursor-not-allowed"
               >

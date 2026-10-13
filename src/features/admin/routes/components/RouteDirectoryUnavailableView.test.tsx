@@ -12,23 +12,25 @@ describe('RouteDirectoryUnavailableView', () => {
     expect(screen.getByText('Backend integration pending')).toBeTruthy();
   });
 
-  it('renders disabled search and filter controls', () => {
+  it('renders disabled search and transport mode filter controls with aria-describedby', () => {
     render(<RouteDirectoryUnavailableView />);
 
     const search = screen.getByRole('searchbox', { name: 'Search routes' }) as HTMLInputElement;
     expect(search.disabled).toBe(true);
+    expect(search.getAttribute('aria-describedby')).toBe('route-controls-pending-desc');
 
-    const filter = screen.getByRole('combobox', { name: 'Mode filter' }) as HTMLSelectElement;
+    const filter = screen.getByRole('combobox', { name: 'Transport Mode filter' }) as HTMLSelectElement;
     expect(filter.disabled).toBe(true);
+    expect(filter.getAttribute('aria-describedby')).toBe('route-controls-pending-desc');
   });
 
-  it('renders navigation link to create a new route and return to staff workspace', () => {
+  it('renders navigation link to create a route and return to administration dashboard', () => {
     render(<RouteDirectoryUnavailableView />);
 
-    const createLink = screen.getByRole('link', { name: 'Create New Route' });
+    const createLink = screen.getByRole('link', { name: 'Create Route' });
     expect(createLink.getAttribute('href')).toBe('/admin/routes/create');
 
-    const staffLink = screen.getByRole('link', { name: 'Return to Staff Workspace' });
-    expect(staffLink.getAttribute('href')).toBe('/admin/staff');
+    const dashboardLink = screen.getByRole('link', { name: 'Return to Administration Dashboard' });
+    expect(dashboardLink.getAttribute('href')).toBe('/admin');
   });
 });

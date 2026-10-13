@@ -12,10 +12,10 @@
 
 - Web-only scope; do not modify Backend or Mobile repositories.
 - No synthetic mock persistence, fake routes, or misleading success states.
-- Server Components for pages; narrow Client Components for form input validation.
-- Sealed Admin/Staff session verification (`verifyAdminSessionFromCookies`).
+- Server Components for pages and unavailable shells.
+- Sealed `Administrator` session verification (`verifyAdminSessionFromCookies`), with `AdminAccessDeniedView` for `Staff` sessions (`BR-115`).
 - English resource-backed copy (`src/features/admin/routes/resources/en.ts`).
-- Verification gates: Vitest tests, `npm run lint`, `npm run typecheck`, `npm run build`, `git diff --check`.
+- Verification gates: Vitest tests, `npm run lint`, `npx tsc --noEmit`, `npm run build`, `git diff --check`.
 
 ---
 
@@ -31,11 +31,10 @@
 - Create: `app/admin/(console)/routes/page.test.tsx`
 
 **Checklist:**
-- [ ] Write failing test for `routeIdValidator` and `RouteDirectoryUnavailableView`
-- [ ] Implement `routeIdValidator` and `RouteDirectoryUnavailableView`
-- [ ] Implement Server Component `app/admin/(console)/routes/page.tsx` with session guard
-- [ ] Run focused Vitest tests and verify pass
-- [ ] Commit: `feat(web): add route directory shell for UC-55/56`
+- [x] Write failing test for `routeIdValidator` and `RouteDirectoryUnavailableView`
+- [x] Implement `routeIdValidator` and `RouteDirectoryUnavailableView`
+- [x] Implement Server Component `app/admin/(console)/routes/page.tsx` with `Administrator` session guard
+- [x] Run focused Vitest tests and verify pass
 
 ---
 
@@ -48,11 +47,10 @@
 - Create: `app/admin/(console)/routes/create/page.test.tsx`
 
 **Checklist:**
-- [ ] Write failing test for `CreateRouteUnavailableView`
-- [ ] Implement `CreateRouteUnavailableView` with field validation and disabled pending submit button
-- [ ] Implement Server Component `app/admin/(console)/routes/create/page.tsx`
-- [ ] Run focused Vitest tests and verify pass
-- [ ] Commit: `feat(web): add create route shell for UC-55`
+- [x] Write failing test for `CreateRouteUnavailableView`
+- [x] Implement `CreateRouteUnavailableView` with SRS §3.9.4.1 fields and disabled pending controls
+- [x] Implement Server Component `app/admin/(console)/routes/create/page.tsx` with `Administrator` session guard
+- [x] Run focused Vitest tests and verify pass
 
 ---
 
@@ -65,19 +63,17 @@
 - Create: `app/admin/(console)/routes/[routeId]/page.test.tsx`
 
 **Checklist:**
-- [ ] Write failing test for `UpdateRouteUnavailableView` and route ID validation
-- [ ] Implement `UpdateRouteUnavailableView`
-- [ ] Implement Server Component `app/admin/(console)/routes/[routeId]/page.tsx` with `notFound()` for invalid IDs
-- [ ] Run focused Vitest tests and verify pass
-- [ ] Commit: `feat(web): add update route shell for UC-56`
+- [x] Write failing test for `UpdateRouteUnavailableView` and route ID validation
+- [x] Implement `UpdateRouteUnavailableView`
+- [x] Implement Server Component `app/admin/(console)/routes/[routeId]/page.tsx` with `Administrator` session guard and `notFound()` for invalid IDs
+- [x] Run focused Vitest tests and verify pass
 
 ---
 
 ### Task 4: Complete verification gates
 
-- [ ] Run all Vitest tests for `src/features/admin/routes` and `app/admin/(console)/routes`
-- [ ] Run `npm run lint`
-- [ ] Run `npm run typecheck`
-- [ ] Run `npm run build`
-- [ ] Run `git diff --check`
-- [ ] Commit: docs and test coverage
+- [x] Run all Vitest tests for `src/features/admin/routes` and `app/admin/(console)/routes`
+- [x] Run `npm run lint`
+- [x] Run `npx tsc --noEmit`
+- [x] Run `npm run build`
+- [x] Run `git diff --check`

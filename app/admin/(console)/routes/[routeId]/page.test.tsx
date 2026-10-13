@@ -20,18 +20,18 @@ vi.mock('next/navigation', () => ({
   notFound: mocks.notFound,
 }));
 
-import RouteDetailPage from './page';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import {
   ADMIN_ACCESS_TOKEN_COOKIE,
   ADMIN_SESSION_SEAL_COOKIE,
   ADMIN_SESSION_SECRET_ENV,
   createAdminSessionSeal,
 } from '@/lib/server/adminSession';
+import RouteDetailPage from './page';
 
 const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
 
-function mockSealedSession(role: 'Administrator' | 'Staff' = 'Administrator') {
-  const token = 'valid-token';
+function mockSealedSession(role: 'Administrator' | 'Staff' = 'Administrator', token = 'valid-token') {
   const sealed = createAdminSessionSeal({
     token,
     role,
@@ -63,8 +63,74 @@ describe('RouteDetailPage (/admin/routes/[routeId])', () => {
     }
   });
 
-  it('redirects unauthenticated sessions to admin login with returnUrl', async () => {
+  it('redirects missing session cookies to admin login with returnUrl', async () => {
     mocks.getCookie.mockReturnValue(undefined);
+
+    await RouteDetailPage({ params: Promise.resolve({ routeId: '42' }) });
+
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Froutes');
+  });
+
+  it('redirects unsealed token to admin login', async () => {
+    mocks.getCookie.mockImplementation((name: string) =>
+      name === ADMIN_ACCESS_TOKEN_COOKIE ? { value: 'unsealed-token' } : undefined,
+    );
+
+    await RouteDetailPage({ params: Promise.resolve({ routeId: '42' }) });
+
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Froutes');
+  });
+
+  it('redirects expired session seal to admin login', async () => {
+    const expiredSealed = createAdminSessionSeal({
+      token: 'valid-token',
+      role: 'Administrator',
+      expiresAt: new Date(Date.now() - 10 * 60 * 1000),
+      secret: TEST_SECRET,
+    })!;
+    mocks.getCookie.mockImplementation((name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'valid-token' };
+      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: expiredSealed.seal };
+      return undefined;
+    });
+
+    await RouteDetailPage({ params: Promise.resolve({ routeId: '42' }) });
+
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Froutes');
+  });
+
+  it('redirects tampered session seal to admin login', async () => {
+    const validSealed = createAdminSessionSeal({
+      token: 'valid-token',
+      role: 'Administrator',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      secret: TEST_SECRET,
+    })!;
+    const tamperedSeal =
+      validSealed.seal.slice(0, -1) + (validSealed.seal.endsWith('a') ? 'b' : 'a');
+    mocks.getCookie.mockImplementation((name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'valid-token' };
+      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: tamperedSeal };
+      return undefined;
+    });
+
+    await RouteDetailPage({ params: Promise.resolve({ routeId: '42' }) });
+
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Froutes');
+  });
+
+  it('redirects access token mismatch to admin login', async () => {
+    const sealed = createAdminSessionSeal({
+      token: 'original-token',
+      role: 'Administrator',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      secret: TEST_SECRET,
+    })!;
+    mocks.getCookie.mockImplementation((name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'different-token' };
+      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: sealed.seal };
+      return undefined;
+    });
 
     await RouteDetailPage({ params: Promise.resolve({ routeId: '42' }) });
 
@@ -92,12 +158,13 @@ describe('RouteDetailPage (/admin/routes/[routeId])', () => {
     expect(screen.getByText('108')).toBeTruthy();
   });
 
-  it('renders Update Route view with valid route ID context for Staff', async () => {
+  it('renders AdminAccessDeniedView for authenticated Staff (BR-115)', async () => {
     mockSealedSession('Staff');
 
-    render(await RouteDetailPage({ params: Promise.resolve({ routeId: '256' }) }));
+    const view = await RouteDetailPage({ params: Promise.resolve({ routeId: '256' }) });
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Update Route' })).toBeTruthy();
-    expect(screen.getByText('256')).toBeTruthy();
+    expect(mocks.redirect).not.toHaveBeenCalled();
+    expect(mocks.notFound).not.toHaveBeenCalled();
+    expect(view?.type).toBe(AdminAccessDeniedView);
   });
 });

@@ -37,11 +37,15 @@ export function RouteDirectoryUnavailableView() {
         </section>
 
         <section className="mt-6 rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-sm sm:p-6">
+          <p id="route-controls-pending-desc" className="sr-only">
+            {copy.pendingDescription}
+          </p>
           <div className="grid gap-4 md:grid-cols-[1fr_14rem]">
             <label className="block text-sm font-bold text-[#1d2939]">
               {copy.searchLabel}
               <input
                 aria-label={copy.searchLabel}
+                aria-describedby="route-controls-pending-desc"
                 disabled
                 placeholder={copy.searchPlaceholder}
                 type="search"
@@ -52,6 +56,7 @@ export function RouteDirectoryUnavailableView() {
               {copy.filterLabel}
               <select
                 aria-label={copy.filterLabel}
+                aria-describedby="route-controls-pending-desc"
                 disabled
                 defaultValue=""
                 className="mt-2 w-full rounded-xl border border-[#d0d7de] bg-[#f2f4f7] px-3 py-2.5 text-sm text-[#667085] disabled:cursor-not-allowed"
@@ -68,10 +73,10 @@ export function RouteDirectoryUnavailableView() {
 
           <div className="mt-6">
             <Link
-              href="/admin/staff"
+              href="/admin"
               className="inline-flex items-center justify-center rounded-xl bg-[#006b5f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#005048] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"
             >
-              {copy.returnToStaffLabel}
+              {copy.returnToDashboardLabel}
             </Link>
           </div>
         </section>
