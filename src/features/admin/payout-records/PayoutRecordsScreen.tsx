@@ -100,8 +100,10 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
           </Field>
           <Field label="Status">
             <select aria-label="Status" aria-describedby="status-filter-help" value={draft.status} onChange={(e) => field('status', e.target.value as PayoutsSearch['status'])} className={inputClass}>
-              <option value="">Staff default: Pending review</option>
-              {PAYOUT_STATUSES.map((status) => <option key={status} value={status}>{formatPayoutStatus(status)}</option>)}
+              <option value="">Pending review</option>
+              {PAYOUT_STATUSES.filter((status) => status !== 'PendingReview').map((status) => (
+                <option key={status} value={status}>{formatPayoutStatus(status)}</option>
+              ))}
             </select>
             <span id="status-filter-help" className="sr-only">Select one Staff-visible payout status. Leaving the default applies the Staff pending-review queue.</span>
           </Field>

@@ -57,7 +57,7 @@ describe('PayoutRecordsScreen', () => {
     expect(screen.getByText('Not available')).toBeTruthy();
     expect(screen.getAllByText('Pending review').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Approved for settlement').length).toBeGreaterThan(0);
-    expect(screen.getByRole('option', { name: 'Staff default: Pending review' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Pending review' })).toBeTruthy();
     expect(screen.queryByRole('option', { name: 'All' })).toBeNull();
     expect(screen.getByText('Payout records for Staff review')).toBeTruthy();
     const action = screen.getAllByRole('button', { name: /Review for PO-/ })[0];
