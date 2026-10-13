@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   useWebSession: vi.fn(),
+  getTravelerProfile: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -15,12 +16,25 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
   useWebSession: mocks.useWebSession,
 }));
 
+vi.mock('@/features/account/profile/travelerProfileApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/account/profile/travelerProfileApi')>()),
+  getTravelerProfile: mocks.getTravelerProfile,
+}));
+
 import AccountSecurityPage, { metadata } from './page';
 
 describe('/account/security production route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllGlobals();
+    mocks.getTravelerProfile.mockResolvedValue({
+      userId: 1,
+      fullName: 'Nguyen Van A',
+      email: 'traveler@tripmate.vn',
+      phoneNumber: null,
+      dateOfBirth: null,
+      avatarUrl: null,
+    });
     mocks.useWebSession.mockReturnValue({
       status: 'authenticated',
       context: {
