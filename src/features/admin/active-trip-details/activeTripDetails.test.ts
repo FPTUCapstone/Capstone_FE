@@ -21,8 +21,8 @@ const detail = {
   }],
   currentLocation: { latitude: 16.0612, longitude: 108.2277, asOfUtc: '2026-09-26T03:12:44Z' },
   itineraryProgress: [
-    { itemId: '901', sequenceNo: 1, poiId: '17', poiName: 'My Khe Beach', itemKind: 'Visit', status: 'Visited', plannedArrivalUtc: '2026-09-26T02:00:00Z', plannedDepartureUtc: '2026-09-26T04:00:00Z', stayDurationMinutes: 120 },
-    { itemId: '902', sequenceNo: 2, poiId: null, poiName: null, itemKind: 'Rest', status: 'Skipped', plannedArrivalUtc: null, plannedDepartureUtc: null, stayDurationMinutes: 60 },
+    { itemId: '901', sequenceNo: 1, poiId: '17', poiName: 'My Khe Beach', itemKind: 'Visit', status: 'Reached', plannedArrivalUtc: '2026-09-26T02:00:00Z', plannedDepartureUtc: '2026-09-26T04:00:00Z', stayDurationMinutes: 120 },
+    { itemId: '902', sequenceNo: 2, poiId: '18', poiName: 'Dragon Bridge', itemKind: 'Visit', status: 'Skipped', plannedArrivalUtc: '2026-09-26T04:15:00Z', plannedDepartureUtc: '2026-09-26T05:15:00Z', stayDurationMinutes: 60 },
   ],
   stateHistory: [
     { fromState: null, toState: 'Navigating', reason: 'Trip started', triggeredBy: 'Traveler', changedAtUtc: '2026-09-25T17:00:00Z' },
@@ -52,7 +52,7 @@ describe('active trip detail contract', () => {
     expect(parsed.tripId).toBe('42');
     expect(parsed.groupPanel).toHaveLength(1);
     expect(parsed.groupPanel![0].members[1].isLocationSharingEnabled).toBe(false);
-    expect(parsed.itineraryProgress[1].plannedArrivalUtc).toBeNull();
+    expect(parsed.itineraryProgress[1].status).toBe('Skipped');
     expect(parsed.incidents[0].weatherEvent!.severity).toBe('Severe');
     expect(parsed.reroutingEvents[0].hasProposedItinerarySnapshot).toBe(true);
   });
@@ -88,6 +88,7 @@ describe('active trip detail contract', () => {
     { locationDisclosure: { state: 'Invalid', sharedMemberCount: 1, hiddenMemberCount: 0 } },
     { locationDisclosure: { state: 'Full', sharedMemberCount: -1, hiddenMemberCount: 0 } },
     { itineraryProgress: [{ ...detail.itineraryProgress[0], status: 'Unknown' }] },
+    { itineraryProgress: [{ ...detail.itineraryProgress[0], plannedArrivalUtc: null }] },
     { incidents: [{ ...detail.incidents[0], weatherEvent: { ...detail.incidents[0].weatherEvent, severity: 'Catastrophic' } }] },
     { reroutingEvents: [{ ...detail.reroutingEvents[0], status: 'Pending' }] },
     { currentLocation: { ...detail.currentLocation, latitude: '16.06' } },

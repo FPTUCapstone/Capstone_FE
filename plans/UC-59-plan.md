@@ -1,20 +1,21 @@
 # UC-59 View Active Trip Details Frontend Implementation Plan
 
-Status: **Approved 2026-09-30** (companion to the approved BE/FE specs; UI layout follows
+Status: **Amended 2026-10-13** for the merged UC-13 session-progress contract (companion to the approved BE/FE specs; UI layout follows
 `specs/UC-59-web-screen-spec.md`). Tasks are atomic and sequenced; tests come first per task.
 
-Branch: `feature/linhnv-view-active-trip-details` (baseline: latest
-`feature/linhnv-view-active-trips` merge of `origin/develop`; lint/typecheck/test/build verified
-green on 2026-09-30).
+Branch: `feature/linhnv-staff-active-trip-access` (rebased on `origin/develop`, including
+UC-13 `TripSessionItems`).
 
 ## Task 1 — Types and contract parsing
 
 `src/features/admin/active-trip-details/`:
 
 - `activeTripDetails.ts`: detail DTO types mirroring the BE response (string IDs, nullable
-  `currentLocation`/`weatherEvent`/`destination`/timestamps), severity/state constants, UTC+7
+  `currentLocation`/`weatherEvent`/`destination`, consent-disclosure metadata, and UTC+7
   display formatters (reuse the project's CR-07 formatting helpers where they exist), and a
-  runtime narrowing guard for the detail payload.
+  runtime narrowing guard for the detail payload. `itineraryProgress` accepts the UC-13
+  session snapshot only: required POI/timestamps and `Pending`/`Reached`/`Skipped` status;
+  it must never interpret the shared itinerary's `Planned`/`Visited`/`Skipped` status.
 - Contract tests first: valid payload parses; unknown extra fields ignored; malformed timestamps,
   numeric (non-string) IDs, or missing sections rejected; a shared `isValidTripId` validator unit
   test covers the full reject list (`1abc`, `1.5`, `1e3`, `+1`, whitespace, `0`, negatives,
@@ -48,7 +49,7 @@ mapping, malformed-success rejection, network failure mapping.
 
 `ActiveTripDetailsScreen.tsx` (+ small section components under `components/` if size demands),
 built to the layout/states/a11y rules in `specs/UC-59-web-screen-spec.md`: header + back link,
-status cards, group panel (group name, host, member table with joined timestamps and
+status cards, consent-disclosure notice, group panel (group name, host, member table with joined timestamps and
 location-sharing badges, per BR-51 state flag only — no coordinates), itinerary progress table,
 state-history timeline, incidents list with weather severity badges, rerouting events with the
 snapshot-available note, location-trail table, manual Refresh control. No mutation controls

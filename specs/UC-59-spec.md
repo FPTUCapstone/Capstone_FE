@@ -55,7 +55,7 @@ Refresh is a read action; trip intervention controls are outside this monitoring
    badge + text). Per BR-51 the panel exposes only the state flag — never member coordinates.
    `Not available` when `groupPanel` is `null` (Self-Planned trip).
 4. **Itinerary progress** — table ordered by sequence: stop name, kind, planned arrival/departure
-   (UTC+7), status (`Planned`/`Visited`/`Skipped`).
+   (UTC+7), session status (`Pending`/`Reached`/`Skipped`).
 5. **FSM state history** — chronological timeline: from → to, reason, triggered by, changed time.
 6. **Incidents** — list ordered newest first: type, description, detected/resolved times; weather
    disruptions render the linked weather event (type, severity badge `Low`–`Extreme`, region,

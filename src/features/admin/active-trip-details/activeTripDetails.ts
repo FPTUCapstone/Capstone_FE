@@ -12,7 +12,8 @@ export const DETAIL_MESSAGES = {
 export const INCIDENT_TYPES = ['SevereWeather', 'ScheduleDelay', 'RouteDeviation', 'POIClosure'] as const;
 export const WEATHER_SEVERITIES = ['Low', 'Moderate', 'Severe', 'Extreme'] as const;
 export const REROUTING_STATUSES = ['Proposed', 'Accepted', 'Rejected', 'Expired'] as const;
-export const ITINERARY_ITEM_STATUSES = ['Planned', 'Visited', 'Skipped'] as const;
+export const ITINERARY_ITEM_STATUSES = ['Pending', 'Reached', 'Skipped'] as const;
+export type ItineraryProgressStatus = (typeof ITINERARY_ITEM_STATUSES)[number];
 export const STATE_HISTORY_ACTORS = ['System', 'Traveler', 'Administrator'] as const;
 
 // Signed 64-bit maximum; trip IDs are compared as digit strings, never as Numbers.
@@ -28,9 +29,9 @@ export type CurrentLocation = { latitude: number; longitude: number; asOfUtc: st
 export type GroupMemberEntry = { userId: string; fullName: string; joinedAtUtc: string; isLocationSharingEnabled: boolean };
 export type GroupPanel = { groupId: string; groupName: string; hostName: string; members: GroupMemberEntry[] };
 export type ItineraryProgressItem = {
-  itemId: string; sequenceNo: number; poiId: string | null; poiName: string | null;
-  itemKind: string; status: string; plannedArrivalUtc: string | null;
-  plannedDepartureUtc: string | null; stayDurationMinutes: number;
+  itemId: string; sequenceNo: number; poiId: string; poiName: string;
+  itemKind: string; status: ItineraryProgressStatus; plannedArrivalUtc: string;
+  plannedDepartureUtc: string; stayDurationMinutes: number;
 };
 export type TripStateChange = {
   fromState: string | null; toState: string; reason: string | null;
@@ -179,11 +180,10 @@ export function parseActiveTripDetail(value: unknown): ActiveTripDetail {
     itineraryProgress: readArray(value.itineraryProgress, (entry): ItineraryProgressItem => {
       if (!isRecord(entry) || !isDecimalStringId(entry.itemId) ||
           !isNonNegativeInteger(entry.sequenceNo) ||
-          !(entry.poiId === null || isDecimalStringId(entry.poiId)) ||
-          !isNullableString(entry.poiName) || !isString(entry.itemKind) ||
+          !isDecimalStringId(entry.poiId) || !isString(entry.poiName) || !isString(entry.itemKind) ||
           !(ITINERARY_ITEM_STATUSES as readonly string[]).includes(entry.status as string) ||
-          !isNullableUtcTimestamp(entry.plannedArrivalUtc) ||
-          !isNullableUtcTimestamp(entry.plannedDepartureUtc) ||
+          !isUtcTimestamp(entry.plannedArrivalUtc) ||
+          !isUtcTimestamp(entry.plannedDepartureUtc) ||
           !isNonNegativeInteger(entry.stayDurationMinutes)) {
         throw new Error('The active-trip detail response is invalid.');
       }

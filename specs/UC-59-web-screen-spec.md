@@ -29,7 +29,7 @@
   `Not available` when `groupPanel` is `null` (Self-Planned trip).
 - Six data sections render in order:
   1. Itinerary Progress — table ordered by `sequenceNo`: stop name, kind, planned
-     arrival/departure (UTC+7, `Not available` when null), status (`Planned`/`Visited`/`Skipped`
+     arrival/departure (UTC+7), session status (`Pending`/`Reached`/`Skipped`
      as badge + text).
   2. FSM State History — chronological timeline: from → to, reason, triggered by, changed time.
   3. Incidents — newest first: type, description, detected/resolved times; unresolved incidents

@@ -29,7 +29,7 @@ const detail: ActiveTripDetail = {
   }],
   currentLocation: { latitude: 16.0612, longitude: 108.2277, asOfUtc: '2026-09-26T03:12:44Z' },
   itineraryProgress: [
-    { itemId: '901', sequenceNo: 1, poiId: '17', poiName: 'My Khe Beach', itemKind: 'Visit', status: 'Visited', plannedArrivalUtc: '2026-09-26T02:00:00Z', plannedDepartureUtc: '2026-09-26T04:00:00Z', stayDurationMinutes: 120 },
+    { itemId: '901', sequenceNo: 1, poiId: '17', poiName: 'My Khe Beach', itemKind: 'Visit', status: 'Reached', plannedArrivalUtc: '2026-09-26T02:00:00Z', plannedDepartureUtc: '2026-09-26T04:00:00Z', stayDurationMinutes: 120 },
   ],
   stateHistory: [
     { fromState: null, toState: 'Navigating', reason: 'Trip started', triggeredBy: 'Traveler', changedAtUtc: '2026-09-25T17:00:00Z' },
