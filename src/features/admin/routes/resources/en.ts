@@ -53,4 +53,17 @@ export const adminRoutesEn = {
     },
     backToDirectoryLabel: 'Back to Route Master Data',
   },
+  update: {
+    eyebrow: 'Route Management',
+    title: 'Update Route',
+    pendingBadge: 'Backend integration pending',
+    pendingDescription:
+      'Route details, endpoint updates, and status transitions will be available after the Route Master Data API is deployed.',
+    requestedRouteIdLabel: 'Requested Route ID',
+    operationsLabel: 'Route Governance Operations',
+    deactivateUnavailableLabel: 'Deactivate Route unavailable',
+    activateUnavailableLabel: 'Activate Route unavailable',
+    backToDirectoryLabel: 'Back to Route Master Data',
+    submitDisabledLabel: 'Save Changes (Unavailable)',
+  },
 } as const;
