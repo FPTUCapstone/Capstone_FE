@@ -170,13 +170,15 @@ export function parseActiveTripDetail(value: unknown): ActiveTripDetail {
     if (!Array.isArray(section)) throw new Error('The active-trip detail response is invalid.');
     return section.map(parse);
   };
+  // Redacted disclosure means no coordinates may reach the UI, even if the payload carries them (legacy/inconsistent BE).
+  const redacted = locationDisclosure.state === 'Redacted';
   return {
     ...value as Omit<ActiveTripDetail,
       'groupPanel' | 'currentLocation' | 'locationDisclosure' | 'itineraryProgress' | 'stateHistory' |
       'incidents' | 'reroutingEvents' | 'locationTrail'>,
     groupPanel,
     locationDisclosure,
-    currentLocation,
+    currentLocation: redacted ? null : currentLocation,
     itineraryProgress: readArray(value.itineraryProgress, (entry): ItineraryProgressItem => {
       if (!isRecord(entry) || !isDecimalStringId(entry.itemId) ||
           !isNonNegativeInteger(entry.sequenceNo) ||
@@ -210,7 +212,7 @@ export function parseActiveTripDetail(value: unknown): ActiveTripDetail {
       }
       return entry as TripReroutingEvent;
     }),
-    locationTrail: readArray(value.locationTrail, (entry): TripLocationPoint => {
+    locationTrail: redacted ? [] : readArray(value.locationTrail, (entry): TripLocationPoint => {
       if (!isRecord(entry) || !isFiniteCoordinate(entry.latitude) ||
           !isFiniteCoordinate(entry.longitude) || !isUtcTimestamp(entry.recordedAtUtc) ||
           !isBoolean(entry.isOfflineCaptured)) {

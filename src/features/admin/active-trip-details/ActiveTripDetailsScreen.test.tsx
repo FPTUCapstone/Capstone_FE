@@ -88,6 +88,18 @@ describe('ActiveTripDetailsScreen', () => {
     expect(screen.getByText(/Location Data Redacted/)).toBeTruthy();
   });
 
+  it('never renders coordinates or trail rows when Redacted, even if the payload carries them', async () => {
+    vi.mocked(fetchActiveTripDetails).mockResolvedValue({
+      ...detail,
+      locationDisclosure: { state: 'Redacted' as const, sharedMemberCount: 0, hiddenMemberCount: 2 },
+    });
+    render(<ActiveTripDetailsScreen tripId="42" />);
+
+    expect(await screen.findByText('Redacted Disclosure')).toBeTruthy();
+    expect(screen.queryByText('16.061200')).toBeNull();
+    expect(screen.queryByLabelText('Location trail table')).toBeNull();
+  });
+
   it('shows the proposed MSG133 wording on 404', async () => {
     vi.mocked(fetchActiveTripDetails).mockRejectedValue(new ActiveTripDetailsError(404));
     render(<ActiveTripDetailsScreen tripId="42" />);

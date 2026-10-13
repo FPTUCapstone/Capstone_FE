@@ -82,6 +82,15 @@ describe('active trip detail contract', () => {
     });
   });
 
+  it('drops currentLocation and locationTrail when disclosure is Redacted', () => {
+    const parsed = parseActiveTripDetail({
+      ...detail,
+      locationDisclosure: { state: 'Redacted', sharedMemberCount: 0, hiddenMemberCount: 2 },
+    });
+    expect(parsed.currentLocation).toBeNull();
+    expect(parsed.locationTrail).toEqual([]);
+  });
+
   it.each([
     { tripId: 42 }, { tripId: '042' }, { tripCode: 42 },
     { startedAtUtc: '2026-09-25 17:00:00' }, { members: -1 },

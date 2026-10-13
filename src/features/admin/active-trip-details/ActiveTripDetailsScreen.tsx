@@ -97,6 +97,8 @@ export function ActiveTripDetailsScreen({ tripId }: { tripId: string }) {
 }
 
 function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
+  // Coordinates are never rendered while disclosure is Redacted, whatever the payload contains.
+  const coordinatesWithheld = detail.locationDisclosure?.state === 'Redacted';
   return (
     <div className="space-y-6">
       <section aria-label="Trip status" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -123,7 +125,7 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
             </span>
           ) : null}
         </div>
-        {detail.currentLocation ? (
+        {detail.currentLocation && !coordinatesWithheld ? (
           <p className="mt-2 text-sm text-[#102a43]">
             <span className="font-mono">
               {formatCoordinate(detail.currentLocation.latitude)}, {formatCoordinate(detail.currentLocation.longitude)}
@@ -227,7 +229,8 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
 
       <section aria-label="Location trail" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Location Trail</SectionTitle>
-        {detail.locationTrail.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> :
+        {coordinatesWithheld ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.notAvailable}</p> :
+        detail.locationTrail.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> :
         <ScrollableTable label="Location trail table" headings={['Latitude', 'Longitude', 'Recorded', 'Captured']}>
           {detail.locationTrail.map((point, index) => (
             <tr key={`${point.recordedAtUtc}-${index}`} className="border-t border-[#e6edf5]">
