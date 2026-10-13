@@ -20,14 +20,17 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
   useWebSession: vi.fn(),
 }));
 
-vi.mock('../travelerProfileApi', () => ({
-  getTravelerProfile: vi.fn().mockResolvedValue({
+vi.mock('../travelerProfileApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../travelerProfileApi')>();
+  return { ...actual,
+    getTravelerProfile: vi.fn().mockResolvedValue({
     fullName: 'Test Traveler',
     email: 'traveler@tripmate.com',
     phoneNumber: '0901234567',
   }),
   updateTravelerProfile: vi.fn(),
-}));
+  };
+});
 
 describe('TravelerProfilePage', () => {
   beforeEach(() => {

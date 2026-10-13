@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { isApiError } from '@/lib/authApi';
 import {
   getTravelerProfile,
-  LocalProfileStorageError,
+  TravelerProfileApiError,
   updateTravelerProfile,
   type TravelerProfileDto,
-  type UpdateTravelerProfilePayload,
 } from './travelerProfileApi';
 
 export interface TravelerProfileFormFields {
@@ -14,164 +12,111 @@ export interface TravelerProfileFormFields {
   email: string;
   phoneNumber: string;
   dateOfBirth: string;
-  gender: 'Male' | 'Female' | 'Other' | '';
-  address: string;
   avatarUrl: string;
 }
 
 export interface UseTravelerProfileOptions {
-  accessToken?: string;
   initialProfile?: Partial<TravelerProfileDto>;
   onSuccess?: (profile: TravelerProfileDto) => void;
   onUnauthorized?: () => void;
 }
 
-export const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5MB (BR-16)
+export const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024;
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function validateFullName(name: string): string | undefined {
   const trimmed = name.trim();
-  if (!trimmed) {
-    return 'Vui lòng nhập họ và tên.';
-  }
-  if (trimmed.length > 100) {
-    return 'Họ và tên không được vượt quá 100 ký tự.';
-  }
+  if (!trimmed) return 'Vui lòng nhập họ và tên.';
+  if (trimmed.length > 100) return 'Họ và tên không được vượt quá 100 ký tự.';
   return undefined;
 }
 
 export function validatePhoneNumber(phone: string): string | undefined {
   const trimmed = phone.trim();
-  if (!trimmed) {
-    return 'Vui lòng nhập số điện thoại.';
-  }
-  // Vietnamese phone format: 10 digits starting with 0 (MSG04)
-  if (!/^0\d{9}$/.test(trimmed)) {
+  if (trimmed && !/^0\d{9}$/.test(trimmed))
     return 'Số điện thoại không hợp lệ. Số điện thoại phải gồm 10 chữ số bắt đầu bằng số 0.';
-  }
   return undefined;
 }
 
-export function validateDateOfBirth(dobStr: string): string | undefined {
-  if (!dobStr) {
-    return undefined; // Optional if not yet specified
-  }
-
-  const dob = new Date(dobStr);
-  if (isNaN(dob.getTime())) {
+export function validateDateOfBirth(value: string): string | undefined {
+  if (!value) return undefined;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return 'Ngày sinh không hợp lệ.';
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day)
     return 'Ngày sinh không hợp lệ.';
-  }
-
   const today = new Date();
-  if (dob > today) {
-    return 'Ngày sinh không thể ở trong tương lai.';
-  }
-
-  // BR-18: User must be at least 16 years old
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-
-  if (age < 16) {
-    return 'Người dùng phải từ 16 tuổi trở lên (BR-18).';
-  }
-
+  const limit = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+  if (date > limit) return 'Người dùng phải từ 16 tuổi trở lên (BR-18).';
   return undefined;
 }
 
 export function validateAvatarFile(file: File): string | undefined {
-  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+  if (file.size === 0 || file.size > MAX_AVATAR_SIZE_BYTES)
+    return 'Kích thước ảnh phải lớn hơn 0 và không vượt quá 5 MB.';
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type))
     return 'Định dạng hình ảnh không hợp lệ. Vui lòng chọn tệp JPG, PNG hoặc WEBP.';
-  }
-  if (file.size > MAX_AVATAR_SIZE_BYTES) {
-    return 'Kích thước tệp vượt quá 5MB. Vui lòng chọn hình ảnh nhỏ hơn (BR-16).';
-  }
   return undefined;
 }
 
+function asFields(profile: Partial<TravelerProfileDto>): TravelerProfileFormFields {
+  return {
+    fullName: profile.fullName ?? '',
+    email: profile.email ?? '',
+    phoneNumber: profile.phoneNumber ?? '',
+    dateOfBirth: profile.dateOfBirth ?? '',
+    avatarUrl: profile.avatarUrl ?? '',
+  };
+}
+
 export function useTravelerProfile(options: UseTravelerProfileOptions = {}) {
-  const { accessToken, initialProfile, onSuccess, onUnauthorized } = options;
-
-  const [fields, setFields] = useState<TravelerProfileFormFields>({
-    fullName: initialProfile?.fullName ?? '',
-    email: initialProfile?.email ?? '',
-    phoneNumber: initialProfile?.phoneNumber ?? '',
-    dateOfBirth: initialProfile?.dateOfBirth ?? '',
-    gender: (initialProfile?.gender as TravelerProfileFormFields['gender']) ?? '',
-    address: initialProfile?.address ?? '',
-    avatarUrl: initialProfile?.avatarUrl ?? '',
-  });
-
+  const { initialProfile, onSuccess, onUnauthorized } = options;
+  const [fields, setFields] = useState<TravelerProfileFormFields>(() => asFields(initialProfile ?? {}));
   const [initialLoadedData, setInitialLoadedData] = useState<TravelerProfileDto | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | undefined>();
+  const [removeAvatar, setRemoveAvatar] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load existing profile on mount
   useEffect(() => {
     let active = true;
+    getTravelerProfile().then((data) => {
+      if (!active) return;
+      setInitialLoadedData(data);
+      setFields(asFields(data));
+      setLoadError(null);
+    }).catch((error: unknown) => {
+      if (!active) return;
+      if (error instanceof TravelerProfileApiError && error.status === 401) onUnauthorized?.();
+      setLoadError(error instanceof Error ? error.message : 'Không thể tải hồ sơ. Vui lòng thử lại.');
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [onUnauthorized, loadAttempt]);
 
-    async function fetchProfile() {
-      try {
-        setLoading(true);
-        const data = await getTravelerProfile({ accessToken });
-        if (active) {
-          setInitialLoadedData(data);
-          setFields({
-            fullName: data.fullName ?? initialProfile?.fullName ?? '',
-            email: data.email ?? initialProfile?.email ?? '',
-            phoneNumber: data.phoneNumber ?? initialProfile?.phoneNumber ?? '',
-            dateOfBirth: data.dateOfBirth ?? initialProfile?.dateOfBirth ?? '',
-            gender: (data.gender as TravelerProfileFormFields['gender']) ?? initialProfile?.gender ?? '',
-            address: data.address ?? initialProfile?.address ?? '',
-            avatarUrl: data.avatarUrl ?? initialProfile?.avatarUrl ?? '',
-          });
-        }
-      } catch {
-        // Safe fallback
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchProfile();
-
-    return () => {
-      active = false;
-    };
-  }, [
-    accessToken,
-    initialProfile?.address,
-    initialProfile?.avatarUrl,
-    initialProfile?.dateOfBirth,
-    initialProfile?.email,
-    initialProfile?.fullName,
-    initialProfile?.gender,
-    initialProfile?.phoneNumber,
-  ]);
+  const retryLoad = useCallback(() => {
+    setLoadError(null);
+    setLoading(true);
+    setLoadAttempt((count) => count + 1);
+  }, []);
 
   const setField = useCallback(
     <K extends keyof TravelerProfileFormFields>(field: K, value: TravelerProfileFormFields[K]) => {
       setFields((prev) => ({ ...prev, [field]: value }));
       setErrors((prev) => {
-        if (!prev[field] && !prev.form) return prev;
         const next = { ...prev };
         delete next[field];
         delete next.form;
         return next;
       });
       setSuccess(false);
-      setBackendFallbackNotice(null);
-    },
-    [],
-  );
+    }, []);
 
   const handleAvatarChange = useCallback((file: File) => {
     const error = validateAvatarFile(file);
@@ -179,134 +124,80 @@ export function useTravelerProfile(options: UseTravelerProfileOptions = {}) {
       setErrors((prev) => ({ ...prev, avatar: error }));
       return;
     }
-
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.avatar;
-      return next;
-    });
-
+    setErrors((prev) => ({ ...prev, avatar: '' }));
+    setAvatarFile(file);
+    setRemoveAvatar(false);
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        setFields((prev) => ({ ...prev, avatarUrl: result }));
-        setSuccess(false);
-      }
+    reader.onload = () => {
+      if (typeof reader.result === 'string')
+        setFields((prev) => ({ ...prev, avatarUrl: reader.result as string }));
     };
     reader.readAsDataURL(file);
+    setSuccess(false);
   }, []);
 
   const handleAvatarRemove = useCallback(() => {
+    setAvatarFile(undefined);
+    setRemoveAvatar(true);
     setFields((prev) => ({ ...prev, avatarUrl: '' }));
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.avatar;
-      return next;
-    });
+    setErrors((prev) => ({ ...prev, avatar: '' }));
     setSuccess(false);
   }, []);
 
   const reset = useCallback(() => {
-    if (initialLoadedData) {
-      setFields({
-        fullName: initialLoadedData.fullName ?? '',
-        email: initialLoadedData.email ?? '',
-        phoneNumber: initialLoadedData.phoneNumber ?? '',
-        dateOfBirth: initialLoadedData.dateOfBirth ?? '',
-        gender: (initialLoadedData.gender as TravelerProfileFormFields['gender']) ?? '',
-        address: initialLoadedData.address ?? '',
-        avatarUrl: initialLoadedData.avatarUrl ?? '',
-      });
-    }
+    if (initialLoadedData) setFields(asFields(initialLoadedData));
+    setAvatarFile(undefined);
+    setRemoveAvatar(false);
     setErrors({});
     setSuccess(false);
-    setBackendFallbackNotice(null);
   }, [initialLoadedData]);
 
   const handleSubmit = useCallback(async (): Promise<boolean> => {
+    if (!initialLoadedData || loadError) return false;
     setSuccess(false);
-    setBackendFallbackNotice(null);
-
-    // Client-side validations
     const fieldErrors: Record<string, string> = {};
-
-    const fullNameError = validateFullName(fields.fullName);
-    if (fullNameError) fieldErrors.fullName = fullNameError;
-
+    const nameError = validateFullName(fields.fullName);
     const phoneError = validatePhoneNumber(fields.phoneNumber);
-    if (phoneError) fieldErrors.phoneNumber = phoneError;
-
     const dobError = validateDateOfBirth(fields.dateOfBirth);
+    if (nameError) fieldErrors.fullName = nameError;
+    if (phoneError) fieldErrors.phoneNumber = phoneError;
     if (dobError) fieldErrors.dateOfBirth = dobError;
-
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return false;
     }
-
     setErrors({});
     setSubmitting(true);
-
     try {
-      const payload: UpdateTravelerProfilePayload = {
+      const result = await updateTravelerProfile({
         fullName: fields.fullName.trim(),
         phoneNumber: fields.phoneNumber.trim(),
         dateOfBirth: fields.dateOfBirth || undefined,
-        gender: fields.gender || undefined,
-        address: fields.address.trim() || undefined,
-        avatarUrl: fields.avatarUrl || undefined,
-      };
-
-      const result = await updateTravelerProfile(payload, { accessToken });
-
+        avatarFile,
+        removeAvatar,
+      });
+      setFields(asFields(result.profile));
+      setInitialLoadedData(result.profile);
+      setAvatarFile(undefined);
+      setRemoveAvatar(false);
       setSuccess(true);
-      setSuccessMessage(result.message || 'Thông tin tạm thời đã được lưu trên thiết bị này.');
-      setBackendFallbackNotice(result.notice || 'Đồng bộ hồ sơ với máy chủ đang chờ tích hợp.');
-
       onSuccess?.(result.profile);
       return true;
-    } catch (err: unknown) {
-      if (isApiError(err)) {
-        if (err.status === 401 && onUnauthorized) {
-          onUnauthorized();
-          return false;
-        }
-
-        if (err.errors) {
-          setErrors(err.errors);
-        } else {
-          setErrors({
-            form: err.message || 'Không thể cập nhật hồ sơ lúc này. Vui lòng thử lại sau.',
-          });
-        }
-      } else if (err instanceof LocalProfileStorageError) {
-        setErrors({
-          form: err.message,
-        });
+    } catch (error: unknown) {
+      if (error instanceof TravelerProfileApiError && error.status === 401) {
+        onUnauthorized?.();
+      } else if (error instanceof TravelerProfileApiError && error.code === 'MSG_PHONE_DUP') {
+        setErrors({ phoneNumber: error.message });
       } else {
-        setErrors({
-          form: 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.',
-        });
+        setErrors({ form: error instanceof Error ? error.message :
+          'Không thể cập nhật hồ sơ lúc này. Vui lòng thử lại.' });
       }
       return false;
     } finally {
       setSubmitting(false);
     }
-  }, [accessToken, fields, onSuccess, onUnauthorized]);
+  }, [avatarFile, fields, initialLoadedData, loadError, onSuccess, onUnauthorized, removeAvatar]);
 
-  return {
-    fields,
-    errors,
-    loading,
-    submitting,
-    success,
-    successMessage,
-    backendFallbackNotice,
-    setField,
-    handleAvatarChange,
-    handleAvatarRemove,
-    handleSubmit,
-    reset,
-  };
+  return { fields, errors, loading, loadError, submitting, success, retryLoad,
+    setField, handleAvatarChange, handleAvatarRemove, handleSubmit, reset };
 }

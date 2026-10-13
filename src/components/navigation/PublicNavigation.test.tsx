@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage } from '@/features/auth/session/authSession';
+import { announceTravelerProfileUpdated, getTravelerProfile } from '@/features/account/profile/travelerProfileApi';
 
 const mocks = vi.hoisted(() => ({
   webRefresh: vi.fn(),
@@ -21,6 +22,11 @@ vi.mock('@/lib/authApi', () => ({
   webLogout: mocks.webLogout,
 }));
 
+vi.mock('@/features/account/profile/travelerProfileApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/account/profile/travelerProfileApi')>();
+  return { ...actual, getTravelerProfile: vi.fn().mockRejectedValue(new Error('Unavailable')) };
+});
+
 const { PublicNavigation } = await import('./PublicNavigation');
 const { publicNavigationEn } = await import('./resources/en');
 
@@ -40,6 +46,7 @@ const context = (overrides: Record<string, unknown> = {}) => ({
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.mocked(getTravelerProfile).mockReset().mockRejectedValue(new Error('Unavailable'));
 });
 
 describe('PublicNavigation S01 restore-aware runtime', () => {
@@ -117,6 +124,50 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     render(<PublicNavigation />);
     expect(screen.getByText('Warm Context')).toBeDefined();
     expect(mocks.webRefresh).not.toHaveBeenCalled();
+  });
+
+  it('shows the saved Traveler avatar in the account menu after loading the profile', async () => {
+    AuthStorage.accept(context(), false);
+    vi.mocked(getTravelerProfile).mockResolvedValue({
+      userId: 42, fullName: 'Test Traveler', email: 'traveler@example.com',
+      phoneNumber: null, dateOfBirth: null, avatarUrl: 'https://res.cloudinary.com/test/avatar.png',
+    });
+    render(<PublicNavigation />);
+    const accountLink = screen.getByRole('link', { name: publicNavigationEn.account.profileAria });
+    await waitFor(() => expect(accountLink.querySelector('img')?.getAttribute('src'))
+      .toBe('https://res.cloudinary.com/test/avatar.png'));
+  });
+
+  it('updates the account menu immediately after a successful profile save', async () => {
+    AuthStorage.accept(context(), false);
+    render(<PublicNavigation />);
+    announceTravelerProfileUpdated({
+      userId: 42, fullName: 'Updated Traveler', email: 'traveler@example.com',
+      phoneNumber: null, dateOfBirth: null, avatarUrl: 'https://res.cloudinary.com/test/new.png',
+    });
+    const accountLink = screen.getByRole('link', { name: publicNavigationEn.account.profileAria });
+    await waitFor(() => expect(accountLink.querySelector('img')?.getAttribute('src'))
+      .toBe('https://res.cloudinary.com/test/new.png'));
+    expect(screen.getByText('Updated Traveler')).toBeDefined();
+  });
+
+  it('does not replace a newly saved avatar with a stale GET response', async () => {
+    let finishLoad!: (profile: Awaited<ReturnType<typeof getTravelerProfile>>) => void;
+    vi.mocked(getTravelerProfile).mockReturnValue(new Promise((resolve) => { finishLoad = resolve; }));
+    AuthStorage.accept(context(), false);
+    render(<PublicNavigation />);
+    announceTravelerProfileUpdated({
+      userId: 42, fullName: 'Updated Traveler', email: 'traveler@example.com',
+      phoneNumber: null, dateOfBirth: null, avatarUrl: 'https://res.cloudinary.com/test/new.png',
+    });
+    finishLoad({
+      userId: 42, fullName: 'Old Traveler', email: 'traveler@example.com',
+      phoneNumber: null, dateOfBirth: null, avatarUrl: 'https://res.cloudinary.com/test/old.png',
+    });
+    const accountLink = screen.getByRole('link', { name: publicNavigationEn.account.profileAria });
+    await waitFor(() => expect(accountLink.querySelector('img')?.getAttribute('src'))
+      .toBe('https://res.cloudinary.com/test/new.png'));
+    expect(screen.queryByText('Old Traveler')).toBeNull();
   });
 
   it('settles back to Sign In (not stuck restoring) when a warm session signs out', async () => {
