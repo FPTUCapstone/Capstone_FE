@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CreateSchedulingRequestForm } from '../components/CreateSchedulingRequestForm';
 import * as schedulingApi from '../services/schedulingApi';
 import * as placeSearchApi from '../services/placeSearchApi';
-import * as preferencesStorage from '@/features/account/preferences/travelPreferencesStorage';
+import * as preferencesApi from '@/features/account/preferences/travelPreferencesApi';
 import {
   TRIPMATE_TIME_ZONE,
   getVietnamCalendarDate,
@@ -468,26 +468,25 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(screen.queryByRole('button', { name: /Văn hóa & Lịch sử/i })).toBeNull();
     });
 
-    it('pre-fills supported preferences (transport, pace, budget) without claiming interests are applied', () => {
-      vi.spyOn(preferencesStorage, 'loadStoredPreferences').mockReturnValueOnce({
-        interests: ['food', 'relaxation'],
-        travelStyle: 'couple',
-        budgetLevel: 'premium',
-        preferredTransport: 'car',
-        travelPace: 'relaxed',
-        foodPreference: 'noRestriction',
-        autoApplyToPlans: true,
+    it('pre-fills only supported transport from the saved server preferences', async () => {
+      vi.spyOn(preferencesApi, 'getTravelPreferences').mockResolvedValueOnce({
+        ok: true,
+        data: {
+          interests: [],
+          preferredTransportMode: 'Car',
+          travelPace: 'Relaxed',
+          riskTolerance: null,
+          foodPreferences: [],
+          updatedAtUtc: null,
+        },
       });
 
-      render(<CreateSchedulingRequestForm userId={123} />);
+      render(<CreateSchedulingRequestForm />);
 
-      expect(
-        screen.getByText(
-          /TripMate đã tự động điền các thiết lập được UC-10 hỗ trợ hiện tại như phương tiện, nhịp độ và ngân sách/i,
-        ),
-      ).toBeDefined();
+      expect(await screen.findByText(/pre-filled your saved transport/i)).toBeDefined();
+      expect(screen.getByRole('button', { name: /Ô tô/i }).className).toContain('border-[#007d6e]');
+      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('8');
       expect(screen.queryByText(/sở thích trải nghiệm/i)).toBeNull();
-      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('6');
     });
 
     it('does NOT include any invented interest fields in backend payload', async () => {
@@ -515,52 +514,13 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(submittedPayload).not.toHaveProperty('preferenceTags');
     });
 
-    it('safely handles corrupted localStorage preferences by consuming sanitized canonical defaults', () => {
-      localStorage.setItem(
-        'tripmate_travel_preferences_456',
-        JSON.stringify({
-          preferredTransport: 'teleport',
-          travelPace: 'turbo',
-          travelStyle: 'spaceship',
-          budgetLevel: 'billionaire',
-        }),
-      );
-
-      render(<CreateSchedulingRequestForm userId={456} />);
-
-      const motorbikeBtn = screen.getByRole('button', { name: /Xe máy/i });
-      expect(motorbikeBtn.className).toContain('border-[#007d6e]');
-      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('8');
-    });
-
-    it('safely handles malformed JSON in localStorage and initializes form with defaults', () => {
-      localStorage.setItem('tripmate_travel_preferences_789', '{invalid-json:broken');
+    it('does not read preferences from browser storage', () => {
+      const getItem = vi.spyOn(Storage.prototype, 'getItem');
+      vi.spyOn(preferencesApi, 'getTravelPreferences').mockResolvedValueOnce({ ok: false, kind: 'sessionExpired' });
 
       render(<CreateSchedulingRequestForm userId={789} />);
 
-      const motorbikeBtn = screen.getByRole('button', { name: /Xe máy/i });
-      expect(motorbikeBtn.className).toContain('border-[#007d6e]');
-    });
-
-    it('safely initializes when stored interests array is empty []', () => {
-      localStorage.setItem(
-        'tripmate_travel_preferences_empty',
-        JSON.stringify({
-          interests: [],
-          travelStyle: 'solo',
-          budgetLevel: 'standard',
-          preferredTransport: 'walking',
-          travelPace: 'relaxed',
-          foodPreference: 'noRestriction',
-          autoApplyToPlans: true,
-        }),
-      );
-
-      render(<CreateSchedulingRequestForm userId="empty" />);
-
-      const walkingBtn = screen.getByRole('button', { name: /Đi bộ/i });
-      expect(walkingBtn.className).toContain('border-[#007d6e]');
-      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('6');
+      expect(getItem).not.toHaveBeenCalledWith(expect.stringContaining('tripmate_travel_preferences'));
     });
   });
 
