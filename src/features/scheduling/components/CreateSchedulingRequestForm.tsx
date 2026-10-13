@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
-import { loadStoredPreferences } from '@/features/account/preferences/travelPreferencesStorage';
+import { getTravelPreferences } from '@/features/account/preferences/travelPreferencesApi';
 import { ROUTES } from '@/lib/routes';
 
 import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
@@ -17,8 +17,6 @@ import {
   getVietnamCalendarDate,
   getVietnamTomorrowDateString,
   isFutureVietnamStartAt,
-  mapPaceToRestPreference,
-  mapTransportPreferenceToMode,
   parseAvailableDuration,
   RestPreference,
   SchedulingResponseDto,
@@ -35,6 +33,7 @@ const MAX_SEARCH_RADIUS_KM = 100;
 type PickerTarget = 'start' | 'exploration' | 'end' | 'mandatory';
 
 interface CreateSchedulingRequestFormProps {
+  /** Kept for callers; preferences are resolved for the signed-in Traveler by the API. */
   userId?: string | number | null;
   onSuccess?: (itinerary: SchedulingResponseDto) => void;
 }
@@ -45,7 +44,6 @@ type PendingSchedulingAttempt = {
 };
 
 export function CreateSchedulingRequestForm({
-  userId,
   onSuccess,
 }: CreateSchedulingRequestFormProps) {
   // Where: the same choices as the mobile app.
@@ -56,56 +54,54 @@ export function CreateSchedulingRequestForm({
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  // Stored preferences snapshot
-  const [initialPreferences] = useState(() => {
-    try {
-      return loadStoredPreferences(userId);
-    } catch {
-      return null;
-    }
-  });
-
   // Time & duration
   const [startDate, setStartDate] = useState(getVietnamTomorrowDateString());
   const [startTime, setStartTime] = useState('08:00');
   // "Thời lượng" is typed freely (hours + minutes): 1 hour to 3 days, and the trip may run
   // past midnight.
-  const [durationHours, setDurationHours] = useState(() => {
-    if (initialPreferences?.travelPace === 'relaxed') return '6';
-    if (initialPreferences?.travelPace === 'packed') return '10';
-    return '8';
-  });
+  const [durationHours, setDurationHours] = useState('8');
   const [durationMinutes, setDurationMinutes] = useState('0');
   const duration = parseAvailableDuration(durationHours, durationMinutes);
 
   // Constraints
   const [searchRadiusKm, setSearchRadiusKm] = useState(10);
   const [returnToStart, setReturnToStart] = useState(true);
-  const [transportMode, setTransportMode] = useState<TransportMode>(() => {
-    if (initialPreferences?.preferredTransport) {
-      return mapTransportPreferenceToMode(initialPreferences.preferredTransport);
-    }
-    return 'Motorbike';
-  });
-  const [restPreference, setRestPreference] = useState<RestPreference>(() => {
-    if (initialPreferences?.travelPace) {
-      return mapPaceToRestPreference(initialPreferences.travelPace);
-    }
-    return 'Auto';
-  });
-  const [budgetVnd, setBudgetVnd] = useState<number | ''>(() => {
-    if (initialPreferences?.budgetLevel === 'economy') return 300000;
-    if (initialPreferences?.budgetLevel === 'premium') return 2000000;
-    return 800000;
-  });
+  const [transportMode, setTransportMode] = useState<TransportMode>('Motorbike');
+  const [restPreference, setRestPreference] = useState<RestPreference>('Auto');
+  const [budgetVnd, setBudgetVnd] = useState<number | ''>('');
 
-  // Preference sync indicator (supported fields: transport, pace/rest, budget)
-  const preferencesSynced = Boolean(
-    initialPreferences &&
-      (initialPreferences.preferredTransport ||
-        initialPreferences.travelPace ||
-        initialPreferences.budgetLevel),
-  );
+  // UC-09 can pre-fill a supported transport mode only. Budget belongs to this request and is
+  // intentionally not read from the Traveler profile.
+  const [preferencesSynced, setPreferencesSynced] = useState(false);
+  const transportTouched = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    void getTravelPreferences()
+      .then((result) => {
+        if (!active || !result.ok) return;
+        const mode = result.data.preferredTransportMode;
+        if (mode && mode !== 'PublicTransit' && !transportTouched.current) {
+          setTransportMode(mode);
+          setPreferencesSynced(true);
+        }
+      })
+      .catch(() => {
+        // Preference prefill is optional; scheduling remains usable when it cannot load.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const chooseTransportMode = (mode: TransportMode) => {
+    transportTouched.current = true;
+    setTransportMode(mode);
+  };
+
+  const chooseBudget = (value: number | '') => {
+    setBudgetVnd(value);
+  };
 
   // Idempotency attempt tracking across retries
   const attemptRef = useRef<PendingSchedulingAttempt | null>(null);
@@ -347,7 +343,7 @@ export function CreateSchedulingRequestForm({
               sync_saved_locally
             </span>
             <span>
-              TripMate đã tự động điền các thiết lập được UC-10 hỗ trợ hiện tại như phương tiện, nhịp độ và ngân sách.
+              TripMate has pre-filled your saved transport preference.
             </span>
           </div>
           <Link
@@ -760,7 +756,7 @@ export function CreateSchedulingRequestForm({
                   key={opt.id}
                   type="button"
                   disabled={opt.disabled}
-                  onClick={() => !opt.disabled && setTransportMode(opt.id)}
+                  onClick={() => !opt.disabled && chooseTransportMode(opt.id)}
                   className={`flex flex-col items-center rounded-xl border p-3 text-center transition ${
                     opt.disabled
                       ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 opacity-60'
@@ -844,7 +840,7 @@ export function CreateSchedulingRequestForm({
                 step={50000}
                 value={budgetVnd}
                 onChange={(e) => {
-                  setBudgetVnd(e.target.value === '' ? '' : Number(e.target.value));
+                  chooseBudget(e.target.value === '' ? '' : Number(e.target.value));
                   setValidationErrors((prev) => ({ ...prev, budgetVnd: '' }));
                 }}
                 placeholder="VD: 500000"
@@ -869,7 +865,7 @@ export function CreateSchedulingRequestForm({
                 <button
                   key={p.amount}
                   type="button"
-                  onClick={() => setBudgetVnd(p.amount)}
+                  onClick={() => chooseBudget(p.amount)}
                   className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
                     budgetVnd === p.amount
                       ? 'border-[#007d6e] bg-teal-50 text-[#007d6e]'

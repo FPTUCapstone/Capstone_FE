@@ -1,245 +1,204 @@
-export type TravelInterestId =
-  | 'culture'
-  | 'nature'
-  | 'food'
-  | 'adventure'
-  | 'relaxation'
-  | 'shopping'
-  | 'museum'
-  | 'nightlife';
+/**
+ * UC-09 Update Travel Preferences — Web contract (Capstone_BE/specs/UC-09-spec.md v3).
+ * Option keys are English and come from the backend; labels live in ./resources (D-01, D-W2).
+ */
 
-export type TravelStyleId = 'solo' | 'couple' | 'family' | 'group';
+export const PREFERRED_TRANSPORT_MODES = ['Walking', 'Motorbike', 'Car', 'PublicTransit'] as const;
+export const TRAVEL_PACES = ['Relaxed', 'Moderate', 'Fast'] as const;
+export const RISK_TOLERANCES = ['Low', 'Medium', 'High'] as const;
+export const FOOD_PREFERENCES = ['NoRestriction', 'Vegetarian', 'Vegan', 'Halal', 'NoSeafood'] as const;
 
-export type BudgetLevelId = 'economy' | 'standard' | 'premium';
+export type PreferredTransportMode = (typeof PREFERRED_TRANSPORT_MODES)[number];
+export type TravelPace = (typeof TRAVEL_PACES)[number];
+export type RiskTolerance = (typeof RISK_TOLERANCES)[number];
+export type FoodPreference = (typeof FOOD_PREFERENCES)[number];
 
-export type PreferredTransportId = 'walking' | 'motorbike' | 'car' | 'publicTransit';
+export const FOOD_NO_RESTRICTION: FoodPreference = 'NoRestriction';
+export const MAX_INTERESTS = 10;
 
-export type TravelPaceId = 'relaxed' | 'balanced' | 'packed';
+/** Backend error codes (spec §7.2). Visible text comes from the message catalog (D-04). */
+export const PREFERENCE_ERROR_CODES = {
+  invalidOption: 'TRAVEL_PREFERENCES.INVALID_OPTION',
+  tooManyInterests: 'TRAVEL_PREFERENCES.TOO_MANY_INTERESTS',
+  foodNoRestrictionExclusive: 'TRAVEL_PREFERENCES.FOOD_NO_RESTRICTION_EXCLUSIVE',
+  valueTooLong: 'TRAVEL_PREFERENCES.VALUE_TOO_LONG',
+  forbidden: 'TRAVEL_PREFERENCES.FORBIDDEN',
+} as const;
 
-export type FoodPreferenceId = 'noRestriction' | 'vegetarian' | 'halal' | 'noSeafood';
+export type PreferenceErrorCode = (typeof PREFERENCE_ERROR_CODES)[keyof typeof PREFERENCE_ERROR_CODES];
 
-export interface TravelPreferencesData {
-  interests: TravelInterestId[];
-  travelStyle: TravelStyleId | null;
-  budgetLevel: BudgetLevelId | null;
-  preferredTransport: PreferredTransportId;
-  travelPace: TravelPaceId;
-  foodPreference: FoodPreferenceId;
-  autoApplyToPlans: boolean;
-  updatedAt?: string;
-}
+export const PREFERENCE_FIELDS = [
+  'interests',
+  'preferredTransportMode',
+  'travelPace',
+  'riskTolerance',
+  'foodPreferences',
+] as const;
+
+export type PreferenceField = (typeof PREFERENCE_FIELDS)[number];
+
+/** Field → error code. Values are backend codes, never display text. */
+export type PreferenceFieldErrors = Partial<Record<PreferenceField, string>>;
 
 export interface InterestOption {
-  id: TravelInterestId;
-  label: string;
-  icon: string;
-  description: string;
+  key: string;
+  source: 'Category' | 'Tag';
 }
 
-export interface TravelStyleOption {
-  id: TravelStyleId;
-  label: string;
-  subtitle: string;
-  icon: string;
+export interface TravelPreferenceOptions {
+  interests: InterestOption[];
+  preferredTransportModes: PreferredTransportMode[];
+  travelPaces: TravelPace[];
+  foodPreferences: FoodPreference[];
+  riskTolerances: RiskTolerance[];
 }
 
-export interface BudgetLevelOption {
-  id: BudgetLevelId;
-  label: string;
-  subtitle: string;
-  rangeDescription: string;
-  icon: string;
+export interface TravelPreferences {
+  interests: string[];
+  preferredTransportMode: PreferredTransportMode | null;
+  travelPace: TravelPace | null;
+  riskTolerance: RiskTolerance | null;
+  foodPreferences: FoodPreference[];
+  /**
+   * Compatibility for the existing UC-10 form. UC-09 never receives, displays or persists this
+   * value; the parser always supplies null while UC-10 remains outside this task's scope.
+   */
+  defaultBudgetVnd: number | null;
+  updatedAtUtc: string | null;
 }
 
-export interface TransportOption {
-  id: PreferredTransportId;
-  label: string;
-  icon: string;
+/** Body of PUT /api/v1/traveler/preferences: the complete state, never partial. */
+export type TravelPreferencesPayload = Omit<TravelPreferences, 'updatedAtUtc' | 'defaultBudgetVnd'>;
+
+export const EMPTY_PREFERENCES: TravelPreferences = Object.freeze({
+  interests: [],
+  preferredTransportMode: null,
+  travelPace: null,
+  riskTolerance: null,
+  foodPreferences: [],
+  defaultBudgetVnd: null,
+  updatedAtUtc: null,
+}) as TravelPreferences;
+
+export class PreferencesContractError extends Error {
+  constructor(detail: string) {
+    super(`PREFERENCES_CONTRACT: ${detail}`);
+    this.name = 'PreferencesContractError';
+  }
 }
 
-export interface PaceOption {
-  id: TravelPaceId;
-  label: string;
-  description: string;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export interface FoodOption {
-  id: FoodPreferenceId;
-  label: string;
-  icon: string;
+function includes<T extends string>(values: readonly T[], value: unknown): value is T {
+  return typeof value === 'string' && (values as readonly string[]).includes(value);
 }
 
-export const INTEREST_OPTIONS: readonly InterestOption[] = [
-  {
-    id: 'culture',
-    label: 'Văn hóa & Di sản',
-    icon: 'museum',
-    description: 'Di tích lịch sử, kiến trúc cổ, lễ hội dân gian và văn hóa bản địa',
-  },
-  {
-    id: 'nature',
-    label: 'Thiên nhiên & Sinh thái',
-    icon: 'park',
-    description: 'Vườn quốc gia, thác nước, núi rừng và danh lam thắng cảnh sinh thái',
-  },
-  {
-    id: 'food',
-    label: 'Ẩm thực & Chợ đêm',
-    icon: 'restaurant',
-    description: 'Đặc sản địa phương, phố đi bộ, ẩm thực đường phố và chợ truyền thống',
-  },
-  {
-    id: 'adventure',
-    label: 'Phiêu lưu & Khám phá',
-    icon: 'hiking',
-    description: 'Trekking rừng núi, chèo sup, hang động và hoạt động cảm giác mạnh',
-  },
-  {
-    id: 'relaxation',
-    label: 'Nghỉ dưỡng & Biển',
-    icon: 'beach_access',
-    description: 'Bãi biển trong xanh, resort thư giãn, suối khoáng nóng và spa',
-  },
-  {
-    id: 'shopping',
-    label: 'Mua sắm & Giải trí',
-    icon: 'shopping_bag',
-    description: 'Trung tâm thương mại, khu vui chơi chủ đề và quà lưu niệm thủ công',
-  },
-  {
-    id: 'museum',
-    label: 'Bảo tàng & Triển lãm',
-    icon: 'history_edu',
-    description: 'Không gian mỹ thuật đương đại, bảo tàng lịch sử và khu trưng bày',
-  },
-  {
-    id: 'nightlife',
-    label: 'Cuộc sống về đêm',
-    icon: 'nightlife',
-    description: 'Quán bar sân thượng, nhạc sống acoustic, phố đêm và dạo phố ngắm cảnh',
-  },
-];
-
-export const TRAVEL_STYLE_OPTIONS: readonly TravelStyleOption[] = [
-  {
-    id: 'solo',
-    label: 'Đi một mình (Solo)',
-    subtitle: 'Tự do trải nghiệm, linh hoạt thời gian theo nhịp sống riêng',
-    icon: 'person',
-  },
-  {
-    id: 'couple',
-    label: 'Cặp đôi (Couple)',
-    subtitle: 'Không gian lãng mạn, ẩm thực tinh tế và điểm ngắm hoàng hôn',
-    icon: 'favorite',
-  },
-  {
-    id: 'family',
-    label: 'Gia đình (Family)',
-    subtitle: 'Tiện nghi an toàn, thân thiện với trẻ nhỏ và người cao tuổi',
-    icon: 'family_restroom',
-  },
-  {
-    id: 'group',
-    label: 'Nhóm bạn (Group)',
-    subtitle: 'Hoạt động gắn kết năng động, check-in sôi nổi và tiệc đêm',
-    icon: 'groups',
-  },
-];
-
-export const BUDGET_LEVEL_OPTIONS: readonly BudgetLevelOption[] = [
-  {
-    id: 'economy',
-    label: 'Tiết kiệm (Economy)',
-    subtitle: 'Tối ưu ngân sách thông minh',
-    rangeDescription: 'Dưới 1.000.000đ / ngày',
-    icon: 'payments',
-  },
-  {
-    id: 'standard',
-    label: 'Tiêu chuẩn (Standard)',
-    subtitle: 'Cân bằng tiện nghi & chi phí hợp lý',
-    rangeDescription: '1.000.000đ – 3.000.000đ / ngày',
-    icon: 'account_balance_wallet',
-  },
-  {
-    id: 'premium',
-    label: 'Cao cấp (Premium)',
-    subtitle: 'Dịch vụ sang trọng & trải nghiệm riêng',
-    rangeDescription: 'Trên 3.000.000đ / ngày',
-    icon: 'diamond',
-  },
-];
-
-export const TRANSPORT_OPTIONS: readonly TransportOption[] = [
-  { id: 'motorbike', label: 'Xe máy', icon: 'two_wheeler' },
-  { id: 'car', label: 'Ô tô / Taxi', icon: 'directions_car' },
-  { id: 'walking', label: 'Đi bộ', icon: 'directions_walk' },
-  { id: 'publicTransit', label: 'Xe buýt / Công cộng', icon: 'directions_bus' },
-];
-
-export const PACE_OPTIONS: readonly PaceOption[] = [
-  { id: 'relaxed', label: 'Thư thái', description: '1–2 điểm đến mỗi ngày, nhiều thời gian nghỉ dưỡng' },
-  { id: 'balanced', label: 'Cân bằng', description: '3–4 điểm đến, phối hợp tham quan và trải nghiệm ẩm thực' },
-  { id: 'packed', label: 'Dày đặc', description: 'Khám phá tối đa các danh thắng, lịch trình liên tục sôi nổi' },
-];
-
-export const FOOD_OPTIONS: readonly FoodOption[] = [
-  { id: 'noRestriction', label: 'Không kiêng', icon: 'restaurant_menu' },
-  { id: 'vegetarian', label: 'Ăn chay', icon: 'spa' },
-  { id: 'halal', label: 'Halal', icon: 'check_circle' },
-  { id: 'noSeafood', label: 'Không hải sản', icon: 'no_food' },
-];
-
-export const DEFAULT_PREFERENCES: TravelPreferencesData = {
-  interests: ['nature', 'food', 'culture'],
-  travelStyle: 'couple',
-  budgetLevel: 'standard',
-  preferredTransport: 'motorbike',
-  travelPace: 'balanced',
-  foodPreference: 'noRestriction',
-  autoApplyToPlans: true,
-};
-
-export const VALID_INTEREST_IDS = new Set<TravelInterestId>(
-  INTEREST_OPTIONS.map((opt) => opt.id),
-);
-export const VALID_TRAVEL_STYLE_IDS = new Set<TravelStyleId>(
-  TRAVEL_STYLE_OPTIONS.map((opt) => opt.id),
-);
-export const VALID_BUDGET_LEVEL_IDS = new Set<BudgetLevelId>(
-  BUDGET_LEVEL_OPTIONS.map((opt) => opt.id),
-);
-export const VALID_TRANSPORT_IDS = new Set<PreferredTransportId>(
-  TRANSPORT_OPTIONS.map((opt) => opt.id),
-);
-export const VALID_PACE_IDS = new Set<TravelPaceId>(
-  PACE_OPTIONS.map((opt) => opt.id),
-);
-export const VALID_FOOD_IDS = new Set<FoodPreferenceId>(
-  FOOD_OPTIONS.map((opt) => opt.id),
-);
-
-export function isTravelInterestId(value: unknown): value is TravelInterestId {
-  return typeof value === 'string' && VALID_INTEREST_IDS.has(value as TravelInterestId);
+function requireStringArray(value: unknown, field: string): string[] {
+  if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
+    throw new PreferencesContractError(`${field} must be a string array`);
+  }
+  return value as string[];
 }
 
-export function isTravelStyleId(value: unknown): value is TravelStyleId {
-  return typeof value === 'string' && VALID_TRAVEL_STYLE_IDS.has(value as TravelStyleId);
+function requireKeyArray<T extends string>(value: unknown, allowed: readonly T[], field: string): T[] {
+  const items = requireStringArray(value, field);
+  if (!items.every((item) => includes(allowed, item))) {
+    throw new PreferencesContractError(`${field} contains an unknown key`);
+  }
+  return items as T[];
 }
 
-export function isBudgetLevelId(value: unknown): value is BudgetLevelId {
-  return typeof value === 'string' && VALID_BUDGET_LEVEL_IDS.has(value as BudgetLevelId);
+function optionalKey<T extends string>(value: unknown, allowed: readonly T[], field: string): T | null {
+  if (value === null || value === undefined) return null;
+  if (!includes(allowed, value)) {
+    throw new PreferencesContractError(`${field} is not a known key`);
+  }
+  return value;
 }
 
-export function isPreferredTransportId(value: unknown): value is PreferredTransportId {
-  return typeof value === 'string' && VALID_TRANSPORT_IDS.has(value as PreferredTransportId);
+/** Strictly parses GET /api/v1/traveler/preferences/options. */
+export function parseTravelPreferenceOptions(value: unknown): TravelPreferenceOptions {
+  if (!isRecord(value)) throw new PreferencesContractError('options must be an object');
+
+  if (!Array.isArray(value.interests)) throw new PreferencesContractError('interests must be an array');
+  const interests = value.interests.map((item): InterestOption => {
+    if (
+      !isRecord(item) ||
+      typeof item.key !== 'string' ||
+      item.key.trim() === '' ||
+      (item.source !== 'Category' && item.source !== 'Tag')
+    ) {
+      throw new PreferencesContractError('interest option is malformed');
+    }
+    return { key: item.key, source: item.source };
+  });
+
+  return {
+    interests,
+    preferredTransportModes: requireKeyArray(value.preferredTransportModes, PREFERRED_TRANSPORT_MODES, 'preferredTransportModes'),
+    travelPaces: requireKeyArray(value.travelPaces, TRAVEL_PACES, 'travelPaces'),
+    foodPreferences: requireKeyArray(value.foodPreferences, FOOD_PREFERENCES, 'foodPreferences'),
+    riskTolerances: requireKeyArray(value.riskTolerances, RISK_TOLERANCES, 'riskTolerances'),
+  };
 }
 
-export function isTravelPaceId(value: unknown): value is TravelPaceId {
-  return typeof value === 'string' && VALID_PACE_IDS.has(value as TravelPaceId);
+/** Strictly parses GET/PUT /api/v1/traveler/preferences responses. Optional fields accept null. */
+export function parseTravelPreferences(value: unknown): TravelPreferences {
+  if (!isRecord(value)) throw new PreferencesContractError('preferences must be an object');
+
+  const updatedAt = value.updatedAtUtc;
+  if (updatedAt !== null && updatedAt !== undefined && (typeof updatedAt !== 'string' || Number.isNaN(Date.parse(updatedAt)))) {
+    throw new PreferencesContractError('updatedAtUtc must be an ISO timestamp or null');
+  }
+
+  return {
+    interests: requireStringArray(value.interests, 'interests'),
+    preferredTransportMode: optionalKey(value.preferredTransportMode, PREFERRED_TRANSPORT_MODES, 'preferredTransportMode'),
+    travelPace: optionalKey(value.travelPace, TRAVEL_PACES, 'travelPace'),
+    riskTolerance: optionalKey(value.riskTolerance, RISK_TOLERANCES, 'riskTolerance'),
+    foodPreferences: requireKeyArray(value.foodPreferences, FOOD_PREFERENCES, 'foodPreferences'),
+    defaultBudgetVnd: null,
+    updatedAtUtc: typeof updatedAt === 'string' ? updatedAt : null,
+  };
 }
 
-export function isFoodPreferenceId(value: unknown): value is FoodPreferenceId {
-  return typeof value === 'string' && VALID_FOOD_IDS.has(value as FoodPreferenceId);
+/** Builds the complete PUT body from a draft (empty → [] / null). */
+export function toPayload(draft: TravelPreferences): TravelPreferencesPayload {
+  return {
+    interests: [...draft.interests],
+    preferredTransportMode: draft.preferredTransportMode,
+    travelPace: draft.travelPace,
+    riskTolerance: draft.riskTolerance,
+    foodPreferences: [...draft.foodPreferences],
+  };
+}
+
+/** Client-side mirror of the backend rules for early feedback; the backend stays authoritative. */
+export function validatePreferencesDraft(draft: TravelPreferencesPayload): PreferenceFieldErrors {
+  const errors: PreferenceFieldErrors = {};
+
+  if (new Set(draft.interests).size > MAX_INTERESTS) {
+    errors.interests = PREFERENCE_ERROR_CODES.tooManyInterests;
+  }
+
+  if (draft.foodPreferences.includes(FOOD_NO_RESTRICTION) && new Set(draft.foodPreferences).size > 1) {
+    errors.foodPreferences = PREFERENCE_ERROR_CODES.foodNoRestrictionExclusive;
+  }
+
+  return errors;
+}
+
+/** Order-insensitive comparison used for dirty tracking. */
+export function samePreferences(a: TravelPreferencesPayload, b: TravelPreferencesPayload): boolean {
+  const sameSet = (x: readonly string[], y: readonly string[]) =>
+    x.length === y.length && x.every((item) => y.includes(item));
+  return (
+    sameSet(a.interests, b.interests) &&
+    sameSet(a.foodPreferences, b.foodPreferences) &&
+    a.preferredTransportMode === b.preferredTransportMode &&
+    a.travelPace === b.travelPace &&
+    a.riskTolerance === b.riskTolerance
+  );
 }

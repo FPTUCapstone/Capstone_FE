@@ -3,7 +3,6 @@
  * Strictly aligned with Capstone_BE SchedulingRequestsController & Domain Enums
  */
 
-import { PreferredTransportId, TravelPaceId } from '@/features/account/preferences/travelPreferencesTypes';
 
 export type TransportMode = 'Walking' | 'Motorbike' | 'Car' | 'PublicTransit';
 
@@ -64,33 +63,6 @@ export interface SchedulingFormValues {
   transportMode: TransportMode;
   restPreference: RestPreference;
   budgetVnd: number | '';
-}
-
-export function mapTransportPreferenceToMode(pref: PreferredTransportId): TransportMode {
-  switch (pref) {
-    case 'walking':
-      return 'Walking';
-    case 'motorbike':
-      return 'Motorbike';
-    case 'car':
-      return 'Car';
-    case 'publicTransit':
-      return 'PublicTransit';
-    default:
-      return 'Motorbike';
-  }
-}
-
-export function mapPaceToRestPreference(pace: TravelPaceId): RestPreference {
-  switch (pace) {
-    case 'relaxed':
-      return 'Frequent';
-    case 'packed':
-      return 'None';
-    case 'balanced':
-    default:
-      return 'Auto';
-  }
 }
 
 export const TRIPMATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
