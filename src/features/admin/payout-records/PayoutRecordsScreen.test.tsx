@@ -128,4 +128,15 @@ describe('PayoutRecordsScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(push).toHaveBeenCalledWith('/admin/payouts?keyword=PO-&pageNumber=2');
   });
+
+  it('shows "Pending review" selected when the URL carries the explicit status=PendingReview', async () => {
+    query = 'status=PendingReview';
+    render(<PayoutRecordsScreen />);
+    await screen.findByText('Da Nang Tours');
+    const select = screen.getByRole('combobox', { name: 'Status' }) as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect(fetchPayoutRecords).toHaveBeenCalledWith(
+      { keyword: '', status: '', periodFrom: '', periodTo: '', pageNumber: 1 },
+      expect.anything());
+  });
 });
