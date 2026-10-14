@@ -11,6 +11,26 @@ export const landingContentEn = {
       'TripMate is temporarily unable to process your request. Please check your connection and try again.',
     conflict: 'The landing page content changed since you opened it. Reload to continue.',
   },
+  screen: {
+    eyebrow: 'Landing page content',
+    title: 'Landing Page Content Management',
+    description:
+      'Edit the content shown on the public TripMate landing page. Saving a draft never changes the public page; only publishing does.',
+    loading: 'Loading landing page content…',
+    pendingBadge: 'Backend integration pending',
+    pendingTitle: 'Landing page content is not connected yet',
+    retry: 'Retry',
+  },
+  versionPanel: {
+    title: 'Versions',
+    publishedHeading: 'Published version',
+    versionLabel: 'Version',
+    publishedBy: 'Published by',
+    publishedAt: 'Published at',
+    historyHeading: 'Version history',
+    noHistory: 'No earlier versions.',
+    restore: 'Restore Previous Version',
+  },
   success: {
     draftSaved: 'Operation completed successfully.',
     // SRS_MESSAGE_GAP: MSG148 has no row in the SRS message table.
