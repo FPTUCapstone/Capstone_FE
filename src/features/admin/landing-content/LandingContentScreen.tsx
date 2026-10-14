@@ -155,6 +155,7 @@ export function LandingContentScreen() {
   const locked = busy || uploads > 0;
   const canSave = ready && dirty && valid && !locked && !toursUnverified && baseVersion !== null;
   const canPublish = ready && hasDraft && !dirty && !locked && !toursUnverified && baseVersion !== null;
+  const canPreview = ready && !toursUnverified;
   const editorDisabled = !ready || locked;
 
   function edit(next: LandingContent) {
@@ -424,7 +425,7 @@ export function LandingContentScreen() {
               onChange={(banner) => edit({ ...draft, banner })}
             />
 
-            {showPreview && <PreviewPanel content={draft} />}
+            {showPreview && <PreviewPanel content={draft} tours={tours ?? []} />}
 
             <div className="flex flex-wrap gap-3">
               <button type="button" disabled={!canSave} onClick={() => void handleSave()} className={buttonClass}>
@@ -432,7 +433,7 @@ export function LandingContentScreen() {
               </button>
               <button
                 type="button"
-                disabled={!ready}
+                disabled={!canPreview}
                 onClick={() => setShowPreview((open) => !open)}
                 className={buttonClass}
               >

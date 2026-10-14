@@ -167,4 +167,49 @@ describe('PreviewPanel', () => {
     expect(screen.getByText('Hue')).toBeTruthy();
     expect(screen.queryAllByRole('textbox')).toHaveLength(0);
   });
+
+  it('renders every configured content type in draft order with CR-07 display dates', () => {
+    const content = emptyContent();
+    content.hero = {
+      headline: 'Discover Central Vietnam',
+      subHeadline: 'A coastal escape',
+      backgroundImage: { mediaId: 'hero', url: '/hero.png' },
+      ctaLabel: 'Plan a trip',
+      ctaTarget: '/plan?source=landing',
+    };
+    content.destinations = [
+      { id: 'hue', name: 'Hue', image: { mediaId: 'hue', url: '/hue.png' }, description: 'Imperial city' },
+      { id: 'hoi-an', name: 'Hoi An', image: { mediaId: 'hoi-an', url: '/hoi-an.png' }, description: 'Lantern town' },
+    ];
+    content.featuredTourIds = ['tour-2', 'tour-1'];
+    content.banner = {
+      image: { mediaId: 'banner', url: '/banner.png' },
+      link: '/offers/autumn',
+      displayStart: '2026-10-01',
+      displayEnd: '2026-10-31',
+    };
+
+    render(
+      <PreviewPanel
+        content={content}
+        tours={[
+          { tourId: 'tour-1', title: 'Hue heritage' },
+          { tourId: 'tour-2', title: 'Hoi An lanterns' },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Hue destination image' }).getAttribute('src')).toBe('/hue.png');
+    expect(screen.getByRole('img', { name: 'Hoi An destination image' }).getAttribute('src')).toBe('/hoi-an.png');
+    expect(screen.getByRole('img', { name: 'Promotional banner' }).getAttribute('src')).toBe('/banner.png');
+    expect(screen.getByText('Plan a trip')).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === 'CTA target: /plan?source=landing')).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Promotional banner' }).parentElement?.textContent).toBe(
+      '/offers/autumn · 01/10/2026 – 31/10/2026',
+    );
+
+    expect(screen.getByLabelText('Preview destinations').textContent).toContain('HueImperial cityHoi AnLantern town');
+    expect(screen.getByLabelText('Preview featured tours').textContent).toContain('Hoi An lanternsHue heritage');
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+  });
 });

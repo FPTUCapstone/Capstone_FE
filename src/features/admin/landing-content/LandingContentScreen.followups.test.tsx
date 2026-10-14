@@ -100,6 +100,15 @@ describe('tour verification gate', () => {
     expect(screen.getByText('Checking that the selected tours are still approved…')).toBeTruthy();
   });
 
+  it('does not open an incomplete preview until selected tour titles have loaded', async () => {
+    service.getLandingContent.mockResolvedValue(stateWith(['t1']));
+    service.getApprovedTours.mockReturnValue(new Promise(() => {}));
+    render(<LandingContentScreen />);
+
+    await screen.findByText('Version 3');
+    expect((screen.getByRole('button', { name: 'Preview' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('shows a failure with Retry and unblocks saving once the list loads', async () => {
     service.getLandingContent.mockResolvedValue(stateWith(['t1']));
     service.getApprovedTours

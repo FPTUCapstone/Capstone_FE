@@ -82,7 +82,15 @@ export const landingContentEn = {
       hidePreview: 'Hide preview',
       cancel: 'Cancel',
     },
-    preview: { title: 'Preview', note: 'This preview is not published.' },
+    preview: {
+      title: 'Preview',
+      note: 'This preview is not published.',
+      ctaTarget: 'CTA target',
+      destinations: 'Preview destinations',
+      featuredTours: 'Featured tours',
+      featuredToursList: 'Preview featured tours',
+      bannerImage: 'Promotional banner',
+    },
   },
   versionPanel: {
     title: 'Versions',
