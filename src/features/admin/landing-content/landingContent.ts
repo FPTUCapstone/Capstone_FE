@@ -55,6 +55,15 @@ export interface TourOption {
 /** Maps a dotted field path (for example `hero.headline`) to an error key. */
 export type ContentErrors = Record<string, ContentErrorKey>;
 
+/** The only error keys Backend may attach to a single field. */
+export const FIELD_ERROR_KEYS: readonly ContentErrorKey[] = [
+  'required',
+  'imageTooLarge',
+  'imageUnsupportedType',
+  'invalidPeriod',
+  'tourUnavailable',
+];
+
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const ALLOWED_IMAGE_TYPES: readonly string[] = ['image/jpeg', 'image/png', 'image/webp'];
 

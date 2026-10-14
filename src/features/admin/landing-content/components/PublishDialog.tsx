@@ -30,7 +30,8 @@ export function PublishDialog({ open, busy, onConfirm, onCancel }: PublishDialog
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Escape') {
       event.stopPropagation();
-      onCancel();
+      // A publish already sent cannot be cancelled from here.
+      if (!busy) onCancel();
       return;
     }
     if (event.key !== 'Tab') return;
@@ -65,6 +66,7 @@ export function PublishDialog({ open, busy, onConfirm, onCancel }: PublishDialog
           <button
             ref={cancelRef}
             type="button"
+            disabled={busy}
             onClick={onCancel}
             className="rounded-xl border border-[#d0d7de] px-4 py-2 text-sm font-bold text-[#00152a]"
           >

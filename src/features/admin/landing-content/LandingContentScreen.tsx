@@ -7,6 +7,7 @@ import { BannerBlock } from './components/BannerBlock';
 import { DestinationsBlock } from './components/DestinationsBlock';
 import { FeaturedToursBlock } from './components/FeaturedToursBlock';
 import { HeroBlock } from './components/HeroBlock';
+import { UploadStatusContext } from './components/ImageField';
 import { PreviewPanel } from './components/PreviewPanel';
 import { PublishDialog } from './components/PublishDialog';
 import { VersionPanel } from './components/VersionPanel';
@@ -50,6 +51,7 @@ export function LandingContentScreen() {
   const [showErrors, setShowErrors] = useState(false);
   const [serverErrors, setServerErrors] = useState<ContentErrors>({});
   const [busy, setBusy] = useState(false);
+  const [uploads, setUploads] = useState(0);
   const [message, setMessage] = useState<Message | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -122,9 +124,11 @@ export function LandingContentScreen() {
   const errors: ContentErrors = showErrors ? { ...validation, ...serverErrors } : serverErrors;
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const ready = status === 'ready';
-  const canSave = ready && dirty && valid && !busy && baseVersion !== null;
-  const canPublish = ready && hasDraft && !dirty && !busy && baseVersion !== null;
-  const editorDisabled = !ready || busy;
+  const trackUpload = (delta: 1 | -1) => setUploads((count) => count + delta);
+  const locked = busy || uploads > 0;
+  const canSave = ready && dirty && valid && !locked && baseVersion !== null;
+  const canPublish = ready && hasDraft && !dirty && !locked && baseVersion !== null;
+  const editorDisabled = !ready || locked;
 
   function edit(next: LandingContent) {
     setDraft(next);
@@ -141,8 +145,9 @@ export function LandingContentScreen() {
       replace(LOGIN_URL);
       return;
     }
-    if (code === 422 && failure?.fieldErrors) {
-      setServerErrors(failure.fieldErrors);
+    if (code === 422) {
+      if (failure?.fieldErrors) setServerErrors(failure.fieldErrors);
+      else setMessage({ kind: 'error', text: copy.errors.validation });
       setShowErrors(true);
     } else if (code === 403) {
       setMessage({ kind: 'error', text: copy.errors.forbidden });
@@ -239,8 +244,11 @@ export function LandingContentScreen() {
   async function handleRestore(versionId: string) {
     await runExclusive(async () => {
       try {
+        // The contract returns the restored version as the stored draft, so it is saved state, like after a save.
         const result = await restoreVersion(versionId);
         setDraft(result.content);
+        setSaved(result.content);
+        setHasDraft(true);
         setBaseVersion(result.baseVersion);
         setShowErrors(true);
         setServerErrors({});
@@ -261,6 +269,7 @@ export function LandingContentScreen() {
     'rounded-xl border border-[#d0d7de] bg-white px-4 py-2 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7] disabled:cursor-not-allowed disabled:opacity-50';
 
   return (
+    <UploadStatusContext.Provider value={trackUpload}>
     <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-[#191c1e] sm:px-6 md:px-8 md:py-10">
       <section className="mx-auto max-w-5xl space-y-6">
         <header className="rounded-2xl border border-[#314863] bg-[#00152a] p-6 text-white shadow-md sm:p-8">
@@ -311,7 +320,7 @@ export function LandingContentScreen() {
                 published={loaded.published}
                 history={loaded.history}
                 onRestore={(versionId) => void handleRestore(versionId)}
-                disabled={busy}
+                disabled={locked}
               />
             )}
 
@@ -381,7 +390,7 @@ export function LandingContentScreen() {
               <button type="button" disabled={!canPublish} onClick={handlePublishClick} className={buttonClass}>
                 {copy.editor.actions.publish}
               </button>
-              <button type="button" disabled={!ready || busy} onClick={handleCancel} className={buttonClass}>
+              <button type="button" disabled={!ready || locked} onClick={handleCancel} className={buttonClass}>
                 {copy.editor.actions.cancel}
               </button>
             </div>
@@ -396,5 +405,6 @@ export function LandingContentScreen() {
         onCancel={() => setConfirmOpen(false)}
       />
     </main>
+    </UploadStatusContext.Provider>
   );
 }

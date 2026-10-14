@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const router = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -191,15 +191,34 @@ describe('LandingContentScreen publish', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('loads a restored version into the draft as an unsaved change', async () => {
+  it('treats a restored version as the stored draft: Cancel keeps it and Publish uses its base version', async () => {
     service.getLandingContent.mockResolvedValue(withDraft());
-    service.restoreVersion.mockResolvedValue({ baseVersion: 3, content: content('Restored headline') });
+    service.restoreVersion.mockResolvedValue({ baseVersion: 5, content: content('Restored headline') });
+    service.publishDraft.mockResolvedValue(newPublished);
     render(<LandingContentScreen />);
     await screen.findByText('Version 3');
     fireEvent.click(screen.getByRole('button', { name: 'Restore Previous Version 2' }));
     await waitFor(() => expect((screen.getByLabelText('Headline') as HTMLInputElement).value).toBe('Restored headline'));
     expect(service.restoreVersion).toHaveBeenCalledWith('v2');
-    expect((screen.getByRole('button', { name: 'Save Draft' }) as HTMLButtonElement).disabled).toBe(false);
-    expect(publishButton().disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Save Draft' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect((screen.getByLabelText('Headline') as HTMLInputElement).value).toBe('Restored headline');
+    await openDialog();
+    confirmInDialog();
+    await screen.findByText('Version 4');
+    expect(service.publishDraft).toHaveBeenCalledWith(5);
+  });
+
+  it('does not let Cancel or Escape dismiss a publish that is already in flight', async () => {
+    service.getLandingContent.mockResolvedValue(withDraft());
+    service.publishDraft.mockReturnValue(new Promise(() => {}));
+    render(<LandingContentScreen />);
+    await screen.findByText('Version 3');
+    const dialog = await openDialog();
+    confirmInDialog();
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    const dialogCancel = within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' });
+    expect((dialogCancel as HTMLButtonElement).disabled).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const router = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -125,6 +125,34 @@ describe('LandingContentScreen editing', () => {
     expect(await screen.findByText(REQUIRED)).toBeTruthy();
     expect(screen.getByLabelText('Call-to-action Target').getAttribute('aria-invalid')).toBe('true');
     expect(screen.queryByText(SUCCESS)).toBeNull();
+  });
+
+  it('shows a validation message, not the unavailable message, for a 422 without usable field errors', async () => {
+    service.getLandingContent.mockResolvedValue(editableState());
+    service.saveDraft.mockRejectedValue(new LandingContentError(422));
+    render(<LandingContentScreen />);
+    await screen.findByText('Version 3');
+    fireEvent.change(headline(), { target: { value: 'Another' } });
+    fireEvent.click(saveButton());
+    expect(await screen.findByText('Some content is invalid. Check the highlighted fields and try again.')).toBeTruthy();
+    expect(screen.queryByText(UNAVAILABLE)).toBeNull();
+  });
+
+  it('locks the editor while an image uploads so edits cannot be overwritten, then keeps both', async () => {
+    service.getLandingContent.mockResolvedValue(editableState());
+    let finishUpload!: (value: unknown) => void;
+    service.uploadImage.mockReturnValue(new Promise((r) => (finishUpload = r)));
+    render(<LandingContentScreen />);
+    await screen.findByText('Version 3');
+    fireEvent.change(screen.getByLabelText('Background Image'), {
+      target: { files: [new File(['x'], 'a.png', { type: 'image/png' })] },
+    });
+    await waitFor(() => expect(headline().disabled).toBe(true));
+    expect(saveButton().disabled).toBe(true);
+    finishUpload({ mediaId: 'm1', url: '/m1.png' });
+    await waitFor(() => expect(headline().disabled).toBe(false));
+    expect(headline().value).toBe('Discover Central Vietnam');
+    expect(screen.getByText('/m1.png')).toBeTruthy();
   });
 
   it('does not report success when the save response is malformed (status 0)', async () => {

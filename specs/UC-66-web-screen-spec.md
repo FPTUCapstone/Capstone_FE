@@ -80,7 +80,7 @@ All paths under `/api/v1/admin/landing-content`, bearer token supplied by the pr
 | Read | `GET /` | `200 { published: Version, draft: Draft \| null, history: VersionSummary[] }` | 401, 403, 5xx |
 | Save draft | `PUT /draft` `{ baseVersion, content }` | `200 Draft` | 422 field errors, 409 |
 | Publish | `POST /publish` `{ baseVersion }` | `200 Version` | 409, 422 (incl. unapproved tour), 5xx |
-| Restore | `POST /restore` `{ versionId }` | `200 Draft` | 404, 409 |
+| Restore | `POST /restore` `{ versionId }` | `200 Draft` (Backend stores the restored version as the current draft; the screen treats it as saved) | 404, 409 |
 | Upload image | `POST /media` multipart | `201 { mediaId, url }` | 413/415/422 |
 | Approved tours | `GET /approved-tours` | `200 TourOption[]` | 401, 403 |
 

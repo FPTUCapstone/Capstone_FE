@@ -10,6 +10,7 @@ export const landingContentEn = {
     unavailable:
       'TripMate is temporarily unable to process your request. Please check your connection and try again.',
     conflict: 'The landing page content changed since you opened it. Reload to continue.',
+    validation: 'Some content is invalid. Check the highlighted fields and try again.',
   },
   screen: {
     eyebrow: 'Landing page content',

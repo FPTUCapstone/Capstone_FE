@@ -1,4 +1,5 @@
 import {
+  FIELD_ERROR_KEYS,
   isLandingContent,
   isLandingContentState,
   isTourOptionList,
@@ -51,10 +52,14 @@ function isPublished(value: unknown): value is LandingContentState['published'] 
 
 function readFieldErrors(body: unknown): ContentErrors | undefined {
   if (!isRecord(body) || !isRecord(body.errors)) return undefined;
-  const entries = Object.entries(body.errors).filter(
-    (entry): entry is [string, ContentErrors[string]] => typeof entry[1] === 'string',
-  );
-  return entries.length > 0 ? (Object.fromEntries(entries) as ContentErrors) : undefined;
+  const result: ContentErrors = {};
+  for (const [field, raw] of Object.entries(body.errors)) {
+    // Accept a bare key or a one-item array of a key; anything else is not a message this UI can show.
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    const key = FIELD_ERROR_KEYS.find((candidate) => candidate === value);
+    if (key) result[field] = key;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 async function request<T>(

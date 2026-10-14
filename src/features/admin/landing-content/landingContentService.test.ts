@@ -109,6 +109,16 @@ describe('landingContentService', () => {
     expect(error.fieldErrors).toEqual({ 'hero.headline': 'required' });
   });
 
+  it('accepts a known error key given as a one-item array', async () => {
+    reply(422, { errors: { 'hero.headline': ['required'] } });
+    expect((await failure(saveDraft(1, content))).fieldErrors).toEqual({ 'hero.headline': 'required' });
+  });
+
+  it('drops values that are not known field error keys instead of passing them to the UI', async () => {
+    reply(422, { errors: { 'Hero.Headline': ['The Headline field is required.'], 'hero.ctaLabel': 'Required' } });
+    expect((await failure(saveDraft(1, content))).fieldErrors).toBeUndefined();
+  });
+
   it.each([401, 403, 409, 503])('keeps the %i status', async (status) => {
     reply(status, { title: 'x' });
     expect((await failure(getLandingContent())).status).toBe(status);

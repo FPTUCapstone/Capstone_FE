@@ -1,8 +1,14 @@
-import { useId, useState } from 'react';
+import { createContext, useContext, useId, useState } from 'react';
 
 import { validateImageFile, type ImageRef } from '../landingContent';
 import { uploadImage } from '../landingContentService';
 import { landingContentEn, type ContentErrorKey } from '../resources/en';
+
+/**
+ * The screen provides this so it can lock the editor while any upload runs: an upload writes back
+ * through the onChange of the render that started it, so other edits during that time would be lost.
+ */
+export const UploadStatusContext = createContext<(delta: 1 | -1) => void>(() => {});
 
 interface ImageFieldProps {
   label: string;
@@ -18,6 +24,7 @@ export function ImageField({ label, value, onChange, error, disabled }: ImageFie
   const copy = landingContentEn;
   const [fileError, setFileError] = useState<ContentErrorKey | null>(null);
   const [uploading, setUploading] = useState(false);
+  const trackUpload = useContext(UploadStatusContext);
   const shownError = fileError ?? error;
 
   async function handleFile(file: File | undefined) {
@@ -30,12 +37,14 @@ export function ImageField({ label, value, onChange, error, disabled }: ImageFie
     }
     setFileError(null);
     setUploading(true);
+    trackUpload(1);
     try {
       onChange(await uploadImage(file));
     } catch {
       setFileError('unavailable');
     } finally {
       setUploading(false);
+      trackUpload(-1);
     }
   }
 
