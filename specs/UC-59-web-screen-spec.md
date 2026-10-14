@@ -2,7 +2,7 @@
 
 ## Route and scope
 
-- Route: `/admin/trips/active/[id]` inside the existing Administrator console layout, reached
+- Route: `/admin/trips/active/[id]` inside the existing Staff console layout, reached
   from each row of the approved UC-58 Active Trips list.
 - Read-only monitoring screen. Intervention actions (incident resolution, rerouting decisions,
   itinerary/session mutation) are excluded until a separate UC is approved.
@@ -15,7 +15,7 @@
 
 ## Layout
 
-- Header: back link to `/admin/trips/active`, eyebrow `Administrator monitoring`, title
+- Header: back link to `/admin/trips/active`, eyebrow `Staff monitoring`, title
   `TRIP-{id}`, and badges for trip type (`Tour`/`SelfPlanned`) and current FSM state
   (`Navigating`/`Exploring`/`Interrupted` as colored-badge + text, never color alone).
 - Identity row: group/traveler name and destination (`Not available` when null), plus a manual
@@ -29,7 +29,7 @@
   `Not available` when `groupPanel` is `null` (Self-Planned trip).
 - Six data sections render in order:
   1. Itinerary Progress — table ordered by `sequenceNo`: stop name, kind, planned
-     arrival/departure (UTC+7, `Not available` when null), status (`Planned`/`Visited`/`Skipped`
+     arrival/departure (UTC+7), session status (`Pending`/`Reached`/`Skipped`
      as badge + text).
   2. FSM State History — chronological timeline: from → to, reason, triggered by, changed time.
   3. Incidents — newest first: type, description, detected/resolved times; unresolved incidents

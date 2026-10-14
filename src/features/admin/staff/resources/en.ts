@@ -25,6 +25,7 @@ export const adminStaffEn = {
     adminDashboard: 'System Overview',
     staffDashboard: 'Staff Workspace',
     tourReviews: 'Tour Reviews',
+    activeTrips: 'Active Trips',
     createPoi: 'POI Catalog',
     algorithmSettings: 'Algorithm Settings',
     auditLogs: 'Audit Logs',
@@ -40,6 +41,10 @@ export const adminStaffEn = {
       'Your Staff account does not have permission to view this system governance module. Please return to the Staff Operations Dashboard to continue your work.',
     returnToStaffButton: 'Return to Staff Workspace',
     returnToAdminSignInButton: 'Switch Administration Account',
+    staffOnlyTitle: 'Staff Access Required',
+    staffOnlyDescription:
+      'Your Administrator account does not have permission to view this Staff operations module. Please return to the administration dashboard or switch to a Staff account.',
+    returnToAdminDashboardButton: 'Return to System Overview',
   },
   staffDashboard: {
     eyebrow: 'Operational Administration Workspace',
@@ -134,8 +139,9 @@ export const adminStaffEn = {
         category: 'Live Operations',
         description:
           'Monitor active traveler itineraries and review operational alerts across regions.',
-        status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting real-time active trip monitoring endpoints.',
+        status: 'available' as const,
+        href: '/admin/trips/active',
+        actionLabel: 'Open Active Trips',
       },
       {
         id: 'platform-booking-oversight',

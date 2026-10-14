@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { type ActiveTripDetail } from './activeTripDetails';
 import { ActiveTripDetailsError, fetchActiveTripDetails } from './activeTripDetailsService';
 import { ActiveTripDetailsScreen } from './ActiveTripDetailsScreen';
 
@@ -14,7 +15,7 @@ vi.mock('./activeTripDetailsService', () => ({
   ActiveTripDetailsError: class extends Error { constructor(public status: number) { super(); } },
 }));
 
-const detail = {
+const detail: ActiveTripDetail = {
   tripId: '42', tripCode: 'TRIP-42', tripType: 'Tour', currentState: 'Interrupted',
   groupOrTraveler: 'Da Nang Weekend Group', destination: 'Hoi An',
   startedAtUtc: '2026-09-25T17:00:00Z', lastSyncedAtUtc: '2026-09-26T03:12:44Z',
@@ -28,7 +29,7 @@ const detail = {
   }],
   currentLocation: { latitude: 16.0612, longitude: 108.2277, asOfUtc: '2026-09-26T03:12:44Z' },
   itineraryProgress: [
-    { itemId: '901', sequenceNo: 1, poiId: '17', poiName: 'My Khe Beach', itemKind: 'Visit', status: 'Visited', plannedArrivalUtc: '2026-09-26T02:00:00Z', plannedDepartureUtc: '2026-09-26T04:00:00Z', stayDurationMinutes: 120 },
+    { itemId: '901', sequenceNo: 1, poiId: '17', poiName: 'My Khe Beach', itemKind: 'Visit', status: 'Reached', plannedArrivalUtc: '2026-09-26T02:00:00Z', plannedDepartureUtc: '2026-09-26T04:00:00Z', stayDurationMinutes: 120 },
   ],
   stateHistory: [
     { fromState: null, toState: 'Navigating', reason: 'Trip started', triggeredBy: 'Traveler', changedAtUtc: '2026-09-25T17:00:00Z' },
@@ -39,6 +40,7 @@ const detail = {
   reroutingEvents: [
     { reroutingId: '31', incidentId: '77', status: 'Proposed', proposedAtUtc: '2026-09-26T02:56:00Z', decidedAtUtc: null, hasProposedItinerarySnapshot: true },
   ],
+  locationDisclosure: { state: 'Partial', sharedMemberCount: 1, hiddenMemberCount: 1 },
   locationTrail: [
     { latitude: 16.0601, longitude: 108.2266, recordedAtUtc: '2026-09-26T03:10:00Z', isOfflineCaptured: false },
   ],
@@ -54,6 +56,7 @@ describe('ActiveTripDetailsScreen', () => {
     render(<ActiveTripDetailsScreen tripId="42" />);
 
     expect(await screen.findByRole('heading', { name: 'TRIP-42' })).toBeTruthy();
+    expect(screen.getByText('Staff monitoring')).toBeTruthy();
     expect(screen.getByText('Tour')).toBeTruthy();
     expect(screen.getByText('Interrupted')).toBeTruthy();
     expect(screen.getByText('Da Nang Weekend Group')).toBeTruthy();
@@ -67,8 +70,34 @@ describe('ActiveTripDetailsScreen', () => {
     expect(screen.getByText('Weather Severe')).toBeTruthy();
     expect(screen.getByText('Proposed itinerary snapshot available')).toBeTruthy();
     expect(screen.getByText('Location Trail')).toBeTruthy();
+    expect(screen.getByText('Partial Disclosure')).toBeTruthy();
+    expect(screen.getByText(/Partial Location Disclosure/)).toBeTruthy();
     // Trip-level fix is shown; member coordinates are never rendered (BR-51).
     expect(screen.getByText(/16\.061200/)).toBeTruthy();
+  });
+
+  it('displays redacted disclosure banner and hides coordinates when consent is absent', async () => {
+    vi.mocked(fetchActiveTripDetails).mockResolvedValue({
+      ...detail,
+      currentLocation: null,
+      locationDisclosure: { state: 'Redacted' as const, sharedMemberCount: 0, hiddenMemberCount: 2 },
+    });
+    render(<ActiveTripDetailsScreen tripId="42" />);
+
+    expect(await screen.findByText('Redacted Disclosure')).toBeTruthy();
+    expect(screen.getByText(/Location Data Redacted/)).toBeTruthy();
+  });
+
+  it('never renders coordinates or trail rows when Redacted, even if the payload carries them', async () => {
+    vi.mocked(fetchActiveTripDetails).mockResolvedValue({
+      ...detail,
+      locationDisclosure: { state: 'Redacted' as const, sharedMemberCount: 0, hiddenMemberCount: 2 },
+    });
+    render(<ActiveTripDetailsScreen tripId="42" />);
+
+    expect(await screen.findByText('Redacted Disclosure')).toBeTruthy();
+    expect(screen.queryByText('16.061200')).toBeNull();
+    expect(screen.queryByLabelText('Location trail table')).toBeNull();
   });
 
   it('shows the proposed MSG133 wording on 404', async () => {

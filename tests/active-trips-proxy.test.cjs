@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
 
-function setup(token, backend) {
+function setup(token, backend, role = 'Staff') {
   return loadTs('src/features/admin/active-trips/activeTripsProxy.ts', {
     'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
@@ -11,6 +11,7 @@ function setup(token, backend) {
       ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
       jsonNoStore: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
       clearAdminSession: response => { response.headers.set('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0'); return response; },
+      verifyAdminSessionFromCookies: () => token ? { role } : null,
     },
   }).proxyActiveTrips;
 }
@@ -20,6 +21,11 @@ const request = (query = '') => new Request(`http://localhost:3001/api/admin/tri
 test('requires the HttpOnly Administrator cookie', async () => {
   const response = await setup(null, async () => { throw new Error('must not call backend'); })(request());
   assert.equal(response.status, 401);
+});
+
+test('rejects an Administrator session before contacting the Staff-only upstream endpoint', async () => {
+  const response = await setup('secret', async () => { throw new Error('must not call backend'); }, 'Administrator')(request());
+  assert.equal(response.status, 403);
 });
 
 test('forwards only approved query parameters and bearer token', async () => {
@@ -43,13 +49,16 @@ test('enforces pageSize 20 even when the caller supplies a larger or duplicate v
   assert.equal(response.status, 200);
 });
 
-test('clears the local session for upstream 401 and 403 without leaking details', async () => {
-  for (const status of [401, 403]) {
-    const response = await setup('secret', async () => Response.json({ detail: 'private upstream data' }, { status }))(request());
-    assert.equal(response.status, status);
-    assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
-    assert.doesNotMatch(await response.text(), /private upstream data/);
-  }
+test('clears the local session only for upstream 401 and preserves it for 403 without leaking details', async () => {
+  const unauthenticated = await setup('secret', async () => Response.json({ detail: 'private upstream data' }, { status: 401 }))(request());
+  assert.equal(unauthenticated.status, 401);
+  assert.match(unauthenticated.headers.get('Set-Cookie'), /Max-Age=0/);
+  assert.doesNotMatch(await unauthenticated.text(), /private upstream data/);
+
+  const forbidden = await setup('secret', async () => Response.json({ detail: 'private upstream data' }, { status: 403 }))(request());
+  assert.equal(forbidden.status, 403);
+  assert.equal(forbidden.headers.get('Set-Cookie'), null);
+  assert.doesNotMatch(await forbidden.text(), /private upstream data/);
 });
 
 test('maps upstream and network failures to a safe 503', async () => {

@@ -27,12 +27,14 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('//attacker.example/admin', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('/admin/login', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('/admin/forgot-password', 'Administrator')).toBe('/admin');
+    expect(getSafeAdminReturnUrl('/admin/trips/active/42', 'Administrator')).toBe('/admin');
   });
 
   it('routes Staff to /admin/staff by default and prevents redirect into Administrator-only or pending routes', () => {
     expect(getSafeAdminReturnUrl(undefined, 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/staff', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/account/security', 'Staff')).toBe('/admin/account/security');
+    expect(getSafeAdminReturnUrl('/admin/trips/active/42', 'Staff')).toBe('/admin/trips/active/42');
     expect(getSafeAdminReturnUrl('/admin/tours/reviews', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest/new', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/tour-operator-applications/1', 'Staff')).toBe('/admin/staff');

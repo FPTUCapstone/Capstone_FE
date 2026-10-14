@@ -12,6 +12,7 @@ import {
   formatVietnamDateTime,
   type ActiveTripDetail,
   type GroupPanel,
+  type LocationDisclosure,
 } from './activeTripDetails';
 import { ActiveTripDetailsError, fetchActiveTripDetails } from './activeTripDetailsService';
 
@@ -57,7 +58,7 @@ export function ActiveTripDetailsScreen({ tripId }: { tripId: string }) {
         >
           ← Back to Active Trips
         </Link>
-        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Administrator monitoring</p>
+        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Staff monitoring</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-extrabold text-[#00152a]">{detail?.tripCode ?? `TRIP-${tripId}`}</h1>
           {detail ? <Badge>{detail.tripType === 'SelfPlanned' ? 'Self-Planned' : 'Tour'}</Badge> : null}
@@ -96,6 +97,8 @@ export function ActiveTripDetailsScreen({ tripId }: { tripId: string }) {
 }
 
 function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
+  // Coordinates are never rendered while disclosure is Redacted, whatever the payload contains.
+  const coordinatesWithheld = detail.locationDisclosure?.state === 'Redacted';
   return (
     <div className="space-y-6">
       <section aria-label="Trip status" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -106,8 +109,23 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
       </section>
 
       <section aria-label="Current traveler location" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
-        <SectionTitle>Current Traveler Location</SectionTitle>
-        {detail.currentLocation ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <SectionTitle>Current Traveler Location</SectionTitle>
+          {detail.locationDisclosure ? (
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                detail.locationDisclosure.state === 'Full'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : detail.locationDisclosure.state === 'Partial'
+                  ? 'bg-sky-100 text-sky-800'
+                  : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {detail.locationDisclosure.state} Disclosure
+            </span>
+          ) : null}
+        </div>
+        {detail.currentLocation && !coordinatesWithheld ? (
           <p className="mt-2 text-sm text-[#102a43]">
             <span className="font-mono">
               {formatCoordinate(detail.currentLocation.latitude)}, {formatCoordinate(detail.currentLocation.longitude)}
@@ -115,6 +133,7 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
             <span className="ml-2 text-[#486581]">as of {formatVietnamDateTime(detail.currentLocation.asOfUtc)}</span>
           </p>
         ) : <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.notAvailable}</p>}
+        <LocationDisclosureStatus disclosure={detail.locationDisclosure} />
       </section>
 
       <GroupPanelSection panels={detail.groupPanel} />
@@ -210,7 +229,8 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
 
       <section aria-label="Location trail" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Location Trail</SectionTitle>
-        {detail.locationTrail.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> :
+        {coordinatesWithheld ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.notAvailable}</p> :
+        detail.locationTrail.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> :
         <ScrollableTable label="Location trail table" headings={['Latitude', 'Longitude', 'Recorded', 'Captured']}>
           {detail.locationTrail.map((point, index) => (
             <tr key={`${point.recordedAtUtc}-${index}`} className="border-t border-[#e6edf5]">
@@ -282,3 +302,61 @@ const ScrollableTable = ({
     </table>
   </div>
 );
+
+function LocationDisclosureStatus({ disclosure }: { disclosure?: LocationDisclosure }) {
+  if (!disclosure) return null;
+  const { state, sharedMemberCount, hiddenMemberCount } = disclosure;
+
+  if (state === 'Redacted') {
+    return (
+      <div
+        className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900"
+        role="status"
+        aria-label="Location disclosure notice"
+      >
+        <span className="material-symbols-outlined text-[18px] text-amber-700" aria-hidden="true">
+          visibility_off
+        </span>
+        <div>
+          <span className="font-semibold">Location Data Redacted: </span>
+          <span>
+            No active Operations Staff location disclosure consent is granted for this trip session. Precise coordinates are withheld in compliance with traveler privacy consent.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === 'Partial') {
+    return (
+      <div
+        className="mt-3 flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-950"
+        role="status"
+        aria-label="Location disclosure notice"
+      >
+        <span className="material-symbols-outlined text-[18px] text-sky-700" aria-hidden="true">
+          info
+        </span>
+        <div>
+          <span className="font-semibold">Partial Location Disclosure: </span>
+          <span>
+            Coordinates are shown for {sharedMemberCount} consenting {sharedMemberCount === 1 ? 'member' : 'members'}. {hiddenMemberCount} {hiddenMemberCount === 1 ? 'member has' : 'members have'} not granted or revoked Staff disclosure consent.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800"
+      role="status"
+      aria-label="Location disclosure notice"
+    >
+      <span className="material-symbols-outlined text-[16px] text-emerald-600" aria-hidden="true">
+        verified_user
+      </span>
+      <span>Full Disclosure: All group members have active Operations Staff consent.</span>
+    </div>
+  );
+}

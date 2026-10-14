@@ -52,6 +52,9 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(
       within(activeSection).getByRole('link', { name: /Open Security Settings/i }).getAttribute('href'),
     ).toBe('/admin/account/security');
+    expect(
+      within(activeSection).getByRole('link', { name: /Open Active Trips/i }).getAttribute('href'),
+    ).toBe('/admin/trips/active');
     expect(within(activeSection).queryByRole('link', { name: /Inspect Application Workspace/i })).toBeNull();
     expect(within(activeSection).queryByRole('link', { name: /Open Review Queue/i })).toBeNull();
     expect(within(activeSection).queryByRole('link', { name: /Open POI Creator/i })).toBeNull();
@@ -63,12 +66,12 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     const disabledButtons = within(pendingSection).getAllByRole('button', {
       name: adminStaffEn.staffDashboard.unavailableModuleLabel,
     });
-    expect(disabledButtons.length).toBe(9);
+    expect(disabledButtons.length).toBe(8);
     for (const button of disabledButtons) {
       expect((button as HTMLButtonElement).disabled).toBe(true);
     }
 
-    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(8);
+    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(7);
     expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.scheduledBatch).length).toBe(1);
     expect(screen.getByText(adminStaffEn.staffDashboard.analyticsNoticeStatus)).toBeTruthy();
 
@@ -136,7 +139,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(poiCatalogCard).queryByRole('link')).toBeNull();
   });
 
-  it('hides Administrator-only and non-Staff-ready navigation items when rendered for a Staff actor and shows them for an Administrator actor', () => {
+  it('shows Active Trips only for Staff and keeps Administrator-only navigation hidden for Staff', () => {
     const { unmount } = render(<AdminNavigation role="Staff" />);
     const staffNav = screen.getByRole('navigation', { name: adminStaffEn.navigation.navAriaLabel });
 
@@ -146,6 +149,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeNull();
+    expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.activeTrips })).toBeTruthy();
 
     unmount();
 
@@ -157,6 +161,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeTruthy();
+    expect(within(adminNav).queryByRole('link', { name: adminStaffEn.navigation.activeTrips })).toBeNull();
   });
 
   it('renders semantic English AdminAccessDeniedView with a link back to /admin/staff', () => {
@@ -170,6 +175,23 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     });
     expect(staffLink.getAttribute('href')).toBe('/admin/staff');
     expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
+  });
+
+  it('explains that Active Trips requires a Staff account when an Administrator is denied', () => {
+    render(<AdminAccessDeniedView requiredRole="Staff" />);
+
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: adminStaffEn.accessDenied.staffOnlyTitle,
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText(adminStaffEn.accessDenied.staffOnlyDescription)).toBeTruthy();
+    expect(
+      screen.getByRole('link', {
+        name: adminStaffEn.accessDenied.returnToAdminDashboardButton,
+      }).getAttribute('href'),
+    ).toBe('/admin');
   });
 
   it('requires a valid BFF HMAC session seal to resolve Staff or Administrator roles and rejects unsealed or non-administration tokens', () => {

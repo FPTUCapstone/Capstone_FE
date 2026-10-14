@@ -1,12 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({
+const { cookiesMock, fetchBackendMock, verifyAdminSessionMock } = vi.hoisted(() => ({
   cookiesMock: vi.fn(),
   fetchBackendMock: vi.fn(),
+  verifyAdminSessionMock: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
+vi.mock('@/lib/server/adminSession', () => ({
+  ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
+  clearAdminSession: (response: Response) => {
+    response.headers.append('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0');
+    return response;
+  },
+  jsonNoStore: (body: unknown, status = 200) => Response.json(body, { status }),
+  verifyAdminSessionFromCookies: verifyAdminSessionMock,
+}));
 
 import { proxyActiveTrips } from './activeTripsProxy';
 
@@ -18,7 +28,10 @@ function request(query = '') {
   return new Request(`http://localhost:3001/api/admin/trips/active${query ? `?${query}` : ''}`);
 }
 
-beforeEach(() => cookiesMock.mockResolvedValue(cookieJar('admin-token')));
+beforeEach(() => {
+  cookiesMock.mockResolvedValue(cookieJar('admin-token'));
+  verifyAdminSessionMock.mockReturnValue({ role: 'Staff' });
+});
 afterEach(() => vi.clearAllMocks());
 
 describe('active trips proxy', () => {
@@ -58,5 +71,20 @@ describe('active trips proxy', () => {
 
     expect(fetchBackendMock.mock.calls[0][0]).toBe('/api/v1/admin/trips/active?pageNumber=2&pageSize=20');
     expect(fetchBackendMock.mock.calls[0][1].headers.Authorization).toBe('Bearer admin-token');
+  });
+
+  it('answers 401 without contacting backend when cookie is missing', async () => {
+    cookiesMock.mockResolvedValue({ get: () => undefined });
+    verifyAdminSessionMock.mockReturnValue(null);
+    const response = await proxyActiveTrips(request());
+    expect(response.status).toBe(401);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects an Administrator session with 403 before contacting backend', async () => {
+    verifyAdminSessionMock.mockReturnValue({ role: 'Administrator' });
+    const response = await proxyActiveTrips(request());
+    expect(response.status).toBe(403);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 });

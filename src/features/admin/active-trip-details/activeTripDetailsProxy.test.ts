@@ -1,24 +1,73 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({ cookiesMock: vi.fn(), fetchBackendMock: vi.fn() }));
+const { cookiesMock, fetchBackendMock, verifyAdminSessionMock } = vi.hoisted(() => ({
+  cookiesMock: vi.fn(),
+  fetchBackendMock: vi.fn(),
+  verifyAdminSessionMock: vi.fn(),
+}));
 vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
+vi.mock('@/lib/server/adminSession', () => ({
+  ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
+  clearAdminSession: (response: Response) => {
+    response.headers.append('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0');
+    return response;
+  },
+  jsonNoStore: (body: unknown, status = 200) => Response.json(body, { status }),
+  verifyAdminSessionFromCookies: verifyAdminSessionMock,
+}));
 
 import { proxyActiveTripDetails } from './activeTripDetailsProxy';
 
 beforeEach(() => {
   cookiesMock.mockResolvedValue({ get: (name: string) => (name === 'tripmate_admin_access_token' ? { value: 'admin-token' } : undefined) });
+  verifyAdminSessionMock.mockReturnValue({ role: 'Staff' });
 });
 afterEach(() => vi.clearAllMocks());
 
 describe('active trip details proxy', () => {
-  it('forwards the admin cookie bearer for a valid id', async () => {
+  it('forwards the Staff session bearer for a valid id', async () => {
     fetchBackendMock.mockResolvedValue(new Response(JSON.stringify({ tripId: '42' }), { status: 200 }));
     const res = await proxyActiveTripDetails('42');
     expect(res.status).toBe(200);
     const [path, init] = fetchBackendMock.mock.calls[0];
     expect(path).toBe('/api/v1/admin/trips/active/42');
     expect(init.headers.Authorization).toBe('Bearer admin-token');
+  });
+
+  it('sanitizes coordinates when location disclosure is Redacted', async () => {
+    const upstreamPayload = {
+      tripId: '42',
+      locationDisclosure: { state: 'Redacted', sharedMemberCount: 0, hiddenMemberCount: 2 },
+      currentLocation: { latitude: 10.7769, longitude: 106.7009, asOfUtc: '2026-10-14T03:00:00Z' },
+      locationTrail: [
+        { latitude: 10.7769, longitude: 106.7009, recordedAtUtc: '2026-10-14T03:00:00Z', isOfflineCaptured: false },
+      ],
+    };
+    fetchBackendMock.mockResolvedValue(new Response(JSON.stringify(upstreamPayload), { status: 200 }));
+    const res = await proxyActiveTripDetails('42');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as typeof upstreamPayload;
+    expect(body.locationDisclosure.state).toBe('Redacted');
+    expect(body.currentLocation).toBeNull();
+    expect(body.locationTrail).toEqual([]);
+  });
+
+  it('preserves coordinates when location disclosure is not Redacted', async () => {
+    const upstreamPayload = {
+      tripId: '42',
+      locationDisclosure: { state: 'Full', sharedMemberCount: 2, hiddenMemberCount: 0 },
+      currentLocation: { latitude: 10.7769, longitude: 106.7009, asOfUtc: '2026-10-14T03:00:00Z' },
+      locationTrail: [
+        { latitude: 10.7769, longitude: 106.7009, recordedAtUtc: '2026-10-14T03:00:00Z', isOfflineCaptured: false },
+      ],
+    };
+    fetchBackendMock.mockResolvedValue(new Response(JSON.stringify(upstreamPayload), { status: 200 }));
+    const res = await proxyActiveTripDetails('42');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as typeof upstreamPayload;
+    expect(body.currentLocation).toEqual({ latitude: 10.7769, longitude: 106.7009, asOfUtc: '2026-10-14T03:00:00Z' });
+    expect(body.locationTrail).toHaveLength(1);
   });
 
   it.each(['0', '-1', '1abc', '1.5', '1e3', '+1', ' 1', '01', '', '9223372036854775808'])(
@@ -31,17 +80,26 @@ describe('active trip details proxy', () => {
 
   it('answers 401 without contacting the backend when the cookie is missing', async () => {
     cookiesMock.mockResolvedValue({ get: () => undefined });
+    verifyAdminSessionMock.mockReturnValue(null);
     const res = await proxyActiveTripDetails('42');
     expect(res.status).toBe(401);
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it.each([401, 403])('clears the session cookie when upstream answers %i', async status => {
+  it('rejects an Administrator session before contacting the Staff-only upstream endpoint', async () => {
+    verifyAdminSessionMock.mockReturnValue({ role: 'Administrator' });
+    const res = await proxyActiveTripDetails('42');
+    expect(res.status).toBe(403);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
+  it.each([[401, true], [403, false]])('maps upstream %i and clears the session: %s', async (status, clearsSession) => {
     fetchBackendMock.mockResolvedValue(new Response('denied', { status }));
     const res = await proxyActiveTripDetails('42');
     expect(res.status).toBe(status);
     const cookies = res.headers.getSetCookie();
-    expect(cookies.some(c => c.startsWith('tripmate_admin_access_token=') && c.includes('Max-Age=0'))).toBe(true);
+    expect(cookies.some(cookie => cookie.startsWith('tripmate_admin_access_token=') && cookie.includes('Max-Age=0')))
+      .toBe(clearsSession);
   });
 
   it.each([[500, 503], [502, 503]])('maps upstream %i to %i', async (upstream, expected) => {
