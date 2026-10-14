@@ -52,6 +52,9 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(
       within(activeSection).getByRole('link', { name: /Open Security Settings/i }).getAttribute('href'),
     ).toBe('/admin/account/security');
+    expect(
+      within(activeSection).getByRole('link', { name: /Open Active Trips/i }).getAttribute('href'),
+    ).toBe('/admin/trips/active');
     expect(within(activeSection).queryByRole('link', { name: /Inspect Application Workspace/i })).toBeNull();
     expect(within(activeSection).queryByRole('link', { name: /Open Review Queue/i })).toBeNull();
     expect(within(activeSection).queryByRole('link', { name: /Open POI Creator/i })).toBeNull();
@@ -63,12 +66,12 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     const disabledButtons = within(pendingSection).getAllByRole('button', {
       name: adminStaffEn.staffDashboard.unavailableModuleLabel,
     });
-    expect(disabledButtons.length).toBe(9);
+    expect(disabledButtons.length).toBe(8);
     for (const button of disabledButtons) {
       expect((button as HTMLButtonElement).disabled).toBe(true);
     }
 
-    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(8);
+    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(7);
     expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.scheduledBatch).length).toBe(1);
     expect(screen.getByText(adminStaffEn.staffDashboard.analyticsNoticeStatus)).toBeTruthy();
 

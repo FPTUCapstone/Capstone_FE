@@ -41,8 +41,33 @@ export async function proxyActiveTripDetails(id: string): Promise<Response> {
     }
     const body: unknown = await upstream.json().catch(() => null);
     if (body === null) return jsonNoStore({ title: 'TripMate returned an invalid response.' }, 503);
-    return jsonNoStore(body, upstream.status);
+    return jsonNoStore(sanitizeActiveTripDetailsPayload(body), upstream.status);
   } catch {
     return jsonNoStore({ title: 'TripMate is temporarily unable to process your request.' }, 503);
   }
+}
+
+/**
+ * Ensures no GPS coordinates reach the browser when location disclosure is Redacted.
+ */
+export function sanitizeActiveTripDetailsPayload(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return body;
+  }
+  const record = body as Record<string, unknown>;
+  const disclosure = record.locationDisclosure;
+  const isRedacted =
+    typeof disclosure === 'object' &&
+    disclosure !== null &&
+    (disclosure as Record<string, unknown>).state === 'Redacted';
+
+  if (!isRedacted) {
+    return body;
+  }
+
+  return {
+    ...record,
+    currentLocation: null,
+    locationTrail: [],
+  };
 }

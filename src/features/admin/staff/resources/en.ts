@@ -139,9 +139,9 @@ export const adminStaffEn = {
         category: 'Live Operations',
         description:
           'Monitor active traveler itineraries and review operational alerts across regions.',
-        status: 'pendingBackend' as const,
-        availabilityNote:
-          'Staff monitoring screens are available from navigation. Live data requires Backend Staff authorization for the active-trip endpoints.',
+        status: 'available' as const,
+        href: '/admin/trips/active',
+        actionLabel: 'Open Active Trips',
       },
       {
         id: 'platform-booking-oversight',

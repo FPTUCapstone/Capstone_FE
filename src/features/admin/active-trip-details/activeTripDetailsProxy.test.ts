@@ -35,6 +35,41 @@ describe('active trip details proxy', () => {
     expect(init.headers.Authorization).toBe('Bearer admin-token');
   });
 
+  it('sanitizes coordinates when location disclosure is Redacted', async () => {
+    const upstreamPayload = {
+      tripId: '42',
+      locationDisclosure: { state: 'Redacted', sharedMemberCount: 0, hiddenMemberCount: 2 },
+      currentLocation: { latitude: 10.7769, longitude: 106.7009, asOfUtc: '2026-10-14T03:00:00Z' },
+      locationTrail: [
+        { latitude: 10.7769, longitude: 106.7009, recordedAtUtc: '2026-10-14T03:00:00Z', isOfflineCaptured: false },
+      ],
+    };
+    fetchBackendMock.mockResolvedValue(new Response(JSON.stringify(upstreamPayload), { status: 200 }));
+    const res = await proxyActiveTripDetails('42');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as typeof upstreamPayload;
+    expect(body.locationDisclosure.state).toBe('Redacted');
+    expect(body.currentLocation).toBeNull();
+    expect(body.locationTrail).toEqual([]);
+  });
+
+  it('preserves coordinates when location disclosure is not Redacted', async () => {
+    const upstreamPayload = {
+      tripId: '42',
+      locationDisclosure: { state: 'Full', sharedMemberCount: 2, hiddenMemberCount: 0 },
+      currentLocation: { latitude: 10.7769, longitude: 106.7009, asOfUtc: '2026-10-14T03:00:00Z' },
+      locationTrail: [
+        { latitude: 10.7769, longitude: 106.7009, recordedAtUtc: '2026-10-14T03:00:00Z', isOfflineCaptured: false },
+      ],
+    };
+    fetchBackendMock.mockResolvedValue(new Response(JSON.stringify(upstreamPayload), { status: 200 }));
+    const res = await proxyActiveTripDetails('42');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as typeof upstreamPayload;
+    expect(body.currentLocation).toEqual({ latitude: 10.7769, longitude: 106.7009, asOfUtc: '2026-10-14T03:00:00Z' });
+    expect(body.locationTrail).toHaveLength(1);
+  });
+
   it.each(['0', '-1', '1abc', '1.5', '1e3', '+1', ' 1', '01', '', '9223372036854775808'])(
     'answers 400 without contacting the backend for %s',
     async id => {
