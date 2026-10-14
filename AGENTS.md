@@ -46,7 +46,11 @@ architecture and delivery rules below.
 
 - Production Web may contain Public, approved Traveler, approved Tour Operator, and Administrator product areas.
 - Determine platform ownership from the latest approved SRS and `docs/WEB_SCOPE_MATRIX.md`; never invent Web equivalents of `MOBILE_ONLY` or `NON_SCREEN` use cases.
-- Current implemented routes remain `/` and `/admin/*`; future namespaces are created only by an approved implementation task.
+- Current frontend route examples include `/`, `/account/*`, `/admin/*`, `/partner/*`,
+  `/plan`, `/itinerary/*`, `/pois/*`, and `/tours/*`. This is not an exhaustive route inventory.
+- Route examples in `AGENTS.md` describe current frontend implementation. Product scope and
+  platform ownership remain governed by the approved SRS and `docs/WEB_SCOPE_MATRIX.md`.
+  New routes or namespaces require an approved implementation task; examples do not authorize them.
 - `src/legacy/mobile/` is historical visual reference code, not a platform-scope authority or production Next.js source.
 - Distinguish mock/prototype behavior from production integration.
 
@@ -106,6 +110,7 @@ when deciding whether a new PR may be created. Reporting task completion is not 
 - New features should include appropriate automated tests.
 - Bug fixes should include regression tests when practical.
 - Tests must verify observable behavior, not implementation details.
+- Failed tests block PR creation; test failures must be fixed and must not be ignored.
 - Do not skip, disable, or exclude failing tests to create a PR.
 - If appropriate tests cannot be added, explain the reason in the PR description; this does not
   excuse failures in the existing required test suite.
