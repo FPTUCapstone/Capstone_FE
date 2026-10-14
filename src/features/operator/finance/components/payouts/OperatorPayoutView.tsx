@@ -133,6 +133,13 @@ export function OperatorPayoutView() {
         <p className="mt-1 text-xs text-slate-500">
           {financeEn.payouts.subtitle}
         </p>
+        <p
+          id="payout-action-integration-status"
+          role="status"
+          className="mt-1 text-xs font-medium text-amber-700"
+        >
+          {financeEn.messages.BACKEND_INTEGRATION_PENDING}
+        </p>
       </div>
 
       {/* Production NO_BACKEND Notice */}

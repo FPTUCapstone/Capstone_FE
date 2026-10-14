@@ -16,7 +16,6 @@ interface SettlementPeriodsTableProps {
 export function SettlementPeriodsTable({
   periods,
   onRequestPayout,
-  isLoading = false,
 }: SettlementPeriodsTableProps) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
@@ -73,11 +72,10 @@ export function SettlementPeriodsTable({
                   PAYOUT_CONFIG.DEFAULT_MINIMUM_PAYOUT_AMOUNT;
                 const hasPending = period.hasPendingPayout;
 
-                const isEligible =
-                  isClosed && hasCompletedTours && reachesMinimum && !hasPending;
-
                 let disabledReason = '';
-                if (!isClosed || !hasCompletedTours) {
+                if (isClosed && hasCompletedTours && reachesMinimum && !hasPending) {
+                  disabledReason = financeEn.messages.BACKEND_INTEGRATION_PENDING;
+                } else if (!isClosed || !hasCompletedTours) {
                   disabledReason = financeEn.payouts.periods.ineligibleHelp;
                 } else if (!reachesMinimum) {
                   disabledReason = financeEn.payouts.periods.belowMinHelp;
@@ -138,7 +136,8 @@ export function SettlementPeriodsTable({
                         <button
                           type="button"
                           onClick={() => onRequestPayout(period)}
-                          disabled={!isEligible || isLoading}
+                          disabled
+                          aria-describedby="payout-action-integration-status"
                           title={disabledReason}
                           className="inline-flex items-center gap-1.5 rounded-xl bg-[#006B5F] px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:cursor-not-allowed disabled:opacity-40"
                         >

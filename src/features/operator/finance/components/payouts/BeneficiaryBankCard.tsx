@@ -13,7 +13,6 @@ interface BeneficiaryBankCardProps {
 export function BeneficiaryBankCard({
   bankInfo,
   onUpdateBank,
-  isLoading = false,
 }: BeneficiaryBankCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftBank, setDraftBank] = useState<BeneficiaryBankDto>(bankInfo);
@@ -72,7 +71,9 @@ export function BeneficiaryBankCard({
           <button
             type="button"
             onClick={handleStartEdit}
-            disabled={isLoading}
+            disabled
+            aria-describedby="beneficiary-bank-integration-status"
+            title={financeEn.messages.BACKEND_INTEGRATION_PENDING}
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[16px]">edit</span>
@@ -80,6 +81,14 @@ export function BeneficiaryBankCard({
           </button>
         )}
       </div>
+
+      <p
+        id="beneficiary-bank-integration-status"
+        role="status"
+        className="mt-3 text-xs font-medium text-amber-700"
+      >
+        {financeEn.messages.BACKEND_INTEGRATION_PENDING}
+      </p>
 
       {isEditing ? (
         <form onSubmit={handleSave} className="mt-4 space-y-4">
@@ -171,6 +180,9 @@ export function BeneficiaryBankCard({
             </button>
             <button
               type="submit"
+              disabled
+              aria-describedby="beneficiary-bank-integration-status"
+              title={financeEn.messages.BACKEND_INTEGRATION_PENDING}
               className="rounded-xl bg-[#006B5F] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
             >
               {financeEn.payouts.bank.saveBtn}

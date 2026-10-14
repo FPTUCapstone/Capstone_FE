@@ -1,5 +1,7 @@
 # TripMate Web Scope Matrix
 
+Finance traceability for PR #54 is recorded in [PR54-FINANCE-SCREEN-SPEC-AUDIT.md](./PR54-FINANCE-SCREEN-SPEC-AUDIT.md). The revenue and payout Web Screen Specification approval remains pending, so financial mutation triggers remain disabled.
+
 Audit date: 2026-09-06
 
 This document is the repository-facing Web scope authority derived from the official TripMate project documents. It does not replace the approved SRS. A use case being listed here does not by itself authorize implementation: a new visual Web screen still requires an approved Web Screen Specification, reviewed UI, and an approved implementation task.

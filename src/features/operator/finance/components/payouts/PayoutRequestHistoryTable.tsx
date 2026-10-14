@@ -16,7 +16,6 @@ interface PayoutRequestHistoryTableProps {
 export function PayoutRequestHistoryTable({
   requests,
   onCancelRequest,
-  isLoading = false,
 }: PayoutRequestHistoryTableProps) {
   const getStatusBadge = (status: PayoutRequestDto['status']) => {
     switch (status) {
@@ -124,7 +123,10 @@ export function PayoutRequestHistoryTable({
                         <button
                           type="button"
                           onClick={() => onCancelRequest(req)}
-                          disabled={isLoading}
+                          disabled
+                          aria-describedby="payout-action-integration-status"
+                          aria-label={`${financeEn.payouts.history.btnCancelRequest}. ${financeEn.messages.BACKEND_INTEGRATION_PENDING}`}
+                          title={financeEn.messages.BACKEND_INTEGRATION_PENDING}
                           className="inline-flex items-center gap-1 rounded-xl border border-rose-200 px-2.5 py-1 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[14px]">

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { formatVndCurrency } from '../../utils/financeFormat';
 import { financeEn } from '../../resources/en';
 import type { PayoutRequestDto } from '../../types/payoutLifecycle';
+import { useAccessibleFinanceDialog } from '../useAccessibleFinanceDialog';
 
 interface CancelPayoutDialogProps {
   isOpen: boolean;
@@ -18,18 +19,18 @@ export function CancelPayoutDialog({
   onClose,
   onConfirmCancel,
 }: CancelPayoutDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  const handleClose = useCallback(() => {
+    setErrorMessage(null);
+    onClose();
+  }, [onClose]);
+  const dialogRef = useAccessibleFinanceDialog(
+    isOpen && Boolean(request),
+    handleClose,
+    isSubmitting
+  );
 
   if (!isOpen || !request) return null;
 
@@ -39,7 +40,7 @@ export function CancelPayoutDialog({
     try {
       const success = await onConfirmCancel(request.id);
       if (success) {
-        onClose();
+        handleClose();
       }
     } catch {
       setErrorMessage(financeEn.messages.MSG127);
@@ -62,6 +63,7 @@ export function CancelPayoutDialog({
     >
       <div
         ref={dialogRef}
+        tabIndex={-1}
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl transition-all"
       >
         <div className="flex items-center gap-3">
@@ -93,7 +95,7 @@ export function CancelPayoutDialog({
         <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isSubmitting}
             className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
           >

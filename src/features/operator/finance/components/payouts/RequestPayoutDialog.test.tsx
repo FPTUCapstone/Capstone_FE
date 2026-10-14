@@ -91,7 +91,39 @@ describe('RequestPayoutDialog (Screen #92)', () => {
     fireEvent.click(cancelBtn);
     expect(mockOnClose).toHaveBeenCalledTimes(1);
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(mockOnClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('focuses the first control, traps Tab in both directions, and restores trigger focus', () => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const { unmount } = render(
+      <RequestPayoutDialog
+        isOpen={true}
+        period={mockPeriod}
+        bankInfo={mockBank}
+        onClose={mockOnClose}
+        onSubmit={mockOnSubmit}
+      />
+    );
+
+    const closeButton = screen.getByRole('button', { name: /Close dialog/i });
+    const cancelButton = screen.getByRole('button', { name: /^Cancel$/i });
+    expect(document.activeElement).toBe(closeButton);
+
+    cancelButton.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(closeButton);
+
+    closeButton.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(cancelButton);
+
+    unmount();
+    expect(document.activeElement).toBe(trigger);
+    trigger.remove();
   });
 });

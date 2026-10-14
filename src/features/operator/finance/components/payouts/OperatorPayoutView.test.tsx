@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OperatorPayoutView } from './OperatorPayoutView';
 import { resetDemoPayoutState } from '../../services/operatorPayoutService';
@@ -63,14 +63,14 @@ describe('OperatorPayoutView (Screen #91)', () => {
     render(<OperatorPayoutView />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Backend Integration Pending/i)).toBeDefined();
+      expect(screen.getAllByText(/Backend Integration Pending/i).length).toBeGreaterThan(0);
       expect(
         screen.getByText(/Payout settlement and banking integration is pending/i)
       ).toBeDefined();
     });
   });
 
-  it('opens Screen #92 Request Payout dialog when clicking Request Payout on an eligible closed period', async () => {
+  it('keeps payout and bank mutation actions disabled with an accessible backend-pending explanation', async () => {
     render(<OperatorPayoutView />);
 
     await waitFor(() => {
@@ -78,40 +78,10 @@ describe('OperatorPayoutView (Screen #91)', () => {
     });
 
     const requestButtons = screen.getAllByRole('button', { name: /Request Payout/i });
-    expect(requestButtons.length).toBeGreaterThan(0);
-    fireEvent.click(requestButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeDefined();
-      expect(
-        screen.getByRole('heading', { name: /Submit Payout Request/i })
-      ).toBeDefined();
-      expect(screen.getAllByText(/Payable Net Amount/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/17\.640\.000 ₫/i).length).toBeGreaterThan(0);
-    });
-  });
-
-  it('allows editing and saving beneficiary bank information', async () => {
-    render(<OperatorPayoutView />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Edit Bank Details/i)).toBeDefined();
-    });
-
+    expect(requestButtons[0].hasAttribute('disabled')).toBe(true);
     const editBtn = screen.getByRole('button', { name: /Edit Bank Details/i });
-    fireEvent.click(editBtn);
-
-    const bankInput = screen.getByLabelText(/Bank Name/i);
-    fireEvent.change(bankInput, { target: { value: 'MB Bank' } });
-
-    const saveBtn = screen.getByRole('button', { name: /Save Bank Details/i });
-    fireEvent.click(saveBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/MB Bank/i)).toBeDefined();
-      expect(
-        screen.getByText(/Beneficiary bank details updated successfully/i)
-      ).toBeDefined();
-    });
+    expect(editBtn.hasAttribute('disabled')).toBe(true);
+    expect(screen.getAllByText('Backend integration pending').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

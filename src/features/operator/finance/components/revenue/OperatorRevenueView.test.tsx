@@ -63,7 +63,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
     render(<OperatorRevenueView />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Backend Integration Pending/i)).toBeDefined();
+      expect(screen.getAllByText(/Backend Integration Pending/i).length).toBeGreaterThan(0);
       expect(
         screen.getByText(/Revenue calculation and reporting backend integration is pending/i)
       ).toBeDefined();
@@ -92,51 +92,23 @@ describe('OperatorRevenueView (Screen #89)', () => {
     });
   });
 
-  it('opens Screen #90 Export Revenue Report dialog when Export Report button is clicked', async () => {
+  it('disables the export trigger and explains that backend integration is pending', async () => {
     render(<OperatorRevenueView />);
 
     const exportButtons = screen.getAllByRole('button', { name: /Export Report/i });
     expect(exportButtons.length).toBeGreaterThan(0);
-    fireEvent.click(exportButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeDefined();
-      expect(
-        screen.getByRole('heading', { name: /Export Revenue Report/i })
-      ).toBeDefined();
-      expect(screen.getByText(/Applied Filter Summary/i)).toBeDefined();
-    });
+    exportButtons.forEach((button) => expect(button.hasAttribute('disabled')).toBe(true));
+    expect(screen.getAllByText('Backend integration pending').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('does not show a fake successful-export toast when Demo async simulation is submitted', async () => {
+  it('does not expose the demo export simulation through the disabled workspace trigger', async () => {
     render(<OperatorRevenueView />);
 
     const exportButtons = screen.getAllByRole('button', { name: /Export Report/i });
+    expect(exportButtons[0].hasAttribute('disabled')).toBe(true);
     fireEvent.click(exportButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeDefined();
-    });
-
-    const checkbox = screen.getByRole('checkbox');
-    fireEvent.click(checkbox);
-
-    const submitExportBtn = screen.getByRole('button', { name: /Export File/i });
-    fireEvent.click(submitExportBtn);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('Demo Async Export Simulation')
-      ).toBeDefined();
-      expect(
-        screen.getByText(
-          /No background export job was created and no notification will be sent/i
-        )
-      ).toBeDefined();
-    });
-
-    // Must keep dialog open with simulation notice and never show the green export-completed toast
-    expect(screen.getByRole('dialog')).toBeDefined();
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(
       screen.queryByText(/Revenue report exported successfully/i)
     ).toBeNull();

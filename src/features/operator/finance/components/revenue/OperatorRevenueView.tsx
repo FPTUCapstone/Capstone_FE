@@ -158,12 +158,23 @@ export function OperatorRevenueView() {
         <button
           type="button"
           onClick={() => setIsExportDialogOpen(true)}
+          disabled
+          aria-describedby="revenue-export-integration-status"
+          title={financeEn.messages.BACKEND_INTEGRATION_PENDING}
           className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
         >
           <span className="material-symbols-outlined text-[18px]">download</span>
           <span>{financeEn.revenue.filters.exportBtn}</span>
         </button>
       </div>
+
+      <p
+        id="revenue-export-integration-status"
+        role="status"
+        className="text-xs font-medium text-amber-700"
+      >
+        {financeEn.messages.BACKEND_INTEGRATION_PENDING}
+      </p>
 
       {/* Production NO_BACKEND Notice */}
       {!isDemo && (

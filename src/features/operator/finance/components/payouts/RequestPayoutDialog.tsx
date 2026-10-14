@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { formatVndCurrency } from '../../utils/financeFormat';
 import { financeEn } from '../../resources/en';
 import type {
   BeneficiaryBankDto,
   SettlementPeriodDto,
 } from '../../types/payoutLifecycle';
+import { useAccessibleFinanceDialog } from '../useAccessibleFinanceDialog';
 
 interface RequestPayoutDialogProps {
   isOpen: boolean;
@@ -23,7 +24,6 @@ export function RequestPayoutDialog({
   onClose,
   onSubmit,
 }: RequestPayoutDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,15 +34,11 @@ export function RequestPayoutDialog({
     onClose();
   }, [onClose]);
 
-  // Escape key listener
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleClose]);
+  const dialogRef = useAccessibleFinanceDialog(
+    isOpen && Boolean(period),
+    handleClose,
+    isSubmitting
+  );
 
   if (!isOpen || !period) return null;
 
@@ -83,6 +79,7 @@ export function RequestPayoutDialog({
     >
       <div
         ref={dialogRef}
+        tabIndex={-1}
         className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl transition-all"
       >
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">

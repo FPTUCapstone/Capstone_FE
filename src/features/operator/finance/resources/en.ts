@@ -235,6 +235,7 @@ export const financeEn = {
     MSG106: 'Download was interrupted. The file remains available in export history.',
     PENDING_BE_INTEGRATION:
       'Finance and payout services are pending backend API integration. No financial values are fabricated in production.',
+    BACKEND_INTEGRATION_PENDING: 'Backend integration pending',
     DEMO_ASYNC_EXPORT_SIMULATION:
       'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
   },
