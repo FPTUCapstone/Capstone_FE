@@ -2,9 +2,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { PublishDialog } from './PublishDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 
 afterEach(() => cleanup());
+
+const copy = { title: 'Publish landing page content', body: 'Body text.', confirmLabel: 'Publish' };
 
 function Harness({ busy = false, onConfirm = () => {} }: { busy?: boolean; onConfirm?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -13,14 +15,14 @@ function Harness({ busy = false, onConfirm = () => {} }: { busy?: boolean; onCon
       <button type="button" onClick={() => setOpen(true)}>
         Open
       </button>
-      <PublishDialog open={open} busy={busy} onConfirm={onConfirm} onCancel={() => setOpen(false)} />
+      <ConfirmDialog {...copy} open={open} busy={busy} onConfirm={onConfirm} onCancel={() => setOpen(false)} />
     </>
   );
 }
 
-describe('PublishDialog', () => {
+describe('ConfirmDialog', () => {
   it('renders nothing while closed', () => {
-    render(<PublishDialog open={false} busy={false} onConfirm={() => {}} onCancel={() => {}} />);
+    render(<ConfirmDialog {...copy} open={false} busy={false} onConfirm={() => {}} onCancel={() => {}} />);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
@@ -57,10 +59,10 @@ describe('PublishDialog', () => {
 
   it('confirms through the Publish button and disables it while busy', () => {
     const onConfirm = vi.fn();
-    const { rerender } = render(<PublishDialog open busy={false} onConfirm={onConfirm} onCancel={() => {}} />);
+    const { rerender } = render(<ConfirmDialog {...copy} open busy={false} onConfirm={onConfirm} onCancel={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    rerender(<PublishDialog open busy onConfirm={onConfirm} onCancel={() => {}} />);
+    rerender(<ConfirmDialog {...copy} open busy onConfirm={onConfirm} onCancel={() => {}} />);
     expect((screen.getByRole('button', { name: 'Publish' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

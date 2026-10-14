@@ -47,6 +47,8 @@ export const landingContentEn = {
       title: 'Featured tours',
       empty: 'No approved tours are available.',
       loadFailed: 'Approved tours could not be loaded.',
+      retry: 'Retry loading tours',
+      loading: 'Checking that the selected tours are still approved…',
     },
     banner: {
       title: 'Promotional banner',
@@ -60,12 +62,18 @@ export const landingContentEn = {
       remove: 'Remove image',
       uploading: 'Uploading…',
       none: 'No image selected.',
+      retry: 'Retry upload',
     },
     publishDialog: {
       title: 'Publish landing page content',
       body: 'Publishing makes this version visible on the public landing page. The current published version is kept in the version history.',
       confirm: 'Publish',
       cancel: 'Cancel',
+    },
+    restoreDialog: {
+      title: 'Restore this version?',
+      body: 'You have unsaved changes. Restoring replaces them with the selected version.',
+      confirm: 'Restore',
     },
     actions: {
       publish: 'Publish',

@@ -102,7 +102,7 @@ describe('landing content proxy', () => {
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it('returns 403 for a verified session whose role is neither Administrator nor Staff', async () => {
+  it('defense in depth: returns 403 if the verifier ever yields a role other than Administrator or Staff', async () => {
     vi.mocked(verifyAdminSessionFromCookies).mockReturnValueOnce({
       role: 'Operator',
       userId: 1,
@@ -205,7 +205,31 @@ describe('landing content proxy', () => {
     expect(res.status).toBe(401);
   });
 
-  it.each([403, 404, 409, 422])('passes an upstream %i body through', async (status) => {
+  it('replaces an upstream 403 or 404 body with a generic title', async () => {
+    upstreamReply(403, { traceId: 'secret-trace' });
+    const forbidden = await proxyLandingContent(makeRequest('GET'), undefined);
+    expect(forbidden.status).toBe(403);
+    expect(await forbidden.json()).toEqual({ title: 'You do not have permission to access this function.' });
+    upstreamReply(404, { traceId: 'secret-trace' });
+    const missing = await proxyLandingContent(makeRequest('GET'), undefined);
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ title: 'Not found.' });
+  });
+
+  it('refuses an oversized upload by declared length or by actual size without calling the backend', async () => {
+    const contentType = 'multipart/form-data; boundary=abc';
+    const declared = new Request(ROUTE_URL, {
+      method: 'POST',
+      headers: { origin: SAME_ORIGIN, 'content-type': contentType, 'content-length': String(7 * 1024 * 1024) },
+      body: 'x',
+    });
+    expect((await proxyLandingContent(declared, ['media'])).status).toBe(413);
+    const actual = makeRequest('POST', { origin: SAME_ORIGIN, body: 'x'.repeat(6 * 1024 * 1024 + 1), contentType });
+    expect((await proxyLandingContent(actual, ['media'])).status).toBe(413);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
+  it.each([409, 422])('passes an upstream %i body through', async (status) => {
     upstreamReply(status, { errors: { 'hero.headline': 'required' } });
     const res = await proxyLandingContent(
       makeRequest('POST', { origin: SAME_ORIGIN, body: '{}', contentType: 'application/json' }),

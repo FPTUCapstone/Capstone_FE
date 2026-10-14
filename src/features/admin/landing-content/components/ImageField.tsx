@@ -1,14 +1,17 @@
 import { createContext, useContext, useId, useState } from 'react';
 
 import { validateImageFile, type ImageRef } from '../landingContent';
-import { uploadImage } from '../landingContentService';
+import { LandingContentError, uploadImage } from '../landingContentService';
 import { landingContentEn, type ContentErrorKey } from '../resources/en';
 
 /**
  * The screen provides this so it can lock the editor while any upload runs: an upload writes back
  * through the onChange of the render that started it, so other edits during that time would be lost.
  */
-export const UploadStatusContext = createContext<(delta: 1 | -1) => void>(() => {});
+export const UploadStatusContext = createContext<{ track: (delta: 1 | -1) => void; onUnauthorized: () => void }>({
+  track: () => {},
+  onUnauthorized: () => {},
+});
 
 interface ImageFieldProps {
   label: string;
@@ -24,7 +27,8 @@ export function ImageField({ label, value, onChange, error, disabled }: ImageFie
   const copy = landingContentEn;
   const [fileError, setFileError] = useState<ContentErrorKey | null>(null);
   const [uploading, setUploading] = useState(false);
-  const trackUpload = useContext(UploadStatusContext);
+  const { track, onUnauthorized } = useContext(UploadStatusContext);
+  const [failedFile, setFailedFile] = useState<File | null>(null);
   const shownError = fileError ?? error;
 
   async function handleFile(file: File | undefined) {
@@ -36,15 +40,21 @@ export function ImageField({ label, value, onChange, error, disabled }: ImageFie
       return;
     }
     setFileError(null);
+    setFailedFile(null);
     setUploading(true);
-    trackUpload(1);
+    track(1);
     try {
       onChange(await uploadImage(file));
-    } catch {
-      setFileError('unavailable');
+    } catch (failure) {
+      if (failure instanceof LandingContentError && failure.status === 401) {
+        onUnauthorized();
+      } else {
+        setFileError('unavailable');
+        setFailedFile(file);
+      }
     } finally {
       setUploading(false);
-      trackUpload(-1);
+      track(-1);
     }
   }
 
@@ -89,6 +99,16 @@ export function ImageField({ label, value, onChange, error, disabled }: ImageFie
         <p id={errorId} className="mt-1 text-xs font-semibold text-[#b42318]">
           {copy.errors[shownError]}
         </p>
+      )}
+      {failedFile && !uploading && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => void handleFile(failedFile)}
+          className="mt-2 rounded-lg border border-[#b42318] px-2.5 py-1 text-xs font-bold text-[#b42318] disabled:opacity-50"
+        >
+          {copy.editor.image.retry}
+        </button>
       )}
     </div>
   );

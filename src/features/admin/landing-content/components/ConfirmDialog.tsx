@@ -2,18 +2,21 @@ import { useEffect, useId, useRef } from 'react';
 
 import { landingContentEn } from '../resources/en';
 
-interface PublishDialogProps {
+interface ConfirmDialogProps {
   open: boolean;
   busy: boolean;
+  title: string;
+  body: string;
+  confirmLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)';
 
-/** CR-05 confirmation modal for publishing: focus is trapped, Escape cancels, focus returns to the opener. */
-export function PublishDialog({ open, busy, onConfirm, onCancel }: PublishDialogProps) {
-  const copy = landingContentEn.editor.publishDialog;
+/** CR-05 confirmation modal: focus is trapped, Escape cancels, focus returns to the opener. */
+export function ConfirmDialog({ open, busy, title, body, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
+  const cancelLabel = landingContentEn.editor.actions.cancel;
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -59,9 +62,9 @@ export function PublishDialog({ open, busy, onConfirm, onCancel }: PublishDialog
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
       >
         <h2 id={titleId} className="text-lg font-extrabold text-[#00152a]">
-          {copy.title}
+          {title}
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-[#475467]">{copy.body}</p>
+        <p className="mt-2 text-sm leading-relaxed text-[#475467]">{body}</p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             ref={cancelRef}
@@ -70,7 +73,7 @@ export function PublishDialog({ open, busy, onConfirm, onCancel }: PublishDialog
             onClick={onCancel}
             className="rounded-xl border border-[#d0d7de] px-4 py-2 text-sm font-bold text-[#00152a]"
           >
-            {copy.cancel}
+            {cancelLabel}
           </button>
           <button
             type="button"
@@ -78,7 +81,7 @@ export function PublishDialog({ open, busy, onConfirm, onCancel }: PublishDialog
             onClick={onConfirm}
             className="rounded-xl bg-[#00152a] px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {copy.confirm}
+            {confirmLabel}
           </button>
         </div>
       </div>

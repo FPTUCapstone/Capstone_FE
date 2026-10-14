@@ -125,7 +125,7 @@ describe('UC-66 Landing Page Content Management page route', () => {
     expect((result as { type: unknown }).type).toBe(LandingContentScreen);
   });
 
-  it('denies a verified session whose role is neither Administrator nor Staff', async () => {
+  it('defense in depth: denies a verified session whose role is neither Administrator nor Staff', async () => {
     vi.mocked(verifyAdminSessionFromCookies).mockReturnValueOnce({
       role: 'Operator',
       userId: 1,

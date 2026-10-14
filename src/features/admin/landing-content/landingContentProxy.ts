@@ -12,6 +12,9 @@ import { landingContentEn } from './resources/en';
 
 const UPSTREAM_BASE = '/api/v1/admin/landing-content';
 
+// 5 MB image (BR-16) plus multipart framing; larger bodies are refused before they are buffered.
+const MAX_MEDIA_BODY_BYTES = 6 * 1024 * 1024;
+
 type BodyKind = 'none' | 'json' | 'multipart';
 
 // The only operations this proxy forwards. The upstream path is built from
@@ -67,7 +70,12 @@ export async function proxyLandingContent(request: Request, path: string[] | und
     if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
       return jsonNoStore({ title: 'Multipart content is required.' }, 415);
     }
+    const declared = Number(request.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > MAX_MEDIA_BODY_BYTES) {
+      return jsonNoStore({ title: 'The upload is too large.' }, 413);
+    }
     body = await request.arrayBuffer();
+    if (body.byteLength > MAX_MEDIA_BODY_BYTES) return jsonNoStore({ title: 'The upload is too large.' }, 413);
     headers['Content-Type'] = contentType;
   }
 
@@ -75,6 +83,9 @@ export async function proxyLandingContent(request: Request, path: string[] | und
     const upstream = await fetchBackend(entry.upstream, { method: request.method, headers, body });
     if (upstream.status >= 500) return jsonNoStore(UNAVAILABLE, 503);
     if (upstream.status === 401) return clearAdminSession(jsonNoStore(SIGN_IN_REQUIRED, 401));
+    // Upstream detail (trace ids, internals) is not exposed for these; 409 and 422 carry user-facing field data.
+    if (upstream.status === 403) return jsonNoStore({ title: landingContentEn.errors.forbidden }, 403);
+    if (upstream.status === 404) return jsonNoStore({ title: 'Not found.' }, 404);
     const result: unknown = await upstream.json().catch(() => null);
     return jsonNoStore(result ?? UNAVAILABLE, upstream.status);
   } catch {

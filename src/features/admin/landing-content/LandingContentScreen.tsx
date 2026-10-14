@@ -9,7 +9,7 @@ import { FeaturedToursBlock } from './components/FeaturedToursBlock';
 import { HeroBlock } from './components/HeroBlock';
 import { UploadStatusContext } from './components/ImageField';
 import { PreviewPanel } from './components/PreviewPanel';
-import { PublishDialog } from './components/PublishDialog';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { VersionPanel } from './components/VersionPanel';
 import {
   emptyContent,
@@ -55,6 +55,9 @@ export function LandingContentScreen() {
   const [message, setMessage] = useState<Message | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<string | null>(null);
+  const [toursKey, setToursKey] = useState(0);
+  const messageRef = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
 
   const { replace } = useRouter();
@@ -75,16 +78,6 @@ export function LandingContentScreen() {
         setShowErrors(false);
         setServerErrors({});
         setStatus('ready');
-        getApprovedTours().then(
-          (list) => {
-            if (cancelled) return;
-            setTours(list);
-            setToursFailed(false);
-          },
-          () => {
-            if (!cancelled) setToursFailed(true);
-          },
-        );
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -113,6 +106,35 @@ export function LandingContentScreen() {
     setReloadKey((key) => key + 1);
   }
 
+  // Approved tours load once the content is ready and again on demand; state is set from promise callbacks only.
+  useEffect(() => {
+    if (status !== 'ready') return;
+    let cancelled = false;
+    getApprovedTours().then(
+      (list) => {
+        if (cancelled) return;
+        setTours(list);
+        setToursFailed(false);
+      },
+      () => {
+        if (!cancelled) setToursFailed(true);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [status, toursKey]);
+
+  // Keyboard and screen-reader users land on the confirmation, since the button they used may now be disabled.
+  useEffect(() => {
+    if (message?.kind === 'success') messageRef.current?.focus();
+  }, [message]);
+
+  function retryTours() {
+    setToursFailed(false);
+    setToursKey((key) => key + 1);
+  }
+
   const tourErrors: ContentErrors = {};
   if (tours) {
     for (const id of draft.featuredTourIds) {
@@ -124,10 +146,15 @@ export function LandingContentScreen() {
   const errors: ContentErrors = showErrors ? { ...validation, ...serverErrors } : serverErrors;
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const ready = status === 'ready';
-  const trackUpload = (delta: 1 | -1) => setUploads((count) => count + delta);
+  const uploadStatus = {
+    track: (delta: 1 | -1) => setUploads((count) => count + delta),
+    onUnauthorized: () => replace(LOGIN_URL),
+  };
+  // Tours still being checked (or failed to load) must not let unverified ids be saved or published.
+  const toursUnverified = draft.featuredTourIds.length > 0 && tours === null;
   const locked = busy || uploads > 0;
-  const canSave = ready && dirty && valid && !locked && baseVersion !== null;
-  const canPublish = ready && hasDraft && !dirty && !locked && baseVersion !== null;
+  const canSave = ready && dirty && valid && !locked && !toursUnverified && baseVersion !== null;
+  const canPublish = ready && hasDraft && !dirty && !locked && !toursUnverified && baseVersion !== null;
   const editorDisabled = !ready || locked;
 
   function edit(next: LandingContent) {
@@ -192,7 +219,7 @@ export function LandingContentScreen() {
         setServerErrors({});
         setMessage({ kind: 'success', text: copy.success.draftSaved });
       } catch (error) {
-        reportFailure(error);
+        reportFailure(error, () => void handleSave());
       }
     });
   }
@@ -253,9 +280,15 @@ export function LandingContentScreen() {
         setShowErrors(true);
         setServerErrors({});
       } catch (error) {
-        reportFailure(error);
+        reportFailure(error, () => void handleRestore(versionId));
       }
     });
+  }
+
+  /** Restoring replaces unsaved edits, so ask first when there are any. */
+  function requestRestore(versionId: string) {
+    if (dirty) setPendingRestore(versionId);
+    else void handleRestore(versionId);
   }
 
   function handleCancel() {
@@ -269,7 +302,7 @@ export function LandingContentScreen() {
     'rounded-xl border border-[#d0d7de] bg-white px-4 py-2 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7] disabled:cursor-not-allowed disabled:opacity-50';
 
   return (
-    <UploadStatusContext.Provider value={trackUpload}>
+    <UploadStatusContext.Provider value={uploadStatus}>
     <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-[#191c1e] sm:px-6 md:px-8 md:py-10">
       <section className="mx-auto max-w-5xl space-y-6">
         <header className="rounded-2xl border border-[#314863] bg-[#00152a] p-6 text-white shadow-md sm:p-8">
@@ -285,12 +318,19 @@ export function LandingContentScreen() {
         )}
 
         {status === 'pending' && (
-          <section className="rounded-2xl border border-[#cfe2f3] bg-[#eef6ff] p-5 sm:p-6">
+          <section role="status" className="rounded-2xl border border-[#cfe2f3] bg-[#eef6ff] p-5 sm:p-6">
             <span className="inline-flex rounded-full bg-[#d7f7f1] px-3 py-1 text-xs font-bold text-[#005048]">
               {copy.screen.pendingBadge}
             </span>
             <h2 className="mt-2 text-base font-bold text-[#1d2939]">{copy.screen.pendingTitle}</h2>
             <p className="mt-1 text-sm leading-relaxed text-[#344054]">{copy.errors.unavailable}</p>
+            <button
+              type="button"
+              onClick={reload}
+              className="mt-3 rounded-lg border border-[#005048] px-3 py-1.5 text-xs font-bold text-[#005048]"
+            >
+              {copy.screen.retry}
+            </button>
           </section>
         )}
 
@@ -319,13 +359,15 @@ export function LandingContentScreen() {
               <VersionPanel
                 published={loaded.published}
                 history={loaded.history}
-                onRestore={(versionId) => void handleRestore(versionId)}
+                onRestore={requestRestore}
                 disabled={locked}
               />
             )}
 
             {message && (
               <div
+                ref={messageRef}
+                tabIndex={-1}
                 role={message.kind === 'success' ? 'status' : 'alert'}
                 className={
                   message.kind === 'success'
@@ -365,7 +407,16 @@ export function LandingContentScreen() {
               disabled={editorDisabled}
               onChange={(featuredTourIds) => edit({ ...draft, featuredTourIds })}
             />
-            {toursFailed && <p className="text-sm font-semibold text-[#b42318]">{copy.editor.tours.loadFailed}</p>}
+            {toursFailed ? (
+              <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-[#b42318]">
+                <p>{copy.editor.tours.loadFailed}</p>
+                <button type="button" onClick={retryTours} className={buttonClass}>
+                  {copy.editor.tours.retry}
+                </button>
+              </div>
+            ) : (
+              toursUnverified && <p role="status" className="text-sm text-[#475467]">{copy.editor.tours.loading}</p>
+            )}
             <BannerBlock
               value={draft.banner}
               errors={errors}
@@ -398,11 +449,27 @@ export function LandingContentScreen() {
         )}
       </section>
 
-      <PublishDialog
+      <ConfirmDialog
         open={confirmOpen}
         busy={busy}
+        title={copy.editor.publishDialog.title}
+        body={copy.editor.publishDialog.body}
+        confirmLabel={copy.editor.publishDialog.confirm}
         onConfirm={() => void handlePublishConfirmed()}
         onCancel={() => setConfirmOpen(false)}
+      />
+      <ConfirmDialog
+        open={pendingRestore !== null}
+        busy={busy}
+        title={copy.editor.restoreDialog.title}
+        body={copy.editor.restoreDialog.body}
+        confirmLabel={copy.editor.restoreDialog.confirm}
+        onConfirm={() => {
+          const versionId = pendingRestore;
+          setPendingRestore(null);
+          if (versionId) void handleRestore(versionId);
+        }}
+        onCancel={() => setPendingRestore(null)}
       />
     </main>
     </UploadStatusContext.Provider>

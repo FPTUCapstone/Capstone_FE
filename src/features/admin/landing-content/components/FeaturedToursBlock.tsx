@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 import type { ContentErrors, TourOption } from '../landingContent';
 import { landingContentEn } from '../resources/en';
 
@@ -11,6 +13,7 @@ interface FeaturedToursBlockProps {
 
 export function FeaturedToursBlock({ value, tours, errors, onChange, disabled }: FeaturedToursBlockProps) {
   const copy = landingContentEn.editor.tours;
+  const baseId = useId();
   // A selected tour that is no longer in the approved list stays visible so the user can see and remove it.
   const unknown: TourOption[] = value
     .filter((id) => !tours.some((tour) => tour.tourId === id))
@@ -30,19 +33,22 @@ export function FeaturedToursBlock({ value, tours, errors, onChange, disabled }:
         <ul className="mt-3 space-y-2">
           {options.map((tour) => {
             const error = errors[`featuredTourIds.${tour.tourId}`];
+            const errorId = `${baseId}-${tour.tourId}-error`;
             return (
               <li key={tour.tourId}>
                 <label className="flex items-center gap-2 text-sm text-[#1d2939]">
                   <input
                     type="checkbox"
                     checked={value.includes(tour.tourId)}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? errorId : undefined}
                     disabled={disabled}
                     onChange={() => toggle(tour.tourId)}
                   />
                   {tour.title}
                 </label>
                 {error && (
-                  <p className="mt-1 ml-6 text-xs font-semibold text-[#b42318]">{landingContentEn.errors[error]}</p>
+                  <p id={errorId} className="mt-1 ml-6 text-xs font-semibold text-[#b42318]">{landingContentEn.errors[error]}</p>
                 )}
               </li>
             );

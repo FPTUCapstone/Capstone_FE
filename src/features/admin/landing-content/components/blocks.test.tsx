@@ -120,7 +120,11 @@ describe('FeaturedToursBlock', () => {
         disabled={false}
       />,
     );
-    expect(screen.getByText('This tour package is currently unavailable for booking.')).toBeTruthy();
+    const message = screen.getByText('This tour package is currently unavailable for booking.');
+    expect(message).toBeTruthy();
+    const checkbox = screen.getByLabelText('gone');
+    expect(checkbox.getAttribute('aria-invalid')).toBe('true');
+    expect(checkbox.getAttribute('aria-describedby')).toBe(message.id);
   });
 
   it('says when no approved tours exist', () => {

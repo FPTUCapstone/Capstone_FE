@@ -61,7 +61,7 @@ The SRS is still being completed. The team lead confirmed that gaps found while 
 
 ## Behaviour
 
-1. **Guard:** no valid session redirects to `/admin/login?returnUrl=%2Fadmin%2Flanding-content`. `Administrator` and `Staff` proceed; other roles render `AdminAccessDeniedView` (MSG126).
+1. **Guard:** no valid session redirects to `/admin/login?returnUrl=%2Fadmin%2Flanding-content`. `Administrator` and `Staff` proceed; a session with any other role is rejected by the session verifier and sent to sign in (page) or answered with 401 (proxy); the explicit `AdminAccessDeniedView` / 403 branch is defense in depth (MSG126).
 2. **Load:** retrieves the published version as an editable draft plus history. Loading uses `role="status"`; stale content is never shown as current. If Backend is not integrated (proxy 404/503), show the pending banner with the MSG127 text and an empty editor; never invented content.
 3. **Edit and validate (client, mirrored by Backend):** mandatory fields of a block in use → MSG01 under the field; images ≤ 5 MB and supported type, otherwise the file is rejected and other input is kept; banner end not before start; featured tours limited to those returned by the approved-tours endpoint.
 4. **Save Draft:** enabled when dirty and valid; success toast MSG129; public page unchanged (BR-128, PC-03).

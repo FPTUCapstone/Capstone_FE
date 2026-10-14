@@ -2,9 +2,13 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const service = vi.hoisted(() => ({ uploadImage: vi.fn() }));
-vi.mock('../landingContentService', () => service);
+vi.mock('../landingContentService', async () => {
+  const actual = await vi.importActual<typeof import('../landingContentService')>('../landingContentService');
+  return { ...actual, ...service };
+});
 
-import { ImageField } from './ImageField';
+import { LandingContentError } from '../landingContentService';
+import { ImageField, UploadStatusContext } from './ImageField';
 
 const MB = 1024 * 1024;
 
@@ -54,6 +58,32 @@ describe('ImageField', () => {
     pick(fileOf(1000, 'image/png'));
     expect(await screen.findByText(/temporarily unable to process your request/)).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('offers a retry after a failed upload that uploads the same file again', async () => {
+    service.uploadImage.mockRejectedValueOnce(new Error('down')).mockResolvedValueOnce({ mediaId: 'm2', url: '/m2.png' });
+    const onChange = vi.fn();
+    render(<ImageField label="Banner Image" value={null} onChange={onChange} disabled={false} />);
+    const file = fileOf(1000, 'image/png');
+    pick(file);
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry upload' }));
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith({ mediaId: 'm2', url: '/m2.png' }));
+    expect(service.uploadImage).toHaveBeenCalledTimes(2);
+    expect(service.uploadImage.mock.calls[1][0]).toBe(file);
+    expect(screen.queryByRole('button', { name: 'Retry upload' })).toBeNull();
+  });
+
+  it('tells the screen to send the user to sign in when the upload is rejected with 401', async () => {
+    service.uploadImage.mockRejectedValue(new LandingContentError(401));
+    const onUnauthorized = vi.fn();
+    render(
+      <UploadStatusContext.Provider value={{ track: () => {}, onUnauthorized }}>
+        <ImageField label="Banner Image" value={null} onChange={() => {}} disabled={false} />
+      </UploadStatusContext.Provider>,
+    );
+    pick(fileOf(1000, 'image/png'));
+    await waitFor(() => expect(onUnauthorized).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('button', { name: 'Retry upload' })).toBeNull();
   });
 
   it('shows the error passed by the parent and lets the user remove the current image', () => {
