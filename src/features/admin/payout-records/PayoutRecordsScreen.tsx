@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
@@ -144,10 +145,13 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
               <td className="px-4 py-3 whitespace-nowrap">{formatRequestedAt(payout.requestedAtUtc)}</td>
               <td className="px-4 py-3"><Badge status={payout.status} alert={payout.status === 'Rejected'}>{formatPayoutStatus(payout.status)}</Badge></td>
               <td className="px-4 py-3">
-                <button type="button" disabled title={PAYOUT_MESSAGES.reviewDisabled} aria-label={`${PAYOUT_MESSAGES.review} for ${payout.payoutCode}`} aria-describedby={`review-disabled-${payout.payoutId}`} className="rounded-lg border border-[#9fb3c8] px-3 py-1.5 text-xs font-bold text-[#64748b] disabled:cursor-not-allowed disabled:opacity-50">
+                <Link
+                  href={ROUTES.admin.payoutDetails(payout.payoutId)}
+                  aria-label={`${PAYOUT_MESSAGES.review} for ${payout.payoutCode}`}
+                  className="rounded-lg border border-[#9fb3c8] px-3 py-1.5 text-xs font-bold text-[#243b53] hover:bg-[#edf2f7]"
+                >
                   {PAYOUT_MESSAGES.review}
-                </button>
-                <span id={`review-disabled-${payout.payoutId}`} className="sr-only">{PAYOUT_MESSAGES.reviewDisabled}</span>
+                </Link>
               </td>
             </tr>)}</tbody>
           </table>
