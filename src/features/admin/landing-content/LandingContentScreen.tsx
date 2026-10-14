@@ -7,6 +7,7 @@ import { DestinationsBlock } from './components/DestinationsBlock';
 import { FeaturedToursBlock } from './components/FeaturedToursBlock';
 import { HeroBlock } from './components/HeroBlock';
 import { PreviewPanel } from './components/PreviewPanel';
+import { PublishDialog } from './components/PublishDialog';
 import { VersionPanel } from './components/VersionPanel';
 import {
   emptyContent,
@@ -16,11 +17,22 @@ import {
   type LandingContentState,
   type TourOption,
 } from './landingContent';
-import { getApprovedTours, getLandingContent, LandingContentError, saveDraft } from './landingContentService';
+import {
+  getApprovedTours,
+  getLandingContent,
+  LandingContentError,
+  publishDraft,
+  restoreVersion,
+  saveDraft,
+} from './landingContentService';
 import { landingContentEn } from './resources/en';
 
 type LoadStatus = 'loading' | 'ready' | 'pending' | 'forbidden' | 'error';
-type Message = { kind: 'success' | 'error'; text: string };
+type Message = {
+  kind: 'success' | 'error';
+  text: string;
+  action?: { label: string; run: () => void };
+};
 
 const LOGIN_URL = '/admin/login?returnUrl=%2Fadmin%2Flanding-content';
 
@@ -30,6 +42,7 @@ export function LandingContentScreen() {
   const [loaded, setLoaded] = useState<LandingContentState | null>(null);
   const [draft, setDraft] = useState<LandingContent>(emptyContent());
   const [saved, setSaved] = useState<LandingContent>(emptyContent());
+  const [hasDraft, setHasDraft] = useState(false);
   const [baseVersion, setBaseVersion] = useState<number | null>(null);
   const [tours, setTours] = useState<TourOption[] | null>(null);
   const [toursFailed, setToursFailed] = useState(false);
@@ -38,6 +51,7 @@ export function LandingContentScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const inFlight = useRef(false);
 
   const load = useCallback(async () => {
@@ -49,6 +63,7 @@ export function LandingContentScreen() {
       setLoaded(data);
       setDraft(content);
       setSaved(content);
+      setHasDraft(data.draft !== null);
       setBaseVersion(data.draft?.baseVersion ?? data.published.versionNumber);
       setShowErrors(false);
       setServerErrors({});
@@ -69,6 +84,7 @@ export function LandingContentScreen() {
       setLoaded(null);
       setDraft(emptyContent());
       setSaved(emptyContent());
+      setHasDraft(false);
       setBaseVersion(null);
       if (code === 403) setStatus('forbidden');
       else if (code === 404 || code === 503) setStatus('pending');
@@ -92,6 +108,7 @@ export function LandingContentScreen() {
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const ready = status === 'ready';
   const canSave = ready && dirty && valid && !busy && baseVersion !== null;
+  const canPublish = ready && hasDraft && !dirty && !busy && baseVersion !== null;
   const editorDisabled = !ready || busy;
 
   function edit(next: LandingContent) {
@@ -101,34 +118,121 @@ export function LandingContentScreen() {
     setMessage(null);
   }
 
-  async function handleSave() {
-    if (!canSave || baseVersion === null || inFlight.current) return;
+  /** Maps a failed request to the screen state; a 401 sends the user to sign in instead. */
+  function reportFailure(error: unknown, retry?: () => void) {
+    const failure = error instanceof LandingContentError ? error : null;
+    const code = failure ? failure.status : 0;
+    if (code === 401) {
+      window.location.assign(LOGIN_URL);
+      return;
+    }
+    if (code === 422 && failure?.fieldErrors) {
+      setServerErrors(failure.fieldErrors);
+      setShowErrors(true);
+    } else if (code === 403) {
+      setMessage({ kind: 'error', text: copy.errors.forbidden });
+    } else if (code === 409) {
+      setMessage({
+        kind: 'error',
+        text: copy.errors.conflict,
+        action: { label: copy.screen.reload, run: () => void load() },
+      });
+    } else {
+      setMessage({
+        kind: 'error',
+        text: copy.errors.unavailable,
+        action: retry ? { label: copy.screen.retry, run: retry } : undefined,
+      });
+    }
+  }
+
+  /** Runs one write at a time; the in-flight guard makes a double click send a single request. */
+  async function runExclusive(work: () => Promise<void>) {
+    if (inFlight.current) return;
     inFlight.current = true;
     setBusy(true);
     setMessage(null);
     try {
-      const result = await saveDraft(baseVersion, draft);
-      setDraft(result.content);
-      setSaved(result.content);
-      setBaseVersion(result.baseVersion);
-      setServerErrors({});
-      setMessage({ kind: 'success', text: copy.success.draftSaved });
-    } catch (error) {
-      const code = error instanceof LandingContentError ? error.status : 0;
-      if (code === 401) {
-        window.location.assign(LOGIN_URL);
-        return;
-      }
-      if (code === 422 && error instanceof LandingContentError && error.fieldErrors) {
-        setServerErrors(error.fieldErrors);
-        setShowErrors(true);
-      } else if (code === 403) setMessage({ kind: 'error', text: copy.errors.forbidden });
-      else if (code === 409) setMessage({ kind: 'error', text: copy.errors.conflict });
-      else setMessage({ kind: 'error', text: copy.errors.unavailable });
+      await work();
     } finally {
       inFlight.current = false;
       setBusy(false);
     }
+  }
+
+  async function handleSave() {
+    if (!canSave || baseVersion === null) return;
+    await runExclusive(async () => {
+      try {
+        const result = await saveDraft(baseVersion, draft);
+        setDraft(result.content);
+        setSaved(result.content);
+        setHasDraft(true);
+        setBaseVersion(result.baseVersion);
+        setServerErrors({});
+        setMessage({ kind: 'success', text: copy.success.draftSaved });
+      } catch (error) {
+        reportFailure(error);
+      }
+    });
+  }
+
+  function handlePublishClick() {
+    if (!canPublish) return;
+    setShowErrors(true);
+    if (!valid) return;
+    setConfirmOpen(true);
+  }
+
+  async function handlePublishConfirmed() {
+    if (baseVersion === null) return;
+    const version = baseVersion;
+    await runExclusive(async () => {
+      try {
+        const published = await publishDraft(version);
+        setConfirmOpen(false);
+        setLoaded((current) =>
+          current
+            ? {
+                published,
+                draft: null,
+                history: [
+                  {
+                    versionId: current.published.versionId,
+                    versionNumber: current.published.versionNumber,
+                    publishedByName: current.published.publishedByName,
+                    publishedAtUtc: current.published.publishedAtUtc,
+                  },
+                  ...current.history,
+                ],
+              }
+            : current,
+        );
+        setDraft(published.content);
+        setSaved(published.content);
+        setHasDraft(false);
+        setBaseVersion(published.versionNumber);
+        setServerErrors({});
+        setMessage({ kind: 'success', text: copy.success.published });
+      } catch (error) {
+        setConfirmOpen(false);
+        reportFailure(error, () => void handlePublishConfirmed());
+      }
+    });
+  }
+
+  async function handleRestore(versionId: string) {
+    await runExclusive(async () => {
+      try {
+        const result = await restoreVersion(versionId);
+        setDraft(result.content);
+        setBaseVersion(result.baseVersion);
+        setShowErrors(true);
+        setServerErrors({});
+      } catch (error) {
+        reportFailure(error);
+      }
+    });
   }
 
   function handleCancel() {
@@ -191,13 +295,13 @@ export function LandingContentScreen() {
               <VersionPanel
                 published={loaded.published}
                 history={loaded.history}
-                onRestore={() => {}}
+                onRestore={(versionId) => void handleRestore(versionId)}
                 disabled={busy}
               />
             )}
 
             {message && (
-              <p
+              <div
                 role={message.kind === 'success' ? 'status' : 'alert'}
                 className={
                   message.kind === 'success'
@@ -205,8 +309,17 @@ export function LandingContentScreen() {
                     : 'rounded-2xl border border-[#fda29b] bg-[#fef3f2] p-4 text-sm font-semibold text-[#b42318]'
                 }
               >
-                {message.text}
-              </p>
+                <p>{message.text}</p>
+                {message.action && (
+                  <button
+                    type="button"
+                    onClick={message.action.run}
+                    className="mt-2 rounded-lg border border-current px-3 py-1.5 text-xs font-bold"
+                  >
+                    {message.action.label}
+                  </button>
+                )}
+              </div>
             )}
 
             <HeroBlock
@@ -228,9 +341,7 @@ export function LandingContentScreen() {
               disabled={editorDisabled}
               onChange={(featuredTourIds) => edit({ ...draft, featuredTourIds })}
             />
-            {toursFailed && (
-              <p className="text-sm font-semibold text-[#b42318]">{copy.editor.tours.loadFailed}</p>
-            )}
+            {toursFailed && <p className="text-sm font-semibold text-[#b42318]">{copy.editor.tours.loadFailed}</p>}
             <BannerBlock
               value={draft.banner}
               errors={errors}
@@ -244,8 +355,16 @@ export function LandingContentScreen() {
               <button type="button" disabled={!canSave} onClick={() => void handleSave()} className={buttonClass}>
                 {copy.editor.actions.saveDraft}
               </button>
-              <button type="button" disabled={!ready} onClick={() => setShowPreview((open) => !open)} className={buttonClass}>
+              <button
+                type="button"
+                disabled={!ready}
+                onClick={() => setShowPreview((open) => !open)}
+                className={buttonClass}
+              >
                 {showPreview ? copy.editor.actions.hidePreview : copy.editor.actions.preview}
+              </button>
+              <button type="button" disabled={!canPublish} onClick={handlePublishClick} className={buttonClass}>
+                {copy.editor.actions.publish}
               </button>
               <button type="button" disabled={!ready || busy} onClick={handleCancel} className={buttonClass}>
                 {copy.editor.actions.cancel}
@@ -254,6 +373,13 @@ export function LandingContentScreen() {
           </>
         )}
       </section>
+
+      <PublishDialog
+        open={confirmOpen}
+        busy={busy}
+        onConfirm={() => void handlePublishConfirmed()}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </main>
   );
 }

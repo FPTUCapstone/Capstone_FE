@@ -20,6 +20,7 @@ export const landingContentEn = {
     pendingBadge: 'Backend integration pending',
     pendingTitle: 'Landing page content is not connected yet',
     retry: 'Retry',
+    reload: 'Reload',
   },
   editor: {
     hero: {
@@ -59,7 +60,14 @@ export const landingContentEn = {
       uploading: 'Uploading…',
       none: 'No image selected.',
     },
+    publishDialog: {
+      title: 'Publish landing page content',
+      body: 'Publishing makes this version visible on the public landing page. The current published version is kept in the version history.',
+      confirm: 'Publish',
+      cancel: 'Cancel',
+    },
     actions: {
+      publish: 'Publish',
       saveDraft: 'Save Draft',
       preview: 'Preview',
       hidePreview: 'Hide preview',
