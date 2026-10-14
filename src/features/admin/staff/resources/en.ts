@@ -42,6 +42,14 @@ export const adminStaffEn = {
     returnToStaffButton: 'Return to Staff Workspace',
     returnToAdminSignInButton: 'Switch Administration Account',
   },
+  staffAccessDenied: {
+    eyebrow: 'Restricted Staff Module',
+    title: 'Staff Access Required',
+    description:
+      'This payout review queue is reserved for Staff. Administrator settlement processing is delivered separately in UC-65.',
+    returnToAdminButton: 'Return to System Overview',
+    returnToAdminSignInButton: 'Switch Administration Account',
+  },
   staffDashboard: {
     eyebrow: 'Operational Administration Workspace',
     title: 'Staff Operations Dashboard',
