@@ -2,7 +2,7 @@
 
 TripMate Frontend contains the responsive Next.js Web application: the Public Website, supported Traveler and Tour Operator Web features, and the Administrator Web workspace. The exact Web boundary is defined by the latest approved SRS and [`docs/WEB_SCOPE_MATRIX.md`](docs/WEB_SCOPE_MATRIX.md). The separate Flutter application owns Mobile-only experiences; files under `src/legacy/mobile` are historical visual references, not platform-scope authority.
 
-Detailed engineering requirements are maintained in [`docs/CODEBASE_RULES.md`](docs/CODEBASE_RULES.md). All contributors must follow them.
+The canonical engineering guideline is [`docs/FRONTEND_ENGINEERING_CONVENTION.md`](docs/FRONTEND_ENGINEERING_CONVENTION.md). All contributors must read it before creating a Pull Request and follow its architecture, state/API, security, UI, testing, and review rules. It supersedes overlapping guidance in the historical [`docs/CODEBASE_RULES.md`](docs/CODEBASE_RULES.md); product authority remains the approved SRS and Web scope matrix. Proposed libraries require scoped adoption tasks and are not assumed installed.
 
 ## Local setup
 
@@ -23,10 +23,10 @@ The development server runs at [http://localhost:3001](http://localhost:3001).
 2. Create a focused branch from `develop` using `<type>/<short-description>`.
 3. Verify the use case's platform classification in the approved SRS and Web scope matrix.
 4. For a new visual Web screen, verify that an approved Web Screen Specification and reviewed UI exist. Stitch is optional for non-visual work or when maintainers approve proceeding without it.
-5. Implement only the assigned scope and update documentation when behavior or setup changes.
+5. Explore the source and contracts, clarify scope, and obtain approval for the specification and plan for non-trivial work. Implement only the assigned scope with behavioral tests first where applicable; review scope compliance and quality between tasks. Update documentation when behavior or setup changes. Coding agents also follow `AGENTS.md` and do not push, open PRs, or merge without developer direction.
 6. Run the required validation commands.
 7. Commit using Conventional Commits.
-8. Push the branch and open a Pull Request into `develop`.
+8. For human contributors, or coding agents after explicit developer direction, push the branch and open a Pull Request into `develop`.
 9. Address review feedback before merge.
 
 Do not infer platform ownership from a legacy component. Do not create Web equivalents of Mobile-only or system-triggered workflows without an updated approved SRS and screen specification.
@@ -67,12 +67,13 @@ Run before opening or updating a Pull Request:
 
 ```bash
 npm install
+npm test
 npm run lint
 npm run typecheck
 npm run build
 ```
 
-No automated test script is configured currently. If a test suite is introduced, add its documented npm script and run it for applicable changes.
+`npm test` runs the Node tests and Vitest suite using the configuration in `package.json`. CI uses `npm ci` and runs test, lint, typecheck, and build. Report baseline failures, environment limitations, and skipped checks honestly; the convention distinguishes these from regressions. For UI changes, also verify routes, responsive layouts, keyboard interaction, and applicable role/status states.
 
 ## Pull Requests
 

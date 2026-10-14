@@ -1,6 +1,6 @@
 # TripMate Frontend Codebase Rules
 
-This document defines the engineering rules for the TripMate Web Frontend. It applies to human contributors and AI coding agents.
+> Superseded on 2026-10-14 by [Frontend Engineering Convention](FRONTEND_ENGINEERING_CONVENTION.md), the canonical engineering guideline for human contributors and coding agents. The text below is historical context, not a second active policy. Its route, API, environment, and test inventories are outdated; use the convention's dated audit and source files for current implementation. Product scope remains governed by the approved SRS and [Web scope matrix](WEB_SCOPE_MATRIX.md). `AGENTS.md` remains the coding-agent execution protocol.
 
 ## 1. Product and repository boundary
 
