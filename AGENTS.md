@@ -71,11 +71,90 @@ architecture and delivery rules below.
 
 ```bash
 npm install
+npm test
 npm run lint
 npm run typecheck
 npm run build
 ```
-- No automated test script is configured; run and report applicable tests if one is introduced.
+- `npm test` is configured and runs the repository's Node and Vitest tests; run and report its results.
+
+## Pre-PR Validation Requirements
+
+Before creating a Pull Request, every contributor must run the following commands locally,
+in order, and review their results:
+
+```bash
+npm install
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
+
+These steps install dependencies, run automated tests, lint, type checking, and the production
+build. Type checking is required when configured; this repository configures `npm run typecheck`.
+Only create a Pull Request after all required checks pass. A failed or environment-blocked check
+does not count as passing: resolve it and rerun the affected checks before creating the PR.
+Record validation results in the PR description. Explaining a failure does not waive this gate.
+
+This pre-PR gate applies to documentation-only changes as well and takes precedence over the
+environment-limited documentation completion allowance in `docs/FRONTEND_ENGINEERING_CONVENTION.md`
+when deciding whether a new PR may be created. Reporting task completion is not PR readiness.
+
+## Automated Testing Rules
+
+- New features should include appropriate automated tests.
+- Bug fixes should include regression tests when practical.
+- Tests must verify observable behavior, not implementation details.
+- Do not skip, disable, or exclude failing tests to create a PR.
+- If appropriate tests cannot be added, explain the reason in the PR description; this does not
+  excuse failures in the existing required test suite.
+- Preserve the existing test-first workflow where applicable; add or update tests alongside
+  changed behavior and run the required test command before requesting review.
+
+## Pull Request Readiness Workflow
+
+Apply the existing scope, specification, plan, and approval gates before implementation.
+The branch-to-merge sequence is:
+
+1. Create a branch using the existing branch convention.
+2. Implement the approved changes with the existing TDD workflow.
+3. Add or update appropriate tests; write behavioral tests before implementation where applicable.
+4. Run all pre-PR validation commands.
+5. Review local results and resolve failures before proceeding.
+6. Create a Pull Request only after the validation gate passes and developer authorization exists.
+7. Request reviewer approval and address review feedback.
+8. Merge only after required checks and reviewer approval, following the existing merge authorization rules.
+
+This sequence does not grant agents permission to push, create PRs, approve their own work,
+or merge without the developer direction required by the existing rules.
+
+## Continuous Integration Expectations
+
+- Frontend CI in `.github/workflows/frontend-ci.yml` automatically validates tests,
+  TypeScript, ESLint, and the production build for Pull Requests targeting `develop`
+  and pushes to `develop`, after installing locked dependencies with `npm ci`.
+- A failing frontend CI check blocks Pull Request approval.
+- Pull Requests should run automated checks through CI when configured. This repository's CI
+  runs tests, lint, type checking, and the production build.
+- A failing CI check blocks merge.
+- Contributors are responsible for fixing failed checks before requesting approval.
+- Local validation does not replace CI validation. Local checks must pass before PR creation;
+  configured CI checks must pass before approval and merge.
+
+## Frontend Validation Checklist
+
+Before requesting review, confirm the following. Mark UI-specific items not applicable with
+a reason for non-UI changes; required automated commands still apply.
+
+- [ ] Tests pass.
+- [ ] TypeScript validation passes.
+- [ ] ESLint passes.
+- [ ] Build succeeds.
+- [ ] Responsive behavior checked.
+- [ ] Loading state checked.
+- [ ] Error state checked.
+- [ ] Accessibility considerations reviewed.
 
 ## File-Scoped Commands
 
