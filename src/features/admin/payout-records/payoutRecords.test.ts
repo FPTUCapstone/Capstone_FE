@@ -71,6 +71,12 @@ describe('search model', () => {
     expect(serializePayoutsSearch(search).has('status')).toBe(false);
   });
 
+  it('normalizes an explicit ?status=PendingReview to the default option, so the Status select shows it as selected', () => {
+    const search = parsePayoutsSearch(new URLSearchParams('status=PendingReview'));
+    expect(search.status).toBe('');
+    expect(serializePayoutsSearch(search).has('status')).toBe(false);
+  });
+
   it('validates the period range without a future-date restriction', () => {
     expect(validatePeriodRange('2026-09-01', '2026-08-01')).toBe(false);
     expect(validatePeriodRange('2026-08-01', '2026-09-01')).toBe(true);

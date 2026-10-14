@@ -131,9 +131,16 @@ export function parsePayoutsSearch(params: URLSearchParams): PayoutsSearch {
   const rawPage = Number(params.get('pageNumber'));
   const from = params.get('periodFrom') ?? '';
   const to = params.get('periodTo') ?? '';
+  // '' is the Status select's "Pending review" (default) option; PendingReview is its only
+  // backing value, filtered out of the option list to avoid a duplicate-looking entry. A URL
+  // carrying the explicit value (e.g. a shared/bookmarked link) must still show that option as
+  // selected, so it is normalized to '' here rather than left to not match any <option>.
+  const normalizedStatus = status === 'PendingReview'
+    ? ''
+    : PAYOUT_STATUSES.includes(status as PayoutStatus) ? status as PayoutStatus : '';
   return {
     keyword: (params.get('keyword') ?? '').trim().slice(0, 200),
-    status: PAYOUT_STATUSES.includes(status as PayoutStatus) ? status as PayoutStatus : '',
+    status: normalizedStatus,
     periodFrom: isIsoDate(from) ? from : '',
     periodTo: isIsoDate(to) ? to : '',
     pageNumber: Number.isSafeInteger(rawPage) && rawPage >= 1 ? rawPage : 1,
