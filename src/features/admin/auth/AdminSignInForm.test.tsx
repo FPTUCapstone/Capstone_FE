@@ -33,6 +33,7 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl(undefined, 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/staff', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/account/security', 'Staff')).toBe('/admin/account/security');
+    expect(getSafeAdminReturnUrl('/admin/payouts', 'Staff')).toBe('/admin/payouts');
     expect(getSafeAdminReturnUrl('/admin/tours/reviews', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest/new', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/tour-operator-applications/1', 'Staff')).toBe('/admin/staff');
