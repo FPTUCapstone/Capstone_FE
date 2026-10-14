@@ -1,6 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const router = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
 const service = vi.hoisted(() => ({
   getLandingContent: vi.fn(),
   getApprovedTours: vi.fn(),
@@ -71,12 +74,11 @@ describe('LandingContentScreen shell', () => {
   });
 
   it('sends the user to login with the exact returnUrl for status 401', async () => {
-    const assign = vi.fn();
-    vi.stubGlobal('location', { ...window.location, assign });
     service.getLandingContent.mockRejectedValue(new LandingContentError(401));
     render(<LandingContentScreen />);
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Flanding-content'));
-    vi.unstubAllGlobals();
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Flanding-content'),
+    );
   });
 
   it('treats a malformed response (status 0) as unavailable and retries on demand', async () => {

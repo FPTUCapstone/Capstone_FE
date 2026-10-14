@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 import { BannerBlock } from './components/BannerBlock';
 import { DestinationsBlock } from './components/DestinationsBlock';
@@ -54,47 +55,61 @@ export function LandingContentScreen() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const inFlight = useRef(false);
 
-  const load = useCallback(async () => {
+  const { replace } = useRouter();
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Loads on mount and again whenever reloadKey changes. State is only set from the promise callbacks.
+  useEffect(() => {
+    let cancelled = false;
+    getLandingContent()
+      .then((data) => {
+        if (cancelled) return;
+        const content = data.draft?.content ?? data.published.content;
+        setLoaded(data);
+        setDraft(content);
+        setSaved(content);
+        setHasDraft(data.draft !== null);
+        setBaseVersion(data.draft?.baseVersion ?? data.published.versionNumber);
+        setShowErrors(false);
+        setServerErrors({});
+        setStatus('ready');
+        getApprovedTours().then(
+          (list) => {
+            if (cancelled) return;
+            setTours(list);
+            setToursFailed(false);
+          },
+          () => {
+            if (!cancelled) setToursFailed(true);
+          },
+        );
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const code = error instanceof LandingContentError ? error.status : 0;
+        if (code === 401) {
+          replace(LOGIN_URL);
+          return;
+        }
+        setLoaded(null);
+        setDraft(emptyContent());
+        setSaved(emptyContent());
+        setHasDraft(false);
+        setBaseVersion(null);
+        if (code === 403) setStatus('forbidden');
+        else if (code === 404 || code === 503) setStatus('pending');
+        else setStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey, replace]);
+
+  function reload() {
     setStatus('loading');
     setMessage(null);
-    try {
-      const data = await getLandingContent();
-      const content = data.draft?.content ?? data.published.content;
-      setLoaded(data);
-      setDraft(content);
-      setSaved(content);
-      setHasDraft(data.draft !== null);
-      setBaseVersion(data.draft?.baseVersion ?? data.published.versionNumber);
-      setShowErrors(false);
-      setServerErrors({});
-      setStatus('ready');
-      getApprovedTours().then(
-        (list) => {
-          setTours(list);
-          setToursFailed(false);
-        },
-        () => setToursFailed(true),
-      );
-    } catch (error) {
-      const code = error instanceof LandingContentError ? error.status : 0;
-      if (code === 401) {
-        window.location.assign(LOGIN_URL);
-        return;
-      }
-      setLoaded(null);
-      setDraft(emptyContent());
-      setSaved(emptyContent());
-      setHasDraft(false);
-      setBaseVersion(null);
-      if (code === 403) setStatus('forbidden');
-      else if (code === 404 || code === 503) setStatus('pending');
-      else setStatus('error');
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    setReloadKey((key) => key + 1);
+  }
 
   const tourErrors: ContentErrors = {};
   if (tours) {
@@ -123,7 +138,7 @@ export function LandingContentScreen() {
     const failure = error instanceof LandingContentError ? error : null;
     const code = failure ? failure.status : 0;
     if (code === 401) {
-      window.location.assign(LOGIN_URL);
+      replace(LOGIN_URL);
       return;
     }
     if (code === 422 && failure?.fieldErrors) {
@@ -135,7 +150,7 @@ export function LandingContentScreen() {
       setMessage({
         kind: 'error',
         text: copy.errors.conflict,
-        action: { label: copy.screen.reload, run: () => void load() },
+        action: { label: copy.screen.reload, run: reload },
       });
     } else {
       setMessage({
@@ -281,7 +296,7 @@ export function LandingContentScreen() {
             <p>{copy.errors.unavailable}</p>
             <button
               type="button"
-              onClick={() => void load()}
+              onClick={reload}
               className="mt-3 rounded-lg border border-[#b42318] px-3 py-1.5 text-xs font-bold"
             >
               {copy.screen.retry}
