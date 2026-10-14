@@ -2,6 +2,10 @@
 
 TripMate is a smart travel planning and travel services platform. This repository contains its responsive Next.js Web application.
 
+## Engineering Documentation
+
+The canonical team guideline is [Frontend Engineering Convention](docs/FRONTEND_ENGINEERING_CONVENTION.md). It defines architecture, routing, UI, state/API boundaries, security, testing, review, and incremental migration. Its dated audit distinguishes existing implementation from proposed standards and branch-specific work; older implementation inventories below may lag source changes. Product scope remains governed by the approved SRS and [Web scope matrix](docs/WEB_SCOPE_MATRIX.md).
+
 ## Project Scope
 
 The approved Web product model contains four areas:
@@ -175,7 +179,7 @@ Official repository: [https://github.com/FPTUCapstone/Capstone_FE](https://githu
 1. Pull the latest changes from the official repository.
 2. Create or use the branch assigned to the task.
 3. Implement the scoped change.
-4. Run `npm run lint` and `npm run build`.
+4. Run `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build`.
 5. Commit with a meaningful message.
-6. Push the branch.
-7. Open a Pull Request for review.
+6. Push the branch (coding agents require explicit developer direction).
+7. Open a Pull Request for review (coding agents require explicit developer direction).
