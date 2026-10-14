@@ -75,6 +75,34 @@ npm run build
 
 `npm test` runs the Node tests and Vitest suite using the configuration in `package.json`. CI uses `npm ci` and runs test, lint, typecheck, and build. Report baseline failures, environment limitations, and skipped checks honestly; the convention distinguishes these from regressions. For UI changes, also verify routes, responsive layouts, keyboard interaction, and applicable role/status states.
 
+## CI Validation
+
+Before requesting review:
+
+- Ensure local checks pass.
+- Pull Request CI must pass.
+- Failed CI checks must be resolved before approval and merge.
+
+[`TripMate FE CI`](.github/workflows/frontend-ci.yml) runs on Pull Requests targeting
+`develop` and pushes to `develop`. Its `frontend-validation` job uses Ubuntu and Node.js
+22 LTS with npm caching, then runs `npm ci`, `npm test`, `npm run typecheck`,
+`npm run lint`, and `npm run build`. Each command must succeed; test output, lint
+warnings, and build failures remain visible in the Actions logs.
+
+Firebase initialization is lazy in the current source, so this workflow does not supply
+Firebase credentials or fabricated configuration for prerendering. Firebase Web config
+is required when exercising authentication, as documented in `.env.example`; it is public
+browser configuration, not Firebase Admin credentials. If a later approved change requires
+build-time values, configure the actual approved Web config through repository variables
+or appropriately scoped Actions secrets and document it. Never supply backend private,
+Firebase Admin, or payment credentials to this frontend validation workflow. Missing
+configuration and font download errors must fail normally.
+
+The legacy `ci.yml` workflow handles only Pull Requests targeting `main` and pushes to
+`main`; `frontend-ci.yml` handles `develop`, avoiding duplicate runs on that branch. Repository
+maintainers must configure branch protection or a ruleset to require `frontend-validation`
+before merging into `develop`; adding a workflow alone does not enforce GitHub merge protection.
+
 ## Pull Requests
 
 - Target `develop` unless maintainers explicitly direct otherwise.
