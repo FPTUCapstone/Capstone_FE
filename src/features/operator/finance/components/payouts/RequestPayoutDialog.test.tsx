@@ -126,4 +126,32 @@ describe('RequestPayoutDialog (Screen #92)', () => {
     expect(document.activeElement).toBe(trigger);
     trigger.remove();
   });
+
+  it('keeps every close path locked while payout submission is pending', async () => {
+    let resolveSubmit: ((value: boolean) => void) | undefined;
+    const pendingSubmit = vi.fn(
+      () => new Promise<boolean>((resolve) => { resolveSubmit = resolve; })
+    );
+
+    render(
+      <RequestPayoutDialog
+        isOpen={true}
+        period={mockPeriod}
+        bankInfo={mockBank}
+        onClose={mockOnClose}
+        onSubmit={pendingSubmit}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Payout Request/i }));
+
+    const closeButton = screen.getByRole('button', { name: /Close dialog/i });
+    expect(closeButton.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(closeButton);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(mockOnClose).not.toHaveBeenCalled();
+
+    resolveSubmit?.(false);
+  });
 });

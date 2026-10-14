@@ -8,7 +8,14 @@ This document is the repository-facing Web scope authority derived from the offi
 
 ## A. Scope Verification
 
-The Current Report 3 used for this correction is `D:/FPT_University_các kì/CapStone_TripMate_DoAn/Report3_Software-Requirement-Specification.docx` (SHA-256 `c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`). It is the primary authority for this matrix.
+The authoritative source for the current review is Report 3 SRS V2,
+`Report3_Software-Requirement-Specification.docx` (workspace SHA-256
+`EF675A01A1F459C1A0994AB0F40B0C99BBAF55CCD68A0F882787D37A12C681B3`).
+The previously recorded path under `D:/FPT_University_các kì/...` and SHA-256
+`c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`
+refer to an older Report 3 copy and are retained here only as a stale provenance
+record; they do not override V2. This narrow correction does not independently
+reapprove the broader matrix or any Web Screen Specification.
 
 | Verification | Confirmed result | Current R3 evidence |
 |---|---|---|
