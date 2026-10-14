@@ -35,6 +35,18 @@ The message table does not match the codes cited by §3.9.10: MSG19 is "Profile 
 - Layout figure is `[TBD]` in the SRS; the layout below is a proposal.
 - The Backend routes and DTOs below are a **proposed contract**, not existing endpoints.
 
+### SRS amendment backlog
+
+The SRS is still being completed. The team lead confirmed that gaps found while coding are to be added to the SRS. This implementation uses the values below until the SRS is updated; each item is to be carried into SRS V2 by the SRS owner.
+
+| # | Section | Proposed amendment |
+|---|---|---|
+| 1 | §2.2.2, Table 4.1, Table 5, §3.9.10, BR-115, entity `LandingPageContent` | Align the UC-66 actor across all sections. Current team decision: Administrator and Staff. |
+| 2 | Message table | Add messages for: image too large or unsupported type, invalid banner display period, content published successfully (referenced as MSG19, MSG29, MSG148 in §3.9.10 but those rows mean something else or do not exist). |
+| 3 | BR-16 / §3.9.10 | Name the supported image types (assumed JPEG, PNG, WebP). |
+| 4 | §3.9.10 Screen Layout | Replace the `[TBD]` figure with the approved layout. |
+| 5 | §3.9.10 | Add the approved-tours lookup, image upload and restore operations to the function description so Backend scope is explicit. |
+
 ## Layout
 
 - Header: eyebrow `Landing page content`, title `Landing Page Content Management`, short description.
