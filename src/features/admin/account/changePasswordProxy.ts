@@ -22,6 +22,14 @@ const UPSTREAM_PATH = '/api/v1/auth/web/change-password';
  * admin cookie (setAdminSession); the Backend's own `tripmate_refresh`
  * Set-Cookie is discarded — the admin BFF session is the sole source of
  * truth for this workspace and never reads that cookie.
+ *
+ * This is a deliberate, pre-existing design decision, not an oversight:
+ * signInAdmin (sessionHandlers.ts) never read a refresh token either, and
+ * the signed internal session is capped at MAX_SESSION_TTL_MS (15 minutes)
+ * regardless of any Backend refresh token's actual lifetime. The admin
+ * workspace has no refresh-token-backed long session to preserve here. If
+ * that changes, this proxy must be revisited to forward/store the refresh
+ * cookie through a safe mechanism — see spec §6.
  */
 export async function proxyAdminChangePassword(request: Request) {
   if (!isSameOriginRequest(request)) {
