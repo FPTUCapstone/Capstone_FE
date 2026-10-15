@@ -51,4 +51,15 @@ describe('OperatorTourNav', () => {
     const bookingLink = screen.getByRole('link', { name: /Bookings/i });
     expect(bookingLink.getAttribute('href')).toBe('/partner/bookings');
   });
+
+  it.each([
+    ['revenue', 'Revenue', '/partner/revenue?demo=1'],
+    ['payouts', 'Payouts', '/partner/payouts?demo=1'],
+  ] as const)('enables the %s workspace link and preserves demo mode', (activeTab, name, href) => {
+    render(<OperatorTourNav activeTab={activeTab} isDemo={true} />);
+
+    const link = screen.getByRole('link', { name });
+    expect(link.getAttribute('href')).toBe(href);
+    expect(link.getAttribute('aria-current')).toBe('page');
+  });
 });

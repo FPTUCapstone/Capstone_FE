@@ -57,15 +57,13 @@ export function OperatorTourNav({
       key: 'revenue',
       label: operatorCommonEn.navigation.revenue,
       icon: 'monitoring',
-      href: '/partner/revenue',
-      disabled: true,
+      href: withTourDemoMode(ROUTES.partner.revenue, isDemo),
     },
     {
       key: 'payouts',
       label: operatorCommonEn.navigation.payouts,
       icon: 'payments',
-      href: '/partner/payouts',
-      disabled: true,
+      href: withTourDemoMode(ROUTES.partner.payouts, isDemo),
     },
   ];
 
@@ -107,30 +105,11 @@ export function OperatorTourNav({
           </p>
           {navItems.map((item) => {
             const isActive = activeTab === item.key;
-            if (item.disabled) {
-              return (
-                <div
-                  key={item.key}
-                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-slate-400 cursor-not-allowed opacity-60"
-                  title={operatorCommonEn.navigation.featureInDevelopment}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
-                      {item.icon}
-                    </span>
-                    <span>{item.label}</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-400">
-                    {operatorCommonEn.navigation.comingSoon}
-                  </span>
-                </div>
-              );
-            }
-
             return (
               <Link
                 key={item.key}
                 href={item.href}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
                   isActive
                     ? 'bg-[#006B5F] text-white shadow-xs'
