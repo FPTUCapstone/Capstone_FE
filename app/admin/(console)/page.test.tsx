@@ -155,12 +155,8 @@ describe('Administration Console Route Access Control (Fail-Closed BFF Session)'
     expect(screen.getByText('AlgorithmConfigMock')).toBeTruthy();
   });
 
-  it('NewPoiPage, AdminTourReviewQueuePage, and TourOperatorApplicationDetailPage block Staff with AdminAccessDeniedView and allow Administrator', async () => {
+  it('AdminTourReviewQueuePage and TourOperatorApplicationDetailPage block Staff with AdminAccessDeniedView', async () => {
     mockSealedSession('Staff');
-    const poiDenied = render(await NewPoiPage());
-    expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
-    poiDenied.unmount();
-
     const reviewDenied = render(await AdminTourReviewQueuePage());
     expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
     reviewDenied.unmount();
@@ -170,10 +166,17 @@ describe('Administration Console Route Access Control (Fail-Closed BFF Session)'
     );
     expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
     appDenied.unmount();
+  });
 
+  it('NewPoiPage allows Staff and blocks Administrator with the Staff-required view', async () => {
     mockSealedSession('Administrator');
-    const poiAllowed = render(await NewPoiPage());
+    const denied = render(await NewPoiPage());
+    expect(screen.getByRole('heading', { name: 'Staff Access Required' })).toBeTruthy();
+    expect(screen.queryByText('CreatePoiMock')).toBeNull();
+    denied.unmount();
+
+    mockSealedSession('Staff');
+    render(await NewPoiPage());
     expect(screen.getByText('CreatePoiMock')).toBeTruthy();
-    poiAllowed.unmount();
   });
 });

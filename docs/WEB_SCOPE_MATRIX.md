@@ -134,7 +134,7 @@ Interaction Type describes the interaction shape supported by Current R3. It is 
 | UC-49 | Unlock User Account | Administrator | ADMIN_WEB_ONLY | Yes | Action plus confirmation dialog | R3 §§2.1 and 3.9.1.3; Table 4.1. No dedicated route is implied. |
 | UC-50 | Approve Tour Operator Application | Administrator | ADMIN_WEB_ONLY | Yes | Review-screen action | Register §3.3 OBJ6; R3 §§2.1 and 3.9.2.1; Table 4.1. |
 | UC-51 | Reject Tour Operator Application | Administrator | ADMIN_WEB_ONLY | Yes | Review action with reason | R3 §§2.1 and 3.9.2.2; Table 4.1. R2's Create POI reference to UC-51 is stale. |
-| UC-52 | Create POI | Administrator | ADMIN_WEB_ONLY | Yes | Creation form/map input | Register §3.3 OBJ6; R3 §§2.1 and 3.9.3.1; Table 4.1. |
+| UC-52 | Create POI | Staff | ADMIN_WEB_ONLY | Yes | Creation form/map input | Team decision (2026-10-15): POIs are created by Staff, not Administrators (the Report 3 V2 catalogue also lists Staff); this supersedes the Administrator actor named in R3 §3.9.3.1 until the SRS is corrected. Register §3.3 OBJ6; R3 §§2.1 and 3.9.3.1; Table 4.1. |
 | UC-53 | Update POI | Administrator | ADMIN_WEB_ONLY | Yes | Edit form/map input | R3 §§2.1 and 3.9.3.2; Table 4.1. |
 | UC-54 | Remove POI | Administrator | ADMIN_WEB_ONLY | Yes | Action plus confirmation dialog | R3 §§2.1 and 3.9.3.3; Table 4.1. No dedicated route is implied. |
 | UC-55 | Create Route | Administrator | ADMIN_WEB_ONLY | Yes | Route creation form/map input | Register §3.3 OBJ6; R3 §§2.1 and 3.9.4.1; Table 4.1. |
