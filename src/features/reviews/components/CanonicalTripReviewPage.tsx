@@ -11,7 +11,22 @@ import { CanonicalReviewApiError } from '../types/canonicalReview';
 import { canonicalReviewMessage } from '../resources/canonicalReviewMessages';
 
 const MAX_FILE_BYTES = 5_000_000;
+const DUPLICATE_RECOVERY_ERROR = 'The existing review could not be loaded. Please try again.';
 const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+function hasUsableRecoveredReview(value: TripReviewContext, reference: ReviewableRecordRef): boolean {
+  const review = value?.review;
+  return value?.existingReviewKind === 'new' &&
+    value.reviewableRecord?.kind === reference.kind && value.reviewableRecord.id === reference.id &&
+    Array.isArray(value.editableFields) && value.editableFields.every(field => typeof field === 'string') &&
+    review?.kind === 'new' && Number.isInteger(review.reviewId) && review.reviewId > 0 &&
+    review.reviewableRecord?.kind === reference.kind && review.reviewableRecord.id === reference.id &&
+    Number.isInteger(review.overallRating) && review.overallRating >= 1 && review.overallRating <= 5 &&
+    typeof review.title === 'string' && review.title.trim().length > 0 &&
+    typeof review.content === 'string' && review.content.trim().length > 0 &&
+    typeof review.publishDisplayName === 'boolean' &&
+    typeof review.version === 'string' && review.version.length > 0;
+}
 
 export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRecordRef }) {
   const router = useRouter();
@@ -24,11 +39,16 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
-  const load = async () => {
+  const load = async (
+    clearCurrentContext = false,
+    accept: (value: TripReviewContext) => boolean = () => true,
+  ): Promise<TripReviewContext | null> => {
     setBusy(true);
     setMessage(null);
+    if (clearCurrentContext) setContext(null);
     try {
       const value = await getReviewContext(reference);
+      if (!accept(value)) return null;
       setContext(value);
       if (value.review?.kind === 'new') {
         setRating(value.review.overallRating);
@@ -36,8 +56,10 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
         setContent(value.review.content);
         setPublishDisplayName(value.review.publishDisplayName);
       }
+      return value;
     } catch (error) {
       setMessage(canonicalReviewMessage(error instanceof CanonicalReviewApiError ? error.errorCode : 'MSG127'));
+      return null;
     } finally { setBusy(false); }
   };
 
@@ -68,8 +90,13 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
     } catch (error) {
       const code = error instanceof CanonicalReviewApiError ? error.errorCode : 'MSG127';
       if (code === 'trip_review.duplicate') {
-        await load();
-        setMessage(canonicalReviewMessage(code));
+        const recovered = await load(true, value => hasUsableRecoveredReview(value, reference));
+        if (recovered) {
+          setMessage(canonicalReviewMessage(code));
+        } else {
+          setContext(null);
+          setMessage(DUPLICATE_RECOVERY_ERROR);
+        }
       } else {
         setMessage(canonicalReviewMessage(code));
         setBusy(false);

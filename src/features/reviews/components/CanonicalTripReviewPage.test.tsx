@@ -68,7 +68,47 @@ describe('CanonicalTripReviewPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
     expect(await screen.findByText('A review already exists. The existing review is shown below.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Update review' })).toBeTruthy();
+    expect(mocks.createReview).toHaveBeenCalledTimes(1);
+    expect(mocks.getReviewContext).toHaveBeenCalledTimes(2);
     expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it('shows a safe recovery error when duplicate recovery GET fails', async () => {
+    mocks.createReview.mockRejectedValue(new CanonicalReviewApiError(409, 'trip_review.duplicate'));
+    mocks.getReviewContext.mockResolvedValueOnce(emptyContext).mockRejectedValueOnce(
+      new CanonicalReviewApiError(503, 'MSG127'),
+    );
+    render(<CanonicalTripReviewPage reference={reference} />);
+    await screen.findByText('Hoi An');
+    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
+    expect(await screen.findByText('The existing review could not be loaded. Please try again.')).toBeTruthy();
+    expect(screen.queryByText('A review already exists. The existing review is shown below.')).toBeNull();
+    expect(screen.queryByText('Hoi An')).toBeNull();
+    expect(mocks.createReview).toHaveBeenCalledTimes(1);
+    expect(mocks.getReviewContext).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects duplicate recovery when GET returns a malformed existing review', async () => {
+    mocks.createReview.mockRejectedValue(new CanonicalReviewApiError(409, 'trip_review.duplicate'));
+    mocks.getReviewContext.mockResolvedValueOnce(emptyContext).mockResolvedValueOnce({
+      ...emptyContext,
+      existingReviewKind: 'new',
+      review: { kind: 'new' },
+    });
+    render(<CanonicalTripReviewPage reference={reference} />);
+    await screen.findByText('Hoi An');
+    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
+    expect(await screen.findByText('The existing review could not be loaded. Please try again.')).toBeTruthy();
+    expect(screen.queryByText('A review already exists. The existing review is shown below.')).toBeNull();
+    expect(screen.queryByText('Hoi An')).toBeNull();
+    expect(mocks.createReview).toHaveBeenCalledTimes(1);
+    expect(mocks.getReviewContext).toHaveBeenCalledTimes(2);
   });
 
   it('updates in place without returning to Trip History', async () => {
