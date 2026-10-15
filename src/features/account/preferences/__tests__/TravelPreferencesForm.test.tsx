@@ -33,7 +33,6 @@ const saved: TravelPreferences = {
   travelPace: null,
   riskTolerance: null,
   foodPreferences: [],
-  defaultBudgetVnd: null,
   updatedAtUtc: '2026-10-13T06:00:00Z',
 };
 

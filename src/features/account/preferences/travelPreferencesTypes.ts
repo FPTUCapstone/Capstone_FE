@@ -59,16 +59,11 @@ export interface TravelPreferences {
   travelPace: TravelPace | null;
   riskTolerance: RiskTolerance | null;
   foodPreferences: FoodPreference[];
-  /**
-   * Compatibility for the existing UC-10 form. UC-09 never receives, displays or persists this
-   * value; the parser always supplies null while UC-10 remains outside this task's scope.
-   */
-  defaultBudgetVnd: number | null;
   updatedAtUtc: string | null;
 }
 
 /** Body of PUT /api/v1/traveler/preferences: the complete state, never partial. */
-export type TravelPreferencesPayload = Omit<TravelPreferences, 'updatedAtUtc' | 'defaultBudgetVnd'>;
+export type TravelPreferencesPayload = Omit<TravelPreferences, 'updatedAtUtc'>;
 
 export const EMPTY_PREFERENCES: TravelPreferences = Object.freeze({
   interests: [],
@@ -76,7 +71,6 @@ export const EMPTY_PREFERENCES: TravelPreferences = Object.freeze({
   travelPace: null,
   riskTolerance: null,
   foodPreferences: [],
-  defaultBudgetVnd: null,
   updatedAtUtc: null,
 }) as TravelPreferences;
 
@@ -159,7 +153,6 @@ export function parseTravelPreferences(value: unknown): TravelPreferences {
     travelPace: optionalKey(value.travelPace, TRAVEL_PACES, 'travelPace'),
     riskTolerance: optionalKey(value.riskTolerance, RISK_TOLERANCES, 'riskTolerance'),
     foodPreferences: requireKeyArray(value.foodPreferences, FOOD_PREFERENCES, 'foodPreferences'),
-    defaultBudgetVnd: null,
     updatedAtUtc: typeof updatedAt === 'string' ? updatedAt : null,
   };
 }
