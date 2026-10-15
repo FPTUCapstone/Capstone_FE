@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  ChangePasswordApiError,
   pendingChangePasswordCapability,
   type AvailableChangePasswordCapability,
 } from '../changePasswordCapability';
@@ -171,6 +172,40 @@ describe('useChangePassword', () => {
     });
 
     expect(result.current.errors.form).toBe('Không thể đổi mật khẩu. Vui lòng thử lại.');
+    expect(result.current.success).toBe(false);
+  });
+
+  it('targets Current Password when the adapter reports a currentPassword-field error (MSG17)', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Mật khẩu hiện tại không đúng.', 'currentPassword'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors).toEqual({ currentPassword: 'Mật khẩu hiện tại không đúng.' });
+    expect(result.current.success).toBe(false);
+  });
+
+  it('targets New Password when the adapter reports a newPassword-field error (MSG05)', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Mật khẩu mới không hợp lệ.', 'newPassword'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors).toEqual({ newPassword: 'Mật khẩu mới không hợp lệ.' });
     expect(result.current.success).toBe(false);
   });
 });

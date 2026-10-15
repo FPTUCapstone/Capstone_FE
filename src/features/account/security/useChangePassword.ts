@@ -8,6 +8,7 @@ import {
 } from '@/lib/passwordPolicy';
 
 import {
+  ChangePasswordApiError,
   pendingChangePasswordCapability,
   type ChangePasswordCapability,
   type ChangePasswordFormValues,
@@ -131,8 +132,14 @@ export function useChangePassword(options: UseChangePasswordOptions = {}) {
       setFields(initialFields);
       options.onSuccess?.();
       return true;
-    } catch {
-      setErrors({ form: 'Không thể đổi mật khẩu. Vui lòng thử lại.' });
+    } catch (error) {
+      // BE spec §5: MSG17 -> currentPassword, MSG05 -> newPassword. Any other
+      // failure (network, session-expired, 403, 5xx/MSG127) stays generic.
+      if (error instanceof ChangePasswordApiError && error.field) {
+        setErrors({ [error.field]: error.message });
+      } else {
+        setErrors({ form: 'Không thể đổi mật khẩu. Vui lòng thử lại.' });
+      }
       return false;
     } finally {
       setSubmitting(false);

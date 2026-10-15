@@ -22,15 +22,28 @@ export type ChangePasswordCapability =
   | AvailableChangePasswordCapability;
 
 /**
- * Production capability for UC-07.
- *
- * Capstone_BE develop does not currently expose an authenticated Change
- * Password endpoint. A future verified adapter will implement
- * `AvailableChangePasswordCapability` and be injected by the actor-specific
- * page composition after its route, DTOs, auth transport, and session
- * semantics are confirmed. Traveler/Tour Operator and Administrator adapters
- * must continue using their separate canonical session architectures. Until
- * then, production cannot send credentials.
+ * Thrown by an `AvailableChangePasswordCapability.execute` adapter. `field`
+ * routes the message to the matching form field (BE spec §5: `MSG17` ->
+ * currentPassword, `MSG05` -> newPassword); omit it for a safe generic
+ * form-level failure (network, 401 session-expired, 403, 5xx/MSG127).
+ */
+export class ChangePasswordApiError extends Error {
+  constructor(
+    message: string,
+    public readonly field?: 'currentPassword' | 'newPassword',
+  ) {
+    super(message);
+    this.name = 'ChangePasswordApiError';
+  }
+}
+
+/**
+ * Fallback capability for an actor/route whose adapter is not yet injected
+ * by its page composition. Traveler/Tour Operator and Administrator each use
+ * their own canonical session architecture and inject a real
+ * `AvailableChangePasswordCapability` (see webChangePasswordCapability.ts and
+ * the admin account feature) once wired; production never sends credentials
+ * through this pending placeholder.
  */
 export const pendingChangePasswordCapability: PendingChangePasswordCapability =
   Object.freeze({

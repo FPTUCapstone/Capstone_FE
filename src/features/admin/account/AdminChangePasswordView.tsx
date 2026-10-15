@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { pendingChangePasswordCapability } from '@/features/account/security/changePasswordCapability';
 import { ChangePasswordForm } from '@/features/account/security/ChangePasswordForm';
 import { ROUTES } from '@/lib/routes';
+
+import { createAdminChangePasswordCapability } from './adminChangePasswordCapability';
 
 export function AdminChangePasswordView() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export function AdminChangePasswordView() {
       </nav>
 
       <ChangePasswordForm
-        capability={pendingChangePasswordCapability}
+        capability={createAdminChangePasswordCapability()}
         onCancel={() => router.push(ROUTES.admin.dashboard)}
       />
     </main>
