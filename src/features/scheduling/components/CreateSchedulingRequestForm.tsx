@@ -11,6 +11,7 @@ import { ROUTES } from '@/lib/routes';
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
 import {
   buildVietnamStartAtIso,
+  calculateTripEnd,
   CreateSchedulingRequestPayload,
   DESTINATION_PRESETS,
   DestinationPreset,
@@ -19,6 +20,7 @@ import {
   isFutureVietnamStartAt,
   mapPaceToRestPreference,
   mapTransportPreferenceToMode,
+  parseAvailableDuration,
   RestPreference,
   SchedulingResponseDto,
   TransportMode,
@@ -56,11 +58,15 @@ export function CreateSchedulingRequestForm({
   // Time & duration
   const [startDate, setStartDate] = useState(getVietnamTomorrowDateString());
   const [startTime, setStartTime] = useState('08:00');
-  const [availableHours, setAvailableHours] = useState(() => {
-    if (initialPreferences?.travelPace === 'relaxed') return 6;
-    if (initialPreferences?.travelPace === 'packed') return 10;
-    return 8; // 8 hours = 480 mins
+  // "Thời lượng" is typed freely (hours + minutes): 1 hour to 3 days, and the trip may run
+  // past midnight.
+  const [durationHours, setDurationHours] = useState(() => {
+    if (initialPreferences?.travelPace === 'relaxed') return '6';
+    if (initialPreferences?.travelPace === 'packed') return '10';
+    return '8';
   });
+  const [durationMinutes, setDurationMinutes] = useState('0');
+  const duration = parseAvailableDuration(durationHours, durationMinutes);
 
   // Constraints
   const [searchRadiusKm, setSearchRadiusKm] = useState(10);
@@ -115,22 +121,9 @@ export function CreateSchedulingRequestForm({
   };
 
 
-  // Calculate live end time
-  const calculateEndTime = () => {
-    try {
-      const [h, m] = startTime.split(':').map(Number);
-      const totalMinutes = h * 60 + m + availableHours * 60;
-      const endH = Math.floor(totalMinutes / 60);
-      const endM = totalMinutes % 60;
-      const formattedEnd = `${String(endH % 24).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-      const isNextDay = totalMinutes >= 24 * 60;
-      return { formattedEnd, isNextDay };
-    } catch {
-      return { formattedEnd: '--:--', isNextDay: false };
-    }
-  };
-
-  const { formattedEnd, isNextDay } = calculateEndTime();
+  // Live end time (the trip may end on a later day)
+  const tripEnd =
+    duration.minutes === null ? null : calculateTripEnd(startDate, startTime, duration.minutes);
 
   // Validate form
   const validate = (): boolean => {
@@ -149,13 +142,8 @@ export function CreateSchedulingRequestForm({
         'Thời gian bắt đầu phải sau thời điểm hiện tại theo giờ Việt Nam (Asia/Ho_Chi_Minh).';
     }
 
-    if (availableHours < 1 || availableHours > 12) {
-      errors.availableHours = 'Thời lượng chuyến đi phải từ 1 đến 12 giờ (trong ngày).';
-    }
-
-    if (isNextDay) {
-      errors.availableHours =
-        'Theo quy định, lịch trình trong ngày phải kết thúc trước 24:00 cùng ngày. Vui lòng giảm thời lượng hoặc chọn giờ bắt đầu sớm hơn.';
+    if (duration.error) {
+      errors.availableHours = duration.error;
     }
 
     if (searchRadiusKm < 1 || searchRadiusKm > 50) {
@@ -235,7 +223,7 @@ export function CreateSchedulingRequestForm({
       explorationLongitude: selectedDestination.centerLongitude,
       endPoiId: null,
       returnToStart,
-      availableMinutes: availableHours * 60,
+      availableMinutes: duration.minutes ?? 0,
       transportMode,
       searchRadiusKm,
       budgetVnd: budgetVnd === '' ? null : Number(budgetVnd),
@@ -462,7 +450,7 @@ export function CreateSchedulingRequestForm({
                 2. Thời gian & Thời lượng chuyến đi
               </h2>
               <p className="text-xs text-slate-500">
-                Lịch trình được tối ưu hóa trong cùng một ngày theo quy định hệ thống
+                Chuyến đi từ 1 giờ đến 3 ngày, có thể kéo dài qua đêm
               </p>
             </div>
           </div>
@@ -526,77 +514,71 @@ export function CreateSchedulingRequestForm({
             </div>
           </div>
 
-          {/* Duration slider */}
+          {/* Duration: free hours + minutes, 1 hour to 3 days */}
           <div className="mt-5 border-t border-slate-100 pt-5">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="duration-slider"
-                className="text-xs font-bold text-slate-700 sm:text-sm"
-              >
-                Thời lượng dự kiến
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
-                  {availableHours} giờ ({availableHours * 60} phút)
-                </span>
-              </div>
-            </div>
-
-            <input
-              id="duration-slider"
-              type="range"
-              min={1}
-              max={12}
-              step={1}
-              value={availableHours}
-              onChange={(e) => {
-                setAvailableHours(Number(e.target.value));
-                setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
-              }}
-              className="mt-2.5 h-2 w-full cursor-pointer accent-[#007d6e]"
-            />
-
-            {/* Quick preset buttons */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[
-                { h: 3, label: '3 giờ (Nửa buổi)' },
-                { h: 6, label: '6 giờ (Một buổi dài)' },
-                { h: 8, label: '8 giờ (Trọn vẹn 1 ngày)' },
-                { h: 10, label: '10 giờ (Khám phá sâu)' },
-              ].map((preset) => (
-                <button
-                  key={preset.h}
-                  type="button"
-                  onClick={() => {
-                    setAvailableHours(preset.h);
+            <p className="text-xs font-bold text-slate-700 sm:text-sm">Thời lượng dự kiến</p>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              Từ 1 giờ đến 3 ngày (72 giờ). Chuyến đi có thể kéo dài qua đêm sang ngày hôm sau.
+            </p>
+            <div className="mt-2.5 grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="duration-hours" className="text-xs font-semibold text-slate-600">
+                  Số giờ
+                </label>
+                <input
+                  id="duration-hours"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  value={durationHours}
+                  onChange={(e) => {
+                    setDurationHours(e.target.value.replace(/\D/g, ''));
                     setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
                   }}
-                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
-                    availableHours === preset.h
-                      ? 'border-[#007d6e] bg-teal-50 text-[#007d6e]'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#007d6e] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="duration-minutes" className="text-xs font-semibold text-slate-600">
+                  Số phút
+                </label>
+                <input
+                  id="duration-minutes"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  value={durationMinutes}
+                  onChange={(e) => {
+                    setDurationMinutes(e.target.value.replace(/\D/g, ''));
+                    setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
+                  }}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#007d6e] focus:outline-none"
+                />
+              </div>
             </div>
 
             {/* Live calculation banner */}
             <div
               className={`mt-4 flex items-center gap-2 rounded-xl p-3 text-xs sm:text-sm ${
-                isNextDay
+                duration.error
                   ? 'border border-rose-200 bg-rose-50 text-rose-900'
                   : 'border border-teal-100 bg-teal-50/60 text-teal-900'
               }`}
             >
               <span className="material-symbols-outlined text-base">
-                {isNextDay ? 'warning' : 'timelapse'}
+                {duration.error ? 'warning' : 'timelapse'}
               </span>
-              <span>
-                Bắt đầu: <strong>{startTime}</strong> • Dự kiến kết thúc:{' '}
-                <strong>{formattedEnd}</strong> {isNextDay ? '(Qua ngày hôm sau ❌)' : '(Cùng ngày ✓)'}
-              </span>
+              {duration.error || !tripEnd ? (
+                <span>{duration.error ?? 'Chọn ngày và giờ xuất phát.'}</span>
+              ) : (
+                <span>
+                  Bắt đầu: <strong>{startTime}</strong> • Dự kiến kết thúc:{' '}
+                  <strong>{tripEnd.time}</strong>{' '}
+                  {tripEnd.dayOffset === 0
+                    ? '(cùng ngày)'
+                    : `ngày ${tripEnd.date} (sau ${tripEnd.dayOffset} ngày)`}
+                </span>
+              )}
             </div>
 
             {validationErrors.availableHours && (

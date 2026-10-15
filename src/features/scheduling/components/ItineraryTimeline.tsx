@@ -2,13 +2,20 @@
 
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
-import { formatVietnamTime, ItineraryDetailItemDto } from '../types/schedulingTypes';
+import {
+  formatVietnamDayLabel,
+  formatVietnamTime,
+  ItineraryDetailItemDto,
+  vietnamDayKey,
+} from '../types/schedulingTypes';
 
 interface ItineraryTimelineProps {
   items: ItineraryDetailItemDto[];
+  /** Trip start (itinerary validFrom): stops on a later day than this carry a day label. */
+  tripStart?: string | null;
 }
 
-export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
+export function ItineraryTimeline({ items, tripStart }: ItineraryTimelineProps) {
   if (!items || items.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
@@ -21,6 +28,13 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
   }
 
   const formatTime = (isoString?: string): string => formatVietnamTime(isoString);
+  // A trip may cross midnight: label each day once when the trip spans several days, counting
+  // the start day too (an evening start whose stops all fall on the next morning).
+  const spansDays =
+    new Set([
+      ...(tripStart ? [vietnamDayKey(tripStart)] : []),
+      ...items.map((item) => vietnamDayKey(item.plannedArrival)),
+    ]).size > 1;
 
   return (
     <div className="relative space-y-6">
@@ -39,9 +53,19 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
           const isLast = index === items.length - 1;
           const arrivalTime = formatTime(item.plannedArrival);
           const departureTime = formatTime(item.plannedDeparture);
+          const startsNewDay =
+            spansDays &&
+            (index === 0 ||
+              vietnamDayKey(items[index - 1].plannedArrival) !==
+                vietnamDayKey(item.plannedArrival));
 
           return (
             <div key={item.itemId || item.sequenceNo || index} className="relative">
+              {startsNewDay && (
+                <p className="mb-3 text-sm font-bold capitalize text-slate-800">
+                  {formatVietnamDayLabel(item.plannedArrival)}
+                </p>
+              )}
               {/* Incoming travel transition from previous stop (Part 9) */}
               {index > 0 &&
                 item.travelDurationFromPreviousMinutes !== null &&
