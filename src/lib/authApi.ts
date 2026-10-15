@@ -372,7 +372,14 @@ export async function webChangePassword(data: WebChangePasswordRequest): Promise
   }
 
   if (!res.ok) {
-    // A failed change must never mutate the existing session.
+    // A business/validation failure (400/403/5xx) must never mutate the
+    // existing session. A 401, however, means the access token itself is no
+    // longer accepted — the session is already invalid and must be cleared
+    // so the caller is routed back to sign-in (UC-07 spec §6/§7), exactly
+    // like webRefresh does for its own 401.
+    if (res.status === 401) {
+      AuthStorage.clear();
+    }
     return handleResponse<never>(res);
   }
 

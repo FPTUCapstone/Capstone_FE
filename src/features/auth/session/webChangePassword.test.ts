@@ -84,6 +84,22 @@ it('preserves the existing session and surfaces MSG17 on an incorrect current pa
   expect(AuthStorage.getAccessToken()).toBe('original-access');
 });
 
+it('clears the session on a 401 — the access token itself is no longer accepted', async () => {
+  AuthStorage.accept(data, false);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ title: 'Unauthorized' }), { status: 401 }),
+    ),
+  );
+
+  await expect(
+    webChangePassword({ currentPassword: 'Current1!', newPassword: 'New2@aaaa' }),
+  ).rejects.toMatchObject({ status: 401 });
+  expect(AuthStorage.getContext()).toBeNull();
+  expect(AuthStorage.getAccessToken()).toBeNull();
+});
+
 it('preserves the existing session on a network failure', async () => {
   AuthStorage.accept(data, false);
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network')));

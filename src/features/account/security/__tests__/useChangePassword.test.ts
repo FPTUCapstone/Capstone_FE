@@ -208,4 +208,38 @@ describe('useChangePassword', () => {
     expect(result.current.errors).toEqual({ newPassword: 'Mật khẩu mới không hợp lệ.' });
     expect(result.current.success).toBe(false);
   });
+
+  it('sets sessionExpired (no retryable form error) for a 401 session-expired failure', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Phiên đăng nhập đã hết hạn.', undefined, 'sessionExpired'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.sessionExpired).toBe(true);
+    expect(result.current.errors).toEqual({});
+  });
+
+  it('shows a distinct form message (not the generic one) for a 403 forbidden failure', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Bạn không có quyền thực hiện hành động này.', undefined, 'forbidden'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors).toEqual({ form: 'Bạn không có quyền thực hiện hành động này.' });
+    expect(result.current.sessionExpired).toBe(false);
+  });
 });

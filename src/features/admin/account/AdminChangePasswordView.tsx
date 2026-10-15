@@ -3,13 +3,21 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { pendingChangePasswordCapability } from '@/features/account/security/changePasswordCapability';
 import { ChangePasswordForm } from '@/features/account/security/ChangePasswordForm';
 import { ROUTES } from '@/lib/routes';
 
 import { createAdminChangePasswordCapability } from './adminChangePasswordCapability';
 
-export function AdminChangePasswordView() {
+export interface AdminChangePasswordViewProps {
+  /** Staff change-password support is not approved yet (spec §3). */
+  role?: 'Administrator' | 'Staff';
+}
+
+export function AdminChangePasswordView({ role }: AdminChangePasswordViewProps = {}) {
   const router = useRouter();
+  const capability =
+    role === 'Staff' ? pendingChangePasswordCapability : createAdminChangePasswordCapability();
 
   return (
     <main className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
@@ -23,8 +31,9 @@ export function AdminChangePasswordView() {
       </nav>
 
       <ChangePasswordForm
-        capability={createAdminChangePasswordCapability()}
+        capability={capability}
         onCancel={() => router.push(ROUTES.admin.dashboard)}
+        onSessionExpired={() => router.replace(ROUTES.admin.login)}
       />
     </main>
   );

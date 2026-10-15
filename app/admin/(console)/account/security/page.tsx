@@ -23,5 +23,9 @@ export default async function AdminAccountSecurityPage() {
     return redirect(ROUTES.admin.login);
   }
 
-  return <AdminChangePasswordView />;
+  // SRS_INTERNAL_CONFLICT (spec §3): Staff change-password support is not
+  // approved yet. The route itself stays reachable so a valid Staff session
+  // never 404s/redirects confusingly, but the view must not claim the real
+  // capability as delivered for that role.
+  return <AdminChangePasswordView role={session.role} />;
 }

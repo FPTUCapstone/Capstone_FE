@@ -77,7 +77,7 @@ describe('createWebChangePasswordCapability', () => {
     ).rejects.toMatchObject({ field: 'newPassword' });
   });
 
-  it('maps a 403 local-password-unavailable failure to a generic form error', async () => {
+  it('maps a 403 local-password-unavailable failure to a forbidden-kind error', async () => {
     AuthStorage.accept(data, false);
     vi.stubGlobal(
       'fetch',
@@ -93,5 +93,23 @@ describe('createWebChangePasswordCapability', () => {
 
     expect(error).toBeInstanceOf(ChangePasswordApiError);
     expect((error as ChangePasswordApiError).field).toBeUndefined();
+    expect((error as ChangePasswordApiError).kind).toBe('forbidden');
+  });
+
+  it('maps a 401 to a sessionExpired-kind error (the session is already cleared)', async () => {
+    AuthStorage.accept(data, false);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ title: 'Unauthorized' }), { status: 401 })),
+    );
+
+    const capability = createWebChangePasswordCapability();
+    const error = await capability
+      .execute({ currentPassword: 'Current1!', newPassword: 'New2@aaaa', confirmPassword: 'New2@aaaa' })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ChangePasswordApiError);
+    expect((error as ChangePasswordApiError).kind).toBe('sessionExpired');
+    expect(AuthStorage.getContext()).toBeNull();
   });
 });

@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { ChangePasswordApiError } from '@/features/account/security/changePasswordCapability';
+
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
@@ -77,5 +79,50 @@ describe('AdminChangePasswordView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
     expect(mocks.push).toHaveBeenCalledWith('/admin');
+  });
+
+  it('shows the pending notice for Staff and never calls the real capability (spec §3)', () => {
+    const { container } = render(<AdminChangePasswordView role="Staff" />);
+
+    expect(screen.getByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeDefined();
+    const submitButton = screen.getByRole('button', {
+      name: 'Đổi mật khẩu',
+    }) as HTMLButtonElement;
+    expect(submitButton.disabled).toBe(true);
+
+    fireEvent.submit(container.querySelector('form')!);
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it('enables the real capability for Administrator', () => {
+    render(<AdminChangePasswordView role="Administrator" />);
+
+    expect(screen.queryByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeNull();
+    const submitButton = screen.getByRole('button', {
+      name: 'Đổi mật khẩu',
+    }) as HTMLButtonElement;
+    expect(submitButton.disabled).toBe(false);
+  });
+
+  it('redirects to admin sign-in when the capability reports a 401 session-expired failure', async () => {
+    mocks.execute.mockRejectedValue(
+      new ChangePasswordApiError('Phiên đăng nhập đã hết hạn.', undefined, 'sessionExpired'),
+    );
+    const { container } = render(<AdminChangePasswordView />);
+
+    fireEvent.change(screen.getByLabelText('Mật khẩu hiện tại'), {
+      target: { value: 'CurrentPass123!' },
+    });
+    fireEvent.change(screen.getByLabelText('Mật khẩu mới'), {
+      target: { value: 'NewSecurePass456@' },
+    });
+    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu mới'), {
+      target: { value: 'NewSecurePass456@' },
+    });
+    fireEvent.submit(container.querySelector('form')!);
+
+    await waitFor(() => {
+      expect(mocks.replace).toHaveBeenCalledWith('/admin/login');
+    });
   });
 });

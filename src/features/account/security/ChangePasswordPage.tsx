@@ -68,6 +68,9 @@ export function ChangePasswordPage() {
             role: context.role,
           }}
           onCancel={() => router.push(ROUTES.home)}
+          onSessionExpired={() =>
+            router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.security)}`)
+          }
         />
       </main>
     </div>

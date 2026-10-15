@@ -49,6 +49,36 @@ describe('createAdminChangePasswordCapability', () => {
     ).rejects.toMatchObject({ field: 'newPassword' });
   });
 
+  it('maps a proxied 401 to a sessionExpired-kind error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ title: 'Administrator sign-in required.' }), { status: 401 })),
+    );
+
+    const capability = createAdminChangePasswordCapability();
+    const error = await capability
+      .execute({ currentPassword: 'Current1!', newPassword: 'New2@aaaa', confirmPassword: 'New2@aaaa' })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ChangePasswordApiError);
+    expect((error as ChangePasswordApiError).kind).toBe('sessionExpired');
+  });
+
+  it('maps a proxied 403 to a forbidden-kind error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ title: 'Administrator access is not allowed.' }), { status: 403 })),
+    );
+
+    const capability = createAdminChangePasswordCapability();
+    const error = await capability
+      .execute({ currentPassword: 'Current1!', newPassword: 'New2@aaaa', confirmPassword: 'New2@aaaa' })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ChangePasswordApiError);
+    expect((error as ChangePasswordApiError).kind).toBe('forbidden');
+  });
+
   it('maps a network failure to a generic ChangePasswordApiError', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network')));
 

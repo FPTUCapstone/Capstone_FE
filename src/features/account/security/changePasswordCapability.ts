@@ -22,15 +22,23 @@ export type ChangePasswordCapability =
   | AvailableChangePasswordCapability;
 
 /**
- * Thrown by an `AvailableChangePasswordCapability.execute` adapter. `field`
- * routes the message to the matching form field (BE spec §5: `MSG17` ->
- * currentPassword, `MSG05` -> newPassword); omit it for a safe generic
- * form-level failure (network, 401 session-expired, 403, 5xx/MSG127).
+ * Thrown by an `AvailableChangePasswordCapability.execute` adapter.
+ *
+ * - `field` routes the message to the matching form field (BE spec §5:
+ *   `MSG17` -> currentPassword, `MSG05` -> newPassword).
+ * - `kind: 'sessionExpired'` (401) means the caller's session is no longer
+ *   valid; the page must clear it and redirect to sign-in (UC-07 spec §6/§7).
+ * - `kind: 'forbidden'` (403, excluding the local-password-unavailable case
+ *   surfaced as a plain message) means the caller is not authorized for this
+ *   action; the page shows an access-denied message without clearing a
+ *   valid session.
+ * - Omit both for a safe generic form-level failure (network, 5xx/MSG127).
  */
 export class ChangePasswordApiError extends Error {
   constructor(
     message: string,
     public readonly field?: 'currentPassword' | 'newPassword',
+    public readonly kind?: 'sessionExpired' | 'forbidden',
   ) {
     super(message);
     this.name = 'ChangePasswordApiError';

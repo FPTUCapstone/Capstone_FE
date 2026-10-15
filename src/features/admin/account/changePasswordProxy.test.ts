@@ -73,6 +73,13 @@ describe('admin change-password proxy', () => {
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
+  it('rejects a Staff session with 403 before touching the backend (spec §3)', async () => {
+    cookiesMock.mockResolvedValue(cookieJar('staff-token', 'Staff'));
+    const res = await proxyAdminChangePassword(jsonRequest());
+    expect(res.status).toBe(403);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
   it('returns 401 without touching the backend when the admin cookie or BFF seal is missing', async () => {
     cookiesMock.mockResolvedValue(cookieJar(undefined));
     const res = await proxyAdminChangePassword(jsonRequest());
