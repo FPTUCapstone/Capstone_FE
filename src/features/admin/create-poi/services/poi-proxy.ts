@@ -13,14 +13,14 @@ export async function proxyPoi(request: Request, path: '/api/v1/admin/pois' | '/
   if (request.method !== 'GET' && !isSameOriginRequest(request)) return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
   const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+  if (!token) return jsonNoStore({ title: 'Staff sign-in required.' }, 401);
   if (typeof verifyAdminSessionFromCookies === 'function') {
     const session = verifyAdminSessionFromCookies(cookieStore);
     if (!session) {
-      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+      return clearAdminSession(jsonNoStore({ title: 'Staff sign-in required.' }, 401));
     }
-    if (session.role === 'Staff') {
-      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+    if (session.role !== 'Staff') {
+      return jsonNoStore({ title: 'Staff access is required.' }, 403);
     }
   }
   let body: string | undefined;
@@ -33,10 +33,10 @@ export async function proxyPoi(request: Request, path: '/api/v1/admin/pois' | '/
     const upstream = await fetchBackend(path, { method: request.method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body });
     if (upstream.status >= 500) return jsonNoStore({ title: 'The POI service is unavailable. The save could not be confirmed.' }, 503);
     if (upstream.status === 401) {
-      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+      return clearAdminSession(jsonNoStore({ title: 'Staff sign-in required.' }, 401));
     }
     if (upstream.status === 403) {
-      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+      return jsonNoStore({ title: 'Staff access is required.' }, 403);
     }
     const result: unknown = await upstream.json().catch(() => null);
     return jsonNoStore(result ?? { title: 'The POI service returned no data.' }, upstream.status);

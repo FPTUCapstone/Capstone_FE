@@ -116,7 +116,7 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
                   AD
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white">Administrator</p>
+                  <p className="text-xs font-semibold text-white">Staff</p>
                   <p className="text-[10px] text-slate-400">Active Session</p>
                 </div>
               </div>

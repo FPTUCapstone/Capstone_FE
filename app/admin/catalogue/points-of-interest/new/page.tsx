@@ -4,12 +4,13 @@ import { redirect } from 'next/navigation';
 
 import { CreatePoiPage } from '@/features/admin/create-poi';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
+import { adminStaffEn } from '@/features/admin/staff/resources/en';
 import { ROUTES } from '@/lib/routes';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
   title: 'Create Point of Interest (POI) | TripMate Admin',
-  description: 'UC-52: Admin interface to create and configure Points of Interest for TripMate catalog.',
+  description: 'UC-52: Staff interface to create and configure Points of Interest for TripMate catalog.',
 };
 
 export default async function NewPoiPage() {
@@ -24,8 +25,13 @@ export default async function NewPoiPage() {
     return redirect(ROUTES.admin.login);
   }
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return (
+      <AdminAccessDeniedView
+        requiredRole="Staff"
+        description={adminStaffEn.staffAccessDenied.poiDescription}
+      />
+    );
   }
 
   return <CreatePoiPage />;
