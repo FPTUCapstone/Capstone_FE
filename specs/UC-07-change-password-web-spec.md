@@ -1,6 +1,6 @@
 # UC-07 Change Password — Web Specification
 
-**Status:** DRAFT — awaiting developer approval  
+**Status:** DRAFT — awaiting developer approval
 **Product reference:** SRS §3.2.7 and the current UC-07 catalogue entry supplied by the product team.
 
 ## 1. Purpose
@@ -109,4 +109,3 @@ On success, the Backend/Web adapter refreshes the current session. The frontend 
 - Adapter/BFF tests: payload allow-list, no token exposure, 401 clear-and-redirect, 403 session preservation, and safe handling of 5xx/network failure.
 - Route tests: direct navigation for valid role, wrong role, missing/expired/tampered session.
 - Responsive/manual keyboard review before delivery.
-
