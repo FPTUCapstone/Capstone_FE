@@ -9,7 +9,7 @@
 
 ## 1. Overview & Scope
 
-Defines the responsive Web Traveler Profile management experience for `Capstone_FE` at `/account/profile`. An authenticated Traveler reviews and maintains their personal profile details (Full Name, Avatar, Phone Number, Date of Birth). 
+Defines the responsive Web Traveler Profile management experience for `Capstone_FE` at `/account/profile`. An authenticated Traveler reviews and maintains their personal profile details (Full Name, Avatar, Phone Number, Date of Birth).
 
 The web client communicates with the TripMate backend via a dedicated Next.js BFF proxy route (`/api/traveler/profile`) that handles session token forwarding, multipart form data handling for avatar media uploads, and standard error translation.
 
