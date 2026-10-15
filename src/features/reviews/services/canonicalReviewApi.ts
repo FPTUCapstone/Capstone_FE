@@ -27,7 +27,7 @@ export async function getReviewContext(ref: ReviewableRecordRef): Promise<TripRe
 
 export async function createReview(ref: ReviewableRecordRef, input: ReviewWriteInput): Promise<CanonicalReview> {
   const form = new FormData();
-  form.set('metadata', new Blob([JSON.stringify({
+  form.set('metadata', JSON.stringify({
     overallRating: input.overallRating,
     title: input.title,
     content: input.content,
@@ -35,7 +35,7 @@ export async function createReview(ref: ReviewableRecordRef, input: ReviewWriteI
     routePacing: null,
     cspRating: null,
     publishDisplayName: input.publishDisplayName,
-  })], { type: 'application/json;charset=utf-8' }), 'metadata.json');
+  }));
   for (const file of input.files ?? []) form.append('files', file, file.name);
   return parse<CanonicalReview>(await fetch(path(ref), { method: 'POST', body: form }));
 }

@@ -31,9 +31,12 @@ describe('canonical review API', () => {
     const form = fetchMock.mock.calls[0][1].body as FormData;
     expect(Array.from(form.keys())).toEqual(['metadata', 'files']);
     expect((form.get('files') as File).name).toBe('photo.png');
-    const metadata = form.get('metadata') as File;
-    expect(metadata.name).toBe('metadata.json');
-    expect(metadata.type).toBe('application/json;charset=utf-8');
+    const metadata = form.get('metadata');
+    expect(typeof metadata).toBe('string');
+    expect(JSON.parse(metadata as string)).toEqual({
+      overallRating: 5, title: 'Great', content: 'Excellent trip', poiRatings: [],
+      routePacing: null, cspRating: null, publishDisplayName: true,
+    });
   });
 
   it('uses the server version for an exact PUT payload', async () => {

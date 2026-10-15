@@ -32,6 +32,48 @@ async function token(signal: AbortSignal): Promise<string | null> {
   return data.accessToken;
 }
 
+async function boundedBytes(request: Request): Promise<Uint8Array | null> {
+  if (!request.body) return new Uint8Array();
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_BODY_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return bytes;
+}
+
+function safeFilename(value: string): string {
+  return value.replace(/[\r\n"\\]/g, '_').slice(0, 255) || 'image';
+}
+
+async function backendMultipart(form: FormData): Promise<{ body: Blob; contentType: string } | null> {
+  const metadata = form.get('metadata');
+  const files = form.getAll('files');
+  if (typeof metadata !== 'string' || files.some((value) => typeof value === 'string') || files.length > 5 ||
+      Array.from(form.keys()).some((key) => key !== 'metadata' && key !== 'files')) return null;
+  const boundary = `tripmate-${crypto.randomUUID()}`;
+  const parts: BlobPart[] = [
+    `--${boundary}\r\nContent-Disposition: form-data; name="metadata"\r\nContent-Type: application/json; charset=utf-8\r\n\r\n${metadata}\r\n`,
+  ];
+  for (const value of files) {
+    const file = value as File;
+    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="${safeFilename(file.name)}"\r\nContent-Type: ${file.type || 'application/octet-stream'}\r\n\r\n`, file, '\r\n');
+  }
+  parts.push(`--${boundary}--\r\n`);
+  return { body: new Blob(parts), contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
 export async function proxyCanonicalReview(
   request: Request, kind: ReviewableRecordKind, rawId: string,
 ): Promise<Response> {
@@ -46,10 +88,21 @@ export async function proxyCanonicalReview(
     const headers = new Headers({ Authorization: `Bearer ${accessToken}` });
     let body: BodyInit | undefined;
     if (request.method === 'POST') {
-      body = await request.formData();
+      const bytes = await boundedBytes(request);
+      if (!bytes) return result({ errorCode: 'trip_review.body_too_large' }, 413);
+      const parsed = await new Response(bytes, { headers: {
+        'Content-Type': request.headers.get('content-type') ?? '',
+      } }).formData().catch(() => null);
+      if (!parsed) return result({ errorCode: 'trip_review.invalid_input' }, 400);
+      const multipart = await backendMultipart(parsed);
+      if (!multipart) return result({ errorCode: 'trip_review.invalid_input' }, 400);
+      body = multipart.body;
+      headers.set('Content-Type', multipart.contentType);
     } else if (request.method === 'PUT') {
+      const bytes = await boundedBytes(request);
+      if (!bytes) return result({ errorCode: 'trip_review.body_too_large' }, 413);
       headers.set('Content-Type', 'application/json');
-      body = await request.text();
+      body = bytes;
     }
     const upstream = await fetchBackend(`/api/v1/${namespace}/${rawId}/review`, {
       method: request.method, headers, body, signal: request.signal,
