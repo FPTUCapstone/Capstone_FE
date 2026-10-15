@@ -2,7 +2,8 @@ export type ReviewableRecordKind = 'commerceBooking' | 'serviceBooking';
 
 export interface ReviewableRecordRef {
   kind: ReviewableRecordKind;
-  id: number;
+  /** Decimal int64 encoded as text so browser number coercion cannot corrupt the identity. */
+  id: string;
 }
 
 export interface ReviewSubject { kind: 'tour' | 'poi' | 'itinerary'; id: number }

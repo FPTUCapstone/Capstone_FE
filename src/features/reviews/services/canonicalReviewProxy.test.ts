@@ -53,4 +53,23 @@ describe('canonical review BFF', () => {
     await proxyCanonicalReview(new Request('http://localhost/api'), 'serviceBooking', '9');
     expect(fetchBackendMock.mock.calls[1][0]).toBe('/api/v1/service-bookings/9/review');
   });
+
+  it('preserves the canonical optimistic-concurrency error code', async () => {
+    fetchBackendMock.mockImplementation(async (path: string) => path === '/api/v1/auth/web/refresh'
+      ? Response.json({ data: { role: 'Traveler', accessToken: 'token' } })
+      : Response.json({ errorCode: 'trip_review.stale_version' }, { status: 409 }));
+    const response = await proxyCanonicalReview(new Request('http://localhost/api'), 'commerceBooking', '9');
+    expect(await response.json()).toEqual({ errorCode: 'trip_review.stale_version' });
+  });
+
+  it('forwards an int64 identifier without converting it to a JavaScript number', async () => {
+    await proxyCanonicalReview(new Request('http://localhost/api'), 'commerceBooking', '9223372036854775807');
+    expect(fetchBackendMock.mock.calls[1][0]).toBe('/api/v1/bookings/9223372036854775807/review');
+  });
+
+  it.each(['0', '-1', '01', '9223372036854775808'])('rejects invalid signed int64 ID %s', async (id) => {
+    const response = await proxyCanonicalReview(new Request('http://localhost/api'), 'commerceBooking', id);
+    expect(response.status).toBe(400);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
 });

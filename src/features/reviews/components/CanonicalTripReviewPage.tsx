@@ -1,17 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { ROUTES } from '@/lib/routes';
 import { createReview, getReviewContext, updateReview } from '../services/canonicalReviewApi';
 import type { CanonicalReview, ReviewableRecordRef, TripReviewContext } from '../types/canonicalReview';
 import { CanonicalReviewApiError } from '../types/canonicalReview';
+import { canonicalReviewMessage } from '../resources/canonicalReviewMessages';
 
 const MAX_FILE_BYTES = 5_000_000;
 const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRecordRef }) {
+  const router = useRouter();
   const [context, setContext] = useState<TripReviewContext | null>(null);
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
@@ -34,7 +37,7 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
         setPublishDisplayName(value.review.publishDisplayName);
       }
     } catch (error) {
-      setMessage(error instanceof CanonicalReviewApiError ? error.errorCode : 'MSG127');
+      setMessage(canonicalReviewMessage(error instanceof CanonicalReviewApiError ? error.errorCode : 'MSG127'));
     } finally { setBusy(false); }
   };
 
@@ -56,12 +59,21 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
       const input = { overallRating: rating, title: title.trim(), content: content.trim(), publishDisplayName, files,
         version: current?.version };
       await (current ? updateReview(reference, input) : createReview(reference, input));
-      setFiles([]); await load(); setMessage(current ? 'Review updated.' : 'Review published.');
+      setFiles([]);
+      if (current) { await load(); setMessage('Review updated.'); }
+      else {
+        setMessage('Review published. Returning to Trip History…');
+        window.setTimeout(() => router.push(ROUTES.account.trips), 800);
+      }
     } catch (error) {
       const code = error instanceof CanonicalReviewApiError ? error.errorCode : 'MSG127';
-      setMessage(code === 'trip_review.policy_rejected' ? 'The review was rejected by the content policy.'
-        : code === 'trip_review.policy_unavailable' ? 'Content screening is temporarily unavailable. Please try again.' : code);
-      setBusy(false);
+      if (code === 'trip_review.duplicate') {
+        await load();
+        setMessage(canonicalReviewMessage(code));
+      } else {
+        setMessage(canonicalReviewMessage(code));
+        setBusy(false);
+      }
     }
   };
 
@@ -84,11 +96,13 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
           {readOnly ? <p className="rounded-lg bg-slate-100 p-3 text-sm">The seven-day edit window has expired. This review is read-only.</p> : null}
           <fieldset disabled={readOnly || busy} className="space-y-4">
             <legend className="sr-only">Review details</legend>
-            <label className="block text-sm font-bold">Rating
-              <select value={rating} onChange={e => setRating(Number(e.target.value))} className="mt-1 block w-full rounded-lg border p-2">
-                <option value={0}>Select</option>{[1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </label>
+            <fieldset><legend className="block text-sm font-bold">Rating</legend>
+              <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Rating">
+                {[1,2,3,4,5].map(v => <button key={v} type="button" role="radio" aria-checked={rating === v}
+                  aria-label={`${v} star${v === 1 ? '' : 's'}`} onClick={() => setRating(v)}
+                  className={`text-3xl ${v <= rating ? 'text-amber-500' : 'text-slate-300'}`}>★</button>)}
+              </div>
+            </fieldset>
             <label className="block text-sm font-bold">Title
               <input value={title} onChange={e => setTitle(e.target.value)} maxLength={200} required className="mt-1 block w-full rounded-lg border p-2" />
             </label>
@@ -104,7 +118,10 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
               }} className="mt-1 block w-full text-sm" />
             </label> : null}
             <label className="flex gap-2 text-sm"><input type="checkbox" checked={publishDisplayName} onChange={e => setPublishDisplayName(e.target.checked)} /> Publish my display name</label>
-            {!readOnly ? <button className="w-full rounded-xl bg-[#006B5F] px-4 py-3 font-bold text-white" type="submit">{current ? 'Update review' : 'Publish review'}</button> : null}
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Link href={ROUTES.account.trips} className="inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-3 font-bold">Cancel</Link>
+              {!readOnly ? <button className="rounded-xl bg-[#006B5F] px-4 py-3 font-bold text-white" type="submit">{current ? 'Update review' : 'Publish review'}</button> : null}
+            </div>
           </fieldset>
         </form>}
       </> : null}

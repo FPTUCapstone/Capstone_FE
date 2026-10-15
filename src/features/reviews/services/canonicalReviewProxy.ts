@@ -4,12 +4,13 @@ import { cookies } from 'next/headers';
 import { isSameOriginRequest } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
 import type { ReviewableRecordKind } from '../types/canonicalReview';
+import { isPositiveInt64 } from '../types/reviewableRecordId';
 
 const MAX_BODY_BYTES = 26_000_000;
 const safeErrorCodes = new Set([
   'trip_review.invalid_input', 'trip_review.not_found', 'trip_review.forbidden',
   'trip_review.booking_not_completed', 'trip_review.duplicate', 'trip_review.edit_expired',
-  'trip_review.stale', 'trip_review.policy_rejected', 'trip_review.policy_unavailable',
+  'trip_review.stale_version', 'trip_review.policy_rejected', 'trip_review.policy_unavailable',
   'trip_review.unsupported_subject', 'trip_review.unsupported_media_type',
   'trip_review.body_too_large',
 ]);
@@ -77,7 +78,7 @@ async function backendMultipart(form: FormData): Promise<{ body: Blob; contentTy
 export async function proxyCanonicalReview(
   request: Request, kind: ReviewableRecordKind, rawId: string,
 ): Promise<Response> {
-  if (!/^[1-9]\d*$/.test(rawId)) return result({ errorCode: 'trip_review.invalid_input' }, 400);
+  if (!isPositiveInt64(rawId)) return result({ errorCode: 'trip_review.invalid_input' }, 400);
   if (request.method !== 'GET' && !isSameOriginRequest(request)) return result({ errorCode: 'FORBIDDEN' }, 403);
   const length = request.headers.get('content-length');
   if (length && Number(length) > MAX_BODY_BYTES) return result({ errorCode: 'trip_review.body_too_large' }, 413);
