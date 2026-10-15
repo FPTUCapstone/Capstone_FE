@@ -167,8 +167,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
       fireEvent.change(timeInput, { target: { value: '09:00' } });
 
-      const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
-      fireEvent.click(quickPresetBtn);
+      fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
@@ -245,8 +244,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
       fireEvent.change(timeInput, { target: { value: '19:30' } });
 
-      const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
-      fireEvent.click(quickPresetBtn);
+      fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
@@ -379,7 +377,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         ),
       ).toBeDefined();
       expect(screen.queryByText(/sở thích trải nghiệm/i)).toBeNull();
-      expect(screen.getByText(/6 giờ \(360 phút\)/i)).toBeDefined();
+      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('6');
     });
 
     it('does NOT include any invented interest fields in backend payload', async () => {
@@ -421,7 +419,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
       const motorbikeBtn = screen.getByRole('button', { name: /Xe máy/i });
       expect(motorbikeBtn.className).toContain('border-[#007d6e]');
-      expect(screen.getByText(/8 giờ \(480 phút\)/i)).toBeDefined();
+      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('8');
     });
 
     it('safely handles malformed JSON in localStorage and initializes form with defaults', () => {
@@ -451,7 +449,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
       const walkingBtn = screen.getByRole('button', { name: /Đi bộ/i });
       expect(walkingBtn.className).toContain('border-[#007d6e]');
-      expect(screen.getByText(/6 giờ \(360 phút\)/i)).toBeDefined();
+      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('6');
     });
   });
 
@@ -639,12 +637,35 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
     const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
     fireEvent.change(timeInput, { target: { value: '09:00' } });
+    fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: '15' } });
 
-    const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
-    fireEvent.click(quickPresetBtn);
+    expect(screen.getByText('12:15')).toBeDefined();
+    expect(screen.getByText(/\(cùng ngày\)/i)).toBeDefined();
+  });
 
-    expect(screen.getByText('12:00')).toBeDefined();
-    expect(screen.getByText(/Cùng ngày ✓/i)).toBeDefined();
+  it('allows a trip that runs past midnight into the next days', () => {
+    render(<CreateSchedulingRequestForm />);
+
+    fireEvent.change(screen.getByLabelText(/Giờ xuất phát/i), { target: { value: '20:00' } });
+    fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: '0' } });
+
+    expect(screen.getByText('02:00')).toBeDefined();
+    expect(screen.getByText(/\(sau 2 ngày\)/i)).toBeDefined();
+  });
+
+  it.each([
+    ['0', '45', 'Thời lượng tối thiểu là 1 giờ.'],
+    ['72', '1', 'Thời lượng tối đa là 72 giờ (3 ngày).'],
+    ['2', '75', 'Nhập số giờ nguyên và số phút từ 0 đến 59.'],
+  ])('rejects %s h %s min', (hours, minutes, message) => {
+    render(<CreateSchedulingRequestForm />);
+
+    fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: hours } });
+    fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: minutes } });
+
+    expect(screen.getAllByText(message).length).toBeGreaterThan(0);
   });
 
   it('shows error if budget is zero or negative', async () => {

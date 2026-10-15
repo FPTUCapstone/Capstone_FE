@@ -389,7 +389,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
                 {/* Left Column: Timeline of Stops */}
                 <div className="lg:col-span-8">
-                  <ItineraryTimeline items={itinerary.items} />
+                  <ItineraryTimeline items={itinerary.items} tripStart={itinerary.validFrom} />
                 </div>
 
                 {/* Right Column: Route Map Preview & Information */}
