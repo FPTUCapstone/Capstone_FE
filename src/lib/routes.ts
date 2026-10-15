@@ -29,6 +29,8 @@ export const ROUTES = {
     security: '/account/security',
     trips: '/account/trips',
     tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
+    bookingReview: (kind: 'commerceBooking' | 'serviceBooking', id: string | number) =>
+      `/account/reviews/${kind}/${encodeURIComponent(id)}`,
   },
   admin: {
     login: '/admin/login',
