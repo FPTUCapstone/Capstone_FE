@@ -20,7 +20,7 @@
 ## Task 2 — Wire Traveler/Tour Operator form behavior
 
 **Files:** `ChangePasswordForm.tsx`, `useChangePassword.ts`, `ChangePasswordPage.tsx`, tests.  
-**RED tests:** valid submit calls real adapter once; local invalid values do not call it; success follows a 200 response only; fields clear; `MSG17` targets Current Password; `MSG03` targets New Password.
+**RED tests:** valid submit calls real adapter once; local invalid values do not call it; success follows a 200 response only; fields clear; `MSG17` targets Current Password; `MSG05` targets New Password.
 
 **Implement:** inject available capability only after adapter is ready. Remove the pending notice only for delivered actor/route.
 

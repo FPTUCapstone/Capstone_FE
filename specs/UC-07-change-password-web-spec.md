@@ -70,11 +70,13 @@ On success, the Backend/Web adapter refreshes the current session. The frontend 
 
 ## 7. Backend result mapping
 
+**SRS_INTERNAL_CONFLICT — message codes:** see BE spec §5. `MSG05` (not `MSG03`) is the catalog/codebase code for password-policy/same-as-current; `MSG06` (not `MSG04`) is the catalog/codebase code for confirm-mismatch (client-side only, never sent to Backend).
+
 | Backend result | Web behavior |
 | --- | --- |
 | 200 success / `MSG18` | Clear fields, announce `Password updated successfully.`, refresh session context, keep the user in the role-appropriate workspace |
 | 400 `MSG01` | Required-field inline feedback |
-| 400 `MSG03` | New-password policy or same-as-current feedback |
+| 400 `MSG05` | New-password policy or same-as-current feedback |
 | 400 `MSG17` | Current-password field feedback: `Current password does not match our records.` |
 | Other 400 validation | Map only approved safe field messages; otherwise show generic form feedback |
 | 401 | Clear session according to its owner and redirect to sign-in |
@@ -97,7 +99,7 @@ On success, the Backend/Web adapter refreshes the current session. The frontend 
 4. The UI cannot display success without a successful Backend response.
 5. Missing/expired/tampered session redirects before protected screen can mutate credentials.
 6. A successful change clears visible form secrets and refreshes only the caller session; refresh tokens remain inaccessible to JavaScript.
-7. Wrong current password maps to `MSG17`; same password/policy violation maps to `MSG03`; failures never become success.
+7. Wrong current password maps to `MSG17`; same password/policy violation maps to `MSG05`; failures never become success.
 8. Administrator and public-account session boundaries remain separate.
 9. The route and UI do not expose Staff support until the SRS actor decision is recorded.
 
