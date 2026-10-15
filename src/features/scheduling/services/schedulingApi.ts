@@ -613,18 +613,38 @@ async function mutateItinerary(
   } catch {
     // Preserve a safe generic message for non-JSON failures.
   }
-  const detail = typeof payload.detail === 'string' ? payload.detail : undefined;
+  // The API puts the human-readable reason in `title` (ProblemDetails) and sometimes `detail`.
+  const detail = typeof payload.detail === 'string'
+    ? payload.detail
+    : typeof payload.title === 'string'
+      ? payload.title
+      : undefined;
   const code = typeof payload.errorCode === 'string'
     ? payload.errorCode
     : typeof payload.code === 'string'
       ? payload.code
       : 'itinerary.mutation_failed';
+  if (code === NAVIGATION_IN_PROGRESS_CODE) {
+    throw new ItineraryHttpError(response.status, NAVIGATION_IN_PROGRESS_MESSAGE, code);
+  }
+  if (code === NO_ALTERNATIVE_CODE) {
+    throw new ItineraryHttpError(response.status, NO_ALTERNATIVE_MESSAGE, code);
+  }
   throw new ItineraryHttpError(
     response.status,
     detail ?? 'Không thể cập nhật lịch trình. Vui lòng thử lại sau.',
     code,
   );
 }
+
+export const NAVIGATION_IN_PROGRESS_CODE = 'itinerary.navigation_in_progress';
+export const NAVIGATION_IN_PROGRESS_MESSAGE =
+  'Chuyến đi đang được điều hướng trên ứng dụng TripMate. Hãy kết thúc chuyến trên app trước khi thay đổi lịch trình.';
+
+/** Regenerating found nothing different: the API keeps the current version. */
+export const NO_ALTERNATIVE_CODE = 'itinerary.no_alternative';
+export const NO_ALTERNATIVE_MESSAGE =
+  'Không có địa điểm nào khác phù hợp với thời gian, khu vực và ngân sách của chuyến này. Lịch trình hiện tại đã là phương án tốt nhất.';
 
 export function acceptItinerary(
   itineraryId: number,
@@ -655,4 +675,80 @@ export function adjustItineraryItems(
     { ...options, idempotencyKey: options?.idempotencyKey ?? generateIdempotencyKey() },
     { orderedVisitPoiIds },
   );
+}
+
+export interface ItinerarySummaryDto {
+  itineraryId: number;
+  schedulingRequestId: number | null;
+  title: string | null;
+  version: number;
+  status: string;
+  validFrom: string | null;
+  validTo: string | null;
+  canManage: boolean;
+  stopCount: number;
+  openNavigationSessionId: number | null;
+}
+
+export interface ItinerarySummaryPageDto {
+  items: ItinerarySummaryDto[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+/**
+ * The Traveler's trips (GET /api/v1/itineraries): itineraries they own or share through a
+ * travel group, the trip in progress first.
+ */
+export async function listMyItineraries(
+  page = 1,
+  pageSize = 20,
+  options?: { accessToken?: string },
+): Promise<ItinerarySummaryPageDto> {
+  const token = options?.accessToken ?? AuthStorage.getContext()?.accessToken;
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBase()}/itineraries?page=${page}&pageSize=${pageSize}`, {
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+  } catch {
+    throw new ItineraryHttpError(
+      503,
+      'Không thể kết nối đến máy chủ TripMate. Vui lòng thử lại sau.',
+      'network.unavailable',
+    );
+  }
+  if (response.status === 401) {
+    throw new ItineraryHttpError(
+      401,
+      'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+      'auth.unauthorized',
+    );
+  }
+  if (!response.ok) {
+    throw new ItineraryHttpError(
+      response.status,
+      'Không thể tải danh sách chuyến đi. Vui lòng thử lại sau.',
+      'server.error',
+    );
+  }
+  const body = (await response.json()) as Partial<ItinerarySummaryPageDto>;
+  if (!Array.isArray(body.items) || typeof body.totalCount !== 'number') {
+    throw new ItineraryHttpError(
+      502,
+      'Dữ liệu danh sách chuyến đi không hợp lệ.',
+      'server.invalid_contract',
+    );
+  }
+  return {
+    items: body.items,
+    page: body.page ?? page,
+    pageSize: body.pageSize ?? pageSize,
+    totalCount: body.totalCount,
+  };
 }
