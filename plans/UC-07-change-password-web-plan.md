@@ -4,7 +4,7 @@
 
 ## Preconditions
 
-1. Resolve the Staff actor conflict in the SRS and `docs/WEB_SCOPE_MATRIX.md`.
+1. Record the team decision that Staff is included for Web internal UC-07 self-service. Staff uses `/admin/account/security`; Mobile remains Traveler/Tour Operator only.
 2. Backend UC-07 routes, safe response DTOs, error codes, current-session renewal behavior, and Web cookie behavior are implemented and documented.
 3. Confirm whether public-account and admin session transports need distinct BFF routes. Do not route an admin session through a public-account helper or vice versa.
 4. Run current baseline checks before code changes.
@@ -26,20 +26,19 @@
 
 **Verify:** focused form/hook/page tests and keyboard behavior.
 
-## Task 3 — Implement Administrator composition and server guard
+## Task 3 — Implement internal-role composition and server guard
 
 **Files:** `app/admin/account/security/page.tsx`, admin feature module(s), admin session helpers/tests as needed.
-**RED tests:** valid Administrator direct navigation renders; Staff/public/wrong role is denied; missing, expired, modified, or token-mismatched admin session redirects before rendering; 401 clears admin cookies while 403 preserves a valid session.
+**RED tests:** valid Administrator and Staff direct navigation render; public or invalid sessions are denied; missing, expired, modified, or token-mismatched internal session redirects before rendering; 401 clears internal cookies while 403 preserves a valid session.
 
 **Implement:** use established server-side guard and admin BFF session design. Do not use public client session as the authorization boundary.
 
 **Verify:** route and proxy tests using real signed-session helpers.
 
-## Task 4 — Implement Staff only after actor decision
+## Task 4 — Enable Staff self-service through the approved internal route
 
-**Condition:** execute only when the SRS conflict is resolved in writing.
-**RED tests:** Staff allowed only to their self-service route; Administrator/public roles denied where appropriate.
-**Implement:** role-specific route/navigation only if approved; otherwise leave task unstarted and document deferral.
+**RED tests:** verified Staff BFF session can submit a valid request; invalid/tampered sessions are rejected before the backend is called; the Staff role remains sealed when replacement tokens are issued.
+**Implement:** use the same `/admin/account/security` route and BFF proxy for Staff and Administrator. Keep the authenticated session role server-side and never accept a subject or role selector from the browser. Mobile remains out of scope for Staff.
 
 ## Task 5 — Error, session, accessibility, and responsive hardening
 

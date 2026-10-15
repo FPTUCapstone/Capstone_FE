@@ -14,8 +14,7 @@ The existing `/account/security` prototype is an explicitly non-operational pend
 ### In scope
 
 - Traveler and Tour Operator self-service screen at `/account/security`.
-- Administrator self-service screen at `/admin/account/security` using the existing admin session architecture.
-- Staff self-service screen only after the actor conflict below is reconciled.
+- Administrator and Staff self-service screen at `/admin/account/security` using the existing internal-session architecture.
 - Current Password, New Password, Confirm New Password, Change Password, and Cancel.
 - Client-side required/policy/distinct/confirmation validation; accessible inline feedback; pending, success, error, and session-expired states.
 - Same-origin/BFF-safe transport consistent with each existing session architecture.
@@ -27,17 +26,17 @@ The existing `/account/security` prototype is an explicitly non-operational pend
 - Mock credential mutation, synthetic success, or local-only password storage.
 - A new global authentication architecture.
 
-## 3. SRS_INTERNAL_CONFLICT — Staff actor
+## 3. Staff actor decision
 
-The supplied UC catalogue includes Staff; detailed SRS §3.2.7 does not. This document treats Staff as intended scope only after SRS and `docs/WEB_SCOPE_MATRIX.md` record the decision. Until then, no route guard, navigation item, or client capability may claim Staff support as delivered.
+The supplied UC catalogue includes Staff while detailed SRS §3.2.7 omits it. On 2026-10-15, the team confirmed that Staff is an authorized UC-07 actor for the Web internal workspace. A valid Staff session may use `/admin/account/security` to change only its own password. This does not create a Staff Mobile route.
 
 ## 4. Routes and authorization
 
 | Actor | Route | Guard |
 | --- | --- | --- |
 | Traveler / Tour Operator | `/account/security` | Restored authenticated public-account session; redirect unauthenticated users to `/sign-in?returnUrl=...` |
-| Administrator | `/admin/account/security` | Valid server-side administrator session; redirect/deny invalid or wrong-role session before rendering |
-| Staff | Route to be confirmed with the SRS actor decision | Valid Staff session only; no Administrator credential reuse |
+| Administrator | `/admin/account/security` | Valid server-side internal session; redirect an invalid session before rendering |
+| Staff | `/admin/account/security` | Valid server-side internal session sealed with `Staff`; the same BFF endpoint changes only the authenticated subject's password |
 
 The subject comes solely from the verified session. The URL and request body never include a user ID or role selector.
 
@@ -101,7 +100,7 @@ On success, the Backend/Web adapter refreshes the current session. The frontend 
 6. A successful change clears visible form secrets and refreshes only the caller session; refresh tokens remain inaccessible to JavaScript.
 7. Wrong current password maps to `MSG17`; same password/policy violation maps to `MSG05`; failures never become success.
 8. Administrator and public-account session boundaries remain separate.
-9. The route and UI do not expose Staff support until the SRS actor decision is recorded.
+9. A valid Staff internal session can use the same self-service screen and BFF endpoint; Staff cannot select another subject or role.
 
 ## 10. Test requirements
 

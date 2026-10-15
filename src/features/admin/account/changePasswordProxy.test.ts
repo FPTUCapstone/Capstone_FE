@@ -9,6 +9,7 @@ import {
   ADMIN_SESSION_SEAL_COOKIE,
   ADMIN_SESSION_SECRET_ENV,
   createAdminSessionSeal,
+  verifyAdminSessionFromCookies,
 } from '@/lib/server/adminSession';
 import { proxyAdminChangePassword } from './changePasswordProxy';
 
@@ -73,11 +74,47 @@ describe('admin change-password proxy', () => {
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it('rejects a Staff session with 403 before touching the backend (spec §3)', async () => {
+  it('forwards a verified Staff session to the backend', async () => {
     cookiesMock.mockResolvedValue(cookieJar('staff-token', 'Staff'));
+    fetchBackendMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            accessToken: 'next-token',
+            accessTokenExpiresAtUtc: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+
     const res = await proxyAdminChangePassword(jsonRequest());
-    expect(res.status).toBe(403);
-    expect(fetchBackendMock).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(fetchBackendMock).toHaveBeenCalledOnce();
+    expect(fetchBackendMock.mock.calls[0]?.[1]).toMatchObject({
+      headers: expect.objectContaining({ Authorization: 'Bearer staff-token' }),
+    });
+
+    const setCookies = res.headers.getSetCookie?.() ?? [res.headers.get('set-cookie') ?? ''];
+    const replacementToken = setCookies
+      .find((cookie) => cookie.startsWith(`${ADMIN_ACCESS_TOKEN_COOKIE}=`))
+      ?.split(';')[0]
+      ?.split('=')[1];
+    const replacementSeal = setCookies
+      .find((cookie) => cookie.startsWith(`${ADMIN_SESSION_SEAL_COOKIE}=`))
+      ?.split(';')[0]
+      ?.split('=')[1];
+    expect(
+      verifyAdminSessionFromCookies({
+        get: (name) =>
+          name === ADMIN_ACCESS_TOKEN_COOKIE
+            ? { value: replacementToken! }
+            : name === ADMIN_SESSION_SEAL_COOKIE
+              ? { value: replacementSeal! }
+              : undefined,
+      }),
+    ).toMatchObject({ role: 'Staff' });
   });
 
   it('returns 401 without touching the backend when the admin cookie or BFF seal is missing', async () => {

@@ -34,13 +34,6 @@ export async function proxyAdminChangePassword(request: Request) {
     return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
   }
 
-  // SRS_INTERNAL_CONFLICT (spec §3): Staff change-password support is not
-  // approved yet. Enforced here too, not only in the client capability
-  // selection, so a direct POST cannot reach the Backend for that role.
-  if (session.role === 'Staff') {
-    return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
-  }
-
   if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
     return jsonNoStore({ title: 'JSON content is required.' }, 415);
   }

@@ -81,21 +81,8 @@ describe('AdminChangePasswordView', () => {
     expect(mocks.push).toHaveBeenCalledWith('/admin');
   });
 
-  it('shows the pending notice for Staff and never calls the real capability (spec §3)', () => {
-    const { container } = render(<AdminChangePasswordView role="Staff" />);
-
-    expect(screen.getByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeDefined();
-    const submitButton = screen.getByRole('button', {
-      name: 'Đổi mật khẩu',
-    }) as HTMLButtonElement;
-    expect(submitButton.disabled).toBe(true);
-
-    fireEvent.submit(container.querySelector('form')!);
-    expect(mocks.execute).not.toHaveBeenCalled();
-  });
-
-  it('enables the real capability for Administrator', () => {
-    render(<AdminChangePasswordView role="Administrator" />);
+  it('enables the real capability for internal self-service users', () => {
+    render(<AdminChangePasswordView />);
 
     expect(screen.queryByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeNull();
     const submitButton = screen.getByRole('button', {
