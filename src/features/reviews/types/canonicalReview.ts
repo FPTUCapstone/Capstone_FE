@@ -6,14 +6,14 @@ export interface ReviewableRecordRef {
   id: string;
 }
 
-export interface ReviewSubject { kind: 'tour' | 'poi' | 'itinerary'; id: number }
+export interface ReviewSubject { kind: 'tour' | 'poi' | 'itinerary'; id: string }
 export interface ReviewSummary { name: string; departureAtUtc: string; bookingReference: string }
 export interface ReviewCapability { available: boolean; reason: string | null }
-export interface ReviewMedia { mediaId: number; deliveryUrl: string }
+export interface ReviewMedia { mediaId: string; deliveryUrl: string }
 
 export interface CanonicalReview {
   kind: 'new';
-  reviewId: number;
+  reviewId: string;
   reviewableRecord: ReviewableRecordRef;
   subject: ReviewSubject;
   overallRating: number;

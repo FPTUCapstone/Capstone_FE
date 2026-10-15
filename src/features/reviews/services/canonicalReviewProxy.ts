@@ -5,10 +5,11 @@ import { isSameOriginRequest } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
 import type { ReviewableRecordKind } from '../types/canonicalReview';
 import { isPositiveInt64 } from '../types/reviewableRecordId';
+import { parseReviewResponse } from './canonicalReviewResponse';
 
 const MAX_BODY_BYTES = 26_000_000;
 const safeErrorCodes = new Set([
-  'trip_review.invalid_input', 'trip_review.not_found', 'trip_review.forbidden',
+  'trip_review.invalid_input', 'trip_review.not_found', 'trip_review.booking_not_found', 'trip_review.forbidden',
   'trip_review.booking_not_completed', 'trip_review.duplicate', 'trip_review.edit_expired',
   'trip_review.stale_version', 'trip_review.policy_rejected', 'trip_review.policy_unavailable',
   'trip_review.unsupported_subject', 'trip_review.unsupported_media_type',
@@ -108,8 +109,19 @@ export async function proxyCanonicalReview(
     const upstream = await fetchBackend(`/api/v1/${namespace}/${rawId}/review`, {
       method: request.method, headers, body, signal: request.signal,
     });
+    if (upstream.ok) {
+      try {
+        const text = await upstream.text();
+        const reference = { kind, id: rawId };
+        const payload = request.method === 'GET'
+          ? parseReviewResponse(text, reference, 'context')
+          : parseReviewResponse(text, reference, 'review');
+        return result(payload, upstream.status);
+      } catch {
+        return result({ errorCode: 'trip_review.invalid_response' }, 502);
+      }
+    }
     const payload: unknown = await upstream.json().catch(() => null);
-    if (upstream.ok) return result(payload, upstream.status);
     const source = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
     const errorCode = typeof source.errorCode === 'string' && safeErrorCodes.has(source.errorCode)
       ? source.errorCode : upstream.status === 401 ? 'UNAUTHENTICATED'

@@ -1,6 +1,8 @@
 const messages: Record<string, string> = {
   'trip_review.invalid_input': 'Check the review details and try again.',
   'trip_review.not_found': 'This booking could not be found.',
+  'trip_review.booking_not_found': 'This booking could not be found.',
+  'trip_review.invalid_response': 'The review service returned an invalid response. Please try again.',
   'trip_review.forbidden': 'You can only review your own booking.',
   'trip_review.booking_not_completed': 'A review can only be submitted after the trip is completed.',
   'trip_review.duplicate': 'A review already exists. The existing review is shown below.',

@@ -19,7 +19,7 @@ import { CanonicalReviewApiError } from '../types/canonicalReview';
 const reference = { kind: 'commerceBooking' as const, id: '9223372036854775807' };
 const emptyContext = {
   reviewableRecord: reference, bookingStatus: 'Completed',
-  subject: { kind: 'tour' as const, id: 4 },
+  subject: { kind: 'tour' as const, id: '4' },
   summary: { name: 'Hoi An', departureAtUtc: '2026-10-01T02:00:00Z', bookingReference: 'BK-1' },
   canSubmit: true, submitUnavailableReason: null, existingReviewKind: 'none' as const,
   review: null, editableFields: [],
@@ -27,8 +27,8 @@ const emptyContext = {
   poiRatings: { available: false, reason: null },
 };
 const existingReview = {
-  kind: 'new' as const, reviewId: 8, reviewableRecord: reference,
-  subject: { kind: 'tour' as const, id: 4 }, overallRating: 5, title: 'Great', content: 'Excellent',
+  kind: 'new' as const, reviewId: '8', reviewableRecord: reference,
+  subject: { kind: 'tour' as const, id: '4' }, overallRating: 5, title: 'Great', content: 'Excellent',
   publishDisplayName: true, publicDisplayName: 'Traveler', publicationStatus: 'Published',
   createdAtUtc: '2026-10-01T02:00:00Z', editDeadlineUtc: '2026-10-08T02:00:00Z',
   updatedAtUtc: '2026-10-01T02:00:00Z', version: 'v1', media: [],
