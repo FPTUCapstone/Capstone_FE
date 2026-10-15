@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { PasswordField } from '@/components/ui/FormControls';
@@ -21,6 +23,8 @@ export interface ChangePasswordFormProps {
   userDisplay?: UserDisplayInfo;
   onCancel?: () => void;
   onSuccess?: () => void;
+  /** 401 (UC-07 spec §6/§7): the session is already cleared; the caller must redirect to sign-in. */
+  onSessionExpired?: () => void;
   capability?: ChangePasswordCapability;
   className?: string;
 }
@@ -46,13 +50,20 @@ export function ChangePasswordForm({
   userDisplay,
   onCancel,
   onSuccess,
+  onSessionExpired,
   capability = pendingChangePasswordCapability,
   className = '',
 }: ChangePasswordFormProps) {
-  const { fields, errors, submitting, success, setField, handleSubmit, reset } =
+  const { fields, errors, submitting, success, sessionExpired, setField, handleSubmit, reset } =
     useChangePassword({ capability, onSuccess });
   const integrationPending = capability.status === 'pending';
   const initials = getInitials(userDisplay?.name, userDisplay?.email);
+
+  useEffect(() => {
+    if (sessionExpired) {
+      onSessionExpired?.();
+    }
+  }, [sessionExpired, onSessionExpired]);
 
   function handleCancelClick() {
     reset();

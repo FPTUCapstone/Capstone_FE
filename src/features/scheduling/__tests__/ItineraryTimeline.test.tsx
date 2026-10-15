@@ -122,4 +122,16 @@ describe('ItineraryTimeline (UC-11)', () => {
 
     expect(screen.getByText(/Chưa có điểm dừng nào trong lịch trình này/i)).toBeDefined();
   });
+
+  it('shows no day labels for a same-day trip', () => {
+    render(<ItineraryTimeline items={mockItems} tripStart="2026-10-20T07:30:00+07:00" />);
+
+    expect(screen.queryByText(/20\/10/)).toBeNull();
+  });
+
+  it('labels the next morning when an evening trip waits overnight', () => {
+    render(<ItineraryTimeline items={mockItems} tripStart="2026-10-19T20:45:00+07:00" />);
+
+    expect(screen.getByText(/20\/10/)).toBeDefined();
+  });
 });

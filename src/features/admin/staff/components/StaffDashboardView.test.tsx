@@ -54,7 +54,9 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     ).toBe('/admin/account/security');
     expect(within(activeSection).queryByRole('link', { name: /Inspect Application Workspace/i })).toBeNull();
     expect(within(activeSection).queryByRole('link', { name: /Open Review Queue/i })).toBeNull();
-    expect(within(activeSection).queryByRole('link', { name: /Open POI Creator/i })).toBeNull();
+    expect(
+      within(activeSection).getByRole('link', { name: /Open POI Creator/i }).getAttribute('href'),
+    ).toBe('/admin/catalogue/points-of-interest/new');
     expect(container.innerHTML).not.toContain('/admin/tour-operator-applications/1');
 
     const pendingSection = screen.getByRole('region', {
@@ -63,12 +65,12 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     const disabledButtons = within(pendingSection).getAllByRole('button', {
       name: adminStaffEn.staffDashboard.unavailableModuleLabel,
     });
-    expect(disabledButtons.length).toBe(9);
+    expect(disabledButtons.length).toBe(8);
     for (const button of disabledButtons) {
       expect((button as HTMLButtonElement).disabled).toBe(true);
     }
 
-    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(8);
+    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(7);
     expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.scheduledBatch).length).toBe(1);
     expect(screen.getByText(adminStaffEn.staffDashboard.analyticsNoticeStatus)).toBeTruthy();
 
@@ -130,10 +132,6 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
-
-    const poiCatalogCard = findModuleCard('POI Catalog Operations');
-    expect(poiCatalogCard.textContent ?? '').toContain('UC-52 / UC-53');
-    expect(within(poiCatalogCard).queryByRole('link')).toBeNull();
   });
 
   it('hides Administrator-only and non-Staff-ready navigation items when rendered for a Staff actor and shows them for an Administrator actor', () => {
@@ -142,8 +140,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
 
     expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeTruthy();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.adminDashboard })).toBeNull();
-    expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeNull();
-    expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeNull();
+    expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeTruthy();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.statisticalReports })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeNull();
@@ -155,7 +152,7 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.adminDashboard })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeTruthy();
-    expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeTruthy();
+    expect(within(adminNav).queryByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeNull();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.statisticalReports })).toBeTruthy();
     expect(
       within(adminNav).getByRole('link', { name: adminStaffEn.navigation.statisticalReports }).getAttribute('href'),

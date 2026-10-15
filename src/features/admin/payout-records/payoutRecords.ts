@@ -13,7 +13,6 @@ export const PAYOUT_MESSAGES = {
   unavailable: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
   empty: 'No data is available for the selected criteria.',
   review: 'Review',
-  reviewDisabled: 'Payout review details will become available after UC-64 is delivered.',
 } as const;
 
 export type PayoutStatus = (typeof PAYOUT_STATUSES)[number];

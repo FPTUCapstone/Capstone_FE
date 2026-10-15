@@ -5,6 +5,8 @@ import {
   createSchedulingRequest,
   acceptItinerary,
   regenerateItinerary,
+  NO_ALTERNATIVE_CODE,
+  NO_ALTERNATIVE_MESSAGE,
   adjustItineraryItems,
   getItineraryById,
   isDemoAllowedInCurrentEnv,
@@ -576,6 +578,25 @@ describe('UC-10 Scheduling API Service', () => {
         expect.stringContaining('/itineraries/789/regenerate'),
         expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ 'Idempotency-Key': 'operation-key' }) }),
       );
+    });
+
+    it('explains in Vietnamese when regenerating finds no other option', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        status: 422,
+        ok: false,
+        json: async () => ({
+          title: 'No other places fit this trip.',
+          errorCode: 'itinerary.no_alternative',
+        }),
+      });
+
+      await expect(
+        regenerateItinerary(789, { accessToken: 'traveler-token', idempotencyKey: 'operation-key' }),
+      ).rejects.toMatchObject({
+        status: 422,
+        code: NO_ALTERNATIVE_CODE,
+        message: NO_ALTERNATIVE_MESSAGE,
+      });
     });
 
     it('adjusts only the requested visit POI order with an idempotency key', async () => {

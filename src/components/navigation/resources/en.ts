@@ -9,6 +9,7 @@ export const publicNavigationEn = {
     explore: 'Explore',
     destinations: 'Destinations',
     smartItinerary: 'Smart Itinerary',
+    myItineraries: 'My Itineraries',
     weatherRerouting: 'Weather Rerouting',
     localTours: 'Local Tours',
     forPartners: 'For Partners',

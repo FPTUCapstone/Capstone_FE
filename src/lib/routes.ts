@@ -7,6 +7,7 @@ export const ROUTES = {
   pois: '/pois',
   poi: (id: string | number) => `/pois/${id}`,
   plan: '/plan',
+  myItineraries: '/itineraries',
   itinerary: (id: string | number) => `/itinerary/${id}`,
   tours: '/tours',
   tour: (id: string | number) => `/tours/${id}`,
@@ -29,6 +30,8 @@ export const ROUTES = {
     security: '/account/security',
     trips: '/account/trips',
     tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
+    bookingReview: (kind: 'commerceBooking' | 'serviceBooking', id: string | number) =>
+      `/account/reviews/${kind}/${encodeURIComponent(id)}`,
   },
   admin: {
     login: '/admin/login',
@@ -43,6 +46,7 @@ export const ROUTES = {
     createPoi: '/admin/catalogue/points-of-interest/new',
     activeTrips: '/admin/trips/active',
     payouts: '/admin/payouts',
+    payoutDetails: (id: string) => `/admin/payouts/${encodeURIComponent(id)}`,
     algorithmParameters: '/admin/settings/algorithm-parameters',
     activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
   },

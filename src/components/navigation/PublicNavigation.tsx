@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { signInDestination } from '@/features/auth/routing/signInDestination';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import {
+  getTravelerProfile,
+  TRAVELER_PROFILE_UPDATED_EVENT,
+  type TravelerProfileDto,
+} from '@/features/account/profile/travelerProfileApi';
 import { ROUTES } from '@/lib/routes';
 import { publicNavigationEn } from './resources/en';
 
@@ -39,9 +44,39 @@ export function PublicNavigation({ isLanding = false }: PublicNavigationProps = 
   // state after F5/direct navigation while an existing session is
   // being restored.
   const { status, context } = useWebSession();
+  const [travelerProfile, setTravelerProfile] = useState<TravelerProfileDto | null>(null);
+  const profileRevision = useRef(0);
+
+  useEffect(() => {
+    if (status !== 'authenticated' || context?.role !== 'Traveler') return;
+    const userId = context.userId;
+    let active = true;
+    const requestRevision = profileRevision.current;
+    void getTravelerProfile().then((profile) => {
+      if (active && profileRevision.current === requestRevision && profile.userId === userId)
+        setTravelerProfile(profile);
+    }).catch(() => {
+      // The navigation keeps its session identity fallback if profile retrieval fails.
+    });
+    function onProfileUpdated(event: Event) {
+      const profile = (event as CustomEvent<TravelerProfileDto>).detail;
+      if (profile?.userId === userId) {
+        profileRevision.current++;
+        setTravelerProfile(profile);
+      }
+    }
+    window.addEventListener(TRAVELER_PROFILE_UPDATED_EVENT, onProfileUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener(TRAVELER_PROFILE_UPDATED_EVENT, onProfileUpdated);
+    };
+  }, [status, context?.role, context?.userId]);
+
+  const currentTravelerProfile = context?.role === 'Traveler' &&
+    travelerProfile?.userId === context.userId ? travelerProfile : null;
 
   const displayName = context
-    ? context.fullName.trim() || context.email
+    ? currentTravelerProfile?.fullName?.trim() || context.fullName.trim() || context.email
     : '';
 
   // Authoritative navigation decision:
@@ -117,6 +152,15 @@ export function PublicNavigation({ isLanding = false }: PublicNavigationProps = 
             {publicNavigationEn.links.smartItinerary}
           </Link>
 
+          {context?.role === 'Traveler' && (
+            <Link
+              href={ROUTES.myItineraries}
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+            >
+              {publicNavigationEn.links.myItineraries}
+            </Link>
+          )}
+
           <Link
             href="/#weather-rerouting"
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
@@ -148,9 +192,19 @@ export function PublicNavigation({ isLanding = false }: PublicNavigationProps = 
               aria-label={publicNavigationEn.account.profileAria}
               className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e] transition hover:bg-teal-100"
             >
-              <span className="material-symbols-outlined text-sm">
-                account_circle
-              </span>
+              {currentTravelerProfile?.avatarUrl ? (
+                // The API returns the Traveler's Cloudinary delivery URL.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={currentTravelerProfile.avatarUrl}
+                  alt=""
+                  className="h-6 w-6 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">
+                  account_circle
+                </span>
+              )}
 
               <span className="max-w-[120px] truncate sm:max-w-[160px]">
                 {displayName}

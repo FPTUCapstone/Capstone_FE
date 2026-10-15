@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { AvailableChangePasswordCapability } from '../changePasswordCapability';
+import { ChangePasswordApiError, type AvailableChangePasswordCapability } from '../changePasswordCapability';
 import { ChangePasswordForm } from '../ChangePasswordForm';
 
 function availableCapability(
@@ -133,6 +133,24 @@ describe('ChangePasswordForm', () => {
 
     expect(await screen.findByText('Không thể đổi mật khẩu. Vui lòng thử lại.')).toBeDefined();
     expect(screen.queryByText(/Mật khẩu đã được cập nhật thành công/)).toBeNull();
+  });
+
+  it('calls onSessionExpired (and never shows a generic retry error) on a 401 failure', async () => {
+    const onSessionExpired = vi.fn();
+    const capability = availableCapability(
+      vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+        new ChangePasswordApiError('Phiên đăng nhập đã hết hạn.', undefined, 'sessionExpired'),
+      ),
+    );
+    render(<ChangePasswordForm capability={capability} onSessionExpired={onSessionExpired} />);
+    fillValidForm();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+
+    await waitFor(() => {
+      expect(onSessionExpired).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByText('Không thể đổi mật khẩu. Vui lòng thử lại.')).toBeNull();
   });
 
   it('preserves cancel navigation and password visibility controls', () => {

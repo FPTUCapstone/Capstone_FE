@@ -47,6 +47,8 @@ export const adminStaffEn = {
     title: 'Staff Access Required',
     description:
       'This payout review queue is reserved for Staff. Administrator settlement processing is delivered separately in UC-65.',
+    poiDescription:
+      'Creating Points of Interest is reserved for Staff accounts. Administrator accounts cannot create POIs.',
     returnToAdminButton: 'Return to System Overview',
     returnToAdminSignInButton: 'Switch Administration Account',
   },
@@ -114,9 +116,9 @@ export const adminStaffEn = {
         category: 'Catalog & Spatial Data',
         description:
           'Create and configure Points of Interest with coordinates, operating hours, and visit attributes.',
-        status: 'pendingBackend' as const,
-        availabilityNote:
-          'Assigned to Staff in Report 3 V2 (UC-52 / UC-53); current Backend /api/v1/admin/pois endpoints remain restricted to Administrator until Staff role policy is enabled.',
+        status: 'available' as const,
+        href: '/admin/catalogue/points-of-interest/new',
+        actionLabel: 'Open POI Creator',
       },
       {
         id: 'user-account-management',

@@ -41,6 +41,11 @@ The server session seal uses `TRIPMATE_ADMIN_SESSION_SECRET`. The variable is do
 
 There is also `SRS_MAPPING_GAP_PLATFORM_REVENUE_SCREENS_37_38`: section 3.1.2 lists Screens #37 and #38, but the SRS provides no matching detailed use cases; UC-67 names Screen #32. The implementation uses descriptive English resource text and does not assert that these conflicting codes have been resolved.
 
+## Shared CSV utility convergence and demo policy decisions
+
+- `CSV_SHARED_UTILITY_CONVERGENCE_DEFERRED`: Reviewer noted that PR #54 introduced a shared utility `src/lib/csv.ts`. However, PR #54 is still open and `src/lib/csv.ts` does not yet exist on `origin/develop`. To avoid copying unmerged code across branches, PR #56 retains its tested, formula-safe local `escapeCsvCell` in `src/features/admin/reports/services/statisticalReportService.ts`. Once both PR #54 and PR #56 are merged to `develop`, an explicit follow-up task will consolidate CSV escaping into `src/lib/csv.ts` while preserving numeric metric formatting (`isLegitimateNumericMetric`).
+- `UNAPPROVED_SCREEN_DEMO_POLICY_DECISION_PENDING`: Reviewer observed differing handling across unapproved screen prototypes: PR #54 disabled all actions pending screen spec approval, whereas PR #56 maintains interactive demo behavior under explicit environment and query opt-in while locking production to `PENDING_BE_INTEGRATION`. A cross-feature policy decision from Product/BA/UX or the engineering owner is pending to standardize demo behavior across screens awaiting approved Web Screen Specifications.
+
 ## Reviewer verification points
 
 - Direct navigation rejects unauthenticated, expired, invalid, and tampered sessions.

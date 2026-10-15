@@ -52,6 +52,14 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
               Payout Records
             </Link>
           ) : null}
+          {isStaffUser ? (
+            <Link
+              href={ROUTES.admin.createPoi}
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
+            >
+              {adminStaffEn.navigation.createPoi}
+            </Link>
+          ) : null}
           {!isStaffUser ? (
             <>
               <Link
@@ -65,12 +73,6 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
                 className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
               >
                 Active Trips
-              </Link>
-              <Link
-                href={ROUTES.admin.createPoi}
-                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#d1e4ff] hover:bg-[#314863] hover:text-white"
-              >
-                {adminStaffEn.navigation.createPoi}
               </Link>
               <Link
                 href={ROUTES.admin.reports}

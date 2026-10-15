@@ -13,6 +13,7 @@ import {
   adjustItineraryItems,
   getItineraryById,
   ItineraryHttpError,
+  NAVIGATION_IN_PROGRESS_CODE,
   regenerateItinerary,
 } from '../services/schedulingApi';
 import { formatVietnamTime, ItineraryDetailDto } from '../types/schedulingTypes';
@@ -120,6 +121,14 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
         router.replace(ROUTES.itinerary(successor.itineraryId));
       }
     } catch (mutationFailure) {
+      if (
+        mutationFailure instanceof ItineraryHttpError &&
+        mutationFailure.code === NAVIGATION_IN_PROGRESS_CODE
+      ) {
+        // Someone started navigating meanwhile: lock the page like a fresh load would.
+        setEditingOrder(false);
+        setItinerary({ ...itinerary, isNavigationInProgress: true });
+      }
       setMutationError(
         mutationFailure instanceof Error
           ? mutationFailure.message
@@ -328,10 +337,12 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                           <span>Chấp nhận lịch trình</span>
                         </button>
                       )}
+                      {!itinerary.isNavigationInProgress && (
+                      <>
                       <button
                         type="button"
                         onClick={() => {
-                          if (window.confirm('Tạo một phiên bản lịch trình mới từ các ràng buộc hiện tại?')) {
+                          if (window.confirm('Tạo phương án khác? TripMate sẽ ưu tiên những địa điểm chưa có trong lịch trình hiện tại; các điểm bạn muốn ghé được giữ nguyên.')) {
                             void applyMutation(() => regenerateItinerary(itinerary.itineraryId));
                           }
                         }}
@@ -350,10 +361,25 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                         <span className="material-symbols-outlined text-sm">reorder</span>
                         <span>Chỉnh sửa thứ tự</span>
                       </button>
+                      </>
+                      )}
                     </>
                   )}
                 </div>
               </div>
+
+              {itinerary.isNavigationInProgress && (
+                <div
+                  role="status"
+                  className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+                >
+                  <span className="material-symbols-outlined text-lg">smartphone</span>
+                  <span>
+                    Chuyến đi đang diễn ra trên ứng dụng TripMate. Lịch trình được khóa chỉnh sửa
+                    cho tới khi chuyến kết thúc trên app.
+                  </span>
+                </div>
+              )}
 
               {mutationError && (
                 <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -361,7 +387,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                 </div>
               )}
 
-              {editingOrder && itinerary.canManage && (
+              {editingOrder && itinerary.canManage && !itinerary.isNavigationInProgress && (
                 <section className="rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
                   <h2 className="text-base font-bold text-slate-900">Sắp xếp lại các điểm tham quan</h2>
                   <p className="mt-1 text-sm text-slate-600">Điểm nghỉ được hệ thống giữ nguyên; bạn chỉ thay đổi thứ tự các điểm tham quan.</p>
@@ -389,7 +415,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
                 {/* Left Column: Timeline of Stops */}
                 <div className="lg:col-span-8">
-                  <ItineraryTimeline items={itinerary.items} />
+                  <ItineraryTimeline items={itinerary.items} tripStart={itinerary.validFrom} />
                 </div>
 
                 {/* Right Column: Route Map Preview & Information */}

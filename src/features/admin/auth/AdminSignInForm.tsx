@@ -20,6 +20,7 @@ const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
   ROUTES.admin.staffDashboard,
   ROUTES.admin.accountSecurity,
   ROUTES.admin.payouts,
+  ROUTES.admin.createPoi,
 ]);
 
 export function isAdministratorOnlyPathname(pathname: string): boolean {
@@ -52,6 +53,10 @@ export function getSafeAdminReturnUrl(
     }
     if (role === 'Staff' && isAdministratorOnlyPathname(candidate.pathname)) {
       return ROUTES.admin.staffDashboard;
+    }
+    // Creating a POI is a Staff action; an Administrator is not sent to a page that would deny access.
+    if (role === 'Administrator' && candidate.pathname === ROUTES.admin.createPoi) {
+      return defaultDestination;
     }
     return `${candidate.pathname}${candidate.search}${candidate.hash}`;
   } catch {

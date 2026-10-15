@@ -45,7 +45,7 @@ describe('PayoutRecordsScreen', () => {
     vi.mocked(fetchPayoutRecords).mockReset().mockResolvedValue(response);
   });
 
-  it('renders summary cards, rows, and the disabled View Details action', async () => {
+  it('renders summary cards, rows, and the review link to the detail page', async () => {
     render(<PayoutRecordsScreen />);
     expect(await screen.findByText('Da Nang Tours')).toBeTruthy();
     expect(screen.getByText('Staff finance')).toBeTruthy();
@@ -60,11 +60,9 @@ describe('PayoutRecordsScreen', () => {
     expect(screen.getByRole('option', { name: 'Pending review' })).toBeTruthy();
     expect(screen.queryByRole('option', { name: 'All' })).toBeNull();
     expect(screen.getByText('Payout records for Staff review')).toBeTruthy();
-    const action = screen.getAllByRole('button', { name: /Review for PO-/ })[0];
+    const action = screen.getAllByRole('link', { name: /Review for PO-/ })[0];
     expect(action).toBeTruthy();
-    expect((action as HTMLButtonElement).disabled).toBe(true);
-    expect((action as HTMLButtonElement).title).toContain('UC-64');
-    expect(action.getAttribute('aria-describedby')).toMatch(/^review-disabled-/);
+    expect(action.getAttribute('href')).toBe('/admin/payouts/12');
 
     const tableRegion = screen.getByLabelText('Payout records table; scroll horizontally on small screens');
     expect(tableRegion.tabIndex).toBe(0);

@@ -7,7 +7,8 @@ type RequiredAdministrationRole = 'Administrator' | 'Staff';
 
 export function AdminAccessDeniedView({
   requiredRole = 'Administrator',
-}: { requiredRole?: RequiredAdministrationRole }) {
+  description,
+}: { requiredRole?: RequiredAdministrationRole; description?: string }) {
   const copy = requiredRole === 'Staff'
     ? adminStaffEn.staffAccessDenied
     : adminStaffEn.accessDenied;
@@ -39,7 +40,7 @@ export function AdminAccessDeniedView({
         </h1>
 
         <p className="mt-2 text-sm leading-relaxed text-[#475467]">
-          {copy.description}
+          {description ?? copy.description}
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
