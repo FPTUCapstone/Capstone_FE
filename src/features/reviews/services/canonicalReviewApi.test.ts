@@ -1,19 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createReview, getReviewContext, updateReview } from './canonicalReviewApi';
+import { backendContext } from './canonicalReviewWireFixtures';
 
 const context = {
-  reviewableRecord: { kind: 'serviceBooking', id: '42' }, bookingStatus: 'Completed',
+  reviewableRecord: { kind: 'serviceBooking', id: 42 }, serviceBookingId: 42, bookingStatus: 'Completed',
   subject: { kind: 'poi', id: 8 }, summary: { name: 'Museum', departureAtUtc: '2026-10-01T00:00:00Z', bookingReference: 'SB-42' },
   canSubmit: true, submitUnavailableReason: null, existingReviewKind: 'none', review: null,
   editableFields: [], routePacing: { available: false, reason: null },
   cspRating: { available: false, reason: null }, poiRatings: { available: false, reason: null },
+  eligiblePois: [], displayNamePreview: { initials: 'T.', fullNameWithConsent: null },
 };
 
 describe('canonical review API', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('keeps service and commerce booking namespaces distinct on GET', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(Response.json(context));
+    const fetchMock = vi.fn().mockResolvedValueOnce(Response.json(context))
+      .mockResolvedValueOnce(new Response(backendContext(false, '42')));
     vi.stubGlobal('fetch', fetchMock);
     await getReviewContext({ kind: 'serviceBooking', id: '42' });
     await getReviewContext({ kind: 'commerceBooking', id: '42' });
@@ -22,7 +25,7 @@ describe('canonical review API', () => {
   });
 
   it('submits exact multipart metadata and files', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(Response.json({ reviewId: 1 }, { status: 201 }));
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(JSON.parse(backendContext(true, '7')).review, { status: 201 }));
     vi.stubGlobal('fetch', fetchMock);
     const file = new File(['image'], 'photo.png', { type: 'image/png' });
     await createReview({ kind: 'commerceBooking', id: '7' }, {
@@ -40,7 +43,9 @@ describe('canonical review API', () => {
   });
 
   it('uses the server version for an exact PUT payload', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(Response.json({ reviewId: 1 }));
+    const review = { ...JSON.parse(backendContext(true, '9')).review, bookingId: undefined,
+      serviceBookingId: 9, reviewableRecord: { kind: 'serviceBooking', id: 9 }, subject: { kind: 'poi', id: 9 } };
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(review));
     vi.stubGlobal('fetch', fetchMock);
     await updateReview({ kind: 'serviceBooking', id: '9' }, {
       overallRating: 4, title: 'Updated', content: 'Updated review', publishDisplayName: false, version: 'AAAA',

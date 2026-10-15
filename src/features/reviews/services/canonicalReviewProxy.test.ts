@@ -8,6 +8,7 @@ vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
 
 import { proxyCanonicalReview } from './canonicalReviewProxy';
+import { backendContext } from './canonicalReviewWireFixtures';
 
 describe('canonical review BFF', () => {
   beforeEach(() => {
@@ -15,7 +16,7 @@ describe('canonical review BFF', () => {
     cookiesMock.mockResolvedValue({ get: () => ({ value: 'refresh' }) });
     fetchBackendMock.mockImplementation(async (path: string) => path === '/api/v1/auth/web/refresh'
       ? Response.json({ data: { role: 'Traveler', accessToken: 'token' } })
-      : Response.json({ reviewId: 1 }, { status: 201 }));
+      : Response.json(JSON.parse(backendContext(true, '7')).review, { status: 201 }));
   });
 
   it('re-encodes metadata as a JSON form field without a filename', async () => {

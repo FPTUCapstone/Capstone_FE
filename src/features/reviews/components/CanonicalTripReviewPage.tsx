@@ -9,6 +9,7 @@ import { createReview, getReviewContext, updateReview } from '../services/canoni
 import type { CanonicalReview, ReviewableRecordRef, TripReviewContext } from '../types/canonicalReview';
 import { CanonicalReviewApiError } from '../types/canonicalReview';
 import { canonicalReviewMessage } from '../resources/canonicalReviewMessages';
+import { isPositiveInt64 } from '../types/reviewableRecordId';
 
 const MAX_FILE_BYTES = 5_000_000;
 const DUPLICATE_RECOVERY_ERROR = 'The existing review could not be loaded. Please try again.';
@@ -19,7 +20,7 @@ function hasUsableRecoveredReview(value: TripReviewContext, reference: Reviewabl
   return value?.existingReviewKind === 'new' &&
     value.reviewableRecord?.kind === reference.kind && value.reviewableRecord.id === reference.id &&
     Array.isArray(value.editableFields) && value.editableFields.every(field => typeof field === 'string') &&
-    review?.kind === 'new' && Number.isInteger(review.reviewId) && review.reviewId > 0 &&
+    review?.kind === 'new' && typeof review.reviewId === 'string' && isPositiveInt64(review.reviewId) &&
     review.reviewableRecord?.kind === reference.kind && review.reviewableRecord.id === reference.id &&
     Number.isInteger(review.overallRating) && review.overallRating >= 1 && review.overallRating <= 5 &&
     typeof review.title === 'string' && review.title.trim().length > 0 &&
