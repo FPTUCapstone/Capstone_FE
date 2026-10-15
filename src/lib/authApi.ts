@@ -332,6 +332,71 @@ export async function webVerifyEmail(idToken: string): Promise<{ emailVerified: 
   throw { code: 'INVALID_VERIFICATION_RESPONSE', status: res.status } satisfies ApiError;
 }
 
+// ─── UC-07 change password (Traveler / Tour Operator Web) ────────────────────
+
+export interface WebChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/**
+ * UC-07 Web change-password for the public (non-admin) session. The browser
+ * carries the current access token as Bearer; on success the Backend sets a
+ * replacement HttpOnly tripmate_refresh cookie (credentials: 'include') and
+ * returns the safe WebAuthResponseDto, which replaces the in-memory session
+ * exactly like webLogin/webRefresh. A failed call never touches the existing
+ * session — the caller remains signed in with the pre-change credentials.
+ */
+export async function webChangePassword(data: WebChangePasswordRequest): Promise<WebAuthContext> {
+  const accessToken = AuthStorage.getAccessToken();
+  if (!accessToken) {
+    throw { code: 'AUTH_REQUIRED', status: 401 } satisfies ApiError;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/auth/web/change-password`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      }),
+    });
+  } catch {
+    throw { code: 'NETWORK', message: 'Change password unavailable.', status: 0 } satisfies ApiError;
+  }
+
+  if (!res.ok) {
+    // A business/validation failure (400/403/5xx) must never mutate the
+    // existing session. A 401, however, means the access token itself is no
+    // longer accepted — the session is already invalid and must be cleared
+    // so the caller is routed back to sign-in (UC-07 spec §6/§7), exactly
+    // like webRefresh does for its own 401.
+    if (res.status === 401) {
+      AuthStorage.clear();
+    }
+    return handleResponse<never>(res);
+  }
+
+  try {
+    const envelope: unknown = await res.json();
+    if (!envelope || typeof envelope !== 'object' || !('success' in envelope) || envelope.success !== true || !('data' in envelope)) {
+      throw new InvalidAuthContextError();
+    }
+    // The Backend always persists the replacement refresh cookie on a
+    // password change (ChangePasswordController), so the client-side display
+    // cache is kept in the same persistent mode.
+    return AuthStorage.accept(envelope.data, true);
+  } catch {
+    throw new InvalidAuthContextError();
+  }
+}
+
 // ─── UC-06 password reset ─────────────────────────────────────────────────────
 
 export interface PasswordResetMessageDto {

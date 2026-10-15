@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   useWebSession: vi.fn(),
   getTravelerProfile: vi.fn(),
+  execute: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -19,6 +20,10 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
 vi.mock('@/features/account/profile/travelerProfileApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/account/profile/travelerProfileApi')>()),
   getTravelerProfile: mocks.getTravelerProfile,
+}));
+
+vi.mock('@/features/account/security/webChangePasswordCapability', () => ({
+  createWebChangePasswordCapability: () => ({ status: 'available', execute: mocks.execute }),
 }));
 
 import AccountSecurityPage, { metadata } from './page';
@@ -35,6 +40,7 @@ describe('/account/security production route', () => {
       dateOfBirth: null,
       avatarUrl: null,
     });
+    mocks.execute.mockResolvedValue(undefined);
     mocks.useWebSession.mockReturnValue({
       status: 'authenticated',
       context: {
@@ -55,10 +61,8 @@ describe('/account/security production route', () => {
     expect(metadata.title).toBe('Đổi mật khẩu | TripMate');
   });
 
-  it('renders the authenticated page pending backend integration without a network request', () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-    const { container } = render(<AccountSecurityPage />);
+  it('renders the authenticated page with the production capability available', () => {
+    render(<AccountSecurityPage />);
 
     expect(screen.getByRole('heading', { name: 'Đổi mật khẩu' })).toBeDefined();
     expect(screen.getAllByText('Nguyen Van A').length).toBe(2);
@@ -69,19 +73,37 @@ describe('/account/security production route', () => {
     expect(screen.getByRole('tab', { name: /Travel Preferences/ })).toBeDefined();
     expect(screen.getByRole('tab', { name: /Security & Password/ })).toBeDefined();
     expect(screen.getByRole('tab', { name: /My Trips/ })).toBeDefined();
-    expect(screen.getByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeDefined();
+    expect(screen.queryByText('Tính năng đổi mật khẩu đang chờ tích hợp máy chủ.')).toBeNull();
     expect(
       (screen.getByRole('button', { name: 'Đổi mật khẩu' }) as HTMLButtonElement)
         .disabled,
-    ).toBe(true);
-
-    fireEvent.submit(container.querySelector('form')!);
-    expect(fetchMock).not.toHaveBeenCalled();
+    ).toBe(false);
   });
 
-  it('uses the same safe pending screen for an authenticated Tour Operator', () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+  it('submits a valid form through the injected production capability', async () => {
+    const { container } = render(<AccountSecurityPage />);
+
+    fireEvent.change(screen.getByLabelText('Mật khẩu hiện tại'), {
+      target: { value: 'CurrentPass123!' },
+    });
+    fireEvent.change(screen.getByLabelText('Mật khẩu mới'), {
+      target: { value: 'NewSecurePass456@' },
+    });
+    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu mới'), {
+      target: { value: 'NewSecurePass456@' },
+    });
+    fireEvent.submit(container.querySelector('form')!);
+
+    await vi.waitFor(() => {
+      expect(mocks.execute).toHaveBeenCalledWith({
+        currentPassword: 'CurrentPass123!',
+        newPassword: 'NewSecurePass456@',
+        confirmPassword: 'NewSecurePass456@',
+      });
+    });
+  });
+
+  it('uses the same production capability for an authenticated Tour Operator', () => {
     mocks.useWebSession.mockReturnValue({
       status: 'authenticated',
       context: {
@@ -97,15 +119,13 @@ describe('/account/security production route', () => {
       },
     });
 
-    const { container } = render(<AccountSecurityPage />);
+    render(<AccountSecurityPage />);
 
     expect(screen.getByText('TourOperator')).toBeDefined();
     expect(
       (screen.getByRole('button', { name: 'Đổi mật khẩu' }) as HTMLButtonElement)
         .disabled,
-    ).toBe(true);
-    fireEvent.submit(container.querySelector('form')!);
-    expect(fetchMock).not.toHaveBeenCalled();
+    ).toBe(false);
   });
 
   it('redirects an unauthenticated user to sign in with the return URL', () => {

@@ -7,8 +7,8 @@ import { ROUTES } from '@/lib/routes';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
-  title: 'Admin Change Password | TripMate Admin',
-  description: 'Đổi mật khẩu quản trị viên TripMate.',
+  title: 'Change Password | TripMate Administration',
+  description: 'Đổi mật khẩu cho tài khoản nội bộ TripMate.',
 };
 
 export default async function AdminAccountSecurityPage() {
@@ -23,5 +23,8 @@ export default async function AdminAccountSecurityPage() {
     return redirect(ROUTES.admin.login);
   }
 
+  // UC-07 permits both internal roles to change only their own password.
+  // The BFF preserves the verified session role and the backend derives the
+  // subject from its bearer token.
   return <AdminChangePasswordView />;
 }
