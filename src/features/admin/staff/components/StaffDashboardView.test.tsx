@@ -140,8 +140,8 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
 
     expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeTruthy();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.adminDashboard })).toBeNull();
-    expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeNull();
     expect(within(staffNav).getByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeTruthy();
+    expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.statisticalReports })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeNull();
     expect(within(staffNav).queryByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeNull();
 
@@ -153,6 +153,10 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeTruthy();
     expect(within(adminNav).queryByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeNull();
+    expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.statisticalReports })).toBeTruthy();
+    expect(
+      within(adminNav).getByRole('link', { name: adminStaffEn.navigation.statisticalReports }).getAttribute('href'),
+    ).toBe('/admin/reports');
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeTruthy();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeTruthy();
   });
