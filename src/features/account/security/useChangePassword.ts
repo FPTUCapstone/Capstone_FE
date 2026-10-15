@@ -140,13 +140,17 @@ export function useChangePassword(options: UseChangePasswordOptions = {}) {
     } catch (error) {
       // BE spec §5/§7: MSG17 -> currentPassword, MSG05 -> newPassword,
       // 401 -> sessionExpired (page redirects, never a retryable form error),
-      // 403 -> a distinct access-denied message. Anything else (network,
-      // 5xx/MSG127) stays a safe generic failure.
+      // Google-only accounts receive a distinct explanation; other 403 values
+      // are access denied. Anything else (network, 5xx/MSG127) stays a safe
+      // generic failure.
       if (error instanceof ChangePasswordApiError && error.field) {
         setErrors({ [error.field]: error.message });
       } else if (error instanceof ChangePasswordApiError && error.kind === 'sessionExpired') {
         setSessionExpired(true);
-      } else if (error instanceof ChangePasswordApiError && error.kind === 'forbidden') {
+      } else if (
+        error instanceof ChangePasswordApiError &&
+        (error.kind === 'forbidden' || error.kind === 'localPasswordUnavailable')
+      ) {
         setErrors({ form: error.message });
       } else {
         setErrors({ form: 'Không thể đổi mật khẩu. Vui lòng thử lại.' });

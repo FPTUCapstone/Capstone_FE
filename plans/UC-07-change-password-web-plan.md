@@ -42,8 +42,8 @@
 
 ## Task 5 — Error, session, accessibility, and responsive hardening
 
-**RED tests:** no false success on 400/401/403/429/5xx/network error; 401 sign-out/redirect; 403 no cookie clearing; no secret serialization; values cleared after success/cancel.
-**Implement:** safe feedback mapping, `no-store` BFF behavior where applicable, focus/ARIA feedback, and responsive styles.
+**RED tests:** no false success on 400/401/403/429/5xx/network error; 401 sign-out/redirect; Google-only public account receives a dedicated `auth.local_password_unavailable` message while other 403 values remain access denied; 403 does not clear a valid session; no secret serialization; values clear after success/cancel.
+**Implement:** safe feedback mapping, including Google-only public accounts without a local password; `no-store` BFF behavior where applicable; focus/ARIA feedback; and responsive styles.
 
 **Manual verification:** 320 px, tablet, desktop, keyboard navigation, password visibility controls, and screen-reader labels.
 

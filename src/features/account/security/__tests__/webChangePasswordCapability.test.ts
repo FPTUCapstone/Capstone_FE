@@ -77,7 +77,7 @@ describe('createWebChangePasswordCapability', () => {
     ).rejects.toMatchObject({ field: 'newPassword' });
   });
 
-  it('maps a 403 local-password-unavailable failure to a forbidden-kind error', async () => {
+  it('maps a Google-only account failure to a distinct local-password-unavailable error', async () => {
     AuthStorage.accept(data, false);
     vi.stubGlobal(
       'fetch',
@@ -93,7 +93,9 @@ describe('createWebChangePasswordCapability', () => {
 
     expect(error).toBeInstanceOf(ChangePasswordApiError);
     expect((error as ChangePasswordApiError).field).toBeUndefined();
-    expect((error as ChangePasswordApiError).kind).toBe('forbidden');
+    expect((error as ChangePasswordApiError).kind).toBe('localPasswordUnavailable');
+    expect((error as ChangePasswordApiError).message).toContain('đăng nhập bằng Google');
+    expect(AuthStorage.getContext()).not.toBeNull();
   });
 
   it('maps a 401 to a sessionExpired-kind error (the session is already cleared)', async () => {

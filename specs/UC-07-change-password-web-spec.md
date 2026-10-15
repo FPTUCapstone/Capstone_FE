@@ -65,7 +65,7 @@ The final adapter is enabled only after BE delivers its approved UC-07 endpoint.
 
 The Web adapter uses the approved same-origin/BFF or existing authorized Web auth transport. It forwards authenticated context, forwards neither user ID nor `confirmNewPassword`, uses `credentials: 'include'` where required, and uses `Cache-Control: no-store` for responses containing authentication state.
 
-On success, the Backend/Web adapter refreshes the current session. The frontend updates in-memory access context only from the safe response DTO and never reads, stores, or displays a refresh token. A 401 clears the corresponding session and redirects to role-appropriate sign-in. A 403 shows access denied and preserves a valid session unless the Backend specifically signals invalid authentication.
+On success, the Backend/Web adapter refreshes the current session. The frontend updates in-memory access context only from the safe response DTO and never reads, stores, or displays a refresh token. A 401 clears the corresponding session and redirects to role-appropriate sign-in. A 403 preserves a valid session. For a public Google-only account, `auth.local_password_unavailable` explains that the account has no local password and should continue using Google sign-in; other 403 results show access denied.
 
 ## 7. Backend result mapping
 
@@ -79,7 +79,8 @@ On success, the Backend/Web adapter refreshes the current session. The frontend 
 | 400 `MSG17` | Current-password field feedback: `Current password does not match our records.` |
 | Other 400 validation | Map only approved safe field messages; otherwise show generic form feedback |
 | 401 | Clear session according to its owner and redirect to sign-in |
-| 403 | Access denied; never claim success |
+| 403 `auth.local_password_unavailable` | Public Google-only account: explain that no TripMate password exists; preserve session and never claim success |
+| Other 403 | Access denied; preserve a valid session and never claim success |
 | 429/5xx/network | Show generic retry feedback; never show success |
 
 ## 8. Accessibility and responsive requirements
@@ -105,6 +106,6 @@ On success, the Backend/Web adapter refreshes the current session. The frontend 
 ## 10. Test requirements
 
 - Form tests: labels, masking toggle, client validation, confirmation omission, no false success, secret clearing, cancel navigation, and error mapping.
-- Adapter/BFF tests: payload allow-list, no token exposure, 401 clear-and-redirect, 403 session preservation, and safe handling of 5xx/network failure.
+- Adapter/BFF tests: payload allow-list, no token exposure, 401 clear-and-redirect, Google-only and other 403 session preservation, and safe handling of 5xx/network failure.
 - Route tests: direct navigation for valid role, wrong role, missing/expired/tampered session.
 - Responsive/manual keyboard review before delivery.

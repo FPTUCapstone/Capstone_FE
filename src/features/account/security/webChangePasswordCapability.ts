@@ -12,12 +12,15 @@ const NEW_PASSWORD_POLICY_MESSAGE =
   'Mật khẩu mới không hợp lệ hoặc trùng với mật khẩu hiện tại.';
 const SESSION_EXPIRED_MESSAGE = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
 const FORBIDDEN_MESSAGE = 'Bạn không có quyền thực hiện hành động này.';
+const LOCAL_PASSWORD_UNAVAILABLE_MESSAGE =
+  'Tài khoản này đăng nhập bằng Google và chưa có mật khẩu TripMate để thay đổi. Hãy tiếp tục đăng nhập bằng Google.';
 
 /**
  * Maps the Backend's stable errorCode/status (UC-07 spec §5/§7) to the
  * matching form field or capability-error kind. 401 -> sessionExpired (the
- * caller already cleared AuthStorage in webChangePassword); 403 -> forbidden;
- * MSG127/5xx/network surface as a safe generic form failure.
+ * caller already cleared AuthStorage in webChangePassword); an authenticated
+ * Google-only account gets its own safe message; other 403 values remain
+ * forbidden. MSG127/5xx/network surface as a safe generic form failure.
  */
 function toCapabilityError(error: unknown): ChangePasswordApiError {
   if (isApiError(error)) {
@@ -29,6 +32,13 @@ function toCapabilityError(error: unknown): ChangePasswordApiError {
     }
     if (error.status === 401) {
       return new ChangePasswordApiError(SESSION_EXPIRED_MESSAGE, undefined, 'sessionExpired');
+    }
+    if (error.code === 'auth.local_password_unavailable') {
+      return new ChangePasswordApiError(
+        LOCAL_PASSWORD_UNAVAILABLE_MESSAGE,
+        undefined,
+        'localPasswordUnavailable',
+      );
     }
     if (error.status === 403) {
       return new ChangePasswordApiError(FORBIDDEN_MESSAGE, undefined, 'forbidden');

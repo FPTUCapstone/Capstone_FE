@@ -242,4 +242,25 @@ describe('useChangePassword', () => {
     expect(result.current.errors).toEqual({ form: 'Bạn không có quyền thực hiện hành động này.' });
     expect(result.current.sessionExpired).toBe(false);
   });
+
+  it('explains that a Google-only account has no local password and preserves its session', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError(
+        'Tài khoản này đăng nhập bằng Google và chưa có mật khẩu TripMate để thay đổi.',
+        undefined,
+        'localPasswordUnavailable',
+      ),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors.form).toContain('đăng nhập bằng Google');
+    expect(result.current.sessionExpired).toBe(false);
+  });
 });
