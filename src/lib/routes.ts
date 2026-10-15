@@ -7,6 +7,7 @@ export const ROUTES = {
   pois: '/pois',
   poi: (id: string | number) => `/pois/${id}`,
   plan: '/plan',
+  myItineraries: '/itineraries',
   itinerary: (id: string | number) => `/itinerary/${id}`,
   tours: '/tours',
   tour: (id: string | number) => `/tours/${id}`,

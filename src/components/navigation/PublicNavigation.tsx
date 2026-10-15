@@ -152,6 +152,15 @@ export function PublicNavigation({ isLanding = false }: PublicNavigationProps = 
             {publicNavigationEn.links.smartItinerary}
           </Link>
 
+          {context?.role === 'Traveler' && (
+            <Link
+              href={ROUTES.myItineraries}
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+            >
+              {publicNavigationEn.links.myItineraries}
+            </Link>
+          )}
+
           <Link
             href="/#weather-rerouting"
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"

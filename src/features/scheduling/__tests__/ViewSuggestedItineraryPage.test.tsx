@@ -300,6 +300,47 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
       expect(screen.queryByRole('button', { name: /Chấp nhận lịch trình/i })).toBeNull();
     });
 
+    it('locks regenerate and reorder while the trip is navigated on the app', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
+        ...mockItinerary,
+        status: 'Active',
+        isNavigationInProgress: true,
+      });
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() =>
+        expect(screen.getByText(/Chuyến đi đang diễn ra trên ứng dụng TripMate/)).toBeDefined(),
+      );
+      expect(screen.queryByRole('button', { name: /Tạo lại lịch trình/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Chỉnh sửa thứ tự/i })).toBeNull();
+    });
+
+    it('locks the page when navigation starts while the owner is editing', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
+        ...mockItinerary,
+        status: 'Active',
+      });
+      vi.spyOn(schedulingApi, 'regenerateItinerary').mockRejectedValueOnce(
+        new schedulingApi.ItineraryHttpError(
+          409,
+          schedulingApi.NAVIGATION_IN_PROGRESS_MESSAGE,
+          schedulingApi.NAVIGATION_IN_PROGRESS_CODE,
+        ),
+      );
+      vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /Tạo lại lịch trình/i })).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lại lịch trình/i }));
+
+      await waitFor(() =>
+        expect(screen.getByText(schedulingApi.NAVIGATION_IN_PROGRESS_MESSAGE)).toBeDefined(),
+      );
+      expect(screen.queryByRole('button', { name: /Tạo lại lịch trình/i })).toBeNull();
+    });
+
     it('does not offer accept for an active itinerary', async () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
         ...mockItinerary,

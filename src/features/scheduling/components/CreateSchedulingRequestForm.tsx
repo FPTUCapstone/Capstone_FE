@@ -8,13 +8,12 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { loadStoredPreferences } from '@/features/account/preferences/travelPreferencesStorage';
 import { ROUTES } from '@/lib/routes';
 
+import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
 import {
   buildVietnamStartAtIso,
   calculateTripEnd,
   CreateSchedulingRequestPayload,
-  DESTINATION_PRESETS,
-  DestinationPreset,
   getVietnamCalendarDate,
   getVietnamTomorrowDateString,
   isFutureVietnamStartAt,
@@ -26,6 +25,14 @@ import {
   TransportMode,
   TRIPMATE_TIME_ZONE,
 } from '../types/schedulingTypes';
+import { PickedPlace, PlacePickerDialog } from './PlacePickerDialog';
+
+const MAX_MANDATORY_POIS = 6;
+// Same bounds as the API (and the mobile app): Da Nang to Hue is about 85 km.
+const MIN_SEARCH_RADIUS_KM = 1;
+const MAX_SEARCH_RADIUS_KM = 100;
+
+type PickerTarget = 'start' | 'exploration' | 'end' | 'mandatory';
 
 interface CreateSchedulingRequestFormProps {
   userId?: string | number | null;
@@ -41,10 +48,13 @@ export function CreateSchedulingRequestForm({
   userId,
   onSuccess,
 }: CreateSchedulingRequestFormProps) {
-  // Selected destination preset
-  const [selectedDestination, setSelectedDestination] = useState<DestinationPreset>(
-    DESTINATION_PRESETS[0],
-  );
+  // Where: the same choices as the mobile app.
+  const [startPoint, setStartPoint] = useState<PickedPlace | null>(null);
+  const [explorationPoi, setExplorationPoi] = useState<PickedPlace | null>(null);
+  const [endPoi, setEndPoi] = useState<PickedPlace | null>(null);
+  const [mandatoryPois, setMandatoryPois] = useState<SelectablePoi[]>([]);
+  const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Stored preferences snapshot
   const [initialPreferences] = useState(() => {
@@ -111,12 +121,54 @@ export function CreateSchedulingRequestForm({
   } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Handle destination change
-  const handleDestinationChange = (destId: string) => {
-    const dest = DESTINATION_PRESETS.find((d) => d.id === destId);
-    if (dest) {
-      setSelectedDestination(dest);
-      setFeedback(null);
+  const locateStartPoint = async () => {
+    setIsLocating(true);
+    try {
+      const location = await getBrowserLocation();
+      setStartPoint({ label: 'Vị trí hiện tại', ...location });
+      setValidationErrors((prev) => ({ ...prev, startPoint: '' }));
+    } catch (error) {
+      setFeedback({
+        tone: 'warning',
+        message: error instanceof PlaceSearchError
+          ? error.message
+          : 'Không lấy được vị trí hiện tại. Hãy chọn một địa điểm.',
+      });
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
+  const handlePicked = (place: PickedPlace) => {
+    const target = pickerTarget;
+    setPickerTarget(null);
+    setFeedback(null);
+    switch (target) {
+      case 'start':
+        setStartPoint(place);
+        setValidationErrors((prev) => ({ ...prev, startPoint: '' }));
+        break;
+      case 'exploration':
+        setExplorationPoi(place);
+        // Must-see places were chosen around the previous area.
+        setMandatoryPois([]);
+        setValidationErrors((prev) => ({ ...prev, exploration: '' }));
+        break;
+      case 'end':
+        setEndPoi(place);
+        setValidationErrors((prev) => ({ ...prev, endPoi: '' }));
+        break;
+      case 'mandatory': {
+        const poi = place.poi;
+        if (!poi) break;
+        setMandatoryPois((prev) =>
+          prev.length >= MAX_MANDATORY_POIS || prev.some((item) => item.id === poi.id)
+            ? prev
+            : [...prev, poi]);
+        break;
+      }
+      default:
+        break;
     }
   };
 
@@ -128,6 +180,18 @@ export function CreateSchedulingRequestForm({
   // Validate form
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
+
+    if (!startPoint) {
+      errors.startPoint = 'Vui lòng chọn điểm xuất phát.';
+    }
+
+    if (!explorationPoi) {
+      errors.exploration = 'Vui lòng chọn khu vực muốn khám phá.';
+    }
+
+    if (!returnToStart && !endPoi?.poi) {
+      errors.endPoi = 'Chọn điểm kết thúc hoặc bật "Quay về điểm xuất phát".';
+    }
 
     if (!startDate) {
       errors.startDate = 'Vui lòng chọn ngày bắt đầu chuyến đi.';
@@ -146,8 +210,8 @@ export function CreateSchedulingRequestForm({
       errors.availableHours = duration.error;
     }
 
-    if (searchRadiusKm < 1 || searchRadiusKm > 50) {
-      errors.searchRadiusKm = 'Bán kính tìm kiếm phải từ 1 đến 50 km.';
+    if (searchRadiusKm < MIN_SEARCH_RADIUS_KM || searchRadiusKm > MAX_SEARCH_RADIUS_KM) {
+      errors.searchRadiusKm = `Bán kính tìm kiếm phải từ ${MIN_SEARCH_RADIUS_KM} đến ${MAX_SEARCH_RADIUS_KM} km.`;
     }
 
     if (budgetVnd !== '' && budgetVnd <= 0) {
@@ -212,22 +276,22 @@ export function CreateSchedulingRequestForm({
       return;
     }
 
-    // Construct backend payload
+    // Construct backend payload (validate() guarantees the places are chosen).
     const startAtIso = buildVietnamStartAtIso(startDate, startTime);
     const payload: CreateSchedulingRequestPayload = {
       startAt: startAtIso,
       timeZoneId: TRIPMATE_TIME_ZONE,
-      startLatitude: selectedDestination.defaultStartLatitude,
-      startLongitude: selectedDestination.defaultStartLongitude,
-      explorationLatitude: selectedDestination.centerLatitude,
-      explorationLongitude: selectedDestination.centerLongitude,
-      endPoiId: null,
+      startLatitude: startPoint!.latitude,
+      startLongitude: startPoint!.longitude,
+      explorationLatitude: explorationPoi!.latitude,
+      explorationLongitude: explorationPoi!.longitude,
+      endPoiId: returnToStart ? null : endPoi?.poi?.id ?? null,
       returnToStart,
       availableMinutes: duration.minutes ?? 0,
       transportMode,
       searchRadiusKm,
       budgetVnd: budgetVnd === '' ? null : Number(budgetVnd),
-      mandatoryPoiIds: [],
+      mandatoryPoiIds: mandatoryPois.map((poi) => poi.id),
       restPreference,
     };
 
@@ -338,7 +402,7 @@ export function CreateSchedulingRequestForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {/* Card 1: Destination & Starting Point */}
+        {/* Card 1: Where — same fields as the mobile app */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-7">
           <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#007d6e]">
@@ -346,64 +410,97 @@ export function CreateSchedulingRequestForm({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 sm:text-lg">
-                1. Điểm đến & Vị trí khởi hành
+                1. Điểm xuất phát & khu vực khám phá
               </h2>
               <p className="text-xs text-slate-500">
-                Chọn thành phố và địa điểm bắt đầu hành trình của bạn
+                Bắt đầu từ nơi bạn đang ở, rồi chọn khu vực và những nơi bạn muốn ghé
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="destination-select"
-                className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm"
+          {/* Starting point */}
+          <div>
+            <p className="text-xs font-bold text-slate-700 sm:text-sm">Điểm xuất phát</p>
+            <p
+              className={`mt-1 text-sm ${startPoint ? 'font-semibold text-slate-800' : 'text-slate-500'}`}
+              data-testid="start-point-label"
+            >
+              {startPoint ? startPoint.label : 'Chưa chọn điểm xuất phát'}
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void locateStartPoint()}
+                disabled={isLocating || isSubmitting}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#006b5f] disabled:opacity-60"
               >
-                Thành phố / Điểm đến
-              </label>
-              <select
-                id="destination-select"
-                value={selectedDestination.id}
-                onChange={(e) => handleDestinationChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 transition focus:border-[#007d6e] focus:outline-hidden focus:ring-2 focus:ring-[#007d6e]/20"
+                <span className="material-symbols-outlined text-base">my_location</span>
+                {isLocating ? 'Đang lấy vị trí…' : 'Dùng vị trí hiện tại'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPickerTarget('start')}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-slate-400 disabled:opacity-60"
               >
-                {DESTINATION_PRESETS.map((dest) => (
-                  <option key={dest.id} value={dest.id}>
-                    {dest.name} ({dest.province})
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-xs text-slate-500">
-                {selectedDestination.description}
-              </p>
+                <span className="material-symbols-outlined text-base">search</span>
+                Chọn điểm xuất phát
+              </button>
             </div>
+            {validationErrors.startPoint && (
+              <p className="mt-1.5 text-xs text-rose-600">{validationErrors.startPoint}</p>
+            )}
+          </div>
 
-            <div>
-              <label
-                htmlFor="default-start-address"
-                className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm"
-              >
-                Điểm xuất phát mặc định
-              </label>
+          {/* Explore around */}
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <PlaceField
+              label="Khu vực khám phá"
+              value={explorationPoi?.label ?? null}
+              helper={
+                startPoint
+                  ? 'Chọn khu vực hoặc điểm tham quan bạn muốn khám phá xung quanh.'
+                  : 'Chọn điểm xuất phát trước.'
+              }
+              disabled={!startPoint || isSubmitting}
+              onOpen={() => setPickerTarget('exploration')}
+              error={validationErrors.exploration}
+            />
+          </div>
+
+          {/* Finish at + return to start */}
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <label className="flex cursor-pointer items-center gap-3">
               <input
-                id="default-start-address"
-                type="text"
-                readOnly
-                value={selectedDestination.defaultStartAddress}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 cursor-not-allowed select-none"
+                type="checkbox"
+                checked={returnToStart}
+                onChange={(e) => {
+                  setReturnToStart(e.target.checked);
+                  setValidationErrors((prev) => ({ ...prev, endPoi: '' }));
+                }}
+                className="h-4 w-4 rounded-sm border-slate-300 text-[#007d6e] accent-[#007d6e] focus:ring-[#007d6e]"
               />
-              <p className="mt-1.5 text-xs text-slate-500">
-                TripMate hiện sử dụng điểm xuất phát mặc định của khu vực đã chọn.
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Tọa độ: {selectedDestination.defaultStartLatitude.toFixed(4)},{' '}
-                {selectedDestination.defaultStartLongitude.toFixed(4)}
-              </p>
+              <span className="text-xs font-medium text-slate-700 sm:text-sm">
+                Quay về điểm xuất phát khi kết thúc hành trình
+              </span>
+            </label>
+            <div className="mt-3">
+              <PlaceField
+                label="Điểm kết thúc"
+                value={returnToStart ? null : endPoi?.label ?? null}
+                helper={
+                  returnToStart
+                    ? 'Bỏ chọn "Quay về điểm xuất phát" để chọn nơi kết thúc chuyến đi.'
+                    : 'Chọn nơi kết thúc chuyến đi.'
+                }
+                disabled={returnToStart || !startPoint || isSubmitting}
+                onOpen={() => setPickerTarget('end')}
+                error={validationErrors.endPoi}
+              />
             </div>
           </div>
 
-          {/* Search Radius Slider */}
+          {/* Search radius */}
           <div className="mt-5 border-t border-slate-100 pt-5">
             <div className="flex items-center justify-between">
               <label
@@ -419,23 +516,65 @@ export function CreateSchedulingRequestForm({
             <input
               id="radius-slider"
               type="range"
-              min={1}
-              max={50}
+              min={MIN_SEARCH_RADIUS_KM}
+              max={MAX_SEARCH_RADIUS_KM}
               step={1}
               value={searchRadiusKm}
-              onChange={(e) => setSearchRadiusKm(Number(e.target.value))}
+              onChange={(e) => {
+                setSearchRadiusKm(Number(e.target.value));
+                // Must-see places were chosen inside the previous radius.
+                setMandatoryPois([]);
+              }}
               className="mt-2.5 h-2 w-full cursor-pointer accent-[#007d6e]"
             />
             <div className="mt-1 flex justify-between text-[11px] text-slate-400">
-              <span>1 km (Gần)</span>
-              <span>10 km (Chuẩn nội thành)</span>
-              <span>50 km (Rộng / Ngoại ô)</span>
+              <span>{MIN_SEARCH_RADIUS_KM} km (Gần)</span>
+              <span>50 km (Ngoại ô)</span>
+              <span>{MAX_SEARCH_RADIUS_KM} km (Liên tỉnh)</span>
             </div>
             {validationErrors.searchRadiusKm && (
               <p className="mt-1 text-xs text-rose-600">
                 {validationErrors.searchRadiusKm}
               </p>
             )}
+          </div>
+
+          {/* Must-see places */}
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <p className="text-xs font-bold text-slate-700 sm:text-sm">Địa điểm muốn ghé</p>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              Không bắt buộc. Thêm tối đa {MAX_MANDATORY_POIS} nơi bạn không muốn bỏ lỡ.
+            </p>
+            {mandatoryPois.length > 0 && (
+              <ul className="mt-2.5 flex flex-wrap gap-2">
+                {mandatoryPois.map((poi) => (
+                  <li
+                    key={poi.id}
+                    className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 py-1 pl-3 pr-1 text-xs font-semibold text-[#007d6e]"
+                  >
+                    {poi.name}
+                    <button
+                      type="button"
+                      onClick={() => setMandatoryPois((prev) => prev.filter((item) => item.id !== poi.id))}
+                      disabled={isSubmitting}
+                      aria-label={`Bỏ ${poi.name}`}
+                      className="rounded-full p-0.5 hover:bg-teal-100"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              onClick={() => setPickerTarget('mandatory')}
+              disabled={!startPoint || isSubmitting || mandatoryPois.length >= MAX_MANDATORY_POIS}
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-slate-300 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-[#007d6e] hover:text-[#007d6e] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-base">add_location_alt</span>
+              Thêm địa điểm muốn ghé
+            </button>
           </div>
         </section>
 
@@ -668,21 +807,6 @@ export function CreateSchedulingRequestForm({
               ))}
             </div>
           </div>
-
-          {/* Return to start toggle */}
-          <div className="border-t border-slate-100 pt-5">
-            <label className="flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={returnToStart}
-                onChange={(e) => setReturnToStart(e.target.checked)}
-                className="h-4 w-4 rounded-sm border-slate-300 text-[#007d6e] accent-[#007d6e] focus:ring-[#007d6e]"
-              />
-              <span className="text-xs font-medium text-slate-700 sm:text-sm">
-                Quay về điểm xuất phát khi kết thúc hành trình (Tạo thành lộ trình khép kín)
-              </span>
-            </label>
-          </div>
         </section>
 
         {/* Card 4: Budget */}
@@ -802,6 +926,59 @@ export function CreateSchedulingRequestForm({
           )}
         </div>
       </form>
+
+      {pickerTarget && (
+        <PlacePickerDialog
+          title={PICKER_TITLES[pickerTarget]}
+          allowAddresses={pickerTarget === 'start'}
+          near={pickerTarget === 'mandatory' ? explorationPoi ?? startPoint : startPoint}
+          radiusKm={pickerTarget === 'mandatory' ? searchRadiusKm : null}
+          onSelect={handlePicked}
+          onClose={() => setPickerTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+const PICKER_TITLES: Record<PickerTarget, string> = {
+  start: 'Chọn điểm xuất phát',
+  exploration: 'Chọn khu vực khám phá',
+  end: 'Chọn điểm kết thúc',
+  mandatory: 'Thêm địa điểm muốn ghé',
+};
+
+function PlaceField({
+  label,
+  value,
+  helper,
+  disabled,
+  onOpen,
+  error,
+}: {
+  label: string;
+  value: string | null;
+  helper: string;
+  disabled: boolean;
+  onOpen: () => void;
+  error?: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-slate-700 sm:text-sm">{label}</p>
+      <button
+        type="button"
+        onClick={onOpen}
+        disabled={disabled}
+        aria-label={`${label}: ${value ?? helper}`}
+        className="mt-1.5 flex w-full items-center justify-between gap-3 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-left text-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+      >
+        <span className={value ? 'font-semibold text-slate-800' : 'text-slate-500'}>
+          {value ?? helper}
+        </span>
+        <span className="material-symbols-outlined text-lg text-slate-400">chevron_right</span>
+      </button>
+      {error && <p className="mt-1.5 text-xs text-rose-600">{error}</p>}
     </div>
   );
 }
