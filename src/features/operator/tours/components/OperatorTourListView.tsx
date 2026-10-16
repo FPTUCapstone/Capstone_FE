@@ -20,6 +20,23 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
   const [items, setItems] = useState(tours);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [tourPendingDeletion, setTourPendingDeletion] = useState<TourPackageDto | null>(null);
+
+  const confirmDelete = async () => {
+    if (!tourPendingDeletion) return;
+    const tour = tourPendingDeletion;
+    setDeletingId(tour.id);
+    setDeleteError(null);
+    try {
+      await removeOperatorTour(tour.id);
+      setItems((current) => current.filter((item) => item.id !== tour.id));
+      setTourPendingDeletion(null);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Không thể xóa tour. Vui lòng thử lại.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredTours = items.filter((t) => {
     if (filter === 'ALL') return true;
@@ -195,16 +212,9 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                             </Link>
                           )}
                           {canDelete && (
-                            <button type="button" disabled={deletingId === t.id} aria-label={`Xóa ${t.title}`} onClick={async () => {
-                              if (!window.confirm(`Xóa bản nháp “${t.title}”? Thao tác này không thể hoàn tác.`)) return;
-                              setDeletingId(t.id);
-                              try {
-                                setDeleteError(null);
-                                await removeOperatorTour(t.id);
-                                setItems((current) => current.filter((item) => item.id !== t.id));
-                              } catch (error) {
-                                setDeleteError(error instanceof Error ? error.message : 'Không thể xóa tour. Vui lòng thử lại.');
-                              } finally { setDeletingId(null); }
+                            <button type="button" disabled={deletingId === t.id} aria-label={`Xóa ${t.title}`} onClick={() => {
+                              setDeleteError(null);
+                              setTourPendingDeletion(t);
                             }} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-rose-600 hover:bg-rose-50 disabled:opacity-50" title="Xóa tour">
                               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
                             </button>
@@ -219,7 +229,30 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
           </div>
         )}
       </div>
-      {deleteError && <p role="alert" className="mt-3 text-sm font-medium text-rose-600">{deleteError}</p>}
+      {deleteError && !tourPendingDeletion && <p role="alert" className="mt-3 text-sm font-medium text-rose-600">{deleteError}</p>}
+      {tourPendingDeletion && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" role="presentation">
+          <section role="dialog" aria-modal="true" aria-labelledby="delete-tour-title" aria-describedby="delete-tour-description" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <span className="material-symbols-outlined grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rose-50 text-rose-600" aria-hidden="true">delete_forever</span>
+              <div>
+                <h2 id="delete-tour-title" className="text-lg font-extrabold text-slate-900">Xóa gói tour?</h2>
+                <p id="delete-tour-description" className="mt-2 text-sm leading-6 text-slate-600">
+                  Bạn sắp xóa <strong className="font-bold text-slate-900">{tourPendingDeletion.title}</strong>. Dữ liệu bản nháp và lịch khởi hành của tour này sẽ bị xóa vĩnh viễn.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              {deleteError && <p role="alert" className="sm:mr-auto rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{deleteError}</p>}
+              <button type="button" onClick={() => setTourPendingDeletion(null)} disabled={deletingId !== null} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Hủy</button>
+              <button type="button" onClick={() => void confirmDelete()} disabled={deletingId !== null} className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50">
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+                {deletingId ? 'Đang xóa…' : 'Xóa tour'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

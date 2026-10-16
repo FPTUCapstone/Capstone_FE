@@ -28,14 +28,28 @@ function firstValidationMessage(errors: unknown): string | undefined {
 
 async function fail(response: Response): Promise<never> {
   let code: string | undefined;
-  let message = response.status === 403
-    ? 'Chỉ nhà điều hành tour đã được phê duyệt mới có thể quản lý gói tour.'
-    : 'Không thể hoàn tất yêu cầu. Vui lòng thử lại.';
+  let message = response.status === 401
+    ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+    : response.status === 403
+      ? 'Bạn không có quyền xóa gói tour này.'
+      : response.status === 404
+        ? 'Không tìm thấy tour hoặc API xóa tour chưa được cập nhật. Hãy tải lại danh sách; nếu vẫn lỗi, hãy chạy lại backend local mới nhất.'
+        : response.status === 409
+          ? 'Tour này không còn ở trạng thái Bản nháp hoặc Bị từ chối nên không thể xóa.'
+          : response.status >= 500
+            ? 'Máy chủ chưa thể xóa tour. Vui lòng thử lại sau hoặc kiểm tra log backend local.'
+            : 'Không thể hoàn tất yêu cầu. Vui lòng thử lại.';
   try {
     const body: unknown = await response.json();
     if (body && typeof body === 'object') {
       const value = body as Record<string, unknown>;
-      code = typeof value.errorCode === 'string' ? value.errorCode : typeof value.code === 'string' ? value.code : undefined;
+      const extensions = value.extensions && typeof value.extensions === 'object'
+        ? value.extensions as Record<string, unknown>
+        : undefined;
+      code = typeof value.errorCode === 'string' ? value.errorCode
+        : typeof value.code === 'string' ? value.code
+          : typeof extensions?.errorCode === 'string' ? extensions.errorCode
+            : undefined;
       if (typeof value.title === 'string') message = value.title;
       if (typeof value.detail === 'string') message = value.detail;
       const firstFieldError = firstValidationMessage(value.errors);
@@ -157,6 +171,12 @@ export async function deleteTourMedia(tourId: number, mediaId: number): Promise<
 }
 
 export async function deleteOperatorTour(tourId: number): Promise<void> {
-  const response = await fetch(`${getApiBase()}/operator/tours/${tourId}`, { method: 'DELETE', headers: headers() });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBase()}/operator/tours/${tourId}`, { method: 'DELETE', headers: headers() });
+  } catch (error) {
+    if (error instanceof OperatorTourApiError) throw error;
+    throw new OperatorTourApiError(0, 'NETWORK', 'Không thể kết nối đến máy chủ để xóa tour. Vui lòng kiểm tra backend local rồi thử lại.');
+  }
   if (!response.ok) await fail(response);
 }
