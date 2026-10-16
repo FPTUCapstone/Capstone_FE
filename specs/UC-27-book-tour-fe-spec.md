@@ -1,369 +1,68 @@
-# UC-27 Frontend Specification — Book Tour
+# UC-27 Web Specification — Book Tour
 
-**Feature:** UC-27 Book Tour  
-**Platform:** Web / Next.js + React  
-**Status:** Draft  
-**Contract basis:** SRS 3.5.4 + Backend UC-27 API  
+**Platform:** Next.js / React
+**Status:** Draft — UI-first delivery allowed; live booking is blocked by the approved Backend contract
+**Sources:** SRS §3.5.4 and `UC-27-book-tour-be-spec.md`
 
----
+## 1. Scope
 
-## 1. Purpose
+UC-27 lets an authenticated Traveler select a departure, provide participant information, obtain a server quote and create a `PendingPayment` booking. It ends after showing the created booking and its server-issued expiry.
 
-UC-27 allows an authenticated Traveler to book a tour package by:
-1. Selecting a departure schedule
-2. Entering participant & contact information
-3. Optionally applying a voucher
-4. Previewing pricing (from Backend)
-5. Confirming the booking
+UC-28 starts only when the user selects **Pay now**. UC-27 does not initialize payment, display a payment gateway, issue a ticket, calculate price, reserve capacity locally, or persist a booking draft in browser storage.
 
----
+## 2. Entry, route and identifiers
 
-## 2. Scope & Exclusions
+The route is:
 
-### Supported
-
-- Traveler-only feature (role-based access)
-- Multi-participant form with dynamic fields
-- Contact information (separate from participants)
-- Voucher application/removal with real-time quote update
-- Server-computed pricing display (BR-63)
-- Confirmation dialog before submission
-- Loading states, error messages per SRS
-- Form state persistence (session-level, not storage)
-
-### Out of Scope
-
-- Payment processing (UC-28)
-- E-ticket display (UC-29)
-- Booking management / cancellation
-- Tour search / discovery (separate feature)
-- Tour Operator bookings
-
----
-
-## 3. Page Layout & Components
-
-### Route
-
-```
-/traveler/tours/:tourScheduleId/book
+```text
+/tours/[tourId]/book?departure=[tourScheduleId]
 ```
 
-### Page Structure
+`tourId` identifies the tour; `tourScheduleId` identifies its dated departure. Both are string IDs in browser DTOs. The page rejects a missing or inconsistent departure and returns to tour detail.
 
-```
-Header
-  ├─ Tour Name, Dates
-  ├─ [Back] to tour details
-  └─ Progress indicator (1/3 Participants, 2/3 Contact, 3/3 Confirm)
+The entry comes from UC-26’s public tour-detail/departure selection. Until UC-26 is live, a development-only fixture may render a labelled **Demo** departure; it must not call create booking or payment.
 
-Main Content
-  ├─ Section 1: Participant Details
-  │  ├─ "Number of participants" input (1-99)
-  │  ├─ Dynamic participant form fields (Name, DOB, ID, Phone) × N
-  │  ├─ [+ Add Participant] button
-  │  └─ Per-field validation feedback
-  │
-  ├─ Section 2: Contact Information
-  │  ├─ Contact name input
-  │  ├─ Email input
-  │  ├─ Phone number input
-  │  └─ [Save as default] checkbox (future feature)
-  │
-  ├─ Section 3: Pricing & Voucher
-  │  ├─ Price breakdown display
-  │  │  ├─ Price per person
-  │  │  ├─ Number of participants
-  │  │  ├─ Subtotal = price × participants
-  │  │  ├─ Discount (if voucher applied)
-  │  │  └─ Total (bold, large)
-  │  ├─ Voucher section
-  │  │  ├─ Voucher code input
-  │  │  ├─ [Apply] button
-  │  │  ├─ Applied voucher display (with discount %)
-  │  │  └─ [Remove] link if voucher applied
-  │  └─ "Loading quote..." spinner (while fetching from Backend)
-  │
-  └─ Action Buttons
-     ├─ [Cancel / Back] → return to tour details
-     └─ [Confirm Booking] → opens confirmation dialog
+## 3. Form and data boundary
 
-Confirmation Dialog
-  ├─ Summary: tour name, dates, participants, total price
-  ├─ Message: "You will have 15 minutes to complete payment after confirming"
-  └─ [Confirm] [Cancel] buttons
-```
+The form contains a participant list, optional voucher code and lead-contact fields represented by the first participant. Required participant fields are only those approved in the Backend contract:
 
----
+- `fullName`
+- optional `phoneNumber`, `email`, `idDocumentType`, `idDocumentNumber`, `nationality`
 
-## 4. User Workflows
+DOB, an age rule, a separate contact table/form contract and arbitrary participant limits are out of scope until product and BE approve them. Client validation is UX-only and mirrors the approved request shape.
 
-### Main Flow: Successful Booking
+## 4. Quote and create flow
 
-```
-1. User clicks [Book Now] on tour schedule
-2. Redirect to /traveler/tours/{id}/book
-3. Preload tour schedule details (API call)
-4. User enters number of participants
-5. → Form updates to show N participant input sets
-6. User fills in all participant details
-7. → Backend quote called (onChange event)
-8. User enters contact information
-9. → Quote refreshed
-10. [Optional] User enters voucher code
-11. → Quote API called with voucher code
-12. Price breakdown displays server-computed total
-13. User clicks [Confirm Booking]
-14. Confirmation dialog shown
-15. User clicks [Confirm] in dialog
-16. → POST /api/v1/traveler/tour-bookings called
-17. Success response → Redirect to payment screen (UC-28)
-18. Show toast: "Booking created! You have 15 minutes to complete payment"
-```
+1. The page receives the selected tour/departure.
+2. A participant-count or voucher change calls `POST /api/v1/traveler/tour-bookings/quote` through the existing authenticated API/proxy layer.
+3. The UI displays `unitPrice`, subtotal, discount, total, currency and remaining slots **exactly as returned**. It performs no arithmetic.
+4. The Traveler reviews a confirmation dialog and confirms once.
+5. The client generates a UUID, sends it as `Idempotency-Key`, and calls `POST /api/v1/traveler/tour-bookings`.
+6. On `201` or idempotent `200`, show booking code, `PendingPayment` and `paymentExpiresAt`. Clear sensitive document input from form state.
+7. The user may select **Pay now**, which navigates to the UC-28 entry point. If expiry arrives on screen, refresh booking status; the server remains authoritative.
 
-### Alternative: Validation Error
+A quote never promises capacity. Create may return a changed quote or a capacity/voucher failure and the page must let the user adjust and request a fresh quote.
 
-```
-1. User submits with invalid participant data
-2. Backend returns 400 + error code (MSG78)
-3. Frontend displays field-level error message
-4. Form remains open for correction
-5. User fixes and resubmits
-```
+## 5. Development fixture policy
 
-### Alternative: Voucher Invalid
+A fixture is permitted only when all are true:
 
-```
-1. User applies voucher code
-2. Backend returns 400 + MSG101 (invalid/expired)
-3. Frontend shows inline error: "Voucher code is invalid, expired or fully used"
-4. User can remove code or try different code
-```
+- non-production environment;
+- `NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true'`;
+- an explicit demo route/query switch accepted by the project’s existing guard.
 
-### Alternative: Insufficient Slots
+The fixture must be isolated behind a repository interface and visibly labelled Demo. It provides a static Tour Detail/departure and read-only `BookingQuote`; it must not calculate totals, mutate browser storage, create a booking, reserve a seat, or start payment. Production always uses the real API and never falls back to fixtures.
 
-```
-1. User enters 50 participants
-2. Backend returns 400 + MSG77 (insufficient slots, e.g., only 10 left)
-3. Frontend shows error: "Not enough slots available for {count} participants. Maximum available: 10"
-4. Form remains for adjustment
-```
+## 6. Failures and accessibility
 
----
+Use the Backend’s existing error envelope and error-code mapping after it is approved. The client treats 401 through the existing refresh/session flow and shows a role-safe 403 message. It provides inline recoverable errors for quote/create failures, disables duplicate submit while a request is active, and announces errors/status with `aria-live`.
 
-## 5. Component Specification
+The confirmation dialog must retain keyboard focus, expose an accessible title/description and return focus to the initiating button when dismissed.
 
-### TourBookingForm Component
+## 7. Acceptance criteria
 
-```typescript
-interface TourBookingFormProps {
-  tourScheduleId: number;
-  tourDetails: TourSchedule;
-  onSuccess?: (booking: TourBooking) => void;
-  onCancel?: () => void;
-}
-
-// State management
-const [participants, setParticipants] = useState<Participant[]>([]);
-const [contactInfo, setContactInfo] = useState<ContactInfo>({
-  fullName: '',
-  email: '',
-  phoneNumber: ''
-});
-const [voucherCode, setVoucherCode] = useState<string>('');
-const [quote, setQuote] = useState<QuoteResponse | null>(null);
-const [loading, setLoading] = useState(false);
-const [errors, setErrors] = useState<ValidationErrors>({});
-const [showConfirmation, setShowConfirmation] = useState(false);
-
-// Handlers
-const handleNumberOfParticipantsChange = (count: number) => {
-  // Update form to show N participant input sets
-  // Trigger quote fetch
-};
-
-const handleVoucherApply = () => {
-  // Call Backend quote endpoint with voucher
-  // Update quote display
-};
-
-const handleConfirmBooking = async () => {
-  // POST /api/v1/traveler/tour-bookings
-  // On success: navigate to payment screen
-  // On error: display error message
-};
-```
-
-### ParticipantForm Component
-
-```typescript
-interface ParticipantFormProps {
-  index: number;
-  value: Participant;
-  onChange: (participant: Participant) => void;
-  error?: FieldError;
-}
-
-// Fields
-- Full Name (text input, required)
-- Date of Birth (date picker, required, format YYYY-MM-DD)
-- Identity Document Number (text input, optional, max 50 chars)
-- Phone Number (tel input, optional, format validation)
-```
-
-### PriceBreakdown Component
-
-```typescript
-interface PriceBreakdownProps {
-  quote: QuoteResponse;
-  loading?: boolean;
-}
-
-// Display
-- Per-participant price
-- Number of participants
-- Subtotal
-- Discount (if voucher)
-- Total (highlighted)
-- Loading state if refreshing
-```
-
----
-
-## 6. API Integration
-
-### Quote Endpoint
-
-```typescript
-// Trigger on participant count change, contact info change, voucher apply/remove
-const fetchQuote = async (
-  tourScheduleId: number,
-  numberOfParticipants: number,
-  voucherCode?: string
-) => {
-  try {
-    setLoading(true);
-    const response = await fetch('/api/v1/traveler/tour-bookings/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tourScheduleId,
-        numberOfParticipants,
-        voucherCode
-      })
-    });
-    
-    if (response.ok) {
-      const quote = await response.json();
-      setQuote(quote);
-      setErrors({}); // Clear quote-related errors
-    } else {
-      const error = await response.json();
-      setErrors({ quote: error.message || 'Failed to fetch pricing' });
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-### Create Booking Endpoint
-
-```typescript
-const submitBooking = async () => {
-  try {
-    setLoading(true);
-    const response = await fetch('/api/v1/traveler/tour-bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tourScheduleId,
-        numberOfParticipants: participants.length,
-        participants,
-        contactInformation: contactInfo,
-        voucherCode: voucherCode || undefined
-      })
-    });
-    
-    if (response.status === 201) {
-      const booking = await response.json();
-      onSuccess?.(booking);
-      // Redirect to /traveler/bookings/{bookingId}/payment
-    } else if (response.status === 400 || response.status === 422) {
-      const error = await response.json();
-      // Map error code to SRS message, display to user
-      setErrors(mapBackendErrors(error));
-    } else if (response.status === 401) {
-      // Trigger re-authentication (existing auth interceptor)
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
----
-
-## 7. Validation & Error Handling
-
-### Client-side Validation (UX Only)
-
-```
-✗ Participant Name: non-empty, max 255 chars
-✗ Date of Birth: valid date, age ≥ 18 (optional, business rule TBD)
-✗ Phone: valid format (+84-based or 10-11 digits)
-✗ Contact Email: valid email format
-✗ Contact Phone: valid format
-```
-
-### Server-side Validation (Source of Truth)
-
-- Backend validates all fields per spec
-- Frontend displays server error messages with field highlighting
-
-### Error Messages (SRS-aligned)
-
-| Backend Error | HTTP | Display Message |
-|--------------|------|-----------------|
-| INVALID_PARTICIPANT (MSG78) | 400 | "Participant information is invalid; check date of birth and ID format" |
-| INSUFFICIENT_SLOTS (MSG77) | 400 | "Not enough slots available for this departure. Maximum: {remaining}" |
-| INVALID_SCHEDULE (MSG65) | 400 | "This tour departure is no longer available" |
-| INVALID_VOUCHER (MSG101) | 400 | "Voucher code is invalid, expired or fully used" |
-| VOUCHER_MINIMUM (MSG102) | 400 | "Voucher requires minimum purchase of {minimum}. Current: {subtotal}" |
-| TOO_MANY_UNPAID (MSG126) | 400 | "You have too many pending bookings. Cancel one to proceed" |
-| SERVER_ERROR (MSG127) | 5xx | "The service is temporarily unavailable. Please try again later" |
-
----
-
-## 8. Responsive Design
-
-- Desktop (≥1024px): 3-column layout (tour details, form, pricing sidebar)
-- Tablet (768-1023px): 2-column layout (form stacked on pricing)
-- Mobile (<768px): Single-column (full-width form, sticky pricing footer)
-
----
-
-## 9. Accessibility
-
-- Form labels linked to inputs (for=)
-- Error messages announced (aria-live="polite")
-- Focus management (focus trap in confirmation dialog)
-- Keyboard navigation (Tab through fields, Enter to submit)
-
----
-
-## 10. Performance
-
-- Quote API debounced (300ms) on participant count change
-- Lazy-load tour details if not already available
-- Session-based state (no persistence to localStorage)
-
----
-
-## Approval Gates
-
-- [ ] Backend API contract confirmed
-- [ ] Error code mapping finalized
-- [ ] Tour schedule detail API available
-- [ ] Confirmation dialog design approved
-- [ ] Accessibility requirements confirmed
+- One route and one booking feature implementation exist; the older `/tours/[id]/book` flow is refactored or explicitly replaced, never run in parallel.
+- IDs, request fields, response fields, idempotency behaviour and error handling match approved OpenAPI.
+- Amounts and expiry come only from Backend responses.
+- Success stops at `PendingPayment`; payment is user-initiated in UC-28.
+- Demo is visibly labelled, explicitly gated, and unavailable in production.
