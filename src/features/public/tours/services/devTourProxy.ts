@@ -21,8 +21,8 @@ function configuration() {
 
 export function isDevTourSearchEnabled(): boolean { return configuration() !== null; }
 
-function problem(status: number, title: string, errorCode?: string): Response {
-  return Response.json({ status, title, ...(errorCode ? { errorCode } : {}) }, { status, headers: { 'Cache-Control': 'no-store', 'Content-Type': 'application/problem+json' } });
+function problem(status: number, title: string, errorCode?: string, traceId?: string): Response {
+  return Response.json({ status, title, ...(errorCode ? { errorCode } : {}) }, { status, headers: { 'Cache-Control': 'no-store', 'Content-Type': 'application/problem+json', ...(traceId ? { 'X-TM70-Trace-Id': traceId } : {}) } });
 }
 
 function validForwardingHeaders(headers: Headers, origin: URL): boolean {
@@ -67,20 +67,23 @@ export async function proxyDevTourRequest(request: Request, resource: 'search' |
   }
   const upstreamUrl = new URL(`/api/dev/tours/${resource}`, config.backend);
   upstreamUrl.search = query.toString();
+  let traceId: string | undefined;
   try {
     const upstream = await fetch(upstreamUrl, {
       method: 'GET', cache: 'no-store', redirect: 'error',
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]),
       headers: { Accept: 'application/json', 'X-TM70-Dev-Key': config.key },
     });
+    const upstreamTrace = upstream.headers.get('X-TM70-Trace-Id');
+    if (upstreamTrace && /^[A-Za-z0-9._:-]{1,256}$/.test(upstreamTrace)) traceId = upstreamTrace;
     const data: unknown = await upstream.json();
     if (!upstream.ok) {
       const code = isDevRecord(data) && typeof data.errorCode === 'string' && Object.hasOwn(DEV_SEARCH_ERRORS, data.errorCode) ? data.errorCode : undefined;
-      return problem(upstream.status, code ? DEV_SEARCH_ERRORS[code] : upstream.status === 400 ? devTourSearchCopy.invalidFilters : devTourSearchCopy.requestFailed, code);
+      return problem(upstream.status, code ? DEV_SEARCH_ERRORS[code] : upstream.status === 400 ? devTourSearchCopy.invalidFilters : devTourSearchCopy.requestFailed, code, traceId);
     }
     const safeData = resource === 'search' ? parseDevPagedTours(data) : parseDevTourCategories(data);
-    return Response.json(safeData, { headers: { 'Cache-Control': 'no-store' } });
+    return Response.json(safeData, { headers: { 'Cache-Control': 'no-store', ...(traceId ? { 'X-TM70-Trace-Id': traceId } : {}) } });
   } catch {
-    return problem(502, 'Development search is temporarily unavailable.');
+    return problem(502, 'Development search is temporarily unavailable.', undefined, traceId);
   }
 }

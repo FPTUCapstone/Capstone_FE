@@ -94,4 +94,35 @@ describe('local development Search V2 boundary', () => {
     const options = vi.mocked(fetch).mock.calls[0][1];
     expect(options?.headers).toEqual({ Accept: 'application/json', 'X-TM70-Dev-Key': 'ephemeral-test-only-key-32-characters' });
   });
+
+  it.each([200, 503])('forwards only the bounded Backend trace header on HTTP %s', async (status) => {
+    const upstream = status === 200
+      ? Response.json([{ categoryId: 1, code: 'SEA', name: 'Sea' }], { status })
+      : Response.json({ errorCode: 'DevSearch.IndexIncomplete', detail: 'private-detail' }, { status });
+    upstream.headers.set('X-TM70-Trace-Id', '0HNABC:00000001');
+    upstream.headers.set('X-Private-Header', 'must-not-leak');
+    upstream.headers.set('Set-Cookie', 'private-session=secret');
+    vi.mocked(fetch).mockResolvedValue(upstream);
+    const response = await proxyDevTourRequest(request(), 'categories');
+    expect(response.status).toBe(status);
+    expect(response.headers.get('X-TM70-Trace-Id')).toBe('0HNABC:00000001');
+    expect(response.headers.get('X-Private-Header')).toBeNull();
+    expect(response.headers.get('Set-Cookie')).toBeNull();
+    expect(await response.text()).not.toContain('private-detail');
+  });
+
+  it.each(['', 'x'.repeat(257), 'bad\r\nInjected: value', 'contains spaces', 'unsafe<value>', 'safe\n', 'safe\r\n'])('discards invalid trace header %j', async (trace) => {
+    const upstream = Response.json([]);
+    const readHeader = upstream.headers.get.bind(upstream.headers);
+    vi.spyOn(upstream.headers, 'get').mockImplementation((name) => name.toLowerCase() === 'x-tm70-trace-id' ? trace : readHeader(name));
+    vi.mocked(fetch).mockResolvedValue(upstream);
+    expect((await proxyDevTourRequest(request(), 'categories')).headers.get('X-TM70-Trace-Id')).toBeNull();
+  });
+
+  it('preserves a safe trace when malformed upstream JSON becomes a safe gateway error', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('invalid-json', { headers: { 'X-TM70-Trace-Id': 'safe-trace-1' } }));
+    const response = await proxyDevTourRequest(request(), 'search');
+    expect(response.status).toBe(502);
+    expect(response.headers.get('X-TM70-Trace-Id')).toBe('safe-trace-1');
+  });
 });
