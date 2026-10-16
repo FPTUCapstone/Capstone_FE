@@ -275,86 +275,10 @@ describe('operatorTourService', () => {
     });
   });
 
-  describe('Real Mode Truthfulness (NO_BACKEND)', () => {
-    it('getOperatorTours returns PENDING_BE_INTEGRATION in real mode', async () => {
-      const res = await getOperatorTours({ allowDemo: false });
-      expect(res.status).toBe('PENDING_BE_INTEGRATION');
-      expect(res.data).toEqual([]);
-      expect(res.isDemo).toBe(false);
-    });
-
-    it('getOperatorTourById returns PENDING_BE_INTEGRATION in real mode', async () => {
-      const res = await getOperatorTourById('tour-test-1', { allowDemo: false });
-      expect(res.status).toBe('PENDING_BE_INTEGRATION');
-      expect(res.data).toBeUndefined();
-      expect(res.isDemo).toBe(false);
-    });
-
-    it('createTourPackage returns PENDING_BE_INTEGRATION in real mode without fake persistence', async () => {
-      const res = await createTourPackage(validPayload, { allowDemo: false });
-      expect(res.status).toBe('PENDING_BE_INTEGRATION');
-      expect(res.data).toBeUndefined();
-      expect(res.isDemo).toBe(false);
-    });
-
-    it('updateTourPackage returns PENDING_BE_INTEGRATION in real mode', async () => {
-      const existingTour: TourPackageDto = {
-        id: 'tour-test-1',
-        tourCode: 'TP-0142',
-        operatorUserId: 101,
-        title: 'Tour Ba Na Hills',
-        destination: 'Đà Nẵng',
-        category: 'Di sản & Thiên nhiên',
-        durationDays: 1,
-        basePrice: 1250000,
-        maxCapacity: 30,
-        description: 'Tour Bà Nà',
-        cancellationPolicy: 'Hủy trước 24h',
-        status: 'Draft',
-        version: 1,
-        itinerary: validPayload.itinerary,
-        schedules: validPayload.schedules,
-        media: [],
-        createdAt: '2026-10-01',
-        updatedAt: '2026-10-01',
-      };
-
-      const res = await updateTourPackage(
-        { ...validPayload, id: 'tour-test-1' },
-        { allowDemo: false, currentTour: existingTour }
-      );
-      expect(res.status).toBe('PENDING_BE_INTEGRATION');
-      expect(res.isDemo).toBe(false);
-    });
-
-    it('submitTourForApproval returns PENDING_BE_INTEGRATION in real mode', async () => {
-      const existingTour: TourPackageDto = {
-        id: 'tour-test-1',
-        tourCode: 'TP-0142',
-        operatorUserId: 101,
-        title: validPayload.title,
-        destination: validPayload.destination,
-        category: 'Di sản & Thiên nhiên',
-        durationDays: 1,
-        basePrice: 1250000,
-        maxCapacity: 30,
-        description: validPayload.description,
-        cancellationPolicy: validPayload.cancellationPolicy,
-        status: 'Draft',
-        version: 1,
-        itinerary: validPayload.itinerary,
-        schedules: validPayload.schedules,
-        media: [],
-        createdAt: '2026-10-01',
-        updatedAt: '2026-10-01',
-      };
-
-      const res = await submitTourForApproval('tour-test-1', {
-        allowDemo: false,
-        currentTour: existingTour,
-      });
-      expect(res.status).toBe('PENDING_BE_INTEGRATION');
-      expect(res.isDemo).toBe(false);
+  describe('Real API guardrails', () => {
+    it('rejects a non-numeric server tour identifier before issuing a request', async () => {
+      await expect(getOperatorTourById('tour-test-1', { allowDemo: false }))
+        .rejects.toThrow('Mã gói tour phải là mã số hợp lệ');
     });
   });
 

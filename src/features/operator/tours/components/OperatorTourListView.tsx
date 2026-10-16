@@ -69,29 +69,6 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
         </div>
       )}
 
-      {/* Real Mode Pending Backend Integration Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[24px] text-amber-600 shrink-0" aria-hidden="true">
-              pending_actions
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-amber-950">
-                Tính năng quản lý gói tour đang chờ kết nối dịch vụ máy chủ
-              </h3>
-              <p className="mt-1 leading-relaxed text-amber-900">
-                Giao diện danh sách và bộ lọc trạng thái (Bản nháp, Chờ duyệt, Đã duyệt, Bị từ chối) đã hoàn thiện.
-                Dữ liệu chưa được tải từ máy chủ (Capstone_BE).
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
         {[

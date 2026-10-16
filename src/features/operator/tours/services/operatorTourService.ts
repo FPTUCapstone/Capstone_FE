@@ -12,8 +12,125 @@ import {
   type TourValidationErrors,
   type UpdateTourPackagePayload,
 } from '../types/tourLifecycle';
+import {
+  assignCancellationPolicy,
+  createTour,
+  getTour,
+  listCancellationPolicies,
+  searchSelectablePois,
+  listTours,
+  submitTour,
+  updateTour,
+  type ApiCreateTour,
+  type ApiTourDetail,
+  type ApiTourListItem,
+} from './operatorTourApi';
+
+export { OperatorTourApiError } from './operatorTourApi';
+export async function getCancellationPolicyOptions() {
+  return listCancellationPolicies();
+}
+export async function getSelectableTourPois() {
+  return searchSelectablePois();
+}
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per BR-16
+
+function asBackendId(value: string | number | undefined, field: string): number {
+  const id = typeof value === 'number' ? value : Number(value);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error(`${field} phải là mã số hợp lệ đã có trên hệ thống.`);
+  }
+  return id;
+}
+
+function toIsoDateTime(date: string, time: 'start' | 'end'): string {
+  return `${date}T${time === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`;
+}
+
+function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
+  return {
+    title: payload.title.trim(),
+    description: payload.description.trim(),
+    ...(payload.category && /^\d+$/.test(payload.category.trim())
+      ? { categoryId: asBackendId(payload.category, 'Mã danh mục') }
+      : {}),
+    basePrice: payload.basePrice,
+    durationDays: payload.durationDays,
+    itineraryItems: payload.itinerary.flatMap((day) => day.activities.map((activity, index) => ({
+      dayNo: day.dayNo,
+      sequenceNo: index + 1,
+      poiId: asBackendId(activity.poiId, 'Mã điểm đến trong lịch trình'),
+      plannedTime: /^\d{2}:\d{2}$/.test(activity.time) ? `${activity.time}:00` : null,
+      stayDurationMinutes: activity.stayDurationMinutes,
+      notes: [activity.transport, activity.notes].filter(Boolean).join(' | ') || null,
+    }))),
+    schedules: payload.schedules.map((schedule) => ({
+      startAtUtc: toIsoDateTime(schedule.departureDate, 'start'),
+      endAtUtc: toIsoDateTime(schedule.returnDate, 'end'),
+      meetingPoint: schedule.meetingPoint?.trim() || null,
+      minimumCapacity: 1,
+      totalCapacity: schedule.totalCapacity,
+      registrationDeadlineAtUtc: null,
+      adultPrice: payload.basePrice,
+      childPrice: payload.childPrice ?? null,
+      infantPrice: null,
+    })),
+  };
+}
+
+function dateOnly(value: string): string { return value.slice(0, 10); }
+
+function statusFromApi(value: string): TourPackageDto['status'] {
+  return ['Draft', 'Pending', 'Approved', 'Rejected', 'Inactive'].includes(value)
+    ? value as TourPackageDto['status'] : 'Draft';
+}
+
+function mapDetail(detail: ApiTourDetail): TourPackageDto {
+  const itinerary = new Map<number, TourPackageDto['itinerary'][number]>();
+  for (const item of detail.itineraryItems) {
+    const day = itinerary.get(item.dayNo) ?? { dayNo: item.dayNo, activities: [] };
+    day.activities.push({
+      id: `${item.dayNo}-${item.sequenceNo}`,
+      time: item.plannedTime?.slice(0, 5) ?? '',
+      poiId: item.poiId,
+      poiName: `POI #${item.poiId}`,
+      stayDurationMinutes: item.stayDurationMinutes,
+      transport: '',
+      notes: item.notes ?? undefined,
+    });
+    itinerary.set(item.dayNo, day);
+  }
+  const schedules = detail.departures.map((departure) => ({
+    id: String(departure.id),
+    departureDate: dateOnly(departure.startAtUtc),
+    returnDate: dateOnly(departure.endAtUtc),
+    totalCapacity: departure.totalCapacity,
+    reservedCapacity: departure.reservedCapacity,
+    meetingPoint: departure.meetingPoint ?? undefined,
+    status: departure.status === 'Cancelled' || departure.status === 'Completed' ? departure.status : 'Scheduled',
+  }));
+  return {
+    id: String(detail.id), tourCode: `TP-${detail.id}`, operatorUserId: 0,
+    title: detail.title, destination: '', category: detail.categoryId ? String(detail.categoryId) : '',
+    durationDays: detail.durationDays, basePrice: detail.basePrice,
+    childPrice: detail.departures[0]?.childPrice ?? undefined,
+    maxCapacity: detail.departures[0]?.totalCapacity ?? 0,
+    description: detail.description, cancellationPolicy: '', status: statusFromApi(detail.status),
+    version: 1, itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo), schedules,
+    media: [], createdAt: '', updatedAt: '',
+  };
+}
+
+function mapListItem(item: ApiTourListItem): TourPackageDto {
+  return {
+    id: String(item.id), tourCode: `TP-${item.id}`, operatorUserId: 0,
+    title: item.title, destination: '', category: '', durationDays: item.durationDays,
+    basePrice: item.basePrice, maxCapacity: 0, description: '', cancellationPolicy: '',
+    status: statusFromApi(item.status), version: 1, itinerary: [], schedules: [], media: [],
+    createdAt: item.updatedAtUtc, updatedAt: item.updatedAtUtc,
+  };
+}
 
 export class OperatorTourValidationError extends Error {
   errors: TourValidationErrors;
@@ -236,12 +353,8 @@ export async function getOperatorTours(options?: {
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    data: [],
-    message: OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  const tours = await listTours();
+  return { status: 'SUCCESS', data: tours.map(mapListItem), isDemo: false };
 }
 
 /**
@@ -284,11 +397,7 @@ export async function getOperatorTourById(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  return { status: 'SUCCESS', data: mapDetail(await getTour(asBackendId(id, 'Mã gói tour'))), isDemo: false };
 }
 
 /**
@@ -344,9 +453,13 @@ export async function createTourPackage(
     };
   }
 
+  const policyId = asBackendId(payload.cancellationPolicy, 'Mã chính sách hủy');
+  const created = await createTour(toBackendPayload(payload), crypto.randomUUID());
+  await assignCancellationPolicy(created.tourId, policyId);
   return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION,
+    status: 'SUCCESS',
+    data: mapDetail(await getTour(created.tourId)),
+    message: OPERATOR_TOUR_MESSAGES.CREATE_SUCCESS,
     isDemo: false,
   };
 }
@@ -499,8 +612,8 @@ export async function updateTourPackage(
     }
 
     return {
-      status: 'PENDING_BE_INTEGRATION',
-      message: OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION,
+      status: 'ERROR',
+      message: 'Phiên bản mới cho tour đã duyệt chưa được dịch vụ máy chủ hỗ trợ.',
       isDemo: false,
     };
   }
@@ -540,11 +653,11 @@ export async function updateTourPackage(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  const tourId = asBackendId(payload.id, 'Mã gói tour');
+  const policyId = asBackendId(payload.cancellationPolicy, 'Mã chính sách hủy');
+  await updateTour(tourId, toBackendPayload(payload));
+  await assignCancellationPolicy(tourId, policyId);
+  return { status: 'SUCCESS', data: mapDetail(await getTour(tourId)), message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS, isDemo: false };
 }
 
 /**
@@ -611,9 +724,6 @@ export async function submitTourForApproval(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  const response = await submitTour(asBackendId(tourId, 'Mã gói tour'));
+  return { status: 'SUCCESS', data: mapDetail(await getTour(response.tourId)), message: OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS, isDemo: false };
 }
