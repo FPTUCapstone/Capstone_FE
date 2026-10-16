@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
+import { CancellationPolicySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { useTourCatalogues } from './useTourCatalogues';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
   OperatorTourValidationError,
@@ -28,7 +30,10 @@ interface UpdateTourPackageViewProps {
 export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTourPackageViewProps) {
   const router = useRouter();
   const isPending = initialTour.status === 'Pending';
-  const isApproved = initialTour.status === 'Approved';
+  // A published package is edited through a new version exactly like an approved one (BR-103).
+  const isApproved = initialTour.status === 'Approved' || initialTour.status === 'Published';
+  const catalogues = useTourCatalogues(isDemo);
+  const [destinationIds, setDestinationIds] = useState<number[]>(initialTour.destinationIds ?? []);
 
   // Form State initialized from initialTour
   const [title, setTitle] = useState(initialTour.title);
@@ -91,10 +96,14 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     setPendingMessage(null);
     setSuccessMessage(null);
 
+    const selectedDestinationNames = catalogues.destinations
+      .filter((option) => destinationIds.includes(option.destinationId))
+      .map((option) => option.name);
     const payload: UpdateTourPackagePayload = {
       id: initialTour.id,
       title,
-      destination,
+      destination: isDemo ? destination : selectedDestinationNames.join(', ') || destination,
+      destinationIds: isDemo ? undefined : destinationIds,
       category,
       durationDays,
       basePrice,
@@ -249,25 +258,9 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         </div>
       )}
 
-      {/* Real Mode Pending Backend Integration Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[24px] text-amber-600 shrink-0">
-              pending_actions
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-amber-950">
-                Tính năng cập nhật gói tour đang chờ kết nối máy chủ
-              </h3>
-              <p className="mt-1 leading-relaxed text-amber-900">
-                Các quy tắc kiểm tra (sức chứa không được giảm dưới số chỗ đã bán BR-61, phân tách trạng thái sửa theo BR-103) đã sẵn sàng. Dữ liệu chưa lưu vào máy chủ.
-              </p>
-            </div>
-          </div>
+      {!isDemo && catalogues.error && (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-800">
+          {catalogues.error}
         </div>
       )}
 
@@ -388,17 +381,28 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
+                  <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
                     Điểm đến
                   </label>
-                  <input
-                    id="field-destination"
-                    type="text"
-                    disabled={isPending}
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
-                  />
+                  {isDemo ? (
+                    <input
+                      id="field-destination"
+                      type="text"
+                      disabled={isPending}
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                    />
+                  ) : (
+                    <DestinationCheckboxes
+                      options={catalogues.destinations}
+                      selectedIds={destinationIds}
+                      onChange={setDestinationIds}
+                      labelId="label-destination"
+                      disabled={isPending}
+                      hasError={Boolean(errors.destination)}
+                    />
+                  )}
                   {errors.destination && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.destination}</p>}
                 </div>
 
@@ -470,14 +474,24 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 <label htmlFor="field-policy" className="block text-xs font-bold text-[#00152A]">
                   Chính sách hủy tour
                 </label>
-                <input
-                  id="field-policy"
-                  type="text"
-                  disabled={isPending}
-                  value={cancellationPolicy}
-                  onChange={(e) => setCancellationPolicy(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
-                />
+                {isDemo ? (
+                  <input
+                    id="field-policy"
+                    type="text"
+                    disabled={isPending}
+                    value={cancellationPolicy}
+                    onChange={(e) => setCancellationPolicy(e.target.value)}
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                  />
+                ) : (
+                  <CancellationPolicySelect
+                    options={catalogues.policies}
+                    value={cancellationPolicy}
+                    onChange={setCancellationPolicy}
+                    disabled={isPending}
+                    hasError={Boolean(errors.cancellationPolicy)}
+                  />
+                )}
                 {errors.cancellationPolicy && (
                   <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.cancellationPolicy}</p>
                 )}
@@ -527,7 +541,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                           <td className="py-2.5 font-medium text-slate-900">
                             {isPending ? (
                               act.poiName
-                            ) : (
+                            ) : isDemo ? (
                               <input
                                 type="text"
                                 value={act.poiName}
@@ -537,6 +551,18 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                                   setItinerary(updated);
                                 }}
                                 className="w-full rounded-lg border border-slate-200 p-1 text-xs"
+                              />
+                            ) : (
+                              <PoiSelect
+                                options={catalogues.pois}
+                                value={act.poiId}
+                                currentName={act.poiName}
+                                onChange={(poi) => {
+                                  const updated = [...itinerary];
+                                  updated[dIdx].activities[aIdx].poiId = poi?.id;
+                                  updated[dIdx].activities[aIdx].poiName = poi?.name ?? '';
+                                  setItinerary(updated);
+                                }}
                               />
                             )}
                           </td>

@@ -1,18 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
   createTourPackage,
-  getCancellationPolicyOptions,
-  getSelectableTourPois,
   OperatorTourValidationError,
   validateCreateTourPackage,
 } from '../services/operatorTourService';
-import type { ApiPoi, ApiPolicy } from '../services/operatorTourApi';
+import { CancellationPolicySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { useTourCatalogues } from './useTourCatalogues';
 import {
   OPERATOR_TOUR_MESSAGES,
   type CreateTourPackagePayload,
@@ -57,8 +56,11 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [cancellationPolicy, setCancellationPolicy] = useState(
     isDemo ? 'Hoàn tiền 100% khi hủy trước ngày khởi hành ít nhất 24 giờ.' : ''
   );
-  const [cancellationPolicies, setCancellationPolicies] = useState<ApiPolicy[]>([]);
-  const [availablePois, setAvailablePois] = useState<ApiPoi[]>([]);
+  const [destinationIds, setDestinationIds] = useState<number[]>([]);
+  const catalogues = useTourCatalogues(isDemo);
+  const availablePois = catalogues.pois;
+  // One idempotency key per unchanged payload: a retry after a lost response must not create a second draft.
+  const createAttempt = useRef<{ signature: string; key: string } | null>(null);
 
   // Itinerary state
   const [itinerary, setItinerary] = useState<TourItineraryDay[]>([
@@ -101,18 +103,6 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isDemo) return;
-    let active = true;
-    void getCancellationPolicyOptions()
-      .then((policies) => { if (active) setCancellationPolicies(policies); })
-      .catch((error: unknown) => { if (active) setErrorMessage(error instanceof Error ? error.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE); });
-    void getSelectableTourPois()
-      .then((pois) => { if (active) setAvailablePois(pois); })
-      .catch((error: unknown) => { if (active) setErrorMessage(error instanceof Error ? error.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE); });
-    return () => { active = false; };
-  }, [isDemo]);
 
   // Handlers for Itinerary
   const handleAddDay = () => {
@@ -184,9 +174,13 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     setPendingMessage(null);
     setSuccessMessage(null);
 
+    const selectedDestinationNames = catalogues.destinations
+      .filter((option) => destinationIds.includes(option.destinationId))
+      .map((option) => option.name);
     const payload: CreateTourPackagePayload = {
       title,
-      destination,
+      destination: isDemo ? destination : selectedDestinationNames.join(', '),
+      destinationIds: isDemo ? undefined : destinationIds,
       category,
       durationDays,
       basePrice,
@@ -198,7 +192,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       cancellationPolicy,
       itinerary,
       schedules,
-      mediaFiles,
+      mediaFiles: isDemo ? mediaFiles : undefined,
     };
 
     // Client-side pre-validation
@@ -212,8 +206,16 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     setSubmitting(true);
 
     try {
-      const result = await createTourPackage(payload, { allowDemo: isDemo });
+      const signature = JSON.stringify({ ...payload, mediaFiles: undefined });
+      if (createAttempt.current?.signature !== signature) {
+        createAttempt.current = { signature, key: crypto.randomUUID() };
+      }
+      const result = await createTourPackage(payload, {
+        allowDemo: isDemo,
+        idempotencyKey: createAttempt.current.key,
+      });
       if (result.status === 'SUCCESS' && result.data) {
+        createAttempt.current = null;
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.CREATE_SUCCESS);
         if (andSubmitApproval) {
           router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(result.data.id), isDemo));
@@ -277,26 +279,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
         </div>
       )}
 
-      {/* Real Mode Pending Backend Integration Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[24px] text-amber-600 shrink-0" aria-hidden="true">
-              pending_actions
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-amber-950">
-                Tính năng tạo gói tour đang chờ kết nối dịch vụ máy chủ
-              </h3>
-              <p className="mt-1 leading-relaxed text-amber-900">
-                Giao diện và các quy tắc kiểm tra tính hợp lệ đã được xác thực (thông tin bắt buộc, giá tour, sức chứa, ngày khởi hành).
-                Dữ liệu hiện tại chưa được lưu trữ vào hệ thống máy chủ (Capstone_BE).
-              </p>
-            </div>
-          </div>
+      {!isDemo && catalogues.error && (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-800">
+          {catalogues.error}
         </div>
       )}
 
@@ -360,19 +345,29 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
+                  <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
                     Điểm đến chính <span className="text-rose-500">*</span>
                   </label>
-                  <input
-                    id="field-destination"
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="Đà Nẵng"
-                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
-                      errors.destination ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#006B5F]'
-                    }`}
-                  />
+                  {isDemo ? (
+                    <input
+                      id="field-destination"
+                      type="text"
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                      placeholder="Đà Nẵng"
+                      className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
+                        errors.destination ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#006B5F]'
+                      }`}
+                    />
+                  ) : (
+                    <DestinationCheckboxes
+                      options={catalogues.destinations}
+                      selectedIds={destinationIds}
+                      onChange={setDestinationIds}
+                      labelId="label-destination"
+                      hasError={Boolean(errors.destination)}
+                    />
+                  )}
                   {errors.destination && (
                     <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
                       {errors.destination}
@@ -489,7 +484,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                       <thead>
                         <tr className="border-b border-slate-200 text-slate-500">
                           <th className="pb-2 font-semibold w-16">Thời gian</th>
-                          <th className="pb-2 font-semibold">Mã POI / điểm dừng</th>
+                          <th className="pb-2 font-semibold">Điểm dừng / Hoạt động</th>
                           <th className="pb-2 font-semibold w-24">Lưu lại</th>
                           <th className="pb-2 font-semibold w-24">Di chuyển</th>
                           <th className="pb-2 font-semibold text-right w-16">Xóa</th>
@@ -511,20 +506,30 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                               />
                             </td>
                             <td className="py-2.5 font-medium text-slate-900">
-                              <select
-                                value={act.poiId ?? ''}
-                                onChange={(e) => {
-                                  const updated = [...itinerary];
-                                  const value = e.target.value;
-                                  updated[dIdx].activities[aIdx].poiId = value ? Number(value) : undefined;
-                                  updated[dIdx].activities[aIdx].poiName = availablePois.find((poi) => poi.id === Number(value))?.name ?? '';
-                                  setItinerary(updated);
-                                }}
-                                className="w-full rounded-lg border border-slate-200 p-1 text-xs"
-                              >
-                                <option value="">Chọn POI đã xác minh</option>
-                                {availablePois.map((poi) => <option key={poi.id} value={poi.id}>#{poi.id} — {poi.name}</option>)}
-                              </select>
+                              isDemo ? (
+                                <input
+                                  type="text"
+                                  value={act.poiName}
+                                  onChange={(e) => {
+                                    const updated = [...itinerary];
+                                    updated[dIdx].activities[aIdx].poiName = e.target.value;
+                                    setItinerary(updated);
+                                  }}
+                                  className="w-full rounded-lg border border-slate-200 p-1 text-xs"
+                                />
+                              ) : (
+                                <PoiSelect
+                                  options={availablePois}
+                                  value={act.poiId}
+                                  currentName={act.poiName}
+                                  onChange={(poi) => {
+                                    const updated = [...itinerary];
+                                    updated[dIdx].activities[aIdx].poiId = poi?.id;
+                                    updated[dIdx].activities[aIdx].poiName = poi?.name ?? '';
+                                    setItinerary(updated);
+                                  }}
+                                />
+                              )
                             </td>
                             <td className="py-2.5 text-slate-600">
                               <input
@@ -624,17 +629,12 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900"
                   />
                 ) : (
-                  <select
-                    id="field-cancellation"
+                  <CancellationPolicySelect
+                    options={catalogues.policies}
                     value={cancellationPolicy}
-                    onChange={(e) => setCancellationPolicy(e.target.value)}
-                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 ${errors.cancellationPolicy ? 'border-rose-400' : 'border-slate-300'}`}
-                  >
-                    <option value="">Chọn chính sách hủy đã phát hành</option>
-                    {cancellationPolicies.map((policy) => (
-                      <option key={policy.id} value={policy.id}>{policy.name}{policy.description ? ` — ${policy.description}` : ''}</option>
-                    ))}
-                  </select>
+                    onChange={setCancellationPolicy}
+                    hasError={Boolean(errors.cancellationPolicy)}
+                  />
                 )}
                 {errors.cancellationPolicy && (
                   <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
@@ -807,6 +807,12 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
               Tệp hình ảnh dung lượng tối đa 5MB mỗi ảnh (BR-16).
             </p>
 
+            {!isDemo ? (
+              <p role="status" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                Tải ảnh đại diện chưa được hỗ trợ trên màn hình này. Bản nháp vẫn được lưu, nhưng gói tour cần có ảnh đại
+                diện đang hoạt động trước khi gửi xét duyệt.
+              </p>
+            ) : (
             <div className="mt-3">
               <label
                 htmlFor="media-upload"
@@ -845,6 +851,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                 </div>
               )}
             </div>
+            )}
           </section>
 
           {/* Amber Alert Notice from Screen #41 */}

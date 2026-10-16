@@ -18,6 +18,14 @@ function headers(extra?: HeadersInit): HeadersInit {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...extra };
 }
 
+function firstValidationMessage(errors: unknown): string | undefined {
+  if (!errors || typeof errors !== 'object') return undefined;
+  for (const messages of Object.values(errors as Record<string, unknown>)) {
+    if (Array.isArray(messages) && typeof messages[0] === 'string' && messages[0]) return messages[0];
+  }
+  return undefined;
+}
+
 async function fail(response: Response): Promise<never> {
   let code: string | undefined;
   let message = response.status === 403
@@ -30,6 +38,8 @@ async function fail(response: Response): Promise<never> {
       code = typeof value.errorCode === 'string' ? value.errorCode : typeof value.code === 'string' ? value.code : undefined;
       if (typeof value.title === 'string') message = value.title;
       if (typeof value.detail === 'string') message = value.detail;
+      const firstFieldError = firstValidationMessage(value.errors);
+      if (firstFieldError) message = firstFieldError;
     }
   } catch { /* Preserve safe fallback. */ }
   throw new OperatorTourApiError(response.status, code, message);
@@ -50,18 +60,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export interface ApiTourListItem { id: number; title: string; status: string; basePrice: number; durationDays: number; updatedAtUtc: string; nextDepartureAtUtc: string | null; }
 export interface ApiItineraryItem { dayNo: number; sequenceNo: number; poiId: number; plannedTime: string | null; stayDurationMinutes: number; notes: string | null; }
 export interface ApiDeparture { id: number; startAtUtc: string; endAtUtc: string; meetingPoint: string | null; minimumCapacity: number; totalCapacity: number; reservedCapacity: number; registrationDeadlineAtUtc: string | null; adultPrice: number | null; childPrice: number | null; infantPrice: number | null; status: string; }
-export interface ApiTourDetail { id: number; title: string; destination: string; description: string; categoryId: number | null; basePrice: number; durationDays: number; status: string; itineraryItems: ApiItineraryItem[]; departures: ApiDeparture[]; }
-export interface ApiCreateTour { title: string; destination: string; description: string; categoryId?: number; basePrice: number; durationDays: number; inclusions?: string; exclusions?: string; itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status'>[]; }
+export interface ApiDestination { destinationId: number; name: string; }
+export interface ApiTourDetail {
+  id: number; title: string; destination: string; description: string; categoryId: number | null;
+  basePrice: number; durationDays: number; status: string; rejectionReason: string | null;
+  inclusions: string | null; exclusions: string | null; destinations: ApiDestination[];
+  cancellationPolicyTemplateId: number | null;
+  itineraryItems: ApiItineraryItem[]; departures: ApiDeparture[];
+}
+/** Create/update body. The backend requires destinationIds and cancellationPolicyTemplateId (BR-101). */
+export interface ApiCreateTour {
+  title: string; description: string; categoryId?: number; basePrice: number; durationDays: number;
+  destinationIds: number[]; cancellationPolicyTemplateId: number; inclusions?: string; exclusions?: string;
+  itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status'>[];
+}
 export interface ApiPolicy { id: number; name: string; description: string | null; rules: { daysBeforeDeparture: number; cancellationFeePercent: number }[]; }
 export interface ApiPoi { id: number; name: string; categoryName: string; address: string | null; averageVisitDurationMinutes: number; }
 
 export const listTours = () => request<ApiTourListItem[]>('/operator/tours');
 export const getTour = (id: number) => request<ApiTourDetail>(`/operator/tours/${id}`);
 export const createTour = (body: ApiCreateTour, idempotencyKey: string) => request<{ tourId: number; status: string }>('/operator/tours', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify(body) });
-export const updateTour = (id: number, body: Omit<ApiCreateTour, 'schedules'> & { schedules: ApiCreateTour['schedules'] }) => request<{ tourId: number; status: string }>(`/operator/tours/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const updateTour = (id: number, body: ApiCreateTour) => request<{ tourId: number; status: string }>(`/operator/tours/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const submitTour = (id: number) => request<{ tourId: number; status: string }>(`/operator/tours/${id}/submit-review`, { method: 'POST' });
 export const listCancellationPolicies = () => request<ApiPolicy[]>('/operator/tours/cancellation-policies');
-export const assignCancellationPolicy = (tourId: number, policyId: number) => request<{ tourId: number; cancellationPolicyTemplateId: number }>(`/operator/tours/${tourId}/cancellation-policy/${policyId}`, { method: 'PUT' });
+export const listDestinations = () => request<ApiDestination[]>('/destinations');
 export async function searchSelectablePois(query = ''): Promise<ApiPoi[]> {
   const params = new URLSearchParams({ page: '1', pageSize: '50' });
   if (query.trim()) params.set('query', query.trim());
