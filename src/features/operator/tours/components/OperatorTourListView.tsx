@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
@@ -20,7 +20,22 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
   const [items, setItems] = useState(tours);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   const [tourPendingDeletion, setTourPendingDeletion] = useState<TourPackageDto | null>(null);
+  const successTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (successTimeoutRef.current !== null) window.clearTimeout(successTimeoutRef.current);
+  }, []);
+
+  const showDeleteSuccess = (tourTitle: string) => {
+    if (successTimeoutRef.current !== null) window.clearTimeout(successTimeoutRef.current);
+    setDeleteSuccess(`Đã xóa “${tourTitle}”.`);
+    successTimeoutRef.current = window.setTimeout(() => {
+      setDeleteSuccess(null);
+      successTimeoutRef.current = null;
+    }, 4000);
+  };
 
   const confirmDelete = async () => {
     if (!tourPendingDeletion) return;
@@ -31,6 +46,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
       await removeOperatorTour(tour.id);
       setItems((current) => current.filter((item) => item.id !== tour.id));
       setTourPendingDeletion(null);
+      showDeleteSuccess(tour.title);
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : 'Không thể xóa tour. Vui lòng thử lại.');
     } finally {
@@ -54,6 +70,12 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
 
   return (
     <div className="space-y-6">
+      {deleteSuccess && (
+        <div role="status" className="fixed right-4 top-4 z-[60] flex max-w-sm items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-semibold text-emerald-800 shadow-lg">
+          <span className="material-symbols-outlined text-[20px] text-emerald-600" aria-hidden="true">check_circle</span>
+          {deleteSuccess}
+        </div>
+      )}
       {/* Top Action Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
@@ -242,13 +264,19 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                 </p>
               </div>
             </div>
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              {deleteError && <p role="alert" className="sm:mr-auto rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{deleteError}</p>}
-              <button type="button" onClick={() => setTourPendingDeletion(null)} disabled={deletingId !== null} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Hủy</button>
-              <button type="button" onClick={() => void confirmDelete()} disabled={deletingId !== null} className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50">
-                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
-                {deletingId ? 'Đang xóa…' : 'Xóa tour'}
-              </button>
+            <div className="mt-6 border-t border-slate-100 pt-5">
+              {deleteError && (
+                <p role="alert" className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+                  {deleteError}
+                </p>
+              )}
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
+                <button type="button" onClick={() => setTourPendingDeletion(null)} disabled={deletingId !== null} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Hủy</button>
+                <button type="button" onClick={() => void confirmDelete()} disabled={deletingId !== null} className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50">
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+                  {deletingId ? 'Đang xóa…' : 'Xóa tour'}
+                </button>
+              </div>
             </div>
           </section>
         </div>
