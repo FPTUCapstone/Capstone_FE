@@ -50,8 +50,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export interface ApiTourListItem { id: number; title: string; status: string; basePrice: number; durationDays: number; updatedAtUtc: string; nextDepartureAtUtc: string | null; }
 export interface ApiItineraryItem { dayNo: number; sequenceNo: number; poiId: number; plannedTime: string | null; stayDurationMinutes: number; notes: string | null; }
 export interface ApiDeparture { id: number; startAtUtc: string; endAtUtc: string; meetingPoint: string | null; minimumCapacity: number; totalCapacity: number; reservedCapacity: number; registrationDeadlineAtUtc: string | null; adultPrice: number | null; childPrice: number | null; infantPrice: number | null; status: string; }
-export interface ApiTourDetail { id: number; title: string; description: string; categoryId: number | null; basePrice: number; durationDays: number; status: string; itineraryItems: ApiItineraryItem[]; departures: ApiDeparture[]; }
-export interface ApiCreateTour { title: string; description: string; categoryId?: number; basePrice: number; durationDays: number; itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status'>[]; }
+export interface ApiTourDetail { id: number; title: string; destination: string; description: string; categoryId: number | null; basePrice: number; durationDays: number; status: string; itineraryItems: ApiItineraryItem[]; departures: ApiDeparture[]; }
+export interface ApiCreateTour { title: string; destination: string; description: string; categoryId?: number; basePrice: number; durationDays: number; inclusions?: string; exclusions?: string; itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status'>[]; }
 export interface ApiPolicy { id: number; name: string; description: string | null; rules: { daysBeforeDeparture: number; cancellationFeePercent: number }[]; }
 export interface ApiPoi { id: number; name: string; categoryName: string; address: string | null; averageVisitDurationMinutes: number; }
 
