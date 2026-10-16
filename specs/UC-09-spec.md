@@ -6,7 +6,7 @@ Status: Draft v4 — 2026-10-13
 
 `/account/preferences` lets an authenticated Traveler view, replace and clear five optional preferences supplied by the backend: interests, preferred transport, travel pace, food preferences, and risk tolerance.
 
-The screen does not render or submit travel style, budget level, auto-apply behavior or a default budget. Option keys are English backend values; labels are localized by feature resources.
+The screen does not render or submit travel style, budget level, auto-apply behavior or a default budget. Option keys and displayed preference/catalog labels are English across Web, Mobile and backend catalog data; validation messages are also English.
 
 ## API and form behavior
 
@@ -16,7 +16,7 @@ Save sends the full five-field state. Empty collections are `[]`; empty scalar c
 
 ## UC-10 boundary
 
-Budget is optional on every scheduling request (`budgetVnd: null` when unselected). It is selected in `CreateSchedulingRequestForm`, is not loaded from UC-09, and is not prefilled from profile data. UC-09 may prefill only supported `preferredTransportMode`; travel pace has no hidden mapping to availability or rest preference.
+Budget is optional on every scheduling request (`budgetVnd: null` when unselected). It is selected in `CreateSchedulingRequestForm`, is not loaded from UC-09, and is not prefilled from profile data. UC-09 may prefill only supported `preferredTransportMode`; travel pace has no hidden mapping to availability or rest preference. This intentionally updates the UC-10 preference-consumption boundary and is part of this coordinated change.
 
 ## Acceptance criteria
 
