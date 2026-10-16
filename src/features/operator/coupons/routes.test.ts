@@ -4,7 +4,7 @@ import { OPERATOR_COUPON_ROUTES, withCouponDemoMode } from './routes';
 describe('OPERATOR_COUPON_ROUTES', () => {
   it('defines correct static and dynamic route paths', () => {
     expect(OPERATOR_COUPON_ROUTES.list).toBe('/partner/coupons');
-    expect(OPERATOR_COUPON_ROUTES.create).toBe('/partner/coupons/new');
+    expect(OPERATOR_COUPON_ROUTES.create).toBe('/partner/coupons/create');
     expect(OPERATOR_COUPON_ROUTES.edit('CP-01')).toBe('/partner/coupons/CP-01/edit');
     expect(OPERATOR_COUPON_ROUTES.edit('coupon with spaces')).toBe(
       '/partner/coupons/coupon%20with%20spaces/edit'
