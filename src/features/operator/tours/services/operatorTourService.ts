@@ -111,7 +111,9 @@ function mapDetail(detail: ApiTourDetail): TourPackageDto {
     totalCapacity: departure.totalCapacity,
     reservedCapacity: departure.reservedCapacity,
     meetingPoint: departure.meetingPoint ?? undefined,
-    status: departure.status === 'Cancelled' || departure.status === 'Completed' ? departure.status : 'Scheduled',
+    status: (departure.status === 'Cancelled' || departure.status === 'Completed'
+      ? departure.status
+      : 'Scheduled') as 'Scheduled' | 'Cancelled' | 'Completed',
   }));
   return {
     id: String(detail.id), tourCode: `TP-${detail.id}`, operatorUserId: 0,
