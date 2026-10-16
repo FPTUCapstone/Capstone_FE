@@ -7,7 +7,13 @@
  * Business Rules: BR-22, BR-56, BR-61, BR-79, BR-101, BR-102, BR-103, BR-104.
  */
 
-export type TourLifecycleStatus = 'Draft' | 'Pending' | 'Approved' | 'Rejected' | 'Inactive';
+export type TourLifecycleStatus =
+  | 'Draft'
+  | 'Pending'
+  | 'Approved'
+  | 'Rejected'
+  | 'Published'
+  | 'Inactive';
 
 export interface TourItineraryActivity {
   id: string;
@@ -25,6 +31,17 @@ export interface TourItineraryDay {
   activities: TourItineraryActivity[];
 }
 
+/** Departure fields the form does not edit; kept so a replace-all update never discards them. */
+export interface TourDepartureServerTerms {
+  startAtUtc: string;
+  endAtUtc: string;
+  minimumCapacity: number;
+  registrationDeadlineAtUtc: string | null;
+  adultPrice: number | null;
+  childPrice: number | null;
+  infantPrice: number | null;
+}
+
 export interface TourDepartureSchedule {
   id: string;
   departureDate: string; // YYYY-MM-DD
@@ -33,6 +50,8 @@ export interface TourDepartureSchedule {
   reservedCapacity: number; // sold slots (BR-61)
   meetingPoint?: string;
   status: 'Scheduled' | 'Cancelled' | 'Completed';
+  /** Present only for a departure loaded from the backend. */
+  serverTerms?: TourDepartureServerTerms;
 }
 
 export interface TourMediaItem {
@@ -48,6 +67,8 @@ export interface TourPackageDto {
   operatorUserId: number | string;
   title: string;
   destination: string;
+  /** Catalogue destination ids (backend `destinationIds`); empty for demo fixtures. */
+  destinationIds?: number[];
   category: string;
   durationDays: number;
   basePrice: number;
@@ -56,6 +77,7 @@ export interface TourPackageDto {
   description: string;
   inclusions?: string;
   exclusions?: string;
+  /** Real mode: the selected cancellation policy template id as a string. Demo: free text. */
   cancellationPolicy: string;
   status: TourLifecycleStatus;
   rejectionReason?: string;
@@ -71,6 +93,8 @@ export interface TourPackageDto {
 export interface CreateTourPackagePayload {
   title: string;
   destination: string;
+  /** Catalogue destination ids. Required for a real (non-demo) save. */
+  destinationIds?: number[];
   category?: string;
   durationDays: number;
   basePrice: number;

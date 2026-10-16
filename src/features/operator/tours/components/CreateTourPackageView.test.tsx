@@ -14,6 +14,19 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('./useTourCatalogues', () => ({
+  useTourCatalogues: () => ({
+    destinations: [
+      { destinationId: 1, name: 'Đà Nẵng' },
+      { destinationId: 2, name: 'Quảng Nam' },
+    ],
+    policies: [{ id: 7, name: 'Standard scheduled departure', description: null, rules: [] }],
+    pois: [{ id: 11, name: 'Bà Nà Hills', categoryName: 'Nature', address: null, averageVisitDurationMinutes: 120 }],
+    loading: false,
+    error: null,
+  }),
+}));
+
 describe('CreateTourPackageView (UC-35 Screen #41)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -24,19 +37,25 @@ describe('CreateTourPackageView (UC-35 Screen #41)', () => {
 
     expect(screen.getByRole('heading', { name: /Tạo gói tour mới/i })).toBeDefined();
     expect(screen.getByLabelText(/Tên gói tour/i)).toBeDefined();
-    expect(screen.getByLabelText(/Điểm đến chính/i)).toBeDefined();
+    expect(screen.getByRole('group', { name: /Điểm đến chính/i })).toBeDefined();
+    expect(screen.getByRole('checkbox', { name: 'Đà Nẵng' })).toBeDefined();
     expect(screen.getByLabelText(/Mô tả chi tiết gói tour/i)).toBeDefined();
     expect(screen.getByLabelText(/Giá người lớn/i)).toBeDefined();
     expect(screen.getByLabelText(/Sức chứa tối đa/i)).toBeDefined();
     expect(screen.getByLabelText(/Chính sách hủy tour/i)).toBeDefined();
   });
 
-  it('displays truthful PENDING_BE_INTEGRATION banner in real mode (NO_BACKEND)', () => {
+  it('does not claim the backend is unavailable in real mode (UC-35 is integrated)', () => {
     render(<CreateTourPackageView isDemo={false} />);
 
-    expect(
-      screen.getByText(/Tính năng tạo gói tour đang chờ kết nối dịch vụ máy chủ/i)
-    ).toBeDefined();
+    expect(screen.queryByText(/đang chờ kết nối/i)).toBeNull();
+  });
+
+  it('is honest that cover-photo upload is not available in real mode', () => {
+    render(<CreateTourPackageView isDemo={false} />);
+
+    expect(screen.queryByLabelText(/Tải lên hình ảnh/i)).toBeNull();
+    expect(screen.getByText(/Tải ảnh đại diện chưa được hỗ trợ/i)).toBeDefined();
   });
 
   it('validates mandatory fields on submit and displays error alerts', async () => {

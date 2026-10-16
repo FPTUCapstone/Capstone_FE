@@ -27,6 +27,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
     Draft: tours.filter((t) => t.status === 'Draft').length,
     Pending: tours.filter((t) => t.status === 'Pending').length,
     Approved: tours.filter((t) => t.status === 'Approved').length,
+    Published: tours.filter((t) => t.status === 'Published').length,
     Rejected: tours.filter((t) => t.status === 'Rejected').length,
   };
 
@@ -75,7 +76,8 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
           { key: 'ALL', label: 'Tất cả' },
           { key: 'Draft', label: 'Bản nháp' },
           { key: 'Pending', label: 'Chờ duyệt' },
-          { key: 'Approved', label: 'Đã xuất bản' },
+          { key: 'Approved', label: 'Đã duyệt' },
+          { key: 'Published', label: 'Đã xuất bản' },
           { key: 'Rejected', label: 'Bị từ chối' },
         ].map((tab) => {
           const isActive = filter === tab.key;
@@ -129,7 +131,8 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredTours.map((t) => {
-                  const canEdit = t.status === 'Draft' || t.status === 'Rejected' || t.status === 'Approved';
+                  const canEdit =
+                    t.status === 'Draft' || t.status === 'Rejected' || t.status === 'Approved' || t.status === 'Published';
                   const canSubmit = t.status === 'Draft' || t.status === 'Rejected';
 
                   return (

@@ -15,12 +15,26 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('./useTourCatalogues', () => ({
+  useTourCatalogues: () => ({
+    destinations: [
+      { destinationId: 1, name: 'Đà Nẵng' },
+      { destinationId: 2, name: 'Quảng Nam' },
+    ],
+    policies: [{ id: 7, name: 'Standard scheduled departure', description: null, rules: [] }],
+    pois: [{ id: 11, name: 'Bà Nà Hills', categoryName: 'Nature', address: null, averageVisitDurationMinutes: 120 }],
+    loading: false,
+    error: null,
+  }),
+}));
+
 const mockTourDraft: TourPackageDto = {
   id: 'tour-ba-na',
   tourCode: 'TP-0142',
   operatorUserId: 101,
   title: 'Khám phá Bà Nà Hills - Cầu Vàng',
   destination: 'Đà Nẵng',
+  destinationIds: [1],
   category: 'Di sản & Thiên nhiên',
   durationDays: 1,
   basePrice: 1250000,
@@ -69,16 +83,15 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
     render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={false} />);
 
     expect(screen.getByDisplayValue('Khám phá Bà Nà Hills - Cầu Vàng')).toBeDefined();
-    expect(screen.getByDisplayValue('Đà Nẵng')).toBeDefined();
+    expect((screen.getByRole('checkbox', { name: 'Đà Nẵng' }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('checkbox', { name: 'Quảng Nam' }) as HTMLInputElement).checked).toBe(false);
     expect(screen.getByDisplayValue('1250000')).toBeDefined();
   });
 
-  it('renders truthful PENDING_BE_INTEGRATION banner in real mode', () => {
+  it('does not claim the backend is unavailable in real mode (UC-35/36 are integrated)', () => {
     render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={false} />);
 
-    expect(
-      screen.getByText(/Tính năng cập nhật gói tour đang chờ kết nối máy chủ/i)
-    ).toBeDefined();
+    expect(screen.queryByText(/đang chờ kết nối/i)).toBeNull();
   });
 
   it('enforces read-only mode when status is Pending (MSG122)', () => {

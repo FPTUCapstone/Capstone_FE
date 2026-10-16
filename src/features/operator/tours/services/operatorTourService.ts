@@ -13,10 +13,10 @@ import {
   type UpdateTourPackagePayload,
 } from '../types/tourLifecycle';
 import {
-  assignCancellationPolicy,
   createTour,
   getTour,
   listCancellationPolicies,
+  listDestinations,
   searchSelectablePois,
   listTours,
   submitTour,
@@ -33,6 +33,9 @@ export async function getCancellationPolicyOptions() {
 export async function getSelectableTourPois() {
   return searchSelectablePois();
 }
+export async function getDestinationOptions() {
+  return listDestinations();
+}
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per BR-16
 
@@ -48,10 +51,42 @@ function toIsoDateTime(date: string, time: 'start' | 'end'): string {
   return `${date}T${time === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`;
 }
 
+function toBackendDestinationIds(payload: CreateTourPackagePayload): number[] {
+  const ids = payload.destinationIds ?? [];
+  if (ids.length === 0) {
+    throw new Error('Vui lòng chọn ít nhất một điểm đến từ danh mục của hệ thống.');
+  }
+  return ids.map((id) => asBackendId(id, 'Mã điểm đến'));
+}
+
+function toBackendSchedule(
+  schedule: CreateTourPackagePayload['schedules'][number],
+  payload: CreateTourPackagePayload,
+): ApiCreateTour['schedules'][number] {
+  const terms = schedule.serverTerms;
+  // Keep the exact instants and prices the backend already holds unless the operator moved the date.
+  const unchangedDates =
+    terms !== undefined &&
+    dateOnly(terms.startAtUtc) === schedule.departureDate &&
+    dateOnly(terms.endAtUtc) === schedule.returnDate;
+  return {
+    startAtUtc: unchangedDates ? terms.startAtUtc : toIsoDateTime(schedule.departureDate, 'start'),
+    endAtUtc: unchangedDates ? terms.endAtUtc : toIsoDateTime(schedule.returnDate, 'end'),
+    meetingPoint: schedule.meetingPoint?.trim() || null,
+    minimumCapacity: Math.min(terms?.minimumCapacity ?? 1, schedule.totalCapacity),
+    totalCapacity: schedule.totalCapacity,
+    registrationDeadlineAtUtc: unchangedDates ? terms.registrationDeadlineAtUtc : null,
+    adultPrice: terms?.adultPrice ?? payload.basePrice,
+    childPrice: terms ? terms.childPrice : payload.childPrice ?? null,
+    infantPrice: terms?.infantPrice ?? null,
+  };
+}
+
 function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
   return {
     title: payload.title.trim(),
-    destination: payload.destination.trim(),
+    destinationIds: toBackendDestinationIds(payload),
+    cancellationPolicyTemplateId: asBackendId(payload.cancellationPolicy, 'Mã chính sách hủy'),
     description: payload.description.trim(),
     inclusions: payload.inclusions?.trim() || undefined,
     exclusions: payload.exclusions?.trim() || undefined,
@@ -68,25 +103,21 @@ function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
       stayDurationMinutes: activity.stayDurationMinutes,
       notes: [activity.transport, activity.notes].filter(Boolean).join(' | ') || null,
     }))),
-    schedules: payload.schedules.map((schedule) => ({
-      startAtUtc: toIsoDateTime(schedule.departureDate, 'start'),
-      endAtUtc: toIsoDateTime(schedule.returnDate, 'end'),
-      meetingPoint: schedule.meetingPoint?.trim() || null,
-      minimumCapacity: 1,
-      totalCapacity: schedule.totalCapacity,
-      registrationDeadlineAtUtc: null,
-      adultPrice: payload.basePrice,
-      childPrice: payload.childPrice ?? null,
-      infantPrice: null,
-    })),
+    schedules: payload.schedules.map((schedule) => toBackendSchedule(schedule, payload)),
   };
 }
 
 function dateOnly(value: string): string { return value.slice(0, 10); }
 
+const API_TOUR_STATUSES: readonly TourPackageDto['status'][] = [
+  'Draft', 'Pending', 'Approved', 'Rejected', 'Published', 'Inactive',
+];
+
+/** An unknown status is a contract error: never present it as an editable Draft. */
 function statusFromApi(value: string): TourPackageDto['status'] {
-  return ['Draft', 'Pending', 'Approved', 'Rejected', 'Inactive'].includes(value)
-    ? value as TourPackageDto['status'] : 'Draft';
+  const status = API_TOUR_STATUSES.find((candidate) => candidate === value);
+  if (!status) throw new Error(`Trạng thái gói tour không được hỗ trợ: ${value}.`);
+  return status;
 }
 
 function mapDetail(detail: ApiTourDetail): TourPackageDto {
@@ -114,14 +145,30 @@ function mapDetail(detail: ApiTourDetail): TourPackageDto {
     status: (departure.status === 'Cancelled' || departure.status === 'Completed'
       ? departure.status
       : 'Scheduled') as 'Scheduled' | 'Cancelled' | 'Completed',
+    serverTerms: {
+      startAtUtc: departure.startAtUtc,
+      endAtUtc: departure.endAtUtc,
+      minimumCapacity: departure.minimumCapacity,
+      registrationDeadlineAtUtc: departure.registrationDeadlineAtUtc,
+      adultPrice: departure.adultPrice,
+      childPrice: departure.childPrice,
+      infantPrice: departure.infantPrice,
+    },
   }));
   return {
     id: String(detail.id), tourCode: `TP-${detail.id}`, operatorUserId: 0,
-    title: detail.title, destination: detail.destination, category: detail.categoryId ? String(detail.categoryId) : '',
+    title: detail.title, destination: detail.destination,
+    destinationIds: detail.destinations.map((item) => item.destinationId),
+    category: detail.categoryId ? String(detail.categoryId) : '',
     durationDays: detail.durationDays, basePrice: detail.basePrice,
     childPrice: detail.departures[0]?.childPrice ?? undefined,
     maxCapacity: detail.departures[0]?.totalCapacity ?? 0,
-    description: detail.description, cancellationPolicy: '', status: statusFromApi(detail.status),
+    description: detail.description,
+    inclusions: detail.inclusions ?? undefined,
+    exclusions: detail.exclusions ?? undefined,
+    cancellationPolicy: detail.cancellationPolicyTemplateId ? String(detail.cancellationPolicyTemplateId) : '',
+    status: statusFromApi(detail.status),
+    rejectionReason: detail.rejectionReason ?? undefined,
     version: 1, itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo), schedules,
     media: [], createdAt: '', updatedAt: '',
   };
@@ -159,7 +206,8 @@ export function validateCreateTourPackage(
   if (!payload.title || payload.title.trim().length === 0) {
     errors.title = OPERATOR_TOUR_MESSAGES.REQUIRED_FIELD;
   }
-  if (!payload.destination || payload.destination.trim().length === 0) {
+  const hasCatalogueDestination = (payload.destinationIds?.length ?? 0) > 0;
+  if (!hasCatalogueDestination && (!payload.destination || payload.destination.trim().length === 0)) {
     errors.destination = OPERATOR_TOUR_MESSAGES.REQUIRED_FIELD;
   }
   if (!payload.description || payload.description.trim().length === 0) {
@@ -411,7 +459,7 @@ export async function getOperatorTourById(
  */
 export async function createTourPackage(
   payload: CreateTourPackagePayload,
-  options?: { allowDemo?: boolean }
+  options?: { allowDemo?: boolean; idempotencyKey?: string }
 ): Promise<TourActionResult<TourPackageDto>> {
   const errors = validateCreateTourPackage(payload);
   if (Object.keys(errors).length > 0) {
@@ -458,9 +506,8 @@ export async function createTourPackage(
     };
   }
 
-  const policyId = asBackendId(payload.cancellationPolicy, 'Mã chính sách hủy');
-  const created = await createTour(toBackendPayload(payload), crypto.randomUUID());
-  await assignCancellationPolicy(created.tourId, policyId);
+  // The caller keeps one key per unchanged payload so a retry after a lost response replays the same draft.
+  const created = await createTour(toBackendPayload(payload), options?.idempotencyKey ?? crypto.randomUUID());
   return {
     status: 'SUCCESS',
     data: mapDetail(await getTour(created.tourId)),
@@ -499,7 +546,7 @@ export async function updateTourPackage(
     };
   }
 
-  if (currentTour.status === 'Approved') {
+  if (currentTour.status === 'Approved' || currentTour.status === 'Published') {
     if (!createNewVersion) {
       return {
         status: 'ERROR',
@@ -659,9 +706,7 @@ export async function updateTourPackage(
   }
 
   const tourId = asBackendId(payload.id, 'Mã gói tour');
-  const policyId = asBackendId(payload.cancellationPolicy, 'Mã chính sách hủy');
   await updateTour(tourId, toBackendPayload(payload));
-  await assignCancellationPolicy(tourId, policyId);
   return { status: 'SUCCESS', data: mapDetail(await getTour(tourId)), message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS, isDemo: false };
 }
 
