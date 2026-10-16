@@ -142,6 +142,21 @@ describe('operatorTourService', () => {
       const errors = validateCreateTourPackage(validPayload);
       expect(Object.keys(errors)).toHaveLength(0);
     });
+
+    it('rejects an itinerary stop that starts before the previous stop has ended', () => {
+      const payload: CreateTourPackagePayload = {
+        ...validPayload,
+        itinerary: [{
+          ...validPayload.itinerary[0],
+          activities: [
+            { ...validPayload.itinerary[0].activities[0], time: '08:00', stayDurationMinutes: 30 },
+            { ...validPayload.itinerary[0].activities[1], time: '08:15' },
+          ],
+        }],
+      };
+
+      expect(validateCreateTourPackage(payload).itinerary).toContain('Hãy chọn giờ từ 08:30 trở đi');
+    });
   });
 
   describe('validateUpdateTourPackage (BR-61)', () => {
@@ -777,7 +792,7 @@ describe('operatorTourService', () => {
         currentTour: pending,
       });
       expect(res.status).toBe('ERROR');
-      expect(res.message).toContain('MSG122');
+      expect(res.message).toContain('chờ duyệt');
     });
 
     it('blocks Approved tour with MSG110', async () => {
@@ -787,7 +802,7 @@ describe('operatorTourService', () => {
         currentTour: approved,
       });
       expect(res.status).toBe('ERROR');
-      expect(res.message).toContain('MSG110');
+      expect(res.message).toContain('phiên bản nháp mới');
     });
 
     it('blocks Inactive tour with BR-104 allow-list error', async () => {
@@ -797,7 +812,6 @@ describe('operatorTourService', () => {
         currentTour: inactive,
       });
       expect(res.status).toBe('ERROR');
-      expect(res.message).toContain('BR-104');
       expect(res.message).toContain('Bản nháp hoặc Bị từ chối');
     });
 
@@ -817,7 +831,7 @@ describe('operatorTourService', () => {
         currentTour: fullyCompleteInactive,
       });
       expect(res.status).toBe('ERROR');
-      expect(res.message).toContain('BR-104');
+      expect(res.message).toContain('Bản nháp hoặc Bị từ chối');
     });
   });
 

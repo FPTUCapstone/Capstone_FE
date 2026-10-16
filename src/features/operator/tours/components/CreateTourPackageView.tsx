@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
@@ -10,7 +10,7 @@ import {
   OperatorTourValidationError,
   validateCreateTourPackage,
 } from '../services/operatorTourService';
-import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect, TransportSelect } from './TourCataloguePickers';
 import { DepartureTermsFields, TourTermsFields } from './TourExtraFields';
 import { useTourCatalogues } from './useTourCatalogues';
 import {
@@ -38,6 +38,18 @@ function nextScheduleId(): string {
   return `sch-user-${scheduleSeq}`;
 }
 
+const START_TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
+  const hours = Math.floor(index / 4).toString().padStart(2, '0');
+  const minutes = ((index % 4) * 15).toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+});
+
+function dayHeading(day: TourItineraryDay): string {
+  const prefix = `Ngày ${day.dayNo}:`;
+  const title = day.title?.trim();
+  return !title ? prefix : title.startsWith(prefix) ? title : `${prefix} ${title}`;
+}
+
 /** A default departure two weeks ahead, so the form never starts with a date in the past. */
 function defaultDepartureDate(daysAhead = 14): string {
   const date = new Date();
@@ -54,7 +66,6 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [category, setCategory] = useState(isDemo ? 'Di sản & Thiên nhiên' : '');
   const [highlights, setHighlights] = useState('');
   const [travellerRequirements, setTravellerRequirements] = useState('');
-  const [timeZoneId, setTimeZoneId] = useState('Asia/Ho_Chi_Minh');
   const [durationDays, setDurationDays] = useState<number>(1);
   const [basePrice, setBasePrice] = useState<number>(1000000);
   const [childPrice, setChildPrice] = useState<number | undefined>(undefined);
@@ -112,18 +123,34 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [validationToast, setValidationToast] = useState<string | null>(null);
+  const validationToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (validationToastTimer.current) clearTimeout(validationToastTimer.current);
+  }, []);
+
+  const showValidationToast = (message: string) => {
+    setValidationToast(message);
+    if (validationToastTimer.current) clearTimeout(validationToastTimer.current);
+    validationToastTimer.current = setTimeout(() => {
+      setValidationToast(null);
+      validationToastTimer.current = null;
+    }, 4500);
+  };
 
   // Handlers for Itinerary
-  const handleAddDay = () => {
-    const nextDay = itinerary.length + 1;
-    setItinerary([
-      ...itinerary,
-      {
-        dayNo: nextDay,
-        title: `Ngày ${nextDay}: Tiếp tục hành trình`,
-        activities: [],
-      },
-    ]);
+  const handleDurationChange = (nextValue: number) => {
+    const nextDuration = Math.max(1, nextValue || 1);
+    setDurationDays(nextDuration);
+    setItinerary((current) => {
+      if (nextDuration < current.length) return current.slice(0, nextDuration);
+      if (nextDuration === current.length) return current;
+      return [...current, ...Array.from({ length: nextDuration - current.length }, (_, index) => {
+        const dayNo = current.length + index + 1;
+        return { dayNo, title: `Ngày ${dayNo}: Tiếp tục hành trình`, activities: [] };
+      })];
+    });
   };
 
   const handleAddActivity = (dayIndex: number) => {
@@ -179,6 +206,11 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
     setMediaPreviews([...mediaPreviews, ...newPreviews]);
   };
+  const removeQueuedImage = (index: number) => {
+    URL.revokeObjectURL(mediaPreviews[index]);
+    setMediaFiles((files) => files.filter((_, candidate) => candidate !== index));
+    setMediaPreviews((previews) => previews.filter((_, candidate) => candidate !== index));
+  };
 
   // Submission handler
   const handleSave = async (andSubmitApproval = false) => {
@@ -203,17 +235,21 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       exclusions,
       highlights: isDemo ? undefined : highlights,
       travellerRequirements: isDemo ? undefined : travellerRequirements,
-      timeZoneId: isDemo ? undefined : timeZoneId,
+      timeZoneId: isDemo ? undefined : 'Asia/Ho_Chi_Minh',
       cancellationPolicy,
       itinerary,
       schedules,
-      mediaFiles: isDemo ? mediaFiles : undefined,
+      mediaFiles,
     };
 
     // Client-side pre-validation
     const validationErrors = validateCreateTourPackage(payload);
+    if (!isDemo && itinerary.some((day) => day.activities.some((activity) => !Number.isSafeInteger(Number(activity.poiId)) || Number(activity.poiId) <= 0))) {
+      validationErrors.itinerary = 'Vui lòng chọn điểm tham quan cho từng điểm dừng.';
+    }
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      showValidationToast('Không thể lưu gói tour. Vui lòng kiểm tra các trường được đánh dấu.');
       return;
     }
 
@@ -246,6 +282,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     } catch (err) {
       if (err instanceof OperatorTourValidationError) {
         setErrors(err.errors);
+        showValidationToast('Không thể lưu gói tour. Vui lòng kiểm tra các trường được đánh dấu.');
       } else {
         setErrorMessage(
           err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE
@@ -268,7 +305,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
             <OperatorTourStatusBadge status="Draft" />
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            Khởi tạo gói tour thương mại bao gồm lịch trình, các chuyến khởi hành, mức giá và chính sách hủy (UC-35, Screen #41).
+            Khởi tạo gói tour thương mại gồm lịch trình, các chuyến khởi hành, mức giá và chính sách hủy.
           </p>
         </div>
 
@@ -361,7 +398,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
                     Điểm đến chính <span className="text-rose-500">*</span>
@@ -389,25 +426,6 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   {errors.destination && (
                     <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
                       {errors.destination}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="field-duration" className="block text-xs font-bold text-[#00152A]">
-                    Thời lượng (Số ngày) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="field-duration"
-                    type="number"
-                    min="1"
-                    value={durationDays}
-                    onChange={(e) => setDurationDays(Number(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
-                  />
-                  {errors.durationDays && (
-                    <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
-                      {errors.durationDays}
                     </p>
                   )}
                 </div>
@@ -462,20 +480,12 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-extrabold text-[#00152A]">
-                  Lịch trình chi tiết theo ngày
+                  Lịch trình chi tiết theo ngày <span className="text-rose-500" aria-hidden="true">*</span>
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Xây dựng các điểm dừng, hoạt động và thời gian biểu (BR-101: Tối thiểu 1 ngày và 1 điểm dừng).
+                  Xây dựng các điểm dừng, hoạt động và thời gian biểu. Cần tối thiểu một ngày và một điểm dừng.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleAddDay}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
-              >
-                <span className="material-symbols-outlined text-[16px]">add</span>
-                Thêm ngày
-              </button>
             </div>
 
             {errors.itinerary && (
@@ -489,7 +499,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                 <div key={day.dayNo} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
                     <span className="text-xs font-extrabold text-[#00152A]">
-                      Ngày {day.dayNo}: {day.title || `Hành trình ngày ${day.dayNo}`}
+                      {dayHeading(day)}
                     </span>
                     <button
                       type="button"
@@ -501,99 +511,23 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                     </button>
                   </div>
 
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-slate-500">
-                          <th className="pb-2 font-semibold w-16">Thời gian</th>
-                          <th className="pb-2 font-semibold">Điểm dừng / Hoạt động</th>
-                          <th className="pb-2 font-semibold w-24">Lưu lại</th>
-                          <th className="pb-2 font-semibold w-24">Di chuyển</th>
-                          <th className="pb-2 font-semibold text-right w-16">Xóa</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {day.activities.map((act, aIdx) => (
-                          <tr key={act.id}>
-                            <td className="py-2.5 font-mono text-slate-700">
-                              <input
-                                type="text"
-                                value={act.time}
-                                onChange={(e) => {
-                                  const updated = [...itinerary];
-                                  updated[dIdx].activities[aIdx].time = e.target.value;
-                                  setItinerary(updated);
-                                }}
-                                className="w-14 rounded-lg border border-slate-200 p-1 text-xs"
-                              />
-                            </td>
-                            <td className="py-2.5 font-medium text-slate-900">
-                              isDemo ? (
-                                <input
-                                  type="text"
-                                  value={act.poiName}
-                                  onChange={(e) => {
-                                    const updated = [...itinerary];
-                                    updated[dIdx].activities[aIdx].poiName = e.target.value;
-                                    setItinerary(updated);
-                                  }}
-                                  className="w-full rounded-lg border border-slate-200 p-1 text-xs"
-                                />
-                              ) : (
-                                <PoiSelect
-                                  options={availablePois}
-                                  value={act.poiId}
-                                  currentName={act.poiName}
-                                  onChange={(poi) => {
-                                    const updated = [...itinerary];
-                                    updated[dIdx].activities[aIdx].poiId = poi?.id;
-                                    updated[dIdx].activities[aIdx].poiName = poi?.name ?? '';
-                                    setItinerary(updated);
-                                  }}
-                                />
-                              )
-                            </td>
-                            <td className="py-2.5 text-slate-600">
-                              <input
-                                type="number"
-                                min="10"
-                                step="10"
-                                value={act.stayDurationMinutes}
-                                onChange={(e) => {
-                                  const updated = [...itinerary];
-                                  updated[dIdx].activities[aIdx].stayDurationMinutes = Number(e.target.value);
-                                  setItinerary(updated);
-                                }}
-                                className="w-14 rounded-lg border border-slate-200 p-1 text-xs"
-                              />{' '}
-                              p
-                            </td>
-                            <td className="py-2.5 text-slate-600">
-                              <input
-                                type="text"
-                                value={act.transport}
-                                onChange={(e) => {
-                                  const updated = [...itinerary];
-                                  updated[dIdx].activities[aIdx].transport = e.target.value;
-                                  setItinerary(updated);
-                                }}
-                                className="w-16 rounded-lg border border-slate-200 p-1 text-xs"
-                              />
-                            </td>
-                            <td className="py-2.5 text-right">
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveActivity(dIdx, aIdx)}
-                                className="text-rose-500 hover:text-rose-700"
-                                title="Xóa điểm dừng"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="mt-3 space-y-3">
+                    {day.activities.map((act, aIdx) => (
+                      <div key={act.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700">Điểm dừng {aIdx + 1}</span>
+                          <button type="button" aria-label={`Xóa điểm dừng ${aIdx + 1}`} onClick={() => handleRemoveActivity(dIdx, aIdx)} className="grid h-8 w-8 place-items-center rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700" title="Xóa điểm dừng">
+                            <span className="material-symbols-outlined text-[19px]">delete</span>
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+                          <div className="md:col-span-5"><label className="block text-[11px] font-semibold text-slate-600">Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1">{isDemo ? <input type="text" value={act.poiName} onChange={(e) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].poiName = e.target.value; setItinerary(updated); }} className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs" /> : <PoiSelect options={availablePois} value={act.poiId} currentName={act.poiName} onChange={(poi) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].poiId = poi?.id; updated[dIdx].activities[aIdx].poiName = poi?.name ?? ''; setItinerary(updated); }} />}</div></div>
+                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Giờ bắt đầu <span className="text-rose-500" aria-hidden="true">*</span></label><select value={act.time} onChange={(e) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].time = e.target.value; setItinerary(updated); }} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs">{!START_TIME_OPTIONS.includes(act.time) && <option value={act.time}>{act.time}</option>}{START_TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}</select></div>
+                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Lưu lại (phút) <span className="text-rose-500" aria-hidden="true">*</span></label><input type="number" min="10" step="10" value={act.stayDurationMinutes} onChange={(e) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].stayDurationMinutes = Number(e.target.value); setItinerary(updated); }} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs" /></div>
+                          <div className="md:col-span-3"><label className="block text-[11px] font-semibold text-slate-600">Phương tiện <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1"><TransportSelect value={act.transport} onChange={(value) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].transport = value; setItinerary(updated); }} /></div></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -668,80 +602,12 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           </section>
         </div>
 
-        {/* Right Column (1/3 width on desktop): Pricing, Schedules, Photos, Alert */}
+        {/* Right column: departure schedules, optional terms and media */}
         <div className="space-y-6">
-          {/* Card: Pricing & Capacity */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
-              Giá bán & Sức chứa
-            </h3>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <label htmlFor="field-basePrice" className="block text-xs font-bold text-[#00152A]">
-                  Giá người lớn (VNĐ) <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  id="field-basePrice"
-                  type="number"
-                  min="1"
-                  step="10000"
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(Number(e.target.value))}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 font-mono focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
-                    errors.basePrice ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#006B5F]'
-                  }`}
-                />
-                {errors.basePrice && (
-                  <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
-                    {errors.basePrice}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="field-childPrice" className="block text-xs font-bold text-[#00152A]">
-                  Giá trẻ em (VNĐ) <span className="text-slate-400 font-normal">(Tùy chọn)</span>
-                </label>
-                <input
-                  id="field-childPrice"
-                  type="number"
-                  min="0"
-                  step="10000"
-                  value={childPrice || ''}
-                  onChange={(e) => setChildPrice(e.target.value ? Number(e.target.value) : undefined)}
-                  placeholder="Để trống nếu không áp dụng"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 font-mono focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="field-capacity" className="block text-xs font-bold text-[#00152A]">
-                  Sức chứa tối đa mỗi chuyến <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  id="field-capacity"
-                  type="number"
-                  min="1"
-                  value={maxCapacity}
-                  onChange={(e) => setMaxCapacity(Number(e.target.value))}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
-                    errors.maxCapacity ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#006B5F]'
-                  }`}
-                />
-                {errors.maxCapacity && (
-                  <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
-                    {errors.maxCapacity}
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
-
           {/* Card: Departure Schedules */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-extrabold text-[#00152A]">Lịch khởi hành</h3>
+              <h3 className="text-base font-extrabold text-[#00152A]">Lịch khởi hành <span className="text-rose-500" aria-hidden="true">*</span></h3>
               <button
                 type="button"
                 onClick={handleAddSchedule}
@@ -750,6 +616,13 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
                 Thêm lịch
               </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div><label htmlFor="field-basePrice" className="block text-[11px] font-semibold text-slate-600">Giá người lớn (VNĐ) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-basePrice" type="number" min="1" step="10000" value={basePrice} onChange={(e) => setBasePrice(Number(e.target.value))} className={`mt-1 h-10 w-full rounded-lg border px-2.5 text-xs font-mono text-slate-900 ${errors.basePrice ? 'border-rose-400' : 'border-slate-300'}`} />{errors.basePrice && <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">{errors.basePrice}</p>}</div>
+              <div><label htmlFor="field-childPrice" className="block text-[11px] font-semibold text-slate-600">Giá trẻ em (VNĐ)</label><input id="field-childPrice" type="number" min="0" step="10000" value={childPrice ?? ''} onChange={(e) => setChildPrice(e.target.value ? Number(e.target.value) : undefined)} placeholder="Tùy chọn" className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900" /></div>
+              <div><label htmlFor="field-capacity" className="block text-[11px] font-semibold text-slate-600">Sức chứa tối đa <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-capacity" type="number" min="1" value={maxCapacity} onChange={(e) => setMaxCapacity(Number(e.target.value))} className={`mt-1 h-10 w-full rounded-lg border px-2.5 text-xs text-slate-900 ${errors.maxCapacity ? 'border-rose-400' : 'border-slate-300'}`} />{errors.maxCapacity && <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">{errors.maxCapacity}</p>}</div>
+              <div><label htmlFor="field-duration" className="block text-[11px] font-semibold text-slate-600">Thời lượng (ngày) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-duration" type="number" min="1" value={durationDays} onChange={(e) => handleDurationChange(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900" />{errors.durationDays && <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">{errors.durationDays}</p>}</div>
             </div>
 
             {errors.schedules && (
@@ -775,7 +648,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-500">Ngày đi</span>
+                      <span className="text-[10px] text-slate-500">Ngày đi <span className="text-rose-500" aria-hidden="true">*</span></span>
                       <input
                         type="date"
                         value={sch.departureDate}
@@ -788,7 +661,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500">Ngày về</span>
+                      <span className="text-[10px] text-slate-500">Ngày về <span className="text-rose-500" aria-hidden="true">*</span></span>
                       <input
                         type="date"
                         value={sch.returnDate}
@@ -802,7 +675,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500">Chỗ mở bán</span>
+                    <span className="text-[10px] text-slate-500">Chỗ mở bán <span className="text-rose-500" aria-hidden="true">*</span></span>
                     <input
                       type="number"
                       min="1"
@@ -837,10 +710,8 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                 <TourTermsFields
                   highlights={highlights}
                   travellerRequirements={travellerRequirements}
-                  timeZoneId={timeZoneId}
                   onHighlights={setHighlights}
                   onTravellerRequirements={setTravellerRequirements}
-                  onTimeZoneId={setTimeZoneId}
                 />
               </div>
             </section>
@@ -852,15 +723,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
               Hình ảnh giới thiệu
             </h3>
             <p className="mt-1 text-[11px] text-slate-500">
-              Tệp hình ảnh dung lượng tối đa 5MB mỗi ảnh (BR-16).
+              Tệp hình ảnh dung lượng tối đa 5MB mỗi ảnh.
             </p>
 
-            {!isDemo ? (
-              <p role="status" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                Hãy lưu bản nháp trước. Hệ thống sẽ chuyển bạn tới màn hình chỉnh sửa để tải ảnh; gói tour cần có ảnh đại diện
-                đang hoạt động trước khi gửi xét duyệt.
-              </p>
-            ) : (
             <div className="mt-3">
               <label
                 htmlFor="media-upload"
@@ -886,20 +751,22 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
               )}
 
               {mediaPreviews.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {mediaPreviews.map((src, pIdx) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={pIdx}
-                      src={src}
-                      alt={`Ảnh tải lên ${pIdx + 1}`}
-                      className="h-16 w-full rounded-lg object-cover border border-slate-200"
-                    />
+                    <div key={src} className="group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-xs">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`Ảnh tải lên ${pIdx + 1}`} className="aspect-[4/3] w-full rounded-lg object-cover" />
+                      <div className="flex items-center justify-between px-1 pt-1.5">
+                        <span className="text-[11px] font-medium text-slate-500">Ảnh {pIdx + 1}</span>
+                        <button type="button" aria-label={`Xóa ảnh ${pIdx + 1}`} onClick={() => removeQueuedImage(pIdx)} className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:bg-rose-50 focus-visible:text-rose-600" title="Xóa ảnh">
+                          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
             </div>
-            )}
           </section>
 
           {/* Amber Alert Notice from Screen #41 */}
@@ -930,7 +797,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           disabled={submitting}
           className="rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
         >
-          Lưu bản nháp (UC-35)
+          {submitting ? 'Đang lưu bản nháp…' : 'Lưu bản nháp'}
         </button>
         <button
           type="button"
@@ -938,9 +805,19 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           disabled={submitting}
           className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
         >
-          Lưu và gửi xét duyệt (UC-37)
+          {submitting ? 'Đang lưu…' : 'Lưu và gửi xét duyệt'}
         </button>
       </div>
+
+      {validationToast && (
+        <div role="alert" className="fixed bottom-5 right-5 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-900 shadow-lg">
+          <span className="material-symbols-outlined shrink-0 text-[20px] text-rose-600" aria-hidden="true">error</span>
+          <p className="flex-1 font-medium leading-5">{validationToast}</p>
+          <button type="button" aria-label="Đóng thông báo" onClick={() => setValidationToast(null)} className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

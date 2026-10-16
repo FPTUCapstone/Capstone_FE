@@ -4,23 +4,19 @@ import React from 'react';
 import { REVIEW_BLOCKER_MESSAGES, TOUR_WARNING_MESSAGES } from '../services/operatorTourService';
 import type { TourDepartureSchedule, TourWarning } from '../types/tourLifecycle';
 
-const TIME_ZONES = ['Asia/Ho_Chi_Minh', 'Asia/Bangkok', 'Asia/Singapore', 'Asia/Phnom_Penh', 'Asia/Vientiane'];
 const inputClass =
   'mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50';
 
 interface TourTermsFieldsProps {
   highlights: string;
   travellerRequirements: string;
-  timeZoneId: string;
   onHighlights: (value: string) => void;
   onTravellerRequirements: (value: string) => void;
-  onTimeZoneId: (value: string) => void;
   disabled?: boolean;
 }
 
 /** Optional package terms that the backend stores with the package (spec Amendment B). */
 export function TourTermsFields(props: TourTermsFieldsProps) {
-  const zones = TIME_ZONES.includes(props.timeZoneId) ? TIME_ZONES : [props.timeZoneId, ...TIME_ZONES];
   return (
     <div className="space-y-4">
       <div>
@@ -45,20 +41,6 @@ export function TourTermsFields(props: TourTermsFieldsProps) {
           className={inputClass}
         />
       </div>
-      <div>
-        <label htmlFor="field-timezone" className="block text-xs font-bold text-[#00152A]">Múi giờ của gói tour</label>
-        <select
-          id="field-timezone"
-          disabled={props.disabled}
-          value={props.timeZoneId}
-          onChange={(event) => props.onTimeZoneId(event.target.value)}
-          className={inputClass}
-        >
-          {zones.map((zone) => (
-            <option key={zone} value={zone}>{zone}</option>
-          ))}
-        </select>
-      </div>
     </div>
   );
 }
@@ -69,14 +51,13 @@ interface DepartureTermsFieldsProps {
   disabled?: boolean;
 }
 
-const toNumberOrNull = (value: string): number | null => (value.trim() === '' ? null : Number(value));
-
 /** Per-departure selling terms: minimum pax, prices and registration deadline (real mode). */
 export function DepartureTermsFields({ schedule, onChange, disabled = false }: DepartureTermsFieldsProps) {
   const id = schedule.id;
   const field = 'mt-1 w-full rounded-lg border border-slate-300 p-2 text-xs disabled:bg-slate-50';
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
       <div>
         <label htmlFor={`sch-min-${id}`} className="text-[11px] font-semibold text-slate-600">Số khách tối thiểu</label>
         <input
@@ -100,41 +81,6 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
           className={field}
         />
       </div>
-      <div>
-        <label htmlFor={`sch-adult-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: người lớn (VND)</label>
-        <input
-          id={`sch-adult-${id}`}
-          type="number"
-          min={1}
-          disabled={disabled}
-          value={schedule.adultPrice ?? ''}
-          onChange={(event) => onChange({ adultPrice: event.target.value === '' ? undefined : Number(event.target.value) })}
-          className={field}
-        />
-      </div>
-      <div>
-        <label htmlFor={`sch-child-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: trẻ em (VND)</label>
-        <input
-          id={`sch-child-${id}`}
-          type="number"
-          min={0}
-          disabled={disabled}
-          value={schedule.childPrice ?? ''}
-          onChange={(event) => onChange({ childPrice: toNumberOrNull(event.target.value) })}
-          className={field}
-        />
-      </div>
-      <div>
-        <label htmlFor={`sch-infant-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: em bé (VND)</label>
-        <input
-          id={`sch-infant-${id}`}
-          type="number"
-          min={0}
-          disabled={disabled}
-          value={schedule.infantPrice ?? ''}
-          onChange={(event) => onChange({ infantPrice: toNumberOrNull(event.target.value) })}
-          className={field}
-        />
       </div>
     </div>
   );

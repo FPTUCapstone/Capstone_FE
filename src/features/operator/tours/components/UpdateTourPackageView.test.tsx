@@ -89,6 +89,12 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
     expect(screen.getByDisplayValue('1250000')).toBeDefined();
   });
 
+  it('fills in missing itinerary days from an existing tour duration', () => {
+    render(<UpdateTourPackageView initialTour={{ ...mockTourDraft, durationDays: 3 }} isDemo={false} />);
+
+    expect(screen.getByText('Ngày 3')).toBeDefined();
+  });
+
   it('does not claim the backend is unavailable in real mode (UC-35/36 are integrated)', () => {
     render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={false} />);
 
@@ -182,6 +188,27 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
         screen.getByText(/Sức chứa không được giảm xuống dưới số lượng chỗ đã bán/i)
       ).toBeDefined();
     });
+  });
+
+  it('adds itinerary days from duration and lets the operator add a stop to the new day', () => {
+    render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={false} />);
+
+    fireEvent.change(screen.getByLabelText(/Thời lượng \(ngày\)/i), { target: { value: '2' } });
+
+    expect(screen.getByText('Ngày 2')).toBeDefined();
+    fireEvent.click(screen.getAllByRole('button', { name: /Thêm điểm dừng/i })[1]);
+
+    expect(screen.getAllByText('Điểm dừng 1')).toHaveLength(2);
+  });
+
+  it('removes extra itinerary days when duration is reduced', () => {
+    render(<UpdateTourPackageView initialTour={mockTourDraft} isDemo={false} />);
+
+    fireEvent.change(screen.getByLabelText(/Thời lượng \(ngày\)/i), { target: { value: '2' } });
+    expect(screen.getByText('Ngày 2')).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText(/Thời lượng \(ngày\)/i), { target: { value: '1' } });
+    expect(screen.queryByText('Ngày 2')).toBeNull();
   });
 
   describe('Demo Mode (?demo=1 continuity)', () => {

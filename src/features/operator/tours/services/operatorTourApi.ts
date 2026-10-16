@@ -57,14 +57,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return await response.json() as T;
 }
 
-export interface ApiTourListItem { id: number; title: string; status: string; basePrice: number; durationDays: number; updatedAtUtc: string; nextDepartureAtUtc: string | null; destination: string; }
+export interface ApiTourListItem { id: number; title: string; status: string; basePrice: number; durationDays: number; versionNo?: number; updatedAtUtc: string; nextDepartureAtUtc: string | null; destination: string; }
 export interface ApiTourListPage { items: ApiTourListItem[]; page: number; pageSize: number; totalCount: number; }
 export interface ApiItineraryItem { dayNo: number; sequenceNo: number; poiId: number; plannedTime: string | null; stayDurationMinutes: number; notes: string | null; }
 export interface ApiDeparture { id: number; startAtUtc: string; endAtUtc: string; meetingPoint: string | null; minimumCapacity: number; totalCapacity: number; reservedCapacity: number; registrationDeadlineAtUtc: string | null; adultPrice: number | null; childPrice: number | null; infantPrice: number | null; status: string; }
 export interface ApiDestination { destinationId: number; name: string; }
 export interface ApiTourDetail {
   id: number; title: string; destination: string; description: string; categoryId: number | null;
-  basePrice: number; durationDays: number; status: string; rejectionReason: string | null;
+  basePrice: number; durationDays: number; versionNo?: number; status: string; rejectionReason: string | null;
   inclusions: string | null; exclusions: string | null; destinations: ApiDestination[];
   cancellationPolicyTemplateId: number | null;
   itineraryItems: ApiItineraryItem[]; departures: ApiDeparture[];
@@ -79,7 +79,7 @@ export interface ApiCreateTour {
   title: string; description: string; categoryId?: number; basePrice: number; durationDays: number;
   destinationIds: number[]; cancellationPolicyTemplateId: number; inclusions?: string; exclusions?: string;
   highlights?: string; travellerRequirements?: string; timeZoneId?: string;
-  itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status'>[];
+  itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status'>[]; sourceTourId?: number;
 }
 export interface ApiPolicy { id: number; name: string; description: string | null; rules: { daysBeforeDeparture: number; cancellationFeePercent: number }[]; }
 export interface ApiCategory { categoryId: number; code: string; name: string; }
@@ -153,5 +153,10 @@ export async function deleteTourMedia(tourId: number, mediaId: number): Promise<
     if (error instanceof OperatorTourApiError) throw error;
     throw new OperatorTourApiError(0, 'NETWORK', 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.');
   }
+  if (!response.ok) await fail(response);
+}
+
+export async function deleteOperatorTour(tourId: number): Promise<void> {
+  const response = await fetch(`${getApiBase()}/operator/tours/${tourId}`, { method: 'DELETE', headers: headers() });
   if (!response.ok) await fail(response);
 }

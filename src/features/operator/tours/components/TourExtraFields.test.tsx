@@ -45,8 +45,9 @@ describe('DepartureTermsFields', () => {
 
     expect((screen.getByLabelText(/Số khách tối thiểu/) as HTMLInputElement).value).toBe('4');
     expect((screen.getByLabelText(/Hạn đăng ký/) as HTMLInputElement).value).toBe('2026-11-18');
-    fireEvent.change(screen.getByLabelText(/trẻ em/), { target: { value: '' } });
-    fireEvent.change(screen.getByLabelText(/người lớn/), { target: { value: '1500000' } });
+    fireEvent.click(screen.getByText(/Thiết lập giá riêng cho lịch này/));
+    fireEvent.change(screen.getByLabelText(/trẻ em/i), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText(/người lớn/i), { target: { value: '1500000' } });
 
     expect(onChange).toHaveBeenCalledWith({ childPrice: null });
     expect(onChange).toHaveBeenCalledWith({ adultPrice: 1500000 });
@@ -54,34 +55,19 @@ describe('DepartureTermsFields', () => {
 });
 
 describe('TourTermsFields', () => {
-  it('edits highlights, requirements and the time zone', () => {
+  it('edits highlights and traveller requirements', () => {
     const props = {
       highlights: '',
       travellerRequirements: '',
-      timeZoneId: 'Asia/Ho_Chi_Minh',
       onHighlights: vi.fn(),
       onTravellerRequirements: vi.fn(),
-      onTimeZoneId: vi.fn(),
     };
     render(<TourTermsFields {...props} />);
 
     fireEvent.change(screen.getByLabelText(/Điểm nổi bật/), { target: { value: 'Cáp treo' } });
     fireEvent.change(screen.getByLabelText(/Yêu cầu đối với du khách/), { target: { value: 'Hộ chiếu' } });
-    fireEvent.change(screen.getByLabelText(/Múi giờ/), { target: { value: 'Asia/Bangkok' } });
 
     expect(props.onHighlights).toHaveBeenCalledWith('Cáp treo');
     expect(props.onTravellerRequirements).toHaveBeenCalledWith('Hộ chiếu');
-    expect(props.onTimeZoneId).toHaveBeenCalledWith('Asia/Bangkok');
-  });
-
-  it('keeps a stored time zone that is not in the shortlist selectable', () => {
-    render(
-      <TourTermsFields
-        highlights="" travellerRequirements="" timeZoneId="Asia/Seoul"
-        onHighlights={vi.fn()} onTravellerRequirements={vi.fn()} onTimeZoneId={vi.fn()}
-      />,
-    );
-
-    expect((screen.getByLabelText(/Múi giờ/) as HTMLSelectElement).value).toBe('Asia/Seoul');
   });
 });

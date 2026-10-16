@@ -19,6 +19,7 @@ import {
   uploadTourMedia,
   reorderTourMedia,
   deleteTourMedia,
+  deleteOperatorTour,
   listCancellationPolicies,
   listDestinations,
   listCategories,
@@ -72,6 +73,16 @@ function asBackendId(value: string | number | undefined, field: string): number 
 
 function toIsoDateTime(date: string, time: 'start' | 'end'): string {
   return `${date}T${time === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`;
+}
+
+function minutesSinceMidnight(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return (hours * 60) + minutes;
+}
+
+function timeFromMinutes(minutes: number): string {
+  const normalized = ((minutes % 1_440) + 1_440) % 1_440;
+  return `${Math.floor(normalized / 60).toString().padStart(2, '0')}:${(normalized % 60).toString().padStart(2, '0')}`;
 }
 
 function toBackendDestinationIds(payload: CreateTourPackagePayload): number[] {
@@ -143,6 +154,14 @@ function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
 
 function dateOnly(value: string): string { return value.slice(0, 10); }
 
+function vietnamToday(): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
 const API_TOUR_STATUSES: readonly TourPackageDto['status'][] = [
   'Draft', 'Pending', 'Approved', 'Rejected', 'Published', 'Inactive',
 ];
@@ -158,14 +177,15 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
   const itinerary = new Map<number, TourPackageDto['itinerary'][number]>();
   for (const item of detail.itineraryItems) {
     const day = itinerary.get(item.dayNo) ?? { dayNo: item.dayNo, activities: [] };
+    const [transport = '', ...noteParts] = (item.notes ?? '').split(' | ');
     day.activities.push({
       id: `${item.dayNo}-${item.sequenceNo}`,
       time: item.plannedTime?.slice(0, 5) ?? '',
       poiId: item.poiId,
       poiName: `POI #${item.poiId}`,
       stayDurationMinutes: item.stayDurationMinutes,
-      transport: '',
-      notes: item.notes ?? undefined,
+      transport,
+      notes: noteParts.join(' | ') || undefined,
     });
     itinerary.set(item.dayNo, day);
   }
@@ -219,7 +239,7 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
     cancellationPolicy: detail.cancellationPolicyTemplateId ? String(detail.cancellationPolicyTemplateId) : '',
     status: statusFromApi(detail.status),
     rejectionReason: detail.rejectionReason ?? undefined,
-    version: 1, itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo), schedules,
+    version: detail.versionNo ?? 1, itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo), schedules,
     media: mapMedia(media),
     createdAt: '', updatedAt: '',
   };
@@ -248,7 +268,7 @@ function mapListItem(item: ApiTourListItem): TourPackageDto {
     id: String(item.id), tourCode: `TP-${item.id}`, operatorUserId: 0,
     title: item.title, destination: item.destination, category: '', durationDays: item.durationDays,
     basePrice: item.basePrice, maxCapacity: 0, description: '', cancellationPolicy: '',
-    status: statusFromApi(item.status), version: 1, itinerary: [], schedules: [], media: [],
+    status: statusFromApi(item.status), version: item.versionNo ?? 1, itinerary: [], schedules: [], media: [],
     createdAt: item.updatedAtUtc, updatedAt: item.updatedAtUtc,
   };
 }
@@ -299,21 +319,51 @@ export function validateCreateTourPackage(
 
   // BR-101: At least one itinerary day with activities
   if (!payload.itinerary || payload.itinerary.length === 0) {
-    errors.itinerary = 'Gói tour phải có ít nhất 1 ngày lịch trình (BR-101, MSG01).';
+    errors.itinerary = 'Gói tour phải có ít nhất 1 ngày lịch trình.';
   } else {
     const hasActivities = payload.itinerary.some(
       (day) => day.activities && day.activities.length > 0
     );
     if (!hasActivities) {
-      errors.itinerary = 'Lịch trình phải có ít nhất 1 điểm dừng hoặc hoạt động (BR-101, MSG01).';
+      errors.itinerary = 'Lịch trình phải có ít nhất 1 điểm dừng hoặc hoạt động.';
+    } else {
+      for (const day of payload.itinerary) {
+        const times = day.activities.map((activity) => activity.time);
+        if (times.some((time) => !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))) {
+          errors.itinerary = `Ngày ${day.dayNo} có thời gian không hợp lệ.`;
+          break;
+        }
+        if (new Set(times).size !== times.length) {
+          const duplicateTime = times.find((time, index) => times.indexOf(time) !== index)!;
+          errors.itinerary = `Ngày ${day.dayNo}: có nhiều điểm dừng cùng bắt đầu lúc ${duplicateTime}. Hãy chọn giờ khác cho từng điểm dừng.`;
+          break;
+        }
+        const chronological = day.activities.map((activity, index) => ({ activity, index })).sort(
+          (left, right) => minutesSinceMidnight(left.activity.time) - minutesSinceMidnight(right.activity.time),
+        );
+        for (let index = 1; index < chronological.length; index++) {
+          const previous = chronological[index - 1];
+          const current = chronological[index];
+          const availableFrom = minutesSinceMidnight(previous.activity.time) + previous.activity.stayDurationMinutes;
+          if (minutesSinceMidnight(current.activity.time) < availableFrom) {
+            errors.itinerary = `Ngày ${day.dayNo}: Điểm dừng ${current.index + 1} bắt đầu lúc ${current.activity.time}, nhưng Điểm dừng ${previous.index + 1} lưu đến ${timeFromMinutes(availableFrom)}. Hãy chọn giờ từ ${timeFromMinutes(availableFrom)} trở đi (hoặc giảm thời gian lưu lại).`;
+            break;
+          }
+        }
+        if (errors.itinerary) break;
+        if ((payload.destinationIds?.length ?? 0) > 0 && day.activities.some((activity) => !Number.isSafeInteger(Number(activity.poiId)) || Number(activity.poiId) <= 0)) {
+          errors.itinerary = `Vui lòng chọn điểm dừng hợp lệ cho ngày ${day.dayNo}.`;
+          break;
+        }
+      }
     }
   }
 
   // BR-101: At least one departure schedule
   if (!payload.schedules || payload.schedules.length === 0) {
-    errors.schedules = 'Gói tour phải có ít nhất 1 lịch khởi hành (BR-101, MSG01).';
+    errors.schedules = 'Gói tour phải có ít nhất 1 lịch khởi hành.';
   } else {
-    const today = new Date().toISOString().split('T')[0];
+    const today = vietnamToday();
     for (const schedule of payload.schedules) {
       if (schedule.totalCapacity <= 0) {
         errors.schedules = OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
@@ -601,9 +651,17 @@ export async function createTourPackage(
 
   // The caller keeps one key per unchanged payload so a retry after a lost response replays the same draft.
   const created = await createTour(toBackendPayload(payload), options?.idempotencyKey ?? crypto.randomUUID());
+  try {
+    for (let index = 0; index < (payload.mediaFiles?.length ?? 0); index += 1) {
+      const file = payload.mediaFiles![index];
+      await uploadTourMedia(created.tourId, file, `${payload.title} - ${file.name}`.slice(0, 500), index === 0, crypto.randomUUID());
+    }
+  } catch {
+    return { status: 'SUCCESS', data: await loadTourDetail(created.tourId), message: 'Đã lưu bản nháp. Hình ảnh chưa tải được, bạn có thể thử lại trong màn hình chỉnh sửa.', isDemo: false };
+  }
   return {
     status: 'SUCCESS',
-    data: mapDetail(await getTour(created.tourId)),
+    data: await loadTourDetail(created.tourId),
     message: OPERATOR_TOUR_MESSAGES.CREATE_SUCCESS,
     isDemo: false,
   };
@@ -756,9 +814,14 @@ export async function updateTourPackage(
       };
     }
 
+    const created = await createTour({
+      ...toBackendPayload(payload),
+      sourceTourId: asBackendId(currentTour.id, 'Mã gói tour nguồn'),
+    }, crypto.randomUUID());
     return {
-      status: 'ERROR',
-      message: 'Phiên bản mới cho tour đã duyệt chưa được dịch vụ máy chủ hỗ trợ.',
+      status: 'SUCCESS',
+      data: await loadTourDetail(created.tourId),
+      message: 'Đã tạo bản nháp mới từ tour đã duyệt. Hãy kiểm tra và gửi xét duyệt lại để thay đổi có hiệu lực.',
       isDemo: false,
     };
   }
@@ -823,13 +886,13 @@ export async function submitTourForApproval(
   if (currentTour.status === 'Pending') {
     return {
       status: 'ERROR',
-      message: 'Gói tour đã ở trạng thái chờ duyệt (MSG122).',
+      message: 'Gói tour đã ở trạng thái chờ duyệt.',
     };
   }
   if (currentTour.status === 'Approved') {
     return {
       status: 'ERROR',
-      message: 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa (MSG110).',
+      message: 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa.',
     };
   }
   const isSubmittableStatus =
@@ -837,14 +900,14 @@ export async function submitTourForApproval(
   if (!isSubmittableStatus) {
     return {
       status: 'ERROR',
-      message: 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt (BR-104).',
+      message: 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt.',
     };
   }
 
   // 2. Completeness check (BR-101)
   const completeness = evaluateTourCompleteness(currentTour);
   if (!completeness.isEligibleForSubmission) {
-    throw new Error('Vui lòng hoàn thành tất cả các mục bắt buộc trước khi gửi xét duyệt (BR-101, MSG01).');
+    throw new Error('Vui lòng hoàn thành tất cả các mục bắt buộc trước khi gửi xét duyệt.');
   }
 
   const allowDemo = Boolean(options?.allowDemo) && isTourDemoAllowedInCurrentEnv();
@@ -908,4 +971,8 @@ export async function removeTourImage(tourId: string, mediaId: string): Promise<
   const id = asBackendId(tourId, 'Mã gói tour');
   await deleteTourMedia(id, asBackendId(mediaId, 'Mã ảnh'));
   return mapMedia(await listTourMedia(id));
+}
+
+export async function removeOperatorTour(tourId: string): Promise<void> {
+  await deleteOperatorTour(asBackendId(tourId, 'Mã gói tour'));
 }

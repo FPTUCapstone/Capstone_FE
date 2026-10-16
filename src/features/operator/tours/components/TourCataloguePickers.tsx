@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import type { ApiCategory, ApiDestination, ApiPoi, ApiPolicy } from '../services/operatorTourApi';
 
 const MAX_DESTINATIONS = 10;
@@ -24,6 +24,11 @@ export function DestinationCheckboxes({
   hasError = false,
   labelId,
 }: DestinationCheckboxesProps) {
+  const [query, setQuery] = useState('');
+  const visibleOptions = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('vi-VN');
+    return normalized ? options.filter((option) => option.name.toLocaleLowerCase('vi-VN').includes(normalized)) : options;
+  }, [options, query]);
   const toggle = (id: number) => {
     if (selectedIds.includes(id)) onChange(selectedIds.filter((value) => value !== id));
     else if (selectedIds.length < MAX_DESTINATIONS) onChange([...selectedIds, id]);
@@ -38,8 +43,16 @@ export function DestinationCheckboxes({
         hasError ? 'border-rose-400' : 'border-slate-300'
       }`}
     >
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Nhập để tìm điểm đến"
+        className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+      />
       {options.length === 0 && <span className="p-1 text-xs text-slate-500">Chưa có danh mục điểm đến.</span>}
-      {options.map((option) => (
+      {options.length > 0 && visibleOptions.length === 0 && <span className="p-1 text-xs text-slate-500">Không tìm thấy điểm đến phù hợp.</span>}
+      {visibleOptions.map((option) => (
         <label
           key={option.destinationId}
           className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1 text-xs text-slate-800"
@@ -53,6 +66,20 @@ export function DestinationCheckboxes({
         </label>
       ))}
     </fieldset>
+  );
+}
+
+export const TRANSPORT_OPTIONS = [
+  'Đi bộ', 'Xe đạp', 'Xe máy', 'Ô tô', 'Taxi', 'Xe du lịch', 'Xe buýt',
+  'Tàu hỏa', 'Tàu điện', 'Thuyền / ca nô', 'Cáp treo', 'Máy bay', 'Khác',
+] as const;
+
+export function TransportSelect({ value, onChange, disabled = false }: { value: string; onChange: (value: string) => void; disabled?: boolean }) {
+  const values = TRANSPORT_OPTIONS.includes(value as typeof TRANSPORT_OPTIONS[number]) ? TRANSPORT_OPTIONS : [value, ...TRANSPORT_OPTIONS];
+  return (
+    <select aria-label="Phương tiện di chuyển" disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="h-10 min-w-32 w-full rounded-lg border border-slate-300 px-2.5 text-xs">
+      {values.map((option) => <option key={option} value={option}>{option}</option>)}
+    </select>
   );
 }
 
@@ -77,13 +104,13 @@ export function PoiSelect({ options, value, currentName, onChange, disabled = fa
         const poi = options.find((candidate) => candidate.id === id);
         onChange(poi ? { id: poi.id, name: poi.name } : null);
       }}
-      className="w-full rounded-lg border border-slate-200 p-1 text-xs"
+      className="h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs"
     >
       <option value="">Chọn POI đã xác minh</option>
       {current !== undefined && !knownCurrent && <option value={current}>{currentName || `POI #${current}`}</option>}
       {options.map((poi) => (
         <option key={poi.id} value={poi.id}>
-          #{poi.id} — {poi.name}
+          {poi.name}{poi.address ? ` — ${poi.address}` : ''}
         </option>
       ))}
     </select>

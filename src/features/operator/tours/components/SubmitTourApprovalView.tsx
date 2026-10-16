@@ -26,13 +26,13 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
 
   let nonSubmittableReason = '';
   if (tour.status === 'Pending') {
-    nonSubmittableReason = 'Gói tour đã ở trạng thái chờ duyệt (MSG122).';
+    nonSubmittableReason = 'Gói tour đã ở trạng thái chờ duyệt.';
   } else if (tour.status === 'Approved') {
-    nonSubmittableReason = 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa (MSG110).';
+    nonSubmittableReason = 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa.';
   } else if (tour.status === 'Published') {
-    nonSubmittableReason = 'Gói tour đã được xuất bản. Thay đổi cần được lưu thành phiên bản mới (BR-103).';
+    nonSubmittableReason = 'Gói tour đã được xuất bản. Thay đổi cần được lưu thành phiên bản mới.';
   } else if (!isSubmittableStatus) {
-    nonSubmittableReason = 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt (BR-104).';
+    nonSubmittableReason = 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt.';
   }
 
   const [reviewerNote, setReviewerNote] = useState('');
@@ -83,7 +83,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
             Gửi duyệt gói tour
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Kiểm tra danh mục yêu cầu trước khi chuyển giao cho Quản trị viên phê duyệt (UC-37, Screen #43).
+            Kiểm tra các thông tin bắt buộc trước khi chuyển giao cho Quản trị viên phê duyệt.
           </p>
         </div>
 
@@ -165,7 +165,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
               Danh mục kiểm tra bắt buộc (Checklist)
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Gói tour chỉ đủ điều kiện gửi duyệt khi tất cả tiêu chí bắt buộc đạt chuẩn (BR-101).
+              Gói tour chỉ đủ điều kiện gửi duyệt khi tất cả tiêu chí bắt buộc đạt chuẩn.
             </p>
           </div>
 
@@ -197,7 +197,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
 
           {!completeness.isEligibleForSubmission && (
             <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 font-medium">
-              Còn <strong>{completeness.missingCount}</strong> mục bắt buộc chưa hoàn tất. Vui lòng quay lại màn hình chỉnh sửa để bổ sung đầy đủ trước khi gửi xét duyệt (BR-101, MSG01).{' '}
+              Còn <strong>{completeness.missingCount}</strong> mục bắt buộc chưa hoàn tất. Vui lòng quay lại màn hình chỉnh sửa để bổ sung đầy đủ trước khi gửi xét duyệt.{' '}
               <Link
                 href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(tour.id), isDemo)}
                 className="font-bold underline"
@@ -240,7 +240,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
             </div>
 
             <p className="mt-4 rounded-xl bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500 border border-slate-100">
-              Thời gian kiểm duyệt tiêu chuẩn là 1 ngày làm việc. Trong thời gian này, gói tour sẽ bị khóa chỉnh sửa (MSG122).
+              Thời gian kiểm duyệt tiêu chuẩn là 1 ngày làm việc. Trong thời gian này, gói tour sẽ bị khóa chỉnh sửa.
             </p>
           </section>
 
@@ -276,7 +276,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           disabled={!isSubmittableStatus || !completeness.isEligibleForSubmission || submitting}
           className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
         >
-          Gửi yêu cầu xét duyệt (UC-37)
+          Gửi yêu cầu xét duyệt
         </button>
       </div>
 

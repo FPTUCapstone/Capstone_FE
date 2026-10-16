@@ -105,12 +105,13 @@ describe('operatorTourService against the UC-35 backend contract', () => {
   it('creates with destinationIds and the policy template in ONE request, using the caller idempotency key', async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ tourId: 42, status: 'Draft' }, 201))
-      .mockResolvedValueOnce(jsonResponse(detail));
+      .mockResolvedValueOnce(jsonResponse(detail))
+      .mockResolvedValueOnce(jsonResponse([]));
 
     const result = await createTourPackage(payload, { idempotencyKey: 'key-1' });
 
     expect(result.status).toBe('SUCCESS');
-    expect(fetchMock).toHaveBeenCalledTimes(2); // POST + GET detail; no separate assign-policy call
+    expect(fetchMock).toHaveBeenCalledTimes(3); // POST + GET detail + media; no separate assign-policy call
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('http://api.test/api/v1/operator/tours');
     expect(init.method).toBe('POST');
@@ -288,8 +289,8 @@ describe('operatorTourService against the UC-35 backend contract', () => {
     const text = new File(['x'], 'a.txt', { type: 'text/plain' });
     const big = new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'big.jpg', { type: 'image/jpeg' });
 
-    await expect(uploadTourImage('42', text, 'alt', { makePrimary: false, idempotencyKey: 'k' })).rejects.toThrow(/MSG19/);
-    await expect(uploadTourImage('42', big, 'alt', { makePrimary: false, idempotencyKey: 'k' })).rejects.toThrow(/MSG19/);
+    await expect(uploadTourImage('42', text, 'alt', { makePrimary: false, idempotencyKey: 'k' })).rejects.toThrow(/Tệp hình ảnh không hợp lệ/);
+    await expect(uploadTourImage('42', big, 'alt', { makePrimary: false, idempotencyKey: 'k' })).rejects.toThrow(/Tệp hình ảnh không hợp lệ/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

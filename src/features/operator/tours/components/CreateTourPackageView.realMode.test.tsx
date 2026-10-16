@@ -38,6 +38,7 @@ function fillValidForm() {
   fireEvent.click(screen.getByRole('checkbox', { name: 'Quảng Nam' }));
   fireEvent.change(screen.getByLabelText(/Mô tả chi tiết gói tour/i), { target: { value: 'Mô tả' } });
   fireEvent.change(screen.getByLabelText(/Chính sách hủy tour/i), { target: { value: '7' } });
+  fireEvent.change(screen.getByLabelText('Điểm tham quan'), { target: { value: '11' } });
 }
 
 describe('CreateTourPackageView in real mode (UC-35 backend contract)', () => {
@@ -57,7 +58,7 @@ describe('CreateTourPackageView in real mode (UC-35 backend contract)', () => {
     expect(payload.destinationIds).toEqual([1, 2]);
     expect(payload.destination).toBe('Đà Nẵng, Quảng Nam');
     expect(payload.cancellationPolicy).toBe('7');
-    expect(payload.mediaFiles).toBeUndefined();
+    expect(payload.mediaFiles).toEqual([]);
   });
 
   it('reuses the idempotency key when the same payload is retried after a failure, and rotates it after an edit', async () => {
