@@ -132,7 +132,7 @@ describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
     ).toBeDefined();
   });
 
-  it('displays truthful PENDING_BE_INTEGRATION message upon confirm in real mode', async () => {
+  it('does not present an obsolete backend-integration banner in real mode', async () => {
     render(<SubmitTourApprovalView tour={mockCompleteTour} isDemo={false} />);
 
     // Open modal
@@ -144,9 +144,8 @@ describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(
-        screen.getAllByText(/Tính năng quản lý vòng đời gói tour đối tác đang chờ kết nối dịch vụ máy chủ/i).length
-      ).toBeGreaterThan(0);
+      expect(screen.queryByText(/đang chờ kết nối dịch vụ máy chủ/i)).toBeNull();
+      expect(screen.getByRole('alert')).toBeDefined();
     });
   });
 
