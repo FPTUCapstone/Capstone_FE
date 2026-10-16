@@ -27,6 +27,8 @@ interface PlacePickerDialogProps {
   /** Ranks and limits catalog places around this point (e.g. must-see places within the radius). */
   near?: GeoPoint | null;
   radiusKm?: number | null;
+  /** Leave restaurants out (must-see places, Review 2 D2). */
+  excludeFoodAndDrink?: boolean;
   onSelect: (place: PickedPlace) => void;
   onClose: () => void;
 }
@@ -36,6 +38,7 @@ export function PlacePickerDialog({
   allowAddresses,
   near,
   radiusKm,
+  excludeFoodAndDrink = false,
   onSelect,
   onClose,
 }: PlacePickerDialogProps) {
@@ -68,7 +71,12 @@ export function PlacePickerDialog({
     setPlacesError(null);
     setAddressesError(null);
     const [placeResult, addressResult] = await Promise.allSettled([
-      searchSelectablePois({ query, near: radiusKm ? near : null, radiusKm }),
+      searchSelectablePois({
+        query,
+        near: radiusKm ? near : null,
+        radiusKm,
+        ...(excludeFoodAndDrink ? { excludeFoodAndDrink: true } : {}),
+      }),
       showAddresses
         ? suggestAddresses(query, sessionRef.current, near)
         : Promise.resolve<AddressCandidate[]>([]),

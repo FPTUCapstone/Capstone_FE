@@ -1,6 +1,13 @@
 'use client';
 
-import { ItineraryDetailDto, SchedulingResponseDto } from '../types/schedulingTypes';
+import {
+  ItineraryDetailDto,
+  ItineraryDetailItemDto,
+  SchedulingResponseDto,
+} from '../types/schedulingTypes';
+import { formatVnd } from '@/lib/priceLabel';
+
+import { splitItineraryCosts } from '../utils/itineraryPresentation';
 
 interface ItinerarySummaryCardsProps {
   itinerary: ItineraryDetailDto | SchedulingResponseDto;
@@ -13,6 +20,18 @@ export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps)
   const restCount = itinerary.items.filter(
     (i) => (('kind' in i ? i.kind : (i as { itemKind: string }).itemKind) === 'Rest'),
   ).length;
+
+  const costs = splitItineraryCosts(
+    itinerary.items.map((i) => ({
+      kind: ('kind' in i ? i.kind : i.itemKind) as ItineraryDetailItemDto['kind'],
+      poiId: i.poiId,
+      estimatedCost: i.estimatedCost,
+      costKind: i.costKind,
+    })),
+  );
+
+  // The request budget is only on the detail response (§3.1); null = no budget given.
+  const budgetVnd = 'budgetVnd' in itinerary ? itinerary.budgetVnd ?? null : null;
 
   const hours = Math.floor(itinerary.totalDurationMinutes / 60);
   const minutes = itinerary.totalDurationMinutes % 60;
@@ -41,18 +60,39 @@ export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps)
         </span>
       </div>
 
-      {/* Stat 2: Total cost */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+      {/* Stat 2: Expected cost per person, split by costKind (Review 2, D11-7) */}
+      <div
+        data-testid="cost-split"
+        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs"
+      >
         <div className="flex items-center gap-2 text-slate-500">
           <span className="material-symbols-outlined text-lg text-emerald-600">
             payments
           </span>
-          <span className="text-xs font-bold">Chi phí dự kiến</span>
+          <span className="text-xs font-bold">Chi phí dự kiến / người</span>
         </div>
-        <p className="mt-2 text-lg font-black text-slate-900 sm:text-xl">
-          {itinerary.totalEstimatedCost.toLocaleString('vi-VN')} đ
-        </p>
-        <span className="text-[11px] text-slate-500">Vé tham quan & ẩm thực</span>
+        <dl className="mt-2 space-y-0.5 text-xs text-slate-600">
+          <div className="flex justify-between gap-2">
+            <dt>Vé</dt>
+            <dd className="font-semibold text-slate-800">{formatVnd(costs.tickets)}</dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt>Ăn uống</dt>
+            <dd className="font-semibold text-slate-800">{formatVnd(costs.food)}</dd>
+          </div>
+          <div className="flex justify-between gap-2 border-t border-slate-100 pt-0.5">
+            <dt className="font-bold text-slate-900">{budgetVnd !== null ? 'Tổng / ngân sách' : 'Tổng'}</dt>
+            <dd className="font-black text-slate-900">
+              {formatVnd(costs.total)}
+              {budgetVnd !== null && ` / ${formatVnd(budgetVnd)}`}
+            </dd>
+          </div>
+        </dl>
+        {costs.unknownCount > 0 && (
+          <span className="text-[11px] text-slate-500">
+            {costs.unknownCount} điểm chưa có thông tin giá
+          </span>
+        )}
       </div>
 
       {/* Stat 3: Stops count */}

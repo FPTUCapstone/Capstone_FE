@@ -7,6 +7,7 @@
 
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { getApiBase } from '@/lib/authApi';
+import { getMapboxPublicToken } from '@/lib/mapboxToken';
 
 import { generateIdempotencyKey } from './schedulingApi';
 
@@ -44,10 +45,13 @@ export async function searchSelectablePois(params: {
   near?: GeoPoint | null;
   radiusKm?: number | null;
   pageSize?: number;
+  /** Must-see places cannot be restaurants (Review 2, D2): the traveler adds food after generation. */
+  excludeFoodAndDrink?: boolean;
 }): Promise<SelectablePoi[]> {
   const search = new URLSearchParams({ page: '1', pageSize: String(params.pageSize ?? 30) });
   const query = params.query?.trim();
   if (query) search.set('query', query);
+  if (params.excludeFoodAndDrink) search.set('excludeFoodAndDrink', 'true');
   if (params.near && params.radiusKm) {
     search.set('latitude', String(params.near.latitude));
     search.set('longitude', String(params.near.longitude));
@@ -96,14 +100,9 @@ export async function searchSelectablePois(params: {
 
 const MAPBOX_BASE = 'https://api.mapbox.com/search/searchbox/v1';
 
-function mapboxToken(): string | null {
-  const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
-  // Only public tokens may ship to a browser.
-  return token && token.startsWith('pk.') ? token : null;
-}
 
 export function isAddressSearchAvailable(): boolean {
-  return mapboxToken() !== null;
+  return getMapboxPublicToken() !== null;
 }
 
 /** Groups suggest calls and the final retrieve into one Mapbox session (billing unit). */
@@ -133,7 +132,7 @@ export async function suggestAddresses(
   sessionToken: string,
   near?: GeoPoint | null,
 ): Promise<AddressCandidate[]> {
-  const token = mapboxToken();
+  const token = getMapboxPublicToken();
   if (!token || !query.trim()) return [];
   const search = new URLSearchParams({
     q: query.trim(),
@@ -170,7 +169,7 @@ export async function retrieveAddress(
   candidate: AddressCandidate,
   sessionToken: string,
 ): Promise<ResolvedAddress> {
-  const token = mapboxToken();
+  const token = getMapboxPublicToken();
   if (!token) throw new PlaceSearchError('Tìm địa chỉ chưa được cấu hình.');
   const search = new URLSearchParams({ access_token: token, session_token: sessionToken, language: 'vi' });
 

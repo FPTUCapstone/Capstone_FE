@@ -37,6 +37,17 @@ vi.mock('../services/placeSearchApi', async (importOriginal) => ({
   isAddressSearchAvailable: () => false,
 }));
 
+vi.mock('../components/maps/LazyMaps', () => ({
+  LazyRadiusMap: ({
+    center,
+    radiusKm,
+  }: {
+    center: { latitude: number; longitude: number };
+    radiusKm: number;
+  }) => <div data-testid="radius-map">{`${center.latitude},${center.longitude}:${radiusKm}`}</div>,
+  LazyItineraryMap: () => null,
+}));
+
 async function flush() {
   for (let i = 0; i < 5; i++) {
     await act(async () => {
@@ -452,6 +463,66 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
       await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
       expect(createSpy.mock.calls[0][0].searchRadiusKm).toBe(100);
+    });
+
+    it('warns only when the radius is wider than 30 km (Review 2, D9)', () => {
+      render(<CreateSchedulingRequestForm />);
+
+      const slider = screen.getByLabelText(/Bán kính tìm kiếm điểm tham quan xung quanh/);
+      expect((slider as HTMLInputElement).value).toBe('10');
+      expect(screen.queryByText(/khá rộng/)).toBeNull();
+
+      fireEvent.change(slider, { target: { value: '30' } });
+      expect(screen.queryByText(/khá rộng/)).toBeNull();
+
+      fireEvent.change(slider, { target: { value: '45' } });
+      expect(screen.getByText(/Bán kính 45 km khá rộng/)).toBeDefined();
+    });
+
+    it('draws the exploration radius on a map that follows the slider when Mapbox is configured (D9)', async () => {
+      vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
+      try {
+        render(<CreateSchedulingRequestForm />);
+        expect(screen.queryByTestId('radius-map')).toBeNull();
+
+        await chooseStartAndArea();
+        expect(screen.getByTestId('radius-map').textContent).toBe(
+          `${CHAM_MUSEUM.latitude},${CHAM_MUSEUM.longitude}:10`,
+        );
+
+        fireEvent.change(screen.getByLabelText(/Bán kính tìm kiếm điểm tham quan xung quanh/), {
+          target: { value: '25' },
+        });
+        expect(screen.getByTestId('radius-map').textContent).toBe(
+          `${CHAM_MUSEUM.latitude},${CHAM_MUSEUM.longitude}:25`,
+        );
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('shows no radius map without a Mapbox token', async () => {
+      vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', '');
+      try {
+        render(<CreateSchedulingRequestForm />);
+        await chooseStartAndArea();
+        expect(screen.queryByTestId('radius-map')).toBeNull();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('excludes restaurants from the must-see picker but not from the area picker (Review 2, D2)', async () => {
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+      expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
+        expect.not.objectContaining({ excludeFoodAndDrink: true }),
+      );
+
+      await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
+      expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
+        expect.objectContaining({ excludeFoodAndDrink: true }),
+      );
     });
   });
 

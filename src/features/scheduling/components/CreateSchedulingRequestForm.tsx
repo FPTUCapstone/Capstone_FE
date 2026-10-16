@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { getTravelPreferences } from '@/features/account/preferences/travelPreferencesApi';
+import { getMapboxPublicToken } from '@/lib/mapboxToken';
 import { ROUTES } from '@/lib/routes';
 
 import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
@@ -23,6 +24,8 @@ import {
   TransportMode,
   TRIPMATE_TIME_ZONE,
 } from '../types/schedulingTypes';
+import { radiusWarning } from '../utils/itineraryPresentation';
+import { LazyRadiusMap } from './maps/LazyMaps';
 import { PickedPlace, PlacePickerDialog } from './PlacePickerDialog';
 
 const MAX_MANDATORY_POIS = 6;
@@ -168,6 +171,20 @@ export function CreateSchedulingRequestForm({
     }
   };
 
+
+  // Review 2 (D9): the radius circle is drawn around the exploration area (or the start).
+  const mapboxToken = getMapboxPublicToken();
+  const [radiusMapFailed, setRadiusMapFailed] = useState(false);
+  const radiusCenterSource = explorationPoi ?? startPoint;
+  const radiusCenterLatitude = radiusCenterSource?.latitude;
+  const radiusCenterLongitude = radiusCenterSource?.longitude;
+  const radiusCenter = useMemo(
+    () =>
+      radiusCenterLatitude === undefined || radiusCenterLongitude === undefined
+        ? null
+        : { latitude: radiusCenterLatitude, longitude: radiusCenterLongitude },
+    [radiusCenterLatitude, radiusCenterLongitude],
+  );
 
   // Live end time (the trip may end on a later day)
   const tripEnd =
@@ -528,6 +545,22 @@ export function CreateSchedulingRequestForm({
               <span>50 km (Ngoại ô)</span>
               <span>{MAX_SEARCH_RADIUS_KM} km (Liên tỉnh)</span>
             </div>
+            {radiusWarning(searchRadiusKm) && (
+              <p role="status" className="mt-2 flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <span className="material-symbols-outlined text-sm">warning</span>
+                <span>{radiusWarning(searchRadiusKm)}</span>
+              </p>
+            )}
+            {mapboxToken && radiusCenter && !radiusMapFailed && (
+              <div className="mt-3">
+                <LazyRadiusMap
+                  token={mapboxToken}
+                  center={radiusCenter}
+                  radiusKm={searchRadiusKm}
+                  onUnavailable={() => setRadiusMapFailed(true)}
+                />
+              </div>
+            )}
             {validationErrors.searchRadiusKm && (
               <p className="mt-1 text-xs text-rose-600">
                 {validationErrors.searchRadiusKm}
@@ -929,6 +962,7 @@ export function CreateSchedulingRequestForm({
           allowAddresses={pickerTarget === 'start'}
           near={pickerTarget === 'mandatory' ? explorationPoi ?? startPoint : startPoint}
           radiusKm={pickerTarget === 'mandatory' ? searchRadiusKm : null}
+          excludeFoodAndDrink={pickerTarget === 'mandatory'}
           onSelect={handlePicked}
           onClose={() => setPickerTarget(null)}
         />

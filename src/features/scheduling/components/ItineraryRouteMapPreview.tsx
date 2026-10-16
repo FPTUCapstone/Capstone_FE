@@ -4,12 +4,15 @@ import { ItineraryDetailDto, SchedulingResponseDto } from '../types/schedulingTy
 
 interface ItineraryRouteMapPreviewProps {
   itinerary: ItineraryDetailDto | SchedulingResponseDto;
+  /** False when the Mapbox itinerary map is shown instead of the order diagram (Review 2, D9). */
+  showDiagram?: boolean;
 }
 
-export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreviewProps) {
+export function ItineraryRouteMapPreview({ itinerary, showDiagram = true }: ItineraryRouteMapPreviewProps) {
   return (
     <div className="space-y-4">
       {/* Stop Order Preview */}
+      {showDiagram && (
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
         <div className="border-b border-slate-100 p-4">
           <div className="flex items-center justify-between">
@@ -83,6 +86,7 @@ export function ItineraryRouteMapPreview({ itinerary }: ItineraryRouteMapPreview
           </div>
         </div>
       </div>
+      )}
 
       {/* Mobile App Sync / Live Navigation Note (UC-13 Mobile Feature) */}
       <div className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 shadow-2xs">

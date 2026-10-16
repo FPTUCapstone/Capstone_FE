@@ -9,6 +9,9 @@ import { fetchPoiDetail } from '../services/poiApi';
 import { PoiApiError, type PoiDetail } from '../types/poi';
 import { formatDuration, formatReviewCount } from '../utils/poiPresentation';
 import { PoiImage } from './PoiImage';
+import { formatPriceLabel } from '@/lib/priceLabel';
+import { useWebSession } from '@/features/auth/session/useWebSession';
+import { TripadvisorReviews } from './TripadvisorReviews';
 
 interface PoiDetailPageProps {
   id: string;
@@ -41,6 +44,9 @@ function DetailLoading() {
 
 export function PoiDetailPage({ id }: PoiDetailPageProps) {
   const router = useRouter();
+  // Tripadvisor reviews are for signed-in Travelers only (Review 2, §3.6).
+  const { status: sessionStatus, context: sessionContext } = useWebSession();
+  const isTraveler = sessionStatus === 'authenticated' && sessionContext?.role === 'Traveler';
   const validId = /^\d+$/.test(id) && Number(id) > 0;
   const [detail, setDetail] = useState<PoiDetail | null>(null);
   const [failure, setFailure] = useState<DetailFailure | null>(validId ? null : 'invalid');
@@ -162,7 +168,8 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Thông tin nhanh">
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" aria-label="Thông tin nhanh">
+          <InfoCard eyebrow={detail.costKind === 'AverageSpend' ? 'Chi tiêu' : 'Giá vé'} value={formatPriceLabel(detail.estimatedVisitCost, detail.costKind)} detail="Ước tính theo dữ liệu catalogue" />
           <InfoCard eyebrow="Thời lượng gợi ý" value={formatDuration(detail.averageVisitDurationMinutes)} detail="Thời lượng trung bình" />
           <InfoCard eyebrow="Không gian" value={detail.indoorOutdoor === 'Outdoor' ? 'Ngoài trời' : detail.indoorOutdoor === 'Indoor' ? 'Trong nhà' : 'Hỗn hợp'} detail="Theo thông tin catalogue" />
           <InfoCard eyebrow="Mái che" value={detail.hasShelter ? 'Có mái che' : 'Không có mái che'} detail="Cân nhắc thời tiết khi tham quan" />
@@ -181,6 +188,12 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {detail.tags.map((tag) => <span key={tag.id} className="rounded-full bg-[#e8edef] px-3 py-2 text-sm font-bold text-[#35474f]">{tag.name}</span>)}
                 </div>
+              </section>
+            ) : null}
+            {isTraveler ? (
+              <section id="danh-gia" className="mt-8 rounded-2xl bg-[#f0f4f5] p-5" aria-labelledby="external-reviews-heading">
+                <h3 id="external-reviews-heading" className="mb-3 text-xl font-black">Đánh giá từ du khách</h3>
+                <TripadvisorReviews poiId={detail.id} />
               </section>
             ) : null}
             <div className="mt-8 rounded-2xl border border-[#cfe1de] bg-[#eef9f6] p-5">

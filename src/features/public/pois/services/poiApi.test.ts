@@ -86,4 +86,18 @@ describe('POI API response parsing', () => {
     const detail = parsePoiDetail({ id: 1, name: 'POI', description: null, status: 'Active', categoryId: 1, categoryName: 'Attraction', latitude: 1, longitude: 1, address: null, indoorOutdoor: 'Outdoor', averageVisitDurationMinutes: 60, hasShelter: false, scenicScore: null, photoRating: null, averageRating: null, reviewCount: 0, isOpenNow: true, openingHours: [], photos: [], tags: [], createdAtUtc: '2026-01-01T00:00:00Z', updatedAtUtc: '2026-01-01T00:00:00Z' });
     expect(detail.description).toBeNull();
   });
+
+  it('reads the Review 2 price fields and tolerates their absence (§3.3)', () => {
+    const base = { id: 1, name: 'POI', description: null, status: 'Active', categoryId: 1, categoryName: 'Attraction', latitude: 1, longitude: 1, address: null, indoorOutdoor: 'Outdoor', averageVisitDurationMinutes: 60, hasShelter: false, scenicScore: null, photoRating: null, averageRating: null, reviewCount: 0, isOpenNow: true, openingHours: [], photos: [], tags: [], createdAtUtc: '2026-01-01T00:00:00Z', updatedAtUtc: '2026-01-01T00:00:00Z' };
+
+    const priced = parsePoiDetail({ ...base, estimatedVisitCost: 40000, costKind: 'AdmissionTicket' });
+    expect(priced.estimatedVisitCost).toBe(40000);
+    expect(priced.costKind).toBe('AdmissionTicket');
+
+    const legacy = parsePoiDetail(base);
+    expect(legacy.estimatedVisitCost).toBeNull();
+    expect(legacy.costKind).toBeNull();
+
+    expect(() => parsePoiDetail({ ...base, estimatedVisitCost: '40000' })).toThrow();
+  });
 });
