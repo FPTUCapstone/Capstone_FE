@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
+import { removeOperatorTour } from '../services/operatorTourService';
 import {
   type TourLifecycleStatus,
   type TourPackageDto,
@@ -16,19 +17,22 @@ interface OperatorTourListViewProps {
 
 export function OperatorTourListView({ tours, isDemo = false }: OperatorTourListViewProps) {
   const [filter, setFilter] = useState<string>('ALL');
+  const [items, setItems] = useState(tours);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const filteredTours = tours.filter((t) => {
+  const filteredTours = items.filter((t) => {
     if (filter === 'ALL') return true;
     return t.status === filter;
   });
 
   const filterCounts = {
-    ALL: tours.length,
-    Draft: tours.filter((t) => t.status === 'Draft').length,
-    Pending: tours.filter((t) => t.status === 'Pending').length,
-    Approved: tours.filter((t) => t.status === 'Approved').length,
-    Published: tours.filter((t) => t.status === 'Published').length,
-    Rejected: tours.filter((t) => t.status === 'Rejected').length,
+    ALL: items.length,
+    Draft: items.filter((t) => t.status === 'Draft').length,
+    Pending: items.filter((t) => t.status === 'Pending').length,
+    Approved: items.filter((t) => t.status === 'Approved').length,
+    Published: items.filter((t) => t.status === 'Published').length,
+    Rejected: items.filter((t) => t.status === 'Rejected').length,
   };
 
   return (
@@ -40,7 +44,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
             Quản lý gói tour
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Danh sách các gói tour thương mại, lịch trình khởi hành và trạng thái xét duyệt (UC-35, UC-36, UC-37).
+            Danh sách các gói tour thương mại, lịch trình khởi hành và trạng thái xét duyệt.
           </p>
         </div>
 
@@ -49,7 +53,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
           className="flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          Tạo gói tour mới (UC-35)
+          Tạo gói tour mới
         </Link>
       </div>
 
@@ -134,6 +138,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                   const canEdit =
                     t.status === 'Draft' || t.status === 'Rejected' || t.status === 'Approved' || t.status === 'Published';
                   const canSubmit = t.status === 'Draft' || t.status === 'Rejected';
+                  const canDelete = canSubmit;
 
                   return (
                     <tr key={t.id} className="hover:bg-slate-50/50 transition">
@@ -164,11 +169,11 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                         <OperatorTourStatusBadge status={t.status as TourLifecycleStatus} />
                       </td>
                       <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                           {canEdit && (
                             <Link
                               href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(t.id), isDemo)}
-                              className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition"
+                              className="inline-flex shrink-0 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition"
                             >
                               Chỉnh sửa
                             </Link>
@@ -184,10 +189,25 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                           {canSubmit && (
                             <Link
                               href={withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(t.id), isDemo)}
-                              className="rounded-lg bg-[#006B5F] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#005249] transition shadow-2xs"
+                              className="inline-flex shrink-0 rounded-lg bg-[#006B5F] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#005249] transition shadow-2xs"
                             >
                               Gửi duyệt
                             </Link>
+                          )}
+                          {canDelete && (
+                            <button type="button" disabled={deletingId === t.id} aria-label={`Xóa ${t.title}`} onClick={async () => {
+                              if (!window.confirm(`Xóa bản nháp “${t.title}”? Thao tác này không thể hoàn tác.`)) return;
+                              setDeletingId(t.id);
+                              try {
+                                setDeleteError(null);
+                                await removeOperatorTour(t.id);
+                                setItems((current) => current.filter((item) => item.id !== t.id));
+                              } catch (error) {
+                                setDeleteError(error instanceof Error ? error.message : 'Không thể xóa tour. Vui lòng thử lại.');
+                              } finally { setDeletingId(null); }
+                            }} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-rose-600 hover:bg-rose-50 disabled:opacity-50" title="Xóa tour">
+                              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+                            </button>
                           )}
                         </div>
                       </td>
@@ -199,6 +219,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
           </div>
         )}
       </div>
+      {deleteError && <p role="alert" className="mt-3 text-sm font-medium text-rose-600">{deleteError}</p>}
     </div>
   );
 }

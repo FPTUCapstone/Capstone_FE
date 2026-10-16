@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
-import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect, TransportSelect } from './TourCataloguePickers';
 import { DepartureTermsFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
 import { TourMediaManager } from './TourMediaManager';
 import { useTourCatalogues } from './useTourCatalogues';
@@ -30,6 +30,20 @@ interface UpdateTourPackageViewProps {
   isDemo?: boolean;
 }
 
+const START_TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
+  const hours = Math.floor(index / 4).toString().padStart(2, '0');
+  const minutes = ((index % 4) * 15).toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+});
+
+function normalizeItineraryDays(days: TourItineraryDay[], durationDays: number): TourItineraryDay[] {
+  if (days.length >= durationDays) return days.slice(0, durationDays);
+  return [...days, ...Array.from({ length: durationDays - days.length }, (_, index) => {
+    const dayNo = days.length + index + 1;
+    return { dayNo, title: `Ngày ${dayNo}: Tiếp tục hành trình`, activities: [] };
+  })];
+}
+
 export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTourPackageViewProps) {
   const router = useRouter();
   const isPending = initialTour.status === 'Pending';
@@ -39,7 +53,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   const [destinationIds, setDestinationIds] = useState<number[]>(initialTour.destinationIds ?? []);
   const [highlights, setHighlights] = useState(initialTour.highlights ?? '');
   const [travellerRequirements, setTravellerRequirements] = useState(initialTour.travellerRequirements ?? '');
-  const [timeZoneId, setTimeZoneId] = useState(initialTour.timeZoneId ?? 'Asia/Ho_Chi_Minh');
+  const [timeZoneId] = useState(initialTour.timeZoneId ?? 'Asia/Ho_Chi_Minh');
   const [media, setMedia] = useState<TourMediaItem[]>(initialTour.media ?? []);
 
   // Form State initialized from initialTour
@@ -56,8 +70,8 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   const [cancellationPolicy, setCancellationPolicy] = useState(initialTour.cancellationPolicy);
 
   // Itinerary & Schedules
-  const [itinerary, setItinerary] = useState<TourItineraryDay[]>(
-    JSON.parse(JSON.stringify(initialTour.itinerary || []))
+  const [itinerary, setItinerary] = useState<TourItineraryDay[]>(() =>
+    normalizeItineraryDays(JSON.parse(JSON.stringify(initialTour.itinerary || [])), initialTour.durationDays),
   );
   const [schedules, setSchedules] = useState<TourDepartureSchedule[]>(
     JSON.parse(JSON.stringify(initialTour.schedules || []))
@@ -72,13 +86,34 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [draggedActivity, setDraggedActivity] = useState<{ dayIndex: number; activityIndex: number } | null>(null);
+  const [validationToast, setValidationToast] = useState<string | null>(null);
+  const validationToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activitySequence = useRef(0);
+
+  useEffect(() => () => {
+    if (validationToastTimer.current) clearTimeout(validationToastTimer.current);
+  }, []);
+
+  const showValidationToast = (message: string) => {
+    setValidationToast(message);
+    if (validationToastTimer.current) clearTimeout(validationToastTimer.current);
+    validationToastTimer.current = setTimeout(() => {
+      setValidationToast(null);
+      validationToastTimer.current = null;
+    }, 4500);
+  };
 
   // Handlers for Itinerary
   const handleAddActivity = (dayIndex: number) => {
     if (isPending) return;
-    const updated = [...itinerary];
+    const updated = itinerary.map((day) => ({ ...day, activities: [...day.activities] }));
+    if (!updated[dayIndex]) {
+      updated.push({ dayNo: 1, title: 'Ngày 1: Khám phá điểm đến', activities: [] });
+      dayIndex = updated.length - 1;
+    }
     const newAct: TourItineraryActivity = {
-      id: `act-${Date.now()}`,
+      id: `new-activity-${++activitySequence.current}`,
       time: '16:00',
       poiName: 'Điểm tham quan mới',
       stayDurationMinutes: 45,
@@ -88,10 +123,30 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     setItinerary(updated);
   };
 
+  const handleDurationChange = (nextValue: number) => {
+    const nextDuration = Math.max(1, nextValue || 1);
+    setDurationDays(nextDuration);
+    setItinerary((current) => normalizeItineraryDays(current, nextDuration));
+  };
+
   const handleRemoveActivity = (dayIndex: number, actIndex: number) => {
     if (isPending) return;
-    const updated = [...itinerary];
+    const updated = itinerary.map((day) => ({ ...day, activities: [...day.activities] }));
+    if (!updated[dayIndex]?.activities[actIndex]) return;
     updated[dayIndex].activities.splice(actIndex, 1);
+    setItinerary(updated);
+  };
+
+  const moveActivity = (fromDayIndex: number, fromIndex: number, toDayIndex: number, toIndex: number) => {
+    if (isPending || (fromDayIndex === toDayIndex && fromIndex === toIndex)) return;
+    const updated = itinerary.map((day) => ({ ...day, activities: [...day.activities] }));
+    if (!updated[fromDayIndex]?.activities[fromIndex] || !updated[toDayIndex]) return;
+    const [activity] = updated[fromDayIndex].activities.splice(fromIndex, 1);
+    if (toIndex < 0 || toIndex >= updated[toDayIndex].activities.length) {
+      updated[toDayIndex].activities.push(activity);
+    } else {
+      updated[toDayIndex].activities.splice(toIndex, 0, activity);
+    }
     setItinerary(updated);
   };
 
@@ -131,6 +186,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     const validationErrors = validateUpdateTourPackage(payload, initialTour);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       return;
     }
 
@@ -149,6 +205,8 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
         if (andSubmit) {
           router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(result.data.id), isDemo));
+        } else if (isApproved) {
+          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(result.data.id), isDemo));
         } else {
           router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
         }
@@ -160,6 +218,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     } catch (err) {
       if (err instanceof OperatorTourValidationError) {
         setErrors(err.errors);
+        showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       } else {
         setErrorMessage(
           err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE
@@ -183,13 +242,13 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
               {initialTour.tourCode}
             </span>
             <OperatorTourStatusBadge status={initialTour.status} />
-            <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">
-              v{initialTour.version}
-            </span>
+            {isApproved && (
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">
+                Phiên bản {initialTour.version}
+              </span>
+            )}
           </div>
-          <p className="mt-1 text-xs text-slate-500">
-            Chỉnh sửa gói tour hiện có và quản lý các phiên bản phát hành (UC-36, Screen #42).
-          </p>
+          <p className="mt-1 text-xs text-slate-500">Chỉnh sửa thông tin gói tour.</p>
         </div>
 
         <Link
@@ -217,7 +276,6 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         </div>
       )}
 
-      {/* Pending Approval Read-Only Banner (MSG122) */}
       {isPending && (
         <div
           role="status"
@@ -244,7 +302,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
             </span>
             <div className="leading-relaxed">
               <strong>Gói tour này đang hoạt động và có {totalSoldSlots} chỗ đã xác nhận đặt chỗ.</strong>{' '}
-              Theo quy định <strong>BR-103</strong>, gói tour đã xuất bản không được sửa trực tiếp. Mọi thay đổi về giá, sức chứa hoặc lịch trình sẽ tạo thành <strong>phiên bản nháp mới (v{initialTour.version + 1})</strong> và cần Quản trị viên xét duyệt lại trước khi có hiệu lực với các chuyến đi mới.
+              Gói tour đã xuất bản không được sửa trực tiếp. Mọi thay đổi về giá, sức chứa hoặc lịch trình sẽ tạo thành <strong>phiên bản nháp mới (v{initialTour.version + 1})</strong> và cần Quản trị viên xét duyệt lại trước khi có hiệu lực với các chuyến đi mới.
             </div>
           </div>
         </div>
@@ -313,7 +371,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
             <div className="mt-4 space-y-4">
               <div>
                 <label htmlFor="field-title" className="block text-xs font-bold text-[#00152A]">
-                  Tên gói tour
+                  Tên gói tour <span className="text-rose-500" aria-hidden="true">*</span>
                 </label>
                 <input
                   id="field-title"
@@ -326,77 +384,10 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 {errors.title && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.title}</p>}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-                <div>
-                  <label htmlFor="field-basePrice" className="block text-xs font-bold text-[#00152A]">
-                    Giá người lớn (VNĐ)
-                  </label>
-                  <input
-                    id="field-basePrice"
-                    type="number"
-                    disabled={isPending}
-                    value={basePrice}
-                    onChange={(e) => setBasePrice(Number(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 font-mono focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
-                  />
-                  {basePrice !== initialTour.basePrice && (
-                    <span className="mt-1 inline-block text-[11px] font-semibold text-blue-600">
-                      Gốc: {initialTour.basePrice.toLocaleString()} đ
-                    </span>
-                  )}
-                  {errors.basePrice && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.basePrice}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="field-childPrice" className="block text-xs font-bold text-[#00152A]">
-                    Giá trẻ em (VNĐ)
-                  </label>
-                  <input
-                    id="field-childPrice"
-                    type="number"
-                    disabled={isPending}
-                    value={childPrice ?? ''}
-                    onChange={(e) => setChildPrice(e.target.value ? Number(e.target.value) : undefined)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 font-mono focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="field-maxCapacity" className="block text-xs font-bold text-[#00152A]">
-                    Sức chứa tối đa
-                  </label>
-                  <input
-                    id="field-maxCapacity"
-                    type="number"
-                    disabled={isPending}
-                    value={maxCapacity}
-                    onChange={(e) => setMaxCapacity(Number(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
-                  />
-                  {errors.maxCapacity && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.maxCapacity}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="field-duration" className="block text-xs font-bold text-[#00152A]">
-                    Thời lượng (ngày)
-                  </label>
-                  <input
-                    id="field-duration"
-                    type="number"
-                    min="1"
-                    disabled={isPending}
-                    value={durationDays}
-                    onChange={(e) => setDurationDays(Number(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
-                  />
-                  {errors.durationDays && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.durationDays}</p>}
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
-                    Điểm đến
+                    Điểm đến chính <span className="text-rose-500" aria-hidden="true">*</span>
                   </label>
                   {isDemo ? (
                     <input
@@ -450,7 +441,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
 
               <div>
                 <label htmlFor="field-description" className="block text-xs font-bold text-[#00152A]">
-                  Mô tả gói tour
+                  Mô tả gói tour <span className="text-rose-500" aria-hidden="true">*</span>
                 </label>
                 <textarea
                   id="field-description"
@@ -495,7 +486,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
 
               <div>
                 <label htmlFor="field-policy" className="block text-xs font-bold text-[#00152A]">
-                  Chính sách hủy tour
+                  Chính sách hủy tour <span className="text-rose-500" aria-hidden="true">*</span>
                 </label>
                 {isDemo ? (
                   <input
@@ -526,88 +517,57 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-[#00152A]">Lịch trình & Điểm dừng</h3>
+                <h3 className="text-base font-extrabold text-[#00152A]">Lịch trình & Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></h3>
                 <p className="mt-0.5 text-xs text-slate-500">
                   Xem và điều chỉnh các điểm dừng trong chương trình tour.
                 </p>
               </div>
-              {!isPending && (
-                <button
-                  type="button"
-                  onClick={() => handleAddActivity(0)}
-                  className="flex items-center gap-1 text-xs font-bold text-[#006B5F] hover:underline"
-                >
-                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                  Thêm điểm dừng
-                </button>
-              )}
             </div>
 
             <div className="mt-4 space-y-4">
+              {errors.itinerary && (
+                <div id="itinerary-validation" tabIndex={-1} role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 outline-none">
+                  {errors.itinerary}
+                </div>
+              )}
               {itinerary.map((day, dIdx) => (
-                <div key={day.dayNo} className="overflow-x-auto">
-                  <p className="text-xs font-bold text-slate-700 pb-2">Ngày {day.dayNo}</p>
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-500">
-                        <th className="pb-2 w-12">#</th>
-                        <th className="pb-2">Điểm dừng</th>
-                        <th className="pb-2 w-28">Thời gian</th>
-                        <th className="pb-2 w-24">Phương tiện</th>
-                        {!isPending && <th className="pb-2 text-right w-12">Xóa</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {day.activities.map((act, aIdx) => (
-                        <tr key={act.id}>
-                          <td className="py-2.5 font-bold text-slate-600">{aIdx + 1}</td>
-                          <td className="py-2.5 font-medium text-slate-900">
-                            {isPending ? (
-                              act.poiName
-                            ) : isDemo ? (
-                              <input
-                                type="text"
-                                value={act.poiName}
-                                onChange={(e) => {
-                                  const updated = [...itinerary];
-                                  updated[dIdx].activities[aIdx].poiName = e.target.value;
-                                  setItinerary(updated);
-                                }}
-                                className="w-full rounded-lg border border-slate-200 p-1 text-xs"
-                              />
-                            ) : (
-                              <PoiSelect
-                                options={catalogues.pois}
-                                value={act.poiId}
-                                currentName={act.poiName}
-                                onChange={(poi) => {
-                                  const updated = [...itinerary];
-                                  updated[dIdx].activities[aIdx].poiId = poi?.id;
-                                  updated[dIdx].activities[aIdx].poiName = poi?.name ?? '';
-                                  setItinerary(updated);
-                                }}
-                              />
-                            )}
-                          </td>
-                          <td className="py-2.5 text-slate-600">
-                            {act.time} · {act.stayDurationMinutes}p
-                          </td>
-                          <td className="py-2.5 text-slate-600">{act.transport}</td>
-                          {!isPending && (
-                            <td className="py-2.5 text-right">
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveActivity(dIdx, aIdx)}
-                                className="text-rose-500 hover:text-rose-700"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">delete</span>
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div
+                  key={day.dayNo}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    if (draggedActivity) moveActivity(draggedActivity.dayIndex, draggedActivity.activityIndex, dIdx, -1);
+                    setDraggedActivity(null);
+                  }}
+                  className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold text-slate-800">Ngày {day.dayNo}</p>{!isPending && <button type="button" onClick={() => handleAddActivity(dIdx)} className="inline-flex items-center gap-1 text-xs font-bold text-[#006B5F] hover:underline"><span className="material-symbols-outlined text-[17px]" aria-hidden="true">add_circle</span>Thêm điểm dừng</button>}</div>
+                  <div className="mt-3 space-y-3">
+                    {day.activities.map((act, aIdx) => (
+                      <div key={act.id} draggable={!isPending} onDragStart={() => setDraggedActivity({ dayIndex: dIdx, activityIndex: aIdx })} onDragEnd={() => setDraggedActivity(null)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => {
+                        event.stopPropagation();
+                        if (draggedActivity) moveActivity(draggedActivity.dayIndex, draggedActivity.activityIndex, dIdx, aIdx);
+                        setDraggedActivity(null);
+                      }} className={`rounded-xl border border-slate-200 bg-white p-3 transition ${draggedActivity?.dayIndex === dIdx && draggedActivity.activityIndex === aIdx ? 'opacity-40' : ''}`}>
+                        <div className="mb-3 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                            {!isPending && <span className="material-symbols-outlined cursor-grab text-[19px] text-slate-400" title="Kéo để đổi thứ tự">drag_indicator</span>}
+                            <span>Điểm dừng {aIdx + 1}</span>
+                            {!isPending && <span className="inline-flex gap-1">
+                              <button type="button" disabled={aIdx === 0} aria-label="Di chuyển lên" onClick={() => moveActivity(dIdx, aIdx, dIdx, aIdx - 1)} className="rounded p-0.5 text-slate-500 hover:bg-slate-100 disabled:opacity-25">↑</button>
+                              <button type="button" disabled={aIdx === day.activities.length - 1} aria-label="Di chuyển xuống" onClick={() => moveActivity(dIdx, aIdx, dIdx, aIdx + 1)} className="rounded p-0.5 text-slate-500 hover:bg-slate-100 disabled:opacity-25">↓</button>
+                            </span>}
+                          </div>
+                          {!isPending && <button type="button" aria-label={`Xóa điểm dừng ${aIdx + 1}`} onClick={() => handleRemoveActivity(dIdx, aIdx)} className="grid h-8 w-8 place-items-center rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700"><span className="material-symbols-outlined text-[19px]">delete</span></button>}
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+                          <div className="md:col-span-5"><label className="block text-[11px] font-semibold text-slate-600">Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1">{isPending ? <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">{act.poiName}</p> : isDemo ? <input type="text" value={act.poiName} onChange={(e) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].poiName = e.target.value; setItinerary(updated); }} className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs" /> : <PoiSelect options={catalogues.pois} value={act.poiId} currentName={act.poiName} onChange={(poi) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].poiId = poi?.id; updated[dIdx].activities[aIdx].poiName = poi?.name ?? ''; setItinerary(updated); }} />}</div></div>
+                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Giờ bắt đầu <span className="text-rose-500" aria-hidden="true">*</span></label>{isPending ? <p className="mt-1 flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700">{act.time}</p> : <select aria-label={`Giờ bắt đầu điểm dừng ${aIdx + 1}`} value={act.time} onChange={(event) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].time = event.target.value; setItinerary(updated); }} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs">{!START_TIME_OPTIONS.includes(act.time) && <option value={act.time}>{act.time}</option>}{START_TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}</select>}</div>
+                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Lưu lại (phút) <span className="text-rose-500" aria-hidden="true">*</span></label>{isPending ? <p className="mt-1 flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700">{act.stayDurationMinutes} phút</p> : <input aria-label={`Thời lượng điểm dừng ${aIdx + 1}`} type="number" min="1" value={act.stayDurationMinutes} onChange={(event) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].stayDurationMinutes = Number(event.target.value); setItinerary(updated); }} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs" />}</div>
+                          <div className="md:col-span-3"><label className="block text-[11px] font-semibold text-slate-600">Phương tiện <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1">{isPending ? <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">{act.transport}</p> : <TransportSelect value={act.transport} onChange={(value) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].transport = value; setItinerary(updated); }} />}</div></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -619,14 +579,21 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
           {/* Card: Departure Schedules with Sold Slots (BR-61) */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
-              Lịch khởi hành & Chỗ đã bán
+              Lịch khởi hành & Chỗ đã bán <span className="text-rose-500" aria-hidden="true">*</span>
             </h3>
             <p className="mt-1 text-[11px] text-slate-500">
-              Quy tắc <strong>BR-61</strong>: Sức chứa không được giảm xuống dưới số chỗ đã bán.
+              Sức chứa không được giảm xuống dưới số chỗ đã bán.
             </p>
 
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div><label htmlFor="field-basePrice" className="block text-[11px] font-semibold text-slate-600">Giá người lớn (VNĐ) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-basePrice" type="number" disabled={isPending} value={basePrice} onChange={(e) => setBasePrice(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900 disabled:bg-slate-50" />{errors.basePrice && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.basePrice}</p>}</div>
+              <div><label htmlFor="field-childPrice" className="block text-[11px] font-semibold text-slate-600">Giá trẻ em (VNĐ)</label><input id="field-childPrice" type="number" disabled={isPending} value={childPrice ?? ''} onChange={(e) => setChildPrice(e.target.value ? Number(e.target.value) : undefined)} placeholder="Tùy chọn" className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900 disabled:bg-slate-50" /></div>
+              <div><label htmlFor="field-maxCapacity" className="block text-[11px] font-semibold text-slate-600">Sức chứa tối đa <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-maxCapacity" type="number" disabled={isPending} value={maxCapacity} onChange={(e) => setMaxCapacity(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900 disabled:bg-slate-50" />{errors.maxCapacity && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.maxCapacity}</p>}</div>
+              <div><label htmlFor="field-duration" className="block text-[11px] font-semibold text-slate-600">Thời lượng (ngày) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-duration" type="number" min="1" disabled={isPending} value={durationDays} onChange={(e) => handleDurationChange(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900 disabled:bg-slate-50" />{errors.durationDays && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.durationDays}</p>}</div>
+            </div>
+
             {errors.schedules && (
-              <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">
+              <p id="schedule-validation" tabIndex={-1} role="alert" className="mt-2 text-xs font-semibold text-rose-600 outline-none">
                 {errors.schedules}
               </p>
             )}
@@ -642,7 +609,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   </div>
                   <div>
                     <label htmlFor={`sch-cap-${sch.id}`} className="text-[11px] text-slate-600 font-semibold">
-                      Sức chứa tổng cộng (Tối thiểu {sch.reservedCapacity})
+                      Sức chứa tổng cộng (Tối thiểu {sch.reservedCapacity}) <span className="text-rose-500" aria-hidden="true">*</span>
                     </label>
                     <input
                       id={`sch-cap-${sch.id}`}
@@ -681,10 +648,8 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 <TourTermsFields
                   highlights={highlights}
                   travellerRequirements={travellerRequirements}
-                  timeZoneId={timeZoneId}
                   onHighlights={setHighlights}
                   onTravellerRequirements={setTravellerRequirements}
-                  onTimeZoneId={setTimeZoneId}
                   disabled={isPending}
                 />
               </div>
@@ -746,7 +711,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
               disabled={submitting}
               className="rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
             >
-              Lưu thay đổi (UC-36)
+              {submitting ? 'Đang lưu…' : isApproved ? 'Lưu thành bản nháp mới' : 'Lưu thay đổi'}
             </button>
             {(initialTour.status === 'Draft' || initialTour.status === 'Rejected') && (
               <button
@@ -755,12 +720,22 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 disabled={submitting}
                 className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
               >
-                Gửi xét duyệt (UC-37)
+                Gửi xét duyệt
               </button>
             )}
           </>
         )}
       </div>
+
+      {validationToast && (
+        <div role="alert" className="fixed bottom-5 right-5 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-900 shadow-lg">
+          <span className="material-symbols-outlined shrink-0 text-[20px] text-rose-600" aria-hidden="true">error</span>
+          <p className="flex-1 font-medium leading-5">{validationToast}</p>
+          <button type="button" aria-label="Đóng thông báo" onClick={() => setValidationToast(null)} className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

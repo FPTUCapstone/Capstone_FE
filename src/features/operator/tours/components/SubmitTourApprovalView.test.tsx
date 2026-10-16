@@ -161,7 +161,7 @@ describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
     expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
 
     expect(
-      screen.getByText(/Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt \(BR-104\)/i)
+      screen.getByText(/Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt\./i)
     ).toBeDefined();
   });
 
@@ -176,7 +176,7 @@ describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
     const submitBtn = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
     expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
 
-    expect(screen.getByText(/Gói tour đã ở trạng thái chờ duyệt \(MSG122\)/i)).toBeDefined();
+    expect(screen.getByText(/Gói tour đã ở trạng thái chờ duyệt\./i)).toBeDefined();
   });
 
   it('disables submit button and shows MSG110 notice when tour status is Approved', () => {
@@ -191,7 +191,7 @@ describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
     expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
 
     expect(
-      screen.getByText(/Gói tour đã được phê duyệt\. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa \(MSG110\)/i)
+      screen.getByText(/Gói tour đã được phê duyệt\. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa\./i)
     ).toBeDefined();
   });
 

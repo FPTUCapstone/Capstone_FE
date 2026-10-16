@@ -7,7 +7,7 @@ import {
   uploadTourImage,
   validateTourImage,
 } from '../services/operatorTourService';
-import { OPERATOR_TOUR_MESSAGES, type TourMediaItem } from '../types/tourLifecycle';
+import type { TourMediaItem } from '../types/tourLifecycle';
 
 interface TourMediaManagerProps {
   tourId: string;
@@ -17,7 +17,7 @@ interface TourMediaManagerProps {
   disabled?: boolean;
 }
 
-/** Real-mode cover photo management for a saved draft (backend media flow, BR-16). */
+/** Cover photo management for an existing tour. */
 export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled = false }: TourMediaManagerProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +29,8 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
     setBusy(true);
     try {
       onChange(await action());
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+    } catch {
+      setError('Không thể cập nhật hình ảnh lúc này. Vui lòng thử lại sau.');
     } finally {
       setBusy(false);
     }
@@ -58,8 +58,8 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
         });
         pendingKeys.current.delete(fingerprint);
         onChange(current);
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      } catch {
+        setError('Không thể tải ảnh lên lúc này. Vui lòng thử lại sau.');
         setBusy(false);
         return;
       }
@@ -73,7 +73,7 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
         Hình ảnh giới thiệu
       </h3>
       <p className="mt-1 text-[11px] text-slate-500">
-        Tệp hình ảnh tối đa 5MB mỗi ảnh (BR-16). Cần có một ảnh đại diện trước khi gửi xét duyệt.
+        Tệp hình ảnh tối đa 5MB mỗi ảnh. Cần có một ảnh đại diện trước khi gửi xét duyệt.
       </p>
 
       {!disabled && (
@@ -103,12 +103,12 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
       {media.length === 0 ? (
         <p className="mt-3 text-xs text-slate-500">Chưa có hình ảnh nào.</p>
       ) : (
-        <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {media.map((item) => (
-            <li key={item.id} className="rounded-xl border border-slate-200 p-2">
+            <li key={item.id} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.url} alt={item.caption ?? tourTitle} className="h-24 w-full rounded-lg object-cover" />
-              <div className="mt-2 flex items-center justify-between gap-1 text-[11px]">
+              <img src={item.url} alt={item.caption ?? tourTitle} className="aspect-[4/3] w-full rounded-lg object-cover" />
+              <div className="flex min-h-9 items-center justify-between gap-1 px-1 pt-1.5 text-[11px]">
                 {item.isPrimary ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800">Ảnh đại diện</span>
                 ) : (
@@ -127,9 +127,10 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
                     disabled={busy}
                     aria-label="Xóa ảnh"
                     onClick={() => void run(() => removeTourImage(tourId, item.id))}
-                    className="font-bold text-rose-600 hover:underline disabled:opacity-50"
+                    className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                    title="Xóa ảnh"
                   >
-                    Xóa
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
                   </button>
                 )}
               </div>

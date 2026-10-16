@@ -1,11 +1,4 @@
-/**
- * UC-35: Create Tour Package
- * UC-36: Update Tour Package
- * UC-37: Submit Tour for Approval
- *
- * Canonical SRS Reference: Report 3 §3.8.2.1, §3.8.2.2, §3.8.2.3,
- * Business Rules: BR-22, BR-56, BR-61, BR-79, BR-101, BR-102, BR-103, BR-104.
- */
+/** Operator tour-package lifecycle data. */
 
 export type TourLifecycleStatus =
   | 'Draft'
@@ -174,59 +167,19 @@ export interface TourActionResult<T = TourPackageDto> {
   isDemo?: boolean;
 }
 
-/**
- * Canonical UC-35/36/37 message constants locked to Report 3 §3.8.2.
- *
- * NOTE on SRS_CONFLICT_UC35_MESSAGE_CODES:
- * Detailed §3.8.2.1:
- * - MSG108 = Tour package created successfully
- * - MSG29 = Departure date in past or return precedes departure
- * - MSG143 = Price or capacity is not a positive value
- * - MSG19 = Image file invalid format or exceeds 5MB (BR-16)
- *
- * NOTE on SRS_CONFLICT_UC36_MESSAGE_CODES:
- * Detailed §3.8.2.2:
- * - MSG109 = Tour package updated successfully
- * - MSG110 = Approved tour package direct edit attempted (offers new draft version)
- * - MSG122 = Tour package currently pending approval (read-only)
- * - MSG143 = Capacity reduced below sold slots (BR-61)
- *
- * NOTE on SRS_CONFLICT_UC37_MESSAGE_CODES:
- * Detailed §3.8.2.3:
- * - MSG111 = Tour package submitted successfully (becomes read-only)
- * - MSG122 = Tour package already pending approval
- * - MSG110 = Tour package already approved
- */
 export const OPERATOR_TOUR_MESSAGES = {
-  /** Mandatory field empty (MSG01) */
-  REQUIRED_FIELD: 'Trường thông tin này là bắt buộc (MSG01).',
-  REQUIRED_SUMMARY: 'Vui lòng điền đầy đủ các thông tin bắt buộc của gói tour (MSG01).',
-
-  /** Positive numeric constraints (MSG143, BR-79, BR-101) */
-  POSITIVE_NUMERIC: 'Giá tour và sức chứa phải là giá trị số dương lớn hơn 0 (BR-79, MSG143).',
-  CAPACITY_BELOW_SOLD: 'Sức chứa không được giảm xuống dưới số lượng chỗ đã bán cho lịch trình này (BR-61, MSG143).',
-
-  /** Departure dates constraints (MSG29, BR-22) */
-  INVALID_SCHEDULE_DATE: 'Ngày khởi hành không được ở quá khứ và ngày về phải sau hoặc cùng ngày khởi hành (BR-22, MSG29).',
-
-  /** Media constraints (MSG19, BR-16) */
-  INVALID_MEDIA: 'Tệp hình ảnh không hợp lệ hoặc dung lượng vượt quá 5MB (BR-16, MSG19).',
-
-  /** Authorization & Ownership (MSG126, BR-07, BR-102) */
-  UNAUTHORIZED_OPERATOR: 'Bạn không có quyền truy cập hoặc quản lý gói tour này (BR-102, MSG126).',
-
-  /** Lifecycle edit constraints (MSG122, MSG110) */
-  PENDING_READ_ONLY: 'Gói tour đang chờ kiểm duyệt và không thể chỉnh sửa trong thời gian này (MSG122).',
-  APPROVED_DIRECT_EDIT: 'Gói tour đã duyệt không thể sửa trực tiếp. Thay đổi sẽ được lưu vào phiên bản nháp mới (BR-103, MSG110).',
-
-  /** Success transitions */
-  CREATE_SUCCESS: 'Tạo gói tour thành công ở trạng thái Bản nháp (MSG108).',
-  UPDATE_SUCCESS: 'Cập nhật thông tin gói tour thành công (MSG109).',
-  SUBMIT_SUCCESS: 'Gói tour đã được gửi để quản trị viên kiểm duyệt thành công (MSG111).',
-
-  /** System failure */
-  SYSTEM_FAILURE: 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại (MSG127).',
-
-  /** Real mode pending backend integration banner */
-  PENDING_BE_INTEGRATION: 'Tính năng quản lý vòng đời gói tour đối tác đang chờ kết nối dịch vụ máy chủ (Capstone_BE).',
+  REQUIRED_FIELD: 'Trường thông tin này là bắt buộc.',
+  REQUIRED_SUMMARY: 'Vui lòng điền đầy đủ các thông tin bắt buộc của gói tour.',
+  POSITIVE_NUMERIC: 'Giá tour và sức chứa phải là giá trị số dương lớn hơn 0.',
+  CAPACITY_BELOW_SOLD: 'Sức chứa không được giảm xuống dưới số lượng chỗ đã bán cho lịch trình này.',
+  INVALID_SCHEDULE_DATE: 'Ngày khởi hành không được ở quá khứ và ngày về phải sau hoặc cùng ngày khởi hành.',
+  INVALID_MEDIA: 'Tệp hình ảnh không hợp lệ hoặc dung lượng vượt quá 5MB.',
+  UNAUTHORIZED_OPERATOR: 'Bạn không có quyền truy cập hoặc quản lý gói tour này.',
+  PENDING_READ_ONLY: 'Gói tour đang chờ kiểm duyệt và không thể chỉnh sửa trong thời gian này.',
+  APPROVED_DIRECT_EDIT: 'Gói tour đã duyệt không thể sửa trực tiếp. Thay đổi sẽ được lưu vào phiên bản nháp mới.',
+  CREATE_SUCCESS: 'Tạo gói tour thành công ở trạng thái Bản nháp.',
+  UPDATE_SUCCESS: 'Cập nhật thông tin gói tour thành công.',
+  SUBMIT_SUCCESS: 'Gói tour đã được gửi để quản trị viên kiểm duyệt thành công.',
+  SYSTEM_FAILURE: 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại.',
+  PENDING_BE_INTEGRATION: 'Tính năng quản lý gói tour hiện chưa thể kết nối máy chủ.',
 } as const;
