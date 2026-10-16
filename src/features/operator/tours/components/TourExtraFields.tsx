@@ -45,6 +45,8 @@ export function TourTermsFields(props: TourTermsFieldsProps) {
   );
 }
 
+const toNumberOrNull = (value: string): number | null => (value.trim() === '' ? null : Number(value));
+
 interface DepartureTermsFieldsProps {
   schedule: TourDepartureSchedule;
   onChange: (patch: Partial<TourDepartureSchedule>) => void;
@@ -82,6 +84,49 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
         />
       </div>
       </div>
+      <details className="text-xs">
+        <summary className="cursor-pointer font-medium text-slate-600 hover:text-[#006B5F]">
+          Thiết lập giá riêng cho lịch này
+        </summary>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div>
+            <label htmlFor={`sch-adult-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: người lớn (VND)</label>
+            <input
+              id={`sch-adult-${id}`}
+              type="number"
+              min={1}
+              disabled={disabled}
+              value={schedule.adultPrice ?? ''}
+              onChange={(event) => onChange({ adultPrice: toNumberOrNull(event.target.value) })}
+              className={field}
+            />
+          </div>
+          <div>
+            <label htmlFor={`sch-child-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: trẻ em (VND)</label>
+            <input
+              id={`sch-child-${id}`}
+              type="number"
+              min={0}
+              disabled={disabled}
+              value={schedule.childPrice ?? ''}
+              onChange={(event) => onChange({ childPrice: toNumberOrNull(event.target.value) })}
+              className={field}
+            />
+          </div>
+          <div>
+            <label htmlFor={`sch-infant-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: em bé (VND)</label>
+            <input
+              id={`sch-infant-${id}`}
+              type="number"
+              min={0}
+              disabled={disabled}
+              value={schedule.infantPrice ?? ''}
+              onChange={(event) => onChange({ infantPrice: toNumberOrNull(event.target.value) })}
+              className={field}
+            />
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

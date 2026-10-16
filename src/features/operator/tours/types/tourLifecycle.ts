@@ -173,7 +173,7 @@ export const OPERATOR_TOUR_MESSAGES = {
   POSITIVE_NUMERIC: 'Giá tour và sức chứa phải là giá trị số dương lớn hơn 0.',
   CAPACITY_BELOW_SOLD: 'Sức chứa không được giảm xuống dưới số lượng chỗ đã bán cho lịch trình này.',
   INVALID_SCHEDULE_DATE: 'Ngày khởi hành không được ở quá khứ và ngày về phải sau hoặc cùng ngày khởi hành.',
-  INVALID_MEDIA: 'Tệp hình ảnh không hợp lệ hoặc dung lượng vượt quá 5MB.',
+  INVALID_MEDIA: 'Tệp hình ảnh không hợp lệ hoặc dung lượng vượt quá 5MB (BR-16, MSG19).',
   UNAUTHORIZED_OPERATOR: 'Bạn không có quyền truy cập hoặc quản lý gói tour này.',
   PENDING_READ_ONLY: 'Gói tour đang chờ kiểm duyệt và không thể chỉnh sửa trong thời gian này.',
   APPROVED_DIRECT_EDIT: 'Gói tour đã duyệt không thể sửa trực tiếp. Thay đổi sẽ được lưu vào phiên bản nháp mới.',

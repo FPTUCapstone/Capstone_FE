@@ -153,6 +153,17 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     });
   };
 
+  const handleAddDay = () => {
+    const nextDay = itinerary.length + 1;
+    const newDay: TourItineraryDay = {
+      dayNo: nextDay,
+      title: `Ngày ${nextDay}: Tiếp tục hành trình`,
+      activities: [],
+    };
+    setItinerary([...itinerary, newDay]);
+    setDurationDays(nextDay);
+  };
+
   const handleAddActivity = (dayIndex: number) => {
     const updated = [...itinerary];
     const newAct: TourItineraryActivity = {
@@ -486,6 +497,14 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   Xây dựng các điểm dừng, hoạt động và thời gian biểu. Cần tối thiểu một ngày và một điểm dừng.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={handleAddDay}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+              >
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                Thêm ngày
+              </button>
             </div>
 
             {errors.itinerary && (
@@ -726,47 +745,54 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
               Tệp hình ảnh dung lượng tối đa 5MB mỗi ảnh.
             </p>
 
-            <div className="mt-3">
-              <label
-                htmlFor="media-upload"
-                className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 p-4 text-center cursor-pointer hover:bg-slate-50 transition"
-              >
-                <span className="material-symbols-outlined text-[28px] text-slate-400">add_photo_alternate</span>
-                <span className="mt-1 text-xs font-bold text-slate-700">Tải lên hình ảnh</span>
-                <span className="text-[10px] text-slate-400">Chọn ảnh từ thiết bị</span>
-                <input
-                  id="media-upload"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
+            {!isDemo ? (
+              <p role="status" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                Hãy lưu bản nháp trước. Hệ thống sẽ chuyển bạn tới màn hình chỉnh sửa để tải ảnh; gói tour cần có ảnh đại diện
+                đang hoạt động trước khi gửi xét duyệt.
+              </p>
+            ) : (
+              <div className="mt-3">
+                <label
+                  htmlFor="media-upload"
+                  className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 p-4 text-center cursor-pointer hover:bg-slate-50 transition"
+                >
+                  <span className="material-symbols-outlined text-[28px] text-slate-400">add_photo_alternate</span>
+                  <span className="mt-1 text-xs font-bold text-slate-700">Tải lên hình ảnh</span>
+                  <span className="text-[10px] text-slate-400">Chọn ảnh từ thiết bị</span>
+                  <input
+                    id="media-upload"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
 
-              {errors.media && (
-                <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">
-                  {errors.media}
-                </p>
-              )}
+                {errors.media && (
+                  <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">
+                    {errors.media}
+                  </p>
+                )}
 
-              {mediaPreviews.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {mediaPreviews.map((src, pIdx) => (
-                    <div key={src} className="group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-xs">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt={`Ảnh tải lên ${pIdx + 1}`} className="aspect-[4/3] w-full rounded-lg object-cover" />
-                      <div className="flex items-center justify-between px-1 pt-1.5">
-                        <span className="text-[11px] font-medium text-slate-500">Ảnh {pIdx + 1}</span>
-                        <button type="button" aria-label={`Xóa ảnh ${pIdx + 1}`} onClick={() => removeQueuedImage(pIdx)} className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:bg-rose-50 focus-visible:text-rose-600" title="Xóa ảnh">
-                          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
-                        </button>
+                {mediaPreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {mediaPreviews.map((src, pIdx) => (
+                      <div key={src} className="group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-xs">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt={`Ảnh tải lên ${pIdx + 1}`} className="aspect-[4/3] w-full rounded-lg object-cover" />
+                        <div className="flex items-center justify-between px-1 pt-1.5">
+                          <span className="text-[11px] font-medium text-slate-500">Ảnh {pIdx + 1}</span>
+                          <button type="button" aria-label={`Xóa ảnh ${pIdx + 1}`} onClick={() => removeQueuedImage(pIdx)} className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:bg-rose-50 focus-visible:text-rose-600" title="Xóa ảnh">
+                            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Amber Alert Notice from Screen #41 */}
