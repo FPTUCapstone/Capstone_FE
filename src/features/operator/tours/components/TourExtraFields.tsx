@@ -97,7 +97,7 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
               min={1}
               disabled={disabled}
               value={schedule.adultPrice ?? ''}
-              onChange={(event) => onChange({ adultPrice: toNumberOrNull(event.target.value) })}
+              onChange={(event) => onChange({ adultPrice: event.target.value === '' ? undefined : Number(event.target.value) })}
               className={field}
             />
           </div>
