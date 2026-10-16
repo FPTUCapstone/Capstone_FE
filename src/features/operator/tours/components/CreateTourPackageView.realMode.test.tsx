@@ -13,6 +13,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('./useTourCatalogues', () => ({
   useTourCatalogues: () => ({
+    categories: [{ categoryId: 3, code: 'NATURE', name: 'Nature' }],
     destinations: [
       { destinationId: 1, name: 'Đà Nẵng' },
       { destinationId: 2, name: 'Quảng Nam' },

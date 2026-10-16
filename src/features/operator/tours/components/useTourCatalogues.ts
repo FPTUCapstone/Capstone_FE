@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import {
   getCancellationPolicyOptions,
+  getCategoryOptions,
   getDestinationOptions,
   getSelectableTourPois,
 } from '../services/operatorTourService';
-import type { ApiDestination, ApiPoi, ApiPolicy } from '../services/operatorTourApi';
+import type { ApiCategory, ApiDestination, ApiPoi, ApiPolicy } from '../services/operatorTourApi';
 import { OPERATOR_TOUR_MESSAGES } from '../types/tourLifecycle';
 
 export interface TourCatalogues {
+  categories: ApiCategory[];
   destinations: ApiDestination[];
   policies: ApiPolicy[];
   pois: ApiPoi[];
@@ -24,6 +26,7 @@ export interface TourCatalogues {
  */
 export function useTourCatalogues(isDemo: boolean): TourCatalogues {
   const [state, setState] = useState<TourCatalogues>({
+    categories: [],
     destinations: [],
     policies: [],
     pois: [],
@@ -34,9 +37,14 @@ export function useTourCatalogues(isDemo: boolean): TourCatalogues {
   useEffect(() => {
     if (isDemo) return;
     let active = true;
-    Promise.all([getDestinationOptions(), getCancellationPolicyOptions(), getSelectableTourPois()])
-      .then(([destinations, policies, pois]) => {
-        if (active) setState({ destinations, policies, pois, loading: false, error: null });
+    Promise.all([
+      getCategoryOptions(),
+      getDestinationOptions(),
+      getCancellationPolicyOptions(),
+      getSelectableTourPois(),
+    ])
+      .then(([categories, destinations, policies, pois]) => {
+        if (active) setState({ categories, destinations, policies, pois, loading: false, error: null });
       })
       .catch((error: unknown) => {
         if (!active) return;

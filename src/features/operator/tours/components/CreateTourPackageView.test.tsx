@@ -16,6 +16,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('./useTourCatalogues', () => ({
   useTourCatalogues: () => ({
+    categories: [{ categoryId: 3, code: 'NATURE', name: 'Nature' }],
     destinations: [
       { destinationId: 1, name: 'Đà Nẵng' },
       { destinationId: 2, name: 'Quảng Nam' },
@@ -55,7 +56,7 @@ describe('CreateTourPackageView (UC-35 Screen #41)', () => {
     render(<CreateTourPackageView isDemo={false} />);
 
     expect(screen.queryByLabelText(/Tải lên hình ảnh/i)).toBeNull();
-    expect(screen.getByText(/Tải ảnh đại diện chưa được hỗ trợ/i)).toBeDefined();
+    expect(screen.getByText(/Hãy lưu bản nháp trước/i)).toBeDefined();
   });
 
   it('validates mandatory fields on submit and displays error alerts', async () => {

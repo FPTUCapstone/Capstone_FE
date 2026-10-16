@@ -15,8 +15,13 @@ import {
 import {
   createTour,
   getTour,
+  listTourMedia,
+  uploadTourMedia,
+  reorderTourMedia,
+  deleteTourMedia,
   listCancellationPolicies,
   listDestinations,
+  listCategories,
   searchSelectablePois,
   listTours,
   submitTour,
@@ -24,6 +29,7 @@ import {
   type ApiCreateTour,
   type ApiTourDetail,
   type ApiTourListItem,
+  type ApiTourMedia,
 } from './operatorTourApi';
 
 export { OperatorTourApiError } from './operatorTourApi';
@@ -33,11 +39,28 @@ export async function getCancellationPolicyOptions() {
 export async function getSelectableTourPois() {
   return searchSelectablePois();
 }
+export async function getCategoryOptions() {
+  return listCategories();
+}
 export async function getDestinationOptions() {
   return listDestinations();
 }
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per BR-16
+
+export const REVIEW_BLOCKER_MESSAGES: Record<string, string> = {
+  primary_image_missing: 'Cần có ảnh đại diện đang hoạt động',
+  future_departure_missing: 'Cần ít nhất 1 lịch khởi hành trong tương lai có giá người lớn',
+  cancellation_policy_missing: 'Cần chọn chính sách hủy tour',
+  destination_missing: 'Cần chọn ít nhất 1 điểm đến',
+};
+
+export const TOUR_WARNING_MESSAGES: Record<string, string> = {
+  duplicate_poi: 'Điểm tham quan này đã xuất hiện trước đó trong lịch trình.',
+  poi_closed_on_day: 'Điểm tham quan đóng cửa vào ngày này của chuyến đi.',
+  outside_opening_hours: 'Thời gian tham quan nằm ngoài giờ mở cửa của điểm này.',
+  opening_hours_unknown: 'Chưa có giờ mở cửa cho điểm này vào ngày diễn ra, hệ thống chưa thể kiểm tra.',
+};
 
 function asBackendId(value: string | number | undefined, field: string): number {
   const id = typeof value === 'number' ? value : Number(value);
@@ -69,16 +92,24 @@ function toBackendSchedule(
     terms !== undefined &&
     dateOnly(terms.startAtUtc) === schedule.departureDate &&
     dateOnly(terms.endAtUtc) === schedule.returnDate;
+  // An untouched deadline keeps the server's exact instant; an edited one is a UTC date at midnight.
+  const editedDeadline = schedule.registrationDeadlineDate;
+  const serverDeadline = terms?.registrationDeadlineAtUtc ?? null;
+  const deadlineUntouched =
+    editedDeadline === undefined || editedDeadline === (serverDeadline ? dateOnly(serverDeadline) : '');
+  const registrationDeadlineAtUtc = deadlineUntouched
+    ? serverDeadline
+    : editedDeadline ? `${editedDeadline}T00:00:00.000Z` : null;
   return {
     startAtUtc: unchangedDates ? terms.startAtUtc : toIsoDateTime(schedule.departureDate, 'start'),
     endAtUtc: unchangedDates ? terms.endAtUtc : toIsoDateTime(schedule.returnDate, 'end'),
     meetingPoint: schedule.meetingPoint?.trim() || null,
-    minimumCapacity: Math.min(terms?.minimumCapacity ?? 1, schedule.totalCapacity),
+    minimumCapacity: Math.min(schedule.minimumCapacity ?? terms?.minimumCapacity ?? 1, schedule.totalCapacity),
     totalCapacity: schedule.totalCapacity,
-    registrationDeadlineAtUtc: unchangedDates ? terms.registrationDeadlineAtUtc : null,
-    adultPrice: terms?.adultPrice ?? payload.basePrice,
-    childPrice: terms ? terms.childPrice : payload.childPrice ?? null,
-    infantPrice: terms?.infantPrice ?? null,
+    registrationDeadlineAtUtc,
+    adultPrice: schedule.adultPrice ?? terms?.adultPrice ?? payload.basePrice,
+    childPrice: schedule.childPrice !== undefined ? schedule.childPrice : terms ? terms.childPrice : payload.childPrice ?? null,
+    infantPrice: schedule.infantPrice !== undefined ? schedule.infantPrice : terms?.infantPrice ?? null,
   };
 }
 
@@ -90,6 +121,9 @@ function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
     description: payload.description.trim(),
     inclusions: payload.inclusions?.trim() || undefined,
     exclusions: payload.exclusions?.trim() || undefined,
+    highlights: payload.highlights?.trim() || undefined,
+    travellerRequirements: payload.travellerRequirements?.trim() || undefined,
+    timeZoneId: payload.timeZoneId?.trim() || undefined,
     ...(payload.category && /^\d+$/.test(payload.category.trim())
       ? { categoryId: asBackendId(payload.category, 'Mã danh mục') }
       : {}),
@@ -120,7 +154,7 @@ function statusFromApi(value: string): TourPackageDto['status'] {
   return status;
 }
 
-function mapDetail(detail: ApiTourDetail): TourPackageDto {
+function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPackageDto {
   const itinerary = new Map<number, TourPackageDto['itinerary'][number]>();
   for (const item of detail.itineraryItems) {
     const day = itinerary.get(item.dayNo) ?? { dayNo: item.dayNo, activities: [] };
@@ -145,6 +179,11 @@ function mapDetail(detail: ApiTourDetail): TourPackageDto {
     status: (departure.status === 'Cancelled' || departure.status === 'Completed'
       ? departure.status
       : 'Scheduled') as 'Scheduled' | 'Cancelled' | 'Completed',
+    minimumCapacity: departure.minimumCapacity,
+    adultPrice: departure.adultPrice ?? undefined,
+    childPrice: departure.childPrice,
+    infantPrice: departure.infantPrice,
+    registrationDeadlineDate: departure.registrationDeadlineAtUtc ? dateOnly(departure.registrationDeadlineAtUtc) : '',
     serverTerms: {
       startAtUtc: departure.startAtUtc,
       endAtUtc: departure.endAtUtc,
@@ -166,18 +205,48 @@ function mapDetail(detail: ApiTourDetail): TourPackageDto {
     description: detail.description,
     inclusions: detail.inclusions ?? undefined,
     exclusions: detail.exclusions ?? undefined,
+    highlights: detail.highlights ?? undefined,
+    travellerRequirements: detail.travellerRequirements ?? undefined,
+    timeZoneId: detail.timeZoneId,
+    reviewBlockers: detail.reviewBlockers,
+    canSubmitForReview: detail.canSubmitForReview,
+    warnings: detail.warnings.map((warning) => ({
+      code: warning.code,
+      dayNo: warning.dayNo ?? undefined,
+      sequenceNo: warning.sequenceNo ?? undefined,
+      poiId: warning.poiId ?? undefined,
+    })),
     cancellationPolicy: detail.cancellationPolicyTemplateId ? String(detail.cancellationPolicyTemplateId) : '',
     status: statusFromApi(detail.status),
     rejectionReason: detail.rejectionReason ?? undefined,
     version: 1, itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo), schedules,
-    media: [], createdAt: '', updatedAt: '',
+    media: mapMedia(media),
+    createdAt: '', updatedAt: '',
   };
+}
+
+function mapMedia(media: ApiTourMedia[]): TourPackageDto['media'] {
+  return media
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((item) => ({
+      id: String(item.tourMediaId),
+      url: item.deliveryUrl,
+      caption: item.caption ?? undefined,
+      isPrimary: item.isPrimary,
+    }));
+}
+
+/** Detail and media are separate backend resources; the screens always need both. */
+async function loadTourDetail(tourId: number): Promise<TourPackageDto> {
+  const [detail, media] = await Promise.all([getTour(tourId), listTourMedia(tourId)]);
+  return mapDetail(detail, media);
 }
 
 function mapListItem(item: ApiTourListItem): TourPackageDto {
   return {
     id: String(item.id), tourCode: `TP-${item.id}`, operatorUserId: 0,
-    title: item.title, destination: '', category: '', durationDays: item.durationDays,
+    title: item.title, destination: item.destination, category: '', durationDays: item.durationDays,
     basePrice: item.basePrice, maxCapacity: 0, description: '', cancellationPolicy: '',
     status: statusFromApi(item.status), version: 1, itinerary: [], schedules: [], media: [],
     createdAt: item.updatedAtUtc, updatedAt: item.updatedAtUtc,
@@ -361,16 +430,40 @@ export function evaluateTourCompleteness(
     isMandatory: true,
   });
 
-  // 6. Cover photos (Visual reference Screen #43 checklist)
-  const photoCount = 'media' in tour && tour.media ? tour.media.length : 0;
-  const hasPhotos = photoCount >= 1;
+  // 6. Cover photo. The backend requires an active primary image, so it is mandatory
+  // whenever the server has reported readiness for this tour (real mode).
+  const media = 'media' in tour && tour.media ? tour.media : [];
+  const photoCount = media.length;
+  const hasPrimaryPhoto = media.some((item) => item.isPrimary);
+  const serverReadiness = 'reviewBlockers' in tour ? tour.reviewBlockers : undefined;
+  const hasPhotos = serverReadiness ? hasPrimaryPhoto : photoCount >= 1;
   items.push({
     key: 'photos',
     label: 'Hình ảnh đại diện gói tour',
     isComplete: hasPhotos,
-    summaryText: hasPhotos ? `${photoCount} hình ảnh` : 'Chưa tải ảnh',
-    isMandatory: false,
+    summaryText: hasPhotos
+      ? `${photoCount} hình ảnh`
+      : serverReadiness && photoCount > 0 ? 'Cần chọn một ảnh đại diện' : 'Chưa tải ảnh',
+    isMandatory: serverReadiness !== undefined,
   });
+
+  // The server is the authority on review prerequisites: honour any blocker it still reports.
+  if (serverReadiness) {
+    const blockerToItem: Record<string, string> = {
+      primary_image_missing: 'photos',
+      future_departure_missing: 'schedules',
+      cancellation_policy_missing: 'cancellation-policy',
+      destination_missing: 'basic-info',
+    };
+    for (const blocker of serverReadiness) {
+      const item = items.find((candidate) => candidate.key === blockerToItem[blocker]);
+      if (item) {
+        item.isComplete = false;
+        item.isMandatory = true;
+        item.summaryText = REVIEW_BLOCKER_MESSAGES[blocker] ?? item.summaryText;
+      }
+    }
+  }
 
   const mandatoryItems = items.filter((item) => item.isMandatory);
   const missingMandatory = mandatoryItems.filter((item) => !item.isComplete);
@@ -450,7 +543,7 @@ export async function getOperatorTourById(
     };
   }
 
-  return { status: 'SUCCESS', data: mapDetail(await getTour(asBackendId(id, 'Mã gói tour'))), isDemo: false };
+  return { status: 'SUCCESS', data: await loadTourDetail(asBackendId(id, 'Mã gói tour')), isDemo: false };
 }
 
 /**
@@ -707,7 +800,7 @@ export async function updateTourPackage(
 
   const tourId = asBackendId(payload.id, 'Mã gói tour');
   await updateTour(tourId, toBackendPayload(payload));
-  return { status: 'SUCCESS', data: mapDetail(await getTour(tourId)), message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS, isDemo: false };
+  return { status: 'SUCCESS', data: await loadTourDetail(tourId), message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS, isDemo: false };
 }
 
 /**
@@ -775,5 +868,44 @@ export async function submitTourForApproval(
   }
 
   const response = await submitTour(asBackendId(tourId, 'Mã gói tour'));
-  return { status: 'SUCCESS', data: mapDetail(await getTour(response.tourId)), message: OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS, isDemo: false };
+  return { status: 'SUCCESS', data: await loadTourDetail(response.tourId), message: OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS, isDemo: false };
+}
+
+
+/** Validates a cover-photo file before any request (BR-16 -> MSG19). */
+export function validateTourImage(file: File): string | null {
+  const isImage = file.type.toLowerCase().startsWith('image/');
+  return !isImage || file.size > MAX_IMAGE_BYTES ? OPERATOR_TOUR_MESSAGES.INVALID_MEDIA : null;
+}
+
+/**
+ * Uploads one image through the backend media flow and returns the refreshed list.
+ * The first image becomes the primary one. The caller keeps one idempotencyKey per chosen file so a
+ * retry after a lost response does not store the picture twice.
+ */
+export async function uploadTourImage(
+  tourId: string,
+  file: File,
+  altText: string,
+  options: { makePrimary: boolean; idempotencyKey: string },
+): Promise<TourPackageDto['media']> {
+  const invalid = validateTourImage(file);
+  if (invalid) throw new Error(invalid);
+  if (!altText.trim()) throw new Error('Vui lòng nhập mô tả ngắn cho ảnh (văn bản thay thế).');
+  const id = asBackendId(tourId, 'Mã gói tour');
+  await uploadTourMedia(id, file, altText.trim(), options.makePrimary, options.idempotencyKey);
+  return mapMedia(await listTourMedia(id));
+}
+
+export async function setPrimaryTourImage(tourId: string, mediaId: string): Promise<TourPackageDto['media']> {
+  const id = asBackendId(tourId, 'Mã gói tour');
+  const current = await listTourMedia(id);
+  const ordered = current.slice().sort((a, b) => a.sortOrder - b.sortOrder).map((item) => item.tourMediaId);
+  return mapMedia(await reorderTourMedia(id, ordered, asBackendId(mediaId, 'Mã ảnh')));
+}
+
+export async function removeTourImage(tourId: string, mediaId: string): Promise<TourPackageDto['media']> {
+  const id = asBackendId(tourId, 'Mã gói tour');
+  await deleteTourMedia(id, asBackendId(mediaId, 'Mã ảnh'));
+  return mapMedia(await listTourMedia(id));
 }
