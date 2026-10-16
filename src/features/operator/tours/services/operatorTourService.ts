@@ -51,7 +51,10 @@ function toIsoDateTime(date: string, time: 'start' | 'end'): string {
 function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
   return {
     title: payload.title.trim(),
+    destination: payload.destination.trim(),
     description: payload.description.trim(),
+    inclusions: payload.inclusions?.trim() || undefined,
+    exclusions: payload.exclusions?.trim() || undefined,
     ...(payload.category && /^\d+$/.test(payload.category.trim())
       ? { categoryId: asBackendId(payload.category, 'Mã danh mục') }
       : {}),
@@ -112,7 +115,7 @@ function mapDetail(detail: ApiTourDetail): TourPackageDto {
   }));
   return {
     id: String(detail.id), tourCode: `TP-${detail.id}`, operatorUserId: 0,
-    title: detail.title, destination: '', category: detail.categoryId ? String(detail.categoryId) : '',
+    title: detail.title, destination: detail.destination, category: detail.categoryId ? String(detail.categoryId) : '',
     durationDays: detail.durationDays, basePrice: detail.basePrice,
     childPrice: detail.departures[0]?.childPrice ?? undefined,
     maxCapacity: detail.departures[0]?.totalCapacity ?? 0,
