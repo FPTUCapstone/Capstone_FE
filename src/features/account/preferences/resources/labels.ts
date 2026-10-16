@@ -32,9 +32,27 @@ export const foodLabels: Record<FoodPreference, string> = {
   NoSeafood: 'No seafood',
 };
 
-/** Interest keys are already the canonical English catalogue labels. */
+/**
+ * Fixed UC-09 interest contract. The key is the persisted/API value; display labels never cross
+ * the API boundary. Add a Vietnamese map beside this one when Web enables locale switching.
+ */
+const interestLabels: Record<string, string> = {
+  adventure: 'Adventure',
+  architecture: 'Architecture',
+  beach: 'Beach',
+  culinary: 'Culinary',
+  culture: 'Culture',
+  heritage: 'Heritage',
+  history: 'History',
+  museum: 'Museum',
+  nature: 'Nature',
+  photography: 'Photography',
+  relaxation: 'Relaxation',
+  shopping: 'Shopping',
+};
+
 export function interestLabel(key: string): string {
-  return key;
+  return interestLabels[key] ?? key;
 }
 
 export function optionLabel<K extends string>(labels: Record<K, string>, key: K): string {

@@ -19,8 +19,9 @@ describe('UC-09 labels', () => {
   });
 
   it('labels known interests and falls back to the key for unknown ones', () => {
-    expect(interestLabel('Beach')).toBe('Beach');
-    expect(interestLabel('street food')).toBe('street food');
+    expect(interestLabel('beach')).toBe('Beach');
+    expect(interestLabel('culinary')).toBe('Culinary');
+    expect(interestLabel('unknown-key')).toBe('unknown-key');
   });
 });
 
