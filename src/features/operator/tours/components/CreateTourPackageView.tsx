@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
   createTourPackage,
+  getCancellationPolicyOptions,
+  getSelectableTourPois,
   OperatorTourValidationError,
   validateCreateTourPackage,
 } from '../services/operatorTourService';
+import type { ApiPoi, ApiPolicy } from '../services/operatorTourApi';
 import {
   OPERATOR_TOUR_MESSAGES,
   type CreateTourPackagePayload,
@@ -51,9 +54,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [description, setDescription] = useState('');
   const [inclusions, setInclusions] = useState('');
   const [exclusions, setExclusions] = useState('');
-  const [cancellationPolicy, setCancellationPolicy] = useState(
-    'Hoàn tiền 100% khi hủy trước ngày khởi hành ít nhất 24 giờ.'
-  );
+  const [cancellationPolicy, setCancellationPolicy] = useState('');
+  const [cancellationPolicies, setCancellationPolicies] = useState<ApiPolicy[]>([]);
+  const [availablePois, setAvailablePois] = useState<ApiPoi[]>([]);
 
   // Itinerary state
   const [itinerary, setItinerary] = useState<TourItineraryDay[]>([
@@ -96,6 +99,18 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isDemo) return;
+    let active = true;
+    void getCancellationPolicyOptions()
+      .then((policies) => { if (active) setCancellationPolicies(policies); })
+      .catch((error: unknown) => { if (active) setErrorMessage(error instanceof Error ? error.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE); });
+    void getSelectableTourPois()
+      .then((pois) => { if (active) setAvailablePois(pois); })
+      .catch((error: unknown) => { if (active) setErrorMessage(error instanceof Error ? error.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE); });
+    return () => { active = false; };
+  }, [isDemo]);
 
   // Handlers for Itinerary
   const handleAddDay = () => {
@@ -472,7 +487,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                       <thead>
                         <tr className="border-b border-slate-200 text-slate-500">
                           <th className="pb-2 font-semibold w-16">Thời gian</th>
-                          <th className="pb-2 font-semibold">Điểm dừng / Hoạt động</th>
+                          <th className="pb-2 font-semibold">Mã POI / điểm dừng</th>
                           <th className="pb-2 font-semibold w-24">Lưu lại</th>
                           <th className="pb-2 font-semibold w-24">Di chuyển</th>
                           <th className="pb-2 font-semibold text-right w-16">Xóa</th>
@@ -494,16 +509,20 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                               />
                             </td>
                             <td className="py-2.5 font-medium text-slate-900">
-                              <input
-                                type="text"
-                                value={act.poiName}
+                              <select
+                                value={act.poiId ?? ''}
                                 onChange={(e) => {
                                   const updated = [...itinerary];
-                                  updated[dIdx].activities[aIdx].poiName = e.target.value;
+                                  const value = e.target.value;
+                                  updated[dIdx].activities[aIdx].poiId = value ? Number(value) : undefined;
+                                  updated[dIdx].activities[aIdx].poiName = availablePois.find((poi) => poi.id === Number(value))?.name ?? '';
                                   setItinerary(updated);
                                 }}
                                 className="w-full rounded-lg border border-slate-200 p-1 text-xs"
-                              />
+                              >
+                                <option value="">Chọn POI đã xác minh</option>
+                                {availablePois.map((poi) => <option key={poi.id} value={poi.id}>#{poi.id} — {poi.name}</option>)}
+                              </select>
                             </td>
                             <td className="py-2.5 text-slate-600">
                               <input
@@ -593,18 +612,28 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                 <label htmlFor="field-cancellation" className="block text-xs font-bold text-[#00152A]">
                   Chính sách hủy tour <span className="text-rose-500">*</span>
                 </label>
-                <textarea
-                  id="field-cancellation"
-                  rows={2}
-                  value={cancellationPolicy}
-                  onChange={(e) => setCancellationPolicy(e.target.value)}
-                  placeholder="Quy định hoàn hủy đối với du khách..."
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
-                    errors.cancellationPolicy
-                      ? 'border-rose-400 focus:border-rose-500'
-                      : 'border-slate-300 focus:border-[#006B5F]'
-                  }`}
-                />
+                {isDemo ? (
+                  <textarea
+                    id="field-cancellation"
+                    rows={2}
+                    value={cancellationPolicy}
+                    onChange={(e) => setCancellationPolicy(e.target.value)}
+                    placeholder="Quy định hoàn hủy đối với du khách..."
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900"
+                  />
+                ) : (
+                  <select
+                    id="field-cancellation"
+                    value={cancellationPolicy}
+                    onChange={(e) => setCancellationPolicy(e.target.value)}
+                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 ${errors.cancellationPolicy ? 'border-rose-400' : 'border-slate-300'}`}
+                  >
+                    <option value="">Chọn chính sách hủy đã phát hành</option>
+                    {cancellationPolicies.map((policy) => (
+                      <option key={policy.id} value={policy.id}>{policy.name}{policy.description ? ` — ${policy.description}` : ''}</option>
+                    ))}
+                  </select>
+                )}
                 {errors.cancellationPolicy && (
                   <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
                     {errors.cancellationPolicy}

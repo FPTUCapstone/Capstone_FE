@@ -15,15 +15,21 @@ function OperatorToursContent() {
 
   const [tours, setTours] = useState<TourPackageDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     async function load() {
       setLoading(true);
+      setLoadError(null);
       try {
         const res = await getOperatorTours({ allowDemo: isDemo });
         if (isMounted && res.data) {
           setTours(res.data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setLoadError(error instanceof Error ? error.message : 'Không thể tải danh sách gói tour.');
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -47,6 +53,10 @@ function OperatorToursContent() {
                   progress_activity
                 </span>
                 <p className="mt-2 text-xs font-bold">Đang tải danh sách gói tour...</p>
+              </div>
+            ) : loadError ? (
+              <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+                {loadError}
               </div>
             ) : (
               <OperatorTourListView tours={tours} isDemo={isDemo} />
