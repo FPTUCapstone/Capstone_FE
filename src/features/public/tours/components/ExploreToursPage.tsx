@@ -25,8 +25,13 @@ import { TourFilterBar } from './TourFilterBar';
 import { TourPagination } from './TourPagination';
 import { TourRecommendationsSection } from './TourRecommendationsSection';
 import { TourEmptyState, TourErrorState, TourListSkeleton } from './TourStates';
+import { DevExploreToursPage } from './DevExploreToursPage';
 
-export function ExploreToursPage() {
+export function ExploreToursPage({ devSearchEnabled = false }: { devSearchEnabled?: boolean }) {
+  return devSearchEnabled ? <DevExploreToursPage /> : <LegacyExploreToursPage />;
+}
+
+function LegacyExploreToursPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryKey = searchParams.toString();

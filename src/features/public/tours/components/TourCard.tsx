@@ -3,10 +3,12 @@ import Link from 'next/link';
 
 import type { TourSearchItemDto } from '../types/tour';
 import { formatDateDisplay, formatVndPrice } from '../utils/tourQuery';
+import { devTourSearchCopy } from '../resources/en';
 
 interface TourCardProps {
   tour: TourSearchItemDto;
   searchContextQuery?: string;
+  aggregateRating?: number | null;
 }
 
 export interface TourAvailabilityPresentation {
@@ -66,7 +68,7 @@ export function getTourAvailabilityPresentation(
   };
 }
 
-export function TourCard({ tour, searchContextQuery }: TourCardProps) {
+export function TourCard({ tour, searchContextQuery, aggregateRating }: TourCardProps) {
   const detailHref = `/tours/${encodeURIComponent(tour.tourId)}${
     searchContextQuery ? `?${searchContextQuery}` : ''
   }`;
@@ -156,6 +158,8 @@ export function TourCard({ tour, searchContextQuery }: TourCardProps) {
             {formatDateDisplay(tour.departureAtUtc)}
           </span>
         </div>
+
+        {aggregateRating !== undefined && <p className="mb-3 text-sm text-slate-600">{aggregateRating === null ? devTourSearchCopy.ratingUnknown : `${devTourSearchCopy.rating}: ${aggregateRating.toFixed(1)} / 5`}</p>}
 
         {/* Price & CTA */}
         <div className="mt-auto flex items-end justify-between border-t border-slate-100 pt-3">
