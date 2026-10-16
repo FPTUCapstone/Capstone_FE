@@ -37,12 +37,10 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleConfirmSubmit = async () => {
     setErrorMessage(null);
-    setPendingMessage(null);
     setSuccessMessage(null);
     setSubmitting(true);
 
@@ -60,9 +58,6 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         setTimeout(() => {
           router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
         }, 1200);
-      } else if (result.status === 'PENDING_BE_INTEGRATION') {
-        setPendingMessage(result.message || OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
-        setShowConfirmModal(false);
       } else if (result.status === 'ERROR') {
         setErrorMessage(result.message || OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
         setShowConfirmModal(false);
@@ -115,29 +110,6 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         </div>
       )}
 
-      {/* Real Mode Pending Backend Integration Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[24px] text-amber-600 shrink-0" aria-hidden="true">
-              pending_actions
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-amber-950">
-                Tính năng gửi duyệt gói tour đang chờ kết nối dịch vụ máy chủ
-              </h3>
-              <p className="mt-1 leading-relaxed text-amber-900">
-                Danh mục kiểm tra tính đầy đủ (BR-101) và chuyển đổi trạng thái vòng đời (BR-104) đã sẵn sàng.
-                Yêu cầu duyệt chưa được ghi nhận vào hàng đợi máy chủ (Capstone_BE).
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Notifications */}
       {successMessage && (
         <div
@@ -145,14 +117,6 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-900 shadow-xs"
         >
           {successMessage}
-        </div>
-      )}
-      {pendingMessage && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-bold text-amber-900 shadow-xs"
-        >
-          {pendingMessage}
         </div>
       )}
       {errorMessage && (

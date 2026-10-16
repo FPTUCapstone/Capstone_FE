@@ -54,7 +54,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [description, setDescription] = useState('');
   const [inclusions, setInclusions] = useState('');
   const [exclusions, setExclusions] = useState('');
-  const [cancellationPolicy, setCancellationPolicy] = useState('');
+  const [cancellationPolicy, setCancellationPolicy] = useState(
+    isDemo ? 'Hoàn tiền 100% khi hủy trước ngày khởi hành ít nhất 24 giờ.' : ''
+  );
   const [cancellationPolicies, setCancellationPolicies] = useState<ApiPolicy[]>([]);
   const [availablePois, setAvailablePois] = useState<ApiPoi[]>([]);
 
