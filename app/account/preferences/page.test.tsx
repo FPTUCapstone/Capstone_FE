@@ -81,7 +81,7 @@ describe('/account/preferences production route', () => {
       expect(screen.getByRole('heading', { name: 'Sở thích du lịch' })).toBeDefined();
     });
     expect(screen.getByRole('tab', { name: /Travel Preferences/ })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Bãi biển' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Beach' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: /Lưu sở thích/ })).toBeDefined();
     expect(mocks.getOptions).toHaveBeenCalledTimes(1);
     expect(mocks.getPreferences).toHaveBeenCalledTimes(1);
@@ -147,5 +147,19 @@ describe('/account/preferences production route', () => {
 
     expect(container.firstChild).toBeNull();
     expect(mocks.replace).toHaveBeenCalledWith('/admin');
+  });
+
+  it('redirects Staff to the Staff workspace without loading Traveler preferences', () => {
+    mockUseWebSession.mockReturnValue({
+      status: 'authenticated',
+      context: { ...traveler.context, userId: 4, role: 'Staff' },
+    });
+
+    const { container } = render(<AccountPreferencesPage />);
+
+    expect(container.firstChild).toBeNull();
+    expect(mocks.replace).toHaveBeenCalledWith('/admin/staff');
+    expect(mocks.getOptions).not.toHaveBeenCalled();
+    expect(mocks.getPreferences).not.toHaveBeenCalled();
   });
 });
