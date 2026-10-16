@@ -1,8 +1,9 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CreateSchedulingRequestForm } from '../components/CreateSchedulingRequestForm';
 import * as schedulingApi from '../services/schedulingApi';
+import * as placeSearchApi from '../services/placeSearchApi';
 import * as preferencesApi from '@/features/account/preferences/travelPreferencesApi';
 import {
   TRIPMATE_TIME_ZONE,
@@ -11,6 +12,55 @@ import {
   buildVietnamStartAtIso,
   isFutureVietnamStartAt,
 } from '../types/schedulingTypes';
+
+const CHAM_MUSEUM = {
+  id: 10003,
+  name: 'Da Nang Museum of Cham Sculpture',
+  categoryName: 'Museum',
+  address: '02 September 2 Street, Hai Chau, Da Nang',
+  latitude: 16.040393,
+  longitude: 108.223058,
+};
+const MY_KHE = {
+  id: 20007,
+  name: 'Bãi biển Mỹ Khê',
+  categoryName: 'Beach',
+  address: null,
+  latitude: 16.069967,
+  longitude: 108.246066,
+};
+
+vi.mock('../services/placeSearchApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../services/placeSearchApi')>()),
+  getBrowserLocation: vi.fn(async () => ({ latitude: 15.9686, longitude: 108.2607 })),
+  searchSelectablePois: vi.fn(async () => [CHAM_MUSEUM, MY_KHE]),
+  isAddressSearchAvailable: () => false,
+}));
+
+async function flush() {
+  for (let i = 0; i < 5; i++) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+}
+
+/** Opens a place field, searches and picks the place with the given name. */
+async function pickPlace(fieldName: RegExp, placeName: string) {
+  fireEvent.click(screen.getByRole('button', { name: fieldName }));
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Tìm' }));
+  await flush();
+  fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(placeName) }));
+  await flush();
+}
+
+/** Start from the current location and explore around the Cham museum. */
+async function chooseStartAndArea() {
+  fireEvent.click(screen.getByRole('button', { name: /Dùng vị trí hiện tại/ }));
+  await flush();
+  await pickPlace(/^Khu vực khám phá:/, CHAM_MUSEUM.name);
+}
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -51,7 +101,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
   it('renders all form cards and inputs correctly with Section 4 as Budget only', () => {
     render(<CreateSchedulingRequestForm />);
 
-    expect(screen.getByText(/1\. Điểm đến & Vị trí khởi hành/i)).toBeDefined();
+    expect(screen.getByText(/1\. Điểm xuất phát & khu vực khám phá/i)).toBeDefined();
     expect(screen.getByText(/2\. Thời gian & Thời lượng chuyến đi/i)).toBeDefined();
     expect(screen.getByText(/3\. Phương tiện & Nhịp độ di chuyển/i)).toBeDefined();
     expect(screen.getByText(/4\. Ngân sách/i)).toBeDefined();
@@ -106,6 +156,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       // Select today (2026-10-01) and past time (18:00)
       const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
@@ -132,6 +183,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
       fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
@@ -159,6 +211,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
       fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
@@ -167,8 +220,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
       fireEvent.change(timeInput, { target: { value: '09:00' } });
 
-      const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
-      fireEvent.click(quickPresetBtn);
+      fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
@@ -187,6 +239,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       vi.setSystemTime(new Date('2026-10-01T12:00:00.000Z')); // 2026-10-01 19:00 Vietnam
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
       fireEvent.change(dateInput, { target: { value: '2026-09-30' } });
@@ -206,6 +259,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const dateInput = screen.getByLabelText(/Ngày bắt đầu/i) as HTMLInputElement;
       expect(dateInput.value).toBe('2026-10-02'); // Defaults to Vietnam tomorrow
@@ -238,6 +292,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
       fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
@@ -245,8 +300,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
       fireEvent.change(timeInput, { target: { value: '19:30' } });
 
-      const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
-      fireEvent.click(quickPresetBtn);
+      fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
@@ -270,6 +324,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const dateInput = screen.getByLabelText(/Ngày bắt đầu/i);
       fireEvent.change(dateInput, { target: { value: '2026-10-05' } });
@@ -292,58 +347,111 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
   /* ------------------------------------------------------------------ */
   /* [P1-1] Starting location truthfulness tests                        */
   /* ------------------------------------------------------------------ */
-  describe('[P1-1] Starting location truthfulness', () => {
-    it('renders start location as a readonly input with truthful helper text', () => {
+  describe('[P1-1] Starting point, area, finish and must-see places (same as mobile)', () => {
+    it('has no city presets and starts with nothing chosen', () => {
       render(<CreateSchedulingRequestForm />);
 
-      const startAddrInput = screen.getByLabelText(/Điểm xuất phát mặc định/i) as HTMLInputElement;
-      expect(startAddrInput).toBeDefined();
-      expect(startAddrInput.readOnly).toBe(true);
-      expect(startAddrInput.value).toBe('Trung tâm Hải Châu / Cầu Rồng, Đà Nẵng');
-
+      expect(screen.queryByLabelText(/Thành phố \/ Điểm đến/i)).toBeNull();
+      expect(screen.getByTestId('start-point-label').textContent).toBe('Chưa chọn điểm xuất phát');
       expect(
-        screen.getByText(/TripMate hiện sử dụng điểm xuất phát mặc định của khu vực đã chọn/i),
-      ).toBeDefined();
-      expect(screen.getByText(/Tọa độ: 16\.0544, 108\.2022/i)).toBeDefined();
+        (screen.getByRole('button', { name: /^Khu vực khám phá:/ }) as HTMLButtonElement).disabled,
+      ).toBe(true);
     });
 
-    it('updates preset start location and coordinates when destination preset changes', () => {
+    it('requires a starting point and an area before generating', async () => {
+      const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
       render(<CreateSchedulingRequestForm />);
 
-      const select = screen.getByLabelText(/Thành phố \/ Điểm đến/i);
-      fireEvent.change(select, { target: { value: 'hoian' } });
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
 
-      const startAddrInput = screen.getByLabelText(/Điểm xuất phát mặc định/i) as HTMLInputElement;
-      expect(startAddrInput.readOnly).toBe(true);
-      expect(startAddrInput.value).toContain('Hội An');
-      expect(screen.getByText(/Tọa độ: 15\.8801, 108\.3380/i)).toBeDefined();
+      expect(await screen.findByText('Vui lòng chọn điểm xuất phát.')).toBeDefined();
+      expect(screen.getByText('Vui lòng chọn khu vực muốn khám phá.')).toBeDefined();
+      expect(createSpy).not.toHaveBeenCalled();
     });
 
-    it('submits payload with exact coordinates matching the displayed preset', async () => {
+    it('keeps "Finish at" locked while returning to the start, with the reason', async () => {
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+
+      const finish = screen.getByRole('button', { name: /^Điểm kết thúc:/ }) as HTMLButtonElement;
+      expect(finish.disabled).toBe(true);
+      expect(finish.textContent).toContain('Bỏ chọn "Quay về điểm xuất phát"');
+
+      fireEvent.click(screen.getByLabelText(/Quay về điểm xuất phát khi kết thúc hành trình/));
+      expect(
+        (screen.getByRole('button', { name: /^Điểm kết thúc:/ }) as HTMLButtonElement).disabled,
+      ).toBe(false);
+    });
+
+    it('sends the chosen coordinates, finish POI and must-see places', async () => {
       const createSpy = vi
         .spyOn(schedulingApi, 'createSchedulingRequest')
         .mockResolvedValueOnce(mockSuccessResponse);
-
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
-      const select = screen.getByLabelText(/Thành phố \/ Điểm đến/i);
-      fireEvent.change(select, { target: { value: 'hue' } });
+      fireEvent.click(screen.getByLabelText(/Quay về điểm xuất phát khi kết thúc hành trình/));
+      await pickPlace(/^Điểm kết thúc:/, MY_KHE.name);
+      await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
 
-      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
-      fireEvent.click(submitBtn);
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+      await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
 
-      await waitFor(
-        () => {
-          expect(createSpy).toHaveBeenCalledTimes(1);
-        },
-        { timeout: 4000 },
+      const payload = createSpy.mock.calls[0][0];
+      expect(payload.startLatitude).toBe(15.9686);
+      expect(payload.startLongitude).toBe(108.2607);
+      expect(payload.explorationLatitude).toBe(CHAM_MUSEUM.latitude);
+      expect(payload.explorationLongitude).toBe(CHAM_MUSEUM.longitude);
+      expect(payload.returnToStart).toBe(false);
+      expect(payload.endPoiId).toBe(MY_KHE.id);
+      expect(payload.mandatoryPoiIds).toEqual([MY_KHE.id]);
+    });
+
+    it('requires a finish place when not returning to the start', async () => {
+      const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+
+      fireEvent.click(screen.getByLabelText(/Quay về điểm xuất phát khi kết thúc hành trình/));
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+
+      expect(
+        await screen.findByText('Chọn điểm kết thúc hoặc bật "Quay về điểm xuất phát".'),
+      ).toBeDefined();
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+
+    it('clears must-see places when the area changes', async () => {
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+      await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
+      expect(screen.getByRole('button', { name: `Bỏ ${MY_KHE.name}` })).toBeDefined();
+
+      await pickPlace(/^Khu vực khám phá:/, MY_KHE.name);
+
+      expect(screen.queryByRole('button', { name: `Bỏ ${MY_KHE.name}` })).toBeNull();
+    });
+
+    it('allows a search radius up to 100 km and uses it for must-see places and the request', async () => {
+      const createSpy = vi
+        .spyOn(schedulingApi, 'createSchedulingRequest')
+        .mockResolvedValueOnce(mockSuccessResponse);
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+
+      const slider = screen.getByLabelText(/Bán kính tìm kiếm điểm tham quan xung quanh/);
+      expect(slider.getAttribute('max')).toBe('100');
+      fireEvent.change(slider, { target: { value: '100' } });
+      expect(screen.getByText('100 km')).toBeDefined();
+
+      await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
+      expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
+        expect.objectContaining({ radiusKm: 100 }),
       );
 
-      const submittedPayload = createSpy.mock.calls[0][0];
-      expect(submittedPayload.startLatitude).toBe(16.4637);
-      expect(submittedPayload.startLongitude).toBe(107.5909);
-      expect(submittedPayload.explorationLatitude).toBe(16.4637);
-      expect(submittedPayload.explorationLongitude).toBe(107.5909);
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+      await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      expect(createSpy.mock.calls[0][0].searchRadiusKm).toBe(100);
     });
   });
 
@@ -360,29 +468,27 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(screen.queryByRole('button', { name: /Văn hóa & Lịch sử/i })).toBeNull();
     });
 
-    it('pre-fills transport only from the UC-09 API and leaves budget request-scoped', async () => {
+    it('pre-fills only supported transport from the saved server preferences', async () => {
       vi.spyOn(preferencesApi, 'getTravelPreferences').mockResolvedValueOnce({
         ok: true,
         data: {
-          interests: ['Beach'],
+          interests: [],
           preferredTransportMode: 'Car',
           travelPace: 'Relaxed',
           riskTolerance: null,
           foodPreferences: [],
-          updatedAtUtc: '2026-10-13T06:00:00Z',
+          updatedAtUtc: null,
         },
       });
 
-      render(<CreateSchedulingRequestForm userId={123} />);
+      render(<CreateSchedulingRequestForm />);
 
       expect(
         await screen.findByText(/TripMate đã tự động điền phương tiện từ sở thích du lịch đã lưu của bạn/i),
       ).toBeDefined();
       expect(screen.getByRole('button', { name: /Ô tô/i }).className).toContain('border-[#007d6e]');
-      expect((screen.getByPlaceholderText('VD: 500000') as HTMLInputElement).value).toBe('');
+      expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('8');
       expect(screen.queryByText(/sở thích trải nghiệm/i)).toBeNull();
-      // D-W4: pace is not mapped to available hours or rest preference.
-      expect(screen.getByText(/8 giờ \(480 phút\)/i)).toBeDefined();
     });
 
     it('does NOT include any invented interest fields in backend payload', async () => {
@@ -391,6 +497,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
@@ -407,85 +514,6 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(submittedPayload).not.toHaveProperty('interestTags');
       expect(submittedPayload).not.toHaveProperty('interestIds');
       expect(submittedPayload).not.toHaveProperty('preferenceTags');
-    });
-
-    it('keeps form defaults and shows no pre-fill banner when preferences cannot be loaded', async () => {
-      const spy = vi.spyOn(preferencesApi, 'getTravelPreferences').mockResolvedValueOnce({ ok: false, kind: 'failure' });
-
-      render(<CreateSchedulingRequestForm userId={456} />);
-
-      await waitFor(() => expect(spy).toHaveBeenCalled());
-      const motorbikeBtn = screen.getByRole('button', { name: /Xe máy/i });
-      expect(motorbikeBtn.className).toContain('border-[#007d6e]');
-      expect(screen.getByText(/8 giờ \(480 phút\)/i)).toBeDefined();
-      expect(screen.queryByText(/TripMate đã tự động điền/i)).toBeNull();
-    });
-
-    it('keeps defaults when saved preferences are unspecified', async () => {
-      const spy = vi.spyOn(preferencesApi, 'getTravelPreferences').mockResolvedValueOnce({
-        ok: true,
-        data: {
-          interests: [],
-          preferredTransportMode: null,
-          travelPace: null,
-          riskTolerance: null,
-          foodPreferences: [],
-          updatedAtUtc: null,
-        },
-      });
-
-      render(<CreateSchedulingRequestForm userId="empty" />);
-
-      await waitFor(() => expect(spy).toHaveBeenCalled());
-      expect(screen.getByRole('button', { name: /Xe máy/i }).className).toContain('border-[#007d6e]');
-      expect(screen.queryByText(/TripMate đã tự động điền/i)).toBeNull();
-    });
-
-    it('does not overwrite a transport the Traveler picked before preferences arrived', async () => {
-      let resolve: (value: Awaited<ReturnType<typeof preferencesApi.getTravelPreferences>>) => void = () => {};
-      vi.spyOn(preferencesApi, 'getTravelPreferences').mockReturnValueOnce(
-        new Promise((done) => {
-          resolve = done;
-        }),
-      );
-
-      render(<CreateSchedulingRequestForm />);
-      fireEvent.click(screen.getByRole('button', { name: /Đi bộ/i }));
-      resolve({
-        ok: true,
-        data: {
-          interests: [],
-          preferredTransportMode: 'Car',
-          travelPace: null,
-          riskTolerance: null,
-          foodPreferences: [],
-          updatedAtUtc: null,
-        },
-      });
-
-      await waitFor(() =>
-        expect(screen.getByRole('button', { name: /Đi bộ/i }).className).toContain('border-[#007d6e]'),
-      );
-      expect(screen.getByRole('button', { name: /Ô tô/i }).className).not.toContain('border-[#007d6e]');
-    });
-
-    it('never pre-selects the disabled public-transit option', async () => {
-      const spy = vi.spyOn(preferencesApi, 'getTravelPreferences').mockResolvedValueOnce({
-        ok: true,
-        data: {
-          interests: [],
-          preferredTransportMode: 'PublicTransit',
-          travelPace: null,
-          riskTolerance: null,
-          foodPreferences: [],
-          updatedAtUtc: null,
-        },
-      });
-
-      render(<CreateSchedulingRequestForm />);
-
-      await waitFor(() => expect(spy).toHaveBeenCalled());
-      expect(screen.getByRole('button', { name: /Xe máy/i }).className).toContain('border-[#007d6e]');
     });
 
     it('does not read preferences from browser storage', () => {
@@ -509,6 +537,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
 
@@ -548,6 +577,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
 
@@ -586,6 +616,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
 
@@ -628,6 +659,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
@@ -647,13 +679,14 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(key2).not.toBe(key1);
     }, 10000);
 
-    it('CASE G: generates a new key when destination preset is changed', async () => {
+    it('CASE G: generates a new key when the exploration area is changed', async () => {
       const createSpy = vi
         .spyOn(schedulingApi, 'createSchedulingRequest')
         .mockRejectedValueOnce(new Error('Failed'))
         .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
@@ -661,9 +694,8 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
       const key1 = createSpy.mock.calls[0][1]?.idempotencyKey;
 
-      // Change destination to Hội An
-      const destSelect = screen.getByLabelText(/Thành phố \/ Điểm đến/i);
-      fireEvent.change(destSelect, { target: { value: 'hoian' } });
+      // Explore around another place
+      await pickPlace(/^Khu vực khám phá:/, MY_KHE.name);
 
       const retryBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(retryBtn);
@@ -682,16 +714,40 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
     const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
     fireEvent.change(timeInput, { target: { value: '09:00' } });
+    fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: '15' } });
 
-    const quickPresetBtn = screen.getByRole('button', { name: /3 giờ \(Nửa buổi\)/i });
-    fireEvent.click(quickPresetBtn);
+    expect(screen.getByText('12:15')).toBeDefined();
+    expect(screen.getByText(/\(cùng ngày\)/i)).toBeDefined();
+  });
 
-    expect(screen.getByText('12:00')).toBeDefined();
-    expect(screen.getByText(/Cùng ngày ✓/i)).toBeDefined();
+  it('allows a trip that runs past midnight into the next days', () => {
+    render(<CreateSchedulingRequestForm />);
+
+    fireEvent.change(screen.getByLabelText(/Giờ xuất phát/i), { target: { value: '20:00' } });
+    fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: '0' } });
+
+    expect(screen.getByText('02:00')).toBeDefined();
+    expect(screen.getByText(/\(sau 2 ngày\)/i)).toBeDefined();
+  });
+
+  it.each([
+    ['0', '45', 'Thời lượng tối thiểu là 1 giờ.'],
+    ['72', '1', 'Thời lượng tối đa là 72 giờ (3 ngày).'],
+    ['2', '75', 'Nhập số giờ nguyên và số phút từ 0 đến 59.'],
+  ])('rejects %s h %s min', (hours, minutes, message) => {
+    render(<CreateSchedulingRequestForm />);
+
+    fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: hours } });
+    fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: minutes } });
+
+    expect(screen.getAllByText(message).length).toBeGreaterThan(0);
   });
 
   it('shows error if budget is zero or negative', async () => {
     render(<CreateSchedulingRequestForm />);
+    await chooseStartAndArea();
 
     const budgetInput = screen.getByLabelText(/Ngân sách dự kiến/i);
     fireEvent.change(budgetInput, { target: { value: '-50000' } });
@@ -709,6 +765,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     const onSuccessMock = vi.fn();
 
     render(<CreateSchedulingRequestForm onSuccess={onSuccessMock} />);
+    await chooseStartAndArea();
 
     const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
     fireEvent.click(submitBtn);
