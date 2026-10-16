@@ -26,6 +26,10 @@ function firstValidationMessage(errors: unknown): string | undefined {
   return undefined;
 }
 
+function isGenericServerMessage(message: string): boolean {
+  return /^an unexpected error occurred\.?$/i.test(message.trim());
+}
+
 async function fail(response: Response): Promise<never> {
   let code: string | undefined;
   let message = response.status === 401
@@ -50,8 +54,8 @@ async function fail(response: Response): Promise<never> {
         : typeof value.code === 'string' ? value.code
           : typeof extensions?.errorCode === 'string' ? extensions.errorCode
             : undefined;
-      if (typeof value.title === 'string') message = value.title;
-      if (typeof value.detail === 'string') message = value.detail;
+      if (typeof value.title === 'string' && !isGenericServerMessage(value.title)) message = value.title;
+      if (typeof value.detail === 'string' && !isGenericServerMessage(value.detail)) message = value.detail;
       const firstFieldError = firstValidationMessage(value.errors);
       if (firstFieldError) message = firstFieldError;
     }
