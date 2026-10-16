@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
-import { CancellationPolicySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { DepartureTermsFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
+import { TourMediaManager } from './TourMediaManager';
 import { useTourCatalogues } from './useTourCatalogues';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
@@ -17,6 +19,7 @@ import {
   type TourDepartureSchedule,
   type TourItineraryActivity,
   type TourItineraryDay,
+  type TourMediaItem,
   type TourPackageDto,
   type TourValidationErrors,
   type UpdateTourPackagePayload,
@@ -34,6 +37,10 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   const isApproved = initialTour.status === 'Approved' || initialTour.status === 'Published';
   const catalogues = useTourCatalogues(isDemo);
   const [destinationIds, setDestinationIds] = useState<number[]>(initialTour.destinationIds ?? []);
+  const [highlights, setHighlights] = useState(initialTour.highlights ?? '');
+  const [travellerRequirements, setTravellerRequirements] = useState(initialTour.travellerRequirements ?? '');
+  const [timeZoneId, setTimeZoneId] = useState(initialTour.timeZoneId ?? 'Asia/Ho_Chi_Minh');
+  const [media, setMedia] = useState<TourMediaItem[]>(initialTour.media ?? []);
 
   // Form State initialized from initialTour
   const [title, setTitle] = useState(initialTour.title);
@@ -112,6 +119,9 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       description,
       inclusions,
       exclusions,
+      highlights: isDemo ? undefined : highlights,
+      travellerRequirements: isDemo ? undefined : travellerRequirements,
+      timeZoneId: isDemo ? undefined : timeZoneId,
       cancellationPolicy,
       itinerary,
       schedules,
@@ -264,6 +274,10 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         </div>
       )}
 
+      {!isDemo && (
+        <TourReadinessPanel blockers={initialTour.reviewBlockers} warnings={initialTour.warnings} />
+      )}
+
       {/* Success / Error alerts */}
       {successMessage && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-900 shadow-xs">
@@ -410,18 +424,27 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   <label htmlFor="field-category" className="block text-xs font-bold text-[#00152A]">
                     Danh mục tour
                   </label>
-                  <select
-                    id="field-category"
-                    disabled={isPending}
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
-                  >
-                    <option value="Di sản & Thiên nhiên">Di sản & Thiên nhiên</option>
-                    <option value="Văn hóa & Ẩm thực">Văn hóa & Ẩm thực</option>
-                    <option value="Khám phá biển đảo">Khám phá biển đảo</option>
-                    <option value="Nghỉ dưỡng & Sinh thái">Nghỉ dưỡng & Sinh thái</option>
-                  </select>
+                  {isDemo ? (
+                    <select
+                      id="field-category"
+                      disabled={isPending}
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                    >
+                      <option value="Di sản & Thiên nhiên">Di sản & Thiên nhiên</option>
+                      <option value="Văn hóa & Ẩm thực">Văn hóa & Ẩm thực</option>
+                      <option value="Khám phá biển đảo">Khám phá biển đảo</option>
+                      <option value="Nghỉ dưỡng & Sinh thái">Nghỉ dưỡng & Sinh thái</option>
+                    </select>
+                  ) : (
+                    <CategorySelect
+                      options={catalogues.categories}
+                      value={category}
+                      onChange={setCategory}
+                      disabled={isPending}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -635,10 +658,48 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                       className="mt-1 w-full rounded-lg border border-slate-300 p-1.5 text-xs text-slate-900"
                     />
                   </div>
+                  {!isDemo && (
+                    <DepartureTermsFields
+                      schedule={sch}
+                      disabled={isPending}
+                      onChange={(patch) => {
+                        const updated = [...schedules];
+                        updated[sIdx] = { ...updated[sIdx], ...patch };
+                        setSchedules(updated);
+                      }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
           </section>
+
+          {!isDemo && (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+              <h3 className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#00152A]">Thông tin bổ sung</h3>
+              <div className="mt-3">
+                <TourTermsFields
+                  highlights={highlights}
+                  travellerRequirements={travellerRequirements}
+                  timeZoneId={timeZoneId}
+                  onHighlights={setHighlights}
+                  onTravellerRequirements={setTravellerRequirements}
+                  onTimeZoneId={setTimeZoneId}
+                  disabled={isPending}
+                />
+              </div>
+            </section>
+          )}
+
+          {!isDemo && (
+            <TourMediaManager
+              tourId={initialTour.id}
+              tourTitle={initialTour.title}
+              media={media}
+              onChange={setMedia}
+              disabled={isPending || isApproved}
+            />
+          )}
 
           {/* Card: Version History (Screen #42) */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">

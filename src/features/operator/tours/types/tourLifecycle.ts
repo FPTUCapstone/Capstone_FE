@@ -50,6 +50,13 @@ export interface TourDepartureSchedule {
   reservedCapacity: number; // sold slots (BR-61)
   meetingPoint?: string;
   status: 'Scheduled' | 'Cancelled' | 'Completed';
+  /** Selling terms. Undefined = not edited (use the server's value or a default); null = cleared. */
+  minimumCapacity?: number;
+  adultPrice?: number;
+  childPrice?: number | null;
+  infantPrice?: number | null;
+  /** YYYY-MM-DD, strictly before the departure date; '' = no deadline. */
+  registrationDeadlineDate?: string;
   /** Present only for a departure loaded from the backend. */
   serverTerms?: TourDepartureServerTerms;
 }
@@ -59,6 +66,13 @@ export interface TourMediaItem {
   url: string;
   caption?: string;
   isPrimary?: boolean;
+}
+
+export interface TourWarning {
+  code: string;
+  dayNo?: number;
+  sequenceNo?: number;
+  poiId?: number;
 }
 
 export interface TourPackageDto {
@@ -77,6 +91,13 @@ export interface TourPackageDto {
   description: string;
   inclusions?: string;
   exclusions?: string;
+  highlights?: string;
+  travellerRequirements?: string;
+  timeZoneId?: string;
+  /** Server-computed readiness (real mode only). Undefined for demo fixtures. */
+  reviewBlockers?: string[];
+  canSubmitForReview?: boolean;
+  warnings?: TourWarning[];
   /** Real mode: the selected cancellation policy template id as a string. Demo: free text. */
   cancellationPolicy: string;
   status: TourLifecycleStatus;
@@ -103,6 +124,9 @@ export interface CreateTourPackagePayload {
   description: string;
   inclusions?: string;
   exclusions?: string;
+  highlights?: string;
+  travellerRequirements?: string;
+  timeZoneId?: string;
   cancellationPolicy: string;
   itinerary: TourItineraryDay[];
   schedules: TourDepartureSchedule[];

@@ -29,6 +29,8 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
     nonSubmittableReason = 'Gói tour đã ở trạng thái chờ duyệt (MSG122).';
   } else if (tour.status === 'Approved') {
     nonSubmittableReason = 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa (MSG110).';
+  } else if (tour.status === 'Published') {
+    nonSubmittableReason = 'Gói tour đã được xuất bản. Thay đổi cần được lưu thành phiên bản mới (BR-103).';
   } else if (!isSubmittableStatus) {
     nonSubmittableReason = 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt (BR-104).';
   }
@@ -195,7 +197,13 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
 
           {!completeness.isEligibleForSubmission && (
             <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 font-medium">
-              Còn <strong>{completeness.missingCount}</strong> mục bắt buộc chưa hoàn tất. Vui lòng quay lại màn hình chỉnh sửa để bổ sung đầy đủ trước khi gửi xét duyệt (BR-101, MSG01).
+              Còn <strong>{completeness.missingCount}</strong> mục bắt buộc chưa hoàn tất. Vui lòng quay lại màn hình chỉnh sửa để bổ sung đầy đủ trước khi gửi xét duyệt (BR-101, MSG01).{' '}
+              <Link
+                href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(tour.id), isDemo)}
+                className="font-bold underline"
+              >
+                Mở màn hình chỉnh sửa
+              </Link>
             </div>
           )}
         </section>
@@ -226,7 +234,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
                   3
                 </span>
                 <p>
-                  Khi được duyệt, gói tour sẽ tự động xuất bản và mở bán công khai cho du khách.
+                  Khi được duyệt, quản trị viên sẽ xuất bản gói tour để mở bán công khai cho du khách. Gói tour đã duyệt chưa hiển thị với du khách cho tới lúc đó.
                 </p>
               </div>
             </div>

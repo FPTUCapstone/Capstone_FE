@@ -10,7 +10,8 @@ import {
   OperatorTourValidationError,
   validateCreateTourPackage,
 } from '../services/operatorTourService';
-import { CancellationPolicySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect } from './TourCataloguePickers';
+import { DepartureTermsFields, TourTermsFields } from './TourExtraFields';
 import { useTourCatalogues } from './useTourCatalogues';
 import {
   OPERATOR_TOUR_MESSAGES,
@@ -37,7 +38,12 @@ function nextScheduleId(): string {
   return `sch-user-${scheduleSeq}`;
 }
 
-const INITIAL_DEPARTURE_DATE = '2026-11-01';
+/** A default departure two weeks ahead, so the form never starts with a date in the past. */
+function defaultDepartureDate(daysAhead = 14): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysAhead);
+  return date.toISOString().slice(0, 10);
+}
 
 export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewProps) {
   const router = useRouter();
@@ -45,7 +51,10 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   // Form State
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState('');
-  const [category, setCategory] = useState('Di sản & Thiên nhiên');
+  const [category, setCategory] = useState(isDemo ? 'Di sản & Thiên nhiên' : '');
+  const [highlights, setHighlights] = useState('');
+  const [travellerRequirements, setTravellerRequirements] = useState('');
+  const [timeZoneId, setTimeZoneId] = useState('Asia/Ho_Chi_Minh');
   const [durationDays, setDurationDays] = useState<number>(1);
   const [basePrice, setBasePrice] = useState<number>(1000000);
   const [childPrice, setChildPrice] = useState<number | undefined>(undefined);
@@ -84,8 +93,8 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [schedules, setSchedules] = useState<TourDepartureSchedule[]>([
     {
       id: 'sch-init-1',
-      departureDate: INITIAL_DEPARTURE_DATE,
-      returnDate: INITIAL_DEPARTURE_DATE,
+      departureDate: defaultDepartureDate(),
+      returnDate: defaultDepartureDate(),
       totalCapacity: 20,
       reservedCapacity: 0,
       meetingPoint: 'Trung tâm thành phố',
@@ -138,7 +147,10 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
   // Handlers for Schedules
   const handleAddSchedule = () => {
-    const nextDep = '2026-11-15';
+    const lastDeparture = schedules[schedules.length - 1]?.departureDate;
+    const nextDep = lastDeparture
+      ? new Date(new Date(`${lastDeparture}T00:00:00Z`).getTime() + 7 * 86_400_000).toISOString().slice(0, 10)
+      : defaultDepartureDate(21);
     const newSch: TourDepartureSchedule = {
       id: nextScheduleId(),
       departureDate: nextDep,
@@ -189,6 +201,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       description,
       inclusions,
       exclusions,
+      highlights: isDemo ? undefined : highlights,
+      travellerRequirements: isDemo ? undefined : travellerRequirements,
+      timeZoneId: isDemo ? undefined : timeZoneId,
       cancellationPolicy,
       itinerary,
       schedules,
@@ -219,8 +234,11 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.CREATE_SUCCESS);
         if (andSubmitApproval) {
           router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(result.data.id), isDemo));
-        } else {
+        } else if (isDemo) {
           router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
+        } else {
+          // A saved draft still needs its cover photo, which is managed on the edit screen.
+          router.push(OPERATOR_TOUR_ROUTES.edit(result.data.id));
         }
       } else if (result.status === 'PENDING_BE_INTEGRATION') {
         setPendingMessage(result.message || OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
@@ -398,17 +416,21 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   <label htmlFor="field-category" className="block text-xs font-bold text-[#00152A]">
                     Danh mục tour
                   </label>
-                  <select
-                    id="field-category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
-                  >
-                    <option value="Di sản & Thiên nhiên">Di sản & Thiên nhiên</option>
-                    <option value="Văn hóa & Ẩm thực">Văn hóa & Ẩm thực</option>
-                    <option value="Khám phá biển đảo">Khám phá biển đảo</option>
-                    <option value="Nghỉ dưỡng & Sinh thái">Nghỉ dưỡng & Sinh thái</option>
-                  </select>
+                  {isDemo ? (
+                    <select
+                      id="field-category"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
+                    >
+                      <option value="Di sản & Thiên nhiên">Di sản & Thiên nhiên</option>
+                      <option value="Văn hóa & Ẩm thực">Văn hóa & Ẩm thực</option>
+                      <option value="Khám phá biển đảo">Khám phá biển đảo</option>
+                      <option value="Nghỉ dưỡng & Sinh thái">Nghỉ dưỡng & Sinh thái</option>
+                    </select>
+                  ) : (
+                    <CategorySelect options={catalogues.categories} value={category} onChange={setCategory} />
+                  )}
                 </div>
               </div>
 
@@ -793,10 +815,36 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                       className="w-full rounded-lg border border-slate-200 p-1 text-xs"
                     />
                   </div>
+                  {!isDemo && (
+                    <DepartureTermsFields
+                      schedule={sch}
+                      onChange={(patch) => {
+                        const updated = [...schedules];
+                        updated[sIdx] = { ...updated[sIdx], ...patch };
+                        setSchedules(updated);
+                      }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
           </section>
+
+          {!isDemo && (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+              <h3 className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#00152A]">Thông tin bổ sung</h3>
+              <div className="mt-3">
+                <TourTermsFields
+                  highlights={highlights}
+                  travellerRequirements={travellerRequirements}
+                  timeZoneId={timeZoneId}
+                  onHighlights={setHighlights}
+                  onTravellerRequirements={setTravellerRequirements}
+                  onTimeZoneId={setTimeZoneId}
+                />
+              </div>
+            </section>
+          )}
 
           {/* Card: Cover Photos / Media */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
@@ -809,8 +857,8 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
             {!isDemo ? (
               <p role="status" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                Tải ảnh đại diện chưa được hỗ trợ trên màn hình này. Bản nháp vẫn được lưu, nhưng gói tour cần có ảnh đại
-                diện đang hoạt động trước khi gửi xét duyệt.
+                Hãy lưu bản nháp trước. Hệ thống sẽ chuyển bạn tới màn hình chỉnh sửa để tải ảnh; gói tour cần có ảnh đại diện
+                đang hoạt động trước khi gửi xét duyệt.
               </p>
             ) : (
             <div className="mt-3">
