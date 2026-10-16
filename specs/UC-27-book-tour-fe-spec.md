@@ -26,7 +26,7 @@ The entry comes from UC-26’s public tour-detail/departure selection. Until UC-
 
 The form contains a participant list, optional voucher code and lead-contact fields represented by the first participant. Required participant fields are only those approved in the Backend contract:
 
-- `fullName`
+- `fullName` and required `participantType` (`Adult`, `Child`, or `Infant`)
 - optional `phoneNumber`, `email`, `idDocumentType`, `idDocumentNumber`, `nationality`
 
 DOB, an age rule, a separate contact table/form contract and arbitrary participant limits are out of scope until product and BE approve them. Client validation is UX-only and mirrors the approved request shape.
@@ -34,8 +34,8 @@ DOB, an age rule, a separate contact table/form contract and arbitrary participa
 ## 4. Quote and create flow
 
 1. The page receives the selected tour/departure.
-2. A participant-count or voucher change calls `POST /api/v1/traveler/tour-bookings/quote` through the existing authenticated API/proxy layer.
-3. The UI displays `unitPrice`, subtotal, discount, total, currency and remaining slots **exactly as returned**. It performs no arithmetic.
+2. A participant-type count or voucher change calls `POST /api/v1/traveler/tour-bookings/quote` through the existing authenticated API/proxy layer.
+3. The UI displays each per-type `priceBreakdown` line, subtotal, discount, total, currency and remaining slots **exactly as returned**. It performs no arithmetic.
 4. The Traveler reviews a confirmation dialog and confirms once.
 5. The client generates a UUID, sends it as `Idempotency-Key`, and calls `POST /api/v1/traveler/tour-bookings`.
 6. On `201` or idempotent `200`, show booking code, `PendingPayment` and `paymentExpiresAt`. Clear sensitive document input from form state.

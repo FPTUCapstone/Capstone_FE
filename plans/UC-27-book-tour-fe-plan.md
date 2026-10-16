@@ -8,7 +8,7 @@
 1. Audit the existing `app/tours/[id]/book` and `src/features/bookings` implementation. Refactor it into the single approved route rather than creating a second booking module.
 2. Define shared browser DTOs using string `tourId`, `tourScheduleId` and `bookingId`.
 3. Add `TourDetailSource` and `BookingQuoteSource` interfaces. Implement a demo source with a selected departure and read-only quote under the existing explicit fixture guard.
-4. Build accessible participant/voucher/summary/confirmation components using the approved field set only.
+4. Build accessible participant/voucher/summary/confirmation components using the approved field set, including required `participantType` selection.
 5. Show Demo mode clearly. Keep confirm disabled or show an explicit “Live booking unavailable” state in demo; do not create fixture bookings, local reservations or payment links.
 
 **Tests:** guard is false in production; no mutation endpoint is called in demo; form labels, focus and loading/error states work.
@@ -17,7 +17,7 @@
 
 1. Add an authenticated service client for quote and create. It must use the project proxy/auth layer instead of direct unauthenticated `fetch` calls.
 2. Send `Idempotency-Key` on create; retain the generated UUID only for the in-flight retry, never in persistent browser storage.
-3. Render the server `BookingQuote` without computing amounts. Debounce quote requests and cancel stale requests.
+3. Derive participant-type counts for the quote request and render the server `BookingQuote.priceBreakdown` without computing amounts. Debounce quote requests and cancel stale requests.
 4. Handle first `201`, duplicate-retry `200`, validation, capacity/voucher conflict, 401 refresh/session outcome and 403 through the approved error map.
 5. Replace/remove the legacy `bookingApi.ts` behaviour that posts to `/api/bookings`, computes demo amounts, or treats unsupported API responses as a successful booking path.
 
