@@ -18,15 +18,15 @@ export const preferenceMessages = {
   },
   catalog: {
     errors: {
-      [PREFERENCE_ERROR_CODES.invalidOption]: 'Lựa chọn không hợp lệ. Vui lòng chọn lại từ danh sách.',
-      [PREFERENCE_ERROR_CODES.tooManyInterests]: 'Bạn chỉ có thể chọn tối đa 10 sở thích.',
+      [PREFERENCE_ERROR_CODES.invalidOption]: 'This option is no longer available. Please choose from the current list.',
+      [PREFERENCE_ERROR_CODES.tooManyInterests]: 'You can select up to 10 interests.',
       [PREFERENCE_ERROR_CODES.foodNoRestrictionExclusive]:
-        '“Không kiêng” không thể chọn cùng các chế độ ăn khác.',
-      [PREFERENCE_ERROR_CODES.valueTooLong]: 'Danh sách lựa chọn quá dài. Vui lòng bỏ bớt.',
+        '“No restriction” cannot be selected with other dietary preferences.',
+      [PREFERENCE_ERROR_CODES.valueTooLong]: 'The selected values are too long. Please remove some selections.',
     } as Record<string, string>,
-    unknownField: 'Giá trị chưa hợp lệ. Vui lòng kiểm tra lại.',
-    clearConfirm: 'Xóa toàn bộ sở thích đã chọn? Thay đổi chỉ được lưu khi bạn bấm “Lưu sở thích”.',
-    emptyInterests: 'Hiện chưa có danh mục sở thích để chọn. Các mục khác vẫn có thể lưu bình thường.',
+    unknownField: 'One or more values are invalid. Please review your selections.',
+    clearConfirm: 'Clear all selected preferences? Changes are saved only after you select “Save preferences”.',
+    emptyInterests: 'There are no interest options available yet. You can still save the other preferences.',
   },
 } as const;
 

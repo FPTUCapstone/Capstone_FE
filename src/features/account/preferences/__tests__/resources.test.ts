@@ -19,7 +19,7 @@ describe('UC-09 labels', () => {
   });
 
   it('labels known interests and falls back to the key for unknown ones', () => {
-    expect(interestLabel('Beach')).toBe('Bãi biển');
+    expect(interestLabel('Beach')).toBe('Beach');
     expect(interestLabel('street food')).toBe('street food');
   });
 });

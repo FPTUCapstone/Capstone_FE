@@ -60,7 +60,7 @@ describe('TravelPreferencesForm', () => {
     expect(screen.getByRole('group', { name: /Nhịp độ tham quan/ })).toBeDefined();
     expect(screen.getByRole('group', { name: /Chế độ ăn uống/ })).toBeDefined();
     expect(screen.getByRole('group', { name: /Mức chấp nhận rủi ro/ })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Bãi biển' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Beach' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'street food' })).toBeDefined();
     expect(screen.queryByText(/Phong cách chuyến đi/)).toBeNull();
     expect(screen.queryByText(/Tự động áp dụng/)).toBeNull();
@@ -75,8 +75,8 @@ describe('TravelPreferencesForm', () => {
   it('shows saved values as selected', () => {
     renderForm(saved);
 
-    expect(screen.getByRole('button', { name: 'Bãi biển' }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Xe máy' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Beach' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Motorbike' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('saves the complete empty state and shows MSG21 only after 200', async () => {
@@ -99,10 +99,10 @@ describe('TravelPreferencesForm', () => {
     vi.mocked(api.updateTravelPreferences).mockResolvedValue({ ok: true, data: saved });
     renderForm();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Bãi biển' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Ô tô / Taxi' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Nhanh' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Nhanh' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Beach' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Car / Taxi' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fast' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fast' }));
     fireEvent.click(saveButton());
 
     await waitFor(() => expect(api.updateTravelPreferences).toHaveBeenCalled());
@@ -117,11 +117,11 @@ describe('TravelPreferencesForm', () => {
     vi.mocked(api.updateTravelPreferences).mockResolvedValue({ ok: true, data: saved });
     renderForm();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Thuần chay' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Không kiêng' }));
-    expect(screen.getByRole('button', { name: 'Thuần chay' }).getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(screen.getByRole('button', { name: 'Vegan' }));
+    fireEvent.click(screen.getByRole('button', { name: 'No restriction' }));
+    expect(screen.getByRole('button', { name: 'Vegan' }).getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(screen.getByRole('button', { name: 'Halal' }));
-    expect(screen.getByRole('button', { name: 'Không kiêng' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'No restriction' }).getAttribute('aria-pressed')).toBe('false');
 
     fireEvent.click(saveButton());
     await waitFor(() => expect(api.updateTravelPreferences).toHaveBeenCalled());
@@ -151,13 +151,13 @@ describe('TravelPreferencesForm', () => {
     });
     renderForm();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Văn hóa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Culture' }));
     fireEvent.click(saveButton());
 
     expect(
       await screen.findByText(preferenceMessages.catalog.errors[PREFERENCE_ERROR_CODES.invalidOption]),
     ).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Văn hóa' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Culture' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.queryByText(preferenceMessages.locked.MSG21)).toBeNull();
   });
 
@@ -215,7 +215,7 @@ describe('TravelPreferencesForm', () => {
     expect(screen.getByText(preferenceMessages.catalog.clearConfirm)).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận xóa' }));
 
-    expect(screen.getByRole('button', { name: 'Bãi biển' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Beach' }).getAttribute('aria-pressed')).toBe('false');
     expect(api.updateTravelPreferences).not.toHaveBeenCalled();
 
     fireEvent.click(saveButton());
@@ -232,7 +232,7 @@ describe('TravelPreferencesForm', () => {
       </>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Bãi biển' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Beach' }));
     const allowed = fireEvent.click(screen.getByRole('link', { name: 'Hồ sơ' }));
 
     expect(confirmSpy).toHaveBeenCalledWith(preferenceMessages.locked.MSG23);
@@ -257,6 +257,6 @@ describe('TravelPreferencesForm', () => {
     render(<TravelPreferencesForm options={{ ...options, interests: [] }} initialPreferences={EMPTY_PREFERENCES} />);
 
     expect(screen.getByText(preferenceMessages.catalog.emptyInterests)).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Đi bộ' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Walking' })).toBeDefined();
   });
 });
