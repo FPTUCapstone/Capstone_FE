@@ -255,14 +255,14 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
       {tourPendingDeletion && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" role="presentation">
           <section role="dialog" aria-modal="true" aria-labelledby="delete-tour-title" aria-describedby="delete-tour-description" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start gap-4">
-              <span className="material-symbols-outlined grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rose-50 text-rose-600" aria-hidden="true">delete_forever</span>
-              <div>
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-[22px] text-rose-600" aria-hidden="true">delete_forever</span>
                 <h2 id="delete-tour-title" className="text-lg font-extrabold text-slate-900">Xóa gói tour?</h2>
-                <p id="delete-tour-description" className="mt-2 text-sm leading-6 text-slate-600">
-                  Bạn sắp xóa <strong className="font-bold text-slate-900">{tourPendingDeletion.title}</strong>. Dữ liệu bản nháp và lịch khởi hành của tour này sẽ bị xóa vĩnh viễn.
-                </p>
               </div>
+              <p id="delete-tour-description" className="mt-4 text-sm leading-6 text-slate-600">
+                Bạn sắp xóa <strong className="font-bold text-slate-900">{tourPendingDeletion.title}</strong>. Dữ liệu bản nháp và lịch khởi hành của tour này sẽ bị xóa vĩnh viễn.
+              </p>
             </div>
             <div className="mt-6 border-t border-slate-100 pt-5">
               {deleteError && (
