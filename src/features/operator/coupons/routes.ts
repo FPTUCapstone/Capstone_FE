@@ -3,7 +3,9 @@
  */
 export const OPERATOR_COUPON_ROUTES = {
   list: '/partner/coupons',
-  create: '/partner/coupons/new',
+  // This is the production form backed by POST /operator/coupons. The historical
+  // /new screen is demo-only and must never be linked from the operator workspace.
+  create: '/partner/coupons/create',
   edit: (id: string | number) => `/partner/coupons/${encodeURIComponent(id)}/edit`,
 } as const;
 
