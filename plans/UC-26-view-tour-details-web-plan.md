@@ -1,6 +1,6 @@
 # UC-26 Web plan
 
-Pending approval of `specs/UC-26-view-tour-details-web-spec.md`. Test first for every task; verify with the listed
+Approved 2026-10-17 together with `specs/UC-26-view-tour-details-web-spec.md`. Test first for every task; verify with the listed
 command before moving on. Work in worktree `Capstone_FE_UC26`, branch `feature/uc26-web-tour-detail` from
 `origin/develop`. Baseline before editing: `npm run typecheck`, `npm test`, `npm run lint` on the clean checkout.
 
