@@ -1,7 +1,7 @@
 # UC-27 Web Implementation Plan — Book Tour
 
 **Platform:** Next.js / React
-**Status:** Phase A may begin; Phase B is blocked until Backend contract approval
+**Status:** Phase A may begin; quote/create API has implementation evidence, but Phase B waits for cross-platform OpenAPI/error-map approval and UC-26 live entry
 
 ## Phase A — UI-first, development only
 
@@ -27,15 +27,15 @@
 
 1. Render booking code, `PendingPayment`, total and `paymentExpiresAt` from create response.
 2. Provide **Pay now** as an explicit navigation handoff to UC-28; do not initialize a gateway from UC-27.
-3. When the displayed expiry has passed, refresh status rather than setting final status locally.
+3. Do not implement expiry status refresh until UC-28 or Booking Details publishes an approved authenticated booking-status endpoint. Until then, show the server expiry and do not set a final status locally.
 
-**Tests:** no automatic payment redirect; expired screen refreshes state; navigation preserves the created booking ID.
+**Tests:** no automatic payment redirect; expired screen has no local final-status transition; navigation preserves the created booking ID.
 
 ## Backend dependencies
 
 - UC-26 supplies public tour detail and departure selection.
-- UC-27 BE supplies approved OpenAPI for quote/create and the common error envelope.
-- UC-28 supplies the payment entry route/contract.
+- UC-27 BE supplies quote/create implementation; cross-platform OpenAPI and common error-map approval remain required.
+- UC-28 supplies the payment entry route/contract and, if expiry refresh is required, an authenticated booking-status endpoint.
 
 ## Definition of done
 

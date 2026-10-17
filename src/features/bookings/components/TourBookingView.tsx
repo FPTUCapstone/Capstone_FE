@@ -10,7 +10,7 @@ import type { TourDetailDto, TourScheduleDto } from '@/features/public/tours/typ
 import { ROUTES } from '@/lib/routes';
 import { createBooking, quoteBooking } from '../services/bookingApi';
 import { BookingApiError } from '../types/booking';
-import type { BookingParticipantRequestDto, BookingQuoteDto, ParticipantType } from '../types/booking';
+import type { BookingDto, BookingParticipantRequestDto, BookingQuoteDto, ParticipantType } from '../types/booking';
 
 interface TourBookingViewProps {
   tour: TourDetailDto;
@@ -100,8 +100,7 @@ export function TourBookingView({
 
   // UC-27 ends at a confirmed PendingPayment booking; "created" switches the view to that
   // confirmation. Payment (UC-28) is a separate, user-initiated navigation, never started here.
-  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
-  const [createdBookingCode, setCreatedBookingCode] = useState<string | null>(null);
+  const [createdBooking, setCreatedBooking] = useState<BookingDto | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [pendingBeNotice, setPendingBeNotice] = useState<string | null>(null);
 
@@ -115,24 +114,15 @@ export function TourBookingView({
   const isQuoteInputValid = Boolean(selectedSchedule) && totalTravelers > 0 && !isOverCapacity;
   const effectiveQuote = isQuoteInputValid ? quote : null;
 
-  // Display-only reference price before the first quote resolves. BR-63's actual policy
-  // (Child/Infant = their own override, else the effective Adult price) lives on the server;
-  // this fallback never guesses a different number (no 50%-of-adult heuristic) — it just shows
-  // the schedule's listed per-person rate for every type until the real breakdown arrives.
-  const fallbackUnitPrice = selectedSchedule?.price ?? tour.basePrice;
+  // Monetary amounts are valid only once the server has produced a quote. In particular, the
+  // client must not infer Child/Infant prices from a schedule card or calculate line totals.
   const findLine = (type: ParticipantType) =>
     effectiveQuote?.priceBreakdown.find((line) => line.participantType === type);
   const adultLine = findLine('Adult');
   const childLine = findLine('Child');
   const infantLine = findLine('Infant');
-  const adultUnitPrice = adultLine?.unitPrice ?? fallbackUnitPrice;
-  const childUnitPrice = childLine?.unitPrice ?? fallbackUnitPrice;
-  const infantUnitPrice = infantLine?.unitPrice ?? fallbackUnitPrice;
-  const subtotal =
-    effectiveQuote?.subtotalAmount ??
-    adultCount * fallbackUnitPrice + childCount * fallbackUnitPrice + infantCount * fallbackUnitPrice;
-  const discountAmount = effectiveQuote?.discountAmount ?? 0;
-  const totalAmount = effectiveQuote?.totalAmount ?? Math.max(0, subtotal - discountAmount);
+  const discountAmount = effectiveQuote?.discountAmount;
+  const totalAmount = effectiveQuote?.totalAmount;
   const appliedVoucherLabel = effectiveQuote?.appliedVoucher?.code ?? null;
 
   // UC-27 BR-63: re-quote from the server whenever the inputs that affect price change. Debounced
@@ -275,8 +265,7 @@ export function TourBookingView({
 
       // UC-27 ends here at PendingPayment. Payment (UC-28) is a separate, user-initiated
       // navigation triggered by the "Pay now" button below — never started automatically.
-      setCreatedBookingId(booking.bookingId);
-      setCreatedBookingCode(booking.bookingCode);
+      setCreatedBooking(booking);
     } catch (err: unknown) {
       const errorMsg =
         err instanceof BookingApiError
@@ -291,8 +280,8 @@ export function TourBookingView({
   };
 
   const handleGoToPayment = () => {
-    if (!createdBookingId) return;
-    router.push(`/bookings/${encodeURIComponent(createdBookingId)}/pay${isDemo ? '?demo=1' : ''}`);
+    if (!createdBooking) return;
+    router.push(`/bookings/${encodeURIComponent(createdBooking.bookingId)}/pay${isDemo ? '?demo=1' : ''}`);
   };
 
   return (
@@ -334,23 +323,23 @@ export function TourBookingView({
 
       {/* Stepper Indicator */}
       <div className="mb-8 flex items-center justify-center gap-2 sm:gap-4 text-xs">
-        <div className={`flex items-center gap-2 font-bold ${createdBookingId ? 'text-slate-400' : 'text-[#007d6e]'}`}>
+        <div className={`flex items-center gap-2 font-bold ${createdBooking ? 'text-slate-400' : 'text-[#007d6e]'}`}>
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              createdBookingId ? 'bg-emerald-600 text-white' : 'bg-[#007d6e] text-white shadow-sm'
+              createdBooking ? 'bg-emerald-600 text-white' : 'bg-[#007d6e] text-white shadow-sm'
             }`}
           >
-            {createdBookingId ? '✓' : '1'}
+            {createdBooking ? '✓' : '1'}
           </span>
           <span>1. Xác nhận đặt tour</span>
         </div>
 
         <div className="h-0.5 w-8 sm:w-16 bg-slate-200" />
 
-        <div className={`flex items-center gap-2 font-bold ${createdBookingId ? 'text-[#007d6e]' : 'text-slate-400'}`}>
+        <div className={`flex items-center gap-2 font-bold ${createdBooking ? 'text-[#007d6e]' : 'text-slate-400'}`}>
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              createdBookingId ? 'bg-[#007d6e] text-white shadow-sm' : 'bg-slate-200 text-slate-500'
+              createdBooking ? 'bg-[#007d6e] text-white shadow-sm' : 'bg-slate-200 text-slate-500'
             }`}
           >
             2
@@ -387,7 +376,7 @@ export function TourBookingView({
       )}
 
       {/* Main Content Layout */}
-      {!createdBookingId ? (
+      {!createdBooking ? (
         /* STEP 1: CONFIRM BOOKING FORM (UC-27) */
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           {/* Left Column: Form Details (7 cols) */}
@@ -490,7 +479,7 @@ export function TourBookingView({
                   <div>
                     <span className="font-bold text-slate-900 block text-sm">Người lớn</span>
                     <span className="text-slate-500 text-[11px]">
-                      {formatCurrency(adultUnitPrice)} / khách
+                      {adultLine ? `${formatCurrency(adultLine.unitPrice)} / khách` : 'Đang tải báo giá…'}
                     </span>
                   </div>
 
@@ -523,7 +512,9 @@ export function TourBookingView({
                 <div className="flex items-center justify-between pt-3">
                   <div>
                     <span className="font-bold text-slate-900 block text-sm">Trẻ em (4–11 tuổi)</span>
-                    <span className="text-slate-500 text-[11px]">{formatCurrency(childUnitPrice)} / khách</span>
+                    <span className="text-slate-500 text-[11px]">
+                      {childLine ? `${formatCurrency(childLine.unitPrice)} / khách` : 'Đang tải báo giá…'}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -555,7 +546,9 @@ export function TourBookingView({
                 <div className="flex items-center justify-between pt-3">
                   <div>
                     <span className="font-bold text-slate-900 block text-sm">Em bé (dưới 4 tuổi)</span>
-                    <span className="text-slate-500 text-[11px]">{formatCurrency(infantUnitPrice)} / khách</span>
+                    <span className="text-slate-500 text-[11px]">
+                      {infantLine ? `${formatCurrency(infantLine.unitPrice)} / khách` : 'Đang tải báo giá…'}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -729,37 +722,28 @@ export function TourBookingView({
               </h3>
 
               <div className="space-y-2 text-xs text-slate-600">
-                {/* Each line's amount comes straight from the server's priceBreakdown (BR-63) —
-                    this view never multiplies quantity × unit price itself. */}
-                <div className="flex justify-between">
-                  <span>{adultCount} người lớn × {formatCurrency(adultUnitPrice)}</span>
-                  <span className="font-semibold text-slate-900">
-                    {formatCurrency(adultLine?.lineAmount ?? adultCount * adultUnitPrice)}
-                  </span>
-                </div>
-
-                {childCount > 0 && (
-                  <div className="flex justify-between">
-                    <span>{childCount} trẻ em × {formatCurrency(childUnitPrice)}</span>
-                    <span className="font-semibold text-slate-900">
-                      {formatCurrency(childLine?.lineAmount ?? childCount * childUnitPrice)}
-                    </span>
-                  </div>
+                {effectiveQuote ? (
+                  effectiveQuote.priceBreakdown.map((line) => (
+                    <div key={line.participantType} className="flex justify-between">
+                      <span>
+                        {line.participantType === 'Adult'
+                          ? 'Người lớn'
+                          : line.participantType === 'Child'
+                            ? 'Trẻ em'
+                            : 'Em bé'}{' '}
+                        ({line.quantity} × {formatCurrency(line.unitPrice)})
+                      </span>
+                      <span className="font-semibold text-slate-900">{formatCurrency(line.lineAmount)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500">Đang tải báo giá từ máy chủ…</p>
                 )}
 
-                {infantCount > 0 && (
-                  <div className="flex justify-between">
-                    <span>{infantCount} em bé × {formatCurrency(infantUnitPrice)}</span>
-                    <span className="font-semibold text-slate-900">
-                      {formatCurrency(infantLine?.lineAmount ?? infantCount * infantUnitPrice)}
-                    </span>
-                  </div>
-                )}
-
-                {appliedVoucherLabel && discountAmount > 0 && (
+                {appliedVoucherLabel && (discountAmount ?? 0) > 0 && (
                   <div className="flex justify-between text-emerald-600 font-medium">
                     <span>Giảm giá ({appliedVoucherLabel})</span>
-                    <span>-{formatCurrency(discountAmount)}</span>
+                    <span>-{formatCurrency(discountAmount!)}</span>
                   </div>
                 )}
 
@@ -769,7 +753,7 @@ export function TourBookingView({
                     {quoteLoading && (
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#007d6e] border-t-transparent" />
                     )}
-                    {formatCurrency(totalAmount)}
+                    {totalAmount === undefined ? '—' : formatCurrency(totalAmount)}
                   </span>
                 </div>
                 {quoteError && (
@@ -855,13 +839,15 @@ export function TourBookingView({
             <div className="flex items-center justify-between border-y border-slate-100 py-4">
               <div>
                 <p className="text-xs text-slate-400 font-semibold uppercase">Mã đơn đặt tour</p>
-                <p className="text-base font-black font-mono text-slate-900">{createdBookingCode}</p>
+                <p className="text-base font-black font-mono text-slate-900">{createdBooking?.bookingCode}</p>
               </div>
               <div className="text-right">
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
                   Chờ thanh toán
                 </span>
-                <p className="text-2xl font-black text-[#007d6e] mt-1">{formatCurrency(totalAmount)}</p>
+                <p className="text-2xl font-black text-[#007d6e] mt-1">
+                  {createdBooking ? formatCurrency(createdBooking.totalAmount, createdBooking.currency) : '—'}
+                </p>
               </div>
             </div>
 
