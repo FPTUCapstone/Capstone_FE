@@ -47,7 +47,7 @@ export interface OperatorCouponApiDto {
   applicableTourIds: number[];
 }
 
-export interface UpdateCouponInput extends Omit<CreateCouponInput, 'code'> {}
+export type UpdateCouponInput = Omit<CreateCouponInput, 'code'>;
 
 export class CouponApiError extends Error {
   constructor(
