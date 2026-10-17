@@ -44,7 +44,10 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
   const hasAvailableSchedules = tour.hasBookableSchedule ?? tour.schedules.some(isSelectable);
 
   const isCurrentScheduleAvailable = selectedSchedule !== undefined && isSelectable(selectedSchedule);
-  const meetingPoint = selectedSchedule?.meetingPoint ?? tour.meetingPoint;
+  // Real data carries the meeting point per departure: never borrow another departure's. Demo data has a
+  // single tour-level meeting point.
+  const meetingPoint =
+    selectedSchedule?.bookable !== undefined ? selectedSchedule.meetingPoint : tour.meetingPoint;
   const cancellationLines = tour.cancellationRules ? describeCancellationRules(tour.cancellationRules) : [];
 
   return (
