@@ -15,6 +15,7 @@ type DiscountType = 'Percentage' | 'Flat';
 
 type FormState = {
   code: string;
+  name: string;
   discountType: DiscountType;
   discountValue: string;
   maxDiscountAmount: string;
@@ -47,7 +48,7 @@ function defaultForm(): FormState {
   const ends = new Date(starts);
   ends.setDate(ends.getDate() + 7);
   return {
-    code: '', discountType: 'Percentage', discountValue: '', maxDiscountAmount: '', minOrderAmount: '0',
+    code: '', name: '', discountType: 'Percentage', discountValue: '', maxDiscountAmount: '', minOrderAmount: '0',
     usageLimit: '', usageLimitPerUser: '', validFrom: localDateTimeValue(starts), validTo: localDateTimeValue(ends), selectedTourIds: [],
   };
 }
@@ -141,6 +142,7 @@ export function CreateCouponForm() {
     const total = asOptionalPositiveInteger(form.usageLimit);
     const perUser = asOptionalPositiveInteger(form.usageLimitPerUser);
     if (!/^[A-Za-z0-9-]{3,30}$/.test(form.code.trim())) next.code = 'Use 3–30 letters, digits, or hyphens.';
+    if (form.name.trim().length === 0 || form.name.trim().length > 120) next.name = 'Enter a coupon name of up to 120 characters.';
     if (!isSupportedMoney(form.discountValue) || (form.discountType === 'Percentage' && discount > 100)) next.discountValue = form.discountType === 'Percentage' ? 'Enter a percentage from 1 to 100 with at most 2 decimal places.' : 'Enter a discount in the supported currency range with at most 2 decimal places.';
     if (form.discountType === 'Percentage' && !isSupportedMoney(form.maxDiscountAmount)) next.maxDiscountAmount = 'A maximum discount is required and must have at most 2 decimal places.';
     if (!isSupportedMoney(form.minOrderAmount || '0', true)) next.minOrderAmount = 'Minimum order must be a non-negative amount with at most 2 decimal places.';
@@ -162,7 +164,7 @@ export function CreateCouponForm() {
     setSubmitting(true);
     try {
       const result = await createCoupon({
-        code: form.code, discountType: form.discountType, discountValue: Number(form.discountValue),
+        code: form.code, name: form.name, discountType: form.discountType, discountValue: Number(form.discountValue),
         ...(form.discountType === 'Percentage' ? { maxDiscountAmount: Number(form.maxDiscountAmount) } : {}),
         minOrderAmount: Number(form.minOrderAmount || '0'), usageLimit: asOptionalPositiveInteger(form.usageLimit),
         usageLimitPerUser: asOptionalPositiveInteger(form.usageLimitPerUser), validFromUtc: new Date(form.validFrom).toISOString(),
@@ -213,6 +215,13 @@ export function CreateCouponForm() {
         <div className="flex items-center justify-between gap-3"><label className="text-sm font-bold text-[#00152a]" htmlFor="coupon-code">Coupon code <span aria-hidden="true" className="text-[#ba1a1a]">*</span></label><button type="button" onClick={() => set('code', generatedCode())} className="inline-flex items-center gap-1 text-sm font-bold text-[#006b5f] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"><span className="material-symbols-outlined text-[17px]" aria-hidden="true">casino</span>Generate code</button></div>
         <div className="relative"><input id="coupon-code" aria-label="Coupon code" value={form.code} onChange={(event) => set('code', event.target.value.toUpperCase())} className={`${inputClass} pr-11 font-mono font-bold uppercase tracking-widest`} placeholder="SUMMERTOUR2026" aria-invalid={!!fieldErrors.code} aria-describedby="coupon-code-help" /><span className="material-symbols-outlined pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#006b5f]" aria-hidden="true">verified</span></div>
         {fieldErrors.code && <p className="mt-1 text-sm text-[#ba1a1a]">{fieldErrors.code}</p>}<p id="coupon-code-help" className="mt-1.5 text-xs leading-5 text-[#5f6368]">Use 3–30 letters, numbers, or hyphens. A short memorable code is easier to enter at checkout.</p>
+      </section>
+
+      <section>
+        <label className="text-sm font-bold text-[#00152a]" htmlFor="coupon-name">Coupon name <span aria-hidden="true" className="text-[#ba1a1a]">*</span>
+          <input id="coupon-name" aria-label="Coupon name" value={form.name} onChange={(event) => set('name', event.target.value)} className={inputClass} placeholder="Summer tour offer" aria-invalid={!!fieldErrors.name} maxLength={120} />
+        </label>
+        {fieldErrors.name && <p className="mt-1 text-sm text-[#ba1a1a]">{fieldErrors.name}</p>}
       </section>
 
       <fieldset>

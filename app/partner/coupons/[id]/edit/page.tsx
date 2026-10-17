@@ -127,43 +127,6 @@ function EditCouponContent() {
                 currentUserId={actorUserId}
                 isDemo={isDemo}
               />
-            ) : !isDemo ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-amber-900">
-                <div className="flex items-start gap-4">
-                  <span className="material-symbols-outlined text-[32px] text-amber-600">
-                    engineering
-                  </span>
-                  <div>
-                    <h2 className="text-lg font-bold">
-                      {couponEn.page.pendingIntegrationTitle}
-                    </h2>
-                    <p className="mt-2 text-sm text-amber-800">
-                      {OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION}
-                    </p>
-                    <p className="mt-1 text-xs text-amber-700">
-                      {couponEn.page.requestedId.replace('{id}', id)}
-                    </p>
-                    <div className="mt-6 flex flex-wrap items-center gap-3">
-                      <Link
-                        href={OPERATOR_COUPON_ROUTES.list}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
-                      >
-                        <span className="material-symbols-outlined text-sm">arrow_back</span>
-                        {couponEn.page.backToList}
-                      </Link>
-                      {isCouponDemoAllowedInCurrentEnv() && (
-                        <Link
-                          href={`/partner/coupons/${id}/edit?demo=1`}
-                          className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
-                        >
-                          <span className="material-symbols-outlined text-sm">science</span>
-                          {couponEn.page.demoModeLink}
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
             ) : (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-900">
                 <h2 className="text-lg font-bold">

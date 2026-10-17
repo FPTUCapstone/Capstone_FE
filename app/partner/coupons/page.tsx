@@ -27,12 +27,14 @@ function OperatorCouponsContent() {
 
   const [coupons, setCoupons] = useState<CouponDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'restoring') return;
     let isMounted = true;
     async function load() {
       setLoading(true);
+      setLoadError(null);
       try {
         if (isDemo && actorUserId === undefined) {
           if (isMounted) setCoupons([]);
@@ -42,8 +44,16 @@ function OperatorCouponsContent() {
           allowDemo: isDemo,
           currentUserId: actorUserId,
         });
-        if (isMounted && res.data) {
-          setCoupons(res.data);
+        if (isMounted) {
+          setCoupons(res.data ?? []);
+          if (res.status !== 'SUCCESS') {
+            setLoadError(res.message || couponEn.errors.systemError);
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setCoupons([]);
+          setLoadError(couponEn.errors.systemError);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -69,6 +79,11 @@ function OperatorCouponsContent() {
                   progress_activity
                 </span>
                 <p className="mt-2 text-xs font-bold">{couponEn.page.loadingList}</p>
+              </div>
+            ) : loadError ? (
+              <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-900">
+                <p className="font-bold">{couponEn.errors.systemError}</p>
+                <p className="mt-1 text-red-800">{loadError}</p>
               </div>
             ) : (
               <OperatorCouponListView coupons={coupons} isDemo={isDemo} />

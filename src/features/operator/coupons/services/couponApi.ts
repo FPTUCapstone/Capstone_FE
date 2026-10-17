@@ -10,6 +10,7 @@ export interface EligibleCouponTour {
 
 export interface CreateCouponInput {
   code: string;
+  name: string;
   discountType: 'Percentage' | 'Flat';
   discountValue: number;
   maxDiscountAmount?: number;
@@ -25,6 +26,28 @@ export interface CreateCouponResult {
   couponId: number;
   code: string;
 }
+
+export interface OperatorCouponApiDto {
+  couponId: number;
+  ownerOperatorUserId: number;
+  code: string;
+  name: string;
+  discountType: 'Percentage' | 'Flat';
+  discountValue: number;
+  maxDiscountAmount: number | null;
+  minOrderAmount: number;
+  usageLimit: number | null;
+  usageLimitPerUser: number | null;
+  usedCount: number;
+  validFromUtc: string;
+  validToUtc: string;
+  status: 'Active' | 'Disabled' | 'Expired';
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  applicableTourIds: number[];
+}
+
+export interface UpdateCouponInput extends Omit<CreateCouponInput, 'code'> {}
 
 export class CouponApiError extends Error {
   constructor(
@@ -52,9 +75,64 @@ function authenticatedHeaders(): HeadersInit {
 function errorMessageFor(status: number): string {
   if (status === 401) return 'Your session has expired. Please sign in again.';
   if (status === 403) return 'Only approved tour operators can manage coupons.';
-  if (status === 409) return 'This coupon code is already in use.';
+  if (status === 404) return 'This coupon was not found or is no longer available.';
+  if (status === 409) return 'This coupon cannot be changed in its current state.';
   if (status === 422) return 'Review the coupon details and selected tours.';
   return 'We could not complete that request. Please try again.';
+}
+
+function isOperatorCoupon(value: unknown): value is OperatorCouponApiDto {
+  if (!value || typeof value !== 'object') return false;
+  const coupon = value as Record<string, unknown>;
+  return Number.isSafeInteger(coupon.couponId)
+    && Number.isSafeInteger(coupon.ownerOperatorUserId)
+    && typeof coupon.code === 'string'
+    && typeof coupon.name === 'string'
+    && (coupon.discountType === 'Percentage' || coupon.discountType === 'Flat')
+    && typeof coupon.discountValue === 'number'
+    && (coupon.maxDiscountAmount === null || typeof coupon.maxDiscountAmount === 'number')
+    && typeof coupon.minOrderAmount === 'number'
+    && (coupon.usageLimit === null || Number.isSafeInteger(coupon.usageLimit))
+    && (coupon.usageLimitPerUser === null || Number.isSafeInteger(coupon.usageLimitPerUser))
+    && Number.isSafeInteger(coupon.usedCount)
+    && typeof coupon.validFromUtc === 'string'
+    && typeof coupon.validToUtc === 'string'
+    && (coupon.status === 'Active' || coupon.status === 'Disabled' || coupon.status === 'Expired')
+    && typeof coupon.createdAtUtc === 'string'
+    && typeof coupon.updatedAtUtc === 'string'
+    && Array.isArray(coupon.applicableTourIds)
+    && coupon.applicableTourIds.every(Number.isSafeInteger);
+}
+
+function couponPayload(input: CreateCouponInput | UpdateCouponInput) {
+  return {
+    ...("code" in input ? { code: input.code.trim().toUpperCase() } : {}),
+    name: input.name.trim(),
+    discountType: input.discountType,
+    discountValue: input.discountValue,
+    ...(input.discountType === 'Percentage' ? { maxDiscountAmount: input.maxDiscountAmount } : {}),
+    minOrderAmount: input.minOrderAmount,
+    usageLimit: input.usageLimit,
+    usageLimitPerUser: input.usageLimitPerUser,
+    validFromUtc: input.validFromUtc,
+    validToUtc: input.validToUtc,
+    applicableTourIds: input.applicableTourIds,
+  };
+}
+
+async function couponRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBase()}/operator/coupons${path}`, {
+      ...init,
+      headers: authenticatedHeaders(),
+    });
+  } catch (error) {
+    if (error instanceof CouponApiError) throw error;
+    throw new CouponApiError(0, 'NETWORK', 'Unable to contact the coupon service. Check your connection and try again.');
+  }
+  if (!response.ok) return parseError(response);
+  return response.json() as Promise<T>;
 }
 
 async function parseError(response: Response): Promise<never> {
@@ -113,18 +191,7 @@ export async function getEligibleCouponTours(): Promise<EligibleCouponTour[]> {
 }
 
 export async function createCoupon(input: CreateCouponInput): Promise<CreateCouponResult> {
-  const body = {
-    code: input.code.trim().toUpperCase(),
-    discountType: input.discountType,
-    discountValue: input.discountValue,
-    ...(input.discountType === 'Percentage' ? { maxDiscountAmount: input.maxDiscountAmount } : {}),
-    minOrderAmount: input.minOrderAmount,
-    usageLimit: input.usageLimit,
-    usageLimitPerUser: input.usageLimitPerUser,
-    validFromUtc: input.validFromUtc,
-    validToUtc: input.validToUtc,
-    applicableTourIds: input.applicableTourIds,
-  };
+  const body = couponPayload(input);
 
   let response: Response;
   try {
@@ -147,4 +214,39 @@ export async function createCoupon(input: CreateCouponInput): Promise<CreateCoup
   }
 
   return result as CreateCouponResult;
+}
+
+export async function listCoupons(): Promise<OperatorCouponApiDto[]> {
+  const body = await couponRequest<unknown>('');
+  if (!Array.isArray(body) || !body.every(isOperatorCoupon)) {
+    throw new CouponApiError(200, 'INVALID_RESPONSE', 'We could not load your coupons. Please try again.');
+  }
+  return body;
+}
+
+export async function getCoupon(couponId: string | number): Promise<OperatorCouponApiDto> {
+  const body = await couponRequest<unknown>(`/${encodeURIComponent(String(couponId))}`);
+  if (!isOperatorCoupon(body)) {
+    throw new CouponApiError(200, 'INVALID_RESPONSE', 'We could not load this coupon. Please try again.');
+  }
+  return body;
+}
+
+export async function updateCoupon(couponId: string | number, input: UpdateCouponInput): Promise<OperatorCouponApiDto> {
+  const body = await couponRequest<unknown>(`/${encodeURIComponent(String(couponId))}`, {
+    method: 'PUT', body: JSON.stringify(couponPayload(input)),
+  });
+  if (!isOperatorCoupon(body)) {
+    throw new CouponApiError(200, 'INVALID_RESPONSE', 'The coupon was updated, but the response was incomplete. Refresh and try again.');
+  }
+  return body;
+}
+
+export async function setCouponActive(couponId: string | number, active: boolean): Promise<OperatorCouponApiDto> {
+  const action = active ? 'activate' : 'deactivate';
+  const body = await couponRequest<unknown>(`/${encodeURIComponent(String(couponId))}/${action}`, { method: 'POST' });
+  if (!isOperatorCoupon(body)) {
+    throw new CouponApiError(200, 'INVALID_RESPONSE', 'The coupon status changed, but the response was incomplete. Refresh and try again.');
+  }
+  return body;
 }

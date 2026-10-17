@@ -114,12 +114,12 @@ describe('Operator Coupons App Router Pages', () => {
     expect(screen.queryByText(couponEn.update.title.replace('{code}', 'BANA15'))).toBeNull();
   });
 
-  it('renders truthful pending banner on EditCouponPage in production mode', async () => {
+  it('renders an actionable error rather than a pending-integration banner in production mode', async () => {
     mockSearchParams = new URLSearchParams(''); // production (no demo=1)
     render(<EditCouponPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(couponEn.page.pendingIntegrationTitle)).toBeDefined();
+      expect(screen.getByText(couponEn.page.notFoundTitle)).toBeDefined();
     });
   });
 

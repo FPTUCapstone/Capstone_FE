@@ -27,6 +27,7 @@ describe('CreateCouponForm', () => {
     render(<CreateCouponForm />);
 
     fireEvent.change(await screen.findByLabelText('Coupon code'), { target: { value: 'TRIP10' } });
+    fireEvent.change(screen.getByLabelText('Coupon name'), { target: { value: 'Trip ten percent' } });
     fireEvent.change(screen.getByLabelText('Discount (%)'), { target: { value: '10' } });
     fireEvent.change(screen.getByLabelText('Maximum discount (VND)'), { target: { value: '100000' } });
     fireEvent.click(screen.getByRole('checkbox'));
