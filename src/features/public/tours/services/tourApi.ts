@@ -2,6 +2,7 @@ import {
   DEMO_RECOMMENDED_TOURS,
   DEMO_TOUR_DETAIL_HOI_AN,
 } from '../data/tourDemoFixtures';
+import { mapTourDetailResponse, parseTourDetailResponse } from './tourDetailResponse';
 import type {
   ApiProblem,
   PagedToursResponseDto,
@@ -180,15 +181,21 @@ export async function getTourRecommendations(options?: {
   };
 }
 
+/** Tour ids are 64-bit integers; anything else cannot exist, so it never reaches the network. */
+const TOUR_ID_PATTERN = /^\d{1,19}$/;
+
+const TOUR_NOT_FOUND_MESSAGE =
+  'Gói tour không tồn tại hoặc đã ngừng hiển thị công khai (MSG65).';
+const TOUR_UNAVAILABLE_MESSAGE =
+  'TripMate tạm thời không thể tải chi tiết tour. Vui lòng kiểm tra kết nối và thử lại (MSG127).';
+
 /**
- * UC-26: View Tour Details
- * Status: PENDING_BE_INTEGRATION
+ * UC-26: View Tour Details.
  *
- * Backend endpoint GET /api/v1/tours/{id} does not exist yet in Capstone_BE.
- * In explicit demo opt-in mode (non-production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + allowDemo=true):
- * returns DEMO_TOUR_DETAIL_HOI_AN.
- * In production mode: attempts to fetch via BFF. If not found or BE unavailable,
- * throws TourApiError so the UI renders the explicit pending/unavailable state.
+ * Calls the BFF route `/api/tours/{id}` (-> `GET /api/v1/tours/{id}`), validates the body strictly and maps it to
+ * the page view model. Failures are classified by `TourApiError.status`: 404 = not found / not public (MSG65),
+ * anything else = unavailable (MSG127). Demo data is returned only in an explicit demo opt-in
+ * (non-production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + allowDemo=true); production never falls back to it.
  */
 export async function getTourDetail(
   id: string,
@@ -206,23 +213,29 @@ export async function getTourDetail(
     };
   }
 
-  // Attempt to call future BFF route /api/tours/${id}
-  try {
-    const raw = await requestJson(`/api/tours/${encodeURIComponent(id)}`, options?.signal);
-    if (isRecord(raw) && typeof raw.tourId === 'string') {
-      return raw as unknown as TourDetailDto;
-    }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    // Mark as PENDING_BE_INTEGRATION
-    throw new TourApiError(
-      'Chi tiết tour đang chờ hoàn tất kết nối API từ máy chủ (UC-26 — PENDING_BE_INTEGRATION).',
-      501,
-    );
+  if (!TOUR_ID_PATTERN.test(id)) {
+    throw new TourApiError(TOUR_NOT_FOUND_MESSAGE, 404);
   }
 
-  throw new TourApiError(
-    'Chi tiết tour đang chờ hoàn tất kết nối API từ máy chủ (UC-26 — PENDING_BE_INTEGRATION).',
-    501,
-  );
+  let raw: unknown;
+  try {
+    raw = await requestJson(`/api/tours/${encodeURIComponent(id)}`, options?.signal);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    if (error instanceof TourApiError) {
+      throw new TourApiError(
+        error.status === 404 ? TOUR_NOT_FOUND_MESSAGE : TOUR_UNAVAILABLE_MESSAGE,
+        error.status,
+        error.problem,
+      );
+    }
+    throw new TourApiError(TOUR_UNAVAILABLE_MESSAGE, 0);
+  }
+
+  try {
+    return mapTourDetailResponse(parseTourDetailResponse(raw));
+  } catch (error) {
+    if (error instanceof TourApiError) throw new TourApiError(TOUR_UNAVAILABLE_MESSAGE, 0);
+    throw error;
+  }
 }
