@@ -146,6 +146,25 @@ describe('TourDetailView (real data)', () => {
       expect(screen.queryByText(/Trẻ em/)).toBeNull();
     });
 
+    it('never shows another departure meeting point when the selected departure has none', () => {
+      const tour = realTourDetailViewModel((wire) => {
+        schedulesOf(wire).push({
+          ...schedulesOf(wire)[0],
+          scheduleId: '14',
+          startAtUtc: '2026-12-10T01:00:00Z',
+          endAtUtc: '2026-12-12T10:00:00Z',
+          meetingPoint: null,
+        });
+      });
+      renderView(tour);
+      expect(screen.getAllByText('Sảnh khách sạn').length).toBeGreaterThanOrEqual(1);
+
+      fireEvent.click(screen.getByRole('button', { name: /10\/12\/2026/ }));
+
+      expect(screen.queryByText('Sảnh khách sạn')).toBeNull();
+      expect(screen.queryByText(/Điểm hẹn tập trung/)).toBeNull();
+    });
+
     it('sends a guest to sign-in and returns to the booking step', () => {
       renderView(realTourDetailViewModel(), { isAuthenticated: false });
 
