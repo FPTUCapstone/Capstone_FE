@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as bookingApi from '../services/bookingApi';
+import * as paymentApi from '../services/paymentApi';
 import { CheckoutResultView } from './CheckoutResultView';
 
 const mockSearchParams = new URLSearchParams();
@@ -11,138 +11,134 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-function setNodeEnv(val?: string) {
-  (process.env as Record<string, string | undefined>).NODE_ENV = val;
-}
-
-describe('CheckoutResultView (UC-28 Payment Return)', () => {
+describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    mockSearchParams.delete('demo');
-    mockSearchParams.delete('vnp_ResponseCode');
-    mockSearchParams.delete('vnp_TxnRef');
     mockSearchParams.delete('bookingId');
+    mockSearchParams.delete('status');
   });
 
-  it('renders payment success state and link to ticket in demo mode (TICKET-5)', async () => {
-    setNodeEnv('development');
-    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
-    mockSearchParams.set('demo', '1');
-    mockSearchParams.set('vnp_ResponseCode', '00');
-    mockSearchParams.set('vnp_TxnRef', 'VNPTXN-884920');
-    mockSearchParams.set('bookingId', 'bk-demo-0148');
+  it('renders payment success state and link to ticket when backend reports Confirmed', async () => {
+    mockSearchParams.set('bookingId', '42');
 
-    render(<CheckoutResultView />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Thanh toán thành công!')).toBeTruthy();
-      expect(screen.getByText('BK-20261015-0148')).toBeTruthy();
-      expect(screen.getByText('VNPTXN-884920')).toBeTruthy();
-      const link = screen.getByRole('link', { name: /Xem vé điện tử QR ngay/ });
-      expect(link.getAttribute('href')).toBe('/bookings/tkt-demo-03/ticket?demo=1');
-      expect(link.getAttribute('href')).not.toContain('bk-demo-0148');
-    });
-  });
-
-  it('TICKET-1: points ticket CTA to ticketId and NOT bookingId on payment success', async () => {
-    setNodeEnv('production');
-    mockSearchParams.set('vnp_ResponseCode', '00');
-
-    vi.spyOn(bookingApi, 'verifyPayment').mockResolvedValueOnce({
-      isSuccess: true,
-      bookingId: 'booking-123',
-      ticketId: 'ticket-456',
-      bookingCode: 'BK-123',
-      transactionRef: 'TXN-123',
-      amount: 1500000,
-      paymentMethod: 'VNPay',
-      paidAtUtc: new Date().toISOString(),
+    vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
+      bookingId: '42',
+      bookingCode: 'BK-20261018-0042',
+      bookingStatus: 'Confirmed',
+      paymentStatus: 'Paid',
+      paymentExpiresAt: '2026-10-18T10:30:00Z',
+      activePayment: {
+        paymentId: 101,
+        gateway: 'PayOS',
+        orderCode: 1729221234567,
+        amount: 2500000,
+        currency: 'VND',
+        checkoutUrl: 'https://pay.payos.vn/web/test',
+        expiresAt: '2026-10-18T10:30:00Z',
+        status: 'Success',
+      },
     });
 
     render(<CheckoutResultView />);
 
     await waitFor(() => {
-      expect(screen.getByText('Thanh toán thành công!')).toBeTruthy();
-      const link = screen.getByRole('link', { name: /Xem vé điện tử QR ngay/ });
-      expect(link.getAttribute('href')).toBe('/bookings/ticket-456/ticket');
-      expect(link.getAttribute('href')).not.toContain('booking-123');
+      expect(screen.getByText('Thanh Toán Hoàn Tất!')).toBeTruthy();
+      expect(screen.getByText('BK-20261018-0042')).toBeTruthy();
+      expect(screen.getByText('1729221234567')).toBeTruthy();
+      const ticketLink = screen.getByRole('link', { name: /Xem Vé Điện Tử QR/i });
+      expect(ticketLink.getAttribute('href')).toBe('/bookings/42/ticket');
     });
   });
 
-  it('TICKET-3: preserves payment success UI but hides ticket CTA when ticketId is undefined', async () => {
-    setNodeEnv('production');
-    mockSearchParams.set('vnp_ResponseCode', '00');
+  it('does NOT render paid receipt on forged ?status=PAID if backend reports PendingPayment', async () => {
+    mockSearchParams.set('bookingId', '42');
+    mockSearchParams.set('status', 'PAID'); // Forged parameter
 
-    vi.spyOn(bookingApi, 'verifyPayment').mockResolvedValueOnce({
-      isSuccess: true,
-      bookingId: 'booking-123',
-      ticketId: undefined,
-      bookingCode: 'BK-123',
-      transactionRef: 'TXN-123',
-      amount: 1500000,
-      paymentMethod: 'VNPay',
-      paidAtUtc: new Date().toISOString(),
+    vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
+      bookingId: '42',
+      bookingCode: 'BK-20261018-0042',
+      bookingStatus: 'PendingPayment',
+      paymentStatus: 'Pending',
+      paymentExpiresAt: '2026-10-18T10:30:00Z',
+      activePayment: {
+        paymentId: 101,
+        gateway: 'PayOS',
+        orderCode: 1729221234567,
+        amount: 2500000,
+        currency: 'VND',
+        checkoutUrl: 'https://pay.payos.vn/web/test',
+        expiresAt: '2026-10-18T10:30:00Z',
+        status: 'Pending',
+      },
     });
 
     render(<CheckoutResultView />);
 
     await waitFor(() => {
-      expect(screen.getByText('Thanh toán thành công!')).toBeTruthy();
-      expect(screen.queryByRole('link', { name: /Xem vé điện tử QR ngay/ })).toBeNull();
-      expect(screen.getByText('Vé điện tử chưa sẵn sàng')).toBeTruthy();
+      expect(screen.queryByText('Thanh Toán Hoàn Tất!')).toBeNull();
+      expect(screen.getByText('Đang Chờ Thanh Toán')).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Tiến hành thanh toán ngay/i })).toBeTruthy();
+    });
+  });
+
+  it('renders cancelled transaction state with retry button when transaction was cancelled', async () => {
+    mockSearchParams.set('bookingId', '42');
+
+    vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
+      bookingId: '42',
+      bookingCode: 'BK-20261018-0042',
+      bookingStatus: 'PendingPayment',
+      paymentStatus: 'Pending',
+      paymentExpiresAt: '2026-10-18T10:30:00Z',
+      activePayment: {
+        paymentId: 101,
+        gateway: 'PayOS',
+        orderCode: 1729221234567,
+        amount: 2500000,
+        currency: 'VND',
+        checkoutUrl: 'https://pay.payos.vn/web/test',
+        expiresAt: '2026-10-18T10:30:00Z',
+        status: 'Cancelled',
+      },
+    });
+
+    render(<CheckoutResultView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Thanh Toán Chưa Hoàn Tất')).toBeTruthy();
+      expect(screen.getByText('Giao dịch đã hủy')).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Tiến hành thanh toán ngay/i })).toBeTruthy();
+    });
+  });
+
+  it('renders expired booking state when booking has expired', async () => {
+    mockSearchParams.set('bookingId', '42');
+
+    vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
+      bookingId: '42',
+      bookingCode: 'BK-20261018-0042',
+      bookingStatus: 'Expired',
+      paymentStatus: 'Failed',
+      paymentExpiresAt: '2026-10-18T10:00:00Z',
+      activePayment: null,
+    });
+
+    render(<CheckoutResultView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Đơn Tour Đã Hết Hạn')).toBeTruthy();
+      expect(screen.getByText('Hết hạn giữ chỗ')).toBeTruthy();
+      expect(screen.getByRole('link', { name: /Khám phá các tour khác/i })).toBeTruthy();
+    });
+  });
+
+  it('renders error notice and retry button when bookingId is missing', async () => {
+    render(<CheckoutResultView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Thông tin thanh toán')).toBeTruthy();
       expect(
-        screen.getByText(/Thanh toán đã được xác nhận, nhưng vé điện tử chưa sẵn sàng để mở/),
-      ).toBeTruthy();
-    });
-  });
-
-  it('TICKET-4: treats blank/whitespace ticketId safely without rendering ticket link', async () => {
-    setNodeEnv('production');
-    mockSearchParams.set('vnp_ResponseCode', '00');
-
-    vi.spyOn(bookingApi, 'verifyPayment').mockResolvedValueOnce({
-      isSuccess: true,
-      bookingId: 'booking-123',
-      ticketId: '   ',
-      bookingCode: 'BK-123',
-      transactionRef: 'TXN-123',
-      amount: 1500000,
-      paymentMethod: 'VNPay',
-      paidAtUtc: new Date().toISOString(),
-    });
-
-    render(<CheckoutResultView />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Thanh toán thành công!')).toBeTruthy();
-      expect(screen.queryByRole('link', { name: /Xem vé điện tử QR ngay/ })).toBeNull();
-      expect(screen.getByText('Vé điện tử chưa sẵn sàng')).toBeTruthy();
-    });
-  });
-
-  it('renders payment failure state in demo mode when code is not 00', async () => {
-    setNodeEnv('development');
-    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
-    mockSearchParams.set('demo', '1');
-    mockSearchParams.set('vnp_ResponseCode', '24');
-
-    render(<CheckoutResultView />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Giao dịch thanh toán chưa hoàn tất')).toBeTruthy();
-    });
-  });
-
-  it('renders PENDING_BE_INTEGRATION truthful notice in real mode without demo opt-in', async () => {
-    setNodeEnv('production');
-    mockSearchParams.set('vnp_ResponseCode', '00');
-
-    render(<CheckoutResultView />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Xác thực thanh toán: PENDING_BE_INTEGRATION')).toBeTruthy();
-      expect(
-        screen.getByText(/Theo tiêu chuẩn bảo mật thanh toán tài chính/),
+        screen.getByText('Không tìm thấy thông tin mã đặt tour (bookingId).'),
       ).toBeTruthy();
     });
   });

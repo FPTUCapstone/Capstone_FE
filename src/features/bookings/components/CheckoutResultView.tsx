@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
-import { verifyPayment } from '../services/bookingApi';
-import type { PaymentVerifyResultDto } from '../types/booking';
+import { createOrReusePayment, getBookingPaymentStatus } from '../services/paymentApi';
+import type { BookingPaymentStatusDto } from '../types/payment';
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -33,25 +33,48 @@ function formatDatetime(isoString?: string): string {
 }
 
 export function CheckoutResultView() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const isDemo = searchParams.get('demo') === '1';
+  const bookingId = searchParams.get('bookingId');
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [result, setResult] = useState<PaymentVerifyResultDto | null>(null);
-  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(Boolean(bookingId));
+  const [retrying, setRetrying] = useState<boolean>(false);
+  const [statusDto, setStatusDto] = useState<BookingPaymentStatusDto | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const fetchStatus = () => {
+    if (!bookingId) return;
+    setLoading(true);
+    getBookingPaymentStatus(bookingId)
+      .then((data) => {
+        setStatusDto(data);
+        setErrorMessage(null);
+      })
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : 'Không thể tải thông tin thanh toán từ hệ thống.';
+        setErrorMessage(msg);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
-    let isMounted = true;
+    if (!bookingId) return;
 
-    verifyPayment(searchParams, { allowDemo: isDemo })
+    let isMounted = true;
+    getBookingPaymentStatus(bookingId)
       .then((data) => {
         if (!isMounted) return;
-        setResult(data);
+        setStatusDto(data);
+        setErrorMessage(null);
       })
       .catch((err: unknown) => {
         if (!isMounted) return;
-        const msg = err instanceof Error ? err.message : 'Không thể xác thực giao dịch.';
-        setPendingNotice(msg);
+        const msg =
+          err instanceof Error ? err.message : 'Không thể tải thông tin thanh toán từ hệ thống.';
+        setErrorMessage(msg);
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -60,7 +83,56 @@ export function CheckoutResultView() {
     return () => {
       isMounted = false;
     };
-  }, [searchParams, isDemo]);
+  }, [bookingId]);
+
+  const handlePayAgain = async () => {
+    if (!bookingId || retrying) return;
+    setRetrying(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await createOrReusePayment(bookingId);
+      if (res.checkoutUrl.startsWith('http')) {
+        window.location.href = res.checkoutUrl;
+      } else {
+        router.push(res.checkoutUrl);
+      }
+    } catch (err: unknown) {
+      setRetrying(false);
+      const msg =
+        err instanceof Error ? err.message : 'Không thể kết nối cổng thanh toán. Vui lòng thử lại sau.';
+      setErrorMessage(msg);
+    }
+  };
+
+  if (!bookingId) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center font-sans" lang="vi">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 mb-4">
+            <span className="material-symbols-outlined text-3xl">info</span>
+          </div>
+
+          <h2 className="text-lg font-bold text-slate-900 mb-2">
+            Thông tin thanh toán
+          </h2>
+
+          <p className="text-xs text-slate-600 leading-relaxed mb-6">
+            Không tìm thấy thông tin mã đặt tour (bookingId).
+          </p>
+
+          <div className="flex justify-center">
+            <Link
+              href={ROUTES.home}
+              className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+            >
+              Về Trang chủ
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -71,199 +143,236 @@ export function CheckoutResultView() {
             aria-hidden="true"
           />
           <p className="text-xs font-semibold text-slate-500">
-            Đang xác thực kết quả thanh toán từ cổng điện tử…
+            Đang xác thực kết quả thanh toán từ hệ thống…
           </p>
         </div>
       </div>
     );
   }
 
-  // Pending BE Integration State (Truthful Real Mode)
-  if (pendingNotice) {
+  // Error fetching canonical status
+  if (errorMessage || !statusDto) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center font-sans" lang="vi">
-        <div className="rounded-3xl border border-amber-200 bg-white p-8 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 mb-4">
-            <span className="material-symbols-outlined text-3xl">pending_actions</span>
+            <span className="material-symbols-outlined text-3xl">info</span>
           </div>
 
           <h2 className="text-lg font-bold text-slate-900 mb-2">
-            Xác thực thanh toán: PENDING_BE_INTEGRATION
+            Thông tin thanh toán
           </h2>
 
-          <p className="text-xs text-slate-600 leading-relaxed mb-4">
-            {pendingNotice}
+          <p className="text-xs text-slate-600 leading-relaxed mb-6">
+            {errorMessage ?? 'Không tìm thấy dữ liệu giao dịch thanh toán.'}
           </p>
 
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600 text-left mb-6 space-y-2">
-            <p className="font-bold text-slate-900">Quy tắc bảo mật hệ thống:</p>
-            <p className="text-[11px] leading-relaxed">
-              Theo tiêu chuẩn bảo mật thanh toán tài chính, kết quả thanh toán từ VNPay bắt buộc phải được Backend xác thực chữ ký điện tử (HMAC-SHA512) để tránh gian lận thay đổi tham số URL từ phía client.
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              type="button"
+              onClick={fetchStatus}
+              className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+            >
+              Thử tải lại
+            </button>
+            <Link
+              href={ROUTES.home}
+              className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+            >
+              Về Trang chủ
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isPaid =
+    statusDto.bookingStatus === 'Confirmed' || statusDto.paymentStatus === 'Paid';
+  const isExpired = statusDto.bookingStatus === 'Expired';
+  const activeTx = statusDto.activePayment;
+  const isCancelledTx = activeTx?.status === 'Cancelled';
+  const amount = activeTx?.amount ?? 0;
+
+  // 1. Success / Paid State
+  if (isPaid) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-12 font-sans" lang="vi">
+        <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-xl">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-8 text-white text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
+              <span className="material-symbols-outlined text-4xl">verified</span>
+            </div>
+            <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold tracking-wide uppercase">
+              Giao dịch thành công
+            </span>
+            <h1 className="mt-2 text-2xl font-black">Thanh Toán Hoàn Tất!</h1>
+            <p className="mt-1 text-xs text-emerald-100">
+              Đơn đặt tour của bạn đã được xác nhận thanh toán điện tử an toàn.
             </p>
           </div>
 
-          {process.env.NODE_ENV !== 'production' && !isDemo && (
-            <div className="mb-6 rounded-2xl bg-teal-50 border border-teal-200 p-4 text-xs text-teal-900 text-left">
-              <p className="font-bold mb-1">Kiểm thử giao diện (Demo Preview):</p>
-              <p className="text-teal-700 text-[11px] mb-3">
-                Bạn có thể xem trước trạng thái thanh toán thành công và vé điện tử QR bằng cách kích hoạt chế độ Demo:
-              </p>
+          <div className="p-8">
+            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-5 space-y-3 mb-6">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500 font-medium">Mã đặt tour:</span>
+                <span className="font-bold text-slate-900">{statusDto.bookingCode}</span>
+              </div>
+              {activeTx?.orderCode ? (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-medium">Mã giao dịch (Order Code):</span>
+                  <span className="font-mono text-slate-800 font-semibold">{activeTx.orderCode}</span>
+                </div>
+              ) : null}
+              {activeTx?.gateway ? (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-medium">Cổng thanh toán:</span>
+                  <span className="font-semibold text-slate-800">{activeTx.gateway}</span>
+                </div>
+              ) : null}
+              <div className="pt-3 border-t border-slate-200/60 flex justify-between items-baseline">
+                <span className="text-sm font-semibold text-slate-700">Tổng đã thanh toán:</span>
+                <span className="text-2xl font-black text-emerald-600">
+                  {formatCurrency(amount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link
-                href="/checkout/result?vnp_ResponseCode=00&vnp_TxnRef=VNPTXN-884920&bookingId=bk-demo-0148&demo=1"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+                href={`/bookings/${encodeURIComponent(String(statusDto.bookingId))}/ticket`}
+                className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#006b5f] transition text-center"
               >
-                <span className="material-symbols-outlined text-sm">science</span>
-                <span>Xem kết quả thanh toán Demo (?demo=1)</span>
+                <span className="material-symbols-outlined text-sm">confirmation_number</span>
+                <span>Xem Vé Điện Tử QR</span>
+              </Link>
+              <Link
+                href={ROUTES.account.trips}
+                className="flex items-center justify-center rounded-2xl border border-slate-200 px-5 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition text-center"
+              >
+                Quản lý chuyến đi
               </Link>
             </div>
-          )}
-
-          <div className="flex justify-center gap-3">
-            <Link
-              href={ROUTES.tours}
-              className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
-            >
-              Về danh sách tour
-            </Link>
           </div>
         </div>
       </div>
     );
   }
 
-  // Payment Success
-  if (result?.isSuccess) {
-    const rawTicketId = result.ticketId?.trim();
-    const ticketId = rawTicketId && rawTicketId.length > 0 ? rawTicketId : null;
-    const ticketUrl = ticketId ? `${ROUTES.bookingTicket(ticketId)}${isDemo ? '?demo=1' : ''}` : null;
-
+  // 2. Expired State
+  if (isExpired) {
     return (
       <div className="mx-auto max-w-xl px-4 py-12 font-sans" lang="vi">
-        {/* Demo banner */}
-        {isDemo && (
-          <div className="mb-6 rounded-2xl border border-teal-200 bg-teal-50/70 p-3.5 text-xs text-teal-900 flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-teal-600 text-base">science</span>
-              <span className="font-semibold">Mô phỏng kết quả thanh toán thành công (Demo Mode)</span>
+        <div className="overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-xl">
+          <div className="bg-gradient-to-r from-rose-600 to-rose-700 p-8 text-white text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
+              <span className="material-symbols-outlined text-4xl">timer_off</span>
             </div>
-            <span className="rounded-md bg-teal-200 px-2 py-0.5 text-[10px] font-extrabold uppercase text-teal-900">
-              DEMO ONLY
+            <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold tracking-wide uppercase">
+              Hết hạn giữ chỗ
             </span>
-          </div>
-        )}
-
-        {/* Success Card */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 mb-4 animate-in zoom-in-95 duration-200">
-            <span className="material-symbols-outlined text-3xl">check_circle</span>
+            <h1 className="mt-2 text-2xl font-black">Đơn Tour Đã Hết Hạn</h1>
+            <p className="mt-1 text-xs text-rose-100">
+              Thời gian giữ chỗ thanh toán đã kết thúc. Chỗ ngồi đã được giải phóng.
+            </p>
           </div>
 
-          <h2 className="text-xl font-bold text-slate-900 mb-1">Thanh toán thành công!</h2>
-          <p className="text-xs text-slate-500 mb-6">
-            Đơn đặt tour của bạn đã được ghi nhận.{' '}
-            {ticketUrl
-              ? 'Vé điện tử QR đã được phát hành tự động.'
-              : 'Hệ thống đang chuẩn bị phát hành vé điện tử QR.'}
-          </p>
-
-          {/* Transaction Summary Details */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 text-left text-xs space-y-3 mb-6">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-              <span className="text-slate-500">Mã đơn đặt:</span>
-              <span className="font-mono font-bold text-slate-900 text-sm">
-                {result.bookingCode}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500">Mã giao dịch cổng:</span>
-              <span className="font-mono font-semibold text-slate-800">
-                {result.transactionRef}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500">Phương thức thanh toán:</span>
-              <span className="font-semibold text-slate-800">{result.paymentMethod}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500">Thời gian giao dịch:</span>
-              <span className="font-semibold text-slate-800">
-                {formatDatetime(result.paidAtUtc)}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-              <span className="font-bold text-slate-900">Tổng tiền đã thanh toán:</span>
-              <span className="text-base font-black text-[#007d6e]">
-                {formatCurrency(result.amount)}
-              </span>
-            </div>
-          </div>
-
-          {/* Next Action: Go to Ticket or Pending Ticket issuance */}
-          <div className="space-y-3">
-            {ticketUrl ? (
+          <div className="p-8 text-center">
+            <p className="text-xs text-slate-600 mb-6 leading-relaxed">
+              Mã đặt tour <strong className="text-slate-900">{statusDto.bookingCode}</strong> không còn hiệu lực thanh toán. Quý khách vui lòng chọn lịch khởi hành mới để tiếp tục đặt tour.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                href={ticketUrl}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3.5 px-4 text-xs font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+                href={ROUTES.tours}
+                className="rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
               >
-                <span>Xem vé điện tử QR ngay (UC-29)</span>
-                <span className="material-symbols-outlined text-base">qr_code_2</span>
+                Khám phá các tour khác
               </Link>
-            ) : (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-xs text-amber-900 text-left space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                  <span className="material-symbols-outlined text-amber-700 text-base">hourglass_top</span>
-                  <span>Vé điện tử chưa sẵn sàng</span>
-                </div>
-                <p className="text-[11px] leading-relaxed text-amber-800">
-                  Thanh toán đã được xác nhận, nhưng vé điện tử chưa sẵn sàng để mở. Vui lòng kiểm tra lại sau hoặc theo dõi thông báo qua email xác nhận của bạn.
-                </p>
-              </div>
-            )}
-
-            <Link
-              href={ROUTES.tours}
-              className="w-full inline-flex items-center justify-center rounded-xl border border-slate-200 py-3 px-4 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
-            >
-              Khám phá thêm các tour khác
-            </Link>
+              <Link
+                href={ROUTES.home}
+                className="rounded-2xl border border-slate-200 px-5 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Về Trang chủ
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Payment Failed or Cancelled
+  // 3. Pending Payment (with Cancelled or Open transaction)
   return (
-    <div className="mx-auto max-w-xl px-4 py-16 text-center font-sans" lang="vi">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 text-red-700 mb-4">
-          <span className="material-symbols-outlined text-3xl">error</span>
+    <div className="mx-auto max-w-xl px-4 py-12 font-sans" lang="vi">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+        <div
+          className={`p-8 text-white text-center ${
+            isCancelledTx
+              ? 'bg-gradient-to-r from-amber-600 to-amber-700'
+              : 'bg-gradient-to-r from-teal-700 to-[#007d6e]'
+          }`}
+        >
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
+            <span className="material-symbols-outlined text-4xl">
+              {isCancelledTx ? 'cancel' : 'pending_actions'}
+            </span>
+          </div>
+          <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold tracking-wide uppercase">
+            {isCancelledTx ? 'Giao dịch đã hủy' : 'Chờ thanh toán'}
+          </span>
+          <h1 className="mt-2 text-2xl font-black">
+            {isCancelledTx ? 'Thanh Toán Chưa Hoàn Tất' : 'Đang Chờ Thanh Toán'}
+          </h1>
+          <p className="mt-1 text-xs text-slate-100">
+            {isCancelledTx
+              ? 'Bạn đã hủy thao tác tại cổng thanh toán. Chỗ giữ vẫn được bảo lưu.'
+              : 'Giao dịch đang chờ thanh toán qua cổng điện tử.'}
+          </p>
         </div>
 
-        <h2 className="text-lg font-bold text-slate-900 mb-1">
-          Giao dịch thanh toán chưa hoàn tất
-        </h2>
-        <p className="text-xs text-slate-500 mb-6">
-          {result?.errorMessage || 'Giao dịch bị gián đoạn hoặc đã bị hủy bỏ bởi người dùng.'}
-        </p>
+        <div className="p-8">
+          <div className="rounded-2xl bg-slate-50 border border-slate-100 p-5 space-y-3 mb-6">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">Mã đặt tour:</span>
+              <span className="font-bold text-slate-900">{statusDto.bookingCode}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">Hạn giữ chỗ thanh toán:</span>
+              <span className="font-semibold text-rose-600">
+                {formatDatetime(statusDto.paymentExpiresAt)}
+              </span>
+            </div>
+            <div className="pt-3 border-t border-slate-200/60 flex justify-between items-baseline">
+              <span className="text-sm font-semibold text-slate-700">Số tiền cần thanh toán:</span>
+              <span className="text-2xl font-black text-[#007d6e]">
+                {formatCurrency(amount)}
+              </span>
+            </div>
+          </div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-3">
-          <Link
-            href={ROUTES.tours}
-            className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
-          >
-            Quay lại danh sách tour
-          </Link>
-          <Link
-            href={ROUTES.home}
-            className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
-          >
-            Về Trang chủ
-          </Link>
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              disabled={retrying}
+              onClick={handlePayAgain}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#006b5f] disabled:opacity-50 transition"
+            >
+              <span className="material-symbols-outlined text-sm">payment</span>
+              <span>{retrying ? 'Đang tạo liên kết…' : 'Tiến hành thanh toán ngay'}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={retrying}
+              onClick={() => {
+                setLoading(true);
+                fetchStatus();
+              }}
+              className="w-full flex items-center justify-center rounded-2xl border border-slate-200 px-5 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Kiểm tra lại trạng thái
+            </button>
+          </div>
         </div>
       </div>
     </div>
