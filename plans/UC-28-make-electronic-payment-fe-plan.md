@@ -10,10 +10,11 @@ Mock contract is available; do not ship a UI that only removes VNPay.
 ## Task 1a — Local payment test entry
 
 Add `/dev/payment?bookingId={id}` behind the existing local demo flag. It
-accepts only an explicit booking ID and calls the normal create/reuse endpoint;
-it does not create a fixture booking or bypass Backend authorization. Add tests
-for the flag, missing ID and start-payment action. Remove this route when the
-UC-27 booking handoff is available.
+is a UI-only prototype while the Booking and Payment Backend contracts are
+unavailable: it displays a clearly labeled fixture and sends no request to
+Backend or PayOS. Add tests for the local outcome transitions and start-payment
+action. Replace this route with the normal create/reuse handoff when UC-27 and
+UC-28 Backend integration is available.
 
 ## Task 2 — Payment handoff
 

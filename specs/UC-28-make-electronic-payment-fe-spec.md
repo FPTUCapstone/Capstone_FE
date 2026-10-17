@@ -2,8 +2,8 @@
 
 ## Status
 
-Draft for approval. Web consumes the UC-28 Backend contract and never simulates
-a successful production payment itself.
+Approved for a local UI prototype. Web consumes the UC-28 Backend contract in
+the integrated phase and never simulates a successful production payment itself.
 
 ## Scope
 
@@ -49,9 +49,10 @@ Web calls:
 4. Cancelled payment remains pending while the booking is eligible; **Pay
    again** requests a reusable/replacement link from Backend.
 5. Before the UC-27 booking entry is merged, the local-only payment test entry
-   accepts an existing `PendingPayment` booking ID and exposes **Start Mock
-   Payment**. It calls the same create/reuse API and never fabricates a booking,
-   amount or payment state.
+   at `/dev/payment` exposes **Start Mock Payment** with an explicitly marked
+   fixture. It does not call Backend or PayOS and is available only with
+   `NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true` outside production. Replace it with
+   the standard create/reuse handoff when UC-27 is integrated.
 
 ## Acceptance criteria
 
