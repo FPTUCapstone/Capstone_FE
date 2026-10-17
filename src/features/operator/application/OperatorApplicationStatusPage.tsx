@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { PartnerShell } from '@/components/layout/PartnerShell';
@@ -17,6 +18,7 @@ function dateTime(value: string | null): string {
 }
 
 export function OperatorApplicationStatusPage() {
+  const router = useRouter();
   const [application, setApplication] = useState<OperatorApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function OperatorApplicationStatusPage() {
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return;
         if (reason instanceof OperatorApplicationError && reason.status === 401) {
-          window.location.assign(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
+          router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
           return;
         }
         setError(reason instanceof OperatorApplicationError && reason.status === 404
@@ -37,7 +39,7 @@ export function OperatorApplicationStatusPage() {
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [reload]);
+  }, [reload, router]);
 
   if (loading) {
     return <PartnerShell title="Operator Application Status" description="Loading your current application."><div role="status" className="h-40 animate-pulse rounded-3xl bg-white"><span className="sr-only">Loading application</span></div></PartnerShell>;

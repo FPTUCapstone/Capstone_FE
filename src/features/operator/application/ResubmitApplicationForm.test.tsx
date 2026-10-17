@@ -97,6 +97,18 @@ describe('ResubmitApplicationForm', () => {
     expect(screen.queryByDisplayValue('Công Ty Du Lịch Miền Trung')).toBeNull();
   });
 
+  it('uses client-side navigation when the initial request is unauthenticated', async () => {
+    vi.mocked(getOperatorApplication).mockRejectedValue(
+      new OperatorApplicationError(401, 'MSG01'),
+    );
+
+    render(<ResubmitApplicationForm />);
+
+    await waitFor(() => {
+      expect(router.replace).toHaveBeenCalledWith('/sign-in?returnUrl=%2Fpartner%2Fapplication');
+    });
+  });
+
   it('submits successfully keeping existing rejected license without uploading new file', async () => {
     render(<ResubmitApplicationForm />);
     await screen.findByDisplayValue('Công Ty Du Lịch Miền Trung');
