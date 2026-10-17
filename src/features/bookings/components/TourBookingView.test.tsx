@@ -7,6 +7,17 @@ import { realTourDetailViewModel } from '@/features/public/tours/__fixtures__/to
 import { TourBookingView } from './TourBookingView';
 
 const mockPush = vi.fn();
+const TRAVELER_CONTEXT = {
+  userId: 1,
+  email: 'traveler@tripmate.vn',
+  fullName: 'Nguyễn Minh Phúc',
+  role: 'Traveler' as const,
+  status: 'Active' as const,
+  applicationStatus: null,
+  applicationUnresolved: false,
+  accessToken: 'mock-token',
+  accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z',
+};
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn() }),
 }));
@@ -177,13 +188,14 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       );
     });
 
-    it('TERMS-2, TERMS-3 & TERMS-4: submit button is disabled before consent, enabled after check, disabled again on uncheck', async () => {
+    it('marks the required consent checkbox inline when the traveler attempts to submit without accepting', async () => {
       render(
         <TourBookingView
           tour={DEMO_TOUR_DETAIL_HOI_AN}
           initialScheduleId="9007199254740997"
           isDemo={false}
-          userContext={null}
+          userContext={TRAVELER_CONTEXT}
+          profilePhone="0905123456"
         />,
       );
 
@@ -192,16 +204,17 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
         name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
       }) as HTMLInputElement;
 
-      expect(submitBtn.disabled).toBe(true);
       await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      expect(submitBtn.disabled).toBe(false);
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => expect(document.activeElement).toBe(checkbox));
+      expect(checkbox.getAttribute('aria-invalid')).toBe('true');
+      expect(screen.getByText('Vui lòng đồng ý với điều khoản đặt tour và chính sách hoàn hủy.')).toBeTruthy();
 
       fireEvent.click(checkbox);
       expect(checkbox.checked).toBe(true);
-      await waitFor(() => expect(submitBtn.disabled).toBe(false));
-
-      fireEvent.click(checkbox);
-      expect(checkbox.checked).toBe(false);
-      expect(submitBtn.disabled).toBe(true);
+      expect(checkbox.getAttribute('aria-invalid')).toBe('false');
     });
 
     it('creates the booking and shows a confirmation panel whose "Pay now" navigates to the UC-28 entry point', async () => {
@@ -210,14 +223,12 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
           tour={DEMO_TOUR_DETAIL_HOI_AN}
           initialScheduleId="9007199254740997"
           isDemo={false}
-          userContext={null}
+          userContext={TRAVELER_CONTEXT}
+          profilePhone="0905123456"
         />,
       );
 
       await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
-      fireEvent.change(screen.getByLabelText('Số điện thoại liên hệ *'), {
-        target: { value: '0905123456' },
-      });
       fireEvent.click(
         screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }),
       );
@@ -231,6 +242,74 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /Thanh toán ngay/i }));
       expect(mockPush).toHaveBeenCalledWith('/bookings/456/pay');
+    });
+
+    it('prefills the lead phone from the traveler profile', () => {
+      render(
+        <TourBookingView
+          tour={DEMO_TOUR_DETAIL_HOI_AN}
+          initialScheduleId="9007199254740997"
+          isDemo={false}
+          userContext={TRAVELER_CONTEXT}
+          profilePhone="0905123456"
+        />,
+      );
+
+      expect((screen.getByLabelText('Số điện thoại liên hệ *') as HTMLInputElement).value).toBe('0905123456');
+    });
+
+    it('lets a traveler clear the profile phone, then focuses and highlights it instead of showing a global alert', async () => {
+      const alertSpy = vi.fn();
+      vi.stubGlobal('alert', alertSpy);
+      render(
+        <TourBookingView
+          tour={DEMO_TOUR_DETAIL_HOI_AN}
+          initialScheduleId="9007199254740997"
+          isDemo={false}
+          userContext={TRAVELER_CONTEXT}
+          profilePhone="0905123456"
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      const phoneInput = screen.getByLabelText('Số điện thoại liên hệ *') as HTMLInputElement;
+      fireEvent.change(phoneInput, { target: { value: '' } });
+      expect(phoneInput.value).toBe('');
+      fireEvent.click(screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }));
+      const submitButton = screen.getByRole('button', { name: /Tiếp tục thanh toán/i });
+      await waitFor(() => expect((submitButton as HTMLButtonElement).disabled).toBe(false));
+      fireEvent.click(submitButton);
+
+      await waitFor(() => expect(document.activeElement).toBe(phoneInput));
+      expect(phoneInput.getAttribute('aria-invalid')).toBe('true');
+      expect(screen.getByRole('alert').textContent).toContain('Vui lòng nhập số điện thoại liên hệ để tiếp tục đặt tour.');
+      expect(screen.queryByText('Không thể tạo đơn đặt tour')).toBeNull();
+      expect(alertSpy).not.toHaveBeenCalled();
+    });
+
+    it('shows every missing required field inline and focuses the first one', async () => {
+      render(
+        <TourBookingView
+          tour={DEMO_TOUR_DETAIL_HOI_AN}
+          initialScheduleId="9007199254740997"
+          isDemo={false}
+          userContext={null}
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      fireEvent.click(screen.getByRole('button', { name: /Tiếp tục thanh toán/i }));
+
+      const nameInput = screen.getByLabelText('Họ và tên trưởng đoàn *');
+      await waitFor(() => expect(document.activeElement).toBe(nameInput));
+      expect(nameInput.getAttribute('aria-invalid')).toBe('true');
+      expect(screen.getByLabelText('Số điện thoại liên hệ *').getAttribute('aria-invalid')).toBe('true');
+      expect(screen.getByLabelText('Email nhận vé điện tử *').getAttribute('aria-invalid')).toBe('true');
+      expect(screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }).getAttribute('aria-invalid')).toBe('true');
+      expect(screen.getByText('Vui lòng nhập họ và tên trưởng đoàn.')).toBeTruthy();
+      expect(screen.getByText('Vui lòng nhập số điện thoại liên hệ để tiếp tục đặt tour.')).toBeTruthy();
+      expect(screen.getByText('Vui lòng nhập email nhận vé điện tử.')).toBeTruthy();
+      expect(screen.getByText('Vui lòng đồng ý với điều khoản đặt tour và chính sách hoàn hủy.')).toBeTruthy();
     });
   });
 });

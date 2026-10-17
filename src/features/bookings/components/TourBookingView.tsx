@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import type { WebAuthContext } from '@/features/auth/session/authSession';
 import type { TourDetailDto, TourScheduleDto } from '@/features/public/tours/types/tour';
@@ -17,7 +17,12 @@ interface TourBookingViewProps {
   initialScheduleId?: string;
   isDemo?: boolean;
   userContext: WebAuthContext | null;
+  /** Loaded from the Traveler profile; it is intentionally separate from the auth session. */
+  profilePhone?: string | null;
 }
+
+type RequiredField = 'leadName' | 'leadPhone' | 'leadEmail' | 'agreedTerms';
+type RequiredFieldErrors = Partial<Record<RequiredField, string>>;
 
 function formatCurrency(amount: number, currency: string = 'VND'): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -52,11 +57,16 @@ export function TourBookingView({
   initialScheduleId,
   isDemo = false,
   userContext,
+  profilePhone,
 }: TourBookingViewProps) {
   const router = useRouter();
   const phoneInputId = useId();
   const notesInputId = useId();
   const couponInputId = useId();
+  const leadNameInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const leadEmailInputRef = useRef<HTMLInputElement>(null);
+  const termsInputRef = useRef<HTMLInputElement>(null);
 
   // Find selected schedule. A departure is selectable only while the server still says it is bookable
   // (capacity left and registration open, BR-60); a link to a closed departure must not pre-select it.
@@ -83,7 +93,10 @@ export function TourBookingView({
   const [leadName, setLeadName] = useState<string>(
     userContext?.fullName || (isDemo ? 'Nguyễn Minh Phúc' : ''),
   );
-  const [leadPhone, setLeadPhone] = useState<string>(isDemo ? '0905 123 456' : '');
+  const [leadPhone, setLeadPhone] = useState<string>(
+    profilePhone?.trim() || (isDemo ? '0905 123 456' : ''),
+  );
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>({});
   const [leadEmail, setLeadEmail] = useState<string>(
     userContext?.email || (isDemo ? 'traveler@tripmate.vn' : ''),
   );
@@ -108,7 +121,15 @@ export function TourBookingView({
   // confirmation. Payment (UC-28) is a separate, user-initiated navigation, never started here.
   const [createdBooking, setCreatedBooking] = useState<BookingDto | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [pendingBeNotice, setPendingBeNotice] = useState<string | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+
+  // The phone belongs to the traveler profile, not the compact auth-session payload. This runs
+  // only when profile data arrives: after that, the traveler is free to clear or edit the field.
+  useEffect(() => {
+    const normalizedPhone = profilePhone?.trim();
+    if (!normalizedPhone) return;
+    setLeadPhone((currentPhone) => currentPhone.trim() ? currentPhone : normalizedPhone);
+  }, [profilePhone]);
 
   // Remaining capacity still comes from the already-loaded tour detail for the selector/counter UI.
   const remainingSlots = quote?.remainingSlots ?? selectedSchedule?.remainingSlots ?? 0;
@@ -197,6 +218,46 @@ export function TourBookingView({
     setCouponError(null);
   };
 
+  const clearRequiredFieldError = (field: RequiredField) => {
+    setRequiredFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const focusRequiredField = (field: RequiredField) => {
+    const input = field === 'leadName'
+      ? leadNameInputRef.current
+      : field === 'leadPhone'
+        ? phoneInputRef.current
+        : field === 'leadEmail'
+          ? leadEmailInputRef.current
+          : termsInputRef.current;
+    requestAnimationFrame(() => {
+      input?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      input?.focus();
+    });
+  };
+
+  const validateRequiredFields = (): boolean => {
+    const errors: RequiredFieldErrors = {};
+    if (!leadName.trim()) errors.leadName = 'Vui lòng nhập họ và tên trưởng đoàn.';
+    if (!leadPhone.trim()) errors.leadPhone = 'Vui lòng nhập số điện thoại liên hệ để tiếp tục đặt tour.';
+    if (!leadEmail.trim()) errors.leadEmail = 'Vui lòng nhập email nhận vé điện tử.';
+    if (!agreedTerms) errors.agreedTerms = 'Vui lòng đồng ý với điều khoản đặt tour và chính sách hoàn hủy.';
+
+    setRequiredFieldErrors(errors);
+    const firstInvalid = (['leadName', 'leadPhone', 'leadEmail', 'agreedTerms'] as const)
+      .find((field) => Boolean(errors[field]));
+    if (firstInvalid) {
+      focusRequiredField(firstInvalid);
+      return false;
+    }
+    return true;
+  };
+
   // Step 1 Submission: Create Booking
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,14 +270,7 @@ export function TourBookingView({
       alert(`Số lượng khách (${totalTravelers}) vượt quá số chỗ còn trống (${remainingSlots}).`);
       return;
     }
-    if (!leadPhone.trim()) {
-      alert('Vui lòng cung cấp số điện thoại liên hệ của trưởng đoàn.');
-      return;
-    }
-    if (!agreedTerms) {
-      alert('Vui lòng đồng ý với điều khoản đặt tour và chính sách hoàn hủy.');
-      return;
-    }
+    if (!validateRequiredFields()) return;
 
     if (!effectiveQuote || quoteLoading) {
       alert('Vui lòng chờ hệ thống tải xong báo giá trước khi xác nhận đặt tour.');
@@ -226,14 +280,14 @@ export function TourBookingView({
     // Demo is explicitly read-only (quote preview only): it must never create a booking, reserve
     // a seat, or lead to payment. Real submission always goes through the live Backend contract.
     if (isDemo) {
-      setPendingBeNotice(
+      setSubmissionError(
         'Chế độ xem trước (Demo) chỉ hiển thị báo giá mô phỏng và không tạo đơn đặt tour thật. Vui lòng tắt chế độ Demo để đặt tour thực tế.',
       );
       return;
     }
 
     setIsSubmitting(true);
-    setPendingBeNotice(null);
+    setSubmissionError(null);
 
     const participants: BookingParticipantRequestDto[] = [
       { fullName: leadName, participantType: 'Adult', phoneNumber: leadPhone, email: leadEmail },
@@ -279,7 +333,7 @@ export function TourBookingView({
           : err instanceof Error
             ? err.message
             : 'Có lỗi xảy ra khi tạo đơn đặt tour.';
-      setPendingBeNotice(errorMsg);
+      setSubmissionError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -364,18 +418,15 @@ export function TourBookingView({
       </div>
 
       {/* Pending BE Notification banner (Real mode) */}
-      {pendingBeNotice && (
-        <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-sm">
+      {submissionError && (
+        <div role="alert" className="mb-6 rounded-2xl border border-red-300 bg-red-50 p-4 text-xs text-red-900 shadow-sm">
           <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-amber-600 text-xl">pending_actions</span>
+            <span className="material-symbols-outlined text-red-600 text-xl">error</span>
             <div>
-              <h4 className="font-bold text-sm text-amber-900 mb-1">
-                Trạng thái kết nối máy chủ: PENDING_BE_INTEGRATION
+              <h4 className="font-bold text-sm text-red-900 mb-1">
+                Không thể tạo đơn đặt tour
               </h4>
-              <p className="text-amber-800 leading-relaxed">{pendingBeNotice}</p>
-              <p className="mt-2 text-[11px] text-amber-700">
-                Hệ thống tuân thủ nguyên tắc trung thực: Không tạo đơn giả mạo khi Backend API chưa sẵn sàng. Bạn có thể thêm tham số <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">?demo=1</code> trên môi trường phát triển để trải nghiệm đầy đủ giao diện.
-              </p>
+              <p className="text-red-800 leading-relaxed">{submissionError}</p>
             </div>
           </div>
         </div>
@@ -603,14 +654,29 @@ export function TourBookingView({
                     Họ và tên trưởng đoàn *
                   </label>
                   <input
+                    ref={leadNameInputRef}
                     id="lead-traveler-name-input"
                     type="text"
                     required
                     value={leadName}
-                    onChange={(e) => setLeadName(e.target.value)}
+                    onChange={(e) => {
+                      setLeadName(e.target.value);
+                      clearRequiredFieldError('leadName');
+                    }}
                     placeholder="Ví dụ: Nguyễn Minh Phúc"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs text-slate-900 focus:border-[#007d6e] focus:outline-hidden focus:ring-1 focus:ring-[#007d6e]"
+                    aria-invalid={Boolean(requiredFieldErrors.leadName)}
+                    aria-describedby={requiredFieldErrors.leadName ? 'lead-traveler-name-error' : undefined}
+                    className={`w-full rounded-xl border px-3 py-2.5 text-xs text-slate-900 focus:outline-hidden focus:ring-1 ${
+                      requiredFieldErrors.leadName
+                        ? 'border-red-500 bg-red-50 focus:border-red-600 focus:ring-red-500'
+                        : 'border-slate-300 focus:border-[#007d6e] focus:ring-[#007d6e]'
+                    }`}
                   />
+                  {requiredFieldErrors.leadName && (
+                    <p id="lead-traveler-name-error" role="alert" className="mt-1 text-xs font-medium text-red-600">
+                      {requiredFieldErrors.leadName}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -618,14 +684,29 @@ export function TourBookingView({
                     Số điện thoại liên hệ *
                   </label>
                   <input
+                    ref={phoneInputRef}
                     id={phoneInputId}
                     type="tel"
                     required
                     value={leadPhone}
-                    onChange={(e) => setLeadPhone(e.target.value)}
+                    onChange={(e) => {
+                      setLeadPhone(e.target.value);
+                      clearRequiredFieldError('leadPhone');
+                    }}
                     placeholder="Ví dụ: 0905 123 456"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs text-slate-900 focus:border-[#007d6e] focus:outline-hidden focus:ring-1 focus:ring-[#007d6e]"
+                    aria-invalid={Boolean(requiredFieldErrors.leadPhone)}
+                    aria-describedby={requiredFieldErrors.leadPhone ? `${phoneInputId}-error` : undefined}
+                    className={`w-full rounded-xl border px-3 py-2.5 text-xs text-slate-900 focus:outline-hidden focus:ring-1 ${
+                      requiredFieldErrors.leadPhone
+                        ? 'border-red-500 bg-red-50 focus:border-red-600 focus:ring-red-500'
+                        : 'border-slate-300 focus:border-[#007d6e] focus:ring-[#007d6e]'
+                    }`}
                   />
+                  {requiredFieldErrors.leadPhone && (
+                    <p id={`${phoneInputId}-error`} role="alert" className="mt-1 text-xs font-medium text-red-600">
+                      {requiredFieldErrors.leadPhone}
+                    </p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">
@@ -633,14 +714,29 @@ export function TourBookingView({
                     Email nhận vé điện tử *
                   </label>
                   <input
+                    ref={leadEmailInputRef}
                     id="lead-traveler-email-input"
                     type="email"
                     required
                     value={leadEmail}
-                    onChange={(e) => setLeadEmail(e.target.value)}
+                    onChange={(e) => {
+                      setLeadEmail(e.target.value);
+                      clearRequiredFieldError('leadEmail');
+                    }}
                     placeholder="Ví dụ: traveler@tripmate.vn"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs text-slate-900 focus:border-[#007d6e] focus:outline-hidden focus:ring-1 focus:ring-[#007d6e]"
+                    aria-invalid={Boolean(requiredFieldErrors.leadEmail)}
+                    aria-describedby={requiredFieldErrors.leadEmail ? 'lead-traveler-email-error' : undefined}
+                    className={`w-full rounded-xl border px-3 py-2.5 text-xs text-slate-900 focus:outline-hidden focus:ring-1 ${
+                      requiredFieldErrors.leadEmail
+                        ? 'border-red-500 bg-red-50 focus:border-red-600 focus:ring-red-500'
+                        : 'border-slate-300 focus:border-[#007d6e] focus:ring-[#007d6e]'
+                    }`}
                   />
+                  {requiredFieldErrors.leadEmail && (
+                    <p id="lead-traveler-email-error" role="alert" className="mt-1 text-xs font-medium text-red-600">
+                      {requiredFieldErrors.leadEmail}
+                    </p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">
@@ -768,17 +864,23 @@ export function TourBookingView({
               </div>
 
               {/* Agreement checkbox */}
-              <div className="pt-2">
+              <div className={`rounded-xl border p-3 transition ${requiredFieldErrors.agreedTerms ? 'border-red-500 bg-red-50' : 'border-transparent'}`}>
                 <label
                   htmlFor="agreed-terms-checkbox"
                   className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer"
                 >
                   <input
+                    ref={termsInputRef}
                     id="agreed-terms-checkbox"
                     type="checkbox"
                     checked={agreedTerms}
-                    onChange={(e) => setAgreedTerms(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#007d6e] focus:ring-[#007d6e]"
+                    onChange={(e) => {
+                      setAgreedTerms(e.target.checked);
+                      clearRequiredFieldError('agreedTerms');
+                    }}
+                    aria-invalid={Boolean(requiredFieldErrors.agreedTerms)}
+                    aria-describedby={requiredFieldErrors.agreedTerms ? 'agreed-terms-error' : undefined}
+                    className={`mt-0.5 h-4 w-4 rounded text-[#007d6e] focus:ring-[#007d6e] ${requiredFieldErrors.agreedTerms ? 'border-red-500' : 'border-slate-300'}`}
                   />
                   <span>
                     Tôi xác nhận thông tin chính xác và đồng ý với{' '}
@@ -788,6 +890,11 @@ export function TourBookingView({
                     của TripMate.
                   </span>
                 </label>
+                {requiredFieldErrors.agreedTerms && (
+                  <p id="agreed-terms-error" role="alert" className="mt-2 text-xs font-medium text-red-600">
+                    {requiredFieldErrors.agreedTerms}
+                  </p>
+                )}
               </div>
 
               {/* Submit CTA Button — Demo is read-only (quote preview only); it never creates a
@@ -798,7 +905,6 @@ export function TourBookingView({
                   isDemo ||
                   isSubmitting ||
                   isOverCapacity ||
-                  !agreedTerms ||
                   !selectedSchedule ||
                   !isBookableSchedule(selectedSchedule)
                   ||

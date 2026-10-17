@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import { getTravelerProfile } from '@/features/account/profile/travelerProfileApi';
 import { getTourDetail, isTourDemoAllowedInCurrentEnv } from '@/features/public/tours/services/tourApi';
 import type { TourDetailDto } from '@/features/public/tours/types/tour';
 import { ROUTES } from '@/lib/routes';
@@ -27,6 +28,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
   const [tour, setTour] = useState<TourDetailDto | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
+  const [profilePhone, setProfilePhone] = useState<string | null>(null);
 
   // Authentication & Role Redirection
   useEffect(() => {
@@ -63,6 +65,26 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
       isMounted = false;
     };
   }, [id, isDemo]);
+
+  // A telephone number is profile data and is deliberately not stored in the browser auth
+  // session. Load it only for the authenticated Traveler who is booking the tour.
+  useEffect(() => {
+    if (status !== 'authenticated' || context?.role !== 'Traveler') return;
+
+    let isMounted = true;
+    getTravelerProfile()
+      .then((profile) => {
+        if (isMounted) setProfilePhone(profile.phoneNumber);
+      })
+      .catch(() => {
+        // The booking page remains usable when the optional profile lookup is unavailable.
+        if (isMounted) setProfilePhone(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [status, context?.role]);
 
   if (status === 'restoring' || loading) {
     return (
@@ -181,6 +203,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
           initialScheduleId={scheduleId}
           isDemo={isDemo}
           userContext={context}
+          profilePhone={profilePhone}
         />
       </main>
     </div>
