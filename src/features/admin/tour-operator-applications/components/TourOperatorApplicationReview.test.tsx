@@ -101,7 +101,15 @@ describe('UC-50 application review routing and feedback', () => {
         rejectionReason: 'Business licence could not be verified.',
         documents: pendingApplication.documents.map(document => ({ ...document, status: 'Rejected' as const })),
       });
-    api.reject.mockResolvedValueOnce(undefined);
+    api.reject.mockResolvedValueOnce({
+      userId: 3,
+      accountStatus: 'Rejected',
+      applicationStatus: 'Rejected',
+      rejectionReason: 'Business licence could not be verified.',
+      reviewedBy: 1,
+      reviewedAt: '2026-10-09T03:00:00Z',
+      message: 'Application rejected. Notification sent to operator.',
+    });
 
     render(<TourOperatorApplicationDetailView userId={3} />);
     fireEvent.click(await screen.findByRole('button', { name: /reject application/i }));

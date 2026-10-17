@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { TourOperatorApplicationDetailView } from '@/features/admin/tour-operator-applications/components/TourOperatorApplicationDetailView';
+import { tourOperatorApplicationEn } from '@/features/admin/tour-operator-applications/resources/en';
 import { parseApplicationId } from '@/features/admin/tour-operator-applications/utils/applicationId';
 import { ROUTES } from '@/lib/routes';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
@@ -34,8 +35,8 @@ export default async function TourOperatorApplicationDetailPage({ params }: Page
   if (userIdNumber === null) {
     return (
       <div className="mx-auto max-w-4xl p-8 text-center text-slate-400">
-        <h2 className="text-xl font-bold text-rose-400 mb-2">Invalid Application ID</h2>
-        <p className="text-sm">The provided application parameter is not a valid numeric user ID.</p>
+        <h2 className="text-xl font-bold text-rose-400 mb-2">{tourOperatorApplicationEn.invalidId.title}</h2>
+        <p className="text-sm">{tourOperatorApplicationEn.invalidId.body}</p>
       </div>
     );
   }
