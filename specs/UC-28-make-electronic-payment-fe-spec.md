@@ -30,6 +30,7 @@ processing, refunds and ticket issuance.
 | --- | --- |
 | `/checkout/mock?paymentId={id}&bookingId={id}` | Local Mock checkout only |
 | `/checkout/result?bookingId={id}` | Gateway return/cancel landing page |
+| `/dev/payment?bookingId={id}` | Local payment test entry only |
 
 Web calls:
 
@@ -47,6 +48,10 @@ Web calls:
    paid, cancelled or expired results.
 4. Cancelled payment remains pending while the booking is eligible; **Pay
    again** requests a reusable/replacement link from Backend.
+5. Before the UC-27 booking entry is merged, the local-only payment test entry
+   accepts an existing `PendingPayment` booking ID and exposes **Start Mock
+   Payment**. It calls the same create/reuse API and never fabricates a booking,
+   amount or payment state.
 
 ## Acceptance criteria
 
@@ -55,3 +60,7 @@ Web calls:
 - Loading, error and retry states are accessible.
 - A forged `?status=PAID` return URL cannot render a paid receipt without the
   Backend status confirming it.
+- `PAYMENT_BOOKING_NOT_ELIGIBLE`, `PAYMENT_BOOKING_EXPIRED`,
+  `PAYMENT_NOT_FOUND`, `PAYMENT_GATEWAY_UNAVAILABLE` and
+  `PAYMENT_MOCK_DISABLED` map to clear user messages; raw gateway errors are
+  never shown.

@@ -2,8 +2,18 @@
 
 ## Task 1 — Contract tests and types
 
-Replace VNPay demo response types with UC-28 payment DTOs. Add failing service
-tests for create/reuse, canonical status and Mock completion.
+Replace VNPay demo response types with UC-28 payment DTOs and map the approved
+payment error codes. Add failing service tests for create/reuse, canonical
+status and Mock completion. Keep existing demo behavior intact until the BE
+Mock contract is available; do not ship a UI that only removes VNPay.
+
+## Task 1a — Local payment test entry
+
+Add `/dev/payment?bookingId={id}` behind the existing local demo flag. It
+accepts only an explicit booking ID and calls the normal create/reuse endpoint;
+it does not create a fixture booking or bypass Backend authorization. Add tests
+for the flag, missing ID and start-payment action. Remove this route when the
+UC-27 booking handoff is available.
 
 ## Task 2 — Payment handoff
 
