@@ -166,3 +166,26 @@ export function formatDateDisplay(isoDateString?: string | null): string {
     return isoDateString;
   }
 }
+
+const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
+/**
+ * Departure and return times are scheduled and sold in Vietnam, so they are always shown in Vietnam local time
+ * (dd/MM/yyyy HH:mm) regardless of the browser or server time zone.
+ */
+export function formatDateTimeVietnam(isoDateString?: string | null): string {
+  if (!isoDateString) return 'Liên hệ';
+  const date = new Date(isoDateString);
+  if (Number.isNaN(date.getTime())) return isoDateString;
+  const parts = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: VIETNAM_TIME_ZONE,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('day')}/${part('month')}/${part('year')} ${part('hour')}:${part('minute')}`;
+}
