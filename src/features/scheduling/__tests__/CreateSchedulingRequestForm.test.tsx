@@ -415,7 +415,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(payload.explorationLongitude).toBe(CHAM_MUSEUM.longitude);
       expect(payload.returnToStart).toBe(false);
       expect(payload.endPoiId).toBe(MY_KHE.id);
-      expect(payload.mandatoryPoiIds).toEqual([MY_KHE.id]);
+      expect(payload.mandatoryPoiIds).toEqual([CHAM_MUSEUM.id, MY_KHE.id]);
     });
 
     it('requires a finish place when not returning to the start', async () => {
@@ -432,15 +432,83 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(createSpy).not.toHaveBeenCalled();
     });
 
-    it('clears must-see places when the area changes', async () => {
+    it('clears previous primary POI when the area changes to a new POI', async () => {
       render(<CreateSchedulingRequestForm />);
       await chooseStartAndArea();
-      await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
-      expect(screen.getByRole('button', { name: `Bỏ ${MY_KHE.name}` })).toBeDefined();
+      expect(screen.getByRole('button', { name: `Bỏ ${CHAM_MUSEUM.name}` })).toBeDefined();
 
       await pickPlace(/^Khu vực khám phá:/, MY_KHE.name);
 
-      expect(screen.queryByRole('button', { name: `Bỏ ${MY_KHE.name}` })).toBeNull();
+      // Previous primary POI (Cham Museum) is cleared, and new primary POI (My Khe) is auto-bound
+      expect(screen.queryByRole('button', { name: `Bỏ ${CHAM_MUSEUM.name}` })).toBeNull();
+      expect(screen.getByRole('button', { name: `Bỏ ${MY_KHE.name}` })).toBeDefined();
+      expect(screen.getByText('Điểm khám phá chính')).toBeDefined();
+    });
+
+    it('auto-binds catalog POI chosen for exploration into mandatory POIs with distinct badge', async () => {
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+
+      // Cham Museum is auto-bound
+      expect(screen.getAllByText(CHAM_MUSEUM.name).length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByText('Điểm khám phá chính')).toBeDefined();
+      expect(screen.getByRole('button', { name: `Bỏ ${CHAM_MUSEUM.name}` })).toBeDefined();
+
+      // Clicking remove chip removes it from mandatory without clearing exploration area
+      fireEvent.click(screen.getByRole('button', { name: `Bỏ ${CHAM_MUSEUM.name}` }));
+      expect(screen.queryByText('Điểm khám phá chính')).toBeNull();
+      expect(screen.getByRole('button', { name: new RegExp(CHAM_MUSEUM.name) })).toBeDefined();
+    });
+
+    it('displays travel feasibility soft warning when round-trip travel exceeds 50% of duration', async () => {
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+
+      // Switch to Walking mode (low speed = 4.5 km/h)
+      fireEvent.click(screen.getByRole('button', { name: /Đi bộ/ }));
+      // Set duration to 1 hour
+      const hoursInput = screen.getByLabelText('Số giờ');
+      fireEvent.change(hoursInput, { target: { value: '1' } });
+      await flush();
+
+      // Soft warning should appear
+      expect(screen.getByRole('alert')).toBeDefined();
+      expect(screen.getByText(/Lưu ý về thời gian di chuyển/)).toBeDefined();
+      expect(screen.getByText(/Thời gian di chuyển 2 chiều/)).toBeDefined();
+
+      // Submit button is NOT disabled
+      const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
+      expect(submitBtn.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('handles 422 infeasibility with quantified explanation and 1-click fix resubmission', async () => {
+      const createSpy = vi
+        .spyOn(schedulingApi, 'createSchedulingRequest')
+        .mockRejectedValueOnce({
+          status: 422,
+          code: 'planning.constraints_infeasible',
+          message: 'The mandatory locations cannot fit within the selected time.',
+        })
+        .mockResolvedValueOnce(mockSuccessResponse);
+
+      render(<CreateSchedulingRequestForm />);
+      await chooseStartAndArea();
+
+      // First submit fails with 422
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+      await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
+
+      // Check quantified error message and 1-click button
+      expect(await screen.findByText(/Không thể xếp lịch: Các điểm bắt buộc cần tối thiểu/)).toBeDefined();
+      const fixBtn = screen.getByRole('button', { name: /Tăng thời lượng lên \d+ giờ và thử lại/i });
+      expect(fixBtn).toBeDefined();
+
+      // Click 1-click fix button
+      fireEvent.click(fixBtn);
+      await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(2), { timeout: 4000 });
+
+      // After resubmission succeeds, success message is displayed
+      expect(await screen.findByText('Khởi tạo lịch trình thành công!')).toBeDefined();
     });
 
     it('allows a search radius up to 100 km and uses it for must-see places and the request', async () => {
