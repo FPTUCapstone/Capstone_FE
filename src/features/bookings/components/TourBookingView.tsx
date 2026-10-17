@@ -8,9 +8,14 @@ import React, { useEffect, useId, useMemo, useState } from 'react';
 import type { WebAuthContext } from '@/features/auth/session/authSession';
 import type { TourDetailDto, TourScheduleDto } from '@/features/public/tours/types/tour';
 import { ROUTES } from '@/lib/routes';
-import { DEMO_COUPON_CODES } from '../data/bookingDemoFixtures';
-import { createBooking, initiatePayment } from '../services/bookingApi';
-import type { BookingDto, PaymentMethod } from '../types/booking';
+import { createBooking, initiatePayment, quoteBooking } from '../services/bookingApi';
+import { BookingApiError } from '../types/booking';
+import type {
+  BookingDto,
+  BookingParticipantRequestDto,
+  BookingQuoteDto,
+  PaymentMethod,
+} from '../types/booking';
 
 interface TourBookingViewProps {
   tour: TourDetailDto;
@@ -84,12 +89,15 @@ export function TourBookingView({
     isDemo ? 'Gia đình có trẻ nhỏ, ưu tiên ghế gần cửa sổ nếu thuận tiện.' : '',
   );
 
-  // Discount code
+  // Discount code — applying only stages the code; the server quote (BR-63) decides eligibility and discount.
   const [couponCode, setCouponCode] = useState<string>(isDemo ? 'HOIAN15' : '');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; percent: number; label: string } | null>(
-    isDemo ? { code: 'HOIAN15', percent: 15, label: 'Ưu đãi 15% mùa lễ hội di sản' } : null,
-  );
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | null>(isDemo ? 'HOIAN15' : null);
   const [couponError, setCouponError] = useState<string | null>(null);
+
+  // Server-computed quote (BE spec §3.1). The client never computes price itself.
+  const [quote, setQuote] = useState<BookingQuoteDto | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState<boolean>(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
   // Terms agreement (explicit opt-in required)
   const [agreedTerms, setAgreedTerms] = useState<boolean>(false);
@@ -118,36 +126,81 @@ export function TourBookingView({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, [secondsRemaining]);
 
-  // Pricing calculations
-  const remainingSlots = selectedSchedule?.remainingSlots ?? 0;
-  const adultUnitPrice = selectedSchedule?.price ?? tour.basePrice;
-  const childUnitPrice = Math.round(adultUnitPrice * 0.5); // 50% for children 4-11
-  const subtotal = adultCount * adultUnitPrice + childCount * childUnitPrice;
-  const discountAmount = appliedCoupon ? Math.round((subtotal * appliedCoupon.percent) / 100) : 0;
-  const totalAmount = Math.max(0, subtotal - discountAmount);
-
+  // Remaining capacity still comes from the already-loaded tour detail for the selector/counter UI.
+  const remainingSlots = quote?.remainingSlots ?? selectedSchedule?.remainingSlots ?? 0;
   const totalTravelers = adultCount + childCount;
   const isOverCapacity = totalTravelers > remainingSlots;
 
-  // Coupon handling
+  // A quote fetched for a now-invalid input (no schedule, zero travelers, over capacity) is stale
+  // and must never be trusted for display or submission, even if React hasn't re-run the effect yet.
+  const isQuoteInputValid = Boolean(selectedSchedule) && totalTravelers > 0 && !isOverCapacity;
+  const effectiveQuote = isQuoteInputValid ? quote : null;
+
+  // Fallback display only (e.g. first paint before the quote resolves); never sent to the server.
+  const fallbackAdultUnitPrice = selectedSchedule?.price ?? tour.basePrice;
+  const fallbackChildUnitPrice = Math.round(fallbackAdultUnitPrice * 0.5);
+  const adultLine = effectiveQuote?.priceBreakdown.find((line) => line.participantType === 'Adult');
+  const childLine = effectiveQuote?.priceBreakdown.find((line) => line.participantType === 'Child');
+  const adultUnitPrice = adultLine?.unitPrice ?? fallbackAdultUnitPrice;
+  const childUnitPrice = childLine?.unitPrice ?? fallbackChildUnitPrice;
+  const subtotal =
+    effectiveQuote?.subtotalAmount ?? adultCount * fallbackAdultUnitPrice + childCount * fallbackChildUnitPrice;
+  const discountAmount = effectiveQuote?.discountAmount ?? 0;
+  const totalAmount = effectiveQuote?.totalAmount ?? Math.max(0, subtotal - discountAmount);
+  const appliedVoucherLabel = effectiveQuote?.appliedVoucher?.code ?? null;
+
+  // UC-27 BR-63: re-quote from the server whenever the inputs that affect price change. Debounced
+  // and cancelled on change so a fast typist / counter-clicker never races an earlier request.
+  useEffect(() => {
+    if (!selectedSchedule || totalTravelers === 0 || isOverCapacity) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      setQuoteLoading(true);
+      quoteBooking(
+        {
+          tourScheduleId: selectedSchedule.scheduleId,
+          participantCounts: { adult: adultCount, child: childCount, infant: 0 },
+          voucherCode: appliedVoucherCode ?? undefined,
+        },
+        tour.tourId,
+        { allowDemo: isDemo, signal: controller.signal },
+      )
+        .then((result) => {
+          setQuote(result);
+          setQuoteError(null);
+          if (appliedVoucherCode && !result.appliedVoucher) {
+            setCouponError('Mã ưu đãi không hợp lệ hoặc đã hết lượt áp dụng.');
+          } else {
+            setCouponError(null);
+          }
+        })
+        .catch((err: unknown) => {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          setQuote(null);
+          setQuoteError(err instanceof Error ? err.message : 'Không thể tải báo giá từ máy chủ.');
+        })
+        .finally(() => setQuoteLoading(false));
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [selectedSchedule, tour.tourId, adultCount, childCount, appliedVoucherCode, isDemo, totalTravelers, isOverCapacity]);
+
+  // Coupon handling — "Apply" only stages the code; the next quote tells us if it was accepted.
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError(null);
     const cleanCode = couponCode.trim().toUpperCase();
-    if (!cleanCode) {
-      setAppliedCoupon(null);
-      return;
-    }
-    const match = DEMO_COUPON_CODES[cleanCode];
-    if (match) {
-      setAppliedCoupon({ code: cleanCode, percent: match.percent, label: match.label });
-    } else {
-      setCouponError('Mã ưu đãi không hợp lệ hoặc đã hết lượt áp dụng.');
-    }
+    setAppliedVoucherCode(cleanCode || null);
   };
 
   const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
+    setAppliedVoucherCode(null);
     setCouponCode('');
     setCouponError(null);
   };
@@ -173,45 +226,51 @@ export function TourBookingView({
       return;
     }
 
+    if (!effectiveQuote || quoteLoading) {
+      alert('Vui lòng chờ hệ thống tải xong báo giá trước khi xác nhận đặt tour.');
+      return;
+    }
+
     setIsSubmitting(true);
     setPendingBeNotice(null);
 
+    const participants: BookingParticipantRequestDto[] = [
+      { fullName: leadName, participantType: 'Adult', phoneNumber: leadPhone, email: leadEmail },
+      ...(adultCount > 1
+        ? Array.from({ length: adultCount - 1 }, (_, i) => ({
+            fullName: `Người lớn ${i + 2}`,
+            participantType: 'Adult' as const,
+          }))
+        : []),
+      ...(childCount > 0
+        ? Array.from({ length: childCount }, (_, i) => ({
+            fullName: `Trẻ em ${i + 1}`,
+            participantType: 'Child' as const,
+          }))
+        : []),
+    ];
+
     try {
+      // One idempotency key per logical submit attempt; the same key is only reused by the
+      // underlying fetch layer's own retry (if any), never minted again for this same click.
       const booking = await createBooking(
         {
-          tourId: tour.tourId,
-          scheduleId: selectedSchedule.scheduleId,
-          adultCount,
-          childCount,
-          leadTravelerName: leadName,
-          leadTravelerPhone: leadPhone,
-          leadTravelerEmail: leadEmail,
-          couponCode: appliedCoupon?.code,
-          participants: [
-            { fullName: leadName, participantType: 'Adult' },
-            ...(adultCount > 1
-              ? Array.from({ length: adultCount - 1 }, (_, i) => ({
-                  fullName: `Người lớn ${i + 2}`,
-                  participantType: 'Adult' as const,
-                }))
-              : []),
-            ...(childCount > 0
-              ? Array.from({ length: childCount }, (_, i) => ({
-                  fullName: `Trẻ em ${i + 1}`,
-                  participantType: 'Child' as const,
-                }))
-              : []),
-          ],
-          specialRequests,
+          tourScheduleId: selectedSchedule.scheduleId,
+          participants,
+          voucherCode: effectiveQuote.appliedVoucher?.code,
         },
-        { allowDemo: isDemo },
+        { allowDemo: isDemo, idempotencyKey: crypto.randomUUID() },
       );
 
       setCreatedBooking(booking);
-      setActiveStep(2); // Advance to UC-28: Payment
+      setActiveStep(2); // Advance to UC-28: Payment (user-initiated handoff, not auto-started)
     } catch (err: unknown) {
       const errorMsg =
-        err instanceof Error ? err.message : 'Có lỗi xảy ra khi tạo đơn đặt tour.';
+        err instanceof BookingApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Có lỗi xảy ra khi tạo đơn đặt tour.';
       setPendingBeNotice(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -592,16 +651,24 @@ export function TourBookingView({
                 Mã giảm giá / Ưu đãi
               </h3>
 
-              {appliedCoupon ? (
+              {appliedVoucherCode ? (
                 <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs">
                   <div>
                     <span className="font-extrabold text-emerald-800 tracking-wider">
-                      {appliedCoupon.code}
+                      {appliedVoucherCode}
                     </span>
-                    <span className="ml-2 rounded-sm bg-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-900">
-                      -{appliedCoupon.percent}%
-                    </span>
-                    <p className="text-[11px] text-emerald-700 mt-0.5">{appliedCoupon.label}</p>
+                    {appliedVoucherLabel ? (
+                      <span className="ml-2 rounded-sm bg-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-900">
+                        Đã áp dụng
+                      </span>
+                    ) : (
+                      <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                        Đang kiểm tra…
+                      </span>
+                    )}
+                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                      Giảm giá do máy chủ tính toán sau khi xác thực mã.
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -659,19 +726,25 @@ export function TourBookingView({
                   </div>
                 )}
 
-                {appliedCoupon && (
+                {appliedVoucherLabel && discountAmount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-medium">
-                    <span>Giảm giá ({appliedCoupon.code})</span>
+                    <span>Giảm giá ({appliedVoucherLabel})</span>
                     <span>-{formatCurrency(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="border-t border-dashed border-slate-200 pt-3 flex items-baseline justify-between">
                   <span className="text-sm font-bold text-slate-900">Tổng thanh toán:</span>
-                  <span className="text-2xl font-black text-[#007d6e]">
+                  <span className="text-2xl font-black text-[#007d6e] inline-flex items-center gap-2">
+                    {quoteLoading && (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#007d6e] border-t-transparent" />
+                    )}
                     {formatCurrency(totalAmount)}
                   </span>
                 </div>
+                {quoteError && (
+                  <p className="text-[11px] text-red-600 font-semibold">{quoteError}</p>
+                )}
               </div>
 
               {/* Agreement checkbox */}
@@ -700,7 +773,14 @@ export function TourBookingView({
               {/* Submit CTA Button */}
               <button
                 type="button"
-                disabled={isSubmitting || isOverCapacity || !agreedTerms || !selectedSchedule}
+                disabled={
+                  isSubmitting ||
+                  isOverCapacity ||
+                  !agreedTerms ||
+                  !selectedSchedule ||
+                  quoteLoading ||
+                  !effectiveQuote
+                }
                 onClick={handleCreateBooking}
                 className="w-full rounded-xl bg-[#007d6e] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >

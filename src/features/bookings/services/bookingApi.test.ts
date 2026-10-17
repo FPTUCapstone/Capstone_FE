@@ -6,6 +6,7 @@ import {
   getTicket,
   initiatePayment,
   isBookingDemoAllowedInCurrentEnv,
+  quoteBooking,
   verifyPayment,
 } from './bookingApi';
 
@@ -45,21 +46,67 @@ describe('bookingApi service (UC-27, UC-28, UC-29)', () => {
     });
   });
 
+  describe('quoteBooking (UC-27)', () => {
+    it('returns a demo quote with coupon discount when demo is allowed', async () => {
+      setNodeEnv('development');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+
+      const quote = await quoteBooking(
+        {
+          tourScheduleId: '9007199254740997',
+          participantCounts: { adult: 2, child: 1, infant: 0 },
+          voucherCode: 'HOIAN15',
+        },
+        '9007199254740995',
+        { allowDemo: true },
+      );
+
+      // 2 * 800k + 1 * 400k = 2,000,000. 15% off = 300,000. Total = 1,700,000
+      expect(quote.subtotalAmount).toBe(2000000);
+      expect(quote.discountAmount).toBe(300000);
+      expect(quote.totalAmount).toBe(1700000);
+      expect(quote.appliedVoucher?.code).toBe('HOIAN15');
+    });
+
+    it('calls POST /api/v1/traveler/tour-bookings/quote in real mode', async () => {
+      setNodeEnv('development');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'false';
+
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            tourId: '45', tourScheduleId: '123', currency: 'VND',
+            participantCounts: { adult: 1, child: 0, infant: 0 },
+            priceBreakdown: [], subtotalAmount: 1000000, discountAmount: 0, totalAmount: 1000000,
+            remainingSlots: 5, appliedVoucher: null,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+      vi.stubGlobal('fetch', mockFetch);
+
+      const quote = await quoteBooking(
+        { tourScheduleId: '123', participantCounts: { adult: 1, child: 0, infant: 0 } },
+        '45',
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/traveler/tour-bookings/quote',
+        expect.objectContaining({ method: 'POST' }),
+      );
+      expect(quote.totalAmount).toBe(1000000);
+    });
+  });
+
   describe('createBooking (UC-27)', () => {
-    it('creates demo booking with price calculations and coupon discount when demo is allowed', async () => {
+    it('creates demo booking from server-shaped quote fixtures when demo is allowed', async () => {
       setNodeEnv('development');
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
 
       const booking = await createBooking(
         {
-          tourId: '9007199254740995',
-          scheduleId: '9007199254740997',
-          adultCount: 2,
-          childCount: 1,
-          leadTravelerName: 'Nguyễn Minh Phúc',
-          leadTravelerPhone: '0905 123 456',
-          leadTravelerEmail: 'traveler@tripmate.vn',
-          couponCode: 'HOIAN15',
+          tourScheduleId: '9007199254740997',
+          voucherCode: 'HOIAN15',
           participants: [
             { fullName: 'Nguyễn Minh Phúc', participantType: 'Adult' },
             { fullName: 'Trần Thị Thu Thảo', participantType: 'Adult' },
@@ -70,36 +117,69 @@ describe('bookingApi service (UC-27, UC-28, UC-29)', () => {
       );
 
       expect(booking.isDemo).toBe(true);
-      expect(booking.adultCount).toBe(2);
-      expect(booking.childCount).toBe(1);
       expect(booking.status).toBe('PendingPayment');
-      expect(booking.paymentStatus).toBe('Pending');
       // 2 * 800k + 1 * 400k = 2,000,000. 15% off = 300,000. Total = 1,700,000
       expect(booking.discountAmount).toBe(300000);
       expect(booking.totalAmount).toBe(1700000);
-      expect(booking.leadTravelerName).toBe('Nguyễn Minh Phúc');
     });
 
-    it('throws 501 PENDING_BE_INTEGRATION in real mode without demo opt-in', async () => {
+    it('sends Idempotency-Key and the approved request shape, and returns the created booking', async () => {
       setNodeEnv('development');
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'false';
 
-      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            bookingId: '456', bookingCode: 'BK-20261017-00001', status: 'PendingPayment',
+            tourScheduleId: '123', currency: 'VND', subtotalAmount: 1000000, discountAmount: 0,
+            totalAmount: 1000000, paymentExpiresAtUtc: '2026-10-17T10:30:00Z', createdAtUtc: '2026-10-17T10:15:00Z',
+          }),
+          { status: 201, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+      vi.stubGlobal('fetch', mockFetch);
+
+      const booking = await createBooking(
+        {
+          tourScheduleId: '123',
+          participants: [{ fullName: 'Test Traveler', participantType: 'Adult' }],
+        },
+        { idempotencyKey: '550e8400-e29b-41d4-a716-446655440000' },
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/traveler/tour-bookings',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ 'Idempotency-Key': '550e8400-e29b-41d4-a716-446655440000' }),
+        }),
+      );
+      expect(booking.bookingId).toBe('456');
+      expect(booking.status).toBe('PendingPayment');
+    });
+
+    it('throws a BookingApiError with a mapped message when the server rejects the request', async () => {
+      setNodeEnv('development');
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'false';
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({ errorCode: 'tour_booking.insufficient_capacity' }),
+            { status: 409, headers: { 'content-type': 'application/json' } },
+          ),
+        ),
+      );
 
       await expect(
         createBooking({
-          tourId: '9007199254740995',
-          scheduleId: '9007199254740997',
-          adultCount: 1,
-          childCount: 0,
-          leadTravelerName: 'Test Traveler',
-          leadTravelerPhone: '0901234567',
-          leadTravelerEmail: 'test@tripmate.vn',
+          tourScheduleId: '123',
           participants: [{ fullName: 'Test Traveler', participantType: 'Adult' }],
         }),
       ).rejects.toMatchObject({
-        status: 501,
-        message: expect.stringContaining('PENDING_BE_INTEGRATION'),
+        status: 409,
+        message: expect.stringContaining('Không còn đủ chỗ trống'),
       });
     });
   });
