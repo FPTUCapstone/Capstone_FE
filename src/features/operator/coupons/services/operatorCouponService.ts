@@ -4,6 +4,16 @@ import {
   DEMO_ELIGIBLE_TOURS,
 } from '../data/operatorCouponDemoFixtures';
 import {
+  CouponApiError,
+  createCoupon as createProductionCoupon,
+  getCoupon as getProductionCoupon,
+  getEligibleCouponTours as getProductionEligibleTours,
+  listCoupons as listProductionCoupons,
+  setCouponActive as setProductionCouponActive,
+  updateCoupon as updateProductionCoupon,
+  type OperatorCouponApiDto,
+} from './couponApi';
+import {
   OPERATOR_COUPON_MESSAGES,
   type CouponActionResult,
   type CouponDto,
@@ -19,6 +29,38 @@ import {
  * Never used in production mode.
  */
 let demoCouponsStore: CouponDto[] = [...INITIAL_DEMO_COUPONS];
+
+function dateOnly(iso: string): string { return iso.slice(0, 10); }
+
+function mapProductionCoupon(coupon: OperatorCouponApiDto): CouponDto {
+  const status: CouponStatus = coupon.status === 'Disabled' ? 'Inactive' : coupon.status;
+  return {
+    id: String(coupon.couponId), couponCode: coupon.code, name: coupon.name,
+    operatorUserId: coupon.ownerOperatorUserId, discountType: coupon.discountType,
+    discountValue: coupon.discountValue, maxDiscountAmount: coupon.maxDiscountAmount,
+    minSpend: coupon.minOrderAmount, usageLimit: coupon.usageLimit ?? 0,
+    usageLimitPerTraveler: coupon.usageLimitPerUser, validFrom: dateOnly(coupon.validFromUtc),
+    validTo: dateOnly(coupon.validToUtc), appliesToAllTours: false,
+    appliedTourIds: coupon.applicableTourIds.map(String), usageCount: coupon.usedCount,
+    status, createdAt: coupon.createdAtUtc, updatedAt: coupon.updatedAtUtc,
+  };
+}
+
+function productionFailure<T>(error: unknown): CouponActionResult<T> {
+  if (error instanceof CouponApiError) {
+    if (error.status === 401 || error.status === 403)
+      return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER, isDemo: false };
+    if (error.status === 404)
+      return { status: 'NOT_FOUND', message: OPERATOR_COUPON_MESSAGES.NOT_FOUND, isDemo: false };
+    return { status: 'SYSTEM_ERROR', message: error.message, isDemo: false };
+  }
+  return { status: 'SYSTEM_ERROR', message: OPERATOR_COUPON_MESSAGES.SYSTEM_ERROR, isDemo: false };
+}
+
+async function productionScope(payload: Pick<CreateCouponPayload, 'appliesToAllTours' | 'appliedTourIds'>): Promise<number[]> {
+  if (!payload.appliesToAllTours) return payload.appliedTourIds.map(Number);
+  return (await getProductionEligibleTours()).map((tour) => tour.id);
+}
 
 /**
  * Resets the in-memory demo coupon store back to initial fixtures.
@@ -377,12 +419,11 @@ export async function getOperatorCoupons(options?: {
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    data: [],
-    isDemo: false,
-  };
+  try {
+    return { status: 'SUCCESS', data: (await listProductionCoupons()).map(mapProductionCoupon), isDemo: false };
+  } catch (error) {
+    return { ...productionFailure<CouponDto[]>(error), data: [] };
+  }
 }
 
 /**
@@ -413,12 +454,19 @@ export async function getEligibleTours(options?: {
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    data: [],
-    isDemo: false,
-  };
+  try {
+    const tours = await getProductionEligibleTours();
+    return {
+      status: 'SUCCESS',
+      data: tours.map((tour) => ({
+        id: String(tour.id), tourCode: `TP-${tour.id}`, title: tour.title,
+        destination: tour.destination ?? undefined, basePrice: tour.basePrice,
+        status: 'Published', operatorUserId: options?.currentUserId ?? 'current',
+      })), isDemo: false,
+    };
+  } catch (error) {
+    return { ...productionFailure<EligibleTourDto[]>(error), data: [] };
+  }
 }
 
 /**
@@ -480,11 +528,11 @@ export async function getOperatorCouponById(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    return { status: 'SUCCESS', data: mapProductionCoupon(await getProductionCoupon(id)), isDemo: false };
+  } catch (error) {
+    return productionFailure<CouponDto>(error);
+  }
 }
 
 /**
@@ -577,11 +625,19 @@ export async function createCoupon(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    const result = await createProductionCoupon({
+      code: payload.couponCode, name: payload.name, discountType: payload.discountType,
+      discountValue: payload.discountValue, maxDiscountAmount: payload.maxDiscountAmount ?? undefined,
+      minOrderAmount: payload.minSpend ?? 0, usageLimit: payload.usageLimit,
+      usageLimitPerUser: payload.usageLimitPerTraveler ?? null,
+      validFromUtc: `${payload.validFrom}T00:00:00.000Z`, validToUtc: `${payload.validTo}T23:59:59.999Z`,
+      applicableTourIds: await productionScope(payload),
+    });
+    return { status: 'SUCCESS', data: mapProductionCoupon(await getProductionCoupon(result.couponId)), message: OPERATOR_COUPON_MESSAGES.CREATE_SUCCESS, isDemo: false };
+  } catch (error) {
+    return productionFailure<CouponDto>(error);
+  }
 }
 
 /**
@@ -695,11 +751,20 @@ export async function updateCoupon(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    const current = await getProductionCoupon(id);
+    const coupon = await updateProductionCoupon(id, {
+      name: payload.name, discountType: payload.discountType ?? current.discountType,
+      discountValue: payload.discountValue, maxDiscountAmount: payload.maxDiscountAmount ?? undefined,
+      minOrderAmount: payload.minSpend ?? 0, usageLimit: payload.usageLimit,
+      usageLimitPerUser: payload.usageLimitPerTraveler ?? null,
+      validFromUtc: `${payload.validFrom}T00:00:00.000Z`, validToUtc: `${payload.validTo}T23:59:59.999Z`,
+      applicableTourIds: await productionScope(payload),
+    });
+    return { status: 'SUCCESS', data: mapProductionCoupon(coupon), message: OPERATOR_COUPON_MESSAGES.UPDATE_SUCCESS, isDemo: false };
+  } catch (error) {
+    return productionFailure<CouponDto>(error);
+  }
 }
 
 /**
@@ -762,11 +827,12 @@ export async function deactivateCoupon(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    const coupon = await setProductionCouponActive(id, false);
+    return { status: 'SUCCESS', data: mapProductionCoupon(coupon), message: OPERATOR_COUPON_MESSAGES.ACTIVATE_SUCCESS, isDemo: false };
+  } catch (error) {
+    return productionFailure<CouponDto>(error);
+  }
 }
 
 /**
@@ -850,9 +916,10 @@ export async function activateCoupon(
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    const coupon = await setProductionCouponActive(id, true);
+    return { status: 'SUCCESS', data: mapProductionCoupon(coupon), message: OPERATOR_COUPON_MESSAGES.ACTIVATE_SUCCESS, isDemo: false };
+  } catch (error) {
+    return productionFailure<CouponDto>(error);
+  }
 }

@@ -185,7 +185,7 @@ describe('UpdateCouponView (UC-39 Update Coupon)', () => {
     expect(screen.getAllByText(couponEn.statuses.expired).length).toBeGreaterThan(0);
   });
 
-  it('truthfully reports pending capability in production mode', async () => {
+  it('reports the production API authentication failure instead of pretending the feature is pending', async () => {
     render(
       <UpdateCouponView
         initialCoupon={initialCoupon}
@@ -200,7 +200,7 @@ describe('UpdateCouponView (UC-39 Update Coupon)', () => {
 
     await waitFor(() => {
       const alert = screen.getByRole('alert');
-      expect(alert.textContent).toContain('PENDING_BE_INTEGRATION');
+      expect(alert.textContent).toContain('Access denied');
     });
     expect(mockPush).not.toHaveBeenCalled();
   });

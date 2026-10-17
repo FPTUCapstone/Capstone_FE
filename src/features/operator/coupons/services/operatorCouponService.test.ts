@@ -495,16 +495,15 @@ describe('operatorCouponService - Expired Coupon Reactivation & Temporal Status 
 });
 
 describe('operatorCouponService - CRUD and Lifecycle in Demo & Production', () => {
-  it('returns truthful PENDING_BE_INTEGRATION in production mode for all actions', async () => {
+  it('does not simulate coupon state when production authentication is unavailable', async () => {
     const listRes = await getOperatorCoupons({ allowDemo: false });
-    expect(listRes.status).toBe('PENDING_BE_INTEGRATION');
-    expect(listRes.message).toBe(OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION);
+    expect(listRes.status).toBe('UNAUTHORIZED');
 
     const getRes = await getOperatorCouponById('cp-bana15', { allowDemo: false });
-    expect(getRes.status).toBe('PENDING_BE_INTEGRATION');
+    expect(getRes.status).toBe('UNAUTHORIZED');
 
     const toursRes = await getEligibleTours({ allowDemo: false });
-    expect(toursRes.status).toBe('PENDING_BE_INTEGRATION');
+    expect(toursRes.status).toBe('UNAUTHORIZED');
 
     const createRes = await createCoupon(
       {
@@ -520,7 +519,7 @@ describe('operatorCouponService - CRUD and Lifecycle in Demo & Production', () =
       },
       { allowDemo: false }
     );
-    expect(createRes.status).toBe('PENDING_BE_INTEGRATION');
+    expect(createRes.status).toBe('UNAUTHORIZED');
 
     const updateRes = await updateCoupon(
       'cp-bana15',
@@ -535,13 +534,13 @@ describe('operatorCouponService - CRUD and Lifecycle in Demo & Production', () =
       },
       { allowDemo: false }
     );
-    expect(updateRes.status).toBe('PENDING_BE_INTEGRATION');
+    expect(updateRes.status).toBe('UNAUTHORIZED');
 
     const deactRes = await deactivateCoupon('cp-bana15', { allowDemo: false });
-    expect(deactRes.status).toBe('PENDING_BE_INTEGRATION');
+    expect(deactRes.status).toBe('UNAUTHORIZED');
 
     const actRes = await activateCoupon('cp-bana15', { allowDemo: false });
-    expect(actRes.status).toBe('PENDING_BE_INTEGRATION');
+    expect(actRes.status).toBe('UNAUTHORIZED');
   });
 
   it('performs complete Create Coupon flow in Demo mode (UC-38)', async () => {
