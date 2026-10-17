@@ -1,6 +1,6 @@
 # UC-26 View Tour Details — Web spec
 
-Status: **PROPOSED — awaiting developer approval.**
+Status: **APPROVED (2026-10-17).** Implemented and verified (see the PR description for the test and UAT evidence).
 
 SRS: Report 3 §3.5.3 (UC-26), BR-54, BR-56, BR-59, BR-60, BR-96, MSG65, MSG127, MSG128.
 Platform: `SHARED_WEB_MOBILE`, Web is the "Detail view" (`docs/WEB_SCOPE_MATRIX.md`). Mobile is a separate PR.
@@ -91,5 +91,7 @@ registrationDeadlineAtUtc?, adultPrice, childPrice?, infantPrice?, remainingSlot
 ## Risks / notes
 
 - The sign-in page's handling of `returnUrl` is outside this UC (other screens already use the same parameter).
+- A departure's meeting point is shown only from the selected departure (real data never borrows another departure's).
+- Each cancellation rule is described as a notice range that runs until the next shorter rule (the Backend copies the operator template 30 → free, 15 → 25 %, 7 → 50 %, 0 → 100 %).
 - Two published versions of the same tour can both be visible until the UC-35 publish flow supersedes the old one
   (reported separately); the page simply shows the id it was given.
