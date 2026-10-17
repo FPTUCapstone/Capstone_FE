@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as bookingApi from '@/features/bookings/services/bookingApi';
 import { DEMO_TOUR_DETAIL_HOI_AN } from '@/features/public/tours/data/tourDemoFixtures';
+import { realTourDetailViewModel } from '@/features/public/tours/__fixtures__/tourDetailWire';
 import { TourBookingView } from './TourBookingView';
 
 const mockPush = vi.fn();
@@ -185,5 +186,66 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       expect(screen.getByText('VNPay QR Code')).toBeTruthy();
       expect(screen.getByText(/Giữ chỗ trong/)).toBeTruthy();
     });
+  });
+});
+
+describe('TourBookingView with real tour detail data (UC-26 handoff)', () => {
+  type WireRecord = Record<string, unknown>;
+
+  const clone = (value: WireRecord): WireRecord => ({ ...value });
+
+  function renderReal(
+    mutate: (wire: WireRecord) => void,
+    initialScheduleId?: string,
+  ) {
+    const tour = realTourDetailViewModel(mutate);
+    render(<TourBookingView tour={tour} initialScheduleId={initialScheduleId} isDemo={false} userContext={null} />);
+    return tour;
+  }
+
+  it('does not preselect a departure the server says is not bookable, even when requested by link', () => {
+    renderReal((wire) => {
+      const [first] = wire.schedules as WireRecord[];
+      wire.schedules = [
+        { ...clone(first), scheduleId: '11', bookable: false, remainingSlots: 7 },
+        { ...clone(first), scheduleId: '13', startAtUtc: '2026-12-01T01:00:00Z', endAtUtc: '2026-12-03T10:00:00Z' },
+      ];
+    }, '11');
+
+    const departures = screen.getAllByRole('button', { name: /\d{2}\/\d{2}\/\d{4}/ });
+    expect(departures[0].hasAttribute('disabled')).toBe(true);
+    expect(departures[1].hasAttribute('disabled')).toBe(false);
+    expect(screen.getByText(/Khởi hành: .*01\/12\/2026/)).toBeTruthy();
+  });
+
+  it('cannot continue to payment when no departure is bookable', () => {
+    renderReal((wire) => {
+      const [first] = wire.schedules as WireRecord[];
+      wire.schedules = [{ ...clone(first), bookable: false, remainingSlots: 7 }];
+      wire.hasBookableSchedule = false;
+    }, '11');
+
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }),
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Ví dụ: 0905 123 456/), { target: { value: '0905123456' } });
+
+    const submit = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+  });
+
+  it('shows the meeting point of the chosen departure and never invents one', () => {
+    renderReal(() => undefined, '11');
+    expect(screen.getByText(/Điểm đón: Sảnh khách sạn/)).toBeTruthy();
+  });
+
+  it('says the meeting point is being updated instead of showing a made-up city', () => {
+    renderReal((wire) => {
+      const [first] = wire.schedules as WireRecord[];
+      wire.schedules = [{ ...clone(first), meetingPoint: null }];
+    }, '11');
+
+    expect(screen.getByText(/Điểm đón: Đang cập nhật/)).toBeTruthy();
+    expect(screen.queryByText(/Đà Nẵng/)).toBeNull();
   });
 });

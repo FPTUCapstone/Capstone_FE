@@ -42,6 +42,11 @@ function formatDatetime(isoString: string): string {
   }
 }
 
+/** Capacity left and, for real data, the server's `bookable` decision (registration still open). */
+function isBookableSchedule(schedule: TourScheduleDto): boolean {
+  return schedule.status === 'Available' && schedule.remainingSlots > 0 && schedule.bookable !== false;
+}
+
 export function TourBookingView({
   tour,
   initialScheduleId,
@@ -53,15 +58,16 @@ export function TourBookingView({
   const notesInputId = useId();
   const couponInputId = useId();
 
-  // Find selected schedule
+  // Find selected schedule. A departure is selectable only while the server still says it is bookable
+  // (capacity left and registration open, BR-60); a link to a closed departure must not pre-select it.
   const availableSchedules = useMemo(() => {
-    return (tour.schedules ?? []).filter((s) => s.status === 'Available' && s.remainingSlots > 0);
+    return (tour.schedules ?? []).filter(isBookableSchedule);
   }, [tour.schedules]);
 
   const defaultSchedule = useMemo(() => {
     if (initialScheduleId) {
       const match = tour.schedules.find((s) => s.scheduleId === initialScheduleId);
-      if (match) return match;
+      if (match && isBookableSchedule(match)) return match;
     }
     return availableSchedules[0] ?? tour.schedules[0] ?? null;
   }, [initialScheduleId, tour.schedules, availableSchedules]);
@@ -155,7 +161,7 @@ export function TourBookingView({
   // Step 1 Submission: Create Booking
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSchedule) return;
+    if (!selectedSchedule || !isBookableSchedule(selectedSchedule)) return;
     if (adultCount < 1) {
       alert('Đơn đặt tour cần ít nhất 1 người lớn.');
       return;
@@ -365,7 +371,7 @@ export function TourBookingView({
                 </span>
                 <h2 className="text-base font-bold text-slate-900 line-clamp-1">{tour.title}</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Thời lượng: {tour.durationDays} ngày • Điểm đón: {tour.meetingPoint || 'Đà Nẵng'}
+                  Thời lượng: {tour.durationDays} ngày • Điểm đón: {selectedSchedule?.meetingPoint || tour.meetingPoint || 'Đang cập nhật'}
                 </p>
               </div>
             </div>
@@ -380,7 +386,7 @@ export function TourBookingView({
               <div className="space-y-2">
                 {tour.schedules.map((schedule) => {
                   const isSelected = selectedSchedule?.scheduleId === schedule.scheduleId;
-                  const isAvailable = schedule.status === 'Available' && schedule.remainingSlots > 0;
+                  const isAvailable = isBookableSchedule(schedule);
 
                   return (
                     <button
@@ -700,7 +706,13 @@ export function TourBookingView({
               {/* Submit CTA Button */}
               <button
                 type="button"
-                disabled={isSubmitting || isOverCapacity || !agreedTerms || !selectedSchedule}
+                disabled={
+                  isSubmitting ||
+                  isOverCapacity ||
+                  !agreedTerms ||
+                  !selectedSchedule ||
+                  !isBookableSchedule(selectedSchedule)
+                }
                 onClick={handleCreateBooking}
                 className="w-full rounded-xl bg-[#007d6e] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
