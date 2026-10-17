@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
 import { getBooking, initiatePayment } from '../services/bookingApi';
@@ -37,8 +37,10 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
   const [actionError, setActionError] = useState<string | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState<boolean>(false);
+  const expiryRefreshRequested = useRef(false);
 
   useEffect(() => {
+    expiryRefreshRequested.current = false;
     let isMounted = true;
     getBooking(bookingId, { allowDemo: isDemo })
       .then((result) => {
@@ -75,19 +77,20 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
   // On expiry the client stops trusting its own state and asks the server what actually happened —
   // the hold may have been released, or payment may have completed in another tab.
   useEffect(() => {
-    if (!isExpired || !booking) return;
+    if (!isExpired || !booking || expiryRefreshRequested.current) return;
+    expiryRefreshRequested.current = true;
     let isMounted = true;
     getBooking(bookingId, { allowDemo: isDemo })
       .then((result) => {
         if (isMounted) setBooking(result);
       })
       .catch(() => {
-        /* Keep showing the expired state; the periodic refresh below will retry. */
+        /* Keep the expired state. A later page visit retries against the server. */
       });
     return () => {
       isMounted = false;
     };
-  }, [isExpired, bookingId, isDemo, booking]);
+  }, [isExpired, bookingId, isDemo]);
 
   const countdownText = useMemo(() => {
     const mins = Math.floor(secondsRemaining / 60);

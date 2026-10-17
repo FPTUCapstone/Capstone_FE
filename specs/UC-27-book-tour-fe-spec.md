@@ -1,7 +1,7 @@
 # UC-27 Web Specification — Book Tour
 
 **Platform:** Next.js / React
-**Status:** Draft — UI-first delivery allowed; live booking is blocked by the approved Backend contract
+**Status:** Draft — UI-first delivery allowed; quote/create API exists, while the live entry remains blocked by UC-26 tour detail and cross-platform OpenAPI/error-map approval
 **Sources:** SRS §3.5.4 and `UC-27-book-tour-be-spec.md`
 
 ## 1. Scope
@@ -15,10 +15,10 @@ UC-28 starts only when the user selects **Pay now**. UC-27 does not initialize p
 The route is:
 
 ```text
-/tours/[tourId]/book?departure=[tourScheduleId]
+/tours/[tourId]/book?scheduleId=[tourScheduleId]
 ```
 
-`tourId` identifies the tour; `tourScheduleId` identifies its dated departure. Both are string IDs in browser DTOs. The page rejects a missing or inconsistent departure and returns to tour detail.
+`tourId` identifies the tour; route query `scheduleId` identifies its dated departure and becomes JSON field `tourScheduleId` in quote/create DTOs. Both are string IDs in browser DTOs. The page rejects a missing or inconsistent departure and returns to tour detail.
 
 The entry comes from UC-26’s public tour-detail/departure selection. Until UC-26 is live, a development-only fixture may render a labelled **Demo** departure; it must not call create booking or payment.
 
@@ -39,7 +39,7 @@ DOB, an age rule, a separate contact table/form contract and arbitrary participa
 4. The Traveler reviews a confirmation dialog and confirms once.
 5. The client generates a UUID, sends it as `Idempotency-Key`, and calls `POST /api/v1/traveler/tour-bookings`.
 6. On `201` or idempotent `200`, show booking code, `PendingPayment` and `paymentExpiresAt`. Clear sensitive document input from form state.
-7. The user may select **Pay now**, which navigates to the UC-28 entry point. If expiry arrives on screen, refresh booking status; the server remains authoritative.
+7. The user may select **Pay now**, which navigates to the UC-28 entry point. UC-27 does not fetch booking status after expiry because no approved authenticated booking-detail/status endpoint exists yet; it displays the server-issued expiry and never assigns a final status locally. UC-28 or Booking Details owns that future endpoint.
 
 A quote never promises capacity. Create may return a changed quote or a capacity/voucher failure and the page must let the user adjust and request a fresh quote.
 

@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 };
 
 interface PaymentHandoffRouteProps {
-  params: Promise<{ bookingId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function PaymentHandoffRoute({ params }: PaymentHandoffRouteProps) {
-  const { bookingId } = await params;
+  const { id } = await params;
   return (
     <Suspense
       fallback={
@@ -22,7 +22,7 @@ export default async function PaymentHandoffRoute({ params }: PaymentHandoffRout
         </div>
       }
     >
-      <PaymentHandoffPage bookingId={bookingId} />
+      <PaymentHandoffPage bookingId={id} />
     </Suspense>
   );
 }
