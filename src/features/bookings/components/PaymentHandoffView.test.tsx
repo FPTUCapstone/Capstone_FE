@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as paymentApi from '../services/paymentApi';
 import { PaymentHandoffView } from './PaymentHandoffView';
 
 const mockPush = vi.fn();
@@ -20,38 +21,67 @@ describe('PaymentHandoffView (UC-28 entry point)', () => {
     process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
   });
 
-  it('loads the demo booking by id and shows the payment method selector', async () => {
+  it('loads the demo booking by id and displays payment gateway details', async () => {
     render(<PaymentHandoffView bookingId="bk-demo-0148" isDemo={true} />);
 
     await waitFor(() => {
       expect(screen.getByText('BK-20261015-0148')).toBeTruthy();
-      expect(screen.getByText('VNPay Gateway')).toBeTruthy();
-      expect(screen.getByText('VNPay QR Code')).toBeTruthy();
+      expect(screen.getByText(/PayOS — Cổng Thanh Toán Trực Tuyến/i)).toBeTruthy();
+      expect(screen.getByText(/Chờ thanh toán/i)).toBeTruthy();
     });
   });
 
-  it('navigates to the simulated payment URL when the traveler confirms payment', async () => {
+  it('calls createOrReusePayment and navigates to returned checkoutUrl on Pay click', async () => {
+    const createSpy = vi.spyOn(paymentApi, 'createOrReusePayment').mockResolvedValueOnce({
+      paymentId: 101,
+      bookingId: 'bk-demo-0148',
+      orderCode: 1729221234567,
+      amount: 1700000,
+      currency: 'VND',
+      checkoutUrl: '/checkout/mock?paymentId=101&bookingId=bk-demo-0148',
+      expiresAt: '2026-10-18T10:30:00Z',
+      status: 'Pending',
+    });
+
     render(<PaymentHandoffView bookingId="bk-demo-0148" isDemo={true} />);
 
-    // Wait for the countdown's first tick, not just the booking load, so the button isn't still
-    // disabled from the one-render gap between "booking loaded" and "secondsRemaining computed".
     const payButton = await waitFor(() => {
-      const button = screen.getByRole('button', { name: /Thanh toán.*với VNPay/i }) as HTMLButtonElement;
+      const button = screen.getByRole('button', { name: /Thanh toán.*ngay/i }) as HTMLButtonElement;
       expect(button.disabled).toBe(false);
       return button;
     });
+
     fireEvent.click(payButton);
 
-    await waitFor(() => expect(mockPush).toHaveBeenCalled());
-    expect(mockPush.mock.calls[0][0]).toContain('/checkout/result');
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith('bk-demo-0148');
+      expect(mockPush).toHaveBeenCalledWith('/checkout/mock?paymentId=101&bookingId=bk-demo-0148');
+    });
   });
 
-  it('shows a truthful pending notice in real mode without demo opt-in', async () => {
-    setNodeEnv('production');
-    render(<PaymentHandoffView bookingId="booking-real-1" isDemo={false} />);
+  it('displays friendly error message when createOrReusePayment fails', async () => {
+    vi.spyOn(paymentApi, 'createOrReusePayment').mockRejectedValueOnce(
+      new paymentApi.PaymentApiError(
+        'Đơn đặt tour không ở trạng thái hợp lệ để thanh toán.',
+        400,
+        'PAYMENT_BOOKING_NOT_ELIGIBLE',
+      ),
+    );
+
+    render(<PaymentHandoffView bookingId="bk-demo-0148" isDemo={true} />);
+
+    const payButton = await waitFor(() => {
+      const button = screen.getByRole('button', { name: /Thanh toán.*ngay/i }) as HTMLButtonElement;
+      expect(button.disabled).toBe(false);
+      return button;
+    });
+
+    fireEvent.click(payButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/PENDING_BE_INTEGRATION/)).toBeTruthy();
+      expect(
+        screen.getByText('Đơn đặt tour không ở trạng thái hợp lệ để thanh toán.'),
+      ).toBeTruthy();
     });
   });
 });
