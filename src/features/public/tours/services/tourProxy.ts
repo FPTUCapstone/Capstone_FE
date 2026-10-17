@@ -7,6 +7,7 @@ import { BackendConfigurationError, fetchBackend } from '@/lib/server/backend';
 import { sanitizeProxyQuery } from '../utils/tourQuery';
 
 const JSON_HEADERS = { 'Content-Type': 'application/problem+json' };
+const TOUR_ID_PATTERN = /^\d{1,19}$/;
 
 function problem(status: number, title: string, errorCode: string): NextResponse {
   return NextResponse.json({ status, title, errorCode }, { status, headers: JSON_HEADERS });
@@ -20,6 +21,12 @@ export async function proxyTourRequest(
     if (segment === '.' || segment === '..') {
       return problem(400, 'Đường dẫn yêu cầu không hợp lệ.', 'Tour.InvalidPath');
     }
+  }
+
+  // The only sub-route is `{tourId}`, a 64-bit integer. Anything else cannot exist, so it is answered here
+  // without a backend round trip (the backend would answer 404 anyway).
+  if (segments.length > 1 || (segments.length === 1 && !TOUR_ID_PATTERN.test(segments[0]))) {
+    return problem(404, 'Gói tour không tồn tại hoặc đã ngừng hiển thị công khai.', 'Tour.NotFound');
   }
 
   const safePath = segments.map((segment) => encodeURIComponent(segment)).join('/');
