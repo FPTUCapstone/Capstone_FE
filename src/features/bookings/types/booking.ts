@@ -75,8 +75,9 @@ export interface BookingDto {
   subtotalAmount: number;
   discountAmount: number;
   totalAmount: number;
-  paymentExpiresAtUtc: string;
-  createdAtUtc: string;
+  /** Matches the Backend wire field exactly (BE spec §3.2); no "Utc" suffix on the wire. */
+  paymentExpiresAt: string;
+  createdAt: string;
   isDemo?: boolean;
 }
 

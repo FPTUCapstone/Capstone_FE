@@ -99,26 +99,36 @@ describe('bookingApi service (UC-27, UC-28, UC-29)', () => {
   });
 
   describe('createBooking (UC-27)', () => {
-    it('creates demo booking from server-shaped quote fixtures when demo is allowed', async () => {
+    it('always calls the real Backend contract, even when the environment allows demo quotes', async () => {
+      // The demo fixture policy only ever permits a read-only quote preview (BE spec §5);
+      // createBooking has no demo branch at all, so this must hit the real endpoint regardless.
       setNodeEnv('development');
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
-
-      const booking = await createBooking(
-        {
-          tourScheduleId: '9007199254740997',
-          voucherCode: 'HOIAN15',
-          participants: [
-            { fullName: 'Nguyễn Minh Phúc', participantType: 'Adult' },
-            { fullName: 'Trần Thị Thu Thảo', participantType: 'Adult' },
-            { fullName: 'Nguyễn Minh An', participantType: 'Child' },
-          ],
-        },
-        { allowDemo: true },
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            bookingId: '456', bookingCode: 'BK-20261017-00001', status: 'PendingPayment',
+            tourScheduleId: '9007199254740997', currency: 'VND', subtotalAmount: 2000000,
+            discountAmount: 300000, totalAmount: 1700000,
+            paymentExpiresAt: '2026-10-17T10:30:00Z', createdAt: '2026-10-17T10:15:00Z',
+          }),
+          { status: 201, headers: { 'content-type': 'application/json' } },
+        ),
       );
+      vi.stubGlobal('fetch', mockFetch);
 
-      expect(booking.isDemo).toBe(true);
+      const booking = await createBooking({
+        tourScheduleId: '9007199254740997',
+        voucherCode: 'HOIAN15',
+        participants: [
+          { fullName: 'Nguyễn Minh Phúc', participantType: 'Adult' },
+          { fullName: 'Trần Thị Thu Thảo', participantType: 'Adult' },
+          { fullName: 'Nguyễn Minh An', participantType: 'Child' },
+        ],
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/traveler/tour-bookings', expect.objectContaining({ method: 'POST' }));
       expect(booking.status).toBe('PendingPayment');
-      // 2 * 800k + 1 * 400k = 2,000,000. 15% off = 300,000. Total = 1,700,000
       expect(booking.discountAmount).toBe(300000);
       expect(booking.totalAmount).toBe(1700000);
     });
@@ -132,7 +142,7 @@ describe('bookingApi service (UC-27, UC-28, UC-29)', () => {
           JSON.stringify({
             bookingId: '456', bookingCode: 'BK-20261017-00001', status: 'PendingPayment',
             tourScheduleId: '123', currency: 'VND', subtotalAmount: 1000000, discountAmount: 0,
-            totalAmount: 1000000, paymentExpiresAtUtc: '2026-10-17T10:30:00Z', createdAtUtc: '2026-10-17T10:15:00Z',
+            totalAmount: 1000000, paymentExpiresAt: '2026-10-17T10:30:00Z', createdAt: '2026-10-17T10:15:00Z',
           }),
           { status: 201, headers: { 'content-type': 'application/json' } },
         ),

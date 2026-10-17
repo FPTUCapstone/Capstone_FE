@@ -1,5 +1,4 @@
 import {
-  createDemoBooking,
   createDemoQuote,
   DEMO_BOOKING_HOI_AN,
   DEMO_TICKET_HOI_AN,
@@ -117,30 +116,13 @@ export async function quoteBooking(
 export async function createBooking(
   request: CreateBookingRequestDto,
   options?: {
-    allowDemo?: boolean;
     idempotencyKey?: string;
     signal?: AbortSignal;
   },
 ): Promise<BookingDto> {
-  if (options?.allowDemo === true && isBookingDemoAllowedInCurrentEnv()) {
-    const counts = request.participants.reduce(
-      (acc, participant) => {
-        if (participant.participantType === 'Adult') acc.adult += 1;
-        else if (participant.participantType === 'Child') acc.child += 1;
-        else acc.infant += 1;
-        return acc;
-      },
-      { adult: 0, child: 0, infant: 0 },
-    );
-    const quote = createDemoQuote('demo-tour', request.tourScheduleId, counts, request.voucherCode);
-    return createDemoBooking({
-      tourScheduleId: request.tourScheduleId,
-      subtotalAmount: quote.subtotalAmount,
-      discountAmount: quote.discountAmount,
-      totalAmount: quote.totalAmount,
-    });
-  }
-
+  // Deliberately no demo branch: the demo fixture policy (BE spec §5) permits a read-only quote
+  // preview only. It must never create a booking, reserve a seat, or start payment — callers in
+  // demo mode must not invoke this function at all (the UI disables the control that would).
   const idempotencyKey = options?.idempotencyKey ?? crypto.randomUUID();
   const raw = await requestJson('/api/v1/traveler/tour-bookings', {
     method: 'POST',

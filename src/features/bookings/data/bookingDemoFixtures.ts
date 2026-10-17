@@ -66,8 +66,8 @@ export function createDemoBooking(overrides?: Partial<BookingDto>): BookingDto {
     subtotalAmount: overrides?.subtotalAmount ?? 2000000,
     discountAmount: overrides?.discountAmount ?? 300000,
     totalAmount: overrides?.totalAmount ?? 1700000,
-    paymentExpiresAtUtc: expiresAt.toISOString(),
-    createdAtUtc: now.toISOString(),
+    paymentExpiresAt: expiresAt.toISOString(),
+    createdAt: now.toISOString(),
     isDemo: true,
   };
 }

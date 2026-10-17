@@ -114,39 +114,7 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
     expect(checkbox.checked).toBe(false);
   });
 
-  it('TERMS-2, TERMS-3 & TERMS-4: submit button is disabled before consent, enabled after check, disabled again on uncheck', async () => {
-    render(
-      <TourBookingView
-        tour={DEMO_TOUR_DETAIL_HOI_AN}
-        initialScheduleId="9007199254740997"
-        isDemo={true}
-        userContext={null}
-      />,
-    );
-
-    const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
-    const checkbox = screen.getByRole('checkbox', {
-      name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
-    }) as HTMLInputElement;
-
-    // TERMS-2: Before consent, submit button is disabled
-    expect(submitBtn.disabled).toBe(true);
-
-    // Wait for the initial server quote to resolve — submit also requires a successful quote (BR-63).
-    await waitFor(() => expect(screen.getByText(/1\.700\.000/)).toBeTruthy());
-
-    // TERMS-3: Traveler checks consent -> eligible to submit
-    fireEvent.click(checkbox);
-    expect(checkbox.checked).toBe(true);
-    await waitFor(() => expect(submitBtn.disabled).toBe(false));
-
-    // TERMS-4: Traveler unchecks consent -> disabled again
-    fireEvent.click(checkbox);
-    expect(checkbox.checked).toBe(false);
-    expect(submitBtn.disabled).toBe(true);
-  });
-
-  it('TERMS-5: defensive submission guard prevents calling createBooking when agreedTerms is false', async () => {
+  it('DEMO-LOCK: submit stays disabled in demo mode regardless of consent, and never calls createBooking', async () => {
     const createBookingSpy = vi.spyOn(bookingApi, 'createBooking');
 
     render(
@@ -158,43 +126,111 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       />,
     );
 
-    const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
-    expect(submitBtn.disabled).toBe(true);
-
-    // Attempt click on disabled button (or simulate click)
-    fireEvent.click(submitBtn);
-
-    expect(createBookingSpy).not.toHaveBeenCalled();
-  });
-
-  it('transitions to Step 2 (Payment Handoff) after agreeing to terms and submitting in demo mode', async () => {
-    render(
-      <TourBookingView
-        tour={DEMO_TOUR_DETAIL_HOI_AN}
-        initialScheduleId="9007199254740997"
-        isDemo={true}
-        userContext={null}
-      />,
-    );
-
-    // Wait for the initial server quote to resolve before interacting — submit requires it (BR-63).
     await waitFor(() => expect(screen.getByText(/1\.700\.000/)).toBeTruthy());
-
-    // Must check terms consent explicitly
     const checkbox = screen.getByRole('checkbox', {
       name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
     });
     fireEvent.click(checkbox);
 
-    const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i });
-    await waitFor(() => expect((submitBtn as HTMLButtonElement).disabled).toBe(false));
+    const submitBtn = screen.getByRole('button', { name: /Đặt tour thật không khả dụng ở chế độ Demo/i }) as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(true);
     fireEvent.click(submitBtn);
 
-    await waitFor(() => {
-      expect(screen.getByText('Thanh toán điện tử (UC-28)')).toBeTruthy();
-      expect(screen.getByText('VNPay Gateway')).toBeTruthy();
-      expect(screen.getByText('VNPay QR Code')).toBeTruthy();
-      expect(screen.getByText(/Giữ chỗ trong/)).toBeTruthy();
+    expect(createBookingSpy).not.toHaveBeenCalled();
+  });
+
+  describe('real mode (isDemo=false)', () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) => {
+          if (url.toString().endsWith('/quote')) {
+            return Promise.resolve(
+              new Response(
+                JSON.stringify({
+                  tourId: '9007199254740995', tourScheduleId: '9007199254740997', currency: 'VND',
+                  participantCounts: { adult: 2, child: 1, infant: 0 },
+                  priceBreakdown: [
+                    { participantType: 'Adult', quantity: 2, unitPrice: 800000, lineAmount: 1600000 },
+                    { participantType: 'Child', quantity: 1, unitPrice: 400000, lineAmount: 400000 },
+                    { participantType: 'Infant', quantity: 0, unitPrice: 800000, lineAmount: 0 },
+                  ],
+                  subtotalAmount: 2000000, discountAmount: 0, totalAmount: 2000000,
+                  remainingSlots: 5, appliedVoucher: null,
+                }),
+                { status: 200, headers: { 'content-type': 'application/json' } },
+              ),
+            );
+          }
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                bookingId: '456', bookingCode: 'BK-20261017-00001', status: 'PendingPayment',
+                tourScheduleId: '9007199254740997', currency: 'VND', subtotalAmount: 2000000,
+                discountAmount: 0, totalAmount: 2000000,
+                paymentExpiresAt: '2026-10-17T10:30:00Z', createdAt: '2026-10-17T10:15:00Z',
+              }),
+              { status: 201, headers: { 'content-type': 'application/json' } },
+            ),
+          );
+        }),
+      );
+    });
+
+    it('TERMS-2, TERMS-3 & TERMS-4: submit button is disabled before consent, enabled after check, disabled again on uncheck', async () => {
+      render(
+        <TourBookingView
+          tour={DEMO_TOUR_DETAIL_HOI_AN}
+          initialScheduleId="9007199254740997"
+          isDemo={false}
+          userContext={null}
+        />,
+      );
+
+      const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
+      const checkbox = screen.getByRole('checkbox', {
+        name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
+      }) as HTMLInputElement;
+
+      expect(submitBtn.disabled).toBe(true);
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+
+      fireEvent.click(checkbox);
+      expect(checkbox.checked).toBe(true);
+      await waitFor(() => expect(submitBtn.disabled).toBe(false));
+
+      fireEvent.click(checkbox);
+      expect(checkbox.checked).toBe(false);
+      expect(submitBtn.disabled).toBe(true);
+    });
+
+    it('creates the booking and shows a confirmation panel whose "Pay now" navigates to the UC-28 entry point', async () => {
+      render(
+        <TourBookingView
+          tour={DEMO_TOUR_DETAIL_HOI_AN}
+          initialScheduleId="9007199254740997"
+          isDemo={false}
+          userContext={null}
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      fireEvent.change(screen.getByLabelText('Số điện thoại liên hệ *'), {
+        target: { value: '0905123456' },
+      });
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }),
+      );
+      const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i });
+      await waitFor(() => expect((submitBtn as HTMLButtonElement).disabled).toBe(false));
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => expect(screen.getByText('BK-20261017-00001')).toBeTruthy());
+      // UC-27 stops here: no payment-method selector or gateway call is rendered on this screen.
+      expect(screen.queryByText('VNPay Gateway')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: /Thanh toán ngay/i }));
+      expect(mockPush).toHaveBeenCalledWith('/bookings/456/pay');
     });
   });
 });

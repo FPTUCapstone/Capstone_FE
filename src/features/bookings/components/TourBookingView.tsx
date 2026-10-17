@@ -8,14 +8,9 @@ import React, { useEffect, useId, useMemo, useState } from 'react';
 import type { WebAuthContext } from '@/features/auth/session/authSession';
 import type { TourDetailDto, TourScheduleDto } from '@/features/public/tours/types/tour';
 import { ROUTES } from '@/lib/routes';
-import { createBooking, initiatePayment, quoteBooking } from '../services/bookingApi';
+import { createBooking, quoteBooking } from '../services/bookingApi';
 import { BookingApiError } from '../types/booking';
-import type {
-  BookingDto,
-  BookingParticipantRequestDto,
-  BookingQuoteDto,
-  PaymentMethod,
-} from '../types/booking';
+import type { BookingParticipantRequestDto, BookingQuoteDto, ParticipantType } from '../types/booking';
 
 interface TourBookingViewProps {
   tour: TourDetailDto;
@@ -82,6 +77,7 @@ export function TourBookingView({
   // Traveler Counts
   const [adultCount, setAdultCount] = useState<number>(2);
   const [childCount, setChildCount] = useState<number>(1);
+  const [infantCount, setInfantCount] = useState<number>(0);
 
   // Lead Traveler Info (prefill from userContext or demo)
   const [leadName, setLeadName] = useState<string>(
@@ -108,33 +104,16 @@ export function TourBookingView({
   // Terms agreement (explicit opt-in required)
   const [agreedTerms, setAgreedTerms] = useState<boolean>(false);
 
-  // Booking Flow Steps: 1 = Form & Confirmation, 2 = Payment Handoff
-  const [activeStep, setActiveStep] = useState<1 | 2>(1);
-  const [createdBooking, setCreatedBooking] = useState<BookingDto | null>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('VNPay');
+  // UC-27 ends at a confirmed PendingPayment booking; "created" switches the view to that
+  // confirmation. Payment (UC-28) is a separate, user-initiated navigation, never started here.
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [createdBookingCode, setCreatedBookingCode] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [pendingBeNotice, setPendingBeNotice] = useState<string | null>(null);
 
-  // Countdown timer for 15-minute hold in Step 2
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(15 * 60);
-
-  useEffect(() => {
-    if (activeStep !== 2) return;
-    const timer = setInterval(() => {
-      setSecondsRemaining((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [activeStep]);
-
-  const countdownText = useMemo(() => {
-    const mins = Math.floor(secondsRemaining / 60);
-    const secs = secondsRemaining % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }, [secondsRemaining]);
-
   // Remaining capacity still comes from the already-loaded tour detail for the selector/counter UI.
   const remainingSlots = quote?.remainingSlots ?? selectedSchedule?.remainingSlots ?? 0;
-  const totalTravelers = adultCount + childCount;
+  const totalTravelers = adultCount + childCount + infantCount;
   const isOverCapacity = totalTravelers > remainingSlots;
 
   // A quote fetched for a now-invalid input (no schedule, zero travelers, over capacity) is stale
@@ -142,15 +121,22 @@ export function TourBookingView({
   const isQuoteInputValid = Boolean(selectedSchedule) && totalTravelers > 0 && !isOverCapacity;
   const effectiveQuote = isQuoteInputValid ? quote : null;
 
-  // Fallback display only (e.g. first paint before the quote resolves); never sent to the server.
-  const fallbackAdultUnitPrice = selectedSchedule?.price ?? tour.basePrice;
-  const fallbackChildUnitPrice = Math.round(fallbackAdultUnitPrice * 0.5);
-  const adultLine = effectiveQuote?.priceBreakdown.find((line) => line.participantType === 'Adult');
-  const childLine = effectiveQuote?.priceBreakdown.find((line) => line.participantType === 'Child');
-  const adultUnitPrice = adultLine?.unitPrice ?? fallbackAdultUnitPrice;
-  const childUnitPrice = childLine?.unitPrice ?? fallbackChildUnitPrice;
+  // Display-only reference price before the first quote resolves. BR-63's actual policy
+  // (Child/Infant = their own override, else the effective Adult price) lives on the server;
+  // this fallback never guesses a different number (no 50%-of-adult heuristic) — it just shows
+  // the schedule's listed per-person rate for every type until the real breakdown arrives.
+  const fallbackUnitPrice = selectedSchedule?.price ?? tour.basePrice;
+  const findLine = (type: ParticipantType) =>
+    effectiveQuote?.priceBreakdown.find((line) => line.participantType === type);
+  const adultLine = findLine('Adult');
+  const childLine = findLine('Child');
+  const infantLine = findLine('Infant');
+  const adultUnitPrice = adultLine?.unitPrice ?? fallbackUnitPrice;
+  const childUnitPrice = childLine?.unitPrice ?? fallbackUnitPrice;
+  const infantUnitPrice = infantLine?.unitPrice ?? fallbackUnitPrice;
   const subtotal =
-    effectiveQuote?.subtotalAmount ?? adultCount * fallbackAdultUnitPrice + childCount * fallbackChildUnitPrice;
+    effectiveQuote?.subtotalAmount ??
+    adultCount * fallbackUnitPrice + childCount * fallbackUnitPrice + infantCount * fallbackUnitPrice;
   const discountAmount = effectiveQuote?.discountAmount ?? 0;
   const totalAmount = effectiveQuote?.totalAmount ?? Math.max(0, subtotal - discountAmount);
   const appliedVoucherLabel = effectiveQuote?.appliedVoucher?.code ?? null;
@@ -168,7 +154,7 @@ export function TourBookingView({
       quoteBooking(
         {
           tourScheduleId: selectedSchedule.scheduleId,
-          participantCounts: { adult: adultCount, child: childCount, infant: 0 },
+          participantCounts: { adult: adultCount, child: childCount, infant: infantCount },
           voucherCode: appliedVoucherCode ?? undefined,
         },
         tour.tourId,
@@ -195,7 +181,17 @@ export function TourBookingView({
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [selectedSchedule, tour.tourId, adultCount, childCount, appliedVoucherCode, isDemo, totalTravelers, isOverCapacity]);
+  }, [
+    selectedSchedule,
+    tour.tourId,
+    adultCount,
+    childCount,
+    infantCount,
+    appliedVoucherCode,
+    isDemo,
+    totalTravelers,
+    isOverCapacity,
+  ]);
 
   // Coupon handling — "Apply" only stages the code; the next quote tells us if it was accepted.
   const handleApplyCoupon = (e: React.FormEvent) => {
@@ -237,6 +233,15 @@ export function TourBookingView({
       return;
     }
 
+    // Demo is explicitly read-only (quote preview only): it must never create a booking, reserve
+    // a seat, or lead to payment. Real submission always goes through the live Backend contract.
+    if (isDemo) {
+      setPendingBeNotice(
+        'Chế độ xem trước (Demo) chỉ hiển thị báo giá mô phỏng và không tạo đơn đặt tour thật. Vui lòng tắt chế độ Demo để đặt tour thực tế.',
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     setPendingBeNotice(null);
 
@@ -254,6 +259,12 @@ export function TourBookingView({
             participantType: 'Child' as const,
           }))
         : []),
+      ...(infantCount > 0
+        ? Array.from({ length: infantCount }, (_, i) => ({
+            fullName: `Em bé ${i + 1}`,
+            participantType: 'Infant' as const,
+          }))
+        : []),
     ];
 
     try {
@@ -265,11 +276,13 @@ export function TourBookingView({
           participants,
           voucherCode: effectiveQuote.appliedVoucher?.code,
         },
-        { allowDemo: isDemo, idempotencyKey: crypto.randomUUID() },
+        { idempotencyKey: crypto.randomUUID() },
       );
 
-      setCreatedBooking(booking);
-      setActiveStep(2); // Advance to UC-28: Payment (user-initiated handoff, not auto-started)
+      // UC-27 ends here at PendingPayment. Payment (UC-28) is a separate, user-initiated
+      // navigation triggered by the "Pay now" button below — never started automatically.
+      setCreatedBookingId(booking.bookingId);
+      setCreatedBookingCode(booking.bookingCode);
     } catch (err: unknown) {
       const errorMsg =
         err instanceof BookingApiError
@@ -283,27 +296,9 @@ export function TourBookingView({
     }
   };
 
-  // Step 2 Submission: Initiate Electronic Payment
-  const handleProceedPayment = async () => {
-    if (!createdBooking) return;
-    setIsSubmitting(true);
-    setPendingBeNotice(null);
-
-    try {
-      const res = await initiatePayment(createdBooking.bookingId, selectedPaymentMethod, {
-        allowDemo: isDemo,
-      });
-
-      if (res.paymentUrl) {
-        router.push(res.paymentUrl);
-      }
-    } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : 'Không thể kết nối cổng thanh toán.';
-      setPendingBeNotice(errorMsg);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleGoToPayment = () => {
+    if (!createdBookingId) return;
+    router.push(`/bookings/${encodeURIComponent(createdBookingId)}/pay${isDemo ? '?demo=1' : ''}`);
   };
 
   return (
@@ -322,9 +317,7 @@ export function TourBookingView({
           {tour.title}
         </Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="font-semibold text-slate-900">
-          {activeStep === 1 ? 'Xác nhận đặt tour (UC-27)' : 'Thanh toán điện tử (UC-28)'}
-        </span>
+        <span className="font-semibold text-slate-900">Xác nhận đặt tour (UC-27)</span>
       </nav>
 
       {/* Demo notice bar when in demo mode */}
@@ -347,27 +340,23 @@ export function TourBookingView({
 
       {/* Stepper Indicator */}
       <div className="mb-8 flex items-center justify-center gap-2 sm:gap-4 text-xs">
-        <div className={`flex items-center gap-2 font-bold ${activeStep === 1 ? 'text-[#007d6e]' : 'text-slate-400'}`}>
+        <div className={`flex items-center gap-2 font-bold ${createdBookingId ? 'text-slate-400' : 'text-[#007d6e]'}`}>
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              activeStep === 1
-                ? 'bg-[#007d6e] text-white shadow-sm'
-                : 'bg-emerald-600 text-white'
+              createdBookingId ? 'bg-emerald-600 text-white' : 'bg-[#007d6e] text-white shadow-sm'
             }`}
           >
-            {activeStep > 1 ? '✓' : '1'}
+            {createdBookingId ? '✓' : '1'}
           </span>
           <span>1. Xác nhận đặt tour</span>
         </div>
 
         <div className="h-0.5 w-8 sm:w-16 bg-slate-200" />
 
-        <div className={`flex items-center gap-2 font-bold ${activeStep === 2 ? 'text-[#007d6e]' : 'text-slate-400'}`}>
+        <div className={`flex items-center gap-2 font-bold ${createdBookingId ? 'text-[#007d6e]' : 'text-slate-400'}`}>
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              activeStep === 2
-                ? 'bg-[#007d6e] text-white shadow-sm'
-                : 'bg-slate-200 text-slate-500'
+              createdBookingId ? 'bg-[#007d6e] text-white shadow-sm' : 'bg-slate-200 text-slate-500'
             }`}
           >
             2
@@ -404,7 +393,7 @@ export function TourBookingView({
       )}
 
       {/* Main Content Layout */}
-      {activeStep === 1 ? (
+      {!createdBookingId ? (
         /* STEP 1: CONFIRM BOOKING FORM (UC-27) */
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           {/* Left Column: Form Details (7 cols) */}
@@ -540,9 +529,7 @@ export function TourBookingView({
                 <div className="flex items-center justify-between pt-3">
                   <div>
                     <span className="font-bold text-slate-900 block text-sm">Trẻ em (4–11 tuổi)</span>
-                    <span className="text-slate-500 text-[11px]">
-                      {formatCurrency(childUnitPrice)} (50% giá người lớn)
-                    </span>
+                    <span className="text-slate-500 text-[11px]">{formatCurrency(childUnitPrice)} / khách</span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -564,6 +551,38 @@ export function TourBookingView({
                       onClick={() => setChildCount((prev) => prev + 1)}
                       className="h-8 w-8 rounded-lg bg-[#007d6e] font-bold text-white hover:bg-[#006b5f] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
                       aria-label="Tăng 1 trẻ em"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Infants */}
+                <div className="flex items-center justify-between pt-3">
+                  <div>
+                    <span className="font-bold text-slate-900 block text-sm">Em bé (dưới 4 tuổi)</span>
+                    <span className="text-slate-500 text-[11px]">{formatCurrency(infantUnitPrice)} / khách</span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={infantCount <= 0}
+                      onClick={() => setInfantCount((prev) => Math.max(0, prev - 1))}
+                      className="h-8 w-8 rounded-lg border border-slate-300 bg-white font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
+                      aria-label="Giảm 1 em bé"
+                    >
+                      –
+                    </button>
+                    <span className="w-5 text-center font-bold text-sm text-slate-900">
+                      {infantCount}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={totalTravelers >= remainingSlots}
+                      onClick={() => setInfantCount((prev) => prev + 1)}
+                      className="h-8 w-8 rounded-lg bg-[#007d6e] font-bold text-white hover:bg-[#006b5f] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
+                      aria-label="Tăng 1 em bé"
                     >
                       +
                     </button>
@@ -716,10 +735,12 @@ export function TourBookingView({
               </h3>
 
               <div className="space-y-2 text-xs text-slate-600">
+                {/* Each line's amount comes straight from the server's priceBreakdown (BR-63) —
+                    this view never multiplies quantity × unit price itself. */}
                 <div className="flex justify-between">
                   <span>{adultCount} người lớn × {formatCurrency(adultUnitPrice)}</span>
                   <span className="font-semibold text-slate-900">
-                    {formatCurrency(adultCount * adultUnitPrice)}
+                    {formatCurrency(adultLine?.lineAmount ?? adultCount * adultUnitPrice)}
                   </span>
                 </div>
 
@@ -727,7 +748,16 @@ export function TourBookingView({
                   <div className="flex justify-between">
                     <span>{childCount} trẻ em × {formatCurrency(childUnitPrice)}</span>
                     <span className="font-semibold text-slate-900">
-                      {formatCurrency(childCount * childUnitPrice)}
+                      {formatCurrency(childLine?.lineAmount ?? childCount * childUnitPrice)}
+                    </span>
+                  </div>
+                )}
+
+                {infantCount > 0 && (
+                  <div className="flex justify-between">
+                    <span>{infantCount} em bé × {formatCurrency(infantUnitPrice)}</span>
+                    <span className="font-semibold text-slate-900">
+                      {formatCurrency(infantLine?.lineAmount ?? infantCount * infantUnitPrice)}
                     </span>
                   </div>
                 )}
@@ -776,10 +806,12 @@ export function TourBookingView({
                 </label>
               </div>
 
-              {/* Submit CTA Button */}
+              {/* Submit CTA Button — Demo is read-only (quote preview only); it never creates a
+                  real booking, so the button stays disabled and says so explicitly in that mode. */}
               <button
                 type="button"
                 disabled={
+                  isDemo ||
                   isSubmitting ||
                   isOverCapacity ||
                   !agreedTerms ||
@@ -797,6 +829,8 @@ export function TourBookingView({
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     <span>Đang tạo đơn đặt tour…</span>
                   </>
+                ) : isDemo ? (
+                  <span>Đặt tour thật không khả dụng ở chế độ Demo</span>
                 ) : (
                   <>
                     <span>Tiếp tục thanh toán</span>
@@ -806,196 +840,53 @@ export function TourBookingView({
               </button>
 
               <p className="text-center text-[11px] text-slate-400">
-                Đơn đặt sẽ được tạo ở trạng thái <strong>Chờ thanh toán (Pending Payment)</strong> và giữ chỗ trong 15 phút.
+                Đơn đặt sẽ được tạo ở trạng thái <strong>Chờ thanh toán (Pending Payment)</strong> và giữ chỗ theo thời hạn do máy chủ quy định.
               </p>
             </div>
           </div>
         </div>
       ) : (
-        /* STEP 2: MAKE ELECTRONIC PAYMENT (UC-28) */
+        /* UC-27 ends here: a confirmed PendingPayment booking. "Pay now" is the only handoff
+           to UC-28 — this view never selects a payment method or calls the gateway itself. */
         <div className="mx-auto max-w-2xl space-y-6">
-          {/* Booking Summary Box */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <span className="material-symbols-outlined">check_circle</span>
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Đặt tour thành công</h2>
+                <p className="text-xs text-slate-500">Đơn của bạn đang ở trạng thái Chờ thanh toán.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-y border-slate-100 py-4">
               <div>
                 <p className="text-xs text-slate-400 font-semibold uppercase">Mã đơn đặt tour</p>
-                <p className="text-base font-black font-mono text-slate-900">
-                  {createdBooking?.bookingCode || 'BK-20261015-0148'}
-                </p>
+                <p className="text-base font-black font-mono text-slate-900">{createdBookingCode}</p>
               </div>
               <div className="text-right">
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
                   Chờ thanh toán
                 </span>
-                <p className="text-2xl font-black text-[#007d6e] mt-1">
-                  {formatCurrency(createdBooking?.totalAmount ?? totalAmount)}
-                </p>
+                <p className="text-2xl font-black text-[#007d6e] mt-1">{formatCurrency(totalAmount)}</p>
               </div>
             </div>
 
-            <div className="py-3 text-xs text-slate-600 space-y-1">
-              <p className="font-bold text-slate-900">{tour.title}</p>
-              <p>
-                Khởi hành: {formatDatetime(selectedSchedule?.startDatetime || '')} • {adultCount} người lớn
-                {childCount > 0 ? `, ${childCount} trẻ em` : ''}
-              </p>
-              <p>Trưởng đoàn: {leadName} ({leadPhone})</p>
-            </div>
-
-            {/* Countdown Hold Notice */}
-            <div className="rounded-xl bg-amber-50/80 border border-amber-200 p-3 text-center text-xs text-amber-900 flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-amber-700 text-sm">schedule</span>
-              <span>
-                Giữ chỗ trong <strong className="font-mono text-amber-950 font-bold">{countdownText}</strong> trước khi hệ thống tự động giải phóng chỗ.
-              </span>
-            </div>
+            <p className="pt-4 text-xs text-slate-500">
+              Vui lòng hoàn tất thanh toán trong thời gian giữ chỗ. Số dư và thời hạn chính xác sẽ
+              được máy chủ xác nhận lại ở bước thanh toán.
+            </p>
           </div>
 
-          {/* Payment Method Selector */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#007d6e] text-base">payments</span>
-              Chọn phương thức thanh toán
-            </h3>
-
-            <div className="space-y-3">
-              {/* VNPay Option */}
-              <label
-                className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition ${
-                  selectedPaymentMethod === 'VNPay'
-                    ? 'border-[#007d6e] bg-teal-50/30 ring-1 ring-[#007d6e]'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="VNPay"
-                    checked={selectedPaymentMethod === 'VNPay'}
-                    onChange={() => setSelectedPaymentMethod('VNPay')}
-                    className="h-4 w-4 text-[#007d6e] focus:ring-[#007d6e]"
-                  />
-                  <div>
-                    <span className="block text-sm font-bold text-slate-900">VNPay Gateway</span>
-                    <span className="text-xs text-slate-500">
-                      Thẻ ATM nội địa, Internet Banking, Thẻ quốc tế Visa/Mastercard
-                    </span>
-                  </div>
-                </div>
-                <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">
-                  Khuyên dùng
-                </span>
-              </label>
-
-              {/* VNPay QR Option */}
-              <label
-                className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition ${
-                  selectedPaymentMethod === 'VNPayQR'
-                    ? 'border-[#007d6e] bg-teal-50/30 ring-1 ring-[#007d6e]'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="VNPayQR"
-                    checked={selectedPaymentMethod === 'VNPayQR'}
-                    onChange={() => setSelectedPaymentMethod('VNPayQR')}
-                    className="h-4 w-4 text-[#007d6e] focus:ring-[#007d6e]"
-                  />
-                  <div>
-                    <span className="block text-sm font-bold text-slate-900">VNPay QR Code</span>
-                    <span className="text-xs text-slate-500">
-                      Quét mã thanh toán trực tiếp qua 30+ ứng dụng ngân hàng &amp; ví điện tử
-                    </span>
-                  </div>
-                </div>
-                <span className="material-symbols-outlined text-slate-400">qr_code_2</span>
-              </label>
-            </div>
-
-            {/* Security Guarantee Banner */}
-            <div className="mt-5 rounded-xl bg-blue-50/70 border border-blue-200 p-3.5 text-xs text-blue-900 flex items-start gap-2.5">
-              <span className="material-symbols-outlined text-blue-600 text-lg">verified_user</span>
-              <div>
-                <p className="font-bold">Bảo chứng an toàn thanh toán</p>
-                <p className="text-blue-800 text-[11px] mt-0.5">
-                  Bạn sẽ được chuyển hướng an toàn tới cổng thanh toán VNPay chuẩn PCI DSS. TripMate không bao giờ lưu trữ thông tin thẻ của bạn.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Timeline Steps Card */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
-              Tiến trình thanh toán
-            </h4>
-
-            <div className="space-y-4 text-xs">
-              <div className="flex items-start gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
-                  ✓
-                </span>
-                <div>
-                  <strong className="text-slate-900 block">1. Tạo đơn đặt tour thành công</strong>
-                  <span className="text-slate-500 text-[11px]">Mã đơn: {createdBooking?.bookingCode}</span>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#007d6e] text-white font-bold text-[11px]">
-                  2
-                </span>
-                <div>
-                  <strong className="text-slate-900 block">2. Thanh toán qua VNPay</strong>
-                  <span className="text-slate-500 text-[11px]">Đang chờ kết quả phản hồi từ cổng thanh toán</span>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 opacity-60">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500 font-bold text-[11px]">
-                  3
-                </span>
-                <div>
-                  <strong className="text-slate-700 block">3. Xác nhận đặt tour &amp; Phát hành vé QR</strong>
-                  <span className="text-slate-500 text-[11px]">Tự động cấp mã vé điện tử tức thì sau khi thanh toán thành công</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action CTAs */}
-          <div className="space-y-3">
-            <button
-              type="button"
-              disabled={isSubmitting || secondsRemaining <= 0}
-              onClick={handleProceedPayment}
-              className="w-full rounded-xl bg-[#007d6e] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Đang kết nối cổng VNPay…</span>
-                </>
-              ) : (
-                <>
-                  <span>Thanh toán {formatCurrency(createdBooking?.totalAmount ?? totalAmount)} với {selectedPaymentMethod}</span>
-                  <span className="material-symbols-outlined text-base">lock</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveStep(1)}
-              className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800 transition py-1"
-            >
-              Quay lại chỉnh sửa thông tin đơn đặt
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleGoToPayment}
+            className="w-full rounded-xl bg-[#007d6e] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>Thanh toán ngay</span>
+            <span className="material-symbols-outlined text-base">arrow_forward</span>
+          </button>
         </div>
       )}
     </div>
