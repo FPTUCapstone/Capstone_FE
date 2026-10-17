@@ -90,7 +90,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
     return () => {
       isMounted = false;
     };
-  }, [isExpired, bookingId, isDemo]);
+  }, [isExpired, booking, bookingId, isDemo]);
 
   const countdownText = useMemo(() => {
     const mins = Math.floor(secondsRemaining / 60);

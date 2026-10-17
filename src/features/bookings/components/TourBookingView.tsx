@@ -93,9 +93,12 @@ export function TourBookingView({
   const [leadName, setLeadName] = useState<string>(
     userContext?.fullName || (isDemo ? 'Nguyễn Minh Phúc' : ''),
   );
-  const [leadPhone, setLeadPhone] = useState<string>(
-    profilePhone?.trim() || (isDemo ? '0905 123 456' : ''),
+  // `null` means the traveler has not edited this field. That lets a profile value that arrives
+  // after the form render act as a default without an effect that overwrites an explicit edit.
+  const [leadPhone, setLeadPhone] = useState<string | null>(
+    isDemo ? '0905 123 456' : null,
   );
+  const resolvedLeadPhone = leadPhone ?? profilePhone?.trim() ?? '';
   const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>({});
   const [leadEmail, setLeadEmail] = useState<string>(
     userContext?.email || (isDemo ? 'traveler@tripmate.vn' : ''),
@@ -122,14 +125,6 @@ export function TourBookingView({
   const [createdBooking, setCreatedBooking] = useState<BookingDto | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-
-  // The phone belongs to the traveler profile, not the compact auth-session payload. This runs
-  // only when profile data arrives: after that, the traveler is free to clear or edit the field.
-  useEffect(() => {
-    const normalizedPhone = profilePhone?.trim();
-    if (!normalizedPhone) return;
-    setLeadPhone((currentPhone) => currentPhone.trim() ? currentPhone : normalizedPhone);
-  }, [profilePhone]);
 
   // Remaining capacity still comes from the already-loaded tour detail for the selector/counter UI.
   const remainingSlots = quote?.remainingSlots ?? selectedSchedule?.remainingSlots ?? 0;
@@ -244,7 +239,7 @@ export function TourBookingView({
   const validateRequiredFields = (): boolean => {
     const errors: RequiredFieldErrors = {};
     if (!leadName.trim()) errors.leadName = 'Vui lòng nhập họ và tên trưởng đoàn.';
-    if (!leadPhone.trim()) errors.leadPhone = 'Vui lòng nhập số điện thoại liên hệ để tiếp tục đặt tour.';
+    if (!resolvedLeadPhone.trim()) errors.leadPhone = 'Vui lòng nhập số điện thoại liên hệ để tiếp tục đặt tour.';
     if (!leadEmail.trim()) errors.leadEmail = 'Vui lòng nhập email nhận vé điện tử.';
     if (!agreedTerms) errors.agreedTerms = 'Vui lòng đồng ý với điều khoản đặt tour và chính sách hoàn hủy.';
 
@@ -290,7 +285,7 @@ export function TourBookingView({
     setSubmissionError(null);
 
     const participants: BookingParticipantRequestDto[] = [
-      { fullName: leadName, participantType: 'Adult', phoneNumber: leadPhone, email: leadEmail },
+      { fullName: leadName, participantType: 'Adult', phoneNumber: resolvedLeadPhone, email: leadEmail },
       ...(adultCount > 1
         ? Array.from({ length: adultCount - 1 }, (_, i) => ({
             fullName: `Người lớn ${i + 2}`,
@@ -688,7 +683,7 @@ export function TourBookingView({
                     id={phoneInputId}
                     type="tel"
                     required
-                    value={leadPhone}
+                    value={resolvedLeadPhone}
                     onChange={(e) => {
                       setLeadPhone(e.target.value);
                       clearRequiredFieldError('leadPhone');
