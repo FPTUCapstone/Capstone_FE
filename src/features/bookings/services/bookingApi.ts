@@ -1,11 +1,13 @@
 import {
   createDemoBooking,
+  createDemoQuote,
   DEMO_BOOKING_HOI_AN,
-  DEMO_COUPON_CODES,
   DEMO_TICKET_HOI_AN,
 } from '../data/bookingDemoFixtures';
 import type {
   BookingDto,
+  BookingQuoteDto,
+  BookingQuoteRequestDto,
   CreateBookingRequestDto,
   PaymentInitResponseDto,
   PaymentMethod,
@@ -56,82 +58,105 @@ async function requestJson(path: string, options?: RequestInit): Promise<unknown
   const body = await readResponse(response);
   if (!response.ok) {
     const problem = isRecord(body) ? body : undefined;
-    const title = typeof problem?.title === 'string' ? problem.title : 'Thao tác không thành công.';
+    const title = BOOKING_ERROR_MESSAGES[String(problem?.errorCode ?? '')] ?? 'Thao tác không thành công.';
     throw new BookingApiError(title, response.status, problem);
   }
   return body;
 }
 
+/** Safe, user-facing messages for every UC-27 errorCode the BFF proxy can forward (tourBookingProxy.ts SAFE_CODES). */
+const BOOKING_ERROR_MESSAGES: Record<string, string> = {
+  'tour_booking.schedule_not_found': 'Lịch khởi hành đã chọn không còn khả dụng.',
+  'tour_booking.schedule_not_open': 'Lịch khởi hành này đã đóng nhận đặt tour.',
+  'tour_booking.insufficient_capacity': 'Không còn đủ chỗ trống cho số lượng khách đã chọn.',
+  'tour_booking.voucher_not_found': 'Mã giảm giá không tồn tại.',
+  'tour_booking.voucher_not_eligible': 'Mã giảm giá không áp dụng cho tour này hoặc đã hết hiệu lực.',
+  'tour_booking.voucher_minimum_not_met': 'Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã giảm giá.',
+  'tour_booking.voucher_usage_limit_reached': 'Mã giảm giá đã hết lượt sử dụng.',
+  'tour_booking.participants_required': 'Cần ít nhất 1 khách tham gia.',
+  'tour_booking.idempotency_key_required': 'Yêu cầu không hợp lệ, vui lòng tải lại trang và thử lại.',
+  'tour_booking.idempotency_key_payload_mismatch': 'Yêu cầu đặt tour trước đó chưa hoàn tất, vui lòng thử lại.',
+  'tour_booking.too_many_unpaid_bookings':
+    'Bạn có quá nhiều đơn đặt tour đang chờ thanh toán. Vui lòng hoàn tất hoặc hủy một đơn trước khi tiếp tục.',
+  'tour_booking.invalid_request': 'Thông tin đặt tour không hợp lệ.',
+  UNAUTHENTICATED: 'Vui lòng đăng nhập lại để tiếp tục.',
+  FORBIDDEN: 'Tính năng này chỉ dành cho tài khoản Du khách (Traveler).',
+  MSG127: 'Dịch vụ tạm thời không khả dụng, vui lòng thử lại sau.',
+};
+
 /**
- * UC-27: Book Tour
- * Creates a tour booking with status 'PendingPayment'.
+ * UC-27: Get price quote for a departure/participant/voucher combination.
+ * Read-only — creates no booking and reserves no capacity (BE spec §3.1). Client never computes amounts itself.
+ */
+export async function quoteBooking(
+  request: BookingQuoteRequestDto,
+  tourId: string,
+  options?: { allowDemo?: boolean; signal?: AbortSignal },
+): Promise<BookingQuoteDto> {
+  if (options?.allowDemo === true && isBookingDemoAllowedInCurrentEnv()) {
+    return createDemoQuote(tourId, request.tourScheduleId, request.participantCounts, request.voucherCode);
+  }
+
+  const raw = await requestJson('/api/v1/traveler/tour-bookings/quote', {
+    method: 'POST',
+    body: JSON.stringify(request),
+    signal: options?.signal,
+  });
+  if (!isRecord(raw) || typeof raw.totalAmount !== 'number') {
+    throw new BookingApiError('Không nhận được báo giá hợp lệ từ máy chủ.', 502);
+  }
+  return raw as unknown as BookingQuoteDto;
+}
+
+/**
+ * UC-27: Book Tour.
+ * Creates a tour booking with status 'PendingPayment'. Sends a fresh Idempotency-Key per
+ * logical submit attempt; the caller must reuse the same key only when retrying the exact
+ * same request (e.g. after a network timeout), never when the user edits the form.
  */
 export async function createBooking(
   request: CreateBookingRequestDto,
   options?: {
     allowDemo?: boolean;
+    idempotencyKey?: string;
     signal?: AbortSignal;
   },
 ): Promise<BookingDto> {
-  const demoAllowed = options?.allowDemo === true && isBookingDemoAllowedInCurrentEnv();
-
-  if (demoAllowed) {
-    const adultUnitPrice = 800000;
-    const childUnitPrice = 400000;
-    const subtotal = request.adultCount * adultUnitPrice + request.childCount * childUnitPrice;
-    let discountAmount = 0;
-    if (request.couponCode && DEMO_COUPON_CODES[request.couponCode.toUpperCase()]) {
-      const coupon = DEMO_COUPON_CODES[request.couponCode.toUpperCase()];
-      discountAmount = Math.round((subtotal * coupon.percent) / 100);
-    }
-    const totalAmount = Math.max(0, subtotal - discountAmount);
-
-    return createDemoBooking({
-      tourId: request.tourId,
-      scheduleId: request.scheduleId,
-      adultCount: request.adultCount,
-      childCount: request.childCount,
-      adultUnitPrice,
-      childUnitPrice,
-      couponCode: request.couponCode,
-      discountAmount,
-      totalAmount,
-      leadTravelerName: request.leadTravelerName,
-      leadTravelerPhone: request.leadTravelerPhone,
-      leadTravelerEmail: request.leadTravelerEmail,
-      participants: request.participants,
-      specialRequests: request.specialRequests,
-    });
-  }
-
-  // Real production path: Call BFF/Backend
-  try {
-    const raw = await requestJson('/api/bookings', {
-      method: 'POST',
-      body: JSON.stringify(request),
-      signal: options?.signal,
-    });
-    if (isRecord(raw) && typeof raw.bookingId === 'string') {
-      return raw as unknown as BookingDto;
-    }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    throw new BookingApiError(
-      'Tính năng Đặt tour đang chờ hoàn tất kết nối API từ máy chủ (UC-27 — PENDING_BE_INTEGRATION).',
-      501,
-      { errorCode: 'PENDING_BE_INTEGRATION' },
+  if (options?.allowDemo === true && isBookingDemoAllowedInCurrentEnv()) {
+    const counts = request.participants.reduce(
+      (acc, participant) => {
+        if (participant.participantType === 'Adult') acc.adult += 1;
+        else if (participant.participantType === 'Child') acc.child += 1;
+        else acc.infant += 1;
+        return acc;
+      },
+      { adult: 0, child: 0, infant: 0 },
     );
+    const quote = createDemoQuote('demo-tour', request.tourScheduleId, counts, request.voucherCode);
+    return createDemoBooking({
+      tourScheduleId: request.tourScheduleId,
+      subtotalAmount: quote.subtotalAmount,
+      discountAmount: quote.discountAmount,
+      totalAmount: quote.totalAmount,
+    });
   }
 
-  throw new BookingApiError(
-    'Tính năng Đặt tour đang chờ hoàn tất kết nối API từ máy chủ (UC-27 — PENDING_BE_INTEGRATION).',
-    501,
-    { errorCode: 'PENDING_BE_INTEGRATION' },
-  );
+  const idempotencyKey = options?.idempotencyKey ?? crypto.randomUUID();
+  const raw = await requestJson('/api/v1/traveler/tour-bookings', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(request),
+    signal: options?.signal,
+  });
+  if (!isRecord(raw) || typeof raw.bookingId !== 'string') {
+    throw new BookingApiError('Không nhận được xác nhận đặt tour hợp lệ từ máy chủ.', 502);
+  }
+  return raw as unknown as BookingDto;
 }
 
 /**
- * UC-27/UC-28: Get Booking Details
+ * UC-27/UC-28: Get Booking Details.
+ * Not yet wired to a Backend endpoint; UC-28 owns the booking-detail contract this will call.
  */
 export async function getBooking(
   bookingId: string,
@@ -159,21 +184,21 @@ export async function getBooking(
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
     throw new BookingApiError(
-      'Thông tin đơn đặt tour đang chờ hoàn tất kết nối API từ máy chủ (UC-27/UC-28 — PENDING_BE_INTEGRATION).',
+      'Thông tin đơn đặt tour đang chờ hoàn tất kết nối API từ máy chủ (UC-28 — PENDING_BE_INTEGRATION).',
       501,
       { errorCode: 'PENDING_BE_INTEGRATION' },
     );
   }
 
   throw new BookingApiError(
-    'Thông tin đơn đặt tour đang chờ hoàn tất kết nối API từ máy chủ (UC-27/UC-28 — PENDING_BE_INTEGRATION).',
+    'Thông tin đơn đặt tour đang chờ hoàn tất kết nối API từ máy chủ (UC-28 — PENDING_BE_INTEGRATION).',
     501,
     { errorCode: 'PENDING_BE_INTEGRATION' },
   );
 }
 
 /**
- * UC-28: Initiate Electronic Payment
+ * UC-28: Initiate Electronic Payment. Out of scope for UC-27; kept pending its own integration task.
  */
 export async function initiatePayment(
   bookingId: string,
@@ -219,8 +244,7 @@ export async function initiatePayment(
 }
 
 /**
- * UC-28: Verify Payment Result
- * Reconciles the callback parameters from VNPay / Payment Gateway.
+ * UC-28: Verify Payment Result. Out of scope for UC-27; kept pending its own integration task.
  */
 export async function verifyPayment(
   searchParams: URLSearchParams,
@@ -289,7 +313,7 @@ export async function verifyPayment(
 }
 
 /**
- * UC-29: View QR E-ticket
+ * UC-29: View QR E-ticket. Out of scope for UC-27; kept pending its own integration task.
  */
 export async function getTicket(
   ticketId: string,

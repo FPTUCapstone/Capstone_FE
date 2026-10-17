@@ -60,17 +60,18 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       />,
     );
 
-    // Initial state: 2 adults, 1 child. Subtotal = 2 * 800k + 1 * 400k = 2,000,000. With 15% coupon = 1,700,000
-    expect(screen.getByText(/1\.700\.000/)).toBeTruthy();
+    // Initial state: 2 adults, 1 child. Subtotal = 2 * 800k + 1 * 400k = 2,000,000. With 15% coupon = 1,700,000.
+    // The total comes from the server quote (BR-63), fetched asynchronously after a debounce.
+    await waitFor(() => expect(screen.getByText(/1\.700\.000/)).toBeTruthy());
 
     // Click decrease child count: 2 adults, 0 child. Subtotal = 1,600,000. With 15% coupon = 1,360,000
     const decreaseChildBtn = screen.getByLabelText('Giảm 1 trẻ em');
     fireEvent.click(decreaseChildBtn);
 
-    expect(screen.getByText(/1\.360\.000/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByText(/1\.360\.000/)).toBeTruthy());
   });
 
-  it('allows applying a valid coupon code and shows percentage badge', async () => {
+  it('allows applying a valid coupon code and the server quote reflects the discount', async () => {
     render(
       <TourBookingView
         tour={DEMO_TOUR_DETAIL_HOI_AN}
@@ -84,13 +85,16 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
     const removeBtn = screen.getByText('Gỡ bỏ');
     fireEvent.click(removeBtn);
 
-    // Enter BANA15 and apply
+    // Enter BANA15 and apply — this only stages the code; the next quote decides eligibility.
     const input = screen.getByPlaceholderText(/Ví dụ: HOIAN15/);
     fireEvent.change(input, { target: { value: 'BANA15' } });
     fireEvent.click(screen.getByText('Áp dụng'));
 
-    expect(screen.getByText('BANA15')).toBeTruthy();
-    expect(screen.getByText('-15%')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('BANA15')).toBeTruthy();
+      expect(screen.getByText('Đã áp dụng')).toBeTruthy();
+      expect(screen.getByText(/Giảm giá \(BANA15\)/)).toBeTruthy();
+    });
   });
 
   it('TERMS-1 & TERMS-6: terms consent checkbox defaults unchecked in both real and demo modes', () => {
@@ -110,7 +114,7 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
     expect(checkbox.checked).toBe(false);
   });
 
-  it('TERMS-2, TERMS-3 & TERMS-4: submit button is disabled before consent, enabled after check, disabled again on uncheck', () => {
+  it('TERMS-2, TERMS-3 & TERMS-4: submit button is disabled before consent, enabled after check, disabled again on uncheck', async () => {
     render(
       <TourBookingView
         tour={DEMO_TOUR_DETAIL_HOI_AN}
@@ -128,10 +132,13 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
     // TERMS-2: Before consent, submit button is disabled
     expect(submitBtn.disabled).toBe(true);
 
+    // Wait for the initial server quote to resolve — submit also requires a successful quote (BR-63).
+    await waitFor(() => expect(screen.getByText(/1\.700\.000/)).toBeTruthy());
+
     // TERMS-3: Traveler checks consent -> eligible to submit
     fireEvent.click(checkbox);
     expect(checkbox.checked).toBe(true);
-    expect(submitBtn.disabled).toBe(false);
+    await waitFor(() => expect(submitBtn.disabled).toBe(false));
 
     // TERMS-4: Traveler unchecks consent -> disabled again
     fireEvent.click(checkbox);
@@ -170,6 +177,9 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       />,
     );
 
+    // Wait for the initial server quote to resolve before interacting — submit requires it (BR-63).
+    await waitFor(() => expect(screen.getByText(/1\.700\.000/)).toBeTruthy());
+
     // Must check terms consent explicitly
     const checkbox = screen.getByRole('checkbox', {
       name: /Điều khoản đặt tour & Chính sách hoàn hủy/i,
@@ -177,7 +187,7 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
     fireEvent.click(checkbox);
 
     const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i });
-    expect((submitBtn as HTMLButtonElement).disabled).toBe(false);
+    await waitFor(() => expect((submitBtn as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
