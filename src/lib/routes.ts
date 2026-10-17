@@ -43,6 +43,8 @@ export const ROUTES = {
     staffDashboard: '/admin/staff',
     reports: '/admin/reports',
     auditLogs: '/admin/audit-logs',
+    operatorApplications: '/admin/tour-operator-applications',
+    operatorApplication: (userId: string | number) => `/admin/tour-operator-applications/${userId}`,
     tourReviews: '/admin/tours/reviews',
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
     createPoi: '/admin/catalogue/points-of-interest/new',
