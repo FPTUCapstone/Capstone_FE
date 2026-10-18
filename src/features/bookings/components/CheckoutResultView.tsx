@@ -238,19 +238,13 @@ export function CheckoutResultView() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex justify-center">
               <Link
-                href={`/bookings/${encodeURIComponent(String(statusDto.bookingId))}/ticket`}
-                className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#006b5f] transition text-center"
+                href={ROUTES.home}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#006b5f] transition text-center"
               >
-                <span className="material-symbols-outlined text-sm">confirmation_number</span>
-                <span>Xem Vé Điện Tử QR</span>
-              </Link>
-              <Link
-                href={ROUTES.account.trips}
-                className="flex items-center justify-center rounded-2xl border border-slate-200 px-5 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition text-center"
-              >
-                Quản lý chuyến đi
+                <span className="material-symbols-outlined text-sm">home</span>
+                <span>Về trang chủ</span>
               </Link>
             </div>
           </div>
@@ -339,9 +333,15 @@ export function CheckoutResultView() {
             <div className="flex justify-between items-center text-xs">
               <span className="text-slate-500 font-medium">Hạn giữ chỗ thanh toán:</span>
               <span className="font-semibold text-rose-600">
-                {formatDatetime(statusDto.paymentExpiresAt)}
+                {formatDatetime(statusDto.paymentExpiresAt ?? undefined)}
               </span>
             </div>
+            {isCancelledTx ? (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500 font-medium">Trạng thái giao dịch:</span>
+                <span className="font-semibold text-amber-700">Đã hủy</span>
+              </div>
+            ) : null}
             <div className="pt-3 border-t border-slate-200/60 flex justify-between items-baseline">
               <span className="text-sm font-semibold text-slate-700">Số tiền cần thanh toán:</span>
               <span className="text-2xl font-black text-[#007d6e]">

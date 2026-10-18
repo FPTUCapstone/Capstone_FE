@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
-import { getBooking } from '../services/bookingApi';
-import { createOrReusePayment } from '../services/paymentApi';
-import type { BookingDto } from '../types/booking';
+import { createOrReusePayment, getBookingPaymentStatus } from '../services/paymentApi';
+import type { BookingPaymentStatusDto } from '../types/payment';
 import { PaymentApiError } from '../types/payment';
 
 interface PaymentHandoffViewProps {
@@ -29,7 +28,7 @@ function formatCurrency(amount: number, currency: string = 'VND'): string {
  */
 export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoffViewProps) {
   const router = useRouter();
-  const [booking, setBooking] = useState<BookingDto | null>(null);
+  const [booking, setBooking] = useState<BookingPaymentStatusDto | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -41,7 +40,9 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
   useEffect(() => {
     expiryRefreshRequested.current = false;
     let isMounted = true;
-    getBooking(bookingId, { allowDemo: isDemo })
+    // UC-28 owns the canonical post-booking read.  Do not depend on the
+    // retired /api/bookings/{id} placeholder from the earlier UI prototype.
+    getBookingPaymentStatus(bookingId)
       .then((result) => {
         if (!isMounted) return;
         setBooking(result);
@@ -61,7 +62,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
   // Countdown is derived from server paymentExpiresAt
   useEffect(() => {
     if (!booking) return;
-    const expiryMs = new Date(booking.paymentExpiresAt).getTime();
+    const expiryMs = new Date(booking.bookingPaymentExpiresAtUtc ?? '').getTime();
     const tick = () => {
       const remainingMs = expiryMs - Date.now();
       setSecondsRemaining(Math.max(0, Math.floor(remainingMs / 1000)));
@@ -76,7 +77,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
     if (!isExpired || !booking || expiryRefreshRequested.current) return;
     expiryRefreshRequested.current = true;
     let isMounted = true;
-    getBooking(bookingId, { allowDemo: isDemo })
+    getBookingPaymentStatus(bookingId)
       .then((result) => {
         if (isMounted) setBooking(result);
       })
@@ -155,14 +156,14 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
             <p className="text-xs text-slate-400 font-semibold uppercase">Mã đơn đặt tour</p>
-            <p className="text-base font-black font-mono text-slate-900">{booking.bookingCode}</p>
+            <p className="text-base font-black font-mono text-slate-900">#{booking.bookingId}</p>
           </div>
           <div className="text-right">
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
               Chờ thanh toán
             </span>
             <p className="text-2xl font-black text-[#007d6e] mt-1">
-              {formatCurrency(booking.totalAmount, booking.currency)}
+              {formatCurrency(booking.amount ?? 0, booking.currency ?? 'VND')}
             </p>
           </div>
         </div>
@@ -245,7 +246,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
             ) : (
               <>
                 <span>
-                  Thanh toán {formatCurrency(booking.totalAmount, booking.currency)} ngay
+                  Thanh toán {formatCurrency(booking.amount ?? 0, booking.currency ?? 'VND')} ngay
                 </span>
                 <span className="material-symbols-outlined text-base">lock</span>
               </>

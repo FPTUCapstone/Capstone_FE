@@ -51,7 +51,7 @@ describe('MockCheckoutView (UC-28 Mock Payment Gateway UI)', () => {
       expect(screen.getByText('1729221234567')).toBeTruthy();
       expect(screen.getByRole('button', { name: /Thanh toán thành công/i })).toBeTruthy();
       expect(screen.getByRole('button', { name: /Hủy thanh toán/i })).toBeTruthy();
-      expect(screen.getByRole('button', { name: /Mô phỏng hết hạn/i })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /Mô phỏng hết hạn/i })).toBeNull();
     });
   });
 
@@ -143,5 +143,38 @@ describe('MockCheckoutView (UC-28 Mock Payment Gateway UI)', () => {
       expect(mockComplete).toHaveBeenCalledWith(101, 'Cancelled');
       expect(mockPush).toHaveBeenCalledWith('/checkout/result?bookingId=42');
     });
+  });
+
+  it('uses the canonical status paymentId when the mock checkout URL has none', async () => {
+    mockSearchParams.set('bookingId', '42');
+    vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
+      bookingId: '42',
+      bookingStatus: 'PendingPayment',
+      paymentStatus: 'Unpaid',
+      paymentId: 101,
+      gateway: 'Mock',
+      transactionStatus: 'Pending',
+      amount: 2500000,
+      currency: 'VND',
+      checkoutUrl: '/checkout/mock?bookingId=42',
+      bookingPaymentExpiresAtUtc: '2026-10-18T10:30:00Z',
+    });
+    const mockComplete = vi.spyOn(paymentApi, 'completeMockPayment').mockResolvedValueOnce({
+      paymentId: 101,
+      bookingId: '42',
+      status: 'Success',
+      bookingStatus: 'Confirmed',
+    });
+
+    render(<MockCheckoutView />);
+
+    const success = await waitFor(() => {
+      const button = screen.getByRole('button', { name: /Thanh toán thành công/i }) as HTMLButtonElement;
+      expect(button.disabled).toBe(false);
+      return button;
+    });
+    fireEvent.click(success);
+
+    await waitFor(() => expect(mockComplete).toHaveBeenCalledWith(101, 'Success'));
   });
 });

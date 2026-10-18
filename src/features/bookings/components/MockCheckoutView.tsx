@@ -70,13 +70,13 @@ export function MockCheckoutView() {
     };
   }, [bookingId]);
 
-  const handleOutcome = async (outcome: MockOutcomeType) => {
-    if (!paymentId || submitting) return;
+  const handleOutcome = async (outcome: MockOutcomeType, targetPaymentId: number) => {
+    if (!targetPaymentId || submitting) return;
     setSubmitting(true);
     setErrorMessage(null);
 
     try {
-      await completeMockPayment(paymentId, outcome);
+      await completeMockPayment(targetPaymentId, outcome);
       router.push(`/checkout/result?bookingId=${encodeURIComponent(bookingId)}`);
     } catch (err: unknown) {
       setSubmitting(false);
@@ -105,6 +105,10 @@ export function MockCheckoutView() {
   }
 
   const active = statusDto?.activePayment;
+  // Mock links are generated before SQL assigns the transaction identity, so
+  // their URL cannot contain paymentId. Resolve it from the canonical status
+  // response after loading instead.
+  const resolvedPaymentId = paymentId || statusDto?.paymentId || 0;
   const displayAmount = active?.amount ?? 0;
   const displayOrderCode = active?.orderCode ?? '—';
   const displayBookingCode = statusDto?.bookingCode ?? bookingId;
@@ -152,7 +156,7 @@ export function MockCheckoutView() {
             <div className="flex justify-between items-center text-xs">
               <span className="text-slate-500 font-medium">Hạn thanh toán:</span>
               <span className="text-slate-700 font-medium">
-                {formatDatetime(statusDto?.paymentExpiresAt)}
+                {formatDatetime(statusDto?.paymentExpiresAt ?? undefined)}
               </span>
             </div>
             <div className="pt-3 border-t border-slate-200/60 flex justify-between items-baseline">
@@ -171,8 +175,8 @@ export function MockCheckoutView() {
             <div className="space-y-3">
               <button
                 type="button"
-                disabled={submitting || !paymentId}
-                onClick={() => handleOutcome('Success')}
+                disabled={submitting || !resolvedPaymentId}
+                onClick={() => handleOutcome('Success', resolvedPaymentId)}
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 transition"
               >
                 <span className="material-symbols-outlined text-lg">check_circle</span>
@@ -181,23 +185,14 @@ export function MockCheckoutView() {
 
               <button
                 type="button"
-                disabled={submitting || !paymentId}
-                onClick={() => handleOutcome('Cancelled')}
+                disabled={submitting || !resolvedPaymentId}
+                onClick={() => handleOutcome('Cancelled', resolvedPaymentId)}
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 transition"
               >
                 <span className="material-symbols-outlined text-lg">cancel</span>
                 <span>Hủy thanh toán (Cancel)</span>
               </button>
 
-              <button
-                type="button"
-                disabled={submitting || !paymentId}
-                onClick={() => handleOutcome('Expired')}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-rose-50 border border-rose-200 px-5 py-3 text-sm font-bold text-rose-700 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 disabled:opacity-50 transition"
-              >
-                <span className="material-symbols-outlined text-lg">timer_off</span>
-                <span>Mô phỏng hết hạn (Expire)</span>
-              </button>
             </div>
           </div>
 

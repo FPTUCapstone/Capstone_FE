@@ -1,4 +1,5 @@
 import type {
+  ActivePaymentDto,
   BookingPaymentStatusDto,
   CreatePaymentResponseDto,
   MockOutcomeType,
@@ -103,7 +104,31 @@ export async function getBookingPaymentStatus(
     throw new PaymentApiError('Phản hồi trạng thái thanh toán không hợp lệ.', 502);
   }
 
-  return raw as unknown as BookingPaymentStatusDto;
+  const status = raw as unknown as BookingPaymentStatusDto;
+  // The Backend deliberately returns the latest transaction as top-level,
+  // canonical fields.  Build the small display-only compatibility object used
+  // by the checkout result views; no browser-supplied state is trusted here.
+  const paymentId = typeof status.paymentId === 'number' ? status.paymentId : null;
+  const transactionStatus = status.transactionStatus;
+  const checkoutUrl = status.checkoutUrl;
+  const activePayment: ActivePaymentDto | null =
+    status.activePayment ?? (paymentId !== null && transactionStatus && checkoutUrl
+      ? {
+          paymentId,
+          gateway: status.gateway ?? 'PayOS',
+          amount: status.amount ?? 0,
+          currency: status.currency ?? 'VND',
+          checkoutUrl,
+          expiresAt: status.paymentLinkExpiresAtUtc ?? '',
+          status: transactionStatus,
+        }
+      : null);
+  return {
+    ...status,
+    bookingCode: status.bookingCode ?? `#${status.bookingId}`,
+    paymentExpiresAt: status.bookingPaymentExpiresAtUtc,
+    activePayment,
+  };
 }
 
 /**
