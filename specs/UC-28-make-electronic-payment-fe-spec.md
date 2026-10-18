@@ -2,8 +2,8 @@
 
 ## Status
 
-Approved for a local UI prototype. Web consumes the UC-28 Backend contract in
-the integrated phase and never simulates a successful production payment itself.
+Draft for approval. Web consumes the UC-28 Backend contract and never simulates
+a successful production payment itself.
 
 ## Scope
 
@@ -30,7 +30,6 @@ processing, refunds and ticket issuance.
 | --- | --- |
 | `/checkout/mock?paymentId={id}&bookingId={id}` | Local Mock checkout only |
 | `/checkout/result?bookingId={id}` | Gateway return/cancel landing page |
-| `/dev/payment?bookingId={id}` | Local payment test entry only |
 
 Web calls:
 
@@ -48,11 +47,6 @@ Web calls:
    paid, cancelled or expired results.
 4. Cancelled payment remains pending while the booking is eligible; **Pay
    again** requests a reusable/replacement link from Backend.
-5. Before the UC-27 booking entry is merged, the local-only payment test entry
-   at `/dev/payment` exposes **Start Mock Payment** with an explicitly marked
-   fixture. It does not call Backend or PayOS and is available only with
-   `NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true` outside production. Replace it with
-   the standard create/reuse handoff when UC-27 is integrated.
 
 ## Acceptance criteria
 
@@ -61,7 +55,3 @@ Web calls:
 - Loading, error and retry states are accessible.
 - A forged `?status=PAID` return URL cannot render a paid receipt without the
   Backend status confirming it.
-- `PAYMENT_BOOKING_NOT_ELIGIBLE`, `PAYMENT_BOOKING_EXPIRED`,
-  `PAYMENT_NOT_FOUND`, `PAYMENT_GATEWAY_UNAVAILABLE` and
-  `PAYMENT_MOCK_DISABLED` map to clear user messages; raw gateway errors are
-  never shown.
