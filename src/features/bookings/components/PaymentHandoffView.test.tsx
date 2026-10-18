@@ -19,13 +19,22 @@ describe('PaymentHandoffView (UC-28 entry point)', () => {
     mockPush.mockClear();
     setNodeEnv('development');
     process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValue({
+      bookingId: '148',
+      bookingCode: 'BK-20261015-0148',
+      bookingStatus: 'PendingPayment',
+      paymentStatus: 'Unpaid',
+      amount: 1700000,
+      currency: 'VND',
+      bookingPaymentExpiresAtUtc: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    });
   });
 
   it('loads the demo booking by id and displays payment gateway details', async () => {
     render(<PaymentHandoffView bookingId="bk-demo-0148" isDemo={true} />);
 
     await waitFor(() => {
-      expect(screen.getByText('BK-20261015-0148')).toBeTruthy();
+      expect(screen.getByText('#148')).toBeTruthy();
       expect(screen.getByText(/PayOS — Cổng Thanh Toán Trực Tuyến/i)).toBeTruthy();
       expect(screen.getByText(/Chờ thanh toán/i)).toBeTruthy();
     });
@@ -34,11 +43,11 @@ describe('PaymentHandoffView (UC-28 entry point)', () => {
   it('calls createOrReusePayment and navigates to returned checkoutUrl on Pay click', async () => {
     const createSpy = vi.spyOn(paymentApi, 'createOrReusePayment').mockResolvedValueOnce({
       paymentId: 101,
-      bookingId: 'bk-demo-0148',
+      bookingId: '148',
       orderCode: 1729221234567,
       amount: 1700000,
       currency: 'VND',
-      checkoutUrl: '/checkout/mock?paymentId=101&bookingId=bk-demo-0148',
+      checkoutUrl: '/checkout/mock?paymentId=101&bookingId=148',
       expiresAt: '2026-10-18T10:30:00Z',
       status: 'Pending',
     });
@@ -54,8 +63,8 @@ describe('PaymentHandoffView (UC-28 entry point)', () => {
     fireEvent.click(payButton);
 
     await waitFor(() => {
-      expect(createSpy).toHaveBeenCalledWith('bk-demo-0148');
-      expect(mockPush).toHaveBeenCalledWith('/checkout/mock?paymentId=101&bookingId=bk-demo-0148');
+      expect(createSpy).toHaveBeenCalledWith('148');
+      expect(mockPush).toHaveBeenCalledWith('/checkout/mock?paymentId=101&bookingId=148');
     });
   });
 

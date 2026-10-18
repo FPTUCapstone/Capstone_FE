@@ -18,7 +18,7 @@ describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
     mockSearchParams.delete('status');
   });
 
-  it('renders payment success state and link to ticket when backend reports Confirmed', async () => {
+  it('renders payment success state and return-home action when backend reports Confirmed', async () => {
     mockSearchParams.set('bookingId', '42');
 
     vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
@@ -45,8 +45,9 @@ describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
       expect(screen.getByText('Thanh Toán Hoàn Tất!')).toBeTruthy();
       expect(screen.getByText('BK-20261018-0042')).toBeTruthy();
       expect(screen.getByText('1729221234567')).toBeTruthy();
-      const ticketLink = screen.getByRole('link', { name: /Xem Vé Điện Tử QR/i });
-      expect(ticketLink.getAttribute('href')).toBe('/bookings/42/ticket');
+      const homeLink = screen.getByRole('link', { name: /Về trang chủ/i });
+      expect(homeLink.getAttribute('href')).toBe('/');
+      expect(screen.queryByRole('link', { name: /Xem Vé Điện Tử QR/i })).toBeNull();
     });
   });
 
