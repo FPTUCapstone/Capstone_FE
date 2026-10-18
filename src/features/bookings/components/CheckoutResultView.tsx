@@ -111,7 +111,6 @@ export function CheckoutResultView() {
       statusDto?.bookingStatus === 'Confirmed' || statusDto?.paymentStatus === 'Paid';
     if (!isPaid) return;
 
-    setSecondsToHome(5);
     const timer = window.setInterval(() => {
       setSecondsToHome((previous) => {
         if (previous <= 1) {
