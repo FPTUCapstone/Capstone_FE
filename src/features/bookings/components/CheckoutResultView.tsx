@@ -43,11 +43,18 @@ export function CheckoutResultView() {
   const wasCancelledAtGateway =
     searchParams.get('cancel') === 'true' ||
     searchParams.get('status')?.toUpperCase() === 'CANCELLED';
+  // This hint only tells the UI to wait for the server-side webhook. It never
+  // marks a booking paid by itself: the canonical API response remains the
+  // source of truth.
+  const gatewayReportedSuccess =
+    searchParams.get('code') === '00' &&
+    searchParams.get('status')?.toUpperCase() === 'PAID';
 
   const [loading, setLoading] = useState<boolean>(Boolean(bookingId));
   const [retrying, setRetrying] = useState<boolean>(false);
   const [statusDto, setStatusDto] = useState<BookingPaymentStatusDto | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [secondsToHome, setSecondsToHome] = useState<number>(5);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -57,7 +64,23 @@ export function CheckoutResultView() {
       if (wasCancelledAtGateway) {
         await cancelPendingPayment(bookingId);
       }
-      return getBookingPaymentStatus(bookingId);
+
+      // PayOS redirects the browser and delivers its signed webhook separately.
+      // A successful return can therefore arrive a few seconds before our
+      // database is updated. Poll briefly instead of offering a second payment.
+      const attempts = gatewayReportedSuccess ? 10 : 1;
+      let latest: BookingPaymentStatusDto | null = null;
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        latest = await getBookingPaymentStatus(bookingId);
+        if (latest.bookingStatus === 'Confirmed' || latest.paymentStatus === 'Paid') {
+          return latest;
+        }
+
+        if (attempt < attempts - 1) {
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 1500));
+        }
+      }
+      return latest;
     };
 
     loadCanonicalStatus()
@@ -79,15 +102,28 @@ export function CheckoutResultView() {
     return () => {
       isMounted = false;
     };
-  }, [bookingId, wasCancelledAtGateway]);
+  }, [bookingId, gatewayReportedSuccess, wasCancelledAtGateway]);
 
-  // UC-28 completion ends at the traveler home screen. The backend remains
-  // authoritative: only a confirmed booking or paid transaction can trigger
-  // this redirect, never a query parameter supplied by the browser.
+  // Give the traveler a short, explicit confirmation before returning home.
+  // The backend remains authoritative: query parameters can never trigger this.
   useEffect(() => {
-    if (statusDto?.bookingStatus === 'Confirmed' || statusDto?.paymentStatus === 'Paid') {
-      router.replace(ROUTES.home);
-    }
+    const isPaid =
+      statusDto?.bookingStatus === 'Confirmed' || statusDto?.paymentStatus === 'Paid';
+    if (!isPaid) return;
+
+    setSecondsToHome(5);
+    const timer = window.setInterval(() => {
+      setSecondsToHome((previous) => {
+        if (previous <= 1) {
+          window.clearInterval(timer);
+          router.replace(ROUTES.home);
+          return 0;
+        }
+        return previous - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
   }, [router, statusDto?.bookingStatus, statusDto?.paymentStatus]);
 
   const handlePayAgain = async () => {
@@ -252,6 +288,9 @@ export function CheckoutResultView() {
                 <span>Về trang chủ</span>
               </Link>
             </div>
+            <p className="mt-4 text-center text-xs font-medium text-slate-500">
+              Tự động trở về trang chủ sau {secondsToHome} giây.
+            </p>
           </div>
         </div>
       </div>
