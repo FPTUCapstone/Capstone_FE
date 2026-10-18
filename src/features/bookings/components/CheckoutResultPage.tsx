@@ -10,6 +10,17 @@ import { isBookingDemoAllowedInCurrentEnv } from '@/features/bookings/services/b
 import { ROUTES } from '@/lib/routes';
 import { CheckoutResultView } from './CheckoutResultView';
 
+function configuredAppOrigin(): string | null {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!configuredUrl) return null;
+
+  try {
+    return new URL(configuredUrl).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function CheckoutResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -17,10 +28,25 @@ export function CheckoutResultPage() {
 
   const isDemo =
     searchParams.get('demo') === '1' && isBookingDemoAllowedInCurrentEnv();
+  const appOrigin = configuredAppOrigin();
+  const mustReturnToAppOrigin =
+    typeof window !== 'undefined' && appOrigin !== null && window.location.origin !== appOrigin;
+
+  // PayOS must return to a public URL. During local development that URL is a
+  // temporary tunnel, while the authenticated session belongs to localhost.
+  // Move the callback, including bookingId and gateway parameters, back to the
+  // configured app origin before checking the session.
+  useEffect(() => {
+    if (!mustReturnToAppOrigin || !appOrigin) return;
+
+    const target = new URL(ROUTES.checkoutResult, appOrigin);
+    target.search = searchParams.toString();
+    window.location.replace(target.toString());
+  }, [appOrigin, mustReturnToAppOrigin, searchParams]);
 
   // Auth Redirection
   useEffect(() => {
-    if (status === 'restoring') return;
+    if (mustReturnToAppOrigin || status === 'restoring') return;
 
     if (status === 'unauthenticated' && !isDemo) {
       const returnUrl = `/checkout/result${
@@ -28,7 +54,17 @@ export function CheckoutResultPage() {
       }`;
       router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(returnUrl)}`);
     }
-  }, [status, isDemo, searchParams, router]);
+  }, [status, isDemo, mustReturnToAppOrigin, searchParams, router]);
+
+  if (mustReturnToAppOrigin) {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#f8fafc]">
+        <main className="flex flex-1 items-center justify-center p-8">
+          <p className="text-xs font-semibold text-slate-500">Đang quay lại ứng dụng TripMate…</p>
+        </main>
+      </div>
+    );
+  }
 
   if (status === 'restoring') {
     return (
