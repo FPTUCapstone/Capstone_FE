@@ -175,7 +175,7 @@ export function RevenueFilterControls({
               disabled={isLoading}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              <span className="material-symbols-outlined text-[16px]">restart_alt</span>
               <span>{financeEn.revenue.filters.resetBtn}</span>
             </button>
 

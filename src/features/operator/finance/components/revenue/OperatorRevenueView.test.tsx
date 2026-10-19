@@ -114,4 +114,56 @@ describe('OperatorRevenueView (Screen #89)', () => {
     ).toBeNull();
     expect(screen.queryByText(/queued successfully/i)).toBeNull();
   });
+
+  it('shows when the report was last loaded and lets the operator force a reload without changing filters', async () => {
+    render(<OperatorRevenueView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('revenue-last-updated').textContent).toMatch(
+        /^Updated /
+      );
+    });
+
+    const refreshButton = screen.getByRole('button', { name: /Refresh/i });
+    expect(refreshButton.hasAttribute('disabled')).toBe(false);
+
+    const updatedAtBeforeClick = screen.getByTestId(
+      'revenue-last-updated'
+    ).textContent;
+    fireEvent.click(refreshButton);
+
+    // Refresh must not pop the export dialog, change the applied filters, or require a page
+    // reload — it only asks for the same report again.
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByTestId('revenue-last-updated').textContent).toMatch(
+        /^Updated /
+      );
+    });
+    expect(
+      (screen.getByLabelText(/Start Date/i) as HTMLInputElement).value
+    ).toBe('2026-10-01');
+    void updatedAtBeforeClick;
+  });
+
+  it('silently refreshes when the tab regains focus, without disabling the Refresh control', async () => {
+    render(<OperatorRevenueView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('revenue-last-updated').textContent).toMatch(
+        /^Updated /
+      );
+    });
+
+    fireEvent(window, new Event('focus'));
+
+    // A background/silent refresh must never disable the controls the way an explicit,
+    // user-initiated reload does.
+    expect(
+      screen.getByRole('button', { name: /Refresh/i }).hasAttribute('disabled')
+    ).toBe(false);
+    expect(
+      screen.getByRole('button', { name: /Apply Filters/i }).hasAttribute('disabled')
+    ).toBe(false);
+  });
 });
