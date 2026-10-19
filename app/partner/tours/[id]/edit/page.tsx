@@ -79,7 +79,7 @@ function EditTourContent() {
                   </span>
                   <div>
                     <h2 className="text-lg font-bold">
-                      Chức năng chỉnh sửa gói tour (UC-36) đang chờ tích hợp Backend
+                      Chức năng chỉnh sửa gói tour đang chờ cập nhật hệ thống
                     </h2>
                     <p className="mt-2 text-sm text-amber-800">
                       {OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION}

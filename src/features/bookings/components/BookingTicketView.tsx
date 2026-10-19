@@ -140,7 +140,7 @@ export function BookingTicketView({ ticketId }: BookingTicketViewProps) {
           Gói tour
         </Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="font-semibold text-slate-900">Vé điện tử QR (UC-29)</span>
+        <span className="font-semibold text-slate-900">Vé điện tử QR</span>
       </nav>
 
       {/* Demo notice (Hidden when printing) */}
@@ -148,7 +148,7 @@ export function BookingTicketView({ ticketId }: BookingTicketViewProps) {
         <div className="mb-6 rounded-2xl border border-teal-200 bg-teal-50/70 p-3.5 text-xs text-teal-900 flex items-center justify-between shadow-xs print:hidden">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-teal-600 text-base">science</span>
-            <span className="font-semibold">Mô phỏng vé điện tử QR hoàn tất (UC-29 Demo)</span>
+            <span className="font-semibold">Vé điện tử QR mô phỏng hoàn tất</span>
           </div>
           <span className="rounded-md bg-teal-200 px-2 py-0.5 text-[10px] font-extrabold uppercase text-teal-900">
             DEMO ONLY

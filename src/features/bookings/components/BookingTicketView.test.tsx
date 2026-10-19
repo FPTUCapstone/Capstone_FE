@@ -29,7 +29,7 @@ describe('BookingTicketView (UC-29 QR E-ticket)', () => {
     render(<BookingTicketView ticketId="tkt-demo-03" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Vé điện tử QR (UC-29)')).toBeTruthy();
+      expect(screen.getByText('Vé điện tử QR')).toBeTruthy();
       expect(screen.getByText('ĐÃ XÁC NHẬN (CONFIRMED)')).toBeTruthy();
       expect(screen.getByText('TKT-8F4K29QX-03')).toBeTruthy();
       expect(screen.getByText('BK-20261015-0148')).toBeTruthy();
