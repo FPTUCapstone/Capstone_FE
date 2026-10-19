@@ -99,8 +99,8 @@ export function ItineraryRouteMapPreview({ itinerary, showDiagram = true }: Itin
               Điều hướng trực tiếp trên ứng dụng di động
             </h4>
             <p className="mt-1 text-xs text-sky-800">
-              Tính năng dẫn đường GPS thời gian thực (UC-13) và Cảnh báo thay đổi lộ trình (UC-14)
-              được tối ưu hóa độc quyền trên ứng dụng <strong>TripMate Flutter Mobile</strong>.
+              Tính năng dẫn đường GPS thời gian thực và Cảnh báo thay đổi lộ trình
+              được tối ưu hóa trên ứng dụng di động <strong>TripMate</strong>.
             </p>
           </div>
         </div>

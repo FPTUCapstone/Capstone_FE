@@ -53,7 +53,7 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       />,
     );
 
-    expect(screen.getByText('Xác nhận đặt tour (UC-27)')).toBeTruthy();
+    expect(screen.getByText('Xác nhận đặt tour')).toBeTruthy();
     expect(screen.getAllByText(DEMO_TOUR_DETAIL_HOI_AN.title).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Endpoint Travel Miền Trung')).toBeTruthy();
     expect(screen.getByText('Số lượng khách tham gia')).toBeTruthy();

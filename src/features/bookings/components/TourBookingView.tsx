@@ -355,7 +355,7 @@ export function TourBookingView({
           {tour.title}
         </Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="font-semibold text-slate-900">Xác nhận đặt tour (UC-27)</span>
+        <span className="font-semibold text-slate-900">Xác nhận đặt tour</span>
       </nav>
 
       {/* Demo notice bar when in demo mode */}
@@ -364,9 +364,9 @@ export function TourBookingView({
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-teal-600 text-lg">science</span>
             <div>
-              <p className="font-bold">Chế độ xem trước trải nghiệm đặt tour (Demo Mode)</p>
+              <p className="font-bold">Chế độ xem trước trải nghiệm đặt tour</p>
               <p className="text-teal-700">
-                Đang sử dụng dữ liệu mô phỏng chuẩn SRS (Report 3) để kiểm thử luồng UC-27 &rarr; UC-28 &rarr; UC-29.
+                Đang sử dụng dữ liệu mô phỏng để trải nghiệm tính năng đặt tour và nhận vé điện tử.
               </p>
             </div>
           </div>

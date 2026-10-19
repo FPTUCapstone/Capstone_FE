@@ -95,7 +95,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
         <div className="mb-6 flex items-center gap-2.5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs font-semibold text-amber-900 shadow-xs">
           <span className="material-symbols-outlined text-lg text-amber-600">info</span>
           <span>
-            CHẾ ĐỘ MÔ PHỎNG (DEMO ONLY) — Đang hiển thị giao diện mẫu cho UC-26 (View Tour Detail) khi đang chờ kết nối Backend chính thức (PENDING_BE_INTEGRATION).
+            CHẾ ĐỘ MÔ PHỎNG (DEMO ONLY) — Đang hiển thị giao diện mẫu chi tiết tour trong thời gian hoàn tất kết nối.
           </span>
         </div>
       )}
@@ -546,7 +546,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                         href={bookingUrl}
                         className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
                       >
-                        <span>Đặt tour ngay (UC-27)</span>
+                        <span>Đặt tour ngay</span>
                         <span className="material-symbols-outlined text-base">arrow_forward</span>
                       </Link>
                     );
