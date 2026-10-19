@@ -143,7 +143,7 @@ export const CSP_PRESETS: Record<string, CspPreset> = {
   danang: {
     cityId: 'danang',
     cityName: 'Đà Nẵng',
-    pace: 'Cân bằng (Balanced)',
+    pace: 'Cân bằng',
     totalDuration: '10.5 giờ',
     totalPois: 5,
     feasibilityScore: 98,
@@ -185,7 +185,7 @@ export const CSP_PRESETS: Record<string, CspPreset> = {
         category: 'Ngắm cảnh & Hoàng hôn',
         duration: '2h30',
         openingHours: 'Mở cả ngày',
-        constraintNote: 'CSP xếp điểm này khớp sự kiện thiên văn: Ngắm hoàng hôn lúc 17:45.',
+        constraintNote: 'Khớp khung giờ ngắm hoàng hôn biển lúc 17:45.',
         icon: 'wb_twilight',
         tag: 'Hoàng hôn',
       },
@@ -204,7 +204,7 @@ export const CSP_PRESETS: Record<string, CspPreset> = {
   hoian: {
     cityId: 'hoian',
     cityName: 'Hội An',
-    pace: 'Thong thả (Relaxed)',
+    pace: 'Thong thả',
     totalDuration: '9.0 giờ',
     totalPois: 4,
     feasibilityScore: 96,
@@ -255,7 +255,7 @@ export const CSP_PRESETS: Record<string, CspPreset> = {
   hue: {
     cityId: 'hue',
     cityName: 'Cố Đô Huế',
-    pace: 'Khám phá (Explorer)',
+    pace: 'Khám phá tối đa',
     totalDuration: '10.0 giờ',
     totalPois: 5,
     feasibilityScore: 97,
@@ -483,9 +483,9 @@ export const VERIFIED_TOURS: VerifiedTour[] = [
 
 export const COMPARISON_DATA: FeatureComparison[] = [
   {
-    feature: 'Tự động tối ưu lịch trình 1 ngày (CSP Engine)',
-    description: 'Tính toán giải bài toán thỏa mãn ràng buộc (thời gian mở/đóng cửa, sự kiện hoàng hôn, ngân sách).',
-    tripmate: 'Có (Thuật toán tối ưu đa ràng buộc CSP)',
+    feature: 'Tự động tối ưu lịch trình 1 ngày',
+    description: 'Tự động cân đối thời gian mở/đóng cửa, sự kiện hoàng hôn và khoảng cách di chuyển.',
+    tripmate: 'Có (Tự động tối ưu đa ràng buộc)',
     googleMaps: 'Không (Chỉ tìm đường theo thứ tự người dùng nhập)',
     tripAdvisor: 'Không (Chỉ bookmark lưu danh sách tĩnh)',
     klook: 'Không (Chỉ bán tour đóng gói cố định)',
@@ -493,7 +493,7 @@ export const COMPARISON_DATA: FeatureComparison[] = [
   {
     feature: 'Cảnh báo thời tiết & Đề xuất điều chỉnh lộ trình',
     description: 'Phát hiện mưa giông (>7mm/h) hoặc thời tiết xấu, tự động đề xuất điểm tham quan trong nhà để du khách duyệt.',
-    tripmate: 'Có (FSM phát hiện gián đoạn & đề xuất phương án)',
+    tripmate: 'Có (Chủ động phát hiện & đề xuất phương án)',
     googleMaps: 'Không (Chỉ cảnh báo tắc đường giao thông)',
     tripAdvisor: 'Không (Không hỗ trợ khi đang di chuyển)',
     klook: 'Không (Không hỗ trợ đổi điểm do thời tiết)',
@@ -515,9 +515,9 @@ export const COMPARISON_DATA: FeatureComparison[] = [
     klook: 'Mã QR tĩnh / PDF voucher',
   },
   {
-    feature: 'Thanh toán ký quỹ (Escrow) & Chính sách hủy do bão lũ',
+    feature: 'Thanh toán bảo đảm & Chính sách hủy do thời tiết',
     description: 'Bảo vệ nguồn tiền du khách, hoàn trả tự động theo chính sách khi có thiên tai hoặc hủy tour khẩn cấp.',
-    tripmate: 'Có (Cơ chế ký quỹ Escrow bảo vệ 2 chiều)',
+    tripmate: 'Có (Bảo lãnh thanh toán an toàn hai chiều)',
     googleMaps: 'Không áp dụng',
     tripAdvisor: 'Quy trình đối tác ngoài',
     klook: 'Xét duyệt thủ công 7 - 14 ngày',
@@ -530,16 +530,16 @@ export const FAQS = [
     a: 'Google Maps chỉ dẫn đường theo thứ tự bạn tự nhập, còn TripAdvisor chỉ là nơi đọc đánh giá. TripMate áp dụng thuật toán tối ưu ràng buộc (CSP) để tự động sắp xếp một ngày du lịch tối ưu dựa trên giờ mở cửa của các điểm đến, thời gian di chuyển thực tế và thời điểm mặt trời lặn, đồng thời chủ động phát hiện gián đoạn thời tiết để đề xuất phương án thay thế.',
   },
   {
-    q: 'Thuật toán CSP giải quyết vấn đề gì cho chuyến đi?',
-    a: 'Trong thực tế, du khách thường tốn nhiều giờ tra cứu để ghép lịch trình và dễ gặp sự cố: đến nơi thì bảo tàng đóng cửa, phải chạy ngược đường, hoặc bị dầm mưa lúc trưa chiều. Thuật toán CSP (Constraint Satisfaction Problem) của TripMate giải quyết đồng thời các biến số ràng buộc về thời gian, địa điểm và nhịp độ để đưa ra phương án khả thi và thoải mái nhất.',
+    q: 'Công nghệ tối ưu lịch trình giải quyết vấn đề gì cho chuyến đi?',
+    a: 'Trong thực tế, du khách thường tốn nhiều giờ tra cứu để ghép lịch trình và dễ gặp sự cố: đến nơi thì bảo tàng đóng cửa, phải chạy ngược đường, hoặc bị dầm mưa lúc trưa chiều. Hệ thống tối ưu đa ràng buộc của TripMate giải quyết đồng thời các biến số về thời gian, địa điểm và nhịp độ để đưa ra phương án khả thi và thoải mái nhất.',
   },
   {
-    q: 'Tính năng cứu nguy thời tiết FSM hoạt động như thế nào?',
-    a: 'Khi du khách đang di chuyển, hệ thống FSM (Finite State Machine) liên tục giám sát điều kiện thời tiết trên tuyến. Nếu phát hiện mưa to (>7mm/h) hoặc giông lốc có nguy cơ ảnh hưởng, hệ thống sẽ gửi cảnh báo và đề xuất các điểm tham quan văn hóa / bảo tàng / café trong nhà trong bán kính gần. Du khách toàn quyền xem xét và xác nhận có áp dụng phương án mới hay không trước khi cập nhật lịch trình.',
+    q: 'Tính năng tự động điều chỉnh lộ trình khi thời tiết xấu hoạt động như thế nào?',
+    a: 'Khi du khách đang di chuyển, hệ thống liên tục giám sát điều kiện thời tiết trên tuyến. Nếu phát hiện mưa to (>7mm/h) hoặc giông lốc có nguy cơ ảnh hưởng, hệ thống sẽ gửi cảnh báo và đề xuất các điểm tham quan văn hóa / bảo tàng / café trong nhà trong bán kính gần. Du khách toàn quyền xem xét và xác nhận có áp dụng phương án mới hay không trước khi cập nhật lịch trình.',
   },
   {
     q: 'Chính sách bảo vệ khi tour bị hủy do bão lũ thời tiết ra sao?',
-    a: 'Theo chính sách bảo vệ quyền lợi du khách của TripMate, khi xảy ra thiên tai hoặc bão lũ khiến Tour Operator phải tuyên bố hủy chuyến khẩn cấp, hệ thống TripMate hỗ trợ kích hoạt quy trình hoàn tiền qua tài khoản ký quỹ (Escrow) minh bạch, bảo vệ quyền lợi của cả du khách lẫn đơn vị tổ chức.',
+    a: 'Theo chính sách bảo vệ quyền lợi du khách của TripMate, khi xảy ra thiên tai hoặc bão lũ khiến Tour Operator phải tuyên bố hủy chuyến khẩn cấp, hệ thống TripMate hỗ trợ kích hoạt quy trình hoàn tiền an toàn và minh bạch, bảo vệ quyền lợi của cả du khách lẫn đơn vị tổ chức.',
   },
   {
     q: 'Ứng dụng Web và Ứng dụng Mobile hỗ trợ khác nhau như thế nào?',

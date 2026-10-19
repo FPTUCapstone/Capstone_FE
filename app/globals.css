@@ -134,12 +134,42 @@
   --brand-textSecondary: #64748B;
 }
 
-html {
+/* Official Lenis Smooth Scroll Configuration */
+html.lenis,
+html.lenis body,
+html.lenis-smooth {
+  height: auto;
+}
+
+html.lenis,
+html.lenis.lenis-smooth,
+html.lenis.lenis-scrolling {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+html:not(.lenis) {
   scroll-behavior: smooth;
+}
+
+html {
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
+  overflow-x: clip;
   font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #F4F7FC;
   color: #0F1B2D;
@@ -307,10 +337,42 @@ body {
   animation: scale-in 180ms ease-out both;
 }
 
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: page-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes editorial-crossfade {
+  from {
+    opacity: 0.35;
+    transform: scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-crossfade {
+  animation: editorial-crossfade 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   .animate-fade-in,
-  .animate-scale-in {
+  .animate-scale-in,
+  .animate-page-enter,
+  .animate-crossfade {
     animation: none;
   }
 }
@@ -607,6 +669,120 @@ body {
   text-wrap: pretty;
 }
 
+/* Heritage Atmosphere Background Animations */
+@keyframes river-drift {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-8px) scaleY(1.02);
+  }
+}
+
+@keyframes dash-flow {
+  from {
+    stroke-dashoffset: 120;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes orb-float-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.14;
+  }
+  50% {
+    transform: translate3d(24px, -20px, 0) scale(1.08);
+    opacity: 0.22;
+  }
+}
+
+@keyframes orb-float-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate3d(-20px, 18px, 0) scale(1.06);
+    opacity: 0.20;
+  }
+}
+
+.animate-river-drift {
+  animation: river-drift 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-dash-flow {
+  animation: dash-flow 24s linear infinite;
+}
+
+.animate-orb-1 {
+  animation: orb-float-1 12s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-orb-2 {
+  animation: orb-float-2 16s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Running Ticker / Marquee Animations */
+@keyframes marquee-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-left 58s linear infinite;
+}
+
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-right 64s linear infinite;
+}
+
+.animate-marquee-left:hover,
+.animate-marquee-right:hover {
+  animation-play-state: paused;
+}
+
+/* Route Dash Flow Animation (Continuous Living Path) */
+@keyframes route-dash-flow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -32;
+  }
+}
+
+.animate-route-dash-flow {
+  stroke-dasharray: 8 6;
+  animation: route-dash-flow 3.8s linear infinite;
+}
+
+
 /* Global Reduced-Motion Enforcements */
 @media (prefers-reduced-motion: reduce) {
   .animate-route-draw {
@@ -633,7 +809,9 @@ body {
   .zoom-in-75,
   .slide-in-from-top-1,
   .animate-fade-in,
-  .animate-scale-in {
+  .animate-scale-in,
+  .animate-page-enter,
+  .animate-crossfade {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -659,4 +837,28 @@ body {
   .btn-press:active {
     transform: none !important;
   }
+  .nav-sliding-pill,
+  .nav-hover-pill {
+    transition: none !important;
+  }
+}
+
+/* Public Navigation Desktop Capsule Sliding Pill Indicator */
+.nav-sliding-pill {
+  transition: left 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              top 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              height 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 150ms ease;
+  will-change: left, width;
+}
+
+/* Public Navigation Desktop Capsule Translucent Hover Indicator */
+.nav-hover-pill {
+  transition: left 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              width 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              top 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              height 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 140ms ease;
+  will-change: left, width, opacity;
 }
