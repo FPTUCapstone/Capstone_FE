@@ -56,8 +56,17 @@ export async function getOperatorRevenueTours(
   if (!isDemoActive) {
     try {
       const response = await fetch('/api/operator/revenue/tours', { cache: 'no-store' });
-      const body = await response.json(); const data = body?.data ?? body;
-      return (data?.items ?? []).map((tour: { id: number; title: string }) => ({ id: String(tour.id), tourCode: `TOUR-${tour.id}`, title: tour.title, operatorUserId: 0 }));
+      if (!response.ok) return [];
+      const body = await response.json();
+      // Backend returns a plain JSON array: [{id, code, title, isActive}]
+      const items: Array<{ id: number; code: string; title: string; isActive: boolean }> =
+        Array.isArray(body) ? body : [];
+      return items.map((tour) => ({
+        id: String(tour.id),
+        tourCode: tour.code,
+        title: tour.title,
+        operatorUserId: 0,
+      }));
     } catch { return []; }
   }
   if (!isValidActor(options.demoActorUserId)) return [];
