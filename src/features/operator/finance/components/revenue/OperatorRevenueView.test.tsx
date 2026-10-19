@@ -40,6 +40,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
 
   afterEach(() => {
     process.env = originalEnv;
+    vi.unstubAllGlobals();
   });
 
   it('renders Screen #89 with header, demo banner, summary metrics, chart, and table', async () => {
@@ -58,16 +59,28 @@ describe('OperatorRevenueView (Screen #89)', () => {
     });
   });
 
-  it('displays truthful PENDING_BE_INTEGRATION notice when demo query is absent', async () => {
+  it('loads the production workspace through the revenue API when demo query is absent', async () => {
     mockSearchParams = new URLSearchParams('');
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('/tours')) {
+        return Promise.resolve(new Response(JSON.stringify([{ id: 7, code: 'TOUR-007', title: 'API tour', isActive: true }]), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({
+        summary: { grossRevenue: 10000, platformCommission: 1000, netAmount: 9000, totalBookings: 1, totalParticipants: 1, refundedAmount: 0, commissionRatePercent: 10 },
+        chartData: [], tourDetails: [], totalToursCount: 1, page: 1, pageSize: 20, totalPages: 1,
+      }), { status: 200 }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
     render(<OperatorRevenueView />);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Backend Integration Pending/i).length).toBeGreaterThan(0);
-      expect(
-        screen.getByText(/Revenue calculation and reporting backend integration is pending/i)
-      ).toBeDefined();
+      expect(screen.getByRole('option', { name: /API tour/i })).toBeDefined();
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/operator/revenue/report?'),
+        { cache: 'no-store' }
+      );
     });
+    expect(screen.queryByText(/Backend Integration Pending/i)).toBeNull();
   });
 
   it('enforces CR-02 draft filter behavior: does not re-query until Apply Filters is clicked', async () => {
@@ -92,13 +105,15 @@ describe('OperatorRevenueView (Screen #89)', () => {
     });
   });
 
-  it('disables the export trigger and explains that backend integration is pending', async () => {
+  it('disables the export trigger until UC-45 export is implemented', async () => {
     render(<OperatorRevenueView />);
 
     const exportButtons = screen.getAllByRole('button', { name: /Export Report/i });
     expect(exportButtons.length).toBeGreaterThan(0);
     exportButtons.forEach((button) => expect(button.hasAttribute('disabled')).toBe(true));
-    expect(screen.getAllByText('Backend integration pending').length).toBeGreaterThan(0);
+    exportButtons.forEach((button) =>
+      expect(button.getAttribute('title')).toBe('Xuất báo cáo sẽ được triển khai ở UC-45')
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
