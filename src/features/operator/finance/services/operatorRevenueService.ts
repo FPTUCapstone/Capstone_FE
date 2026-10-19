@@ -53,9 +53,23 @@ export async function getOperatorRevenueTours(
   options: OperatorRevenueServiceOptions = {}
 ): Promise<DemoTourPackage[]> {
   const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
-  if (!isDemoActive || !isValidActor(options.demoActorUserId)) {
-    return [];
+  if (!isDemoActive) {
+    try {
+      const response = await fetch('/api/operator/revenue/tours', { cache: 'no-store' });
+      if (!response.ok) return [];
+      const body = await response.json();
+      // Backend returns a plain JSON array: [{id, code, title, isActive}]
+      const items: Array<{ id: number; code: string; title: string; isActive: boolean }> =
+        Array.isArray(body) ? body : [];
+      return items.map((tour) => ({
+        id: String(tour.id),
+        tourCode: tour.code,
+        title: tour.title,
+        operatorUserId: 0,
+      }));
+    } catch { return []; }
   }
+  if (!isValidActor(options.demoActorUserId)) return [];
   return DEMO_OPERATOR_TOURS.filter(
     (t) => String(t.operatorUserId) === String(options.demoActorUserId)
   );
@@ -171,20 +185,20 @@ export async function getOperatorRevenueReport(
   const page = pagination.page ?? 1;
   const pageSize = pagination.pageSize ?? REVENUE_DEFAULT_PAGE_SIZE;
 
-  // Production NO_BACKEND truthfulness
   if (!isDemoActive) {
-    return {
-      summary: { ...ZERO_SUMMARY },
-      chartData: [],
-      tourDetails: [],
-      totalToursCount: 0,
-      page,
-      pageSize,
-      totalPages: 0,
-      appliedFilters: filters,
-      pendingBackendNotice: REVENUE_MESSAGES.PENDING_BE_INTEGRATION,
-      messageCode: REVENUE_ERROR_CODES.PENDING_BE_INTEGRATION,
-    };
+    try {
+      const params = new URLSearchParams({ startDate: filters.startDate, endDate: filters.endDate, granularity: filters.granularity, page: String(page), pageSize: String(pageSize) });
+      if (filters.tourId && filters.tourId !== 'all') params.set('tourId', filters.tourId);
+      const response = await fetch(`/api/operator/revenue/report?${params.toString()}`, { cache: 'no-store' });
+      const body = await response.json().catch(() => null);
+      const data = body?.data ?? body;
+      if (!response.ok || !data?.summary) {
+        throw new Error(body?.title || 'Không thể tải dữ liệu doanh thu. Hãy kiểm tra Backend và đăng nhập lại.');
+      }
+      return { ...data, appliedFilters: filters, messageCode: REVENUE_ERROR_CODES.SUCCESS } as RevenueReportResult;
+    } catch (error) {
+      return { summary: { ...ZERO_SUMMARY }, chartData: [], tourDetails: [], totalToursCount: 0, page, pageSize, totalPages: 0, appliedFilters: filters, errorMessage: error instanceof Error ? error.message : 'Không thể tải dữ liệu doanh thu. Hãy kiểm tra Backend và đăng nhập lại.', messageCode: REVENUE_ERROR_CODES.SYSTEM_FAILURE };
+    }
   }
 
   // BR-105 Fail-closed if actor identity is missing in demo mode

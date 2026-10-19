@@ -23,9 +23,9 @@ it('keeps missing profile unresolved and authenticated', async () => {
  applicationApi.get.mockRejectedValue(new OperatorApplicationError(404));
  AuthStorage.accept(context(null), false); render(<PartnerApplicationPage />); await waitFor(() => expect(screen.getByText('Tour Operator application not found.')).toBeDefined()); expect(AuthStorage.getContext()).not.toBeNull(); expect(screen.queryByText('PendingApproval')).toBeNull();
 });
-it.each(['PendingApproval','Rejected',null])('does not show approved area for %s', (status) => {
- AuthStorage.accept(context(status), false); render(<PartnerPage />); expect(screen.queryByText(/Khu/)).toBeNull();
+it.each(['PendingApproval','Rejected',null])('does not show the operator dashboard for %s', (status) => {
+ AuthStorage.accept(context(status), false); render(<PartnerPage />); expect(screen.queryByRole('heading', { name: /Chào / })).toBeNull();
 });
-it('shows approved placeholder only with authoritative approved context', () => {
- AuthStorage.accept(context('Approved'), false); render(<PartnerPage />); expect(screen.getByText(/Khu/)).toBeDefined();
+it('shows the operator dashboard only with authoritative approved context', () => {
+ AuthStorage.accept(context('Approved'), false); render(<PartnerPage />); expect(screen.getByRole('heading', { name: /Chào / })).toBeDefined();
 });

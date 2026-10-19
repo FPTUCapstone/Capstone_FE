@@ -26,6 +26,7 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
 
   afterEach(() => {
     process.env = originalEnv;
+    vi.unstubAllGlobals();
   });
 
   describe('UC-44 View Revenue Report - Production NO_BACKEND Truthfulness', () => {
@@ -35,7 +36,14 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       );
       expect(financeEn.revenue.demoNoticeDesc).toMatch(/non-authoritative/i);
     });
-    it('returns empty figures and PENDING_BE_INTEGRATION notice when isDemo is false', async () => {
+    it('uses the production report endpoint when isDemo is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({
+          summary: { grossRevenue: 10000, platformCommission: 1000, netAmount: 9000, totalBookings: 1, totalParticipants: 1, refundedAmount: 0, commissionRatePercent: 10 },
+          chartData: [], tourDetails: [], totalToursCount: 1, page: 1, pageSize: 20, totalPages: 1,
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      );
+      vi.stubGlobal('fetch', fetchMock);
       const result = await getOperatorRevenueReport(
         {
           startDate: '2026-09-01',
@@ -45,25 +53,32 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
         { isDemo: false }
       );
 
-      expect(result.summary.grossRevenue).toBe(0);
-      expect(result.summary.platformCommission).toBe(0);
-      expect(result.summary.netAmount).toBe(0);
-      expect(result.summary.totalBookings).toBe(0);
-      expect(result.summary.totalParticipants).toBe(0);
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/operator/revenue/report?startDate=2026-09-01'),
+        { cache: 'no-store' }
+      );
+      expect(result.summary.grossRevenue).toBe(10000);
+      expect(result.summary.platformCommission).toBe(1000);
+      expect(result.summary.netAmount).toBe(9000);
+      expect(result.summary.totalBookings).toBe(1);
+      expect(result.summary.totalParticipants).toBe(1);
       expect(result.summary.refundedAmount).toBe(0);
       expect(result.chartData).toEqual([]);
       expect(result.tourDetails).toEqual([]);
-      expect(result.pendingBackendNotice).toBe(
-        REVENUE_MESSAGES.PENDING_BE_INTEGRATION
-      );
-      expect(result.messageCode).toBe(
-        REVENUE_ERROR_CODES.PENDING_BE_INTEGRATION
-      );
+      expect(result.pendingBackendNotice).toBeUndefined();
+      expect(result.messageCode).toBe(REVENUE_ERROR_CODES.SUCCESS);
     });
 
-    it('returns empty tour list for filter dropdown when isDemo is false', async () => {
+    it('uses the production tour filter endpoint when isDemo is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([{ id: 7, code: 'TOUR-007', title: 'API tour', isActive: true }]), {
+          status: 200, headers: { 'Content-Type': 'application/json' },
+        })
+      );
+      vi.stubGlobal('fetch', fetchMock);
       const tours = await getOperatorRevenueTours({ isDemo: false });
-      expect(tours).toEqual([]);
+      expect(fetchMock).toHaveBeenCalledWith('/api/operator/revenue/tours', { cache: 'no-store' });
+      expect(tours).toEqual([{ id: '7', tourCode: 'TOUR-007', title: 'API tour', operatorUserId: 0 }]);
     });
   });
 
