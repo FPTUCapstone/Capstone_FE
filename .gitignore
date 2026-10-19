@@ -12,3 +12,14 @@ coverage/
 !.env.example
 .firebase/
 
+# ==========================================
+# Local AI Agent Skills
+# ==========================================
+
+# Skills installed using npx skills
+/.agents/skills/
+
+# Local skills installation lock file
+/skills-lock.json
+
+/audit-output
