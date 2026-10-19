@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { ExplorePoisPage } from '@/features/public/pois/components/ExplorePoisPage';
 import { PoiListSkeleton } from '@/features/public/pois/components/PoiStates';
+import { PageTransition } from '@/components/navigation/PageTransition';
 
 export const metadata: Metadata = {
   title: 'Khám phá địa điểm',
@@ -11,15 +12,17 @@ export const metadata: Metadata = {
 
 export default function PoisPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="mx-auto min-h-screen max-w-4xl bg-[#f3f6f7] px-4 py-12" lang="vi">
-          <h1 className="mb-8 text-3xl font-black text-[#00152a]">Khám phá địa điểm tham quan</h1>
-          <PoiListSkeleton />
-        </main>
-      }
-    >
-      <ExplorePoisPage />
-    </Suspense>
+    <PageTransition>
+      <Suspense
+        fallback={
+          <main className="mx-auto min-h-screen max-w-4xl bg-[#f3f6f7] px-4 py-12" lang="vi">
+            <h1 className="mb-8 text-3xl font-black text-[#00152a]">Khám phá địa điểm tham quan</h1>
+            <PoiListSkeleton />
+          </main>
+        }
+      >
+        <ExplorePoisPage />
+      </Suspense>
+    </PageTransition>
   );
 }
