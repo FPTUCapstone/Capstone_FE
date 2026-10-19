@@ -21,6 +21,22 @@ function configuredAppOrigin(): string | null {
   }
 }
 
+/**
+ * Keeps PayOS callbacks on the public tunnel only long enough to move them
+ * back to the authenticated application origin. Exported for regression tests.
+ */
+export function getCheckoutResultRedirectUrl(
+  appOrigin: string | null,
+  currentOrigin: string,
+  callbackQuery: string,
+): string | null {
+  if (!appOrigin || currentOrigin === appOrigin) return null;
+
+  const target = new URL(ROUTES.checkoutResult, appOrigin);
+  target.search = callbackQuery;
+  return target.toString();
+}
+
 export function CheckoutResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,20 +45,20 @@ export function CheckoutResultPage() {
   const isDemo =
     searchParams.get('demo') === '1' && isBookingDemoAllowedInCurrentEnv();
   const appOrigin = configuredAppOrigin();
-  const mustReturnToAppOrigin =
-    typeof window !== 'undefined' && appOrigin !== null && window.location.origin !== appOrigin;
+  const redirectUrl =
+    typeof window === 'undefined'
+      ? null
+      : getCheckoutResultRedirectUrl(appOrigin, window.location.origin, searchParams.toString());
+  const mustReturnToAppOrigin = redirectUrl !== null;
 
   // PayOS must return to a public URL. During local development that URL is a
   // temporary tunnel, while the authenticated session belongs to localhost.
   // Move the callback, including bookingId and gateway parameters, back to the
   // configured app origin before checking the session.
   useEffect(() => {
-    if (!mustReturnToAppOrigin || !appOrigin) return;
-
-    const target = new URL(ROUTES.checkoutResult, appOrigin);
-    target.search = searchParams.toString();
-    window.location.replace(target.toString());
-  }, [appOrigin, mustReturnToAppOrigin, searchParams]);
+    if (!redirectUrl) return;
+    window.location.replace(redirectUrl);
+  }, [redirectUrl]);
 
   // Auth Redirection
   useEffect(() => {
