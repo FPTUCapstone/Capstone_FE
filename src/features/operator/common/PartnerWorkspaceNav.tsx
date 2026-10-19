@@ -6,7 +6,7 @@ import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
 
-export type PartnerWorkspaceTabKey = 'dashboard' | 'profile';
+export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts';
 
 interface PartnerWorkspaceNavProps {
   activeTab: PartnerWorkspaceTabKey;
@@ -33,7 +33,7 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     key: 'tours',
     label: 'Gói tour',
     icon: 'tour',
-    disabled: true,
+    href: '/partner/tours',
   },
   {
     key: 'coupons',
@@ -51,13 +51,13 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     key: 'revenue',
     label: 'Doanh thu',
     icon: 'monitoring',
-    disabled: true,
+    href: ROUTES.partner.revenue,
   },
   {
     key: 'payouts',
     label: 'Thanh toán',
     icon: 'payments',
-    disabled: true,
+    href: ROUTES.partner.payouts,
   },
 ];
 

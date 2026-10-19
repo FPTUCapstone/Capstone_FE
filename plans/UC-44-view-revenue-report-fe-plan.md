@@ -19,19 +19,19 @@ Create Next.js App Router API handlers:
 Update `src/features/operator/finance/services/operatorRevenueService.ts`:
 - Replace `PENDING_BE_INTEGRATION` in production mode with fetch calls to the BFF routes.
 - Retain deterministic mock fallback for offline demo mode when `isDemo: true`.
-- Handle error codes (`MSG29`, `MSG126`, `MSG127`, `MSG128`) and empty data transformations. Preserve server-provided ISO weekly labels and never recalculate revenue, commission, or buckets on the client.
+- Handle error codes (`MSG31`, `MSG126`, `MSG127`, `MSG128`) and empty data transformations. Preserve server-provided ISO weekly labels and never recalculate revenue, commission, refunds, or buckets on the client.
 
 **Done when:** Service tests verify both live API parsing and demo fallback modes.
 
 ## Task 3 — View Components Alignment & Testing
 
 Verify and enhance `OperatorRevenueView.tsx` and child components:
-- Ensure filter controls bind to router query state or local state with instant validation for invalid dates (`MSG29`).
-- Render four primary cards (Gross Revenue, Net Payout, Platform Commission, Bookings/Participants) and settlement details (Payments Received, Discounts Given, Refunded Amount); ensure `RevenueSummaryCards` and `RevenueChart` handle zero-booking responses truthfully (`MSG128`).
+- Ensure filter controls bind to router query state or local state with instant validation for invalid dates (`MSG31`).
+- Render the six SRS summary metrics in a responsive 4 + 2 layout: Gross Revenue, Net Payout, Platform Commission, Total Bookings, Total Participants, and Refunded Amount. Render Payments Received, Discounts Given, and Net Sales in settlement details; ensure `RevenueSummaryCards` and `RevenueChart` handle zero-booking responses truthfully (`MSG128`).
 - Render Export and Request Payout as disabled contextual actions until UC-45 and UC-46 are available; do not build those flows in UC-44.
-- Verify English resource copy and currency formatting (`VND` / `₫`).
+- Verify English resource copy and currency formatting (`VND` / `₫`), and label sales by successful-payment date and refunds by completion date.
 
-**Done when:** Component tests in `OperatorRevenueView.test.tsx` assert loading, populated, empty, error, invalid-period, and unavailable-UC-45/46 action states.
+**Done when:** Component tests in `OperatorRevenueView.test.tsx` assert loading, populated, empty, error, MSG31 invalid-period, six-metric layout, and unavailable-UC-45/46 action states.
 
 ## Task 4 — Verification
 

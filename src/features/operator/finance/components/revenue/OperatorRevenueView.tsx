@@ -33,10 +33,10 @@ export function OperatorRevenueView() {
   const isDemo = demoQuery && isFinanceDemoAllowedInCurrentEnv();
   const actorUserId = context?.userId;
 
-  // Initial date defaults (e.g., September 2026 for demo or current month)
+  // Seeded development records are in the current reporting month.
   const initialFilters: RevenueFilterInput = {
-    startDate: '2026-09-01',
-    endDate: '2026-09-30',
+    startDate: '2026-10-01',
+    endDate: '2026-10-31',
     granularity: 'monthly',
     tourId: undefined,
   };
@@ -159,45 +159,13 @@ export function OperatorRevenueView() {
           type="button"
           onClick={() => setIsExportDialogOpen(true)}
           disabled
-          aria-describedby="revenue-export-integration-status"
-          title={financeEn.messages.BACKEND_INTEGRATION_PENDING}
+          title="Xuất báo cáo sẽ được triển khai ở UC-45"
           className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
         >
           <span className="material-symbols-outlined text-[18px]">download</span>
           <span>{financeEn.revenue.filters.exportBtn}</span>
         </button>
       </div>
-
-      <p
-        id="revenue-export-integration-status"
-        role="status"
-        className="text-xs font-medium text-amber-700"
-      >
-        {financeEn.messages.BACKEND_INTEGRATION_PENDING}
-      </p>
-
-      {/* Production NO_BACKEND Notice */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 text-xs text-sky-900"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-sky-600 text-lg">
-              info
-            </span>
-            <div>
-              <p className="font-bold">
-                {financeEn.revenue.pendingNoticeTitle}
-              </p>
-              <p className="mt-0.5 text-sky-700">
-                {reportResult?.pendingBackendNotice ||
-                  financeEn.messages.PENDING_BE_INTEGRATION}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Demo Mode Notice */}
       {isDemo && (
