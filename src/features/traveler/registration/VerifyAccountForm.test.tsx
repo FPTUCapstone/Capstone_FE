@@ -6,9 +6,13 @@ import { VerifyAccountForm } from './VerifyAccountForm';
 const mocks = vi.hoisted(() => ({
   currentUser: null as null | { email: string },
   sendEmailVerification: vi.fn(),
+  signInWithEmailAndPassword: vi.fn(),
 }));
 
-vi.mock('firebase/auth', () => ({ sendEmailVerification: mocks.sendEmailVerification }));
+vi.mock('firebase/auth', () => ({
+  sendEmailVerification: mocks.sendEmailVerification,
+  signInWithEmailAndPassword: mocks.signInWithEmailAndPassword,
+}));
 vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => mocks }));
 
 describe('VerifyAccountForm', () => {
@@ -120,5 +124,28 @@ describe('VerifyAccountForm', () => {
     fireEvent.click(retryButton);
     await act(async () => undefined);
     expect(mocks.sendEmailVerification).toHaveBeenCalledTimes(2);
+  });
+
+  it('restores the matching operator Firebase session before resending an operator link', async () => {
+    mocks.signInWithEmailAndPassword.mockResolvedValue({
+      user: { email: 'operator@example.com' },
+    });
+    mocks.sendEmailVerification.mockResolvedValue(undefined);
+    render(<VerifyAccountForm flow="operator" />);
+    fireEvent.change(screen.getByLabelText('Registration email'), {
+      target: { value: 'operator@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password to restore your registration session'), {
+      target: { value: 'Password1!' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Resend Verification Email' }));
+    expect(await screen.findByText('A fresh verification link has been sent to your email address.')).toBeDefined();
+    expect(mocks.signInWithEmailAndPassword).toHaveBeenCalledWith(
+      mocks, 'operator@example.com', 'Password1!',
+    );
+    expect(mocks.sendEmailVerification).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'operator@example.com' }),
+      expect.objectContaining({ url: expect.stringContaining('/verify-email?flow=operator') }),
+    );
   });
 });

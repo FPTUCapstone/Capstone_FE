@@ -31,24 +31,3 @@ export interface TourBooking {
   amount: string;
   date?: string;
 }
-
-export interface PendingTourReview {
-  id: string;
-  tourName: string;
-  operatorName: string;
-  location: string;
-  status: 'pending';
-  operatorAvatar: string;
-  rating: number;
-  activeTours: number;
-  submittedTime: string;
-  price: string;
-  duration: string;
-  maxPeople: number;
-  languages: string;
-  category: string;
-  matchScore: number;
-  heroImage: string;
-  overview: string;
-  itinerary: ItineraryNode[];
-}

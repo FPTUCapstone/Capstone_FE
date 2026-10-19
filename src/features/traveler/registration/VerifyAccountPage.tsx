@@ -2,9 +2,9 @@ import HeroPanel from '@/components/registration/HeroPanel';
 import BrandLogo from '@/components/registration/BrandLogo';
 import { VerifyAccountForm } from '@/features/traveler/registration/VerifyAccountForm';
 
-type VerifyAccountPageProps = { deliveryFailed?: boolean; email?: string };
+type VerifyAccountPageProps = { deliveryFailed?: boolean; email?: string; flow?: string };
 
-export function VerifyAccountPage({ deliveryFailed, email }: VerifyAccountPageProps) {
+export function VerifyAccountPage({ deliveryFailed, email, flow }: VerifyAccountPageProps) {
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr] lg:items-start">
       {/* LEFT: HERO PANEL */}
@@ -23,7 +23,7 @@ export function VerifyAccountPage({ deliveryFailed, email }: VerifyAccountPagePr
         </div>
 
         <div className="w-full max-w-[480px]">
-          <VerifyAccountForm email={email} deliveryFailed={deliveryFailed} />
+          <VerifyAccountForm email={email} deliveryFailed={deliveryFailed} flow={flow} />
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
             Need help? Contact TripMate Customer Support.

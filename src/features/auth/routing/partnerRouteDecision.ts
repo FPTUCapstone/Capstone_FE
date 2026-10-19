@@ -1,7 +1,7 @@
 import { ROUTES } from '@/lib/routes';
 import type { WebAuthContext } from '../session/authSession';
 
-export type PartnerRoute = 'register' | 'dashboard' | 'application' | 'resubmit';
+export type PartnerRoute = 'register' | 'dashboard' | 'application' | 'resubmit' | 'profile' | 'couponCreate';
 export type PartnerRouteDecision = { action: 'allow' } | { action: 'redirect'; href: string };
 
 /**
@@ -23,6 +23,7 @@ export function partnerRouteDecision(route: PartnerRoute, context: WebAuthContex
   }
   if (context.role === 'Traveler') return { action: 'redirect', href: ROUTES.home };
   if (context.role === 'Administrator') return { action: 'redirect', href: ROUTES.admin.dashboard };
+  if (context.role === 'Staff') return { action: 'redirect', href: ROUTES.admin.staffDashboard };
 
   // TourOperator (Active is guaranteed by the context validator). Approved is
   // the only state that may enter the workspace; every other application state
@@ -32,6 +33,8 @@ export function partnerRouteDecision(route: PartnerRoute, context: WebAuthContex
   const rejected = context.applicationStatus === 'Rejected';
   switch (route) {
     case 'dashboard':
+    case 'profile':
+    case 'couponCreate':
       return approved ? { action: 'allow' } : { action: 'redirect', href: ROUTES.partner.application };
     case 'application':
       return approved ? { action: 'redirect', href: ROUTES.partner.dashboard } : { action: 'allow' };

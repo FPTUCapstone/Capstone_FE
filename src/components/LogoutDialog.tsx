@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { operatorCommonEn } from "@/features/operator/common/resources/en";
+
+export type LogoutDialogLabels = {
+  title?: string;
+  description?: string;
+  cancelButton?: string;
+  confirmButton?: string;
+  loadingText?: string;
+};
 
 type LogoutDialogProps = {
   open: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void> | void;
   errorMessage?: string | null;
+  labels?: LogoutDialogLabels;
 };
 
 export default function LogoutDialog({
@@ -15,9 +25,16 @@ export default function LogoutDialog({
   onClose,
   onConfirm,
   errorMessage,
+  labels,
 }: LogoutDialogProps) {
   const [loading, setLoading] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  const titleText = labels?.title ?? operatorCommonEn.logout.confirmTitle;
+  const descText = labels?.description ?? operatorCommonEn.logout.confirmMessage;
+  const cancelText = labels?.cancelButton ?? operatorCommonEn.logout.cancelButton;
+  const confirmText = labels?.confirmButton ?? operatorCommonEn.logout.confirmButton;
+  const loadingText = labels?.loadingText ?? operatorCommonEn.logout.loading;
 
   const handleClose = useCallback(() => {
     setLoading(false);
@@ -38,7 +55,7 @@ export default function LogoutDialog({
     };
   }, [open]);
 
-  // Esc để đóng + khóa cuộn nền
+  // Esc to close + lock background scroll
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -107,13 +124,13 @@ export default function LogoutDialog({
           id="logout-title"
           className="text-2xl font-bold text-brand-navy tracking-tight mb-2"
         >
-          Xác nhận đăng xuất
+          {titleText}
         </h2>
         <p
           id="logout-desc"
           className="text-sm text-brand-textSecondary leading-relaxed mb-4"
         >
-          Bạn có chắc chắn muốn đăng xuất khỏi TripMate không?
+          {descText}
         </p>
 
         {errorMessage ? (
@@ -133,7 +150,7 @@ export default function LogoutDialog({
             disabled={loading}
             className="h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#CBD5E1] rounded-xl text-[#1E293B] font-semibold text-sm transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Hủy
+            {cancelText}
           </button>
           <button
             type="button"
@@ -146,10 +163,10 @@ export default function LogoutDialog({
                 <span className="material-symbols-outlined text-[18px] animate-spin">
                   progress_activity
                 </span>
-                <span>Đang xử lý...</span>
+                <span>{loadingText}</span>
               </>
             ) : (
-              <span>Đăng xuất</span>
+              <span>{confirmText}</span>
             )}
           </button>
         </div>

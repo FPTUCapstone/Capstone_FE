@@ -93,7 +93,7 @@ export function AdminSidebar() {
             <span className="material-symbols-outlined text-white text-[18px]">person</span>
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold text-white truncate">Administrator</span>
+            <span className="text-xs font-semibold text-white truncate">Staff</span>
             <span className="text-[10px] text-slate-300 truncate">Admin workspace</span>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  ChangePasswordApiError,
   pendingChangePasswordCapability,
   type AvailableChangePasswordCapability,
 } from '../changePasswordCapability';
@@ -172,5 +173,94 @@ describe('useChangePassword', () => {
 
     expect(result.current.errors.form).toBe('Không thể đổi mật khẩu. Vui lòng thử lại.');
     expect(result.current.success).toBe(false);
+  });
+
+  it('targets Current Password when the adapter reports a currentPassword-field error (MSG17)', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Mật khẩu hiện tại không đúng.', 'currentPassword'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors).toEqual({ currentPassword: 'Mật khẩu hiện tại không đúng.' });
+    expect(result.current.success).toBe(false);
+  });
+
+  it('targets New Password when the adapter reports a newPassword-field error (MSG05)', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Mật khẩu mới không hợp lệ.', 'newPassword'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors).toEqual({ newPassword: 'Mật khẩu mới không hợp lệ.' });
+    expect(result.current.success).toBe(false);
+  });
+
+  it('sets sessionExpired (no retryable form error) for a 401 session-expired failure', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Phiên đăng nhập đã hết hạn.', undefined, 'sessionExpired'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.sessionExpired).toBe(true);
+    expect(result.current.errors).toEqual({});
+  });
+
+  it('shows a distinct form message (not the generic one) for a 403 forbidden failure', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError('Bạn không có quyền thực hiện hành động này.', undefined, 'forbidden'),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors).toEqual({ form: 'Bạn không có quyền thực hiện hành động này.' });
+    expect(result.current.sessionExpired).toBe(false);
+  });
+
+  it('explains that a Google-only account has no local password and preserves its session', async () => {
+    const execute = vi.fn<AvailableChangePasswordCapability['execute']>().mockRejectedValue(
+      new ChangePasswordApiError(
+        'Tài khoản này đăng nhập bằng Google và chưa có mật khẩu TripMate để thay đổi.',
+        undefined,
+        'localPasswordUnavailable',
+      ),
+    );
+    const { result } = renderHook(() =>
+      useChangePassword({ capability: availableCapability(execute) }),
+    );
+    fillValidFields(result);
+
+    await act(async () => {
+      expect(await result.current.handleSubmit()).toBe(false);
+    });
+
+    expect(result.current.errors.form).toContain('đăng nhập bằng Google');
+    expect(result.current.sessionExpired).toBe(false);
   });
 });

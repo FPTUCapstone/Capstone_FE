@@ -5,6 +5,7 @@ import {
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
   formatDateDisplay,
+  formatDateTimeVietnam,
   formatVndPrice,
   parseTourSearchState,
   sanitizeProxyQuery,
@@ -207,5 +208,20 @@ describe('tourQuery utils', () => {
     it('handles null date gracefully', () => {
       expect(formatDateDisplay(null)).toBe('Liên hệ');
     });
+  });
+});
+
+describe('formatDateTimeVietnam', () => {
+  it('formats UTC instants in Vietnam local time', () => {
+    expect(formatDateTimeVietnam('2026-11-01T01:00:00Z')).toBe('01/11/2026 08:00');
+    expect(formatDateTimeVietnam('2026-11-01T18:30:00Z')).toBe('02/11/2026 01:30');
+    expect(formatDateTimeVietnam('2026-12-31T17:00:00Z')).toBe('01/01/2027 00:00');
+  });
+
+  it('accepts offsets and falls back safely', () => {
+    expect(formatDateTimeVietnam('2026-11-01T08:00:00+07:00')).toBe('01/11/2026 08:00');
+    expect(formatDateTimeVietnam(undefined)).toBe('Liên hệ');
+    expect(formatDateTimeVietnam(null)).toBe('Liên hệ');
+    expect(formatDateTimeVietnam('not a date')).toBe('not a date');
   });
 });

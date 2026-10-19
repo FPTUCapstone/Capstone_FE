@@ -2,17 +2,21 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 import { TravelerProfileForm } from './TravelerProfileForm';
+import { announceTravelerProfileUpdated } from './travelerProfileApi';
 
 export function TravelerProfilePage() {
   const router = useRouter();
   const { status, context } = useWebSession();
+  const redirectToSignIn = useCallback(() => {
+    router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.profile)}`);
+  }, [router]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -61,15 +65,13 @@ export function TravelerProfilePage() {
 
         {/* Profile Update Form */}
         <TravelerProfileForm
-          accessToken={context.accessToken}
           initialProfile={{
             fullName: context.fullName,
             email: context.email,
           }}
           onCancel={() => router.push(ROUTES.home)}
-          onUnauthorized={() => {
-            router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.profile)}`);
-          }}
+          onUnauthorized={redirectToSignIn}
+          onSuccess={announceTravelerProfileUpdated}
         />
       </main>
     </div>

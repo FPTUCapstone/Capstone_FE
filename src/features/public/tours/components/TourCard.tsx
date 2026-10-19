@@ -92,8 +92,13 @@ export function TourCard({ tour, searchContextQuery }: TourCardProps) {
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-teal-50 text-slate-400">
-            <span className="material-symbols-outlined text-4xl text-teal-600/40">tour</span>
+          <div
+            aria-hidden="true"
+            className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-teal-50 text-slate-400"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-4xl text-teal-600/40">
+              tour
+            </span>
           </div>
         )}
 

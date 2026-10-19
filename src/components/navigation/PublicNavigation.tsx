@@ -1,14 +1,42 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { signInDestination } from '@/features/auth/routing/signInDestination';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import {
+  getTravelerProfile,
+  TRAVELER_PROFILE_UPDATED_EVENT,
+  type TravelerProfileDto,
+} from '@/features/account/profile/travelerProfileApi';
 import { ROUTES } from '@/lib/routes';
+import { publicNavigationEn } from './resources/en';
 
-export function PublicNavigation() {
+interface PublicNavigationProps {
+  isLanding?: boolean;
+}
+
+export function PublicNavigation({ isLanding = false }: PublicNavigationProps = {}) {
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!isLanding) return;
+    function handleScroll() {
+      const scrollY = window.scrollY;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      setIsScrolled(scrollY > 24);
+      if (maxScroll > 0) {
+        setScrollProgress(Math.min(1, Math.max(0, scrollY / maxScroll)));
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isLanding]);
+
   // An empty in-memory context is NOT considered Guest until the
   // cookie-backed session restore has completed.
   //
@@ -16,9 +44,39 @@ export function PublicNavigation() {
   // state after F5/direct navigation while an existing session is
   // being restored.
   const { status, context } = useWebSession();
+  const [travelerProfile, setTravelerProfile] = useState<TravelerProfileDto | null>(null);
+  const profileRevision = useRef(0);
+
+  useEffect(() => {
+    if (status !== 'authenticated' || context?.role !== 'Traveler') return;
+    const userId = context.userId;
+    let active = true;
+    const requestRevision = profileRevision.current;
+    void getTravelerProfile().then((profile) => {
+      if (active && profileRevision.current === requestRevision && profile.userId === userId)
+        setTravelerProfile(profile);
+    }).catch(() => {
+      // The navigation keeps its session identity fallback if profile retrieval fails.
+    });
+    function onProfileUpdated(event: Event) {
+      const profile = (event as CustomEvent<TravelerProfileDto>).detail;
+      if (profile?.userId === userId) {
+        profileRevision.current++;
+        setTravelerProfile(profile);
+      }
+    }
+    window.addEventListener(TRAVELER_PROFILE_UPDATED_EVENT, onProfileUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener(TRAVELER_PROFILE_UPDATED_EVENT, onProfileUpdated);
+    };
+  }, [status, context?.role, context?.userId]);
+
+  const currentTravelerProfile = context?.role === 'Traveler' &&
+    travelerProfile?.userId === context.userId ? travelerProfile : null;
 
   const displayName = context
-    ? context.fullName.trim() || context.email
+    ? currentTravelerProfile?.fullName?.trim() || context.fullName.trim() || context.email
     : '';
 
   // Authoritative navigation decision:
@@ -45,52 +103,76 @@ export function PublicNavigation() {
       : ROUTES.partner.register;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-xs backdrop-blur-md md:px-8">
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 md:px-8 px-4 py-3 ${
+        isLanding && isScrolled
+          ? 'border-b border-slate-200/80 bg-white/90 backdrop-blur-md shadow-xs'
+          : 'border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-xs'
+      }`}
+    >
+      {/* Landing Scroll Progress Indicator */}
+      {isLanding && (
+        <div
+          className="absolute bottom-0 left-0 h-[2.5px] bg-[#007d6e] transition-transform duration-75 origin-left"
+          style={{ transform: `scaleX(${scrollProgress})`, width: '100%' }}
+          aria-hidden="true"
+        />
+      )}
+
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <Link
           href={ROUTES.home}
-          aria-label="TripMate Landing Page"
+          aria-label={publicNavigationEn.brandAria}
         >
           <BrandLogo />
         </Link>
 
         <nav
           className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-2 sm:w-auto"
-          aria-label="Public navigation"
+          aria-label={publicNavigationEn.navAria}
         >
           <Link
             href={ROUTES.pois}
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
-            Khám phá
+            {publicNavigationEn.links.explore}
           </Link>
 
-          <a
-            href="#destinations"
+          <Link
+            href="/#destinations"
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
-            Điểm đến
-          </a>
+            {publicNavigationEn.links.destinations}
+          </Link>
 
           <Link
             href={ROUTES.plan}
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
-            Lịch trình Tối ưu
+            {publicNavigationEn.links.smartItinerary}
           </Link>
 
-          <a
-            href="#weather-rerouting"
+          {context?.role === 'Traveler' && (
+            <Link
+              href={ROUTES.myItineraries}
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
+            >
+              {publicNavigationEn.links.myItineraries}
+            </Link>
+          )}
+
+          <Link
+            href="/#weather-rerouting"
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
-            Cứu nguy Thời tiết
-          </a>
+            {publicNavigationEn.links.weatherRerouting}
+          </Link>
 
           <Link
             href={ROUTES.tours}
             className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
           >
-            Tour Bản địa
+            {publicNavigationEn.links.localTours}
           </Link>
 
           {showPartner ? (
@@ -98,7 +180,7 @@ export function PublicNavigation() {
               href={partnerHref}
               className="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[#007d6e]"
             >
-              Dành cho Đối tác
+              {publicNavigationEn.links.forPartners}
             </Link>
           ) : null}
         </nav>
@@ -107,12 +189,22 @@ export function PublicNavigation() {
           <div className="order-2 flex items-center justify-end gap-2 sm:order-3">
             <Link
               href={ROUTES.account.profile}
-              aria-label="Tài khoản và hồ sơ"
+              aria-label={publicNavigationEn.account.profileAria}
               className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e] transition hover:bg-teal-100"
             >
-              <span className="material-symbols-outlined text-sm">
-                account_circle
-              </span>
+              {currentTravelerProfile?.avatarUrl ? (
+                // The API returns the Traveler's Cloudinary delivery URL.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={currentTravelerProfile.avatarUrl}
+                  alt=""
+                  className="h-6 w-6 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">
+                  account_circle
+                </span>
+              )}
 
               <span className="max-w-[120px] truncate sm:max-w-[160px]">
                 {displayName}
@@ -124,11 +216,11 @@ export function PublicNavigation() {
         ) : status === 'restoring' ? (
           <div
             role="status"
-            aria-label="Restoring session"
+            aria-label={publicNavigationEn.account.restoringAria}
             className="order-2 h-10 w-24 animate-pulse rounded-xl bg-gray-200 sm:order-3"
           >
             <span className="sr-only">
-              Restoring session…
+              {publicNavigationEn.account.restoringSrText}
             </span>
           </div>
         ) : (
@@ -137,14 +229,14 @@ export function PublicNavigation() {
               href={ROUTES.register}
               className="hidden min-h-9 items-center rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 sm:inline-flex"
             >
-              Đăng ký
+              {publicNavigationEn.account.register}
             </Link>
 
             <Link
               href={ROUTES.signIn}
               className="inline-flex min-h-9 items-center rounded-xl bg-[#007d6e] px-4 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
             >
-              Đăng nhập
+              {publicNavigationEn.account.signIn}
             </Link>
           </div>
         )}

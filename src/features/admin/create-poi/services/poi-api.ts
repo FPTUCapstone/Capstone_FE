@@ -8,7 +8,7 @@ function messageFor(status: number): string {
   switch (status) {
     case 400: return 'Some fields need attention. Review the highlighted fields.';
     case 401: return 'Your session has expired. Sign in again to continue.';
-    case 403: return 'An active Administrator account is required.';
+    case 403: return 'An active Staff account is required.';
     case 404: return 'The selected category or tags are no longer available. Reload the catalogue and review your selections.';
     case 409: return 'An active POI with the same name and coordinates already exists.';
     default: return 'The save could not be confirmed. Check whether the POI was created before trying again.';

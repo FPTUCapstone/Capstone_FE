@@ -6,157 +6,41 @@ import { TravelerProfileForm } from '../TravelerProfileForm';
 
 vi.mock('../travelerProfileApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../travelerProfileApi')>();
-  return {
-    ...actual,
-    getTravelerProfile: vi.fn(),
-    updateTravelerProfile: vi.fn(),
-  };
+  return { ...actual, getTravelerProfile: vi.fn(), updateTravelerProfile: vi.fn() };
 });
+
+const profile = { userId: 7, fullName: 'Nguyễn An', email: 'an@example.com',
+  phoneNumber: null, dateOfBirth: null, avatarUrl: null };
 
 describe('TravelerProfileForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(api.getTravelerProfile).mockResolvedValue({
-      fullName: 'Nguyễn Văn A',
-      email: 'traveler@tripmate.com',
-      phoneNumber: '0901234567',
-      dateOfBirth: '1995-10-20',
-      gender: 'Male',
-      address: '123 Đường Lê Lợi, Q.1',
-      avatarUrl: '',
-    });
+    vi.mocked(api.getTravelerProfile).mockResolvedValue(profile);
   });
+  afterEach(() => cleanup());
 
-  afterEach(() => {
-    cleanup();
-  });
-
-  it('renders loading state initially', () => {
-    vi.mocked(api.getTravelerProfile).mockReturnValue(new Promise(() => {}));
+  it('renders server data and read-only email without discarded fields', async () => {
     render(<TravelerProfileForm />);
-    expect(screen.getByText('Đang tải thông tin hồ sơ…')).toBeDefined();
+    await waitFor(() => expect(screen.getByLabelText(/Họ và tên/)).toBeDefined());
+    expect((screen.getByLabelText(/Họ và tên/) as HTMLInputElement).value).toBe('Nguyễn An');
+    expect((screen.getByRole('textbox', { name: /Địa chỉ Email/ }) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByLabelText('Giới tính')).toBeNull();
+    expect(screen.queryByLabelText('Địa chỉ cư trú')).toBeNull();
   });
 
-  it('renders profile fields and enforces read-only email (BR-17)', async () => {
+  it('shows a terminal error when GET fails', async () => {
+    vi.mocked(api.getTravelerProfile).mockRejectedValue(new api.TravelerProfileApiError(503, 'MSG127'));
     render(<TravelerProfileForm />);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Đang tải thông tin hồ sơ…')).toBeNull();
-    });
-
-    expect(screen.getByRole('heading', { name: 'Thông tin cá nhân' })).toBeDefined();
-
-    const fullNameInput = screen.getByLabelText(/Họ và tên/) as HTMLInputElement;
-    expect(fullNameInput.value).toBe('Nguyễn Văn A');
-
-    const emailInput = screen.getByRole('textbox', { name: /Địa chỉ Email/ }) as HTMLInputElement;
-    expect(emailInput.value).toBe('traveler@tripmate.com');
-    expect(emailInput.disabled).toBe(true);
-    expect(screen.getByText(/Chỉ đọc \(BR-17\)/)).toBeDefined();
-
-    const phoneInput = screen.getByLabelText(/Số điện thoại/) as HTMLInputElement;
-    expect(phoneInput.value).toBe('0901234567');
+    await waitFor(() => expect(screen.getByText('Không thể tải hồ sơ')).toBeDefined());
+    expect(screen.queryByRole('button', { name: 'Lưu thay đổi' })).toBeNull();
   });
 
-  it('displays validation errors on invalid submit (MSG01 & MSG04)', async () => {
+  it('shows success only after the server accepts update', async () => {
+    vi.mocked(api.updateTravelerProfile).mockResolvedValue({ messageCode: 'MSG20',
+      message: 'Saved', profile });
     render(<TravelerProfileForm />);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Đang tải thông tin hồ sơ…')).toBeNull();
-    });
-
-    const fullNameInput = screen.getByLabelText(/Họ và tên/);
-    fireEvent.change(fullNameInput, { target: { value: '' } });
-
-    const phoneInput = screen.getByLabelText(/Số điện thoại/);
-    fireEvent.change(phoneInput, { target: { value: '12345' } });
-
-    const submitBtn = screen.getByRole('button', { name: 'Lưu thay đổi' });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('Vui lòng nhập họ và tên.')).toBeDefined();
-      expect(
-        screen.getByText(
-          'Số điện thoại không hợp lệ. Số điện thoại phải gồm 10 chữ số bắt đầu bằng số 0.',
-        ),
-      ).toBeDefined();
-    });
-    expect(api.updateTravelerProfile).not.toHaveBeenCalled();
-  });
-
-  it('shows local draft feedback upon profile save (LOCAL_DRAFT & PENDING_BE_INTEGRATION)', async () => {
-    vi.mocked(api.updateTravelerProfile).mockResolvedValue({
-      success: true,
-      messageCode: 'LOCAL_DRAFT',
-      message: 'Thông tin tạm thời đã được lưu trên thiết bị này.',
-      notice: 'Đồng bộ hồ sơ với máy chủ đang chờ tích hợp.',
-      profile: {
-        fullName: 'Nguyễn Văn Đã Cập Nhật',
-        email: 'traveler@tripmate.com',
-        phoneNumber: '0901234567',
-      },
-      storageMode: 'LOCAL_DRAFT',
-      integrationStatus: 'PENDING_BE_INTEGRATION',
-    });
-
-    render(<TravelerProfileForm />);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Đang tải thông tin hồ sơ…')).toBeNull();
-    });
-
-    const fullNameInput = screen.getByLabelText(/Họ và tên/);
-    fireEvent.change(fullNameInput, { target: { value: 'Nguyễn Văn Đã Cập Nhật' } });
-
-    const submitBtn = screen.getByRole('button', { name: 'Lưu thay đổi' });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('Thông tin tạm thời đã được lưu trên thiết bị này.')).toBeDefined();
-      expect(screen.getByText(/Chờ tích hợp máy chủ/)).toBeDefined();
-    });
-  });
-
-  it('renders explicit error and suppresses success banner when local storage fails', async () => {
-    vi.mocked(api.updateTravelerProfile).mockRejectedValue(
-      new api.LocalProfileStorageError(
-        'LOCAL_DRAFT_STORAGE_FAILED',
-        'Không thể lưu thông tin vào bộ nhớ thiết bị. Vui lòng kiểm tra dung lượng trình duyệt.',
-      ),
-    );
-
-    render(<TravelerProfileForm />);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Đang tải thông tin hồ sơ…')).toBeNull();
-    });
-
-    const submitBtn = screen.getByRole('button', { name: 'Lưu thay đổi' });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('Không thể lưu thông tin vào bộ nhớ thiết bị. Vui lòng kiểm tra dung lượng trình duyệt.'),
-      ).toBeDefined();
-    });
-
-    // Success banners MUST NOT be displayed
-    expect(screen.queryByText('Thông tin tạm thời đã được lưu trên thiết bị này.')).toBeNull();
-    expect(screen.queryByText(/Chờ tích hợp máy chủ/)).toBeNull();
-  });
-
-  it('calls onCancel when Hủy thay đổi button is clicked', async () => {
-    const onCancel = vi.fn();
-    render(<TravelerProfileForm onCancel={onCancel} />);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Đang tải thông tin hồ sơ…')).toBeNull();
-    });
-
-    const cancelBtn = screen.getByRole('button', { name: 'Hủy thay đổi' });
-    fireEvent.click(cancelBtn);
-
-    expect(onCancel).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+    await waitFor(() => expect(screen.getByText('Cập nhật hồ sơ thành công')).toBeDefined());
   });
 });

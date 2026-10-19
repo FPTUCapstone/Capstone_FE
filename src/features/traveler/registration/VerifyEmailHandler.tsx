@@ -7,15 +7,16 @@ import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
-import { saveTokens, verifyEmail } from '@/lib/authApi';
+import { saveTokens, verifyEmail, webVerifyEmail } from '@/lib/authApi';
 import { mapFirebaseAuthError } from '@/lib/authErrorMapper';
 
 interface VerifyEmailHandlerProps {
   mode?: string;
   oobCode?: string;
+  flow?: string;
 }
 
-export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
+export function VerifyEmailHandler({ mode, oobCode, flow }: VerifyEmailHandlerProps) {
   const isInitialValid = mode === 'verifyEmail' && Boolean(oobCode);
   const [status, setStatus] = useState<'verifying' | 'success' | 'incomplete' | 'error'>(
     isInitialValid ? 'verifying' : 'error'
@@ -66,8 +67,12 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
         try {
           await currentUser.reload();
           const idToken = await currentUser.getIdToken(true);
-          const res = await verifyEmail(idToken);
-          saveTokens(res.accessToken, res.refreshToken);
+          if (flow === 'operator') {
+            await webVerifyEmail(idToken);
+          } else {
+            const res = await verifyEmail(idToken);
+            saveTokens(res.accessToken, res.refreshToken);
+          }
         } catch {
           if (isMounted) {
             setErrorMessage(
@@ -99,7 +104,7 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
     return () => {
       isMounted = false;
     };
-  }, [isInitialValid, mode, oobCode]);
+  }, [isInitialValid, mode, oobCode, flow]);
 
   if (status === 'verifying') {
     return (

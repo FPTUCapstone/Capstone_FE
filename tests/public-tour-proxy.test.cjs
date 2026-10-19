@@ -147,7 +147,7 @@ test('passthrough 400, 404, 500 error status and body without modification', asy
       });
     });
 
-    const response = await proxyTourRequest([status === 404 ? '9999' : '']);
+    const response = await proxyTourRequest(status === 404 ? ['9999'] : []);
     assert.equal(response.status, status);
     assert.equal(response.headers.get('Cache-Control'), 'no-store');
     const body = await response.json();
@@ -174,4 +174,49 @@ test('rejects path traversal segments . and .. with 400 ProblemDetails', async (
   assert.equal(multiResponse.status, 400);
   const multiProblem = await multiResponse.json();
   assert.equal(multiProblem.errorCode, 'Tour.InvalidPath');
+});
+
+test('detail id must be a 64-bit integer: anything else is a 404 problem and never reaches the backend', async () => {
+  for (const id of ['abc', '12abc', '1/2', '1%2F2', '-5', '1.5', '', ' 7', '\uFF11\uFF12', '12345678901234567890']) {
+    let called = false;
+    const { proxyTourRequest } = setup(async () => {
+      called = true;
+      return new Response('{}', { status: 200 });
+    });
+
+    const response = await proxyTourRequest([id], new URLSearchParams());
+
+    assert.equal(response.status, 404, `id ${JSON.stringify(id)}`);
+    assert.equal(called, false, `id ${JSON.stringify(id)} must not call the backend`);
+    assert.match(response.headers.get('Content-Type') ?? '', /application\/problem\+json/);
+    const body = await response.json();
+    assert.equal(body.errorCode, 'Tour.NotFound');
+    assert.equal(body.status, 404);
+  }
+});
+
+test('detail accepts the full 19 digit range and forwards it as a path segment', async () => {
+  let requestedPath = '';
+  const { proxyTourRequest } = setup(async (path) => {
+    requestedPath = path;
+    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  });
+
+  const response = await proxyTourRequest(['9007199254740993'], new URLSearchParams({ demo: '1' }));
+
+  assert.equal(response.status, 200);
+  assert.equal(requestedPath, '/api/v1/tours/9007199254740993');
+});
+
+test('more than one path segment is not a tour route', async () => {
+  let called = false;
+  const { proxyTourRequest } = setup(async () => {
+    called = true;
+    return new Response('{}', { status: 200 });
+  });
+
+  const response = await proxyTourRequest(['15', 'media'], new URLSearchParams());
+
+  assert.equal(response.status, 404);
+  assert.equal(called, false);
 });

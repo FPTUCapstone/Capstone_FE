@@ -8,6 +8,7 @@ import {
 } from '@/lib/passwordPolicy';
 
 import {
+  ChangePasswordApiError,
   pendingChangePasswordCapability,
   type ChangePasswordCapability,
   type ChangePasswordFormValues,
@@ -91,6 +92,10 @@ export function useChangePassword(options: UseChangePasswordOptions = {}) {
   const [errors, setErrors] = useState<ChangePasswordErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  // 401 only (UC-07 spec §6/§7): the session is already invalid, so the page
+  // must clear it and redirect to sign-in rather than show a retryable
+  // form-level error.
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   function setField(name: keyof ChangePasswordFormState, value: string) {
     setFields((previous) => ({ ...previous, [name]: value }));
@@ -124,6 +129,7 @@ export function useChangePassword(options: UseChangePasswordOptions = {}) {
     setSubmitting(true);
     setErrors({});
     setSuccess(false);
+    setSessionExpired(false);
 
     try {
       await capability.execute({ ...fields });
@@ -131,8 +137,24 @@ export function useChangePassword(options: UseChangePasswordOptions = {}) {
       setFields(initialFields);
       options.onSuccess?.();
       return true;
-    } catch {
-      setErrors({ form: 'Không thể đổi mật khẩu. Vui lòng thử lại.' });
+    } catch (error) {
+      // BE spec §5/§7: MSG17 -> currentPassword, MSG05 -> newPassword,
+      // 401 -> sessionExpired (page redirects, never a retryable form error),
+      // Google-only accounts receive a distinct explanation; other 403 values
+      // are access denied. Anything else (network, 5xx/MSG127) stays a safe
+      // generic failure.
+      if (error instanceof ChangePasswordApiError && error.field) {
+        setErrors({ [error.field]: error.message });
+      } else if (error instanceof ChangePasswordApiError && error.kind === 'sessionExpired') {
+        setSessionExpired(true);
+      } else if (
+        error instanceof ChangePasswordApiError &&
+        (error.kind === 'forbidden' || error.kind === 'localPasswordUnavailable')
+      ) {
+        setErrors({ form: error.message });
+      } else {
+        setErrors({ form: 'Không thể đổi mật khẩu. Vui lòng thử lại.' });
+      }
       return false;
     } finally {
       setSubmitting(false);
@@ -144,6 +166,7 @@ export function useChangePassword(options: UseChangePasswordOptions = {}) {
     setErrors({});
     setSuccess(false);
     setSubmitting(false);
+    setSessionExpired(false);
   }
 
   return {
@@ -151,6 +174,7 @@ export function useChangePassword(options: UseChangePasswordOptions = {}) {
     errors,
     submitting,
     success,
+    sessionExpired,
     capabilityStatus: capability.status,
     setField,
     handleSubmit,

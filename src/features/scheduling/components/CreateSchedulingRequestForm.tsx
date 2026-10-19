@@ -1,31 +1,64 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
-import { loadStoredPreferences } from '@/features/account/preferences/travelPreferencesStorage';
+import { getTravelPreferences } from '@/features/account/preferences/travelPreferencesApi';
+import { getMapboxPublicToken } from '@/lib/mapboxToken';
 import { ROUTES } from '@/lib/routes';
 
+import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
 import {
   buildVietnamStartAtIso,
+  calculateTripEnd,
   CreateSchedulingRequestPayload,
-  DESTINATION_PRESETS,
-  DestinationPreset,
   getVietnamCalendarDate,
   getVietnamTomorrowDateString,
   isFutureVietnamStartAt,
-  mapPaceToRestPreference,
-  mapTransportPreferenceToMode,
+  parseAvailableDuration,
   RestPreference,
   SchedulingResponseDto,
   TransportMode,
   TRIPMATE_TIME_ZONE,
 } from '../types/schedulingTypes';
+import { radiusWarning } from '../utils/itineraryPresentation';
+import { LazyRadiusMap } from './maps/LazyMaps';
+import { PickedPlace, PlacePickerDialog } from './PlacePickerDialog';
+
+const MAX_MANDATORY_POIS = 6;
+// Same bounds as the API (and the mobile app): Da Nang to Hue is about 85 km.
+const MIN_SEARCH_RADIUS_KM = 1;
+const MAX_SEARCH_RADIUS_KM = 100;
+
+export function calculateDistanceKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const earthRadiusKm = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const midLat = (((lat1 + lat2) / 2) * Math.PI) / 180;
+  const x = dLng * Math.cos(midLat);
+  const y = dLat;
+  return Math.sqrt(x * x + y * y) * earthRadiusKm;
+}
+
+export const SPEED_KMH: Record<TransportMode, number> = {
+  Motorbike: 35,
+  Car: 30,
+  Walking: 4.5,
+  PublicTransit: 20,
+};
+
+type PickerTarget = 'start' | 'exploration' | 'end' | 'mandatory';
 
 interface CreateSchedulingRequestFormProps {
+  /** Kept for callers; preferences are resolved for the signed-in Traveler by the API. */
   userId?: string | number | null;
   onSuccess?: (itinerary: SchedulingResponseDto) => void;
 }
@@ -36,60 +69,64 @@ type PendingSchedulingAttempt = {
 };
 
 export function CreateSchedulingRequestForm({
-  userId,
   onSuccess,
 }: CreateSchedulingRequestFormProps) {
-  // Selected destination preset
-  const [selectedDestination, setSelectedDestination] = useState<DestinationPreset>(
-    DESTINATION_PRESETS[0],
-  );
-
-  // Stored preferences snapshot
-  const [initialPreferences] = useState(() => {
-    try {
-      return loadStoredPreferences(userId);
-    } catch {
-      return null;
-    }
-  });
+  // Where: the same choices as the mobile app.
+  const [startPoint, setStartPoint] = useState<PickedPlace | null>(null);
+  const [explorationPoi, setExplorationPoi] = useState<PickedPlace | null>(null);
+  const [endPoi, setEndPoi] = useState<PickedPlace | null>(null);
+  const [mandatoryPois, setMandatoryPois] = useState<SelectablePoi[]>([]);
+  const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Time & duration
   const [startDate, setStartDate] = useState(getVietnamTomorrowDateString());
   const [startTime, setStartTime] = useState('08:00');
-  const [availableHours, setAvailableHours] = useState(() => {
-    if (initialPreferences?.travelPace === 'relaxed') return 6;
-    if (initialPreferences?.travelPace === 'packed') return 10;
-    return 8; // 8 hours = 480 mins
-  });
+  // "Thời lượng" is typed freely (hours + minutes): 1 hour to 3 days, and the trip may run
+  // past midnight.
+  const [durationHours, setDurationHours] = useState('8');
+  const [durationMinutes, setDurationMinutes] = useState('0');
+  const duration = parseAvailableDuration(durationHours, durationMinutes);
 
   // Constraints
   const [searchRadiusKm, setSearchRadiusKm] = useState(10);
   const [returnToStart, setReturnToStart] = useState(true);
-  const [transportMode, setTransportMode] = useState<TransportMode>(() => {
-    if (initialPreferences?.preferredTransport) {
-      return mapTransportPreferenceToMode(initialPreferences.preferredTransport);
-    }
-    return 'Motorbike';
-  });
-  const [restPreference, setRestPreference] = useState<RestPreference>(() => {
-    if (initialPreferences?.travelPace) {
-      return mapPaceToRestPreference(initialPreferences.travelPace);
-    }
-    return 'Auto';
-  });
-  const [budgetVnd, setBudgetVnd] = useState<number | ''>(() => {
-    if (initialPreferences?.budgetLevel === 'economy') return 300000;
-    if (initialPreferences?.budgetLevel === 'premium') return 2000000;
-    return 800000;
-  });
+  const [transportMode, setTransportMode] = useState<TransportMode>('Motorbike');
+  const [restPreference, setRestPreference] = useState<RestPreference>('Auto');
+  const [budgetVnd, setBudgetVnd] = useState<number | ''>('');
 
-  // Preference sync indicator (supported fields: transport, pace/rest, budget)
-  const preferencesSynced = Boolean(
-    initialPreferences &&
-      (initialPreferences.preferredTransport ||
-        initialPreferences.travelPace ||
-        initialPreferences.budgetLevel),
-  );
+  // UC-09 can pre-fill a supported transport mode only. Budget belongs to this request and is
+  // intentionally not read from the Traveler profile.
+  const [preferencesSynced, setPreferencesSynced] = useState(false);
+  const transportTouched = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    void getTravelPreferences()
+      .then((result) => {
+        if (!active || !result.ok) return;
+        const mode = result.data.preferredTransportMode;
+        if (mode && mode !== 'PublicTransit' && !transportTouched.current) {
+          setTransportMode(mode);
+          setPreferencesSynced(true);
+        }
+      })
+      .catch(() => {
+        // Preference prefill is optional; scheduling remains usable when it cannot load.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const chooseTransportMode = (mode: TransportMode) => {
+    transportTouched.current = true;
+    setTransportMode(mode);
+  };
+
+  const chooseBudget = (value: number | '') => {
+    setBudgetVnd(value);
+  };
 
   // Idempotency attempt tracking across retries
   const attemptRef = useRef<PendingSchedulingAttempt | null>(null);
@@ -104,37 +141,159 @@ export function CreateSchedulingRequestForm({
     message: string;
   } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [infeasibilityFix, setInfeasibilityFix] = useState<{
+    requiredMinutes: number;
+    currentMinutes: number;
+    suggestedHours: number;
+  } | null>(null);
 
-  // Handle destination change
-  const handleDestinationChange = (destId: string) => {
-    const dest = DESTINATION_PRESETS.find((d) => d.id === destId);
-    if (dest) {
-      setSelectedDestination(dest);
-      setFeedback(null);
-    }
-  };
-
-
-  // Calculate live end time
-  const calculateEndTime = () => {
+  const locateStartPoint = async () => {
+    setIsLocating(true);
     try {
-      const [h, m] = startTime.split(':').map(Number);
-      const totalMinutes = h * 60 + m + availableHours * 60;
-      const endH = Math.floor(totalMinutes / 60);
-      const endM = totalMinutes % 60;
-      const formattedEnd = `${String(endH % 24).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-      const isNextDay = totalMinutes >= 24 * 60;
-      return { formattedEnd, isNextDay };
-    } catch {
-      return { formattedEnd: '--:--', isNextDay: false };
+      const location = await getBrowserLocation();
+      setStartPoint({ label: 'Vị trí hiện tại', ...location });
+      setValidationErrors((prev) => ({ ...prev, startPoint: '' }));
+    } catch (error) {
+      setFeedback({
+        tone: 'warning',
+        message: error instanceof PlaceSearchError
+          ? error.message
+          : 'Không lấy được vị trí hiện tại. Hãy chọn một địa điểm.',
+      });
+    } finally {
+      setIsLocating(false);
     }
   };
 
-  const { formattedEnd, isNextDay } = calculateEndTime();
+  const handlePicked = (place: PickedPlace) => {
+    const target = pickerTarget;
+    setPickerTarget(null);
+    setFeedback(null);
+    setInfeasibilityFix(null);
+    switch (target) {
+      case 'start':
+        setStartPoint(place);
+        setValidationErrors((prev) => ({ ...prev, startPoint: '' }));
+        break;
+      case 'exploration': {
+        const previousPrimaryPoiId = explorationPoi?.poi?.id;
+        setExplorationPoi(place);
+        if (place.poi) {
+          const newPoi = place.poi;
+          setMandatoryPois((prev) => {
+            const filtered = previousPrimaryPoiId
+              ? prev.filter((p) => p.id !== previousPrimaryPoiId)
+              : prev;
+            const validAroundNewCenter = filtered.filter((p) => {
+              const dist = calculateDistanceKm(place.latitude, place.longitude, p.latitude, p.longitude);
+              return dist <= searchRadiusKm;
+            });
+            return validAroundNewCenter.some((p) => p.id === newPoi.id)
+              ? validAroundNewCenter
+              : [newPoi, ...validAroundNewCenter].slice(0, MAX_MANDATORY_POIS);
+          });
+        } else {
+          setMandatoryPois((prev) => {
+            const filtered = previousPrimaryPoiId
+              ? prev.filter((p) => p.id !== previousPrimaryPoiId)
+              : prev;
+            return filtered.filter((p) => {
+              const dist = calculateDistanceKm(place.latitude, place.longitude, p.latitude, p.longitude);
+              return dist <= searchRadiusKm;
+            });
+          });
+        }
+        setValidationErrors((prev) => ({ ...prev, exploration: '' }));
+        break;
+      }
+      case 'end':
+        setEndPoi(place);
+        setValidationErrors((prev) => ({ ...prev, endPoi: '' }));
+        break;
+      case 'mandatory': {
+        const poi = place.poi;
+        if (!poi) break;
+        setMandatoryPois((prev) =>
+          prev.length >= MAX_MANDATORY_POIS || prev.some((item) => item.id === poi.id)
+            ? prev
+            : [...prev, poi]);
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
+  const travelFeasibility = (() => {
+    if (!startPoint || !explorationPoi || !duration.minutes || duration.minutes <= 0) {
+      return null;
+    }
+    const speed = SPEED_KMH[transportMode] ?? 35;
+    const outboundKm = calculateDistanceKm(
+      startPoint.latitude,
+      startPoint.longitude,
+      explorationPoi.latitude,
+      explorationPoi.longitude,
+    );
+    let inboundKm = outboundKm;
+    if (!returnToStart && endPoi) {
+      inboundKm = calculateDistanceKm(
+        explorationPoi.latitude,
+        explorationPoi.longitude,
+        endPoi.latitude,
+        endPoi.longitude,
+      );
+    }
+    const totalTransitKm = outboundKm + inboundKm;
+    const transitMinutes = Math.round((totalTransitKm / speed) * 60);
+    const transitHours = Math.round((transitMinutes / 60) * 10) / 10;
+    const isWarning = transitMinutes > 0.5 * duration.minutes;
+    const suggestedHours = Math.max(6, Math.ceil((transitMinutes * 2) / 60));
+
+    return {
+      totalTransitKm,
+      transitMinutes,
+      transitHours,
+      isWarning,
+      suggestedHours,
+      message: `Thời gian di chuyển 2 chiều (~${transitHours}h) chiếm hơn một nửa chuyến đi. Bạn nên tăng thời lượng lên từ ${suggestedHours} giờ để có thời gian trải nghiệm trọn vẹn.`,
+    };
+  })();
+
+
+  // Review 2 (D9): the radius circle is drawn around the exploration area (or the start).
+  const mapboxToken = getMapboxPublicToken();
+  const [radiusMapFailed, setRadiusMapFailed] = useState(false);
+  const radiusCenterSource = explorationPoi ?? startPoint;
+  const radiusCenterLatitude = radiusCenterSource?.latitude;
+  const radiusCenterLongitude = radiusCenterSource?.longitude;
+  const radiusCenter = useMemo(
+    () =>
+      radiusCenterLatitude === undefined || radiusCenterLongitude === undefined
+        ? null
+        : { latitude: radiusCenterLatitude, longitude: radiusCenterLongitude },
+    [radiusCenterLatitude, radiusCenterLongitude],
+  );
+
+  // Live end time (the trip may end on a later day)
+  const tripEnd =
+    duration.minutes === null ? null : calculateTripEnd(startDate, startTime, duration.minutes);
 
   // Validate form
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
+
+    if (!startPoint) {
+      errors.startPoint = 'Vui lòng chọn điểm xuất phát.';
+    }
+
+    if (!explorationPoi) {
+      errors.exploration = 'Vui lòng chọn khu vực muốn khám phá.';
+    }
+
+    if (!returnToStart && !endPoi?.poi) {
+      errors.endPoi = 'Chọn điểm kết thúc hoặc bật "Quay về điểm xuất phát".';
+    }
 
     if (!startDate) {
       errors.startDate = 'Vui lòng chọn ngày bắt đầu chuyến đi.';
@@ -149,17 +308,12 @@ export function CreateSchedulingRequestForm({
         'Thời gian bắt đầu phải sau thời điểm hiện tại theo giờ Việt Nam (Asia/Ho_Chi_Minh).';
     }
 
-    if (availableHours < 1 || availableHours > 12) {
-      errors.availableHours = 'Thời lượng chuyến đi phải từ 1 đến 12 giờ (trong ngày).';
+    if (duration.error) {
+      errors.availableHours = duration.error;
     }
 
-    if (isNextDay) {
-      errors.availableHours =
-        'Theo quy định, lịch trình trong ngày phải kết thúc trước 24:00 cùng ngày. Vui lòng giảm thời lượng hoặc chọn giờ bắt đầu sớm hơn.';
-    }
-
-    if (searchRadiusKm < 1 || searchRadiusKm > 50) {
-      errors.searchRadiusKm = 'Bán kính tìm kiếm phải từ 1 đến 50 km.';
+    if (searchRadiusKm < MIN_SEARCH_RADIUS_KM || searchRadiusKm > MAX_SEARCH_RADIUS_KM) {
+      errors.searchRadiusKm = `Bán kính tìm kiếm phải từ ${MIN_SEARCH_RADIUS_KM} đến ${MAX_SEARCH_RADIUS_KM} km.`;
     }
 
     if (budgetVnd !== '' && budgetVnd <= 0) {
@@ -170,12 +324,13 @@ export function CreateSchedulingRequestForm({
     return Object.keys(errors).length === 0;
   };
 
-  // Form submit
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Form submit implementation
+  const executeSubmit = async (overrideAvailableMinutes?: number) => {
     setFeedback(null);
+    setInfeasibilityFix(null);
 
-    if (!validate()) {
+    const activeAvailableMinutes = overrideAvailableMinutes ?? duration.minutes;
+    if (!overrideAvailableMinutes && !validate()) {
       setFeedback({
         tone: 'error',
         title: 'Thông tin chưa hợp lệ',
@@ -224,22 +379,22 @@ export function CreateSchedulingRequestForm({
       return;
     }
 
-    // Construct backend payload
+    // Construct backend payload (validate() guarantees the places are chosen).
     const startAtIso = buildVietnamStartAtIso(startDate, startTime);
     const payload: CreateSchedulingRequestPayload = {
       startAt: startAtIso,
       timeZoneId: TRIPMATE_TIME_ZONE,
-      startLatitude: selectedDestination.defaultStartLatitude,
-      startLongitude: selectedDestination.defaultStartLongitude,
-      explorationLatitude: selectedDestination.centerLatitude,
-      explorationLongitude: selectedDestination.centerLongitude,
-      endPoiId: null,
+      startLatitude: startPoint!.latitude,
+      startLongitude: startPoint!.longitude,
+      explorationLatitude: explorationPoi!.latitude,
+      explorationLongitude: explorationPoi!.longitude,
+      endPoiId: returnToStart ? null : endPoi?.poi?.id ?? null,
       returnToStart,
-      availableMinutes: availableHours * 60,
+      availableMinutes: activeAvailableMinutes ?? 0,
       transportMode,
       searchRadiusKm,
       budgetVnd: budgetVnd === '' ? null : Number(budgetVnd),
-      mandatoryPoiIds: [],
+      mandatoryPoiIds: mandatoryPois.map((poi) => poi.id),
       restPreference,
     };
 
@@ -271,18 +426,77 @@ export function CreateSchedulingRequestForm({
         onSuccess(result.data);
       }
     } catch (err: unknown) {
-      const apiErr = err as { code?: string; message?: string };
-      setFeedback({
-        tone: 'error',
-        title: 'Không thể tạo lịch trình tối ưu',
-        message:
-          apiErr.message ||
-          'Ràng buộc không khả thi hoặc hệ thống đang bận. Vui lòng mở rộng bán kính hoặc tăng thời lượng chuyến đi.',
-      });
+      const apiErr = err as { code?: string; message?: string; status?: number };
+      const is422 = apiErr.status === 422 || apiErr.code === 'planning.constraints_infeasible';
+
+      if (is422) {
+        const speed = SPEED_KMH[transportMode] ?? 35;
+        const outboundKm = startPoint && explorationPoi
+          ? calculateDistanceKm(
+              startPoint.latitude,
+              startPoint.longitude,
+              explorationPoi.latitude,
+              explorationPoi.longitude,
+            )
+          : 0;
+        const inboundKm = !returnToStart && endPoi && explorationPoi
+          ? calculateDistanceKm(
+              explorationPoi.latitude,
+              explorationPoi.longitude,
+              endPoi.latitude,
+              endPoi.longitude,
+            )
+          : outboundKm;
+        const transitMinutes = Math.round(((outboundKm + inboundKm) / speed) * 60);
+        const totalVisitMinutes = mandatoryPois.reduce((acc, poi) => {
+          return acc + ((poi as unknown as { averageVisitDurationMinutes?: number }).averageVisitDurationMinutes ?? 60);
+        }, 0);
+        const currentMins = activeAvailableMinutes ?? 0;
+        const requiredMinutes = Math.max(
+          currentMins + 60,
+          transitMinutes + Math.max(totalVisitMinutes, 120),
+        );
+        const suggestedHours = Math.max(
+          Math.ceil(currentMins / 60) + 2,
+          Math.ceil(requiredMinutes / 60),
+        );
+
+        setInfeasibilityFix({
+          requiredMinutes,
+          currentMinutes: currentMins,
+          suggestedHours,
+        });
+
+        setFeedback({
+          tone: 'error',
+          title: 'Không thể tạo lịch trình tối ưu',
+          message: `Không thể xếp lịch: Các điểm bắt buộc cần tối thiểu ${requiredMinutes} phút (bao gồm di chuyển và tham quan), vượt quá thời lượng ${currentMins} phút của bạn.`,
+        });
+      } else {
+        setInfeasibilityFix(null);
+        setFeedback({
+          tone: 'error',
+          title: 'Không thể tạo lịch trình tối ưu',
+          message:
+            apiErr.message ||
+            'Ràng buộc không khả thi hoặc hệ thống đang bận. Vui lòng mở rộng bán kính hoặc tăng thời lượng chuyến đi.',
+        });
+      }
     } finally {
       setIsSubmitting(false);
       setOptimizationPhase(null);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void executeSubmit();
+  };
+
+  const handleApplyFixAndResubmit = async (suggestedHours: number) => {
+    setDurationHours(String(suggestedHours));
+    setDurationMinutes('0');
+    await executeSubmit(suggestedHours * 60);
   };
 
   return (
@@ -295,7 +509,7 @@ export function CreateSchedulingRequestForm({
               sync_saved_locally
             </span>
             <span>
-              TripMate đã tự động điền các thiết lập được UC-10 hỗ trợ hiện tại như phương tiện, nhịp độ và ngân sách.
+              TripMate đã tự động điền phương tiện từ sở thích du lịch đã lưu của bạn.
             </span>
           </div>
           <Link
@@ -310,13 +524,25 @@ export function CreateSchedulingRequestForm({
 
       {/* Feedback banner */}
       {feedback && (
-        <div className="mb-6">
+        <div className="mb-6 space-y-3">
           <FeedbackAlert
             tone={feedback.tone}
             title={feedback.title}
           >
             {feedback.message}
           </FeedbackAlert>
+          {infeasibilityFix && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => void handleApplyFixAndResubmit(infeasibilityFix.suggestedHours)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+              >
+                <span className="material-symbols-outlined text-base">update</span>
+                Tăng thời lượng lên {infeasibilityFix.suggestedHours} giờ và thử lại
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -350,7 +576,7 @@ export function CreateSchedulingRequestForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {/* Card 1: Destination & Starting Point */}
+        {/* Card 1: Where — same fields as the mobile app */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-7">
           <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#007d6e]">
@@ -358,64 +584,97 @@ export function CreateSchedulingRequestForm({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 sm:text-lg">
-                1. Điểm đến & Vị trí khởi hành
+                1. Điểm xuất phát & khu vực khám phá
               </h2>
               <p className="text-xs text-slate-500">
-                Chọn thành phố và địa điểm bắt đầu hành trình của bạn
+                Bắt đầu từ nơi bạn đang ở, rồi chọn khu vực và những nơi bạn muốn ghé
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="destination-select"
-                className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm"
+          {/* Starting point */}
+          <div>
+            <p className="text-xs font-bold text-slate-700 sm:text-sm">Điểm xuất phát</p>
+            <p
+              className={`mt-1 text-sm ${startPoint ? 'font-semibold text-slate-800' : 'text-slate-500'}`}
+              data-testid="start-point-label"
+            >
+              {startPoint ? startPoint.label : 'Chưa chọn điểm xuất phát'}
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void locateStartPoint()}
+                disabled={isLocating || isSubmitting}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#006b5f] disabled:opacity-60"
               >
-                Thành phố / Điểm đến
-              </label>
-              <select
-                id="destination-select"
-                value={selectedDestination.id}
-                onChange={(e) => handleDestinationChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 transition focus:border-[#007d6e] focus:outline-hidden focus:ring-2 focus:ring-[#007d6e]/20"
+                <span className="material-symbols-outlined text-base">my_location</span>
+                {isLocating ? 'Đang lấy vị trí…' : 'Dùng vị trí hiện tại'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPickerTarget('start')}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-slate-400 disabled:opacity-60"
               >
-                {DESTINATION_PRESETS.map((dest) => (
-                  <option key={dest.id} value={dest.id}>
-                    {dest.name} ({dest.province})
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-xs text-slate-500">
-                {selectedDestination.description}
-              </p>
+                <span className="material-symbols-outlined text-base">search</span>
+                Chọn điểm xuất phát
+              </button>
             </div>
+            {validationErrors.startPoint && (
+              <p className="mt-1.5 text-xs text-rose-600">{validationErrors.startPoint}</p>
+            )}
+          </div>
 
-            <div>
-              <label
-                htmlFor="default-start-address"
-                className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm"
-              >
-                Điểm xuất phát mặc định
-              </label>
+          {/* Explore around */}
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <PlaceField
+              label="Khu vực khám phá"
+              value={explorationPoi?.label ?? null}
+              helper={
+                startPoint
+                  ? 'Chọn khu vực hoặc điểm tham quan bạn muốn khám phá xung quanh.'
+                  : 'Chọn điểm xuất phát trước.'
+              }
+              disabled={!startPoint || isSubmitting}
+              onOpen={() => setPickerTarget('exploration')}
+              error={validationErrors.exploration}
+            />
+          </div>
+
+          {/* Finish at + return to start */}
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <label className="flex cursor-pointer items-center gap-3">
               <input
-                id="default-start-address"
-                type="text"
-                readOnly
-                value={selectedDestination.defaultStartAddress}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 cursor-not-allowed select-none"
+                type="checkbox"
+                checked={returnToStart}
+                onChange={(e) => {
+                  setReturnToStart(e.target.checked);
+                  setValidationErrors((prev) => ({ ...prev, endPoi: '' }));
+                }}
+                className="h-4 w-4 rounded-sm border-slate-300 text-[#007d6e] accent-[#007d6e] focus:ring-[#007d6e]"
               />
-              <p className="mt-1.5 text-xs text-slate-500">
-                TripMate hiện sử dụng điểm xuất phát mặc định của khu vực đã chọn.
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Tọa độ: {selectedDestination.defaultStartLatitude.toFixed(4)},{' '}
-                {selectedDestination.defaultStartLongitude.toFixed(4)}
-              </p>
+              <span className="text-xs font-medium text-slate-700 sm:text-sm">
+                Quay về điểm xuất phát khi kết thúc hành trình
+              </span>
+            </label>
+            <div className="mt-3">
+              <PlaceField
+                label="Điểm kết thúc"
+                value={returnToStart ? null : endPoi?.label ?? null}
+                helper={
+                  returnToStart
+                    ? 'Bỏ chọn "Quay về điểm xuất phát" để chọn nơi kết thúc chuyến đi.'
+                    : 'Chọn nơi kết thúc chuyến đi.'
+                }
+                disabled={returnToStart || !startPoint || isSubmitting}
+                onOpen={() => setPickerTarget('end')}
+                error={validationErrors.endPoi}
+              />
             </div>
           </div>
 
-          {/* Search Radius Slider */}
+          {/* Search radius */}
           <div className="mt-5 border-t border-slate-100 pt-5">
             <div className="flex items-center justify-between">
               <label
@@ -431,24 +690,128 @@ export function CreateSchedulingRequestForm({
             <input
               id="radius-slider"
               type="range"
-              min={1}
-              max={50}
+              min={MIN_SEARCH_RADIUS_KM}
+              max={MAX_SEARCH_RADIUS_KM}
               step={1}
               value={searchRadiusKm}
-              onChange={(e) => setSearchRadiusKm(Number(e.target.value))}
+              onChange={(e) => {
+                const newRadius = Number(e.target.value);
+                setSearchRadiusKm(newRadius);
+                setMandatoryPois((prev) => {
+                  if (!explorationPoi) return [];
+                  return prev.filter((p) => {
+                    if (explorationPoi.poi && p.id === explorationPoi.poi.id) {
+                      return true;
+                    }
+                    const dist = calculateDistanceKm(
+                      explorationPoi.latitude,
+                      explorationPoi.longitude,
+                      p.latitude,
+                      p.longitude,
+                    );
+                    return dist <= newRadius;
+                  });
+                });
+              }}
               className="mt-2.5 h-2 w-full cursor-pointer accent-[#007d6e]"
             />
             <div className="mt-1 flex justify-between text-[11px] text-slate-400">
-              <span>1 km (Gần)</span>
-              <span>10 km (Chuẩn nội thành)</span>
-              <span>50 km (Rộng / Ngoại ô)</span>
+              <span>{MIN_SEARCH_RADIUS_KM} km (Gần)</span>
+              <span>50 km (Ngoại ô)</span>
+              <span>{MAX_SEARCH_RADIUS_KM} km (Liên tỉnh)</span>
             </div>
+            {radiusWarning(searchRadiusKm) && (
+              <p role="status" className="mt-2 flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <span className="material-symbols-outlined text-sm">warning</span>
+                <span>{radiusWarning(searchRadiusKm)}</span>
+              </p>
+            )}
+            {mapboxToken && radiusCenter && !radiusMapFailed && (
+              <div className="mt-3">
+                <LazyRadiusMap
+                  token={mapboxToken}
+                  center={radiusCenter}
+                  radiusKm={searchRadiusKm}
+                  onUnavailable={() => setRadiusMapFailed(true)}
+                />
+              </div>
+            )}
             {validationErrors.searchRadiusKm && (
               <p className="mt-1 text-xs text-rose-600">
                 {validationErrors.searchRadiusKm}
               </p>
             )}
           </div>
+
+          {/* Must-see places */}
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <p className="text-xs font-bold text-slate-700 sm:text-sm">Địa điểm muốn ghé</p>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              Không bắt buộc. Thêm tối đa {MAX_MANDATORY_POIS} nơi bạn không muốn bỏ lỡ.
+            </p>
+            {mandatoryPois.length > 0 && (
+              <ul className="mt-2.5 flex flex-wrap gap-2">
+                {mandatoryPois.map((poi) => {
+                  const isPrimary = poi.id === explorationPoi?.poi?.id;
+                  return (
+                    <li
+                      key={poi.id}
+                      className={`inline-flex items-center gap-1.5 rounded-full border py-1 pl-3 pr-1 text-xs font-semibold ${
+                        isPrimary
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                          : 'border-teal-200 bg-teal-50 text-[#007d6e]'
+                      }`}
+                    >
+                      <span>{poi.name}</span>
+                      {isPrimary && (
+                        <span className="rounded-full bg-emerald-200/70 px-1.5 py-0.5 text-[10px] font-bold text-emerald-900">
+                          Điểm khám phá chính
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMandatoryPois((prev) => prev.filter((item) => item.id !== poi.id))
+                        }
+                        disabled={isSubmitting}
+                        aria-label={`Bỏ ${poi.name}`}
+                        className="rounded-full p-0.5 hover:bg-black/5"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <button
+              type="button"
+              onClick={() => setPickerTarget('mandatory')}
+              disabled={!startPoint || isSubmitting || mandatoryPois.length >= MAX_MANDATORY_POIS}
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-slate-300 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-[#007d6e] hover:text-[#007d6e] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-base">add_location_alt</span>
+              Thêm địa điểm muốn ghé
+            </button>
+          </div>
+
+          {/* Travel Feasibility Gate Warning (Soft Alert) */}
+          {travelFeasibility?.isWarning && (
+            <div
+              role="alert"
+              className="mt-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-900 shadow-2xs"
+            >
+              <span className="material-symbols-outlined mt-0.5 text-base text-amber-600" aria-hidden="true">
+                warning
+              </span>
+              <div>
+                <p className="font-bold">Lưu ý về thời gian di chuyển</p>
+                <p className="mt-0.5 leading-relaxed text-amber-800">
+                  {travelFeasibility.message}
+                </p>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Card 2: Date, Time & Duration */}
@@ -462,7 +825,7 @@ export function CreateSchedulingRequestForm({
                 2. Thời gian & Thời lượng chuyến đi
               </h2>
               <p className="text-xs text-slate-500">
-                Lịch trình được tối ưu hóa trong cùng một ngày theo quy định hệ thống
+                Chuyến đi từ 1 giờ đến 3 ngày, có thể kéo dài qua đêm
               </p>
             </div>
           </div>
@@ -526,77 +889,71 @@ export function CreateSchedulingRequestForm({
             </div>
           </div>
 
-          {/* Duration slider */}
+          {/* Duration: free hours + minutes, 1 hour to 3 days */}
           <div className="mt-5 border-t border-slate-100 pt-5">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="duration-slider"
-                className="text-xs font-bold text-slate-700 sm:text-sm"
-              >
-                Thời lượng dự kiến
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
-                  {availableHours} giờ ({availableHours * 60} phút)
-                </span>
-              </div>
-            </div>
-
-            <input
-              id="duration-slider"
-              type="range"
-              min={1}
-              max={12}
-              step={1}
-              value={availableHours}
-              onChange={(e) => {
-                setAvailableHours(Number(e.target.value));
-                setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
-              }}
-              className="mt-2.5 h-2 w-full cursor-pointer accent-[#007d6e]"
-            />
-
-            {/* Quick preset buttons */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[
-                { h: 3, label: '3 giờ (Nửa buổi)' },
-                { h: 6, label: '6 giờ (Một buổi dài)' },
-                { h: 8, label: '8 giờ (Trọn vẹn 1 ngày)' },
-                { h: 10, label: '10 giờ (Khám phá sâu)' },
-              ].map((preset) => (
-                <button
-                  key={preset.h}
-                  type="button"
-                  onClick={() => {
-                    setAvailableHours(preset.h);
+            <p className="text-xs font-bold text-slate-700 sm:text-sm">Thời lượng dự kiến</p>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              Từ 1 giờ đến 3 ngày (72 giờ). Chuyến đi có thể kéo dài qua đêm sang ngày hôm sau.
+            </p>
+            <div className="mt-2.5 grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="duration-hours" className="text-xs font-semibold text-slate-600">
+                  Số giờ
+                </label>
+                <input
+                  id="duration-hours"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  value={durationHours}
+                  onChange={(e) => {
+                    setDurationHours(e.target.value.replace(/\D/g, ''));
                     setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
                   }}
-                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
-                    availableHours === preset.h
-                      ? 'border-[#007d6e] bg-teal-50 text-[#007d6e]'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#007d6e] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="duration-minutes" className="text-xs font-semibold text-slate-600">
+                  Số phút
+                </label>
+                <input
+                  id="duration-minutes"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  value={durationMinutes}
+                  onChange={(e) => {
+                    setDurationMinutes(e.target.value.replace(/\D/g, ''));
+                    setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
+                  }}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#007d6e] focus:outline-none"
+                />
+              </div>
             </div>
 
             {/* Live calculation banner */}
             <div
               className={`mt-4 flex items-center gap-2 rounded-xl p-3 text-xs sm:text-sm ${
-                isNextDay
+                duration.error
                   ? 'border border-rose-200 bg-rose-50 text-rose-900'
                   : 'border border-teal-100 bg-teal-50/60 text-teal-900'
               }`}
             >
               <span className="material-symbols-outlined text-base">
-                {isNextDay ? 'warning' : 'timelapse'}
+                {duration.error ? 'warning' : 'timelapse'}
               </span>
-              <span>
-                Bắt đầu: <strong>{startTime}</strong> • Dự kiến kết thúc:{' '}
-                <strong>{formattedEnd}</strong> {isNextDay ? '(Qua ngày hôm sau ❌)' : '(Cùng ngày ✓)'}
-              </span>
+              {duration.error || !tripEnd ? (
+                <span>{duration.error ?? 'Chọn ngày và giờ xuất phát.'}</span>
+              ) : (
+                <span>
+                  Bắt đầu: <strong>{startTime}</strong> • Dự kiến kết thúc:{' '}
+                  <strong>{tripEnd.time}</strong>{' '}
+                  {tripEnd.dayOffset === 0
+                    ? '(cùng ngày)'
+                    : `ngày ${tripEnd.date} (sau ${tripEnd.dayOffset} ngày)`}
+                </span>
+              )}
             </div>
 
             {validationErrors.availableHours && (
@@ -639,7 +996,7 @@ export function CreateSchedulingRequestForm({
                   key={opt.id}
                   type="button"
                   disabled={opt.disabled}
-                  onClick={() => !opt.disabled && setTransportMode(opt.id)}
+                  onClick={() => !opt.disabled && chooseTransportMode(opt.id)}
                   className={`flex flex-col items-center rounded-xl border p-3 text-center transition ${
                     opt.disabled
                       ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 opacity-60'
@@ -686,21 +1043,6 @@ export function CreateSchedulingRequestForm({
               ))}
             </div>
           </div>
-
-          {/* Return to start toggle */}
-          <div className="border-t border-slate-100 pt-5">
-            <label className="flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={returnToStart}
-                onChange={(e) => setReturnToStart(e.target.checked)}
-                className="h-4 w-4 rounded-sm border-slate-300 text-[#007d6e] accent-[#007d6e] focus:ring-[#007d6e]"
-              />
-              <span className="text-xs font-medium text-slate-700 sm:text-sm">
-                Quay về điểm xuất phát khi kết thúc hành trình (Tạo thành lộ trình khép kín)
-              </span>
-            </label>
-          </div>
         </section>
 
         {/* Card 4: Budget */}
@@ -738,7 +1080,7 @@ export function CreateSchedulingRequestForm({
                 step={50000}
                 value={budgetVnd}
                 onChange={(e) => {
-                  setBudgetVnd(e.target.value === '' ? '' : Number(e.target.value));
+                  chooseBudget(e.target.value === '' ? '' : Number(e.target.value));
                   setValidationErrors((prev) => ({ ...prev, budgetVnd: '' }));
                 }}
                 placeholder="VD: 500000"
@@ -763,7 +1105,7 @@ export function CreateSchedulingRequestForm({
                 <button
                   key={p.amount}
                   type="button"
-                  onClick={() => setBudgetVnd(p.amount)}
+                  onClick={() => chooseBudget(p.amount)}
                   className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
                     budgetVnd === p.amount
                       ? 'border-[#007d6e] bg-teal-50 text-[#007d6e]'
@@ -820,6 +1162,60 @@ export function CreateSchedulingRequestForm({
           )}
         </div>
       </form>
+
+      {pickerTarget && (
+        <PlacePickerDialog
+          title={PICKER_TITLES[pickerTarget]}
+          allowAddresses={pickerTarget === 'start'}
+          near={pickerTarget === 'mandatory' ? explorationPoi ?? startPoint : startPoint}
+          radiusKm={pickerTarget === 'mandatory' ? searchRadiusKm : null}
+          excludeFoodAndDrink={pickerTarget === 'mandatory'}
+          onSelect={handlePicked}
+          onClose={() => setPickerTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+const PICKER_TITLES: Record<PickerTarget, string> = {
+  start: 'Chọn điểm xuất phát',
+  exploration: 'Chọn khu vực khám phá',
+  end: 'Chọn điểm kết thúc',
+  mandatory: 'Thêm địa điểm muốn ghé',
+};
+
+function PlaceField({
+  label,
+  value,
+  helper,
+  disabled,
+  onOpen,
+  error,
+}: {
+  label: string;
+  value: string | null;
+  helper: string;
+  disabled: boolean;
+  onOpen: () => void;
+  error?: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-slate-700 sm:text-sm">{label}</p>
+      <button
+        type="button"
+        onClick={onOpen}
+        disabled={disabled}
+        aria-label={`${label}: ${value ?? helper}`}
+        className="mt-1.5 flex w-full items-center justify-between gap-3 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-left text-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+      >
+        <span className={value ? 'font-semibold text-slate-800' : 'text-slate-500'}>
+          {value ?? helper}
+        </span>
+        <span className="material-symbols-outlined text-lg text-slate-400">chevron_right</span>
+      </button>
+      {error && <p className="mt-1.5 text-xs text-rose-600">{error}</p>}
     </div>
   );
 }
