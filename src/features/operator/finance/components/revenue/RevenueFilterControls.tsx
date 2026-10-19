@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { financeEn } from '../../resources/en';
 import type {
   RevenueFilterInput,
@@ -29,6 +29,14 @@ export function RevenueFilterControls({
   const [draftFilters, setDraftFilters] =
     useState<RevenueFilterInput>(appliedFilters);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Sync draft state when applied filters change (e.g., after Reset).
+  // This is a controlled component pattern: the parent prop controls the form state.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDraftFilters(appliedFilters);
+    setValidationError(null);
+  }, [appliedFilters]);
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
