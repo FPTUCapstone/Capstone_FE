@@ -38,7 +38,7 @@ export function FeaturedToursSection() {
                 Tour Trải Nghiệm Bản Địa <span className="text-[#007d6e]">Đã Kiểm Duyệt</span>
               </h2>
               <p className="mt-3 text-slate-500 text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
-                Trực tiếp từ các nhà tổ chức tour (Tour Operators) uy tín tại Miền Trung. 
+                Trực tiếp từ các nhà tổ chức tour uy tín tại Miền Trung.
                 Tích hợp vé điện tử Dynamic QR và thanh toán ký quỹ Escrow minh bạch.
               </p>
             </div>
@@ -112,7 +112,19 @@ export function FeaturedToursSection() {
               delay={idx * 120}
               duration={700}
             >
-              <div className="tilt-card bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-teal-300 card-hover-lift transition-all duration-300 flex flex-col group h-full">
+              <div className="relative h-full group">
+                {/* Dynamic Soft Tour Glow standing behind the card */}
+                <div
+                  className={`absolute -inset-2 rounded-3xl transition-all duration-700 pointer-events-none blur-xl animate-orb-1 ${
+                    tour.city === 'Đà Nẵng'
+                      ? 'bg-gradient-to-br from-teal-500/22 to-sky-400/15'
+                      : tour.city === 'Hội An'
+                      ? 'bg-gradient-to-br from-amber-500/25 to-orange-400/15'
+                      : 'bg-gradient-to-br from-purple-500/22 to-violet-400/15'
+                  } opacity-30 group-hover:opacity-85 group-hover:scale-[1.02]`}
+                />
+
+                <div className="tilt-card relative z-10 bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-teal-300 card-hover-lift transition-all duration-300 flex flex-col group h-full">
                 {/* Tour Hero Image */}
                 <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
                   <img
@@ -184,6 +196,7 @@ export function FeaturedToursSection() {
                     </button>
                   </div>
                 </div>
+              </div>
               </div>
             </ScrollReveal>
           ))}

@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
+import { BrandLogo } from '@/components/brand/BrandLogo';
+import { PageTransition } from '@/components/navigation/PageTransition';
+import { SmoothScrollProvider, useSmoothScroll } from '@/components/providers/SmoothScrollProvider';
 import { ROUTES } from '@/lib/routes';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { LandingHero } from './components/LandingHero';
+import { EditorialRunningTicker } from './components/EditorialRunningTicker';
 import { CentralVietnamShowcase } from './components/CentralVietnamShowcase';
 import { CspSimulatorSection } from './components/CspSimulatorSection';
 import { WeatherReroutingSection } from './components/WeatherReroutingSection';
@@ -17,9 +21,24 @@ import { MobileAppShowcaseSection } from './components/MobileAppShowcaseSection'
 import { FaqSection } from './components/FaqSection';
 import { FinalCtaSection } from './components/FinalCtaSection';
 
+const CITIES: Array<'danang' | 'hoian' | 'hue'> = ['danang', 'hoian', 'hue'];
+
 export function LandingPage() {
+  return (
+    <SmoothScrollProvider>
+      <PageTransition>
+        <LandingContent />
+      </PageTransition>
+    </SmoothScrollProvider>
+  );
+}
+
+function LandingContent() {
+  const { scrollTo } = useSmoothScroll();
   const [activeCity, setActiveCity] = useState<'danang' | 'hoian' | 'hue'>('danang');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isAutoPlayPaused, setIsAutoPlayPaused] = useState(false);
+  const userInteractedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     function handleScroll() {
@@ -29,25 +48,54 @@ export function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Proactive 8-second auto-rotation cycling between destinations and photography
+  useEffect(() => {
+    if (isAutoPlayPaused) return;
+
+    const interval = setInterval(() => {
+      setActiveCity((prev) => {
+        const nextIndex = (CITIES.indexOf(prev) + 1) % CITIES.length;
+        return CITIES[nextIndex];
+      });
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlayPaused]);
+
   function handleSelectCity(city: 'danang' | 'hoian' | 'hue') {
     setActiveCity(city);
+    // Pause auto-rotation temporarily when user deliberately clicks to inspect
+    setIsAutoPlayPaused(true);
+    if (userInteractedTimeoutRef.current) clearTimeout(userInteractedTimeoutRef.current);
+    userInteractedTimeoutRef.current = setTimeout(() => {
+      setIsAutoPlayPaused(false);
+    }, 12000);
   }
 
   function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollTo(0);
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f7fc] text-[#0F1B2D] font-sans antialiased selection:bg-teal-100 selection:text-teal-900 relative">
+    <div className="min-h-screen bg-[#f4f7fc] text-[#0F1B2D] font-sans antialiased selection:bg-teal-100 selection:text-teal-900 relative overflow-x-clip">
       {/* Route-Aware Public Header Navigation with Scroll Progress */}
       <PublicNavigation isLanding={true} />
 
       <main>
         {/* 1. Hero Section with Journey Canvas */}
-        <LandingHero activeCity={activeCity} onSelectCity={handleSelectCity} />
+        <LandingHero
+          activeCity={activeCity}
+          onSelectCity={handleSelectCity}
+          isAutoPlayPaused={isAutoPlayPaused}
+          onPauseAutoPlay={() => setIsAutoPlayPaused(true)}
+          onResumeAutoPlay={() => setIsAutoPlayPaused(false)}
+        />
+
+        {/* Dynamic Running Text Ribbon: Live Atlas & Cultural Highlights */}
+        <EditorialRunningTicker />
 
         {/* 2. Central Vietnam Destination Showcase */}
-        <CentralVietnamShowcase onSelectCity={handleSelectCity} />
+        <CentralVietnamShowcase activeCity={activeCity} onSelectCity={handleSelectCity} />
 
         {/* 3. Interactive CSP Simulator Section */}
         <CspSimulatorSection selectedCity={activeCity} onCityChange={handleSelectCity} />
@@ -81,9 +129,8 @@ export function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-slate-200">
               {/* Col 1: Brand & Enterprise info */}
               <div className="md:col-span-2">
-                <div className="flex items-center gap-2 text-[#00152a] font-black text-xl">
-                  <span className="material-symbols-outlined text-2xl text-[#007d6e]">explore</span>
-                  <span>TripMate Platform</span>
+                <div className="flex items-center gap-2">
+                  <BrandLogo size={26} />
                 </div>
                 <p className="mt-3 text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md">
                   Nền tảng công nghệ du lịch thông minh Miền Trung Việt Nam.
