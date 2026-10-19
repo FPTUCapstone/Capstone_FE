@@ -1,7 +1,15 @@
-type BrandLogoProps = {
+import {
+  TRIPMATE_SYMBOL_VIEWBOX,
+  TRIPMATE_SYMBOL_PATH,
+  TRIPMATE_SYMBOL_ASPECT_RATIO,
+} from './tripMateLogoPaths';
+
+export type BrandLogoProps = {
   context?: 'main' | 'partner' | 'admin';
   inverse?: boolean;
   size?: number;
+  variant?: 'full' | 'icon';
+  className?: string;
 };
 
 const labels = {
@@ -10,30 +18,37 @@ const labels = {
   admin: 'TripMate Admin',
 };
 
-export function BrandLogo({ context = 'main', inverse = false, size = 24 }: BrandLogoProps) {
-  const color = inverse ? 'text-white' : 'text-[#007D6E]';
+export function BrandLogo({
+  context = 'main',
+  inverse = false,
+  size = 24,
+  variant = 'full',
+  className = '',
+}: BrandLogoProps) {
+  const width = Math.round(size * TRIPMATE_SYMBOL_ASPECT_RATIO);
+  const color = inverse ? 'text-white' : 'text-[#10283b]';
 
   return (
-    <span className={`inline-flex items-center gap-2 ${color}`}>
+    <span className={`inline-flex items-center gap-2.5 ${color} ${className}`}>
       <svg
-        width={size}
+        width={width}
         height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={inverse ? 'text-white' : 'text-brand-brightTeal'}
+        viewBox={TRIPMATE_SYMBOL_VIEWBOX}
+        fill="currentColor"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        className="shrink-0"
+        aria-hidden="true"
       >
-        <path
-          d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"
-          className={inverse ? 'fill-white/30' : 'fill-brand-teal/30'}
-        />
-        <circle cx="12" cy="10" r="3" className="fill-white stroke-white" />
-        <path d="M12 7v1" stroke="#FF7043" strokeWidth="2" />
+        <path d={TRIPMATE_SYMBOL_PATH} />
       </svg>
-      <span className="text-xl font-extrabold tracking-tight sm:text-2xl">{labels[context]}</span>
+      {variant !== 'icon' && (
+        <span className="text-xl font-extrabold tracking-tight sm:text-2xl whitespace-nowrap">
+          {labels[context]}
+        </span>
+      )}
     </span>
   );
 }
+
+export default BrandLogo;
