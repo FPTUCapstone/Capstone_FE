@@ -84,7 +84,7 @@ Before requesting review:
 - Failed CI checks must be resolved before approval and merge.
 
 [`TripMate FE CI`](.github/workflows/frontend-ci.yml) runs on Pull Requests targeting
-`develop` and pushes to `develop`. Its `frontend-validation` job uses Ubuntu and Node.js
+`develop` or `main` and pushes to `develop` or `main`. Its `frontend-validation` job uses Ubuntu and Node.js
 22 LTS with npm caching, then runs `npm ci`, `npm test`, `npm run typecheck`,
 `npm run lint`, and `npm run build`. Each command must succeed; test output, lint
 warnings, and build failures remain visible in the Actions logs.
@@ -98,10 +98,9 @@ or appropriately scoped Actions secrets and document it. Never supply backend pr
 Firebase Admin, or payment credentials to this frontend validation workflow. Missing
 configuration and font download errors must fail normally.
 
-The legacy `ci.yml` workflow handles only Pull Requests targeting `main` and pushes to
-`main`; `frontend-ci.yml` handles `develop`, avoiding duplicate runs on that branch. Repository
+`frontend-ci.yml` is the only frontend CI workflow; the legacy `ci.yml` was removed. Repository
 maintainers must configure branch protection or a ruleset to require `frontend-validation`
-before merging into `develop`; adding a workflow alone does not enforce GitHub merge protection.
+before merging into `develop` and `main`; adding a workflow alone does not enforce GitHub merge protection.
 
 ## Pull Requests
 
