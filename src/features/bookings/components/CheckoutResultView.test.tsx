@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as paymentApi from '../services/paymentApi';
+import { getCheckoutResultRedirectUrl } from './CheckoutResultPage';
 import { CheckoutResultView } from './CheckoutResultView';
 
 const mockSearchParams = new URLSearchParams();
@@ -16,6 +17,8 @@ describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
     vi.restoreAllMocks();
     mockSearchParams.delete('bookingId');
     mockSearchParams.delete('status');
+    mockSearchParams.delete('code');
+    mockSearchParams.delete('cancel');
   });
 
   it('renders payment success state and return-home action when backend reports Confirmed', async () => {
@@ -110,6 +113,55 @@ describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
       expect(screen.getByText('Giao dịch đã hủy')).toBeTruthy();
       expect(screen.getByRole('button', { name: /Tiến hành thanh toán ngay/i })).toBeTruthy();
     });
+  });
+
+  it('records a CANCELLED gateway callback before loading canonical status', async () => {
+    mockSearchParams.set('bookingId', '42');
+    mockSearchParams.set('status', 'CANCELLED');
+    const cancel = vi.spyOn(paymentApi, 'cancelPendingPayment').mockResolvedValue();
+    vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
+      bookingId: '42', bookingCode: 'BK-20261018-0042', bookingStatus: 'PendingPayment', paymentStatus: 'Pending',
+      paymentExpiresAt: '2026-10-18T10:30:00Z', activePayment: null,
+    });
+
+    render(<CheckoutResultView />);
+
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith('42'));
+  });
+
+  it('waits for the canonical webhook update after a PAID callback instead of trusting the URL', async () => {
+    vi.useFakeTimers();
+    try {
+      mockSearchParams.set('bookingId', '42');
+      mockSearchParams.set('status', 'PAID');
+      mockSearchParams.set('code', '00');
+      vi.spyOn(paymentApi, 'getBookingPaymentStatus')
+        .mockResolvedValueOnce({
+          bookingId: '42', bookingCode: 'BK-20261018-0042', bookingStatus: 'PendingPayment', paymentStatus: 'Pending',
+          paymentExpiresAt: '2026-10-18T10:30:00Z', activePayment: null,
+        })
+        .mockResolvedValueOnce({
+          bookingId: '42', bookingCode: 'BK-20261018-0042', bookingStatus: 'Confirmed', paymentStatus: 'Paid',
+          paymentExpiresAt: '2026-10-18T10:30:00Z', activePayment: null,
+        });
+
+      render(<CheckoutResultView />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+
+      expect(screen.getByText('Thanh Toán Hoàn Tất!')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('moves a tunnel callback back to localhost while preserving payment parameters', () => {
+    expect(getCheckoutResultRedirectUrl(
+      'http://localhost:3001',
+      'https://demo.trycloudflare.com',
+      'bookingId=42&status=CANCELLED&cancel=true',
+    )).toBe('http://localhost:3001/checkout/result?bookingId=42&status=CANCELLED&cancel=true');
   });
 
   it('renders expired booking state when booking has expired', async () => {

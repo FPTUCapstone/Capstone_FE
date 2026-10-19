@@ -132,6 +132,24 @@ export async function getBookingPaymentStatus(
 }
 
 /**
+ * Records a traveler cancellation after PayOS returns through the configured
+ * cancel URL. This releases only the previous payment link, not the booking
+ * hold, so a new link can be issued before the booking expires.
+ */
+export async function cancelPendingPayment(
+  bookingId: string | number,
+  options?: { signal?: AbortSignal },
+): Promise<void> {
+  await requestJson(
+    `/api/v1/traveler/bookings/${encodeURIComponent(bookingId)}/payment/cancel`,
+    {
+      method: 'POST',
+      signal: options?.signal,
+    },
+  );
+}
+
+/**
  * UC-28: Complete a mock payment with specified outcome.
  * Available only in local/development environments when provider is Mock.
  * Invokes POST /api/v1/traveler/payments/{paymentId}/mock-outcome.

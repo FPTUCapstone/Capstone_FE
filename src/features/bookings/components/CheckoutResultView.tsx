@@ -5,7 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
-import { createOrReusePayment, getBookingPaymentStatus } from '../services/paymentApi';
+import {
+  cancelPendingPayment,
+  createOrReusePayment,
+  getBookingPaymentStatus,
+} from '../services/paymentApi';
 import type { BookingPaymentStatusDto } from '../types/payment';
 
 function formatCurrency(amount: number): string {
@@ -36,35 +40,50 @@ export function CheckoutResultView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
+  const wasCancelledAtGateway =
+    searchParams.get('cancel') === 'true' ||
+    searchParams.get('status')?.toUpperCase() === 'CANCELLED';
+  // This hint only tells the UI to wait for the server-side webhook. It never
+  // marks a booking paid by itself: the canonical API response remains the
+  // source of truth.
+  const gatewayReportedSuccess =
+    searchParams.get('code') === '00' &&
+    searchParams.get('status')?.toUpperCase() === 'PAID';
 
   const [loading, setLoading] = useState<boolean>(Boolean(bookingId));
   const [retrying, setRetrying] = useState<boolean>(false);
   const [statusDto, setStatusDto] = useState<BookingPaymentStatusDto | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const fetchStatus = () => {
-    if (!bookingId) return;
-    setLoading(true);
-    getBookingPaymentStatus(bookingId)
-      .then((data) => {
-        setStatusDto(data);
-        setErrorMessage(null);
-      })
-      .catch((err: unknown) => {
-        const msg =
-          err instanceof Error ? err.message : 'Không thể tải thông tin thanh toán từ hệ thống.';
-        setErrorMessage(msg);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+  const [secondsToHome, setSecondsToHome] = useState<number>(5);
 
   useEffect(() => {
     if (!bookingId) return;
 
     let isMounted = true;
-    getBookingPaymentStatus(bookingId)
+    const loadCanonicalStatus = async () => {
+      if (wasCancelledAtGateway) {
+        await cancelPendingPayment(bookingId);
+      }
+
+      // PayOS redirects the browser and delivers its signed webhook separately.
+      // A successful return can therefore arrive a few seconds before our
+      // database is updated. Poll briefly instead of offering a second payment.
+      const attempts = gatewayReportedSuccess ? 10 : 1;
+      let latest: BookingPaymentStatusDto | null = null;
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        latest = await getBookingPaymentStatus(bookingId);
+        if (latest.bookingStatus === 'Confirmed' || latest.paymentStatus === 'Paid') {
+          return latest;
+        }
+
+        if (attempt < attempts - 1) {
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 1500));
+        }
+      }
+      return latest;
+    };
+
+    loadCanonicalStatus()
       .then((data) => {
         if (!isMounted) return;
         setStatusDto(data);
@@ -83,7 +102,28 @@ export function CheckoutResultView() {
     return () => {
       isMounted = false;
     };
-  }, [bookingId]);
+  }, [bookingId, gatewayReportedSuccess, wasCancelledAtGateway]);
+
+  // Give the traveler a short, explicit confirmation before returning home.
+  // The backend remains authoritative: query parameters can never trigger this.
+  useEffect(() => {
+    const isPaid =
+      statusDto?.bookingStatus === 'Confirmed' || statusDto?.paymentStatus === 'Paid';
+    if (!isPaid) return;
+
+    const timer = window.setInterval(() => {
+      setSecondsToHome((previous) => {
+        if (previous <= 1) {
+          window.clearInterval(timer);
+          router.replace(ROUTES.home);
+          return 0;
+        }
+        return previous - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [router, statusDto?.bookingStatus, statusDto?.paymentStatus]);
 
   const handlePayAgain = async () => {
     if (!bookingId || retrying) return;
@@ -170,7 +210,7 @@ export function CheckoutResultView() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               type="button"
-              onClick={fetchStatus}
+              onClick={() => window.location.reload()}
               className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
             >
               Thử tải lại
@@ -247,6 +287,9 @@ export function CheckoutResultView() {
                 <span>Về trang chủ</span>
               </Link>
             </div>
+            <p className="mt-4 text-center text-xs font-medium text-slate-500">
+              Tự động trở về trang chủ sau {secondsToHome} giây.
+            </p>
           </div>
         </div>
       </div>
@@ -361,17 +404,13 @@ export function CheckoutResultView() {
               <span>{retrying ? 'Đang tạo liên kết…' : 'Tiến hành thanh toán ngay'}</span>
             </button>
 
-            <button
-              type="button"
-              disabled={retrying}
-              onClick={() => {
-                setLoading(true);
-                fetchStatus();
-              }}
-              className="w-full flex items-center justify-center rounded-2xl border border-slate-200 px-5 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            <Link
+              href={ROUTES.home}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
             >
-              Kiểm tra lại trạng thái
-            </button>
+              <span className="material-symbols-outlined text-sm">home</span>
+              Về trang chủ
+            </Link>
           </div>
         </div>
       </div>

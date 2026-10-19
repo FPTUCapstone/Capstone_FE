@@ -129,6 +129,40 @@ export async function proxyGetBookingPaymentStatus(
   return json(payload, 200);
 }
 
+export async function proxyCancelPendingPayment(
+  request: Request,
+  bookingId: string,
+): Promise<Response> {
+  if (!isSameOriginRequest(request)) {
+    return json({ errorCode: 'FORBIDDEN' }, 403);
+  }
+
+  const auth = await travelerAccessToken(request.signal);
+  if ('status' in auth) {
+    return safeFailure(auth.status, null);
+  }
+
+  const id = encodeURIComponent(bookingId);
+  const response = await fetchBackend(`/api/v1/traveler/bookings/${id}/payment/cancel`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    signal: request.signal,
+  });
+
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    return safeFailure(response.status, body);
+  }
+
+  const payload =
+    body && typeof body === 'object' && 'data' in body ? (body as { data: unknown }).data : body;
+  return json(payload, 200);
+}
+
 export async function proxyCompleteMockPayment(
   request: Request,
   paymentId: string,
