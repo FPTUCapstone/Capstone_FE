@@ -166,4 +166,23 @@ describe('OperatorRevenueView (Screen #89)', () => {
       screen.getByRole('button', { name: /Apply Filters/i }).hasAttribute('disabled')
     ).toBe(false);
   });
+
+  it('REGRESSION: applying the same filter values twice in a row does not leave Apply stuck disabled', async () => {
+    render(<OperatorRevenueView />);
+
+    const applyButton = () =>
+      screen.getByRole('button', { name: /Apply Filters/i }) as HTMLButtonElement;
+
+    await waitFor(() => expect(applyButton().disabled).toBe(false));
+
+    // Click Apply twice without editing any field in between. The second click submits a
+    // filter object that is value-identical to (and, before the fix, the same reference as)
+    // the already-applied one, which must not stop the report from reloading and the button
+    // from re-enabling.
+    fireEvent.click(applyButton());
+    await waitFor(() => expect(applyButton().disabled).toBe(false));
+
+    fireEvent.click(applyButton());
+    await waitFor(() => expect(applyButton().disabled).toBe(false));
+  });
 });

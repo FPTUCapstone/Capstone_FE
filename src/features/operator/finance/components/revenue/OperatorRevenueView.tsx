@@ -60,6 +60,14 @@ export function OperatorRevenueView() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  // Bumped by every explicit user action (Apply, Reset, manual Refresh) so the fetch effect
+  // below always re-fires, even when the submitted filters are value-identical to the current
+  // ones (e.g. clicking Apply again without editing anything). appliedFilters alone cannot
+  // drive this: if the new filter object is the same reference as the current state, React
+  // bails out of re-rendering for that update, loadReport's identity never changes, the
+  // [loadReport] effect never re-runs, and isLoading — set to true by the handler — would be
+  // stuck forever with no fetch left to turn it back off.
+  const [requestToken, setRequestToken] = useState(0);
 
   // Guards every setState below against firing after unmount, across all four callers of
   // loadReport (initial/filter-change load, manual refresh, tab-focus refresh, background poll).
@@ -107,7 +115,12 @@ export function OperatorRevenueView() {
         if (isMountedRef.current && !options?.silent) setIsLoading(false);
       }
     },
-    [appliedFilters, currentPage, isDemo, actorUserId]
+    // requestToken is intentionally unused in the body: it exists only to force this
+    // callback's identity to change on every explicit user action, even when appliedFilters
+    // is value-identical to its previous state (see the requestToken declaration above for
+    // why that case needs forcing).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [appliedFilters, currentPage, isDemo, actorUserId, requestToken]
   );
 
   // Re-fetch whenever filters, page, or actor/demo context change. The resulting loading
@@ -163,17 +176,19 @@ export function OperatorRevenueView() {
     setIsLoading(true);
     setAppliedFilters(newFilters);
     setCurrentPage(1);
+    setRequestToken((token) => token + 1);
   };
 
   const handleResetFilters = () => {
     setIsLoading(true);
     setAppliedFilters(initialFilters);
     setCurrentPage(1);
+    setRequestToken((token) => token + 1);
   };
 
   const handleManualRefresh = () => {
     setIsLoading(true);
-    void loadReport();
+    setRequestToken((token) => token + 1);
   };
 
   const lastUpdatedLabel = lastUpdatedAt
