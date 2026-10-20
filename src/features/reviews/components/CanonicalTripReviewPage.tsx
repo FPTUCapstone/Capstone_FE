@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { ROUTES } from '@/lib/routes';
 import { createReview, getReviewContext, updateReview } from '../services/canonicalReviewApi';
 import type { CanonicalReview, ReviewableRecordRef, TripReviewContext } from '../types/canonicalReview';
@@ -106,8 +105,7 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
   };
 
   return <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]">
-    <PublicNavigation />
-    <main className="mx-auto max-w-2xl px-4 py-10">
+        <main className="mx-auto max-w-2xl px-4 py-10">
       <Link href={ROUTES.account.trips} className="text-sm font-semibold text-[#006B5F]">← Back to trip history</Link>
       <h1 className="mt-5 text-3xl font-black">Trip review</h1>
       {busy && !context ? <p className="mt-6" role="status">Loading review…</p> : null}

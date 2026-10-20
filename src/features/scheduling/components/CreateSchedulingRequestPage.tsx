@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 import { CreateSchedulingRequestForm } from './CreateSchedulingRequestForm';
@@ -43,7 +42,6 @@ export function CreateSchedulingRequestPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <PublicNavigation />
 
       <main className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">

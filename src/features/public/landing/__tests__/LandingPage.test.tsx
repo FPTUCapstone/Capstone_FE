@@ -48,10 +48,8 @@ afterEach(() => {
 });
 
 describe('LandingPage integration & synchronization', () => {
-  it('renders landing page with public navigation, hero, and main sections', () => {
+  it('renders landing page with hero, and main sections', () => {
     render(<LandingPage />);
-
-    expect(screen.getByTestId('public-navigation')).toBeDefined();
     expect(screen.getByRole('heading', { level: 1 })).toBeDefined();
     expect(screen.getByText(/Central Vietnam Travel Atlas/i)).toBeDefined();
     expect(screen.getByRole('contentinfo')).toBeDefined();

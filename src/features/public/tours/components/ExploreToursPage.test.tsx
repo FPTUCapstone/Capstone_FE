@@ -98,8 +98,6 @@ describe('ExploreToursPage', () => {
 
   it('renders page layout, navigation, filters, and results', async () => {
     render(<ExploreToursPage />);
-
-    expect(screen.getByTestId('public-navigation')).toBeTruthy();
     expect(screen.getByText(/Tour Trải Nghiệm/)).toBeTruthy();
     expect(screen.getByLabelText('Bộ lọc tìm kiếm tour')).toBeTruthy();
 
