@@ -64,7 +64,12 @@ export function ExportHistoryPanel({
   // refreshToken intentionally forces this effect to re-run even when isDemo/demoActorUserId
   // have not changed, so a just-created export shows up without waiting for the next poll.
   useEffect(() => {
-    void load();
+    // Queue the request after the effect has committed. This avoids synchronously cascading a
+    // state update from the effect while retaining an immediate refresh on mount/token change.
+    const timeoutId = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [load, refreshToken]);
 
   // Poll only while something is still Queued/Processing; stop as soon as nothing is pending.
