@@ -5,9 +5,13 @@
 
 export type RevenuePeriodGranularity = 'daily' | 'weekly' | 'monthly';
 
-export type RevenueExportFormat = 'xlsx' | 'csv' | 'pdf';
+// CSV and PDF are deferred by product decision: this operator has no external accounting
+// system to feed, and PDF is not an accounting-friendly format. Only XLSX is implemented.
+export type RevenueExportFormat = 'xlsx';
 
 export type RevenueExportScope = 'summary' | 'summary_and_details';
+
+export type RevenueExportStatus = 'Queued' | 'Processing' | 'Ready' | 'Failed' | 'Expired';
 
 export interface RevenueFilterInput {
   startDate: string; // YYYY-MM-DD
@@ -71,23 +75,43 @@ export interface ExportRevenuePayload {
   appliedFilters: RevenueFilterInput;
 }
 
-export type AsyncExportStatus =
-  | 'idle'
-  | 'demo_simulated'
-  | 'queued'
-  | 'processing'
-  | 'ready'
-  | 'failed';
-
-export interface ExportRevenueResult {
-  success: boolean;
+/** Mirrors the backend's RevenueExportResponseDto; shared by create, history, and download. */
+export interface RevenueExportRecord {
+  id: number;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  granularity: RevenuePeriodGranularity;
+  tourId?: number;
+  format: RevenueExportFormat;
+  scope: RevenueExportScope;
+  status: RevenueExportStatus;
+  requestedAtUtc: string;
+  completedAtUtc?: string;
+  expiresAtUtc?: string;
   fileName?: string;
-  fileContent?: string;
-  mimeType?: 'text/csv;charset=utf-8';
+  /** Only present while Status is Ready and unexpired; never a persisted storage URL. */
   downloadUrl?: string;
-  isAsyncQueued?: boolean;
-  isAsyncSimulated?: boolean;
-  asyncStatus?: AsyncExportStatus;
+}
+
+export interface CreateRevenueExportResult {
+  success: boolean;
+  record?: RevenueExportRecord;
+  message?: string;
+  messageCode?: string;
+}
+
+export interface RevenueExportHistoryResult {
+  items: RevenueExportRecord[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  errorMessage?: string;
+  messageCode?: string;
+}
+
+export interface DownloadRevenueExportResult {
+  success: boolean;
   message?: string;
   messageCode?: string;
 }
@@ -105,17 +129,11 @@ export const REVENUE_ERROR_CODES = {
   SYSTEM_FAILURE: 'MSG127',
   DOWNLOAD_INTERRUPTED: 'MSG106',
   PENDING_BE_INTEGRATION: 'PENDING_BE_INTEGRATION',
-  PENDING_BINARY_EXPORT_INTEGRATION: 'PENDING_BINARY_EXPORT_INTEGRATION',
-  DEMO_ASYNC_EXPORT_SIMULATION: 'DEMO_ASYNC_EXPORT_SIMULATION',
 } as const;
 
 export const REVENUE_MESSAGES = {
   PENDING_BE_INTEGRATION:
     'Revenue calculation and reporting backend integration is pending. No financial figures are fabricated in production.',
-  PENDING_BINARY_EXPORT_INTEGRATION:
-    'Binary export (.xlsx and .pdf) is pending backend export integration. In Demo mode, only CSV (.csv) file download is supported.',
-  DEMO_ASYNC_EXPORT_SIMULATION:
-    'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
   MSG126: 'Access denied. You can only view revenue for tour packages you own.',
   MSG29: 'End date must be on or after start date.',
   MSG128: 'No revenue records found for the selected period.',

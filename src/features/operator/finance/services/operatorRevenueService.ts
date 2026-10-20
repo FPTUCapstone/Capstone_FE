@@ -12,15 +12,16 @@ import {
   type DemoBookingRecord,
   type DemoTourPackage,
 } from '../data/operatorRevenueDemoFixtures';
-import { financeEn } from '../resources/en';
-import { toCsvRow } from '@/lib/csv';
 import {
   REVENUE_DEFAULT_PAGE_SIZE,
   REVENUE_ERROR_CODES,
   REVENUE_MESSAGES,
+  type CreateRevenueExportResult,
+  type DownloadRevenueExportResult,
   type ExportRevenuePayload,
-  type ExportRevenueResult,
   type RevenueChartDataPoint,
+  type RevenueExportHistoryResult,
+  type RevenueExportRecord,
   type RevenueFilterInput,
   type RevenueReportResult,
   type RevenueSummaryDto,
@@ -406,17 +407,17 @@ export async function getOperatorRevenueReport(
 }
 
 /**
- * Exports the Revenue Report (UC-45).
+ * Creates an export request (UC-45). Returns the created export record, whose `status` tells
+ * the caller whether the file is already Ready (synchronous) or Queued for the worker.
  */
-export async function exportOperatorRevenueReport(
+export async function createRevenueExport(
   payload: ExportRevenuePayload,
-  options: OperatorRevenueServiceOptions = {},
-  simulateAsync = false
-): Promise<ExportRevenueResult> {
+  options: OperatorRevenueServiceOptions = {}
+): Promise<CreateRevenueExportResult> {
   const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
-
-  // Production NO_BACKEND truthfulness
-  if (!isDemoActive) {
+  if (isDemoActive) {
+    // Demo mode has no real file-generation backend to call, and production integrity rules
+    // forbid fabricating a file or relabeling bytes as .xlsx. Demo mode previews figures only.
     return {
       success: false,
       message: REVENUE_MESSAGES.PENDING_BE_INTEGRATION,
@@ -424,102 +425,146 @@ export async function exportOperatorRevenueReport(
     };
   }
 
-  // Format validation (MSG01)
-  if (!payload.format) {
-    return {
-      success: false,
-      message: REVENUE_MESSAGES.MSG01,
-      messageCode: REVENUE_ERROR_CODES.MISSING_REQUIRED_FIELD,
-    };
-  }
+  try {
+    const response = await fetch('/api/operator/revenue/exports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({
+        startDate: payload.appliedFilters.startDate,
+        endDate: payload.appliedFilters.endDate,
+        granularity: payload.appliedFilters.granularity,
+        tourId:
+          payload.appliedFilters.tourId && payload.appliedFilters.tourId !== 'all'
+            ? Number(payload.appliedFilters.tourId)
+            : undefined,
+        format: payload.format,
+        scope: payload.scope,
+      }),
+    });
+    const body: unknown = await response.json().catch(() => null);
 
-  // Never rename CSV bytes to .xlsx or .pdf: binary formats require backend integration
-  if (payload.format !== 'csv') {
-    return {
-      success: false,
-      message: REVENUE_MESSAGES.PENDING_BINARY_EXPORT_INTEGRATION,
-      messageCode: REVENUE_ERROR_CODES.PENDING_BINARY_EXPORT_INTEGRATION,
-    };
-  }
-
-  // Retrieve current report matching applied filters (BR-110)
-  const report = await getOperatorRevenueReport(payload.appliedFilters, options, {
-    pageSize: 1000,
-  });
-
-  // Zero-record validation (MSG128)
-  if (
-    report.summary.grossRevenue === 0 &&
-    report.summary.totalBookings === 0 &&
-    report.summary.refundedAmount === 0
-  ) {
-    return {
-      success: false,
-      message: REVENUE_MESSAGES.MSG128,
-      messageCode: REVENUE_ERROR_CODES.NO_RECORDS_FOUND,
-    };
-  }
-
-  // Demo UI simulation only: never claim a real background export job or notification
-  if (simulateAsync) {
-    return {
-      success: false,
-      isAsyncSimulated: true,
-      isAsyncQueued: false,
-      asyncStatus: 'demo_simulated',
-      message: financeEn.exportDialog.asyncDesc,
-      messageCode: REVENUE_ERROR_CODES.DEMO_ASYNC_EXPORT_SIMULATION,
-    };
-  }
-
-  // Generate Demo downloadable CSV file content (.csv only)
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const fileName = `TripMate_DEMO_Revenue_Report_${timestamp}.csv`;
-
-  const csvRows: string[] = [
-    toCsvRow(['# TRIPMATE REVENUE REPORT (DEMO MODE)']),
-    toCsvRow([`# Applied Range: ${payload.appliedFilters.startDate} to ${payload.appliedFilters.endDate}`]),
-    toCsvRow([`# Granularity: ${payload.appliedFilters.granularity}`]),
-    toCsvRow([`# Tour Scope: ${payload.appliedFilters.tourId || 'all'}`]),
-    '',
-    toCsvRow(['SUMMARY METRICS']),
-    toCsvRow(['Gross Revenue', report.summary.grossRevenue]),
-    toCsvRow(['Platform Commission', report.summary.platformCommission]),
-    toCsvRow(['Refunded Amount', report.summary.refundedAmount]),
-    toCsvRow(['Net Amount', report.summary.netAmount]),
-    toCsvRow(['Total Bookings', report.summary.totalBookings]),
-    toCsvRow(['Total Participants', report.summary.totalParticipants]),
-  ];
-
-  if (payload.scope === 'summary_and_details') {
-    csvRows.push('', toCsvRow(['TOUR PACKAGE DETAILS']));
-    csvRows.push(
-      toCsvRow(['Tour Code', 'Tour Name', 'Bookings', 'Participants', 'Gross Revenue', 'Refunded', 'Commission', 'Net Amount'])
-    );
-    for (const t of report.tourDetails) {
-      csvRows.push(
-        toCsvRow([
-          t.tourCode,
-          t.tourName,
-          t.bookingsCount,
-          t.participantsCount,
-          t.grossRevenue,
-          t.refundedAmount,
-          t.commission,
-          t.netAmount,
-        ])
-      );
+    if (!response.ok) {
+      const code = errorCodeFrom(body) ?? REVENUE_ERROR_CODES.SYSTEM_FAILURE;
+      return { success: false, message: messageForCode(code), messageCode: code };
     }
+
+    const record = body as RevenueExportRecord;
+    return {
+      success: true,
+      record,
+      message: record.status === 'Ready' ? REVENUE_MESSAGES.MSG116 : undefined,
+      messageCode: record.status === 'Ready' ? REVENUE_ERROR_CODES.EXPORT_SUCCESS : undefined,
+    };
+  } catch {
+    return {
+      success: false,
+      message: REVENUE_MESSAGES.MSG127,
+      messageCode: REVENUE_ERROR_CODES.SYSTEM_FAILURE,
+    };
+  }
+}
+
+/** Returns the caller's export history (UC-45), newest first. */
+export async function getRevenueExportHistory(
+  options: OperatorRevenueServiceOptions = {},
+  pagination: { page?: number; pageSize?: number } = {}
+): Promise<RevenueExportHistoryResult> {
+  const page = pagination.page ?? 1;
+  const pageSize = pagination.pageSize ?? REVENUE_DEFAULT_PAGE_SIZE;
+  const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
+  if (isDemoActive) {
+    return { items: [], totalCount: 0, page, pageSize, totalPages: 0 };
   }
 
-  const fileContent = csvRows.join('\r\n');
+  try {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    const response = await fetch(`/api/operator/revenue/exports?${params.toString()}`, {
+      cache: 'no-store',
+    });
+    const body: unknown = await response.json().catch(() => null);
 
-  return {
-    success: true,
-    fileName,
-    fileContent,
-    mimeType: 'text/csv;charset=utf-8',
-    message: REVENUE_MESSAGES.MSG116,
-    messageCode: REVENUE_ERROR_CODES.EXPORT_SUCCESS,
-  };
+    if (!response.ok || !body || !isRevenueExportHistoryShape(body)) {
+      return {
+        items: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+        errorMessage: REVENUE_MESSAGES.MSG127,
+        messageCode: REVENUE_ERROR_CODES.SYSTEM_FAILURE,
+      };
+    }
+
+    return body;
+  } catch {
+    return {
+      items: [],
+      totalCount: 0,
+      page,
+      pageSize,
+      totalPages: 0,
+      errorMessage: REVENUE_MESSAGES.MSG127,
+      messageCode: REVENUE_ERROR_CODES.SYSTEM_FAILURE,
+    };
+  }
+}
+
+/**
+ * Downloads a Ready export (UC-45). Fetches the file as a Blob first so a failure never
+ * navigates the browser away from the app; only a confirmed 200 response triggers a save.
+ */
+export async function downloadRevenueExport(
+  exportId: number,
+  fileName: string
+): Promise<DownloadRevenueExportResult> {
+  try {
+    const response = await fetch(`/api/operator/revenue/exports/${exportId}/download`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => null);
+      const code = errorCodeFrom(body) ?? REVENUE_ERROR_CODES.DOWNLOAD_INTERRUPTED;
+      return { success: false, message: messageForCode(code), messageCode: code };
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return { success: true };
+  } catch {
+    return {
+      success: false,
+      message: REVENUE_MESSAGES.MSG106,
+      messageCode: REVENUE_ERROR_CODES.DOWNLOAD_INTERRUPTED,
+    };
+  }
+}
+
+function isRevenueExportHistoryShape(body: unknown): body is RevenueExportHistoryResult {
+  return (
+    !!body &&
+    typeof body === 'object' &&
+    'items' in body &&
+    Array.isArray((body as { items: unknown }).items)
+  );
+}
+
+function errorCodeFrom(body: unknown): string | null {
+  if (body && typeof body === 'object' && 'errorCode' in body && typeof body.errorCode === 'string') {
+    return body.errorCode;
+  }
+  return null;
+}
+
+function messageForCode(code: string): string {
+  return (REVENUE_MESSAGES as Record<string, string>)[code] ?? REVENUE_MESSAGES.MSG127;
 }

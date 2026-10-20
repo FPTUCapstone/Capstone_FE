@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExportRevenueDialog } from './ExportRevenueDialog';
 
@@ -11,20 +11,22 @@ describe('ExportRevenueDialog (Screen #90)', () => {
   };
 
   const mockOnClose = vi.fn();
-  const mockOnExport = vi.fn().mockResolvedValue({ success: true });
+  const mockOnExport = vi.fn().mockResolvedValue({
+    success: true,
+    record: { id: 1, status: 'Ready', fileName: 'file.xlsx' },
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders applied filter summary and format/scope controls', () => {
+  it('renders the applied filter summary, the Excel-only format, and the scope controls', () => {
     render(
       <ExportRevenueDialog
         isOpen={true}
         appliedFilters={defaultAppliedFilters}
         onClose={mockOnClose}
         onExport={mockOnExport}
-        isDemo={true}
       />
     );
 
@@ -33,66 +35,37 @@ describe('ExportRevenueDialog (Screen #90)', () => {
     expect(screen.getByText(/Monthly/i)).toBeDefined();
     expect(screen.getByText(/All Tour Packages/i)).toBeDefined();
     expect(screen.getByText(/Export File Format/i)).toBeDefined();
+    expect(screen.getByText(/Excel Spreadsheet \(\.xlsx\)/i)).toBeDefined();
     expect(screen.getByText(/Content Scope/i)).toBeDefined();
+    // No format selector: xlsx is the only supported format (CSV/PDF deferred by product decision).
+    expect(screen.queryByText(/\.csv/i)).toBeNull();
+    expect(screen.queryByText(/\.pdf/i)).toBeNull();
   });
 
-  it('keeps Excel (.xlsx) and PDF (.pdf) visible as canonical options marked Pending Binary Export Integration and disabled, and submits CSV (.csv) to onExport handler', () => {
+  it('submits the immutable applied-filter snapshot with the selected scope', () => {
     render(
       <ExportRevenueDialog
         isOpen={true}
         appliedFilters={defaultAppliedFilters}
         onClose={mockOnClose}
         onExport={mockOnExport}
-        isDemo={true}
       />
     );
 
-    const csvRadio = screen.getByDisplayValue('csv') as HTMLInputElement;
-    const xlsxRadio = screen.getByDisplayValue('xlsx') as HTMLInputElement;
-    const pdfRadio = screen.getByDisplayValue('pdf') as HTMLInputElement;
+    const summaryOnlyRadio = screen.getByRole('radio', { name: /Summary metrics only/i });
+    fireEvent.click(summaryOnlyRadio);
 
-    expect(csvRadio.disabled).toBe(false);
-    expect(xlsxRadio.disabled).toBe(true);
-    expect(pdfRadio.disabled).toBe(true);
-    expect(
-      screen.getAllByText(/Pending Binary Export Integration/i).length
-    ).toBeGreaterThanOrEqual(2);
-
-    // Click Export File (submits CSV)
     const exportBtn = screen.getByRole('button', { name: /Export File/i });
     fireEvent.click(exportBtn);
 
-    expect(mockOnExport).toHaveBeenCalledWith(
-      {
-        format: 'csv',
-        scope: 'summary_and_details',
-        appliedFilters: defaultAppliedFilters,
-      },
-      false
-    );
+    expect(mockOnExport).toHaveBeenCalledWith({
+      format: 'xlsx',
+      scope: 'summary',
+      appliedFilters: defaultAppliedFilters,
+    });
   });
 
-  it('disables export submission in Production NO_BACKEND mode (isDemo=false)', () => {
-    render(
-      <ExportRevenueDialog
-        isOpen={true}
-        appliedFilters={defaultAppliedFilters}
-        onClose={mockOnClose}
-        onExport={mockOnExport}
-        isDemo={false}
-      />
-    );
-
-    const exportBtn = screen.getByRole('button', {
-      name: /Export File/i,
-    }) as HTMLButtonElement;
-    expect(exportBtn.disabled).toBe(true);
-    expect(
-      screen.getByText(/Export is unavailable in Production mode/i)
-    ).toBeDefined();
-  });
-
-  it('calls onClose when Cancel button or Escape key is pressed', () => {
+  it('closes immediately when the export is Ready', async () => {
     render(
       <ExportRevenueDialog
         isOpen={true}
@@ -102,22 +75,15 @@ describe('ExportRevenueDialog (Screen #90)', () => {
       />
     );
 
-    const cancelBtn = screen.getByRole('button', { name: /Cancel/i });
-    fireEvent.click(cancelBtn);
+    fireEvent.click(screen.getByRole('button', { name: /Export File/i }));
 
-    expect(mockOnClose).toHaveBeenCalledTimes(1);
-
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(mockOnClose).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(mockOnClose).toHaveBeenCalledTimes(1));
   });
 
-  it('renders centralized English copy and displays Demo async simulation notice without closing dialog as a completed export', async () => {
-    const asyncMockExport = vi.fn().mockResolvedValue({
-      success: false,
-      isAsyncSimulated: true,
-      isAsyncQueued: false,
-      message:
-        'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
+  it('shows a Queued notice and switches Cancel to Close instead of closing', async () => {
+    const queuedExport = vi.fn().mockResolvedValue({
+      success: true,
+      record: { id: 2, status: 'Queued' },
     });
 
     render(
@@ -125,49 +91,71 @@ describe('ExportRevenueDialog (Screen #90)', () => {
         isOpen={true}
         appliedFilters={defaultAppliedFilters}
         onClose={mockOnClose}
-        onExport={asyncMockExport}
+        onExport={queuedExport}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Export File/i }));
+
+    expect(await screen.findByText('Export Queued')).toBeDefined();
+    expect(mockOnClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /^Close$/i })).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Export File/i })).toBeNull();
+  });
+
+  it('shows the backend error message and keeps the dialog open on MSG128 (no records)', async () => {
+    const failedExport = vi.fn().mockResolvedValue({
+      success: false,
+      message: 'No revenue records found for the selected period.',
+      messageCode: 'MSG128',
+    });
+
+    render(
+      <ExportRevenueDialog
+        isOpen={true}
+        appliedFilters={defaultAppliedFilters}
+        onClose={mockOnClose}
+        onExport={failedExport}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Export File/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('No revenue records found for the selected period.');
+    expect(mockOnClose).not.toHaveBeenCalled();
+  });
+
+  it('shows a Demo-mode notice and still allows attempting the real export', () => {
+    render(
+      <ExportRevenueDialog
+        isOpen={true}
+        appliedFilters={defaultAppliedFilters}
+        onClose={mockOnClose}
+        onExport={mockOnExport}
         isDemo={true}
       />
     );
 
-    expect(screen.getByLabelText('Close dialog')).toBeDefined();
-    expect(screen.getByText('Real CSV Download')).toBeDefined();
     expect(
-      screen.getByText(
-        'Includes summary metrics and full per-tour itemized breakdown'
-      )
+      screen.getByText(/unavailable while previewing with Demo mode data/i)
     ).toBeDefined();
-    expect(screen.getByText('Summary metrics cards only')).toBeDefined();
-    expect(
-      screen.getByText('Simulate Large Async Export (Demo UI Preview)')
-    ).toBeDefined();
-    expect(
-      screen.getByText(
-        'Local UI preview only. Genuine background export jobs are pending backend integration.'
-      )
-    ).toBeDefined();
+  });
 
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
-    fireEvent.click(checkbox);
-
-    const exportBtn = screen.getByRole('button', { name: /Export File/i });
-    fireEvent.click(exportBtn);
-
-    expect(asyncMockExport).toHaveBeenCalledWith(
-      {
-        format: 'csv',
-        scope: 'summary_and_details',
-        appliedFilters: defaultAppliedFilters,
-      },
-      true
+  it('calls onClose when Cancel is clicked or Escape is pressed', () => {
+    render(
+      <ExportRevenueDialog
+        isOpen={true}
+        appliedFilters={defaultAppliedFilters}
+        onClose={mockOnClose}
+        onExport={mockOnExport}
+      />
     );
 
-    expect(await screen.findByText('Demo Async Export Simulation')).toBeDefined();
-    expect(
-      await screen.findByText(
-        /No background export job was created and no notification will be sent/i
-      )
-    ).toBeDefined();
-    expect(mockOnClose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(mockOnClose).toHaveBeenCalledTimes(2);
   });
 });

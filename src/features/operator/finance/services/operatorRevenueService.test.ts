@@ -1,15 +1,15 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import {
-  exportOperatorRevenueReport,
+  createRevenueExport,
+  downloadRevenueExport,
   getOperatorRevenueReport,
   getOperatorRevenueTours,
+  getRevenueExportHistory,
 } from './operatorRevenueService';
 import {
   REVENUE_ERROR_CODES,
   REVENUE_MESSAGES,
-  type RevenueExportFormat,
 } from '../types/revenueLifecycle';
-import { DEMO_OPERATOR_TOURS } from '../data/operatorRevenueDemoFixtures';
 import { financeEn } from '../resources/en';
 
 describe('operatorRevenueService (UC-44 & UC-45)', () => {
@@ -302,214 +302,224 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
   });
 
   describe('UC-45 Export Revenue Report', () => {
-    it('disallows export in production mode without backend', async () => {
-      const res = await exportOperatorRevenueReport(
-        {
-          format: 'csv',
-          scope: 'summary',
-          appliedFilters: {
-            startDate: '2026-09-01',
-            endDate: '2026-09-30',
-            granularity: 'monthly',
-          },
-        },
-        { isDemo: false }
-      );
+    // In production, tour ids come from the real backend as numeric strings (e.g. "142"),
+    // unlike the demo fixtures' "tour-142" format — createRevenueExport always calls the
+    // production BFF, so the filter snapshot here must match that shape.
+    const appliedFilters = {
+      startDate: '2026-08-01',
+      endDate: '2026-08-31',
+      granularity: 'monthly' as const,
+      tourId: '142',
+    };
 
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(REVENUE_MESSAGES.PENDING_BE_INTEGRATION);
-      expect(res.fileContent).toBeUndefined();
-    });
+    describe('createRevenueExport', () => {
+      it('disallows export in demo mode (no fabricated file, no backend to call)', async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
 
-    it('requires export format (MSG01)', async () => {
-      const res = await exportOperatorRevenueReport(
-        {
-          format: '' as unknown as RevenueExportFormat,
-          scope: 'summary',
-          appliedFilters: {
-            startDate: '2026-09-01',
-            endDate: '2026-09-30',
-            granularity: 'monthly',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(REVENUE_MESSAGES.MSG01);
-    });
-
-    it('rejects export when no records exist for applied filters (MSG128)', async () => {
-      const res = await exportOperatorRevenueReport(
-        {
-          format: 'csv',
-          scope: 'summary',
-          appliedFilters: {
-            startDate: '2025-01-01',
-            endDate: '2025-01-31',
-            granularity: 'monthly',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(REVENUE_MESSAGES.MSG128);
-    });
-
-    it('generates demo file with DEMO watermark and applied filter summary', async () => {
-      const res = await exportOperatorRevenueReport(
-        {
-          format: 'csv',
-          scope: 'summary_and_details',
-          appliedFilters: {
-            startDate: '2026-09-01',
-            endDate: '2026-09-30',
-            granularity: 'monthly',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(res.success).toBe(true);
-      expect(res.fileName).toContain('TripMate_DEMO_Revenue_Report_');
-      expect(res.fileName?.endsWith('.csv')).toBe(true);
-      expect(res.mimeType).toBe('text/csv;charset=utf-8');
-      expect(res.fileContent).toContain('DEMO MODE');
-      expect(res.fileContent).toContain('Gross Revenue,14000000');
-      expect(res.fileContent).toContain('Net Amount,11200000');
-      expect(res.fileContent).toContain('TOUR PACKAGE DETAILS');
-      expect(res.fileContent).toContain('Ba Na Hills Full-Day Tour');
-    });
-
-    it('exports section headings as safe literal text without a visible apostrophe', async () => {
-      const res = await exportOperatorRevenueReport(
-        {
-          format: 'csv',
-          scope: 'summary_and_details',
-          appliedFilters: {
-            startDate: '2026-09-01',
-            endDate: '2026-09-30',
-            granularity: 'monthly',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(res.success).toBe(true);
-      const rows = res.fileContent?.split('\r\n') ?? [];
-      expect(rows).toContain('SUMMARY METRICS');
-      expect(rows).toContain('TOUR PACKAGE DETAILS');
-      expect(rows).not.toContain("'--- SUMMARY METRICS ---");
-      expect(rows).not.toContain("'--- TOUR PACKAGE DETAILS ---");
-    });
-
-    it('never renames CSV bytes to .xlsx or .pdf and rejects binary formats with PENDING_BINARY_EXPORT_INTEGRATION', async () => {
-      for (const binaryFormat of ['xlsx', 'pdf'] as const) {
-        const res = await exportOperatorRevenueReport(
-          {
-            format: binaryFormat,
-            scope: 'summary_and_details',
-            appliedFilters: {
-              startDate: '2026-09-01',
-              endDate: '2026-09-30',
-              granularity: 'monthly',
-            },
-          },
+        const res = await createRevenueExport(
+          { format: 'xlsx', scope: 'summary', appliedFilters },
           { isDemo: true, demoActorUserId: 101 }
         );
 
         expect(res.success).toBe(false);
-        expect(res.messageCode).toBe(
-          REVENUE_ERROR_CODES.PENDING_BINARY_EXPORT_INTEGRATION
-        );
-        expect(res.message).toBe(
-          REVENUE_MESSAGES.PENDING_BINARY_EXPORT_INTEGRATION
-        );
-        expect(res.fileName).toBeUndefined();
-        expect(res.fileContent).toBeUndefined();
-      }
-    });
+        expect(res.messageCode).toBe(REVENUE_ERROR_CODES.PENDING_BE_INTEGRATION);
+        expect(fetchMock).not.toHaveBeenCalled();
+      });
 
-    it('supports summary-only scope without itemized tour details', async () => {
-      const res = await exportOperatorRevenueReport(
-        {
-          format: 'csv',
+      it('posts the filter snapshot to the BFF and returns a Ready record with MSG116', async () => {
+        const record = {
+          id: 42,
+          startDate: '2026-08-01',
+          endDate: '2026-08-31',
+          granularity: 'monthly',
+          tourId: 142,
+          format: 'xlsx',
           scope: 'summary',
-          appliedFilters: {
-            startDate: '2026-09-01',
-            endDate: '2026-09-30',
-            granularity: 'monthly',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
+          status: 'Ready',
+          requestedAtUtc: '2026-10-20T03:00:00Z',
+          fileName: 'tripmate-revenue-20260801-20260831-42.xlsx',
+          downloadUrl: '/api/operator/revenue/exports/42/download',
+        };
+        const fetchMock = vi.fn().mockResolvedValue(
+          new Response(JSON.stringify(record), { status: 201 })
+        );
+        vi.stubGlobal('fetch', fetchMock);
 
-      expect(res.success).toBe(true);
-      expect(res.fileContent).toContain('Gross Revenue,14000000');
-      expect(res.fileContent).not.toContain('TOUR PACKAGE DETAILS');
-    });
-
-    it('exports malicious and multiline tour names as injection-safe valid CSV cells', async () => {
-      const tour = DEMO_OPERATOR_TOURS.find((item) => item.operatorUserId === 101)!;
-      const originalTitle = tour.title;
-      tour.title = ' =HYPERLINK("https://attacker.example"),\r\nĐà Nẵng';
-
-      try {
-        const res = await exportOperatorRevenueReport(
-          {
-            format: 'csv',
-            scope: 'summary_and_details',
-            appliedFilters: {
-              startDate: '2026-09-01',
-              endDate: '2026-09-30',
-              granularity: 'monthly',
-            },
-          },
-          { isDemo: true, demoActorUserId: 101 }
+        const res = await createRevenueExport(
+          { format: 'xlsx', scope: 'summary', appliedFilters },
+          { isDemo: false }
         );
 
         expect(res.success).toBe(true);
-        expect(res.fileContent).toContain(
-          '"\' =HYPERLINK(""https://attacker.example""),\r\nĐà Nẵng"'
+        expect(res.record).toEqual(record);
+        expect(res.messageCode).toBe(REVENUE_ERROR_CODES.EXPORT_SUCCESS);
+
+        expect(fetchMock).toHaveBeenCalledWith(
+          '/api/operator/revenue/exports',
+          expect.objectContaining({ method: 'POST' })
         );
-        expect(res.fileContent).not.toContain(
-          '" =HYPERLINK("https://attacker.example")'
+        const sentBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(sentBody).toEqual({
+          startDate: '2026-08-01',
+          endDate: '2026-08-31',
+          granularity: 'monthly',
+          tourId: 142,
+          format: 'xlsx',
+          scope: 'summary',
+        });
+      });
+
+      it('returns a Queued record without a success message code', async () => {
+        const record = {
+          id: 43, startDate: '2026-08-01', endDate: '2026-08-31', granularity: 'monthly',
+          format: 'xlsx', scope: 'summary_and_details', status: 'Queued',
+          requestedAtUtc: '2026-10-20T03:00:00Z',
+        };
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+          new Response(JSON.stringify(record), { status: 202 })
+        ));
+
+        const res = await createRevenueExport(
+          { format: 'xlsx', scope: 'summary_and_details', appliedFilters },
+          { isDemo: false }
         );
-      } finally {
-        tour.title = originalTitle;
-      }
+
+        expect(res.success).toBe(true);
+        expect(res.record?.status).toBe('Queued');
+        expect(res.message).toBeUndefined();
+        expect(res.messageCode).toBeUndefined();
+      });
+
+      it('sends tourId undefined (not NaN) when the applied filter is "all"', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ id: 1, status: 'Ready' }), { status: 201 })
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        await createRevenueExport(
+          { format: 'xlsx', scope: 'summary', appliedFilters: { ...appliedFilters, tourId: 'all' } },
+          { isDemo: false }
+        );
+
+        const sentBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(sentBody.tourId).toBeUndefined();
+      });
+
+      it('maps a backend MSG128 (no records) response through unchanged', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ errorCode: 'MSG128' }), { status: 422 })
+        ));
+
+        const res = await createRevenueExport(
+          { format: 'xlsx', scope: 'summary', appliedFilters },
+          { isDemo: false }
+        );
+
+        expect(res.success).toBe(false);
+        expect(res.messageCode).toBe('MSG128');
+        expect(res.message).toBe(REVENUE_MESSAGES.MSG128);
+      });
+
+      it('returns MSG127 when the BFF cannot be reached', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+        const res = await createRevenueExport(
+          { format: 'xlsx', scope: 'summary', appliedFilters },
+          { isDemo: false }
+        );
+
+        expect(res.success).toBe(false);
+        expect(res.messageCode).toBe(REVENUE_ERROR_CODES.SYSTEM_FAILURE);
+      });
     });
 
-    it('presents asynchronous export simulation as a local Demo UI simulation without claiming a real background job or notification', async () => {
-      const res = await exportOperatorRevenueReport(
-        {
-          format: 'csv',
-          scope: 'summary_and_details',
-          appliedFilters: {
-            startDate: '2026-09-01',
-            endDate: '2026-09-30',
-            granularity: 'monthly',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 },
-        true // simulateAsync
-      );
+    describe('getRevenueExportHistory', () => {
+      it('returns an empty page in demo mode without calling the BFF', async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
 
-      expect(res.success).toBe(false);
-      expect(res.isAsyncSimulated).toBe(true);
-      expect(res.isAsyncQueued).toBe(false);
-      expect(res.asyncStatus).toBe('demo_simulated');
-      expect(res.messageCode).toBe(
-        REVENUE_ERROR_CODES.DEMO_ASYNC_EXPORT_SIMULATION
-      );
-      expect(res.message).toBe(
-        REVENUE_MESSAGES.DEMO_ASYNC_EXPORT_SIMULATION
-      );
-      expect(res.message).not.toMatch(/queued successfully/i);
-      expect(res.message).not.toMatch(/will be notified when ready/i);
-      expect(res.fileContent).toBeUndefined();
-      expect(res.fileName).toBeUndefined();
+        const res = await getRevenueExportHistory({ isDemo: true, demoActorUserId: 101 });
+
+        expect(res).toEqual({ items: [], totalCount: 0, page: 1, pageSize: 20, totalPages: 0 });
+        expect(fetchMock).not.toHaveBeenCalled();
+      });
+
+      it('forwards pagination and returns the BFF history page', async () => {
+        const historyBody = {
+          items: [{ id: 1, status: 'Ready' }],
+          totalCount: 1,
+          page: 1,
+          pageSize: 20,
+          totalPages: 1,
+        };
+        const fetchMock = vi.fn().mockResolvedValue(
+          new Response(JSON.stringify(historyBody), { status: 200 })
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const res = await getRevenueExportHistory({ isDemo: false }, { page: 2, pageSize: 10 });
+
+        expect(res).toEqual(historyBody);
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining('/api/operator/revenue/exports?page=2&pageSize=10'),
+          expect.anything()
+        );
+      });
+
+      it('returns MSG127 when the history request fails', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
+
+        const res = await getRevenueExportHistory({ isDemo: false });
+
+        expect(res.items).toEqual([]);
+        expect(res.messageCode).toBe(REVENUE_ERROR_CODES.SYSTEM_FAILURE);
+      });
+    });
+
+    describe('downloadRevenueExport', () => {
+      it('fetches the BFF download endpoint and triggers a Blob download on success', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          new Response(new Blob(['fake-xlsx-bytes']), { status: 200 })
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        vi.stubGlobal('URL', {
+          ...URL,
+          createObjectURL: vi.fn(() => 'blob:fake'),
+          revokeObjectURL: vi.fn(),
+        });
+
+        const res = await downloadRevenueExport(42, 'tripmate-revenue-20260801-20260831-42.xlsx');
+
+        expect(res.success).toBe(true);
+        expect(fetchMock).toHaveBeenCalledWith(
+          '/api/operator/revenue/exports/42/download',
+          expect.anything()
+        );
+      });
+
+      it('returns MSG106 without throwing when the download is interrupted', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ errorCode: 'MSG106' }), { status: 502 })
+        ));
+
+        const res = await downloadRevenueExport(42, 'file.xlsx');
+
+        expect(res.success).toBe(false);
+        expect(res.messageCode).toBe('MSG106');
+        expect(res.message).toBe(REVENUE_MESSAGES.MSG106);
+      });
+
+      it('returns a safe not-found code for a foreign or missing export id', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ errorCode: 'revenue_export.not_found' }), { status: 404 })
+        ));
+
+        const res = await downloadRevenueExport(999, 'file.xlsx');
+
+        expect(res.success).toBe(false);
+        expect(res.messageCode).toBe('revenue_export.not_found');
+      });
     });
   });
 });
