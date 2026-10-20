@@ -28,13 +28,13 @@ export function TourRecommendationsSection({
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-100/70 px-3 py-1 text-[11px] font-bold text-[#007d6e] mb-2">
             <span className="material-symbols-outlined text-sm">auto_awesome</span>
-            <span>Hệ Thống Gợi Ý Thông Minh TripMate (UC-25)</span>
+            <span>Hệ Thống Gợi Ý Thông Minh TripMate</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#00152a] tracking-tight">
             Tour Dành Riêng Cho Bạn
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-slate-600">
-            Dựa trên hồ sơ sở thích du lịch, phong cách di chuyển và độ tương thích &gt;80% (BR-58).
+            Dựa trên hồ sơ sở thích du lịch, phong cách di chuyển và độ tương thích &gt;80%.
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export function TourRecommendationsSection({
             Tính Năng Gợi Ý AI Đang Được Kết Nối
           </h3>
           <p className="mx-auto max-w-xl text-xs text-slate-600 leading-relaxed">
-            Thuật toán gợi ý tour tương thích cá nhân hóa (UC-25) hiện đang trong quá trình tích hợp máy chủ Backend
+            Thuật toán gợi ý tour tương thích cá nhân hóa hiện đang trong quá trình tích hợp máy chủ Backend
             <span className="ml-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
               PENDING_BE_INTEGRATION
             </span>
@@ -109,7 +109,7 @@ export function TourRecommendationsSection({
                     </div>
                   )}
                   <span className="absolute top-2 left-2 rounded-md bg-teal-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                    Match {rec.matchingScore}% (MSG68)
+                    Match {rec.matchingScore}%
                   </span>
                 </div>
 

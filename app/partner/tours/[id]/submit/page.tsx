@@ -79,7 +79,7 @@ function SubmitTourContent() {
                   </span>
                   <div>
                     <h2 className="text-lg font-bold">
-                      Chức năng gửi duyệt gói tour (UC-37) đang chờ tích hợp Backend
+                      Chức năng gửi duyệt gói tour đang chờ cập nhật hệ thống
                     </h2>
                     <p className="mt-2 text-sm text-amber-800">
                       {OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION}

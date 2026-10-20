@@ -23,7 +23,9 @@ export function ComparisonMatrixSection() {
 
         {/* Comparison Table */}
         <ScrollReveal animation="fade-up" delay={150}>
-          <div className="mt-12 overflow-x-auto rounded-3xl border border-slate-200 shadow-sm">
+          <div className="relative mt-12 group/matrix">
+            <div className="absolute -inset-2.5 rounded-3xl bg-gradient-to-r from-teal-500/15 via-sky-400/10 to-emerald-400/12 blur-xl opacity-40 group-hover/matrix:opacity-65 transition-opacity duration-700 pointer-events-none" />
+            <div className="relative z-10 overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-xs">
             <table className="w-full text-left text-xs sm:text-sm border-collapse bg-white">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-700">
@@ -76,6 +78,7 @@ export function ComparisonMatrixSection() {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         </ScrollReveal>
       </div>

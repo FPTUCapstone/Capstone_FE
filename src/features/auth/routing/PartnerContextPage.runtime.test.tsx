@@ -56,11 +56,11 @@ describe('S01 runtime wiring regression (real cold-start composition, browser fa
     expect(mocks.webRefresh).toHaveBeenCalledTimes(1);
   });
 
-  it('B. cold /partner restores an Approved operator into the approved area', async () => {
+  it('B. cold /partner restores an Approved operator into the operator dashboard', async () => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(operator('Approved') as never, false));
     render(<PartnerPage />);
     expect(screen.queryByText(/Please sign in/)).toBeNull();
-    await waitFor(() => expect(screen.getByText(/Khu/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Chào Restored Operator/ })).toBeDefined());
   });
 
   it('C. cold restore with applicationStatus null keeps the fail-closed unresolved UI and infers nothing', async () => {

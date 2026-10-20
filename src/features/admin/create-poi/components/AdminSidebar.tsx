@@ -1,17 +1,15 @@
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
 import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export function AdminSidebar() {
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#102a43] text-white z-50 flex flex-col justify-between shadow-md">
       <div className="flex flex-col flex-1 overflow-y-auto">
         {/* Brand Header */}
-        <div className="h-16 flex items-center gap-3 px-6 bg-[#00152a]/40 border-b border-white/5">
-          <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-tight text-white leading-none">TripMate</span>
-            <span className="text-[10px] uppercase tracking-widest text-slate-300 mt-1">Admin Console</span>
-          </div>
+        <div className="h-16 flex items-center px-6 bg-[#00152a]/40 border-b border-white/5">
+          <BrandLogo context="admin" inverse size={20} />
         </div>
 
         {/* Navigation Sections */}

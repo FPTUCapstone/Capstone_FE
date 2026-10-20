@@ -20,6 +20,19 @@ export const publicNavigationEn = {
     restoringSrText: 'Restoring session…',
     register: 'Register',
     signIn: 'Sign in',
+    quickPlan: 'Plan Trip',
+    mobilePlan: 'Plan',
+  },
+  drawer: {
+    openAria: 'Open navigation menu',
+    closeAria: 'Close menu',
+    title: 'Menu',
+    navAria: 'Mobile navigation menu',
+    poisDesc: 'Points of Interest',
+    planDesc: 'Smart Itinerary',
+    toursDesc: 'Curated Local Tours',
+    myItinerariesDesc: 'Saved Itineraries',
+    partnerDesc: 'Partner Portal',
   },
 } as const;
 

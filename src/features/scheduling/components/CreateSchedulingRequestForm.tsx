@@ -33,6 +33,28 @@ const MAX_MANDATORY_POIS = 6;
 const MIN_SEARCH_RADIUS_KM = 1;
 const MAX_SEARCH_RADIUS_KM = 100;
 
+export function calculateDistanceKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const earthRadiusKm = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const midLat = (((lat1 + lat2) / 2) * Math.PI) / 180;
+  const x = dLng * Math.cos(midLat);
+  const y = dLat;
+  return Math.sqrt(x * x + y * y) * earthRadiusKm;
+}
+
+export const SPEED_KMH: Record<TransportMode, number> = {
+  Motorbike: 35,
+  Car: 30,
+  Walking: 4.5,
+  PublicTransit: 20,
+};
+
 type PickerTarget = 'start' | 'exploration' | 'end' | 'mandatory';
 
 interface CreateSchedulingRequestFormProps {
@@ -119,6 +141,11 @@ export function CreateSchedulingRequestForm({
     message: string;
   } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [infeasibilityFix, setInfeasibilityFix] = useState<{
+    requiredMinutes: number;
+    currentMinutes: number;
+    suggestedHours: number;
+  } | null>(null);
 
   const locateStartPoint = async () => {
     setIsLocating(true);
@@ -142,17 +169,43 @@ export function CreateSchedulingRequestForm({
     const target = pickerTarget;
     setPickerTarget(null);
     setFeedback(null);
+    setInfeasibilityFix(null);
     switch (target) {
       case 'start':
         setStartPoint(place);
         setValidationErrors((prev) => ({ ...prev, startPoint: '' }));
         break;
-      case 'exploration':
+      case 'exploration': {
+        const previousPrimaryPoiId = explorationPoi?.poi?.id;
         setExplorationPoi(place);
-        // Must-see places were chosen around the previous area.
-        setMandatoryPois([]);
+        if (place.poi) {
+          const newPoi = place.poi;
+          setMandatoryPois((prev) => {
+            const filtered = previousPrimaryPoiId
+              ? prev.filter((p) => p.id !== previousPrimaryPoiId)
+              : prev;
+            const validAroundNewCenter = filtered.filter((p) => {
+              const dist = calculateDistanceKm(place.latitude, place.longitude, p.latitude, p.longitude);
+              return dist <= searchRadiusKm;
+            });
+            return validAroundNewCenter.some((p) => p.id === newPoi.id)
+              ? validAroundNewCenter
+              : [newPoi, ...validAroundNewCenter].slice(0, MAX_MANDATORY_POIS);
+          });
+        } else {
+          setMandatoryPois((prev) => {
+            const filtered = previousPrimaryPoiId
+              ? prev.filter((p) => p.id !== previousPrimaryPoiId)
+              : prev;
+            return filtered.filter((p) => {
+              const dist = calculateDistanceKm(place.latitude, place.longitude, p.latitude, p.longitude);
+              return dist <= searchRadiusKm;
+            });
+          });
+        }
         setValidationErrors((prev) => ({ ...prev, exploration: '' }));
         break;
+      }
       case 'end':
         setEndPoi(place);
         setValidationErrors((prev) => ({ ...prev, endPoi: '' }));
@@ -170,6 +223,42 @@ export function CreateSchedulingRequestForm({
         break;
     }
   };
+
+  const travelFeasibility = (() => {
+    if (!startPoint || !explorationPoi || !duration.minutes || duration.minutes <= 0) {
+      return null;
+    }
+    const speed = SPEED_KMH[transportMode] ?? 35;
+    const outboundKm = calculateDistanceKm(
+      startPoint.latitude,
+      startPoint.longitude,
+      explorationPoi.latitude,
+      explorationPoi.longitude,
+    );
+    let inboundKm = outboundKm;
+    if (!returnToStart && endPoi) {
+      inboundKm = calculateDistanceKm(
+        explorationPoi.latitude,
+        explorationPoi.longitude,
+        endPoi.latitude,
+        endPoi.longitude,
+      );
+    }
+    const totalTransitKm = outboundKm + inboundKm;
+    const transitMinutes = Math.round((totalTransitKm / speed) * 60);
+    const transitHours = Math.round((transitMinutes / 60) * 10) / 10;
+    const isWarning = transitMinutes > 0.5 * duration.minutes;
+    const suggestedHours = Math.max(6, Math.ceil((transitMinutes * 2) / 60));
+
+    return {
+      totalTransitKm,
+      transitMinutes,
+      transitHours,
+      isWarning,
+      suggestedHours,
+      message: `Thời gian di chuyển 2 chiều (~${transitHours}h) chiếm hơn một nửa chuyến đi. Bạn nên tăng thời lượng lên từ ${suggestedHours} giờ để có thời gian trải nghiệm trọn vẹn.`,
+    };
+  })();
 
 
   // Review 2 (D9): the radius circle is drawn around the exploration area (or the start).
@@ -235,12 +324,13 @@ export function CreateSchedulingRequestForm({
     return Object.keys(errors).length === 0;
   };
 
-  // Form submit
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Form submit implementation
+  const executeSubmit = async (overrideAvailableMinutes?: number) => {
     setFeedback(null);
+    setInfeasibilityFix(null);
 
-    if (!validate()) {
+    const activeAvailableMinutes = overrideAvailableMinutes ?? duration.minutes;
+    if (!overrideAvailableMinutes && !validate()) {
       setFeedback({
         tone: 'error',
         title: 'Thông tin chưa hợp lệ',
@@ -300,7 +390,7 @@ export function CreateSchedulingRequestForm({
       explorationLongitude: explorationPoi!.longitude,
       endPoiId: returnToStart ? null : endPoi?.poi?.id ?? null,
       returnToStart,
-      availableMinutes: duration.minutes ?? 0,
+      availableMinutes: activeAvailableMinutes ?? 0,
       transportMode,
       searchRadiusKm,
       budgetVnd: budgetVnd === '' ? null : Number(budgetVnd),
@@ -336,18 +426,77 @@ export function CreateSchedulingRequestForm({
         onSuccess(result.data);
       }
     } catch (err: unknown) {
-      const apiErr = err as { code?: string; message?: string };
-      setFeedback({
-        tone: 'error',
-        title: 'Không thể tạo lịch trình tối ưu',
-        message:
-          apiErr.message ||
-          'Ràng buộc không khả thi hoặc hệ thống đang bận. Vui lòng mở rộng bán kính hoặc tăng thời lượng chuyến đi.',
-      });
+      const apiErr = err as { code?: string; message?: string; status?: number };
+      const is422 = apiErr.status === 422 || apiErr.code === 'planning.constraints_infeasible';
+
+      if (is422) {
+        const speed = SPEED_KMH[transportMode] ?? 35;
+        const outboundKm = startPoint && explorationPoi
+          ? calculateDistanceKm(
+              startPoint.latitude,
+              startPoint.longitude,
+              explorationPoi.latitude,
+              explorationPoi.longitude,
+            )
+          : 0;
+        const inboundKm = !returnToStart && endPoi && explorationPoi
+          ? calculateDistanceKm(
+              explorationPoi.latitude,
+              explorationPoi.longitude,
+              endPoi.latitude,
+              endPoi.longitude,
+            )
+          : outboundKm;
+        const transitMinutes = Math.round(((outboundKm + inboundKm) / speed) * 60);
+        const totalVisitMinutes = mandatoryPois.reduce((acc, poi) => {
+          return acc + ((poi as unknown as { averageVisitDurationMinutes?: number }).averageVisitDurationMinutes ?? 60);
+        }, 0);
+        const currentMins = activeAvailableMinutes ?? 0;
+        const requiredMinutes = Math.max(
+          currentMins + 60,
+          transitMinutes + Math.max(totalVisitMinutes, 120),
+        );
+        const suggestedHours = Math.max(
+          Math.ceil(currentMins / 60) + 2,
+          Math.ceil(requiredMinutes / 60),
+        );
+
+        setInfeasibilityFix({
+          requiredMinutes,
+          currentMinutes: currentMins,
+          suggestedHours,
+        });
+
+        setFeedback({
+          tone: 'error',
+          title: 'Không thể tạo lịch trình tối ưu',
+          message: `Không thể xếp lịch: Các điểm bắt buộc cần tối thiểu ${requiredMinutes} phút (bao gồm di chuyển và tham quan), vượt quá thời lượng ${currentMins} phút của bạn.`,
+        });
+      } else {
+        setInfeasibilityFix(null);
+        setFeedback({
+          tone: 'error',
+          title: 'Không thể tạo lịch trình tối ưu',
+          message:
+            apiErr.message ||
+            'Ràng buộc không khả thi hoặc hệ thống đang bận. Vui lòng mở rộng bán kính hoặc tăng thời lượng chuyến đi.',
+        });
+      }
     } finally {
       setIsSubmitting(false);
       setOptimizationPhase(null);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void executeSubmit();
+  };
+
+  const handleApplyFixAndResubmit = async (suggestedHours: number) => {
+    setDurationHours(String(suggestedHours));
+    setDurationMinutes('0');
+    await executeSubmit(suggestedHours * 60);
   };
 
   return (
@@ -375,13 +524,25 @@ export function CreateSchedulingRequestForm({
 
       {/* Feedback banner */}
       {feedback && (
-        <div className="mb-6">
+        <div className="mb-6 space-y-3">
           <FeedbackAlert
             tone={feedback.tone}
             title={feedback.title}
           >
             {feedback.message}
           </FeedbackAlert>
+          {infeasibilityFix && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => void handleApplyFixAndResubmit(infeasibilityFix.suggestedHours)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+              >
+                <span className="material-symbols-outlined text-base">update</span>
+                Tăng thời lượng lên {infeasibilityFix.suggestedHours} giờ và thử lại
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -534,9 +695,23 @@ export function CreateSchedulingRequestForm({
               step={1}
               value={searchRadiusKm}
               onChange={(e) => {
-                setSearchRadiusKm(Number(e.target.value));
-                // Must-see places were chosen inside the previous radius.
-                setMandatoryPois([]);
+                const newRadius = Number(e.target.value);
+                setSearchRadiusKm(newRadius);
+                setMandatoryPois((prev) => {
+                  if (!explorationPoi) return [];
+                  return prev.filter((p) => {
+                    if (explorationPoi.poi && p.id === explorationPoi.poi.id) {
+                      return true;
+                    }
+                    const dist = calculateDistanceKm(
+                      explorationPoi.latitude,
+                      explorationPoi.longitude,
+                      p.latitude,
+                      p.longitude,
+                    );
+                    return dist <= newRadius;
+                  });
+                });
               }}
               className="mt-2.5 h-2 w-full cursor-pointer accent-[#007d6e]"
             />
@@ -576,23 +751,37 @@ export function CreateSchedulingRequestForm({
             </p>
             {mandatoryPois.length > 0 && (
               <ul className="mt-2.5 flex flex-wrap gap-2">
-                {mandatoryPois.map((poi) => (
-                  <li
-                    key={poi.id}
-                    className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 py-1 pl-3 pr-1 text-xs font-semibold text-[#007d6e]"
-                  >
-                    {poi.name}
-                    <button
-                      type="button"
-                      onClick={() => setMandatoryPois((prev) => prev.filter((item) => item.id !== poi.id))}
-                      disabled={isSubmitting}
-                      aria-label={`Bỏ ${poi.name}`}
-                      className="rounded-full p-0.5 hover:bg-teal-100"
+                {mandatoryPois.map((poi) => {
+                  const isPrimary = poi.id === explorationPoi?.poi?.id;
+                  return (
+                    <li
+                      key={poi.id}
+                      className={`inline-flex items-center gap-1.5 rounded-full border py-1 pl-3 pr-1 text-xs font-semibold ${
+                        isPrimary
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                          : 'border-teal-200 bg-teal-50 text-[#007d6e]'
+                      }`}
                     >
-                      <span className="material-symbols-outlined text-sm">close</span>
-                    </button>
-                  </li>
-                ))}
+                      <span>{poi.name}</span>
+                      {isPrimary && (
+                        <span className="rounded-full bg-emerald-200/70 px-1.5 py-0.5 text-[10px] font-bold text-emerald-900">
+                          Điểm khám phá chính
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMandatoryPois((prev) => prev.filter((item) => item.id !== poi.id))
+                        }
+                        disabled={isSubmitting}
+                        aria-label={`Bỏ ${poi.name}`}
+                        className="rounded-full p-0.5 hover:bg-black/5"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
             <button
@@ -605,6 +794,24 @@ export function CreateSchedulingRequestForm({
               Thêm địa điểm muốn ghé
             </button>
           </div>
+
+          {/* Travel Feasibility Gate Warning (Soft Alert) */}
+          {travelFeasibility?.isWarning && (
+            <div
+              role="alert"
+              className="mt-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-900 shadow-2xs"
+            >
+              <span className="material-symbols-outlined mt-0.5 text-base text-amber-600" aria-hidden="true">
+                warning
+              </span>
+              <div>
+                <p className="font-bold">Lưu ý về thời gian di chuyển</p>
+                <p className="mt-0.5 leading-relaxed text-amber-800">
+                  {travelFeasibility.message}
+                </p>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Card 2: Date, Time & Duration */}

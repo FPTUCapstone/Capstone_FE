@@ -27,6 +27,9 @@ export const financeEn = {
     demoNoticeDesc:
       'Financial metrics displayed below are non-authoritative estimates calculated from deterministic demo fixtures for testing. The SRS formula conflict between revenue reporting and payout settlement remains pending Product/BA decision; authoritative production calculations require backend verification.',
     pendingNoticeTitle: 'Backend Integration Pending',
+    refreshBtn: 'Refresh',
+    lastUpdatedPrefix: 'Updated',
+    lastUpdatedNever: 'Not loaded yet',
 
     filters: {
       title: 'Filter Criteria',

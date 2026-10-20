@@ -15,6 +15,7 @@ vi.mock('next/navigation', () => ({
     replace: mocks.replace,
     refresh: mocks.refresh,
   }),
+  usePathname: () => '/',
 }));
 
 vi.mock('@/lib/authApi', () => ({
@@ -260,5 +261,84 @@ describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
     render(<PublicNavigation />);
     expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
+  });
+});
+
+describe('PublicNavigation Vietnamese localization & Mobile Drawer', () => {
+  beforeEach(() => {
+    AuthStorage.clear();
+    localStorage.clear();
+    sessionStorage.clear();
+    mocks.webRefresh.mockResolvedValue(null);
+  });
+
+  it('renders Vietnamese navigation links when locale="vi"', async () => {
+    render(<PublicNavigation locale="vi" />);
+    expect(screen.getByRole('link', { name: 'Điểm đến' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Lập lịch trình' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Tour du lịch' })).toBeDefined();
+  });
+
+  it('opens and closes mobile navigation drawer with accessible triggers and escape key', async () => {
+    render(<PublicNavigation locale="vi" />);
+    const openBtn = screen.getByRole('button', { name: 'Mở menu điều hướng' });
+    expect(openBtn.getAttribute('aria-expanded')).toBe('false');
+
+    // Open drawer
+    fireEvent.click(openBtn);
+    expect(openBtn.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeDefined();
+
+    // Close with close button
+    const closeBtn = screen.getByRole('button', { name: 'Đóng menu' });
+    fireEvent.click(closeBtn);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    // Open again and close with Escape key
+    fireEvent.click(openBtn);
+    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeDefined();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('renders sliding pill indicator and updates active selection on click and hover', async () => {
+    render(<PublicNavigation locale="vi" isLanding={true} />);
+
+    // Sliding pill indicator is present
+    const pill = screen.getByTestId('nav-sliding-pill');
+    expect(pill).toBeDefined();
+
+    // Hover pill indicator is also present
+    const hoverPill = screen.getByTestId('nav-hover-pill');
+    expect(hoverPill).toBeDefined();
+
+    const planLink = screen.getByRole('link', { name: 'Lập lịch trình' });
+    const poisLink = screen.getByRole('link', { name: 'Điểm đến' });
+
+    // Initial landing state has no capsule tab active
+    expect(poisLink.getAttribute('aria-current')).toBeNull();
+    expect(planLink.getAttribute('aria-current')).toBeNull();
+
+    // Click on plan updates selected key
+    const preventNav = (e: MouseEvent) => e.preventDefault();
+    planLink.addEventListener('click', preventNav, { once: true });
+    fireEvent.click(planLink);
+    expect(planLink.getAttribute('aria-current')).toBe('page');
+    expect(planLink.className).toContain('text-[#005F56]');
+    expect(poisLink.getAttribute('aria-current')).toBeNull();
+
+    // Hovering over pois triggers dim hover state, but does NOT steal active selection
+    fireEvent.mouseEnter(poisLink);
+    expect(poisLink.className).toContain('text-[#121E28]');
+    expect(planLink.getAttribute('aria-current')).toBe('page');
+    expect(planLink.className).toContain('text-[#005F56]');
+
+    // Leaving nav restores clean selected state
+    const nav = planLink.closest('nav');
+    if (nav) {
+      fireEvent.mouseLeave(nav);
+    }
+    expect(planLink.getAttribute('aria-current')).toBe('page');
+    expect(planLink.className).toContain('text-[#005F56]');
   });
 });

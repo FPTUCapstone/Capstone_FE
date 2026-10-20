@@ -54,6 +54,7 @@ export function PlacePickerDialog({
   const sessionRef = useRef(createAddressSession());
   const searchGeneration = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isFirstMount = useRef(true);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -64,7 +65,8 @@ export function PlacePickerDialog({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
 
-  const search = async () => {
+  const search = async (overrideQuery?: string) => {
+    const q = overrideQuery !== undefined ? overrideQuery : query;
     const generation = ++searchGeneration.current;
     setHasSearched(true);
     setIsSearching(true);
@@ -72,13 +74,13 @@ export function PlacePickerDialog({
     setAddressesError(null);
     const [placeResult, addressResult] = await Promise.allSettled([
       searchSelectablePois({
-        query,
+        query: q,
         near: radiusKm ? near : null,
         radiusKm,
         ...(excludeFoodAndDrink ? { excludeFoodAndDrink: true } : {}),
       }),
       showAddresses
-        ? suggestAddresses(query, sessionRef.current, near)
+        ? suggestAddresses(q, sessionRef.current, near)
         : Promise.resolve<AddressCandidate[]>([]),
     ]);
     if (generation !== searchGeneration.current) return;
@@ -96,6 +98,28 @@ export function PlacePickerDialog({
     }
     setIsSearching(false);
   };
+
+  useEffect(() => {
+    if (!showAddresses) {
+      const timer = setTimeout(() => {
+        void search('');
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddresses]);
+
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      void search(query);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   const pickAddress = async (candidate: AddressCandidate) => {
     setResolvingId(candidate.id);
@@ -160,6 +184,27 @@ export function PlacePickerDialog({
             Tìm
           </button>
         </form>
+
+        {!showAddresses && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Gợi ý:
+            </span>
+            {['Bà Nà Hills', 'Sơn Trà', 'Ngũ Hành Sơn', 'Cầu Rồng', 'Mỹ Khê', 'Hòa Phú Thành'].map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => {
+                  setQuery(suggestion);
+                  void search(suggestion);
+                }}
+                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-[#007d6e] hover:bg-teal-50/50 hover:text-[#007d6e]"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
         {radiusKm && near ? (
           <p className="mt-1.5 text-[11px] text-slate-500">
             Chỉ hiển thị địa điểm trong bán kính {Math.round(radiusKm)} km quanh khu vực khám phá.

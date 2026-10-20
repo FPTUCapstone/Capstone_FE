@@ -3,14 +3,17 @@
 import React, { useEffect, useRef, useState, ElementType, ReactNode } from 'react';
 
 export type RevealAnimation =
+  | 'editorial-text'
+  | 'card-reveal'
   | 'fade-up'
   | 'fade-down'
   | 'fade-left'
   | 'fade-right'
   | 'zoom-in'
+  | 'image-reveal'
   | 'fade';
 
-interface ScrollRevealProps {
+export interface ScrollRevealProps {
   children: ReactNode;
   animation?: RevealAnimation;
   delay?: number; // milliseconds
@@ -25,22 +28,27 @@ export function ScrollReveal({
   children,
   animation = 'fade-up',
   delay = 0,
-  duration = 700,
+  duration = 450,
   className = '',
   as: Component = 'div',
-  threshold = 0.1,
+  threshold = 0.05,
   triggerOnce = true,
 }: ScrollRevealProps) {
   const [isRevealed, setIsRevealed] = useState(false);
   const elementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    // Graceful fallback for reduced motion preference
-    if (
+    // 1. Accessibility: Bypass if reduced motion requested and force-motion is not enabled
+    const prefersReduced =
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
+      window.matchMedia('(prefers-reduced-motion: reduce)')?.matches;
+    const forceMotion =
+      typeof document !== 'undefined' &&
+      (document.documentElement.dataset.forceMotion === 'true' ||
+        document.documentElement.dataset.motion === 'enabled');
+
+    if (prefersReduced && !forceMotion) {
       queueMicrotask(() => {
         setIsRevealed(true);
       });
@@ -58,9 +66,18 @@ export function ScrollReveal({
       return;
     }
 
-    // Check if element is already in viewport on mount (e.g. Hero section above the fold)
+    // 2. Viewport check on mount:
+    // Only auto-trigger on mount for elements truly above the fold on initial load.
+    // Lower sections (e.g. destinations, csp) wait until scrolled into view via IntersectionObserver.
     const rect = element.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
+    const isAboveTheFold =
+      rect.height > 0 &&
+      rect.bottom > 0 &&
+      (window.scrollY > 0
+        ? rect.top < window.innerHeight
+        : rect.top < window.innerHeight * 0.65);
+
+    if (isAboveTheFold) {
       const timer = setTimeout(() => {
         setIsRevealed(true);
       }, delay);
@@ -68,12 +85,18 @@ export function ScrollReveal({
     }
 
     let observerTimer: NodeJS.Timeout | undefined;
+
+    // 3. Look-ahead IntersectionObserver with 60px rootMargin
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          observerTimer = setTimeout(() => {
+          if (delay > 0) {
+            observerTimer = setTimeout(() => {
+              setIsRevealed(true);
+            }, delay);
+          } else {
             setIsRevealed(true);
-          }, delay);
+          }
 
           if (triggerOnce) {
             observer.unobserve(entry.target);
@@ -84,31 +107,56 @@ export function ScrollReveal({
       },
       {
         threshold,
-        rootMargin: '0px 0px -40px 0px',
+        rootMargin: '60px 0px 60px 0px',
       }
     );
 
     observer.observe(element);
+
+    // 4. Fast-scroll safety listener: ONLY force-reveal if user has already scrolled completely PAST the element above viewport
+    function handleFastScrollSafety() {
+      if (!elementRef.current) return;
+      const currentRect = elementRef.current.getBoundingClientRect();
+      if (currentRect.bottom < 0) {
+        setIsRevealed(true);
+        window.removeEventListener('scroll', handleFastScrollSafety);
+      }
+    }
+    window.addEventListener('scroll', handleFastScrollSafety, { passive: true });
+
     return () => {
       if (observerTimer) {
         clearTimeout(observerTimer);
       }
+      window.removeEventListener('scroll', handleFastScrollSafety);
       observer.disconnect();
     };
   }, [delay, threshold, triggerOnce]);
 
   const getTransformClasses = () => {
     switch (animation) {
+      case 'card-reveal':
+        // Editorial camera focus & lift: 32px upward translation with 0.97 scale and subtle blur clear
+        return isRevealed
+          ? 'opacity-100 translate-y-0 scale-100 filter-none'
+          : 'opacity-0 translate-y-8 scale-[0.97] blur-[2px]';
+      case 'editorial-text':
+        // 12px subtle editorial translation
+        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3';
       case 'fade-up':
-        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-7';
+        // 14px subtle translation
+        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3.5';
       case 'fade-down':
-        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-7';
+        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3.5';
       case 'fade-left':
-        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-7';
+        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-3.5';
       case 'fade-right':
-        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-7';
+        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-3.5';
+      case 'image-reveal':
+        // Editorial subtle scale 0.985 with 8px upward settle
+        return isRevealed ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-[0.985] translate-y-2';
       case 'zoom-in':
-        return isRevealed ? 'opacity-100 scale-100' : 'opacity-0 scale-95';
+        return isRevealed ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.985]';
       case 'fade':
       default:
         return isRevealed ? 'opacity-100' : 'opacity-0';
@@ -127,5 +175,77 @@ export function ScrollReveal({
     >
       {children}
     </Component>
+  );
+}
+
+/**
+ * Editorial Text Reveal helper component
+ * 12px upward settle with 450ms duration
+ */
+export function EditorialTextReveal({
+  children,
+  delay = 0,
+  duration = 450,
+  className = '',
+  as = 'div',
+}: Omit<ScrollRevealProps, 'animation'>) {
+  return (
+    <ScrollReveal
+      animation="editorial-text"
+      delay={delay}
+      duration={duration}
+      className={className}
+      as={as}
+    >
+      {children}
+    </ScrollReveal>
+  );
+}
+
+/**
+ * Image Reveal helper component
+ * 1.5% scale + 8px settle with 600ms duration
+ */
+export function ImageReveal({
+  children,
+  delay = 0,
+  duration = 600,
+  className = '',
+  as = 'div',
+}: Omit<ScrollRevealProps, 'animation'>) {
+  return (
+    <ScrollReveal
+      animation="image-reveal"
+      delay={delay}
+      duration={duration}
+      className={className}
+      as={as}
+    >
+      {children}
+    </ScrollReveal>
+  );
+}
+
+/**
+ * Card Reveal helper component
+ * 32px upward settle with 0.97 scale and subtle camera focus clear
+ */
+export function CardReveal({
+  children,
+  delay = 0,
+  duration = 700,
+  className = '',
+  as = 'div',
+}: Omit<ScrollRevealProps, 'animation'>) {
+  return (
+    <ScrollReveal
+      animation="card-reveal"
+      delay={delay}
+      duration={duration}
+      className={className}
+      as={as}
+    >
+      {children}
+    </ScrollReveal>
   );
 }

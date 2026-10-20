@@ -68,7 +68,7 @@ export function ResubmitApplicationForm() {
     }).catch((reason: unknown) => {
       if (controller.signal.aborted) return;
       if (reason instanceof OperatorApplicationError && reason.status === 401) {
-        window.location.assign(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
+        router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
       } else setGlobalError(operatorMessage('MSG127'));
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -114,7 +114,7 @@ export function ResubmitApplicationForm() {
     } catch (reason) {
       if (reason instanceof OperatorApplicationError) {
         if (reason.status === 401) {
-          window.location.assign(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
+          router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.partner.application)}`);
           return;
         }
         if (reason.status === 409 && reason.code === 'MSG161') {

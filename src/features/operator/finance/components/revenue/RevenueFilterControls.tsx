@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { financeEn } from '../../resources/en';
 import type {
   RevenueFilterInput,
@@ -29,6 +29,14 @@ export function RevenueFilterControls({
   const [draftFilters, setDraftFilters] =
     useState<RevenueFilterInput>(appliedFilters);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Sync draft state when applied filters change (e.g., after Reset).
+  // This is a controlled component pattern: the parent prop controls the form state.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDraftFilters(appliedFilters);
+    setValidationError(null);
+  }, [appliedFilters]);
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +183,7 @@ export function RevenueFilterControls({
               disabled={isLoading}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              <span className="material-symbols-outlined text-[16px]">restart_alt</span>
               <span>{financeEn.revenue.filters.resetBtn}</span>
             </button>
 
@@ -184,7 +192,7 @@ export function RevenueFilterControls({
               onClick={onOpenExport}
               disabled
               aria-describedby="revenue-export-integration-status"
-              title={financeEn.messages.BACKEND_INTEGRATION_PENDING}
+              title="Xuất báo cáo sẽ được triển khai ở UC-45"
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-[#00152A] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]">download</span>

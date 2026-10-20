@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import {
@@ -24,6 +24,12 @@ import { RevenueChart } from './RevenueChart';
 import { RevenueDetailTable } from './RevenueDetailTable';
 import { ExportRevenueDialog } from './ExportRevenueDialog';
 
+// A booking elsewhere (a Traveler completing payment) can change this report at any time; the
+// operator is a passive viewer, not the actor who triggers a change. Polling at this cadence
+// keeps the dashboard reasonably fresh without hammering the report query, and only runs while
+// the tab is actually visible (see the visibility-driven effect below).
+const REVENUE_POLL_INTERVAL_MS = 45_000;
+
 export function OperatorRevenueView() {
   const { context } = useWebSession();
   const searchParams = useSearchParams();
@@ -33,10 +39,10 @@ export function OperatorRevenueView() {
   const isDemo = demoQuery && isFinanceDemoAllowedInCurrentEnv();
   const actorUserId = context?.userId;
 
-  // Initial date defaults (e.g., September 2026 for demo or current month)
+  // Seeded development records are in the current reporting month.
   const initialFilters: RevenueFilterInput = {
-    startDate: '2026-09-01',
-    endDate: '2026-09-30',
+    startDate: '2026-10-01',
+    endDate: '2026-10-31',
     granularity: 'monthly',
     tourId: undefined,
   };
@@ -48,9 +54,30 @@ export function OperatorRevenueView() {
   );
   const [tours, setTours] = useState<DemoTourPackage[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  // Starts true so the first mount shows a loading state without an effect setting it
+  // synchronously; every later load is triggered by an event handler that sets this itself.
+  const [isLoading, setIsLoading] = useState(true);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  // Bumped by every explicit user action (Apply, Reset, manual Refresh) so the fetch effect
+  // below always re-fires, even when the submitted filters are value-identical to the current
+  // ones (e.g. clicking Apply again without editing anything). appliedFilters alone cannot
+  // drive this: if the new filter object is the same reference as the current state, React
+  // bails out of re-rendering for that update, loadReport's identity never changes, the
+  // [loadReport] effect never re-runs, and isLoading — set to true by the handler — would be
+  // stuck forever with no fetch left to turn it back off.
+  const [requestToken, setRequestToken] = useState(0);
+
+  // Guards every setState below against firing after unmount, across all four callers of
+  // loadReport (initial/filter-change load, manual refresh, tab-focus refresh, background poll).
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Load owned tour packages for filter dropdown
   useEffect(() => {
@@ -68,35 +95,105 @@ export function OperatorRevenueView() {
     };
   }, [isDemo, actorUserId]);
 
-  useEffect(() => {
-    let isMounted = true;
-    void getOperatorRevenueReport(
-      appliedFilters,
-      { isDemo, demoActorUserId: actorUserId },
-      { page: currentPage, pageSize: REVENUE_DEFAULT_PAGE_SIZE }
-    ).then((result) => {
-      if (isMounted) {
+  // Single data-fetch path shared by the initial load, Apply/Reset filters, the manual Refresh
+  // button, tab-focus refresh, and background polling. It never flips `isLoading` on; the caller
+  // that wants a visible spinner sets that synchronously itself (an event handler, never an
+  // effect body) before triggering this. `silent` skips turning it back off, so a background
+  // refresh that didn't turn it on also never touches it.
+  const loadReport = useCallback(
+    async (options?: { silent?: boolean }) => {
+      try {
+        const result = await getOperatorRevenueReport(
+          appliedFilters,
+          { isDemo, demoActorUserId: actorUserId },
+          { page: currentPage, pageSize: REVENUE_DEFAULT_PAGE_SIZE }
+        );
+        if (!isMountedRef.current) return;
         setReportResult(result);
-        setIsLoading(false);
+        setLastUpdatedAt(new Date());
+      } finally {
+        if (isMountedRef.current && !options?.silent) setIsLoading(false);
       }
-    });
-    return () => {
-      isMounted = false;
+    },
+    // requestToken is intentionally unused in the body: it exists only to force this
+    // callback's identity to change on every explicit user action, even when appliedFilters
+    // is value-identical to its previous state (see the requestToken declaration above for
+    // why that case needs forcing).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [appliedFilters, currentPage, isDemo, actorUserId, requestToken]
+  );
+
+  // Re-fetch whenever filters, page, or actor/demo context change. The resulting loading
+  // indicator comes from `isLoading`'s initializer (mount) or from the handler that changed
+  // these dependencies (Apply/Reset/manual Refresh) — never from this effect setting it.
+  useEffect(() => {
+    void loadReport();
+  }, [loadReport]);
+
+  // Keep the dashboard fresh while it is actually being looked at: refresh immediately when the
+  // tab regains focus/visibility, then poll on an interval only while visible. A booking made by
+  // a Traveler elsewhere is what changes this report, so the operator has no other signal that
+  // new data might exist.
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+
+    const stopPolling = () => {
+      if (intervalId !== undefined) {
+        clearInterval(intervalId);
+        intervalId = undefined;
+      }
     };
-  }, [appliedFilters, currentPage, isDemo, actorUserId]);
+
+    const startPolling = () => {
+      if (intervalId !== undefined) return;
+      intervalId = setInterval(() => {
+        void loadReport({ silent: true });
+      }, REVENUE_POLL_INTERVAL_MS);
+    };
+
+    const handleVisible = () => {
+      if (document.visibilityState !== 'visible') {
+        stopPolling();
+        return;
+      }
+      void loadReport({ silent: true });
+      startPolling();
+    };
+
+    if (document.visibilityState === 'visible') startPolling();
+    document.addEventListener('visibilitychange', handleVisible);
+    window.addEventListener('focus', handleVisible);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisible);
+      window.removeEventListener('focus', handleVisible);
+    };
+  }, [loadReport]);
 
   // Filter application handler
   const handleApplyFilters = (newFilters: RevenueFilterInput) => {
     setIsLoading(true);
     setAppliedFilters(newFilters);
     setCurrentPage(1);
+    setRequestToken((token) => token + 1);
   };
 
   const handleResetFilters = () => {
     setIsLoading(true);
     setAppliedFilters(initialFilters);
     setCurrentPage(1);
+    setRequestToken((token) => token + 1);
   };
+
+  const handleManualRefresh = () => {
+    setIsLoading(true);
+    setRequestToken((token) => token + 1);
+  };
+
+  const lastUpdatedLabel = lastUpdatedAt
+    ? `${financeEn.revenue.lastUpdatedPrefix} ${lastUpdatedAt.toLocaleTimeString()}`
+    : financeEn.revenue.lastUpdatedNever;
 
   // Export report handler (UC-45)
   const handleExport = async (
@@ -155,49 +252,41 @@ export function OperatorRevenueView() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsExportDialogOpen(true)}
-          disabled
-          aria-describedby="revenue-export-integration-status"
-          title={financeEn.messages.BACKEND_INTEGRATION_PENDING}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
-        >
-          <span className="material-symbols-outlined text-[18px]">download</span>
-          <span>{financeEn.revenue.filters.exportBtn}</span>
-        </button>
-      </div>
+        <div className="flex items-center gap-3">
+          <span
+            className="text-xs text-slate-400"
+            aria-live="polite"
+            data-testid="revenue-last-updated"
+          >
+            {lastUpdatedLabel}
+          </span>
 
-      <p
-        id="revenue-export-integration-status"
-        role="status"
-        className="text-xs font-medium text-amber-700"
-      >
-        {financeEn.messages.BACKEND_INTEGRATION_PENDING}
-      </p>
-
-      {/* Production NO_BACKEND Notice */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 text-xs text-sky-900"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-sky-600 text-lg">
-              info
+          <button
+            type="button"
+            onClick={handleManualRefresh}
+            disabled={isLoading}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
+          >
+            <span
+              className={`material-symbols-outlined text-[16px] ${isLoading ? 'animate-spin' : ''}`}
+            >
+              refresh
             </span>
-            <div>
-              <p className="font-bold">
-                {financeEn.revenue.pendingNoticeTitle}
-              </p>
-              <p className="mt-0.5 text-sky-700">
-                {reportResult?.pendingBackendNotice ||
-                  financeEn.messages.PENDING_BE_INTEGRATION}
-              </p>
-            </div>
-          </div>
+            <span>{financeEn.revenue.refreshBtn}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsExportDialogOpen(true)}
+            disabled
+            title="Xuất báo cáo sẽ được triển khai ở UC-45"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            <span>{financeEn.revenue.filters.exportBtn}</span>
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Demo Mode Notice */}
       {isDemo && (

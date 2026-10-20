@@ -114,7 +114,7 @@ describe('TourBookingPage (UC-27 Route & Role Guards)', () => {
     render(<TourBookingPage id="9007199254740995" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Xác nhận đặt tour (UC-27)')).toBeTruthy();
+      expect(screen.getByText('Xác nhận đặt tour')).toBeTruthy();
       expect(
         screen.getAllByText(/Hành Trình Di Sản Phố Cổ Hội An/).length,
       ).toBeGreaterThanOrEqual(1);
