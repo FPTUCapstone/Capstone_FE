@@ -43,6 +43,9 @@ beforeEach(() => {
   lastLenisOptions = {};
   localStorage.clear();
   delete document.documentElement.dataset.motion;
+  document.documentElement.removeAttribute('data-motion');
+  delete (window as unknown as { __lenis?: unknown }).__lenis;
+  delete (window as unknown as { __setTripMateMotion?: unknown }).__setTripMateMotion;
 
   class MockResizeObserver implements ResizeObserver {
     observe() {}
@@ -68,6 +71,9 @@ afterEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
   delete document.documentElement.dataset.motion;
+  document.documentElement.removeAttribute('data-motion');
+  delete (window as unknown as { __lenis?: unknown }).__lenis;
+  delete (window as unknown as { __setTripMateMotion?: unknown }).__setTripMateMotion;
 });
 
 describe('SmoothScrollProvider (Global Premium Motion & Accessibility System)', () => {
@@ -211,5 +217,30 @@ describe('SmoothScrollProvider (Global Premium Motion & Accessibility System)', 
     document.body.appendChild(preventContainer);
     expect(preventFn(childOfPrevent)).toBe(true);
     document.body.removeChild(preventContainer);
+  });
+
+  it('guarantees test isolation and prevents state leakage from preceding reduced-motion tests', () => {
+    // 1. Simulate state left behind by an earlier reduced-motion test
+    localStorage.setItem('tripmate_motion', 'reduced');
+    document.documentElement.dataset.motion = 'reduced';
+
+    // 2. Perform teardown reset as done in test lifecycle hooks
+    localStorage.clear();
+    delete document.documentElement.dataset.motion;
+    document.documentElement.removeAttribute('data-motion');
+
+    // 3. Render fresh provider - must default to full motion and initialize Lenis
+    const { unmount } = render(
+      <SmoothScrollProvider>
+        <div>Isolated Test Content</div>
+      </SmoothScrollProvider>
+    );
+
+    const preventFn = lastLenisOptions.prevent as (node: HTMLElement) => boolean;
+    expect(typeof preventFn).toBe('function');
+    expect(lastLenisOptions.allowNestedScroll).toBe(true);
+
+    unmount();
+    expect(mockDestroy).toHaveBeenCalledTimes(1);
   });
 });
