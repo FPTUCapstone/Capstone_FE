@@ -35,6 +35,7 @@ export function ExportHistoryPanel({
   const [isLoading, setIsLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -47,7 +48,16 @@ export function ExportHistoryPanel({
   const load = useCallback(async () => {
     const result = await getRevenueExportHistory({ isDemo, demoActorUserId });
     if (!isMountedRef.current) return;
-    setItems(result.items);
+    // A failed fetch (network error, expired session, 5xx) must never be mistaken for "no
+    // exports yet": the backend reports failure via errorMessage with items left empty, so the
+    // caller must branch on it instead of rendering items unconditionally.
+    if (result.errorMessage) {
+      setLoadError(result.errorMessage);
+      setItems([]);
+    } else {
+      setLoadError(null);
+      setItems(result.items);
+    }
     setIsLoading(false);
   }, [isDemo, demoActorUserId]);
 
@@ -114,11 +124,30 @@ export function ExportHistoryPanel({
         </div>
       )}
 
+      {loadError && (
+        <div
+          role="alert"
+          className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+        >
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px]">error</span>
+            <span>{loadError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="shrink-0 font-semibold underline hover:no-underline"
+          >
+            {financeEn.exportHistory.refreshBtn}
+          </button>
+        </div>
+      )}
+
       {isLoading ? (
         <p className="mt-4 text-xs text-slate-400" role="status">
           {financeEn.revenue.lastUpdatedPrefix}…
         </p>
-      ) : items.length === 0 ? (
+      ) : loadError ? null : items.length === 0 ? (
         <div className="my-8 flex flex-col items-center justify-center text-center text-slate-400">
           <span className="material-symbols-outlined text-3xl">folder_off</span>
           <p className="mt-2 text-xs">{financeEn.exportHistory.empty}</p>
