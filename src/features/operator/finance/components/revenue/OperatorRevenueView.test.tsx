@@ -55,6 +55,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
       expect(screen.getAllByText(/Net Amount/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Total Bookings/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/Revenue Trend/i)).toBeDefined();
+      expect(screen.getByText(/Settlement Breakdown/i)).toBeDefined();
       expect(screen.getByText(/Tour Package Breakdown/i)).toBeDefined();
     });
   });

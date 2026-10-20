@@ -148,6 +148,12 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       expect(result.summary.commissionRatePercent).toBe(10);
       expect(result.messageCode).toBe(REVENUE_ERROR_CODES.SUCCESS);
 
+      // Settlement breakdown (SRS §3.8.5.1): no discounts in these fixtures, so Payments
+      // Received equals Gross Revenue and Net Sales is Payments Received minus the refund.
+      expect(result.summary.paymentsReceived).toBe(14000000);
+      expect(result.summary.discountsGiven).toBe(0);
+      expect(result.summary.netSales).toBe(12600000);
+
       // Foreign operator 202 bookings must NOT be included!
       expect(result.summary.grossRevenue).not.toBe(62000000);
     });
@@ -190,6 +196,31 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       expect(result.summary.netAmount).toBe(6160000);
       expect(result.tourDetails.length).toBe(1);
       expect(result.tourDetails[0].tourId).toBe('tour-142');
+    });
+
+    it('computes the settlement breakdown when a booking carries a coupon discount', async () => {
+      const result = await getOperatorRevenueReport(
+        {
+          startDate: '2026-08-01',
+          endDate: '2026-08-31',
+          granularity: 'monthly',
+          tourId: 'tour-142',
+        },
+        { isDemo: true, demoActorUserId: 101 }
+      );
+
+      // bk-0081 (August, tour-142): paidAmount 14,000,000, discount 600,000, no refund.
+      // Gross Revenue = Payments Received + Discounts Given = 14,000,000 + 600,000 = 14,600,000
+      // Net Sales = Payments Received - Refunds = 14,000,000 - 0 = 14,000,000
+      // Commission (10%) is computed on Payments Received, not on the pre-discount gross.
+      // Net Payout = Net Sales - Commission = 14,000,000 - 1,400,000 = 12,600,000
+      expect(result.summary.paymentsReceived).toBe(14000000);
+      expect(result.summary.discountsGiven).toBe(600000);
+      expect(result.summary.grossRevenue).toBe(14600000);
+      expect(result.summary.refundedAmount).toBe(0);
+      expect(result.summary.netSales).toBe(14000000);
+      expect(result.summary.platformCommission).toBe(1400000);
+      expect(result.summary.netAmount).toBe(12600000);
     });
 
     it('validates date range: returns MSG29 when startDate is after endDate', async () => {

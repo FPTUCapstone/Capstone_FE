@@ -61,6 +61,19 @@ export const financeEn = {
       refundedAmountHelp: 'Completed customer refunds within this period',
     },
 
+    settlement: {
+      title: 'Settlement Breakdown',
+      subtitle: 'How gross revenue becomes your net payout for this period.',
+      grossRevenue: 'Gross Revenue',
+      discountsGiven: 'Discounts Given',
+      paymentsReceived: 'Payments Received',
+      refundedAmount: 'Refunded Amount',
+      netSales: 'Net Sales',
+      platformCommission: 'Platform Commission',
+      netPayout: 'Net Payout',
+      formulaHint: 'Payments Received − Refunds − Commission = Net Payout',
+    },
+
     chart: {
       title: 'Revenue Trend',
       subtitle: 'Revenue, refunds, and net earnings over the selected period.',

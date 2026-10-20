@@ -27,6 +27,7 @@ export interface DemoBookingRecord {
   participantsCount: number;
   totalAmount: number;
   paidAmount: number;
+  discountAmount?: number; // Coupon/promo discount applied; paidAmount already reflects it
   hasVerifiedPayment: boolean;
   refundedAmount?: number;
   refundCompletedDate?: string; // YYYY-MM-DD
@@ -163,6 +164,8 @@ export const INITIAL_DEMO_REVENUE_BOOKINGS: DemoBookingRecord[] = [
 
   // Operator 101 - August 2026 bookings (for historical & settlement tests)
   {
+    // Carries a coupon discount so settlement-breakdown math (Gross = Payments + Discount)
+    // has a non-zero case to exercise; paidAmount already reflects the discount applied.
     id: 'bk-0081',
     bookingCode: 'BK-20260815-0081',
     tourId: 'tour-142',
@@ -173,6 +176,7 @@ export const INITIAL_DEMO_REVENUE_BOOKINGS: DemoBookingRecord[] = [
     participantsCount: 10,
     totalAmount: 14000000,
     paidAmount: 14000000,
+    discountAmount: 600000,
     hasVerifiedPayment: true,
   },
   {
