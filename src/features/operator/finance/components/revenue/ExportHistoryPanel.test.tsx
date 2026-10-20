@@ -51,6 +51,17 @@ describe('ExportHistoryPanel (UC-45)', () => {
     expect(downloadButtons.length).toBe(1);
   });
 
+  it('shows an error alert instead of the empty state when the history fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ title: 'Internal Server Error' }), { status: 500 })
+    ));
+
+    render(<ExportHistoryPanel isDemo={false} refreshToken={0} />);
+
+    expect(await screen.findByRole('alert')).toBeDefined();
+    expect(screen.queryByText(/No exports yet/i)).toBeNull();
+  });
+
   it('polls while an export is Queued and stops once it becomes Ready', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
