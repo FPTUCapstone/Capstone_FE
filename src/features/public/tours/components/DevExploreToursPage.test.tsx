@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getDevTourCategories, searchDevTours } from '../services/devTourApi';
@@ -46,15 +46,97 @@ describe('development tour discovery', () => {
     expect(searchDevTours).not.toHaveBeenCalled();
   });
 
-  it('shows explicit dependency failure without previous results or a false total count', async () => {
+  it('retains successful data and displayed criteria while a different query fails, then retries that query', async () => {
+    query = 'keyword=beach&mode=lexical&page=2&pageSize=1';
+    vi.mocked(searchDevTours).mockResolvedValueOnce({ ...response, page: 2, pageSize: 1, totalCount: 3, totalPages: 3 });
     const { rerender } = render(<DevExploreToursPage />);
     await screen.findByText('Quiet beach');
     vi.mocked(searchDevTours).mockRejectedValue(new Error('Vectors are missing or stale. No partial results were returned.'));
     query = 'keyword=mountain&mode=semantic';
     rerender(<DevExploreToursPage />);
-    expect(screen.queryByText('Quiet beach')).toBeNull();
+    expect(screen.getByText('Quiet beach')).toBeTruthy();
     await screen.findByText(/Vectors are missing or stale/);
-    expect(screen.queryByText(/1 tour/)).toBeNull();
+    expect(screen.getByText(/MSG127/)).toBeTruthy();
+    const criteria = screen.getByRole('region', { name: 'Displayed search criteria' });
+    expect(within(criteria).getByText('beach')).toBeTruthy();
+    expect(within(criteria).getByText('lexical')).toBeTruthy();
+    expect(within(criteria).queryByText('mountain')).toBeNull();
+    expect(screen.getByText('Showing 1 of 3 tours')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Xem chi tiết/ }).getAttribute('href')).toContain('keyword=beach');
+    fireEvent.click(screen.getByRole('button', { name: /^Trang 3$/ }));
+    expect(push).toHaveBeenLastCalledWith('/tours?keyword=beach&page=3&pageSize=1&mode=lexical');
+    vi.mocked(searchDevTours).mockResolvedValueOnce({ ...response, items: [], totalCount: 0, totalPages: 0 });
+    fireEvent.click(screen.getByRole('button', { name: 'Retry search' }));
+    await screen.findByText('No matching tours.');
+    expect(vi.mocked(searchDevTours).mock.calls.at(-1)?.[0].get('keyword')).toBe('mountain');
+    expect(screen.queryByText('Quiet beach')).toBeNull();
+    expect(within(screen.getByRole('region', { name: 'Displayed search criteria' })).getByText('mountain')).toBeTruthy();
+  });
+
+  it('keeps the snapshot during pending work and ignores both late success and late rejection', async () => {
+    const { rerender } = render(<DevExploreToursPage />);
+    await screen.findByText('Quiet beach');
+    let resolveOld: (value: DevPagedToursResponseDto) => void = () => {};
+    vi.mocked(searchDevTours).mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+    query = 'keyword=older';
+    rerender(<DevExploreToursPage />);
+    const oldSignal = vi.mocked(searchDevTours).mock.calls.at(-1)?.[1];
+    expect(screen.getByText('Quiet beach')).toBeTruthy();
+    expect(screen.getByText('Searching tours…')).toBeTruthy();
+    vi.mocked(searchDevTours).mockRejectedValueOnce(new Error('Current request failed'));
+    query = 'keyword=current';
+    rerender(<DevExploreToursPage />);
+    await screen.findByText('Current request failed');
+    expect(oldSignal?.aborted).toBe(true);
+    await act(async () => resolveOld({ ...response, items: [{ ...response.items[0], title: 'Late result' }] }));
+    expect(screen.queryByText('Late result')).toBeNull();
+    expect(screen.getByText('Current request failed')).toBeTruthy();
+
+    let rejectOld: (error: Error) => void = () => {};
+    vi.mocked(searchDevTours).mockImplementationOnce(() => new Promise((_, reject) => { rejectOld = reject; }));
+    query = 'keyword=obsolete-failure';
+    rerender(<DevExploreToursPage />);
+    vi.mocked(searchDevTours).mockResolvedValueOnce({ ...response, items: [{ ...response.items[0], title: 'Newest result' }] });
+    query = 'keyword=newest';
+    rerender(<DevExploreToursPage />);
+    await screen.findByText('Newest result');
+    await act(async () => rejectOld(new Error('Obsolete failure')));
+    expect(screen.queryByText('Obsolete failure')).toBeNull();
+    expect(screen.getByText('Newest result')).toBeTruthy();
+  });
+
+  it('retains data on invalid navigation and restores criteria when navigating back or resetting', async () => {
+    query = 'keyword=beach&mode=hybrid';
+    const { rerender } = render(<DevExploreToursPage />);
+    await screen.findByText('Quiet beach');
+    const calls = vi.mocked(searchDevTours).mock.calls.length;
+    query = 'startDate=2027-02-30';
+    rerender(<DevExploreToursPage />);
+    expect(screen.getByText('Enter valid calendar dates.')).toBeTruthy();
+    expect(screen.getByText('Quiet beach')).toBeTruthy();
+    expect(vi.mocked(searchDevTours).mock.calls.length).toBe(calls);
+    query = 'keyword=beach&mode=hybrid';
+    rerender(<DevExploreToursPage />);
+    await waitFor(() => expect(vi.mocked(searchDevTours).mock.calls.length).toBe(calls + 1));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
+    expect(push).toHaveBeenLastCalledWith('/tours');
+    query = '';
+    rerender(<DevExploreToursPage />);
+    await waitFor(() => expect(within(screen.getByRole('region', { name: 'Displayed search criteria' })).getByText('lexical')).toBeTruthy());
+  });
+
+  it('does not invent previous data on initial failure or treat an abort as an error', async () => {
+    vi.mocked(searchDevTours).mockRejectedValueOnce(new Error('Initial failure'));
+    const { rerender } = render(<DevExploreToursPage />);
+    await screen.findByText('Initial failure');
+    expect(screen.queryByRole('region', { name: 'Displayed search criteria' })).toBeNull();
+    expect(screen.queryByText(/Showing/)).toBeNull();
+    vi.mocked(searchDevTours).mockRejectedValueOnce(new DOMException('Cancelled', 'AbortError'));
+    query = 'keyword=cancelled';
+    rerender(<DevExploreToursPage />);
+    await act(async () => {});
+    expect(screen.queryByText('Cancelled')).toBeNull();
+    expect(screen.queryByText('Initial failure')).toBeNull();
   });
 
   it('aborts obsolete requests and ignores a delayed response after URL navigation', async () => {
