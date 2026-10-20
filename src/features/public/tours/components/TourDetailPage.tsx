@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { getTourDetail, isTourDemoAllowedInCurrentEnv } from '../services/tourApi';
 import { TourApiError, type TourDetailDto } from '../types/tour';
@@ -107,7 +106,6 @@ export function TourDetailPage({ id }: TourDetailPageProps) {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900">
-      <PublicNavigation />
 
       <main className="py-6">
         {loading ? (

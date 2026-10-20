@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
 import { useWebSession } from '@/features/auth/session/useWebSession';
@@ -94,7 +93,6 @@ export function TravelPreferencesPage() {
 
   return (
     <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
-      <PublicNavigation />
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">

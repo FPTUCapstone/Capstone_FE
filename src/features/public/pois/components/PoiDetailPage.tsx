@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { fetchPoiDetail } from '../services/poiApi';
 import { PoiApiError, type PoiDetail } from '../types/poi';
 import { formatDuration, formatReviewCount } from '../utils/poiPresentation';
@@ -92,14 +91,13 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-white" lang="vi"><PublicNavigation /><DetailLoading /></div>;
+    return <div className="min-h-screen bg-white" lang="vi"><DetailLoading /></div>;
   }
 
   if (failure || !detail) {
     const content = detailStatusText(failure ?? 'network');
     return (
       <div className="min-h-screen bg-[#f3f6f7]" lang="vi">
-        <PublicNavigation />
         <main className="mx-auto flex min-h-[70vh] max-w-2xl items-center px-4 py-12 sm:px-8">
           <section className="w-full rounded-[28px] border border-[#d5e0e3] bg-white p-8 text-center shadow-[0_18px_50px_rgba(0,21,42,.08)]">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#edf1f2] text-2xl text-[#5f6c73]" aria-hidden="true">⌖</div>
@@ -122,7 +120,7 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
 
   return (
     <div className="min-h-screen bg-white text-[#00152a]" lang="vi">
-      <PublicNavigation />
+      
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={goBack} className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-extrabold text-[#006b5f] hover:bg-[#edf8f5]">← Quay lại kết quả khám phá</button>

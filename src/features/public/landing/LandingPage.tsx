@@ -3,10 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { PageTransition } from '@/components/navigation/PageTransition';
-import { SmoothScrollProvider, useSmoothScroll } from '@/components/providers/SmoothScrollProvider';
+import { useSmoothScroll } from '@/components/providers/SmoothScrollProvider';
 import { ROUTES } from '@/lib/routes';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { LandingHero } from './components/LandingHero';
@@ -25,11 +24,9 @@ const CITIES: Array<'danang' | 'hoian' | 'hue'> = ['danang', 'hoian', 'hue'];
 
 export function LandingPage() {
   return (
-    <SmoothScrollProvider>
-      <PageTransition>
-        <LandingContent />
-      </PageTransition>
-    </SmoothScrollProvider>
+    <PageTransition>
+      <LandingContent />
+    </PageTransition>
   );
 }
 
@@ -78,9 +75,7 @@ function LandingContent() {
 
   return (
     <div className="min-h-screen bg-[#f4f7fc] text-[#0F1B2D] font-sans antialiased selection:bg-teal-100 selection:text-teal-900 relative overflow-x-clip">
-      {/* Route-Aware Public Header Navigation with Scroll Progress */}
-      <PublicNavigation isLanding={true} />
-
+      
       <main>
         {/* 1. Hero Section with Journey Canvas */}
         <LandingHero
