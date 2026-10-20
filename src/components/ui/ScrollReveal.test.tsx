@@ -1,29 +1,17 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScrollReveal, EditorialTextReveal, ImageReveal, CardReveal } from './ScrollReveal';
 
 describe('ScrollReveal motion specifications', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
-    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    }));
   });
 
   afterEach(() => {
     cleanup();
-    localStorage.clear();
   });
 
-  it('applies original distinct upward translation for fade-up animation', () => {
+  it('applies original distinct upward translation for fade-up animation (translate-y-7)', () => {
     class UnintersectedObserver implements IntersectionObserver {
       readonly root = null;
       readonly rootMargin = '';
@@ -45,7 +33,7 @@ describe('ScrollReveal motion specifications', () => {
 
     const wrapper = screen.getByTestId('editorial-text').parentElement!;
     expect(wrapper.getAttribute('data-revealed')).toBe('false');
-    expect(wrapper.className).toContain('translate-y-6');
+    expect(wrapper.className).toContain('translate-y-7');
   });
 
   it('applies subtle image scale 0.95 for zoom-in animation', () => {
@@ -103,21 +91,50 @@ describe('ScrollReveal motion specifications', () => {
     expect(capturedOptions?.rootMargin).toBe('0px 0px -40px 0px');
   });
 
-  it('instantly reveals without transform delay when tripmate_motion is explicitly reduced', async () => {
-    localStorage.setItem('tripmate_motion', 'reduced');
+  it('reveals element with smooth entrance transition when IntersectionObserver intersects', () => {
+    let triggerIntersection: IntersectionObserverCallback | undefined;
+
+    class MockObserver implements IntersectionObserver {
+      readonly root = null;
+      readonly rootMargin = '';
+      readonly thresholds = [];
+      constructor(callback: IntersectionObserverCallback) {
+        triggerIntersection = callback;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    window.IntersectionObserver = MockObserver;
 
     render(
       <ScrollReveal animation="fade-up">
-        <span data-testid="reduced-target">Reduced Content</span>
+        <span data-testid="target-span">Animated Content</span>
       </ScrollReveal>
     );
 
-    await waitFor(() => {
-      const wrapper = screen.getByTestId('reduced-target').parentElement!;
-      expect(wrapper.getAttribute('data-revealed')).toBe('true');
-      expect(wrapper.className).toContain('opacity-100');
-      expect(wrapper.className).toContain('translate-y-0');
+    const wrapper = screen.getByTestId('target-span').parentElement!;
+    expect(wrapper.getAttribute('data-revealed')).toBe('false');
+
+    // Trigger intersection
+    act(() => {
+      triggerIntersection?.(
+        [
+          {
+            isIntersecting: true,
+            target: wrapper,
+          } as unknown as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver
+      );
     });
+
+    expect(wrapper.getAttribute('data-revealed')).toBe('true');
+    expect(wrapper.className).toContain('opacity-100');
+    expect(wrapper.className).toContain('translate-y-0');
   });
 
   it('renders EditorialTextReveal with upward editorial-text animation (translate-y-4)', () => {

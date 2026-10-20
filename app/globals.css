@@ -452,14 +452,7 @@ body {
   animation: editorial-crossfade 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html:not([data-motion="full"]) .animate-fade-in,
-  html:not([data-motion="full"]) .animate-scale-in,
-  html:not([data-motion="full"]) .animate-page-enter,
-  html:not([data-motion="full"]) .animate-crossfade {
-    animation: none;
-  }
-}
+/* Reduced motion override removed: full premium motion always active */
 
 .pulse-marker {
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -867,9 +860,7 @@ body {
 }
 
 
-/* Global Reduced-Motion Enforcements */
-/* Reduced-motion enforcements apply ONLY when explicitly set to reduced or when OS prefers reduced and data-motion is NOT full */
-html[data-motion="reduced"] .animate-route-draw,
+/* Global Reduced-Motion Enforcements (applied only when data-motion is NOT full) */
 @media (prefers-reduced-motion: reduce) {
   html:not([data-motion="full"]) .animate-route-draw {
     stroke-dashoffset: 0 !important;
@@ -926,15 +917,6 @@ html[data-motion="reduced"] .animate-route-draw,
   html:not([data-motion="full"]) .nav-sliding-pill,
   html:not([data-motion="full"]) .nav-hover-pill {
     transition: none !important;
-  }
-  html:not([data-motion="full"]) [data-revealed],
-  html:not([data-motion="full"]) [data-revealed="false"],
-  html:not([data-motion="full"]) [data-revealed="true"] {
-    opacity: 1 !important;
-    transform: none !important;
-    filter: none !important;
-    transition: none !important;
-    pointer-events: auto !important;
   }
   html:not([data-motion="full"]) .page-enter,
   html:not([data-motion="full"]) .animate-page-enter {

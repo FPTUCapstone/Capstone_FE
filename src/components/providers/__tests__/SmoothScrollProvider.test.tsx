@@ -42,6 +42,7 @@ beforeEach(() => {
   mockStart.mockClear();
   lastLenisOptions = {};
   localStorage.clear();
+  delete document.documentElement.dataset.motion;
 
   class MockResizeObserver implements ResizeObserver {
     observe() {}
@@ -66,6 +67,7 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   localStorage.clear();
+  delete document.documentElement.dataset.motion;
 });
 
 describe('SmoothScrollProvider (Global Premium Motion & Accessibility System)', () => {
