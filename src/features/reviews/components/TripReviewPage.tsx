@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
+import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { tripReviewEn } from '@/features/trips/resources/en';
 import {
@@ -130,7 +131,8 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
 
   return (
     <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
-      
+      <PublicNavigation />
+
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Breadcrumb Navigation */}
         <nav
