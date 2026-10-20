@@ -13,7 +13,7 @@ Included:
 - Period filter controls: Date Range (Start Date, End Date), Granularity (Daily, Weekly, Monthly), Tour Package selector.
 - Summary metrics: Gross Revenue, Net Payout, Platform Commission (with rate badge), Total Bookings, Total Participants, and Refunded Amount. Payments Received, Discounts Given, and Net Sales appear in the settlement detail card.
 - Time-series Chart: Interactive revenue visualization (Gross vs Net payout) across selected time buckets.
-- Detail Table: Per-tour metrics (Tour Name, Bookings, Travelers, Gross, Discount, Commission, Net).
+- Detail Table: Per-tour metrics (Tour Name, Bookings, Travelers, Gross, Refunded Amount, Commission, Net).
 - Empty, loading, and error states using the canonical message catalog: MSG31, MSG126, MSG127, and MSG128.
 - Wire bridge: Integration between `operatorRevenueService.ts` / BFF proxy and Backend `/api/v1/operator/revenue/report`.
 

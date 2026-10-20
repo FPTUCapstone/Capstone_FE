@@ -38,8 +38,11 @@ function isValidActor(id?: number | string): boolean {
 
 const ZERO_SUMMARY: RevenueSummaryDto = {
   grossRevenue: 0,
+  paymentsReceived: 0,
+  discountsGiven: 0,
   platformCommission: 0,
   netAmount: 0,
+  netSales: 0,
   totalBookings: 0,
   totalParticipants: 0,
   refundedAmount: 0,
@@ -291,15 +294,23 @@ export async function getOperatorRevenueReport(
   }
 
   // Compute summary metrics
-  const grossRevenue = revenueEligible.reduce((acc, b) => acc + b.paidAmount, 0);
+  const paymentsReceived = revenueEligible.reduce((acc, b) => acc + b.paidAmount, 0);
+  const discountsGiven = revenueEligible.reduce(
+    (acc, b) => acc + (b.discountAmount || 0),
+    0
+  );
+  const grossRevenue = paymentsReceived + discountsGiven;
   const refundedAmount = refundEligible.reduce(
     (acc, b) => acc + (b.refundedAmount || 0),
     0
   );
+  const netSales = paymentsReceived - refundedAmount;
+  // BR-114: commission is computed on the amount actually received, matching the backend's
+  // calculation basis (the payment transaction amount), not on the pre-discount gross figure.
   const platformCommission = Math.round(
-    grossRevenue * (DEMO_PLATFORM_COMMISSION_RATE / 100)
+    paymentsReceived * (DEMO_PLATFORM_COMMISSION_RATE / 100)
   );
-  const netAmount = grossRevenue - platformCommission - refundedAmount;
+  const netAmount = netSales - platformCommission;
   const totalBookings = revenueEligible.length;
   const totalParticipants = revenueEligible.reduce(
     (acc, b) => acc + b.participantsCount,
@@ -308,8 +319,11 @@ export async function getOperatorRevenueReport(
 
   const summary: RevenueSummaryDto = {
     grossRevenue,
+    paymentsReceived,
+    discountsGiven,
     platformCommission,
     netAmount,
+    netSales,
     totalBookings,
     totalParticipants,
     refundedAmount,

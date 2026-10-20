@@ -21,6 +21,7 @@ import type { DemoTourPackage } from '../../data/operatorRevenueDemoFixtures';
 import { RevenueFilterControls } from './RevenueFilterControls';
 import { RevenueSummaryCards } from './RevenueSummaryCards';
 import { RevenueChart } from './RevenueChart';
+import { SettlementDetailsCard } from './SettlementDetailsCard';
 import { RevenueDetailTable } from './RevenueDetailTable';
 import { ExportRevenueDialog } from './ExportRevenueDialog';
 
@@ -348,9 +349,16 @@ export function OperatorRevenueView() {
         <RevenueSummaryCards summary={reportResult.summary} />
       )}
 
-      {/* Revenue Trend Chart */}
+      {/* Middle Section: Revenue Trend Chart (2/3) + Settlement Breakdown (1/3) */}
       {reportResult && (
-        <RevenueChart chartData={reportResult.chartData} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <RevenueChart chartData={reportResult.chartData} />
+          </div>
+          <div className="lg:col-span-1">
+            <SettlementDetailsCard summary={reportResult.summary} />
+          </div>
+        </div>
       )}
 
       {/* Detail Table */}

@@ -13,7 +13,8 @@ export function formatVndCurrency(amount: number): string {
   if (typeof amount !== 'number' || isNaN(amount)) {
     return '0 ₫';
   }
-  const rounded = Math.round(amount);
+  // `|| 0` normalizes -0 (e.g. from `-x` where x is 0) so it never renders as "-0 ₫".
+  const rounded = Math.round(amount) || 0;
   const formattedNumber = new Intl.NumberFormat('vi-VN', {
     maximumFractionDigits: 0,
   }).format(rounded);
