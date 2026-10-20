@@ -25,13 +25,20 @@ describe('useSafePathname', () => {
     });
 
     const originalLocation = window.location;
-    delete (window as unknown as { location?: unknown }).location;
-    window.location = { ...originalLocation, pathname: '/pois/hoan-kiem' } as Location;
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, pathname: '/pois/hoan-kiem' },
+      configurable: true,
+      writable: true,
+    });
 
     const { result } = renderHook(() => useSafePathname());
     expect(result.current).toBe('/pois/hoan-kiem');
 
-    window.location = originalLocation;
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      configurable: true,
+      writable: true,
+    });
   });
 
   it('falls back to "/" when both usePathname and window.location are unavailable', () => {
@@ -40,12 +47,19 @@ describe('useSafePathname', () => {
     });
 
     const originalLocation = window.location;
-    delete (window as unknown as { location?: unknown }).location;
-    window.location = { ...originalLocation, pathname: '' } as Location;
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, pathname: '' },
+      configurable: true,
+      writable: true,
+    });
 
     const { result } = renderHook(() => useSafePathname());
     expect(result.current).toBe('/');
 
-    window.location = originalLocation;
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      configurable: true,
+      writable: true,
+    });
   });
 });
