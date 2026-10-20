@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, ElementType, ReactNode } from 'react';
+import { getEffectiveMotionPreference } from '@/components/providers/SmoothScrollProvider';
 
 export type RevealAnimation =
   | 'editorial-text'
@@ -28,7 +29,7 @@ export function ScrollReveal({
   children,
   animation = 'fade-up',
   delay = 0,
-  duration = 450,
+  duration = 600,
   className = '',
   as: Component = 'div',
   threshold = 0.05,
@@ -39,16 +40,9 @@ export function ScrollReveal({
 
   useEffect(() => {
     // 1. Accessibility: Bypass if reduced motion requested and force-motion is not enabled
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)')?.matches;
-    const forceMotion =
-      typeof document !== 'undefined' &&
-      (document.documentElement.dataset.forceMotion === 'true' ||
-        document.documentElement.dataset.motion === 'enabled');
+    const isReduced = getEffectiveMotionPreference() === 'reduced';
 
-    if (prefersReduced && !forceMotion) {
+    if (isReduced) {
       queueMicrotask(() => {
         setIsRevealed(true);
       });
@@ -75,7 +69,7 @@ export function ScrollReveal({
       rect.bottom > 0 &&
       (window.scrollY > 0
         ? rect.top < window.innerHeight
-        : rect.top < window.innerHeight * 0.65);
+        : rect.top < window.innerHeight * 0.75);
 
     if (isAboveTheFold) {
       const timer = setTimeout(() => {
@@ -107,7 +101,7 @@ export function ScrollReveal({
       },
       {
         threshold,
-        rootMargin: '60px 0px 60px 0px',
+        rootMargin: '0px 0px -40px 0px',
       }
     );
 
@@ -142,21 +136,21 @@ export function ScrollReveal({
           : 'opacity-0 translate-y-8 scale-[0.97] blur-[2px]';
       case 'editorial-text':
         // 12px subtle editorial translation
-        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3';
+        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4';
       case 'fade-up':
         // 14px subtle translation
-        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3.5';
+        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6';
       case 'fade-down':
-        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3.5';
+        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-6';
       case 'fade-left':
-        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-3.5';
+        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6';
       case 'fade-right':
-        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-3.5';
+        return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6';
       case 'image-reveal':
         // Editorial subtle scale 0.985 with 8px upward settle
-        return isRevealed ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-[0.985] translate-y-2';
+        return isRevealed ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-[0.97] translate-y-4';
       case 'zoom-in':
-        return isRevealed ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.985]';
+        return isRevealed ? 'opacity-100 scale-100' : 'opacity-0 scale-95';
       case 'fade':
       default:
         return isRevealed ? 'opacity-100' : 'opacity-0';
