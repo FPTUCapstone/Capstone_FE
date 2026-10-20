@@ -33,14 +33,9 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Default to Vietnamese in browser (app is lang="vi") and on landing, with English fallback for en tests
-  const resolvedLocale =
-    locale ??
-    (isLanding
-      ? 'vi'
-      : typeof document !== 'undefined' && document.documentElement.lang === 'vi'
-      ? 'vi'
-      : 'en');
+  // Default to Vietnamese in all environments (SSR & Client) to match <html lang="vi">.
+  // Explicit locale override can be provided via props (e.g. locale="en").
+  const resolvedLocale = locale ?? 'vi';
 
   const strings = resolvedLocale === 'vi' ? publicNavigationVi : publicNavigationEn;
   const drawerStrings = resolvedLocale === 'vi' ? publicNavigationVi.drawer : publicNavigationEn.drawer;

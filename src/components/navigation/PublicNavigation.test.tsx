@@ -30,6 +30,7 @@ vi.mock('@/features/account/profile/travelerProfileApi', async (importOriginal) 
 
 const { PublicNavigation } = await import('./PublicNavigation');
 const { publicNavigationEn } = await import('./resources/en');
+const { publicNavigationVi } = await import('./resources/vi');
 
 const context = (overrides: Record<string, unknown> = {}) => ({
   userId: 42,
@@ -61,7 +62,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     let settleRefresh!: () => void;
     const gate = new Promise<void>((resolve) => { settleRefresh = resolve; });
     mocks.webRefresh.mockImplementation(async () => { await gate; return AuthStorage.accept(context(), false); });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     // Empty in-memory context is NOT treated as Guest during restore.
     expect(screen.queryByRole('link', { name: publicNavigationEn.account.signIn })).toBeNull();
     expect(screen.queryByRole('button', { name: /Log out/i })).toBeNull();
@@ -73,7 +74,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('restores an authenticated Traveler from a valid refresh cookie', async () => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ fullName: 'Restored Traveler' }), false));
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByText('Restored Traveler')).toBeDefined());
     expect(screen.queryByRole('link', { name: publicNavigationEn.account.signIn })).toBeNull();
     expect(screen.getByRole('button', { name: /Log out/i })).toBeDefined();
@@ -81,7 +82,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('restores an authenticated Administrator with no Partner entry', async () => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ role: 'Administrator', fullName: 'Restored Admin' }), false));
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByText('Restored Admin')).toBeDefined());
     expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
   });
@@ -92,21 +93,21 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     ['Rejected', '/partner/application'],
   ])('restores a TourOperator %s and routes Partner to %s', async (applicationStatus, href) => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Restored Operator', applicationStatus }), false));
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
     expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe(href);
   });
 
   it('preserves an unresolved TourOperator as the fail-closed application projection, not Approved', async () => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Restored Operator', applicationStatus: null }), false));
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
     expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/application');
   });
 
   it('settles unauthenticated when the refresh cookie is invalid (401)', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.account.signIn })).toBeDefined());
     expect(screen.queryByRole('status')).toBeNull();
     expect(AuthStorage.getContext()).toBeNull();
@@ -114,7 +115,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('settles unauthenticated when there is no refresh cookie, exposing guest registration', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
     expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/register');
     expect(screen.getByRole('link', { name: publicNavigationEn.account.register })).toBeDefined();
@@ -122,7 +123,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('does not call webRefresh when a valid in-memory context already exists', () => {
     AuthStorage.accept(context({ fullName: 'Warm Context' }), false);
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     expect(screen.getByText('Warm Context')).toBeDefined();
     expect(mocks.webRefresh).not.toHaveBeenCalled();
   });
@@ -133,7 +134,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
       userId: 42, fullName: 'Test Traveler', email: 'traveler@example.com',
       phoneNumber: null, dateOfBirth: null, avatarUrl: 'https://res.cloudinary.com/test/avatar.png',
     });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     const accountLink = screen.getByRole('link', { name: publicNavigationEn.account.profileAria });
     await waitFor(() => expect(accountLink.querySelector('img')?.getAttribute('src'))
       .toBe('https://res.cloudinary.com/test/avatar.png'));
@@ -141,7 +142,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('updates the account menu immediately after a successful profile save', async () => {
     AuthStorage.accept(context(), false);
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     announceTravelerProfileUpdated({
       userId: 42, fullName: 'Updated Traveler', email: 'traveler@example.com',
       phoneNumber: null, dateOfBirth: null, avatarUrl: 'https://res.cloudinary.com/test/new.png',
@@ -156,7 +157,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     let finishLoad!: (profile: Awaited<ReturnType<typeof getTravelerProfile>>) => void;
     vi.mocked(getTravelerProfile).mockReturnValue(new Promise((resolve) => { finishLoad = resolve; }));
     AuthStorage.accept(context(), false);
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     announceTravelerProfileUpdated({
       userId: 42, fullName: 'Updated Traveler', email: 'traveler@example.com',
       phoneNumber: null, dateOfBirth: null, avatarUrl: 'https://res.cloudinary.com/test/new.png',
@@ -176,7 +177,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     mocks.webLogout.mockImplementation(async () => {
       AuthStorage.clear();
     });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     expect(screen.getByText('Warm Context')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /Log out/i }));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /Log out/i }));
@@ -187,7 +188,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
 
   it('updates the navbar without a full reload when the AuthStorage context changes after settle', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.account.signIn })).toBeDefined());
     AuthStorage.accept(context({ fullName: 'Fresh Context' }), false);
     await waitFor(() => expect(screen.getByText('Fresh Context')).toBeDefined());
@@ -200,7 +201,7 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     localStorage.setItem('tripmate_access_token', 'legacy-token');
     localStorage.setItem('tripmate_user', JSON.stringify({ fullName: 'Legacy User', email: 'legacy@example.com' }));
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.account.signIn })).toBeDefined());
     expect(screen.queryByText('Legacy User')).toBeNull();
   });
@@ -216,7 +217,7 @@ describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
   it('keeps the public POI discovery entry after the navigation redesign', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
 
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
 
     const explore = await screen.findByRole('link', { name: publicNavigationEn.links.explore });
     expect(explore.getAttribute('href')).toBe('/pois');
@@ -224,7 +225,7 @@ describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
 
   it('keeps the generic Partner link to guest registration once settled unauthenticated', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
     expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/register');
     expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
@@ -232,7 +233,7 @@ describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
 
   it('shows neither the Partner item nor an operator-registration CTA for an authenticated Traveler', () => {
     AuthStorage.accept(context(), false);
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Register Tour Operator account' })).toBeNull();
@@ -244,21 +245,21 @@ describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
     ['Rejected', '/partner/application'],
   ])('routes the Partner item for a TourOperator %s context to its own destination', (applicationStatus, href) => {
     AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Operator', applicationStatus }), false);
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe(href);
     expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
   });
 
   it('keeps an unresolved TourOperator authenticated and points Partner at the application projection', () => {
     AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Operator', applicationStatus: null }), false);
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/application');
     expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
   });
 
   it('does not expose the Partner registration entry to an authenticated Administrator', () => {
     AuthStorage.accept(context({ role: 'Administrator', fullName: 'Admin' }), false);
-    render(<PublicNavigation />);
+    render(<PublicNavigation locale="en" />);
     expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
   });
@@ -340,5 +341,41 @@ describe('PublicNavigation Vietnamese localization & Mobile Drawer', () => {
     }
     expect(planLink.getAttribute('aria-current')).toBe('page');
     expect(planLink.className).toContain('text-[#005F56]');
+  });
+});
+
+describe('PublicNavigation Default Vietnamese Locale & Hydration Integrity', () => {
+  beforeEach(() => {
+    AuthStorage.clear();
+    localStorage.clear();
+    sessionStorage.clear();
+    mocks.webRefresh.mockResolvedValue(null);
+  });
+
+  it('defaults to Vietnamese without requiring locale or document.documentElement.lang inspection', () => {
+    render(<PublicNavigation />);
+    expect(screen.getByRole('link', { name: publicNavigationVi.brandAria })).toBeDefined();
+    expect(screen.getByRole('navigation', { name: publicNavigationVi.navAria })).toBeDefined();
+    expect(screen.getByRole('link', { name: publicNavigationVi.links.smartItinerary })).toBeDefined();
+    expect(screen.getByRole('link', { name: publicNavigationVi.links.localTours })).toBeDefined();
+  });
+
+  it('produces matching HTML in SSR renderToString and client render without attribute mismatches', async () => {
+    const ReactDOMServer = (await import('react-dom/server')).default;
+    const ssrHtml = ReactDOMServer.renderToString(<PublicNavigation />);
+    
+    // SSR HTML must render Vietnamese brandAria, NOT English
+    expect(ssrHtml).toContain('aria-label="' + publicNavigationVi.brandAria + '"');
+    expect(ssrHtml).not.toContain('aria-label="' + publicNavigationEn.brandAria + '"');
+
+    // Mount in DOM and verify client DOM attributes match exactly
+    const container = document.createElement('div');
+    container.innerHTML = ssrHtml;
+    document.body.appendChild(container);
+
+    const ssrBrandLink = container.querySelector('a[href="/"]');
+    expect(ssrBrandLink?.getAttribute('aria-label')).toBe(publicNavigationVi.brandAria);
+
+    document.body.removeChild(container);
   });
 });

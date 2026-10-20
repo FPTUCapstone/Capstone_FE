@@ -47,7 +47,7 @@ export function TripHistoryPage() {
 
   return (
     <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
-      <PublicNavigation />
+      <PublicNavigation locale="en" />
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Breadcrumb Navigation */}
