@@ -330,6 +330,10 @@ export function LandingHero({
         {/* Vịnh Lăng Cô Station */}
         <g>
           <circle cx="1060" cy="130" r="9" fill="#007D6E" fillOpacity="0.16" />
+          <circle cx="1060" cy="130" r="3.5" fill="none" stroke="#007D6E" strokeWidth="1.2" opacity="0.6">
+            <animate attributeName="r" from="3.5" to="16" dur="2.8s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.6" to="0" dur="2.8s" repeatCount="indefinite" />
+          </circle>
           <circle cx="1060" cy="130" r="3.5" fill="#007D6E" stroke="#FFFFFF" strokeWidth="1.5" />
           <g className="hidden md:block">
             <rect x="1005" y="104" width="110" height="20" rx="4" fill="#FFFFFF" fillOpacity="0.95" stroke="#007D6E" strokeWidth="0.8" strokeOpacity="0.45" />
@@ -349,6 +353,10 @@ export function LandingHero({
         {/* Sơn Trà & Linh Ứng Station */}
         <g>
           <circle cx="1400" cy="220" r="10" fill="#007D6E" fillOpacity="0.16" />
+          <circle cx="1400" cy="220" r="4" fill="none" stroke="#007D6E" strokeWidth="1.2" opacity="0.6">
+            <animate attributeName="r" from="4" to="17" dur="2.8s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.6" to="0" dur="2.8s" repeatCount="indefinite" />
+          </circle>
           <circle cx="1400" cy="220" r="4" fill="#007D6E" stroke="#FFFFFF" strokeWidth="1.5" />
           <g className="hidden md:block">
             <rect x="1352" y="240" width="86" height="30" rx="4" fill="#FFFFFF" fillOpacity="0.95" stroke="#007D6E" strokeWidth="0.8" strokeOpacity="0.45" />
@@ -364,6 +372,10 @@ export function LandingHero({
         {/* Bà Nà Hills & Cầu Vàng Station */}
         <g>
           <circle cx="670" cy="345" r="10" fill="#7C3AED" fillOpacity="0.16" />
+          <circle cx="670" cy="345" r="4" fill="none" stroke="#7C3AED" strokeWidth="1.2" opacity="0.6">
+            <animate attributeName="r" from="4" to="17" dur="2.8s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.6" to="0" dur="2.8s" repeatCount="indefinite" />
+          </circle>
           <circle cx="670" cy="345" r="4" fill="#7C3AED" stroke="#FFFFFF" strokeWidth="1.5" />
           <g className="hidden md:block">
             <rect x="598" y="318" width="144" height="20" rx="4" fill="#FFFFFF" fillOpacity="0.95" stroke="#7C3AED" strokeWidth="0.8" strokeOpacity="0.45" />
@@ -376,6 +388,10 @@ export function LandingHero({
         {/* Ngũ Hành Sơn Station */}
         <g>
           <circle cx="740" cy="530" r="10" fill="#007D6E" fillOpacity="0.16" />
+          <circle cx="740" cy="530" r="4" fill="none" stroke="#007D6E" strokeWidth="1.2" opacity="0.6">
+            <animate attributeName="r" from="4" to="17" dur="2.8s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.6" to="0" dur="2.8s" repeatCount="indefinite" />
+          </circle>
           <circle cx="740" cy="530" r="4" fill="#007D6E" stroke="#FFFFFF" strokeWidth="1.5" />
           <g className="hidden md:block">
             <rect x="682" y="502" width="116" height="20" rx="4" fill="#FFFFFF" fillOpacity="0.95" stroke="#007D6E" strokeWidth="0.8" strokeOpacity="0.45" />
@@ -388,6 +404,10 @@ export function LandingHero({
         {/* Thánh Địa Mỹ Sơn Station */}
         <g>
           <circle cx="600" cy="590" r="9" fill="#D97706" fillOpacity="0.16" />
+          <circle cx="600" cy="590" r="3.5" fill="none" stroke="#D97706" strokeWidth="1.2" opacity="0.6">
+            <animate attributeName="r" from="3.5" to="16" dur="2.8s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.6" to="0" dur="2.8s" repeatCount="indefinite" />
+          </circle>
           <circle cx="600" cy="590" r="3.5" fill="#D97706" stroke="#FFFFFF" strokeWidth="1.5" />
           <g className="hidden md:block">
             <rect x="532" y="568" width="136" height="20" rx="4" fill="#FFFFFF" fillOpacity="0.95" stroke="#D97706" strokeWidth="0.8" strokeOpacity="0.45" />
@@ -418,8 +438,20 @@ export function LandingHero({
 
         {/* 9. Waypoint Destination Geographic Beacons & Pin Labels */}
         {/* Huế Station */}
-        <g className="animate-pulse-subtle">
+        <g>
+          {/* Static Soft Glow Halo Base */}
           <circle cx="890" cy="130" r="14" fill="#7C3AED" fillOpacity="0.15" />
+          {/* Radar ripple ring expanding outward */}
+          <circle cx="890" cy="130" r="5.5" fill="#7C3AED" opacity="0.3">
+            <animate attributeName="r" from="5.5" to="24" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.3" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="890" cy="130" r="5.5" fill="none" stroke="#7C3AED" strokeWidth="1.6" opacity="0.8">
+            <animate attributeName="r" from="5.5" to="24" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="stroke-width" from="1.6" to="0.3" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          {/* Chấm chính cố định tại tọa độ địa lý, không nhảy */}
           <circle cx="890" cy="130" r="5.5" fill="#7C3AED" stroke="#FFFFFF" strokeWidth="2" />
         </g>
         <g className="hidden md:block">
@@ -430,8 +462,20 @@ export function LandingHero({
         </g>
 
         {/* Đà Nẵng Station */}
-        <g className="animate-pulse-subtle">
+        <g>
+          {/* Static Soft Glow Halo Base */}
           <circle cx="1400" cy="430" r="16" fill="#007D6E" fillOpacity="0.18" />
+          {/* Radar ripple ring expanding outward */}
+          <circle cx="1400" cy="430" r="6" fill="#007D6E" opacity="0.3">
+            <animate attributeName="r" from="6" to="26" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.3" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="1400" cy="430" r="6" fill="none" stroke="#007D6E" strokeWidth="1.8" opacity="0.8">
+            <animate attributeName="r" from="6" to="26" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="stroke-width" from="1.8" to="0.3" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          {/* Chấm chính cố định tại tọa độ địa lý, không nhảy */}
           <circle cx="1400" cy="430" r="6" fill="#007D6E" stroke="#FFFFFF" strokeWidth="2.5" />
         </g>
         <g className="hidden md:block">
@@ -442,8 +486,20 @@ export function LandingHero({
         </g>
 
         {/* Hội An Station */}
-        <g className="animate-pulse-subtle">
+        <g>
+          {/* Static Soft Glow Halo Base */}
           <circle cx="770" cy="590" r="14" fill="#D97706" fillOpacity="0.16" />
+          {/* Radar ripple ring expanding outward */}
+          <circle cx="770" cy="590" r="5.5" fill="#D97706" opacity="0.3">
+            <animate attributeName="r" from="5.5" to="24" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.3" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="770" cy="590" r="5.5" fill="none" stroke="#D97706" strokeWidth="1.6" opacity="0.8">
+            <animate attributeName="r" from="5.5" to="24" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="stroke-width" from="1.6" to="0.3" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          {/* Chấm chính cố định tại tọa độ địa lý, không nhảy */}
           <circle cx="770" cy="590" r="5.5" fill="#D97706" stroke="#FFFFFF" strokeWidth="2" />
         </g>
         <g className="hidden md:block">
