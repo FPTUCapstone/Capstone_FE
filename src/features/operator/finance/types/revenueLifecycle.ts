@@ -18,8 +18,11 @@ export interface RevenueFilterInput {
 
 export interface RevenueSummaryDto {
   grossRevenue: number;
+  paymentsReceived: number; // Amount actually paid by travelers (gross revenue minus discounts)
+  discountsGiven: number; // Coupon/promo discounts applied on eligible bookings
   platformCommission: number;
   netAmount: number;
+  netSales: number; // Payments received minus refunded amount, before commission
   totalBookings: number;
   totalParticipants: number;
   refundedAmount: number;
