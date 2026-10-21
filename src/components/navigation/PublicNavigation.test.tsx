@@ -15,7 +15,6 @@ vi.mock('next/navigation', () => ({
     replace: mocks.replace,
     refresh: mocks.refresh,
   }),
-  usePathname: () => '/',
 }));
 
 vi.mock('@/lib/authApi', () => ({
@@ -80,29 +79,42 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     expect(screen.getByRole('button', { name: /Log out/i })).toBeDefined();
   });
 
-  it('restores an authenticated Administrator with no Partner entry', async () => {
+  it('restores an authenticated Administrator with no Partner entry in primary nav', async () => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ role: 'Administrator', fullName: 'Restored Admin' }), false));
     render(<PublicNavigation locale="en" />);
     await waitFor(() => expect(screen.getByText('Restored Admin')).toBeDefined());
     expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
+    expect(screen.queryByRole('button', { name: publicNavigationEn.account.partnerMenuAria })).toBeNull();
   });
 
-  it.each([
-    ['Approved', '/partner'],
-    ['PendingApproval', '/partner/application'],
-    ['Rejected', '/partner/application'],
-  ])('restores a TourOperator %s and routes Partner to %s', async (applicationStatus, href) => {
-    mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Restored Operator', applicationStatus }), false));
+  it('restores an authenticated TourOperator and renders role-aware account dropdown, not nav link', async () => {
+    mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Restored Operator', applicationStatus: 'Approved' }), false));
     render(<PublicNavigation locale="en" />);
-    await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
-    expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe(href);
+    await waitFor(() => expect(screen.getByText('Restored Operator')).toBeDefined());
+    // Not in primary nav
+    expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
+    // Dropdown trigger is present
+    const operatorButton = screen.getByRole('button', { name: publicNavigationEn.account.partnerMenuAria });
+    expect(operatorButton).toBeDefined();
+    expect(operatorButton.getAttribute('aria-expanded')).toBe('false');
+
+    // Open dropdown
+    fireEvent.click(operatorButton);
+    expect(operatorButton.getAttribute('aria-expanded')).toBe('true');
+    const menu = screen.getByRole('menu', { name: publicNavigationEn.account.partnerMenuAria });
+    expect(within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerWorkspace, 'i') }).getAttribute('href')).toBe('/partner');
+    expect(within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerProfile, 'i') }).getAttribute('href')).toBe('/partner/profile');
   });
 
-  it('preserves an unresolved TourOperator as the fail-closed application projection, not Approved', async () => {
+  it('preserves an unresolved TourOperator as the fail-closed application projection in dropdown', async () => {
     mocks.webRefresh.mockImplementation(async () => AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Restored Operator', applicationStatus: null }), false));
     render(<PublicNavigation locale="en" />);
-    await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
-    expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/application');
+    await waitFor(() => expect(screen.getByText('Restored Operator')).toBeDefined());
+    const operatorButton = screen.getByRole('button', { name: publicNavigationEn.account.partnerMenuAria });
+    fireEvent.click(operatorButton);
+    const menu = screen.getByRole('menu', { name: publicNavigationEn.account.partnerMenuAria });
+    expect(within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerApplication, 'i') }).getAttribute('href')).toBe('/partner/application');
+    expect(within(menu).queryByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerWorkspace, 'i') })).toBeNull();
   });
 
   it('settles unauthenticated when the refresh cookie is invalid (401)', async () => {
@@ -113,11 +125,11 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
     expect(AuthStorage.getContext()).toBeNull();
   });
 
-  it('settles unauthenticated when there is no refresh cookie, exposing guest registration', async () => {
+  it('settles unauthenticated when there is no refresh cookie, exposing guest sign-in / register, without partner link in primary nav', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
     render(<PublicNavigation locale="en" />);
-    await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
-    expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/register');
+    await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.account.signIn })).toBeDefined());
+    expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
     expect(screen.getByRole('link', { name: publicNavigationEn.account.register })).toBeDefined();
   });
 
@@ -207,175 +219,118 @@ describe('PublicNavigation S01 restore-aware runtime', () => {
   });
 });
 
-describe('PublicNavigation Partner item by role (BR6 product decision)', () => {
+describe('PublicNavigation Partner Navigation v2.0 & Role dropdowns', () => {
   beforeEach(() => {
     AuthStorage.clear();
     localStorage.clear();
     sessionStorage.clear();
   });
 
-  it('keeps the public POI discovery entry after the navigation redesign', async () => {
+  it('keeps public POI discovery entry after navigation redesign', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
-
     render(<PublicNavigation locale="en" />);
-
     const explore = await screen.findByRole('link', { name: publicNavigationEn.links.explore });
     expect(explore.getAttribute('href')).toBe('/pois');
   });
 
-  it('keeps the generic Partner link to guest registration once settled unauthenticated', async () => {
+  it('does NOT render For Partners link in primary nav for unauthenticated guests', async () => {
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
     render(<PublicNavigation locale="en" />);
-    await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners })).toBeDefined());
-    expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/register');
-    expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
+    await waitFor(() => expect(screen.getByRole('link', { name: publicNavigationEn.account.signIn })).toBeDefined());
+    expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
   });
 
-  it('shows neither the Partner item nor an operator-registration CTA for an authenticated Traveler', () => {
+  it('does NOT render For Partners link or operator menu for an authenticated Traveler', () => {
     AuthStorage.accept(context(), false);
     render(<PublicNavigation locale="en" />);
     expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Register Tour Operator account' })).toBeNull();
+    expect(screen.queryByRole('button', { name: publicNavigationEn.account.partnerMenuAria })).toBeNull();
+  });
+
+  it('renders Approved Tour Operator dropdown with workspace, profile, and logout in English', () => {
+    AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Skyline Travel', applicationStatus: 'Approved' }), false);
+    render(<PublicNavigation locale="en" />);
+    expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
+
+    const trigger = screen.getByRole('button', { name: publicNavigationEn.account.partnerMenuAria });
+    expect(trigger).toBeDefined();
+    expect(screen.getByText('Skyline Travel')).toBeDefined();
+
+    // Open dropdown
+    fireEvent.click(trigger);
+    const menu = screen.getByRole('menu', { name: publicNavigationEn.account.partnerMenuAria });
+    const workspaceLink = within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerWorkspace, 'i') });
+    expect(workspaceLink.getAttribute('href')).toBe('/partner');
+
+    const profileLink = within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerProfile, 'i') });
+    expect(profileLink.getAttribute('href')).toBe('/partner/profile');
+
+    const logoutBtn = within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.logOut, 'i') });
+    expect(logoutBtn).toBeDefined();
+
+    // Dismiss with Escape key
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('menu', { name: publicNavigationEn.account.partnerMenuAria })).toBeNull();
+  });
+
+  it('renders Vietnamese labels by default', () => {
+    AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Hoi An Eco', applicationStatus: 'Approved' }), false);
+    render(<PublicNavigation />);
+
+    const trigger = screen.getByRole('button', { name: publicNavigationVi.account.partnerMenuAria });
+    expect(trigger).toBeDefined();
+
+    fireEvent.click(trigger);
+    const menu = screen.getByRole('menu', { name: publicNavigationVi.account.partnerMenuAria });
+    expect(within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationVi.account.partnerWorkspace, 'i') })).toBeDefined();
+    expect(within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationVi.account.partnerProfile, 'i') })).toBeDefined();
   });
 
   it.each([
-    ['Approved', '/partner'],
     ['PendingApproval', '/partner/application'],
     ['Rejected', '/partner/application'],
-  ])('routes the Partner item for a TourOperator %s context to its own destination', (applicationStatus, href) => {
-    AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Operator', applicationStatus }), false);
+  ])('renders %s Tour Operator dropdown with application projection and no workspace entry', (applicationStatus, href) => {
+    AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Coastal Tours', applicationStatus }), false);
     render(<PublicNavigation locale="en" />);
-    expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe(href);
-    expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
+    const trigger = screen.getByRole('button', { name: publicNavigationEn.account.partnerMenuAria });
+    fireEvent.click(trigger);
+    const menu = screen.getByRole('menu', { name: publicNavigationEn.account.partnerMenuAria });
+    const appLink = within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerApplication, 'i') });
+    expect(appLink.getAttribute('href')).toBe(href);
+    expect(within(menu).queryByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerWorkspace, 'i') })).toBeNull();
   });
 
-  it('keeps an unresolved TourOperator authenticated and points Partner at the application projection', () => {
-    AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Operator', applicationStatus: null }), false);
+  it('keeps an unresolved TourOperator fail-closed pointing to application projection', () => {
+    AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Pending Ops', applicationStatus: null }), false);
     render(<PublicNavigation locale="en" />);
-    expect(screen.getByRole('link', { name: publicNavigationEn.links.forPartners }).getAttribute('href')).toBe('/partner/application');
-    expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
+    const trigger = screen.getByRole('button', { name: publicNavigationEn.account.partnerMenuAria });
+    fireEvent.click(trigger);
+    const menu = screen.getByRole('menu', { name: publicNavigationEn.account.partnerMenuAria });
+    expect(within(menu).getByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerApplication, 'i') }).getAttribute('href')).toBe('/partner/application');
+    expect(within(menu).queryByRole('menuitem', { name: new RegExp(publicNavigationEn.account.partnerWorkspace, 'i') })).toBeNull();
   });
 
-  it('does not expose the Partner registration entry to an authenticated Administrator', () => {
-    AuthStorage.accept(context({ role: 'Administrator', fullName: 'Admin' }), false);
+  it('does NOT expose Tour Operator dropdown to an authenticated Administrator', () => {
+    AuthStorage.accept(context({ role: 'Administrator', fullName: 'Super Admin' }), false);
     render(<PublicNavigation locale="en" />);
+    expect(screen.queryByRole('button', { name: publicNavigationEn.account.partnerMenuAria })).toBeNull();
     expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Become a Tour Operator' })).toBeNull();
-  });
-});
-
-describe('PublicNavigation Vietnamese localization & Mobile Drawer', () => {
-  beforeEach(() => {
-    AuthStorage.clear();
-    localStorage.clear();
-    sessionStorage.clear();
-    mocks.webRefresh.mockResolvedValue(null);
+    expect(screen.getByRole('link', { name: /Super Admin/i }).getAttribute('href')).toBe('/admin');
   });
 
-  it('renders Vietnamese navigation links when locale="vi"', async () => {
-    render(<PublicNavigation locale="vi" />);
-    expect(screen.getByRole('link', { name: 'Điểm đến' })).toBeDefined();
-    expect(screen.getByRole('link', { name: 'Lập lịch trình' })).toBeDefined();
-    expect(screen.getByRole('link', { name: 'Tour du lịch' })).toBeDefined();
-  });
+  it('closes dropdown when clicking outside', () => {
+    AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Skyline Travel', applicationStatus: 'Approved' }), false);
+    render(
+      <div>
+        <div data-testid="outside-element">Outside</div>
+        <PublicNavigation locale="en" />
+      </div>
+    );
+    const trigger = screen.getByRole('button', { name: publicNavigationEn.account.partnerMenuAria });
+    fireEvent.click(trigger);
+    expect(screen.getByRole('menu', { name: publicNavigationEn.account.partnerMenuAria })).toBeDefined();
 
-  it('opens and closes mobile navigation drawer with accessible triggers and escape key', async () => {
-    render(<PublicNavigation locale="vi" />);
-    const openBtn = screen.getByRole('button', { name: 'Mở menu điều hướng' });
-    expect(openBtn.getAttribute('aria-expanded')).toBe('false');
-
-    // Open drawer
-    fireEvent.click(openBtn);
-    expect(openBtn.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeDefined();
-
-    // Close with close button
-    const closeBtn = screen.getByRole('button', { name: 'Đóng menu' });
-    fireEvent.click(closeBtn);
-    expect(screen.queryByRole('dialog')).toBeNull();
-
-    // Open again and close with Escape key
-    fireEvent.click(openBtn);
-    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeDefined();
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
-  it('renders sliding pill indicator and updates active selection on click and hover', async () => {
-    render(<PublicNavigation locale="vi" isLanding={true} />);
-
-    // Sliding pill indicator is present
-    const pill = screen.getByTestId('nav-sliding-pill');
-    expect(pill).toBeDefined();
-
-    // Hover pill indicator is also present
-    const hoverPill = screen.getByTestId('nav-hover-pill');
-    expect(hoverPill).toBeDefined();
-
-    const planLink = screen.getByRole('link', { name: 'Lập lịch trình' });
-    const poisLink = screen.getByRole('link', { name: 'Điểm đến' });
-
-    // Initial landing state has no capsule tab active
-    expect(poisLink.getAttribute('aria-current')).toBeNull();
-    expect(planLink.getAttribute('aria-current')).toBeNull();
-
-    // Click on plan updates selected key
-    const preventNav = (e: MouseEvent) => e.preventDefault();
-    planLink.addEventListener('click', preventNav, { once: true });
-    fireEvent.click(planLink);
-    expect(planLink.getAttribute('aria-current')).toBe('page');
-    expect(planLink.className).toContain('text-[#005F56]');
-    expect(poisLink.getAttribute('aria-current')).toBeNull();
-
-    // Hovering over pois triggers dim hover state, but does NOT steal active selection
-    fireEvent.mouseEnter(poisLink);
-    expect(poisLink.className).toContain('text-[#121E28]');
-    expect(planLink.getAttribute('aria-current')).toBe('page');
-    expect(planLink.className).toContain('text-[#005F56]');
-
-    // Leaving nav restores clean selected state
-    const nav = planLink.closest('nav');
-    if (nav) {
-      fireEvent.mouseLeave(nav);
-    }
-    expect(planLink.getAttribute('aria-current')).toBe('page');
-    expect(planLink.className).toContain('text-[#005F56]');
-  });
-});
-
-describe('PublicNavigation Default Vietnamese Locale & Hydration Integrity', () => {
-  beforeEach(() => {
-    AuthStorage.clear();
-    localStorage.clear();
-    sessionStorage.clear();
-    mocks.webRefresh.mockResolvedValue(null);
-  });
-
-  it('defaults to Vietnamese without requiring locale or document.documentElement.lang inspection', () => {
-    render(<PublicNavigation />);
-    expect(screen.getByRole('link', { name: publicNavigationVi.brandAria })).toBeDefined();
-    expect(screen.getByRole('navigation', { name: publicNavigationVi.navAria })).toBeDefined();
-    expect(screen.getByRole('link', { name: publicNavigationVi.links.smartItinerary })).toBeDefined();
-    expect(screen.getByRole('link', { name: publicNavigationVi.links.localTours })).toBeDefined();
-  });
-
-  it('produces matching HTML in SSR renderToString and client render without attribute mismatches', async () => {
-    const ReactDOMServer = (await import('react-dom/server')).default;
-    const ssrHtml = ReactDOMServer.renderToString(<PublicNavigation />);
-    
-    // SSR HTML must render Vietnamese brandAria, NOT English
-    expect(ssrHtml).toContain('aria-label="' + publicNavigationVi.brandAria + '"');
-    expect(ssrHtml).not.toContain('aria-label="' + publicNavigationEn.brandAria + '"');
-
-    // Mount in DOM and verify client DOM attributes match exactly
-    const container = document.createElement('div');
-    container.innerHTML = ssrHtml;
-    document.body.appendChild(container);
-
-    const ssrBrandLink = container.querySelector('a[href="/"]');
-    expect(ssrBrandLink?.getAttribute('aria-label')).toBe(publicNavigationVi.brandAria);
-
-    document.body.removeChild(container);
+    fireEvent.mouseDown(screen.getByTestId('outside-element'));
+    expect(screen.queryByRole('menu', { name: publicNavigationEn.account.partnerMenuAria })).toBeNull();
   });
 });

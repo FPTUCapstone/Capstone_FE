@@ -1,12 +1,11 @@
 /**
  * Shared Vietnamese resource strings for PublicNavigation.
- * Aligns with publicNavigationEn structure for seamless localization.
  */
 export const publicNavigationVi = {
   brandAria: 'Trang chủ TripMate',
-  navAria: 'Điều hướng công cộng',
+  navAria: 'Điều hướng công khai',
   links: {
-    explore: 'Điểm đến',
+    explore: 'Khám phá',
     destinations: 'Điểm đến',
     smartItinerary: 'Lập lịch trình',
     myItineraries: 'Lịch trình của tôi',
@@ -16,23 +15,29 @@ export const publicNavigationVi = {
   },
   account: {
     profileAria: 'Tài khoản và hồ sơ',
-    restoringAria: 'Đang khôi phục phiên',
-    restoringSrText: 'Đang khôi phục phiên…',
+    restoringAria: 'Đang khôi phục phiên làm việc',
+    restoringSrText: 'Đang khôi phục phiên làm việc…',
     register: 'Đăng ký',
     signIn: 'Đăng nhập',
-    quickPlan: 'Lên kế hoạch ngay',
-    mobilePlan: 'Lập lịch',
+    partnerWorkspace: 'Quản lý đối tác',
+    partnerProfile: 'Hồ sơ doanh nghiệp',
+    partnerApplication: 'Hồ sơ đối tác',
+    partnerMenuAria: 'Menu tài khoản đối tác',
+    logOut: 'Đăng xuất',
+    operatorRoleBadge: 'Đối tác',
   },
   drawer: {
     openAria: 'Mở menu điều hướng',
     closeAria: 'Đóng menu',
     title: 'Menu',
-    navAria: 'Menu điều hướng',
-    poisDesc: 'Kho danh thắng & tọa độ danh lam',
-    planDesc: 'Tối ưu nhịp sinh học & giờ mở cửa',
+    navAria: 'Menu điều hướng di động',
+    poisDesc: 'Kho danh thắng & toạ độ danh lam',
+    planDesc: 'Tối ưu nhịp sinh học & lịch trình',
     toursDesc: 'Trải nghiệm có kiểm duyệt & bảo chứng',
+    weatherDesc: 'Cứu nguy lộ trình khi mưa bão',
+    destinationsDesc: 'Khám phá Đà Nẵng, Hội An, Huế',
     myItinerariesDesc: 'Hành trình đã lưu',
-    partnerDesc: 'Cổng đăng ký & Quản trị lữ hành',
+    partnerDesc: 'Cổng đăng ký & Quản trị đối tác',
   },
 } as const;
 
