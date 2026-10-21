@@ -102,15 +102,15 @@ describe('POI API response parsing', () => {
   });
 });
 
-describe('POI API fallback to sample fixtures', () => {
+describe('POI API error propagation and explicit demo isolation', () => {
   const originalFetch = global.fetch;
-
   afterEach(() => {
     global.fetch = originalFetch;
     delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    vi.unstubAllEnvs();
   });
 
-  it('falls back to sample POIs when API returns 502/503 service unavailable', async () => {
+  it('propagates 502/503 service unavailable as PoiApiError instead of returning fake fixtures', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 503,
@@ -118,14 +118,10 @@ describe('POI API fallback to sample fixtures', () => {
       json: async () => ({ status: 503, title: 'Dịch vụ khám phá chưa được cấu hình.' }),
     });
 
-    const res = await fetchPois(new URLSearchParams());
-    expect(res.items.length).toBeGreaterThanOrEqual(1);
-    expect(res.totalCount).toBeGreaterThanOrEqual(1);
-    expect(res.items[0].name).toBeTruthy();
-    expect(res.items[0].latitude).toBeGreaterThan(15);
+    await expect(fetchPois(new URLSearchParams())).rejects.toThrow();
   });
 
-  it('falls back to sample POI detail when detail API returns 502/503', async () => {
+  it('propagates 502 Bad Gateway on detail request as PoiApiError', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 502,
@@ -133,10 +129,48 @@ describe('POI API fallback to sample fixtures', () => {
       json: async () => ({ status: 502, title: 'Không thể kết nối máy chủ khám phá.' }),
     });
 
+    await expect(fetchPoiDetail('1')).rejects.toThrow();
+  });
+
+  it('propagates network failure as error without silently substituting fixtures', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(fetchPois(new URLSearchParams())).rejects.toThrow('Không thể kết nối máy chủ khám phá.');
+    await expect(fetchPoiDetail('1')).rejects.toThrow('Không thể kết nối máy chủ khám phá.');
+  });
+
+  it('propagates AbortError without converting to sample results', async () => {
+    const abortErr = new DOMException('The user aborted a request.', 'AbortError');
+    global.fetch = vi.fn().mockRejectedValue(abortErr);
+
+    await expect(fetchPois(new URLSearchParams())).rejects.toThrow('The user aborted a request.');
+  });
+
+  it('returns demo fixtures in development mode only when NEXT_PUBLIC_ENABLE_DEMO_FIXTURES is explicitly true', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+
+    const paged = await fetchPois(new URLSearchParams());
+    expect(paged.items.length).toBeGreaterThan(0);
+    expect(paged.items[0].name).toBeTruthy();
+
     const detail = await fetchPoiDetail('1');
-    expect(detail).not.toBeNull();
     expect(detail.id).toBe(1);
     expect(detail.name).toBe('Bãi biển Mỹ Khê');
-    expect(detail.photos).toHaveLength(5);
+  });
+
+  it('strictly ignores NEXT_PUBLIC_ENABLE_DEMO_FIXTURES in production mode', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      headers: { get: () => 'application/problem+json' },
+      json: async () => ({ status: 503, title: 'Dịch vụ khám phá chưa được cấu hình.' }),
+    });
+
+    await expect(fetchPois(new URLSearchParams())).rejects.toThrow();
+    await expect(fetchPoiDetail('1')).rejects.toThrow();
   });
 });
