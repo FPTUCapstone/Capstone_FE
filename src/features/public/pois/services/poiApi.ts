@@ -192,44 +192,26 @@ async function requestJson(path: string, signal?: AbortSignal): Promise<unknown>
 
 import { getSamplePagedPois, getSamplePoiDetail } from '../data/samplePoiFixtures';
 
+function isDemoFixturesEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  return process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
+}
+
 export async function fetchPois(query: URLSearchParams, signal?: AbortSignal): Promise<PagedPois> {
-  const forceDemo = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
-  if (forceDemo) {
+  if (isDemoFixturesEnabled()) {
     return getSamplePagedPois(query);
   }
 
-  try {
-    return parsePagedPois(await requestJson(`/api/pois?${query.toString()}`, signal));
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    if (
-      error instanceof PoiApiError &&
-      (error.status === 502 || error.status === 503 || error.status === 0)
-    ) {
-      return getSamplePagedPois(query);
-    }
-    throw error;
-  }
+  return parsePagedPois(await requestJson(`/api/pois?${query.toString()}`, signal));
 }
 
 export async function fetchPoiDetail(id: string, signal?: AbortSignal): Promise<PoiDetail> {
-  const forceDemo = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
-  if (forceDemo) {
+  if (isDemoFixturesEnabled()) {
     const sample = getSamplePoiDetail(id);
     if (sample) return sample;
   }
 
-  try {
-    return parsePoiDetail(await requestJson(`/api/pois/${encodeURIComponent(id)}`, signal));
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    if (
-      error instanceof PoiApiError &&
-      (error.status === 502 || error.status === 503 || error.status === 0)
-    ) {
-      const sample = getSamplePoiDetail(id);
-      if (sample) return sample;
-    }
-    throw error;
-  }
+  return parsePoiDetail(await requestJson(`/api/pois/${encodeURIComponent(id)}`, signal));
 }
