@@ -175,4 +175,41 @@ describe('PoiMapboxView', () => {
     unmount();
     expect(mockMapRemove).toHaveBeenCalled();
   });
+
+  it('renders malicious strings strictly as plain text without DOM XSS injection', () => {
+    const maliciousItems: PoiSummary[] = [
+      {
+        id: 999,
+        name: '<img src="x" onerror="window.__xssInjected=true">Tên Độc Hại',
+        categoryId: 1,
+        categoryName: '<script>window.__scriptInjected=true</script>Danh Mục Độc',
+        latitude: 16.05,
+        longitude: 108.24,
+        address: '"><svg onload="window.__svgInjected=true">Địa Chỉ Độc',
+        indoorOutdoor: 'Outdoor',
+        averageVisitDurationMinutes: 60,
+        hasShelter: false,
+        averageRating: 4.5,
+        reviewCount: 10,
+        thumbnailUrl: null,
+        distanceKm: 1.0,
+        isOpenNow: true,
+      },
+    ];
+
+    render(<PoiMapboxView items={maliciousItems} selectedId={999} onSelectPoi={vi.fn()} />);
+
+    expect(markerElements.length).toBe(1);
+    const markerEl = markerElements[0];
+
+    // Assert no injected executable DOM nodes
+    expect(markerEl.querySelector('img[src="x"]')).toBeNull();
+    expect(markerEl.querySelector('script')).toBeNull();
+    expect(markerEl.querySelector('svg[onload]')).toBeNull();
+
+    // Assert malicious payload strings are preserved safely as textContent
+    expect(markerEl.textContent).toContain('<img src="x" onerror="window.__xssInjected=true">Tên Độc Hại');
+    expect(markerEl.textContent).toContain('<script>window.__scriptInjected=true</script>Danh Mục Độc');
+    expect(markerEl.textContent).toContain('"><svg onload="window.__svgInjected=true">Địa Chỉ Độc');
+  });
 });
