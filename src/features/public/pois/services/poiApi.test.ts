@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { parsePagedPois, parsePoiDetail } from './poiApi';
+import { fetchPoiDetail, fetchPois, parsePagedPois, parsePoiDetail } from './poiApi';
 
 describe('POI API response parsing', () => {
   it('accepts nullable list fields without inventing values', () => {
@@ -99,5 +99,44 @@ describe('POI API response parsing', () => {
     expect(legacy.costKind).toBeNull();
 
     expect(() => parsePoiDetail({ ...base, estimatedVisitCost: '40000' })).toThrow();
+  });
+});
+
+describe('POI API fallback to sample fixtures', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+  });
+
+  it('falls back to sample POIs when API returns 502/503 service unavailable', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      headers: { get: () => 'application/problem+json' },
+      json: async () => ({ status: 503, title: 'Dịch vụ khám phá chưa được cấu hình.' }),
+    });
+
+    const res = await fetchPois(new URLSearchParams());
+    expect(res.items.length).toBeGreaterThanOrEqual(1);
+    expect(res.totalCount).toBeGreaterThanOrEqual(1);
+    expect(res.items[0].name).toBeTruthy();
+    expect(res.items[0].latitude).toBeGreaterThan(15);
+  });
+
+  it('falls back to sample POI detail when detail API returns 502/503', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      headers: { get: () => 'application/problem+json' },
+      json: async () => ({ status: 502, title: 'Không thể kết nối máy chủ khám phá.' }),
+    });
+
+    const detail = await fetchPoiDetail('1');
+    expect(detail).not.toBeNull();
+    expect(detail.id).toBe(1);
+    expect(detail.name).toBe('Bãi biển Mỹ Khê');
+    expect(detail.photos).toHaveLength(5);
   });
 });

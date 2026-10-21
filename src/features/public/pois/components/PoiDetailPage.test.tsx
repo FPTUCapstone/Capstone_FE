@@ -151,4 +151,28 @@ describe('PoiDetailPage', () => {
     fireEvent.click(backBtn);
     expect(back).toHaveBeenCalled();
   });
+  it('renders Mapbox geographic map and itinerary reservation card', async () => {
+    render(<PoiDetailPage id="42" />);
+    await screen.findByRole('heading', { name: 'Ngũ Hành Sơn' });
+
+    expect(screen.getByText('Bản đồ vị trí (Mapbox)')).toBeTruthy();
+    expect(screen.getByText('16.003890, 108.264170')).toBeTruthy();
+    expect(screen.getByText('Lập lịch trình cùng địa điểm này')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Lập lịch trình/i }).getAttribute('href')).toBe('/plan');
+  });
+
+  it('copies coordinates to clipboard when copy button is clicked', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(<PoiDetailPage id="42" />);
+    await screen.findByRole('heading', { name: 'Ngũ Hành Sơn' });
+
+    const copyBtn = screen.getByRole('button', { name: 'Sao chép tọa độ' });
+    fireEvent.click(copyBtn);
+
+    expect(writeText).toHaveBeenCalledWith('16.003890, 108.264170');
+  });
 });
