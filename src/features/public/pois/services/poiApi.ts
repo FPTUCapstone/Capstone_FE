@@ -190,10 +190,46 @@ async function requestJson(path: string, signal?: AbortSignal): Promise<unknown>
   return body;
 }
 
+import { getSamplePagedPois, getSamplePoiDetail } from '../data/samplePoiFixtures';
+
 export async function fetchPois(query: URLSearchParams, signal?: AbortSignal): Promise<PagedPois> {
-  return parsePagedPois(await requestJson(`/api/pois?${query.toString()}`, signal));
+  const forceDemo = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
+  if (forceDemo) {
+    return getSamplePagedPois(query);
+  }
+
+  try {
+    return parsePagedPois(await requestJson(`/api/pois?${query.toString()}`, signal));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    if (
+      error instanceof PoiApiError &&
+      (error.status === 502 || error.status === 503 || error.status === 0)
+    ) {
+      return getSamplePagedPois(query);
+    }
+    throw error;
+  }
 }
 
 export async function fetchPoiDetail(id: string, signal?: AbortSignal): Promise<PoiDetail> {
-  return parsePoiDetail(await requestJson(`/api/pois/${encodeURIComponent(id)}`, signal));
+  const forceDemo = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
+  if (forceDemo) {
+    const sample = getSamplePoiDetail(id);
+    if (sample) return sample;
+  }
+
+  try {
+    return parsePoiDetail(await requestJson(`/api/pois/${encodeURIComponent(id)}`, signal));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    if (
+      error instanceof PoiApiError &&
+      (error.status === 502 || error.status === 503 || error.status === 0)
+    ) {
+      const sample = getSamplePoiDetail(id);
+      if (sample) return sample;
+    }
+    throw error;
+  }
 }

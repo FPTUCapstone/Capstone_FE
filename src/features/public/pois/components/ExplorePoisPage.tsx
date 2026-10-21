@@ -11,7 +11,8 @@ import { fetchPois } from '../services/poiApi';
 import { PoiApiError, type PagedPois, type PoiOrigin, type PoiSearchState } from '../types/poi';
 import { buildPoiQuery, parsePoiSearchState, toPublicUrlParams } from '../utils/poiQuery';
 import { PoiCard } from './PoiCard';
-import { PoiMapPreview } from './PoiMapPreview';
+import Link from 'next/link';
+import { PoiMapboxView } from './PoiMapboxView';
 import { PoiPagination } from './PoiPagination';
 import { PoiEmptyState, PoiErrorState, PoiListSkeleton } from './PoiStates';
 
@@ -37,6 +38,7 @@ export function ExplorePoisPage() {
   const [error, setError] = useState<'network' | null>(null);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [requestVersion, setRequestVersion] = useState(0);
+  const [selectedPoiId, setSelectedPoiId] = useState<number | null>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -125,18 +127,28 @@ export function ExplorePoisPage() {
     ? 'Từ khóa tìm kiếm không được vượt quá 200 ký tự.'
     : null;
 
+  const effectiveSelectedId = (selectedPoiId !== null && data?.items.some((p) => p.id === selectedPoiId))
+    ? selectedPoiId
+    : (data?.items[0]?.id ?? null);
+
   return (
     <div className="min-h-screen bg-[#f3f6f7] text-[#00152a]" lang="vi">
       <main>
-        <section className="border-b border-[#d7e0e3] bg-[#001f35] px-4 py-10 text-white sm:px-8 sm:py-12">
+        <section className="border-b border-[#d7e0e3] bg-[#001f35] px-4 py-6 text-white sm:px-8 sm:py-8">
           <div className="mx-auto max-w-7xl">
-            <p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#7ce6d9]">Khám phá miền Trung</p>
-            <div className="mt-3 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <nav aria-label="Đường dẫn điều hướng" className="mb-2 text-xs font-semibold text-[#8eb0bc]">
+              <Link href="/" className="hover:text-white transition">Trang chủ</Link>{' '}
+              <span aria-hidden="true">/</span>{' '}
+              <span aria-current="page" className="text-white">Khám phá địa điểm</span>
+            </nav>
+            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
               <div>
-                <h1 className="text-3xl font-black tracking-[-.035em] sm:text-4xl lg:text-5xl">Khám phá địa điểm tham quan</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#c7dce5] sm:text-base">Tìm các điểm đến đang hoạt động, lọc theo nhu cầu và xem vị trí minh họa trước khi lên đường.</p>
+                <h1 className="text-2xl font-black tracking-[-.035em] sm:text-3xl lg:text-4xl text-white">Khám phá địa điểm</h1>
+                <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-[#c7dce5] sm:text-sm">
+                  Tìm kiếm và định vị các điểm tham quan đang hoạt động, lọc theo nhu cầu và xem trực tiếp trên bản đồ địa lý Mapbox.
+                </p>
               </div>
-              <div className="inline-flex w-fit items-center rounded-full border border-[#3a6572] bg-white/10 px-4 py-2 text-sm font-bold text-[#d8f3ef]">
+              <div className="inline-flex w-fit items-center rounded-full border border-[#3a6572] bg-white/10 px-3.5 py-1.5 text-xs font-bold text-[#d8f3ef]">
                 {data ? `${data.totalCount} địa điểm phù hợp` : 'Đang cập nhật dữ liệu'}
               </div>
             </div>
@@ -243,7 +255,7 @@ export function ExplorePoisPage() {
             ))}
           </div>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,.92fr)] xl:gap-8">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,42fr)_minmax(0,58fr)] xl:gap-8">
             <section className={`${viewMode === 'list' ? 'block' : 'hidden'} min-w-0 lg:block`} aria-label="Danh sách địa điểm">
               <div className="mb-4 flex items-end justify-between gap-4">
                 <div>
@@ -260,7 +272,14 @@ export function ExplorePoisPage() {
               {!loading && !error && data?.totalCount === 0 ? <PoiEmptyState onReset={resetFilters} /> : null}
               {data && data.items.length > 0 ? (
                 <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-1">
-                  {data.items.map((poi) => <PoiCard key={poi.id} poi={poi} />)}
+                  {data.items.map((poi) => (
+                    <PoiCard
+                      key={poi.id}
+                      poi={poi}
+                      isSelected={poi.id === effectiveSelectedId}
+                      onSelect={() => setSelectedPoiId(poi.id)}
+                    />
+                  ))}
                   <div className="rounded-2xl border border-[#d8e1e4] bg-white px-4 py-4 md:col-span-2 lg:col-span-1">
                     <p className="mb-4 text-center text-sm font-semibold text-[#56666e]">Đang hiển thị {resultRange(data)}</p>
                     <PoiPagination page={data.page} totalPages={data.totalPages} onPageChange={(page) => updateFilters({ page })} />
@@ -269,10 +288,14 @@ export function ExplorePoisPage() {
               ) : null}
             </section>
 
-            <aside className={`${viewMode === 'map' ? 'block' : 'hidden'} min-w-0 lg:block`} aria-label="Xem địa điểm trên bản đồ minh họa">
+            <aside className={`${viewMode === 'map' ? 'block' : 'hidden'} min-w-0 lg:block`} aria-label="Bản đồ địa lý khám phá địa điểm">
               <div className="lg:sticky lg:top-24">
-                <PoiMapPreview items={data?.items ?? []} />
-                <p className="mt-3 text-center text-xs leading-relaxed text-[#66767d]">Vị trí được minh họa theo tọa độ của các địa điểm trên trang hiện tại.</p>
+                <PoiMapboxView
+                  items={data?.items ?? []}
+                  selectedId={effectiveSelectedId}
+                  onSelectPoi={setSelectedPoiId}
+                />
+                <p className="mt-3 text-center text-xs leading-relaxed text-[#66767d]">Bản đồ hiển thị tọa độ địa lý thực tế của các địa điểm trên trang hiện tại qua Mapbox.</p>
                 {data ? (
                   <div className="mt-4 lg:hidden">
                     <PoiPagination page={data.page} totalPages={data.totalPages} onPageChange={(page) => updateFilters({ page })} />
