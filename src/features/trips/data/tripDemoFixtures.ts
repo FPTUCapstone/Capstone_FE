@@ -1,4 +1,4 @@
-import type { TripCardDto, TripSummaryStatsDto } from '../types/tripHistory';
+import type { TripCardDto } from '../types/tripHistory';
 
 /**
  * EXPLICIT DEMO FIXTURES (DEMO_ONLY)
@@ -164,12 +164,3 @@ export const DEMO_TRIP_CARDS: TripCardDto[] = [
     isDemo: true,
   },
 ];
-
-export const DEMO_TRIP_SUMMARY: TripSummaryStatsDto = {
-  totalCompletedTrips: 3,
-  totalDistanceKm: 84,
-  totalVisitedPois: 12,
-  cspMatchRate: 98,
-  averageRating: 5.0,
-  isDemo: true,
-};

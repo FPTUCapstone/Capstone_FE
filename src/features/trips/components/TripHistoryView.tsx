@@ -2,162 +2,122 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
 import { tripReviewEn } from '../resources/en';
-import { getTripHistory } from '../services/tripHistoryApi';
-import type {
-  TripCardDto,
-  TripHistoryFilter,
-  TripState,
-  TripSummaryStatsDto,
-} from '../types/tripHistory';
-import { TripCard } from './TripCard';
+import { isTripDemoAllowedInCurrentEnv } from '../services/tripHistoryApi';
+import { fetchTripHistory, TripHistoryClientError } from '../services/tripHistoryClient';
+import {
+  TRIP_HISTORY_PAGE_SIZE,
+  type TripHistoryPage,
+  type TripListItem,
+  type TripTab,
+  type TripTypeFilter,
+} from '../types/tripHistoryContract';
+import { TripCard, type TripDetailFocus } from './TripCard';
+import { TripDetailDialog } from './TripDetailDialog';
 import { TripFiltersBar } from './TripFiltersBar';
 import { TripSummaryBanner } from './TripSummaryBanner';
-import { useModalFocusTrap } from './useModalFocusTrap';
+
+interface OpenDetail {
+  item: TripListItem;
+  focus?: TripDetailFocus;
+}
+
+const TAB_BUTTON =
+  'flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm';
 
 export function TripHistoryView() {
   const searchParams = useSearchParams();
   const isDemo = searchParams.get('demo') === '1';
+  // The page may ask for demo data; the client and this banner both honour it only where it is allowed.
+  const showDemoBanner = isDemo && isTripDemoAllowedInCurrentEnv();
 
-  const [activeTab, setActiveTab] = useState<TripState>('Completed');
-  const [tripType, setTripType] = useState<'ALL' | 'TourBooking' | 'SelfPlannedItinerary'>('ALL');
-  const [submittedSearchQuery, setSubmittedSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<TripTab>('Completed');
+  const [tripType, setTripType] = useState<TripTypeFilter>('All');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [page, setPage] = useState<number>(1);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const pageSize = 20;
+  const [page, setPage] = useState(1);
 
   const [loading, setLoading] = useState(true);
-  const [trips, setTrips] = useState<TripCardDto[]>([]);
-  const [summary, setSummary] = useState<TripSummaryStatsDto | undefined>(undefined);
-  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+  const [data, setData] = useState<TripHistoryPage | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Review modal state & accessibility focus trap
-  const [selectedReviewTrip, setSelectedReviewTrip] = useState<TripCardDto | null>(null);
-  const reviewCloseButtonRef = useRef<HTMLButtonElement>(null);
-
-  const reviewDialogRef = useModalFocusTrap<HTMLDivElement>({
-    isOpen: Boolean(selectedReviewTrip),
-    onClose: () => setSelectedReviewTrip(null),
-    initialFocusRef: reviewCloseButtonRef,
-  });
-
   const [retryIndex, setRetryIndex] = useState(0);
+  const [openDetail, setOpenDetail] = useState<OpenDetail | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
 
-    const filter: TripHistoryFilter = {
-      tab: activeTab,
-      tripType,
-      searchQuery: submittedSearchQuery,
-      fromDate,
-      toDate,
-      page,
-      pageSize,
-    };
-
-    getTripHistory(filter, { allowDemo: isDemo })
+    fetchTripHistory(
+      { tab: activeTab, tripType, fromDate: fromDate || undefined, toDate: toDate || undefined, page },
+      { allowDemo: isDemo, signal: controller.signal },
+    )
       .then((response) => {
-        if (!isMounted) return;
-        if (response.status === 'PENDING_BE_INTEGRATION') {
-          setPendingNotice(
-            response.message || tripReviewEn.bff.tripHistoryPendingDetail
-          );
-          setTrips([]);
-          setTotalCount(0);
-          setSummary(undefined);
-        } else {
-          setTrips(response.trips);
-          setTotalCount(response.totalCount);
-          setSummary(response.summary);
-          setPendingNotice(null);
-        }
+        if (controller.signal.aborted) return;
+        setData(response);
         setErrorMessage(null);
+        setLoading(false);
       })
-      .catch((err: unknown) => {
-        if (!isMounted) return;
-        setPendingNotice(null);
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setData(null);
         setErrorMessage(
-          err instanceof Error
-            ? err.message
-            : tripReviewEn.errors.systemError
+          error instanceof TripHistoryClientError ? error.message : tripReviewEn.errors.systemError,
         );
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       });
 
-    return () => {
-      isMounted = false;
-    };
-  }, [activeTab, tripType, submittedSearchQuery, fromDate, toDate, page, isDemo, retryIndex]);
+    // A newer request supersedes this one; its late answer must not overwrite the newer list.
+    return () => controller.abort();
+  }, [activeTab, tripType, fromDate, toDate, page, isDemo, retryIndex]);
+
+  const startLoading = () => {
+    setLoading(true);
+    setErrorMessage(null);
+  };
 
   const handleRetry = () => {
-    setLoading(true);
-    setErrorMessage(null);
-    setPendingNotice(null);
-    setRetryIndex((prev) => prev + 1);
+    startLoading();
+    setRetryIndex((value) => value + 1);
   };
 
-  const handleTabChange = (newTab: TripState) => {
-    if (newTab === activeTab) return;
-    setLoading(true);
-    setTrips([]);
-    setErrorMessage(null);
-    setPendingNotice(null);
-    setActiveTab(newTab);
+  const handleTabChange = (tab: TripTab) => {
+    if (tab === activeTab) return;
+    startLoading();
+    setData(null);
+    setActiveTab(tab);
     setPage(1);
   };
 
-  const handleTripTypeChange = (newType: 'ALL' | 'TourBooking' | 'SelfPlannedItinerary') => {
-    setLoading(true);
-    setTrips([]);
-    setErrorMessage(null);
-    setPendingNotice(null);
-    setTripType(newType);
+  const handleTripTypeChange = (type: TripTypeFilter) => {
+    startLoading();
+    setData(null);
+    setTripType(type);
     setPage(1);
   };
 
-  const handleSearchSubmit = (newQuery: string) => {
-    setLoading(true);
-    setTrips([]);
-    setErrorMessage(null);
-    setPendingNotice(null);
-    setSubmittedSearchQuery(newQuery);
+  const handleDateRangeChange = (from: string, to: string) => {
+    startLoading();
+    setData(null);
+    setFromDate(from);
+    setToDate(to);
     setPage(1);
   };
 
-  const handleDateRangeChange = (newFrom: string, newTo: string) => {
-    setLoading(true);
-    setTrips([]);
-    setErrorMessage(null);
-    setPendingNotice(null);
-    setFromDate(newFrom);
-    setToDate(newTo);
-    setPage(1);
+  const handlePageChange = (next: number) => {
+    startLoading();
+    setPage(next);
   };
 
-  const handlePageChange = (newPage: number) => {
-    setLoading(true);
-    setErrorMessage(null);
-    setPendingNotice(null);
-    setPage(newPage);
-  };
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const items = data?.items ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / TRIP_HISTORY_PAGE_SIZE));
 
   return (
     <div className="space-y-6">
-      {/* Demo Mode Alert Banner */}
-      {isDemo && (
+      {showDemoBanner && (
         <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-amber-600" aria-hidden="true">
@@ -168,21 +128,19 @@ export function TripHistoryView() {
               {tripReviewEn.demo.tripHistoryBannerText}
             </span>
           </div>
-          <span className="rounded bg-amber-200 px-2 py-0.5 font-bold uppercase tracking-wider text-amber-800 text-[10px]">
+          <span className="rounded bg-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
             {tripReviewEn.demo.badgeLabel}
           </span>
         </div>
       )}
 
-      {/* Segmented Tabs Control (Report 3 §3.7.1 & Stitch) */}
+      {/* Segmented tabs (Report 3 §3.7.1) */}
       <div className="flex items-center rounded-2xl bg-slate-200/70 p-1.5 shadow-2xs">
         <button
           type="button"
           onClick={() => handleTabChange('Upcoming')}
-          className={`flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm ${
-            activeTab === 'Upcoming'
-              ? 'bg-white text-[#00152A] shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} ${
+            activeTab === 'Upcoming' ? 'bg-white text-[#00152A] shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.upcoming}
@@ -191,16 +149,14 @@ export function TripHistoryView() {
         <button
           type="button"
           onClick={() => handleTabChange('Completed')}
-          className={`flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm flex ${
-            activeTab === 'Completed'
-              ? 'bg-white text-[#00152A] shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} flex items-center justify-center gap-1.5 ${
+            activeTab === 'Completed' ? 'bg-white text-[#00152A] shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <span className="inline-block h-2 w-2 rounded-full bg-[#006B5F]" />
           <span>{tripReviewEn.tripHistory.tabs.completed}</span>
           {activeTab === 'Completed' && totalCount > 0 && (
-            <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.2 text-[10px] font-extrabold text-[#006B5F]">
+            <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.5 text-[10px] font-extrabold text-[#006B5F]">
               {totalCount}
             </span>
           )}
@@ -209,83 +165,36 @@ export function TripHistoryView() {
         <button
           type="button"
           onClick={() => handleTabChange('Cancelled')}
-          className={`flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm ${
-            activeTab === 'Cancelled'
-              ? 'bg-white text-[#00152A] shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} ${
+            activeTab === 'Cancelled' ? 'bg-white text-[#00152A] shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.cancelled}
         </button>
       </div>
 
-      {/* KPI Summary Banner (Only when summary exists or completed tab) */}
-      {summary && <TripSummaryBanner summary={summary} isDemo={isDemo} />}
+      {data?.summary && <TripSummaryBanner summary={data.summary} isDemo={showDemoBanner} />}
 
-      {/* Filter and Search Bar */}
       <TripFiltersBar
         tripType={tripType}
         onTripTypeChange={handleTripTypeChange}
-        searchQuery={submittedSearchQuery}
-        onSearchSubmit={handleSearchSubmit}
         fromDate={fromDate}
         toDate={toDate}
         onDateRangeChange={handleDateRangeChange}
       />
 
-      {/* Main State Views */}
       {loading ? (
-        <div
-          aria-label={tripReviewEn.accessibility.loadingTripsAria}
-          className="space-y-4"
-        >
+        <div aria-label={tripReviewEn.accessibility.loadingTripsAria} className="space-y-4">
           <div className="h-32 animate-pulse rounded-2xl bg-slate-200" />
           <div className="h-40 animate-pulse rounded-2xl bg-slate-200" />
           <div className="h-40 animate-pulse rounded-2xl bg-slate-200" />
         </div>
-      ) : pendingNotice ? (
-        <div
-          role="status"
-          className="rounded-2xl border border-teal-200 bg-[#E6F4F1]/60 p-6 text-center text-slate-700 shadow-2xs sm:p-8"
-        >
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#006B5F] shadow-xs">
-            <span className="material-symbols-outlined text-[26px]" aria-hidden="true">
-              cloud_sync
-            </span>
-          </div>
-          <h3 className="text-base font-bold text-[#00152A]">
-            {tripReviewEn.tripHistory.pending.title}
-          </h3>
-          <p className="mx-auto mt-2 max-w-md text-xs text-slate-600 leading-relaxed">
-            {pendingNotice}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              {tripReviewEn.actions.retryConnection}
-            </button>
-            <Link
-              href={ROUTES.plan}
-              className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
-            >
-              {tripReviewEn.actions.planNewItinerary}
-            </Link>
-          </div>
-        </div>
       ) : errorMessage ? (
-        <div
-          role="alert"
-          className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 sm:p-8"
-        >
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 sm:p-8">
           <span className="material-symbols-outlined mx-auto mb-2 text-[32px] text-rose-600" aria-hidden="true">
             error
           </span>
-          <h3 className="text-base font-bold text-rose-900">
-            {tripReviewEn.tripHistory.error.title}
-          </h3>
+          <h3 className="text-base font-bold text-rose-900">{tripReviewEn.tripHistory.error.title}</h3>
           <p className="mt-1 text-xs">{errorMessage}</p>
           <button
             type="button"
@@ -295,22 +204,15 @@ export function TripHistoryView() {
             {tripReviewEn.actions.retry}
           </button>
         </div>
-      ) : trips.length === 0 ? (
-        <div
-          role="status"
-          className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center sm:p-12"
-        >
+      ) : items.length === 0 ? (
+        <div role="status" className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center sm:p-12">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
             <span className="material-symbols-outlined text-[28px]" aria-hidden="true">
               luggage
             </span>
           </div>
-          <h3 className="text-base font-bold text-[#00152A]">
-            {tripReviewEn.tripHistory.empty.title}
-          </h3>
-          <p className="mt-1 text-xs text-slate-500">
-            {tripReviewEn.tripHistory.empty.description}
-          </p>
+          <h3 className="text-base font-bold text-[#00152A]">{tripReviewEn.tripHistory.empty.title}</h3>
+          <p className="mt-1 text-xs text-slate-500">{tripReviewEn.tripHistory.empty.description}</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={ROUTES.plan}
@@ -328,152 +230,78 @@ export function TripHistoryView() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
             <span>
               {tripReviewEn.tripHistory.showingPrefix}{' '}
-              <strong className="text-slate-800">{trips.length}</strong>{' '}
+              <strong className="text-slate-800">{items.length}</strong>{' '}
               {tripReviewEn.tripHistory.showingSeparator}{' '}
               <strong className="text-slate-800">{totalCount}</strong>{' '}
               {tripReviewEn.tripHistory.showingSuffix}
             </span>
-            <span className="text-[11px] text-slate-400">
-              {tripReviewEn.tripHistory.timezoneNotice}
-            </span>
+            <span className="text-[11px] text-slate-400">{tripReviewEn.tripHistory.timezoneNotice}</span>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {trips.map((trip) => (
+            {items.map((item) => (
               <TripCard
-                key={trip.tripId}
-                trip={trip}
-                onViewReview={(t) => setSelectedReviewTrip(t)}
+                key={`${item.kind}:${item.id}`}
+                item={item}
+                onOpenDetail={(opened, focus) => setOpenDetail({ item: opened, focus })}
               />
             ))}
           </div>
 
-          {/* Pagination controls per CR-01 */}
-          {totalCount > 0 && (
-            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
-              <p className="text-xs text-slate-500">
-                {tripReviewEn.pagination.pagePrefix}{' '}
-                <span className="font-bold text-slate-800">{page}</span>{' '}
-                {tripReviewEn.pagination.pageSeparator}{' '}
-                <span className="font-bold text-slate-800">{totalPages}</span>{' '}
-                {tripReviewEn.pagination.totalTripsSuffix(totalCount)}
-              </p>
-              <div
-                className="flex items-center gap-1.5"
-                role="navigation"
-                aria-label={tripReviewEn.accessibility.paginationNavAria}
-              >
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(Math.max(1, page - 1))}
-                  disabled={page <= 1}
-                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label={tripReviewEn.accessibility.previousPageAria}
-                >
-                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-                  <span>{tripReviewEn.pagination.previous}</span>
-                </button>
-
-                <span className="px-2 text-xs font-bold text-slate-800">
-                  {page} / {totalPages}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
-                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label={tripReviewEn.accessibility.nextPageAria}
-                >
-                  <span>{tripReviewEn.pagination.next}</span>
-                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Submitted Review Modal */}
-      {selectedReviewTrip && (
-        <div
-          ref={reviewDialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="review-dialog-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
-        >
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  {tripReviewEn.dialogs.submittedReview.badge}
-                </span>
-                <h4 id="review-dialog-title" className="mt-1 text-base font-extrabold text-[#00152A]">
-                  {selectedReviewTrip.title}
-                </h4>
-              </div>
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+            <p className="text-xs text-slate-500">
+              {tripReviewEn.pagination.pagePrefix} <span className="font-bold text-slate-800">{page}</span>{' '}
+              {tripReviewEn.pagination.pageSeparator}{' '}
+              <span className="font-bold text-slate-800">{totalPages}</span>{' '}
+              {tripReviewEn.pagination.totalTripsSuffix(totalCount)}
+            </p>
+            <div
+              className="flex items-center gap-1.5"
+              role="navigation"
+              aria-label={tripReviewEn.accessibility.paginationNavAria}
+            >
               <button
-                ref={reviewCloseButtonRef}
                 type="button"
-                onClick={() => setSelectedReviewTrip(null)}
-                className="text-slate-400 hover:text-slate-600"
-                aria-label={tripReviewEn.accessibility.closeDialogAria}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
+                disabled={page <= 1}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={tripReviewEn.accessibility.previousPageAria}
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                  chevron_left
+                </span>
+                <span>{tripReviewEn.pagination.previous}</span>
               </button>
-            </div>
-
-            <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4 text-xs">
-              <div className="flex items-center gap-1 text-amber-500 font-bold">
-                <span className="text-sm">★ {selectedReviewTrip.rating}.0 / 5.0</span>
-                <span className="text-slate-500 font-normal">
-                  {tripReviewEn.dialogs.submittedReview.ratingCaption}
-                </span>
-              </div>
-
-              {selectedReviewTrip.reviewComment && (
-                <div>
-                  <p className="font-semibold text-slate-700">
-                    {tripReviewEn.dialogs.submittedReview.commentHeading}
-                  </p>
-                  <p className="mt-1 text-slate-600 leading-relaxed italic">
-                    &ldquo;{selectedReviewTrip.reviewComment}&rdquo;
-                  </p>
-                </div>
-              )}
-
-              {selectedReviewTrip.reviewedAtUtc && (
-                <p className="text-[11px] text-slate-400">
-                  {tripReviewEn.dialogs.submittedReview.submittedAt(
-                    new Intl.DateTimeFormat('en-GB', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                      timeZone: 'Asia/Ho_Chi_Minh',
-                    }).format(new Date(selectedReviewTrip.reviewedAtUtc))
-                  )}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-5 flex justify-end">
+              <span className="px-2 text-xs font-bold text-slate-800">
+                {page} / {totalPages}
+              </span>
               <button
                 type="button"
-                onClick={() => setSelectedReviewTrip(null)}
-                className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+                disabled={page >= totalPages}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={tripReviewEn.accessibility.nextPageAria}
               >
-                {tripReviewEn.actions.close}
+                <span>{tripReviewEn.pagination.next}</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                  chevron_right
+                </span>
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {openDetail && (
+        <TripDetailDialog
+          item={openDetail.item}
+          focus={openDetail.focus}
+          allowDemo={isDemo}
+          onClose={() => setOpenDetail(null)}
+        />
       )}
     </div>
   );

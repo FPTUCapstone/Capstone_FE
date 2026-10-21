@@ -1,7 +1,7 @@
-import { handleTravelerTripListBffRequest } from '@/features/trips/services/tripReviewBff';
+import { proxyTripHistoryList } from '@/features/trips/services/tripHistoryProxy';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  return handleTravelerTripListBffRequest(request);
+  return proxyTripHistoryList(request);
 }
