@@ -38,43 +38,104 @@ function checkWebGLSupported(): boolean {
   return true;
 }
 
-function renderMarkerHtml(poi: PoiSummary, isSelected: boolean): string {
-  const ratingStr = poi.averageRating !== null ? `★ ${poi.averageRating.toFixed(1)}` : '';
-  const statusStr = poi.isOpenNow ? '● Đang mở cửa' : '○ Đã đóng';
-  const statusColor = poi.isOpenNow ? 'text-[#007d6e]' : 'text-[#68767c]';
+function buildMarkerContent(poi: PoiSummary, isSelected: boolean): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'poi-marker-container group relative flex items-center justify-center';
 
-  return `
-    <div class="poi-marker-container group relative flex items-center justify-center">
-      <!-- Hover Tooltip Annotation Badge -->
-      <div class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 w-max max-w-[260px] opacity-0 -translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto shadow-2xl">
-        <div class="rounded-xl border border-[#cfe1de] bg-white/98 p-3 shadow-xl backdrop-blur-xs text-left">
-          <div class="flex items-center gap-1.5 text-[10px] font-bold">
-            <span class="rounded-full bg-[#00152a] px-2 py-0.5 text-white">${poi.categoryName}</span>
-            ${ratingStr ? `<span class="text-[#e65100] font-black">${ratingStr}</span>` : ''}
-            <span class="${statusColor}">${statusStr}</span>
-          </div>
-          <p class="mt-1.5 text-xs font-black text-[#00152a] leading-tight line-clamp-1">${poi.name}</p>
-          ${poi.address ? `<p class="mt-0.5 text-[11px] text-[#55666e] line-clamp-1">${poi.address}</p>` : ''}
-          <div class="mt-1.5 flex items-center justify-between text-[10px] text-[#007d6e] font-extrabold border-t border-[#e8eff1] pt-1.5">
-            <span>Nhấp để xem chi tiết</span>
-            <span>→</span>
-          </div>
-        </div>
-        <div class="mx-auto h-0 w-0 border-x-5 border-t-5 border-x-transparent border-t-[#cfe1de]"></div>
-      </div>
+  // Hover Tooltip Annotation Badge
+  const tooltipWrapper = document.createElement('div');
+  tooltipWrapper.className =
+    'pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 w-max max-w-[260px] opacity-0 -translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto shadow-2xl';
 
-      <!-- Nested Pin Body: Scales smoothly without touching Mapbox parent transform -->
-      <div class="flex items-center justify-center rounded-full border-2 border-white shadow-lg transition-all duration-200 cursor-pointer ${
-        isSelected
-          ? 'bg-[#e65100] scale-125 z-30 w-10 h-10 ring-4 ring-[#e65100]/30'
-          : 'bg-[#007d6e] hover:scale-115 z-10 w-8 h-8 hover:bg-[#006b5f]'
-      }">
-        <svg viewBox="0 0 24 24" class="w-4 h-4 text-white fill-current pointer-events-none" aria-hidden="true">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-        </svg>
-      </div>
-    </div>
-  `;
+  const tooltipCard = document.createElement('div');
+  tooltipCard.className =
+    'rounded-xl border border-[#cfe1de] bg-white/98 p-3 shadow-xl backdrop-blur-xs text-left';
+
+  // Category, Rating, Status Row
+  const headerRow = document.createElement('div');
+  headerRow.className = 'flex items-center gap-1.5 text-[10px] font-bold';
+
+  const categoryBadge = document.createElement('span');
+  categoryBadge.className = 'rounded-full bg-[#00152a] px-2 py-0.5 text-white';
+  categoryBadge.textContent = poi.categoryName;
+  headerRow.appendChild(categoryBadge);
+
+  if (poi.averageRating !== null) {
+    const ratingBadge = document.createElement('span');
+    ratingBadge.className = 'text-[#e65100] font-black';
+    ratingBadge.textContent = `★ ${poi.averageRating.toFixed(1)}`;
+    headerRow.appendChild(ratingBadge);
+  }
+
+  const statusBadge = document.createElement('span');
+  statusBadge.className = poi.isOpenNow ? 'text-[#007d6e]' : 'text-[#68767c]';
+  statusBadge.textContent = poi.isOpenNow ? '● Đang mở cửa' : '○ Đã đóng';
+  headerRow.appendChild(statusBadge);
+
+  tooltipCard.appendChild(headerRow);
+
+  // Safe POI Name text node
+  const nameEl = document.createElement('p');
+  nameEl.className = 'mt-1.5 text-xs font-black text-[#00152a] leading-tight line-clamp-1';
+  nameEl.textContent = poi.name;
+  tooltipCard.appendChild(nameEl);
+
+  // Safe Address text node (if present)
+  if (poi.address && poi.address.trim()) {
+    const addressEl = document.createElement('p');
+    addressEl.className = 'mt-0.5 text-[11px] text-[#55666e] line-clamp-1';
+    addressEl.textContent = poi.address;
+    tooltipCard.appendChild(addressEl);
+  }
+
+  // Action Cue Row
+  const footerRow = document.createElement('div');
+  footerRow.className =
+    'mt-1.5 flex items-center justify-between text-[10px] text-[#007d6e] font-extrabold border-t border-[#e8eff1] pt-1.5';
+
+  const footerText = document.createElement('span');
+  footerText.textContent = 'Nhấp để xem chi tiết';
+  const footerArrow = document.createElement('span');
+  footerArrow.textContent = '→';
+
+  footerRow.appendChild(footerText);
+  footerRow.appendChild(footerArrow);
+  tooltipCard.appendChild(footerRow);
+
+  tooltipWrapper.appendChild(tooltipCard);
+
+  // Tooltip triangle pointer
+  const arrowPointer = document.createElement('div');
+  arrowPointer.className =
+    'mx-auto h-0 w-0 border-x-5 border-t-5 border-x-transparent border-t-[#cfe1de]';
+  tooltipWrapper.appendChild(arrowPointer);
+
+  container.appendChild(tooltipWrapper);
+
+  // Nested Pin Body (SVG constructed via DOM APIs without untrusted markup)
+  const pinBody = document.createElement('div');
+  pinBody.className = `flex items-center justify-center rounded-full border-2 border-white shadow-lg transition-all duration-200 cursor-pointer ${
+    isSelected
+      ? 'bg-[#e65100] scale-125 z-30 w-10 h-10 ring-4 ring-[#e65100]/30'
+      : 'bg-[#007d6e] hover:scale-115 z-10 w-8 h-8 hover:bg-[#006b5f]'
+  }`;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'w-4 h-4 text-white fill-current pointer-events-none');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute(
+    'd',
+    'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'
+  );
+  svg.appendChild(path);
+  pinBody.appendChild(svg);
+
+  container.appendChild(pinBody);
+
+  return container;
 }
 
 export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewProps) {
@@ -207,7 +268,8 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
         const rootEl = existing.getElement();
         if (rootEl) {
           rootEl.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-          rootEl.innerHTML = renderMarkerHtml(poi, isSelected);
+          rootEl.setAttribute('aria-label', `${poi.name} - ${poi.categoryName}`);
+          rootEl.replaceChildren(buildMarkerContent(poi, isSelected));
         }
       } else {
         const rootEl = document.createElement('div');
@@ -217,7 +279,7 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
         rootEl.setAttribute('aria-label', `${poi.name} - ${poi.categoryName}`);
         rootEl.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
         rootEl.setAttribute('data-poi-id', String(poi.id));
-        rootEl.innerHTML = renderMarkerHtml(poi, isSelected);
+        rootEl.appendChild(buildMarkerContent(poi, isSelected));
 
         rootEl.addEventListener('click', (e) => {
           e.stopPropagation();

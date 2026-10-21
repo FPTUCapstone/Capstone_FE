@@ -90,13 +90,24 @@ export function PoiDetailMapboxView({
       rootEl.className = 'poi-detail-mapbox-marker-root cursor-pointer outline-none select-none';
       rootEl.setAttribute('role', 'img');
       rootEl.setAttribute('aria-label', `Vị trí ${name}`);
-      rootEl.innerHTML = `
-        <div class="flex items-center justify-center rounded-full border-3 border-white bg-[#007d6e] shadow-xl w-10 h-10 ring-4 ring-[#007d6e]/20 transition-transform duration-200 hover:scale-110 hover:bg-[#006b5f]">
-          <svg viewBox="0 0 24 24" class="w-5 h-5 text-white fill-current pointer-events-none" aria-hidden="true">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-          </svg>
-        </div>
-      `;
+
+      const pinBody = document.createElement('div');
+      pinBody.className =
+        'flex items-center justify-center rounded-full border-3 border-white bg-[#007d6e] shadow-xl w-10 h-10 ring-4 ring-[#007d6e]/20 transition-transform duration-200 hover:scale-110 hover:bg-[#006b5f]';
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('class', 'w-5 h-5 text-white fill-current pointer-events-none');
+      svg.setAttribute('aria-hidden', 'true');
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute(
+        'd',
+        'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'
+      );
+      svg.appendChild(path);
+      pinBody.appendChild(svg);
+      rootEl.appendChild(pinBody);
 
       const marker = new mapboxgl.Marker({ element: rootEl })
         .setLngLat([longitude, latitude])
