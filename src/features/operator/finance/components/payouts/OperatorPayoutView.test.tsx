@@ -4,13 +4,16 @@ import { OperatorPayoutView } from './OperatorPayoutView';
 import { resetDemoPayoutState } from '../../services/operatorPayoutService';
 
 let mockSearchParams = new URLSearchParams('demo=1');
+const mockRouterReplace = vi.fn();
+const mockRouterPush = vi.fn();
+// Next.js's real useRouter() returns a stable object across renders; this mock must too, or a
+// dependency on `router` in a hook (as redirectToSignInIfExpired has) retriggers its effect on
+// every render and loops forever.
+const mockRouter = { push: mockRouterPush, replace: mockRouterReplace };
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => mockSearchParams,
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-  }),
+  useRouter: () => mockRouter,
 }));
 
 vi.mock('@/features/auth/session/useWebSession', () => ({
@@ -31,6 +34,7 @@ describe('OperatorPayoutView (UC-46)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRouterReplace.mockClear();
     process.env = {
       ...originalEnv,
       NODE_ENV: 'test',
@@ -101,19 +105,85 @@ describe('OperatorPayoutView (UC-46)', () => {
     expect(septemberRow?.textContent).toMatch(/Still open/i);
   });
 
-  it('shows a per-section error with Retry when a section fails to load', async () => {
+  it('shows a per-section error with Retry when a section fails to load, instead of a false empty state', async () => {
     mockSearchParams = new URLSearchParams('');
     const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
     vi.stubGlobal('fetch', fetchMock);
 
     render(<OperatorPayoutView />);
 
-    // Production mode (no ?demo=1): all three sections hit the BFF, which fails here, so each
-    // section's service call catches it and returns an empty/default result — not an error
-    // banner, since the service never throws past itself. This confirms the empty state renders
-    // instead of crashing the page.
+    // Production mode (no ?demo=1): all four reads hit the BFF, which fails here. Each now throws
+    // a PayoutLoadError that the view's own catch block turns into an error banner with Retry —
+    // never a silently-empty table/balance/bank card, which would look identical to "nothing to
+    // pay out" when the real cause is a network or backend failure.
     await waitFor(() => {
-      expect(screen.getByText(/No settlement months available/i)).toBeDefined();
+      expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText(/No settlement months available/i)).toBeNull();
+    expect(screen.getAllByRole('button', { name: /Retry/i }).length).toBeGreaterThan(0);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('re-fetches months/balance/history after a failed cancel (409), not only after a successful one', async () => {
+    mockSearchParams = new URLSearchParams('');
+    let historyFetchCount = 0;
+    const historyItem = {
+      payoutCode: 'PO-RACE-000001', periodCount: 1, periodStart: '2026-09-01', periodEnd: '2026-09-30',
+      payableNetAmount: 1_000_000, status: 'PendingReview', requestedAtUtc: '2026-10-01T00:00:00Z',
+      settledAtUtc: null, rejectionReason: null, cancellable: true,
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/cancel')) {
+        return new Response(JSON.stringify({ errorCode: 'PAYOUT_NOT_CANCELLABLE' }), { status: 409 });
+      }
+      if (url.includes('/settlement-months')) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes('/available-balance')) {
+        return new Response(JSON.stringify({
+          periodCount: 0, paymentsReceived: 0, discountsGiven: 0, refundedAmount: 0, netSales: 0,
+          commissionAmount: 0, adjustmentsOutstanding: 0, payableNetAmount: 0,
+          requestable: false, blockReason: null, activePayoutCode: null,
+        }), { status: 200 });
+      }
+      if (url.includes('/bank-account')) {
+        return new Response(JSON.stringify({
+          bankName: null, accountHolderName: null, maskedAccountNumber: null, updatedAtUtc: null,
+        }), { status: 200 });
+      }
+      if (url.includes('/api/operator/payouts?')) {
+        historyFetchCount += 1;
+        return new Response(JSON.stringify({
+          items: [historyItem], page: 1, pageSize: 20, totalCount: 1, totalPages: 1,
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({}), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<OperatorPayoutView />);
+    await waitFor(() => expect(historyFetchCount).toBe(1));
+
+    fireEvent.click(screen.getByRole('button', { name: /Cancel Request/i }));
+    expect(await screen.findByRole('dialog')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Cancellation/i }));
+
+    await waitFor(() => expect(historyFetchCount).toBe(2));
+
+    vi.unstubAllGlobals();
+  });
+
+  it('redirects to sign-in when a section load gets a 401 (expired session), instead of showing an error banner', async () => {
+    mockSearchParams = new URLSearchParams('');
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<OperatorPayoutView />);
+
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in');
     });
 
     vi.unstubAllGlobals();

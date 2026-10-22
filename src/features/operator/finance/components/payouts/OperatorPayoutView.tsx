@@ -1,14 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import { ROUTES } from '@/lib/routes';
 import {
   cancelPayout,
   getAvailableBalance,
   getBeneficiaryBankAccount,
   getPayoutHistory,
   getSettlementMonths,
+  PayoutLoadError,
   requestPayout,
   updateBeneficiaryBankAccount,
 } from '../../services/operatorPayoutService';
@@ -53,6 +55,7 @@ const EMPTY_BALANCE: AvailableBalanceDto = {
 export function OperatorPayoutView() {
   const { context } = useWebSession();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const demoQuery = searchParams.get('demo') === '1';
   const isDemo = demoQuery && isFinanceDemoAllowedInCurrentEnv();
@@ -83,6 +86,20 @@ export function OperatorPayoutView() {
     setTimeout(() => setToastMessage(null), 5000);
   };
 
+  // A 401 means the session has expired server-side; every section would otherwise show its own
+  // "system error" banner for what is really one event, so this redirects once instead. Any other
+  // failure (403/500/network) is per-section — handled by the caller via its own error state.
+  const redirectToSignInIfExpired = useCallback(
+    (error: unknown): boolean => {
+      if (error instanceof PayoutLoadError && error.status === 401) {
+        router.replace(ROUTES.signIn);
+        return true;
+      }
+      return false;
+    },
+    [router]
+  );
+
   // These never set isLoading(true) themselves — only the handler/effect that triggers a load
   // does that (synchronously, outside any effect body), consistent with the OperatorRevenueView
   // pattern: effects may only set state after an await, never as the first synchronous act.
@@ -91,48 +108,52 @@ export function OperatorPayoutView() {
       const data = await getSettlementMonths(year, { isDemo, demoActorUserId: actorUserId });
       setMonths(data);
       setMonthsError(null);
-    } catch {
+    } catch (error) {
+      if (redirectToSignInIfExpired(error)) return;
       setMonthsError(financeEn.messages.MSG127);
     } finally {
       setIsLoadingMonths(false);
     }
-  }, [year, isDemo, actorUserId]);
+  }, [year, isDemo, actorUserId, redirectToSignInIfExpired]);
 
   const loadBalance = useCallback(async () => {
     try {
       const data = await getAvailableBalance({ isDemo, demoActorUserId: actorUserId });
       setBalance(data);
       setBalanceError(null);
-    } catch {
+    } catch (error) {
+      if (redirectToSignInIfExpired(error)) return;
       setBalanceError(financeEn.messages.MSG127);
     } finally {
       setIsLoadingBalance(false);
     }
-  }, [isDemo, actorUserId]);
+  }, [isDemo, actorUserId, redirectToSignInIfExpired]);
 
   const loadBank = useCallback(async () => {
     try {
       const data = await getBeneficiaryBankAccount({ isDemo, demoActorUserId: actorUserId });
       setBankInfo(data);
       setBankError(null);
-    } catch {
+    } catch (error) {
+      if (redirectToSignInIfExpired(error)) return;
       setBankError(financeEn.messages.MSG127);
     } finally {
       setIsLoadingBank(false);
     }
-  }, [isDemo, actorUserId]);
+  }, [isDemo, actorUserId, redirectToSignInIfExpired]);
 
   const loadHistory = useCallback(async () => {
     try {
       const data = await getPayoutHistory(1, 20, { isDemo, demoActorUserId: actorUserId });
       setHistory(data.items);
       setHistoryError(null);
-    } catch {
+    } catch (error) {
+      if (redirectToSignInIfExpired(error)) return;
       setHistoryError(financeEn.messages.MSG127);
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [isDemo, actorUserId]);
+  }, [isDemo, actorUserId, redirectToSignInIfExpired]);
 
   // The catch block in each load function only ever runs after its internal `await` settles
   // (there is no synchronous code before that await that could throw), so calling these from
@@ -176,8 +197,11 @@ export function OperatorPayoutView() {
     const result = await cancelPayout(payoutCode, { isDemo, demoActorUserId: actorUserId });
     if (result.success) {
       showToast(financeEn.messages.MSG129);
-      await Promise.all([loadMonths(), loadBalance(), loadHistory()]);
     }
+    // Always re-fetch, success or failure: a 409 PAYOUT_NOT_CANCELLABLE means Staff/Admin moved
+    // the request out from under the operator (e.g. approved it) while this dialog was open, so
+    // the stale row/dialog state must be replaced with what the server now has, not just on success.
+    await Promise.all([loadMonths(), loadBalance(), loadHistory()]);
     return { success: result.success, errorCode: result.errorCode };
   };
 

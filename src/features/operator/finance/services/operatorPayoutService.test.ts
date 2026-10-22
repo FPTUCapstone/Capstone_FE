@@ -5,6 +5,7 @@ import {
   getBeneficiaryBankAccount,
   getPayoutHistory,
   getSettlementMonths,
+  PayoutLoadError,
   requestPayout,
   resetDemoPayoutState,
   updateBeneficiaryBankAccount,
@@ -111,11 +112,26 @@ describe('operatorPayoutService (UC-46)', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/operator/payouts/PO-202608-000001/cancel', expect.objectContaining({ method: 'POST' }));
     });
 
-    it('returns empty results when fetch throws (network failure)', async () => {
+    it('throws a PayoutLoadError (not an empty result) when fetch rejects (network failure)', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
 
-      const months = await getSettlementMonths(2026, { isDemo: false });
-      expect(months).toEqual([]);
+      await expect(getSettlementMonths(2026, { isDemo: false })).rejects.toThrow(PayoutLoadError);
+    });
+
+    it('throws a PayoutLoadError carrying the status when the backend returns 401', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(getSettlementMonths(2026, { isDemo: false })).rejects.toMatchObject({ status: 401 });
+    });
+
+    it('throws a PayoutLoadError for the available-balance, bank-account, and history reads too', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 500 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(getAvailableBalance({ isDemo: false })).rejects.toThrow(PayoutLoadError);
+      await expect(getBeneficiaryBankAccount({ isDemo: false })).rejects.toThrow(PayoutLoadError);
+      await expect(getPayoutHistory(1, 20, { isDemo: false })).rejects.toThrow(PayoutLoadError);
     });
   });
 

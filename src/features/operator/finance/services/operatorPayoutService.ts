@@ -28,6 +28,23 @@ export interface OperatorPayoutServiceOptions {
   demoActorUserId?: number | string;
 }
 
+/**
+ * Thrown by the four read functions below on a non-ok response or a network failure, so a
+ * caller's load effect can distinguish "the backend said there is nothing" from "the request
+ * failed" instead of silently rendering an empty state on 401/403/500/network-down. `status` is
+ * the HTTP status when known (401/403 lets the caller redirect to sign-in), or null for a
+ * network-level failure.
+ */
+export class PayoutLoadError extends Error {
+  readonly status: number | null;
+
+  constructor(message: string, status: number | null) {
+    super(message);
+    this.name = 'PayoutLoadError';
+    this.status = status;
+  }
+}
+
 function isValidActor(id?: number | string): boolean {
   return id !== undefined && id !== null && String(id).trim().length > 0;
 }
@@ -70,10 +87,13 @@ export async function getSettlementMonths(
     try {
       const query = year ? `?year=${year}` : '';
       const response = await fetch(`/api/operator/payouts/settlement-months${query}`, { cache: 'no-store' });
-      if (!response.ok) return [];
+      if (!response.ok) throw new PayoutLoadError('Failed to load settlement months.', response.status);
       const body = await response.json();
       return Array.isArray(body) ? (body as SettlementMonthDto[]) : [];
-    } catch { return []; }
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading settlement months.', null);
+    }
   }
 
   if (!isValidActor(options.demoActorUserId)) return [];
@@ -98,9 +118,12 @@ export async function getBeneficiaryBankAccount(
   if (!isDemoActive) {
     try {
       const response = await fetch('/api/operator/payouts/bank-account', { cache: 'no-store' });
-      if (!response.ok) return empty;
+      if (!response.ok) throw new PayoutLoadError('Failed to load the beneficiary bank account.', response.status);
       return (await response.json()) as BeneficiaryBankAccountDto;
-    } catch { return empty; }
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading the beneficiary bank account.', null);
+    }
   }
 
   if (!isValidActor(options.demoActorUserId)) return empty;
@@ -170,9 +193,12 @@ export async function getAvailableBalance(
   if (!isDemoActive) {
     try {
       const response = await fetch('/api/operator/payouts/available-balance', { cache: 'no-store' });
-      if (!response.ok) return empty;
+      if (!response.ok) throw new PayoutLoadError('Failed to load the available balance.', response.status);
       return (await response.json()) as AvailableBalanceDto;
-    } catch { return empty; }
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading the available balance.', null);
+    }
   }
 
   if (!isValidActor(options.demoActorUserId)) return empty;
@@ -304,9 +330,12 @@ export async function getPayoutHistory(
   if (!isDemoActive) {
     try {
       const response = await fetch(`/api/operator/payouts?page=${page}&pageSize=${pageSize}`, { cache: 'no-store' });
-      if (!response.ok) return empty;
+      if (!response.ok) throw new PayoutLoadError('Failed to load the payout history.', response.status);
       return (await response.json()) as PayoutHistoryResponse;
-    } catch { return empty; }
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading the payout history.', null);
+    }
   }
 
   if (!isValidActor(options.demoActorUserId)) return empty;

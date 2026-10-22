@@ -272,8 +272,8 @@ export const financeEn = {
     // Neutral placeholder wording; never MSG29/MSG31/MSG118/MSG119/MSG120/MSG131-136.
     PAYOUT_PLACEHOLDER_INVALID_MONTH: 'The selected settlement month is invalid.',
     PAYOUT_PLACEHOLDER_MONTH_NOT_CLOSED: 'This settlement month has not closed yet.',
-    PAYOUT_PLACEHOLDER_NOT_REQUESTABLE: 'The payable amount for this month is not positive.',
-    PAYOUT_PLACEHOLDER_ACTIVE_EXISTS: 'A payout request already exists for this settlement month.',
+    PAYOUT_PLACEHOLDER_NOT_REQUESTABLE: 'The combined payable amount across all outstanding months is not positive.',
+    PAYOUT_PLACEHOLDER_ACTIVE_EXISTS: 'A payout request is already in progress for this account.',
     PAYOUT_PLACEHOLDER_BELOW_MINIMUM: 'The payable amount is below the configured minimum payout.',
     PAYOUT_PLACEHOLDER_NOT_CANCELLABLE: 'This payout request can no longer be cancelled.',
     DEMO_ASYNC_EXPORT_SIMULATION:

@@ -37,8 +37,9 @@ export function CancelPayoutDialog({ isOpen, request, onClose, onConfirmCancel }
         handleClose();
         return;
       }
-      // 409 PAYOUT_NOT_CANCELLABLE: the caller re-fetches history before this dialog is shown
-      // again, so the status here is already current when the operator retries.
+      // 409 PAYOUT_NOT_CANCELLABLE: the caller re-fetches months/balance/history right after this
+      // call regardless of outcome, so the underlying table is already corrected by the time this
+      // error renders — only this dialog's own copy of `request` is stale until it is closed.
       const displayKey = result.errorCode ? PAYOUT_ERROR_DISPLAY[result.errorCode] : undefined;
       const text = displayKey ? (financeEn.messages as Record<string, string>)[displayKey] : undefined;
       setErrorMessage(text ?? financeEn.messages.MSG127);
