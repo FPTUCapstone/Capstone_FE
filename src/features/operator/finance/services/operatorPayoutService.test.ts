@@ -1,21 +1,21 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import {
-  cancelPayoutRequest,
-  getPayoutWorkspaceData,
-  requestPayoutSettlement,
+  cancelPayout,
+  getAvailableBalance,
+  getBeneficiaryBankAccount,
+  getPayoutHistory,
+  getSettlementMonths,
+  requestPayout,
   resetDemoPayoutState,
-  updateBeneficiaryBank,
+  updateBeneficiaryBankAccount,
 } from './operatorPayoutService';
-import {
-  PAYOUT_ERROR_CODES,
-  PAYOUT_MESSAGES,
-} from '../types/payoutLifecycle';
 
 describe('operatorPayoutService (UC-46)', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.resetModules();
+    vi.unstubAllGlobals();
     process.env = {
       ...originalEnv,
       NODE_ENV: 'test',
@@ -26,309 +26,225 @@ describe('operatorPayoutService (UC-46)', () => {
 
   afterEach(() => {
     process.env = originalEnv;
+    vi.unstubAllGlobals();
   });
 
-  describe('Production NO_BACKEND Truthfulness', () => {
-    it('returns empty workspace and PENDING_BE_INTEGRATION notice when isDemo is false', async () => {
-      const data = await getPayoutWorkspaceData({ isDemo: false });
-      expect(data.settlementPeriods).toEqual([]);
-      expect(data.payoutRequests).toEqual([]);
-      expect(data.pendingBackendNotice).toBe(PAYOUT_MESSAGES.PENDING_BE_INTEGRATION);
-      expect(data.messageCode).toBe(PAYOUT_ERROR_CODES.PENDING_BE_INTEGRATION);
+  describe('Production BFF calls', () => {
+    it('calls the settlement-months endpoint with the year query', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await getSettlementMonths(2026, { isDemo: false });
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/operator/payouts/settlement-months?year=2026', { cache: 'no-store' });
     });
 
-    it('rejects payout submission in production mode', async () => {
-      const res = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-08-2026',
-          bankInfo: {
-            operatorUserId: 101,
-            accountHolder: 'NGUYEN VAN AN',
-            bankName: 'VCB',
-            accountNumber: '1029384756',
-          },
-        },
+    it('calls the available-balance endpoint', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ periodCount: 0, requestable: false }), { status: 200 })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await getAvailableBalance({ isDemo: false });
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/operator/payouts/available-balance', { cache: 'no-store' });
+    });
+
+    it('calls the bank-account GET endpoint', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ bankName: null, accountHolderName: null, maskedAccountNumber: null, updatedAtUtc: null }), { status: 200 })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await getBeneficiaryBankAccount({ isDemo: false });
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/operator/payouts/bank-account', { cache: 'no-store' });
+    });
+
+    it('PUTs the bank-account endpoint with the submitted fields', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ bankName: 'VCB', accountHolderName: 'A', maskedAccountNumber: '****1234', updatedAtUtc: '2026-10-22T00:00:00Z' }), { status: 200 })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await updateBeneficiaryBankAccount(
+        { bankName: 'VCB', accountHolderName: 'A', accountNumber: '1234567890' },
         { isDemo: false }
       );
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.PENDING_BE_INTEGRATION);
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/operator/payouts/bank-account', expect.objectContaining({ method: 'PUT' }));
+      const sentBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(sentBody.accountNumber).toBe('1234567890');
     });
 
-    it('rejects payout cancellation in production mode', async () => {
-      const res = await cancelPayoutRequest('po-req-0101', { isDemo: false });
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.PENDING_BE_INTEGRATION);
+    it('POSTs a payout request with no body (claims the whole available balance)', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ payoutCode: 'PO-202610-000001', status: 'PendingReview' }), { status: 201 })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await requestPayout({ isDemo: false });
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/operator/payouts', { method: 'POST' });
+    });
+
+    it('maps a non-ok response to its backend errorCode', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ errorCode: 'ACTIVE_PAYOUT_EXISTS' }), { status: 409 })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const result = await requestPayout({ isDemo: false });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('ACTIVE_PAYOUT_EXISTS');
+    });
+
+    it('calls the cancel endpoint for the given payout code', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ payoutCode: 'PO-202608-000001', status: 'Cancelled' }), { status: 200 })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await cancelPayout('PO-202608-000001', { isDemo: false });
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/operator/payouts/PO-202608-000001/cancel', expect.objectContaining({ method: 'POST' }));
+    });
+
+    it('returns empty results when fetch throws (network failure)', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+      const months = await getSettlementMonths(2026, { isDemo: false });
+      expect(months).toEqual([]);
     });
   });
 
   describe('Demo Mode Retrieval & Ownership Isolation (BR-105)', () => {
-    it('fails closed with MSG126 when demoActorUserId is missing', async () => {
-      const data = await getPayoutWorkspaceData({ isDemo: true });
-      expect(data.errorMessage).toBe(PAYOUT_MESSAGES.MSG126);
-      expect(data.messageCode).toBe(PAYOUT_ERROR_CODES.UNAUTHORIZED);
+    it('returns nothing when demoActorUserId is missing', async () => {
+      const months = await getSettlementMonths(2026, { isDemo: true });
+      expect(months).toEqual([]);
     });
 
-    it('enforces BR-105: operator 101 retrieves only owned periods and requests', async () => {
-      const data = await getPayoutWorkspaceData({
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-
-      expect(data.settlementPeriods.length).toBe(5);
-      expect(data.settlementPeriods.every((p) => p.operatorUserId === 101)).toBe(true);
-      expect(data.settlementPeriods.some((p) => p.operatorUserId === 202)).toBe(false);
-
-      expect(data.beneficiaryBank.accountHolder).toBe('NGUYEN VAN AN');
-      expect(data.payoutRequests.length).toBe(1);
-      expect(data.payoutRequests[0].id).toBe('po-req-0101');
+    it('enforces BR-105: operator 101 sees only owned settlement months', async () => {
+      const months = await getSettlementMonths(2026, { isDemo: true, demoActorUserId: 101 });
+      expect(months.length).toBeGreaterThan(0);
+      expect(months.some((m) => m.month === 8)).toBe(true);
     });
 
     it('enforces BR-105: foreign operator 202 data is isolated from operator 101', async () => {
-      const data = await getPayoutWorkspaceData({
-        isDemo: true,
-        demoActorUserId: 202,
-      });
+      const months202 = await getSettlementMonths(2026, { isDemo: true, demoActorUserId: 202 });
+      const bank101 = await getBeneficiaryBankAccount({ isDemo: true, demoActorUserId: 101 });
+      const bank202 = await getBeneficiaryBankAccount({ isDemo: true, demoActorUserId: 202 });
 
-      expect(data.settlementPeriods.length).toBe(1);
-      expect(data.settlementPeriods[0].operatorUserId).toBe(202);
-      expect(data.beneficiaryBank.accountHolder).toBe('LE THI MAI');
-      expect(data.payoutRequests.length).toBe(1);
-      expect(data.payoutRequests[0].id).toBe('po-req-0202');
+      expect(months202.length).toBe(2);
+      expect(bank101.accountHolderName).toBe('NGUYEN VAN AN');
+      expect(bank202.accountHolderName).toBe('LE THI MAI');
     });
   });
 
-  describe('UC-46 Payout Request Eligibility & Submission', () => {
-    const validBank = {
-      operatorUserId: 101,
-      accountHolder: 'NGUYEN VAN AN',
-      bankName: 'Vietcombank',
-      accountNumber: '1029384756',
-    };
+  describe('UC-46 Available Balance Aggregation (demo)', () => {
+    it('aggregates every closed, unclaimed month into one balance (BR-111, BR-112)', async () => {
+      const balance = await getAvailableBalance({ isDemo: true, demoActorUserId: 101 });
 
-    it('successfully submits payout request for an eligible closed period (BR-111, BR-112)', async () => {
-      const res = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-08-2026', // Closed, 2 completed tours, payable 17,640,000 >= 5,000,000
-          bankInfo: validBank,
-        },
+      expect(balance.periodCount).toBe(2);
+      expect(balance.payableNetAmount).toBe(3_600_000 + 17_640_000);
+      expect(balance.requestable).toBe(true);
+    });
+
+    it('excludes months already claimed by a live payout (BR-105 scoped to operator 202)', async () => {
+      const balance = await getAvailableBalance({ isDemo: true, demoActorUserId: 202 });
+      expect(balance.periodCount).toBe(1);
+      expect(balance.payableNetAmount).toBe(43_200_000);
+    });
+  });
+
+  describe('UC-46 Payout Request Submission (demo)', () => {
+    it('successfully submits a payout claiming the entire available balance (BR-111, BR-112)', async () => {
+      const res = await requestPayout({ isDemo: true, demoActorUserId: 101 });
+
+      expect(res.success).toBe(true);
+      expect(res.data?.status).toBe('PendingReview');
+      expect(res.data?.periodCount).toBe(2);
+      expect(res.data?.payableNetAmount).toBe(3_600_000 + 17_640_000);
+      expect(res.data?.maskedAccountNumber).toBe('******4756');
+
+      const months = await getSettlementMonths(2026, { isDemo: true, demoActorUserId: 101 });
+      const august = months.find((m) => m.month === 8);
+      expect(august?.coverage).toBe('IncludedInPayout');
+      expect(august?.payoutCode).toBe(res.data?.payoutCode);
+    });
+
+    it('rejects a duplicate request while one is already active (ACTIVE_PAYOUT_EXISTS, BR-113)', async () => {
+      const first = await requestPayout({ isDemo: true, demoActorUserId: 101 });
+      expect(first.success).toBe(true);
+
+      const second = await requestPayout({ isDemo: true, demoActorUserId: 101 });
+      expect(second.success).toBe(false);
+      expect(second.errorCode).toBe('ACTIVE_PAYOUT_EXISTS');
+    });
+  });
+
+  describe('UC-46 Cancel Payout Request (demo)', () => {
+    it('cancels a PendingReview request and returns its months to the available balance', async () => {
+      const created = await requestPayout({ isDemo: true, demoActorUserId: 101 });
+      const payoutCode = created.data!.payoutCode;
+
+      const cancelRes = await cancelPayout(payoutCode, { isDemo: true, demoActorUserId: 101 });
+      expect(cancelRes.success).toBe(true);
+      expect(cancelRes.data?.status).toBe('Cancelled');
+
+      const months = await getSettlementMonths(2026, { isDemo: true, demoActorUserId: 101 });
+      const august = months.find((m) => m.month === 8);
+      expect(august?.coverage).toBe('AvailableBalance');
+
+      const reRequest = await requestPayout({ isDemo: true, demoActorUserId: 101 });
+      expect(reRequest.success).toBe(true);
+    });
+
+    it('blocks cancelling a foreign operator payout (BR-105, PAYOUT_NOT_FOUND)', async () => {
+      const res = await cancelPayout('PO-202606-000202', { isDemo: true, demoActorUserId: 101 });
+      expect(res.success).toBe(false);
+      expect(res.errorCode).toBe('PAYOUT_NOT_FOUND');
+    });
+
+    it('blocks cancelling an already-Settled request (PAYOUT_NOT_CANCELLABLE)', async () => {
+      const res = await cancelPayout('PO-202606-000202', { isDemo: true, demoActorUserId: 202 });
+      expect(res.success).toBe(false);
+      expect(res.errorCode).toBe('PAYOUT_NOT_CANCELLABLE');
+    });
+  });
+
+  describe('Beneficiary Bank Account (demo)', () => {
+    it('updates the bank account and returns only the masked number', async () => {
+      // Uppercasing the account holder name is a UI-layer concern (BeneficiaryBankCard already
+      // uppercases before calling this); the service stores and returns what it is given, trimmed.
+      const res = await updateBeneficiaryBankAccount(
+        { bankName: 'BIDV', accountHolderName: 'NGUYEN VAN AN TEST', accountNumber: '9988776655' },
         { isDemo: true, demoActorUserId: 101 }
       );
 
       expect(res.success).toBe(true);
-      expect(res.message).toBe(PAYOUT_MESSAGES.MSG118);
-      expect(res.payoutRequest).toBeDefined();
-      expect(res.payoutRequest?.status).toBe('Pending Confirmation');
-      expect(res.payoutRequest?.requestedAmount).toBe(17640000); // Demo-calculated payable amount estimate
-      expect(res.payoutRequest?.bankSnapshot.accountNumber).toBe('1029384756');
-
-      // Verify that settlement period is now marked as hasPendingPayout
-      const workspace = await getPayoutWorkspaceData({
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-      const period = workspace.settlementPeriods.find(
-        (p) => p.id === 'per-101-08-2026'
-      );
-      expect(period?.hasPendingPayout).toBe(true);
+      expect(res.data?.accountHolderName).toBe('NGUYEN VAN AN TEST');
+      expect(res.data?.maskedAccountNumber).toBe('******6655');
+      expect(JSON.stringify(res.data)).not.toContain('9988776655');
     });
 
-    it('rejects payout request when period is Open / ongoing -> MSG128 (BR-111)', async () => {
-      const res = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-09-2026', // Open status
-          bankInfo: validBank,
-        },
+    it('rejects an update with empty required fields (VALIDATION_REQUIRED_FIELD)', async () => {
+      const res = await updateBeneficiaryBankAccount(
+        { bankName: 'BIDV', accountHolderName: '   ', accountNumber: '' },
         { isDemo: true, demoActorUserId: 101 }
       );
 
       expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.MSG128);
-      expect(res.messageCode).toBe(PAYOUT_ERROR_CODES.PERIOD_INELIGIBLE);
-    });
-
-    it('rejects payout request when period has 0 completed tours -> MSG128 (BR-111)', async () => {
-      const res = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-06-2026', // Closed, completedToursCount = 0
-          bankInfo: validBank,
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.MSG128);
-    });
-
-    it('rejects payout request when payable amount is below minimum threshold -> MSG120', async () => {
-      const res = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-05-2026', // Closed, payable 3,600,000 < 5,000,000
-          bankInfo: validBank,
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.MSG120);
-      expect(res.messageCode).toBe(PAYOUT_ERROR_CODES.BELOW_MINIMUM_AMOUNT);
-    });
-
-    it('rejects duplicate pending payout request for the same period -> MSG119 (BR-113)', async () => {
-      // First submission succeeds
-      const first = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-08-2026',
-          bankInfo: validBank,
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(first.success).toBe(true);
-
-      // Second submission on same period is blocked
-      const second = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-08-2026',
-          bankInfo: validBank,
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(second.success).toBe(false);
-      expect(second.message).toBe(PAYOUT_MESSAGES.MSG119);
-      expect(second.messageCode).toBe(PAYOUT_ERROR_CODES.REQUEST_ALREADY_PENDING);
-    });
-
-    it('rejects payout request when beneficiary bank details are incomplete -> MSG01', async () => {
-      const res = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-08-2026',
-          bankInfo: {
-            operatorUserId: 101,
-            accountHolder: '',
-            bankName: 'VCB',
-            accountNumber: '',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.MSG01);
-      expect(res.messageCode).toBe(PAYOUT_ERROR_CODES.MISSING_BENEFICIARY_FIELD);
+      expect(res.errorCode).toBe('VALIDATION_REQUIRED_FIELD');
     });
   });
 
-  describe('UC-46 Cancel Payout Request', () => {
-    it('cancels pending confirmation payout request and restores period eligibility', async () => {
-      // Create a pending request
-      const createRes = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-08-2026',
-          bankInfo: {
-            operatorUserId: 101,
-            accountHolder: 'NGUYEN VAN AN',
-            bankName: 'Vietcombank',
-            accountNumber: '1029384756',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      const reqId = createRes.payoutRequest!.id;
-
-      // Cancel the pending request
-      const cancelRes = await cancelPayoutRequest(reqId, {
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-
-      expect(cancelRes.success).toBe(true);
-      expect(cancelRes.message).toBe(PAYOUT_MESSAGES.MSG129);
-      expect(cancelRes.payoutRequest?.status).toBe('Cancelled');
-
-      // Verify that settlement period hasPendingPayout is released so it can be requested again
-      const workspace = await getPayoutWorkspaceData({
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-      const period = workspace.settlementPeriods.find(
-        (p) => p.id === 'per-101-08-2026'
-      );
-      expect(period?.hasPendingPayout).toBe(false);
-
-      // Period can now be requested again
-      const reRequest = await requestPayoutSettlement(
-        {
-          periodId: 'per-101-08-2026',
-          bankInfo: {
-            operatorUserId: 101,
-            accountHolder: 'NGUYEN VAN AN',
-            bankName: 'Vietcombank',
-            accountNumber: '1029384756',
-          },
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(reRequest.success).toBe(true);
-    });
-
-    it('blocks cancellation of Settled payout requests', async () => {
-      const res = await cancelPayoutRequest('po-req-0101', {
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.CANNOT_CANCEL_NON_PENDING);
-      expect(res.messageCode).toBe(PAYOUT_ERROR_CODES.CANNOT_CANCEL_NON_PENDING);
-    });
-
-    it('blocks cancellation of foreign operator payout requests (BR-105)', async () => {
-      // Operator 101 attempting to cancel operator 202 request po-req-0202
-      const res = await cancelPayoutRequest('po-req-0202', {
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-
-      expect(res.success).toBe(false);
-      expect(res.message).toBe(PAYOUT_MESSAGES.MSG126);
-    });
-  });
-
-  describe('Beneficiary Bank Details Update', () => {
-    it('updates beneficiary bank account successfully and sanitizes uppercase account holder', async () => {
-      const updateRes = await updateBeneficiaryBank(
-        {
-          operatorUserId: 101,
-          accountHolder: 'nguyen van an test',
-          bankName: 'BIDV',
-          accountNumber: '9988776655',
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(updateRes.success).toBe(true);
-
-      const workspace = await getPayoutWorkspaceData({
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-      expect(workspace.beneficiaryBank.accountHolder).toBe('NGUYEN VAN AN TEST');
-      expect(workspace.beneficiaryBank.bankName).toBe('BIDV');
-      expect(workspace.beneficiaryBank.accountNumber).toBe('9988776655');
-    });
-
-    it('rejects bank update with empty fields -> MSG01', async () => {
-      const updateRes = await updateBeneficiaryBank(
-        {
-          operatorUserId: 101,
-          accountHolder: '   ',
-          bankName: 'BIDV',
-          accountNumber: '',
-        },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-
-      expect(updateRes.success).toBe(false);
-      expect(updateRes.message).toBe(PAYOUT_MESSAGES.MSG01);
+  describe('Payout history (demo)', () => {
+    it('returns only the authenticated operator\'s history', async () => {
+      const history = await getPayoutHistory(1, 20, { isDemo: true, demoActorUserId: 202 });
+      expect(history.items.length).toBe(1);
+      expect(history.items[0].payoutCode).toBe('PO-202606-000202');
     });
   });
 });

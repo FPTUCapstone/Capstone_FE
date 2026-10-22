@@ -1,101 +1,160 @@
 /**
- * Settlement History and Payout Request (UC-46) lifecycle contracts and data structures.
- * Based strictly on Report 3 V2 §3.8.5.3.
+ * Request Payout Settlement (UC-46) lifecycle contracts and data structures.
+ * "Available balance" model (decided 2026-10-23): one request aggregates every closed, eligible,
+ * not-yet-paid settlement month for the operator into a single payout, instead of one request per
+ * month — so a low-revenue operator whose payable amount never individually crosses the minimum
+ * is never stuck forever. Matches Capstone_BE/specs/UC-46-request-payout-settlement-be-spec.md.
  */
 
-export type SettlementPeriodStatus = 'Open' | 'Closed';
+export type MonthCoverage = 'Open' | 'AvailableBalance' | 'IncludedInPayout';
 
-export type PayoutRequestStatus =
-  | 'Pending Confirmation'
+export type PayoutStatus =
+  | 'PendingReview'
+  | 'ApprovedForSettlement'
+  | 'SettlementProcessing'
   | 'Settled'
+  | 'SettlementFailed'
   | 'Rejected'
   | 'Cancelled';
 
-export interface SettlementPeriodDto {
-  id: string;
-  operatorUserId: number | string;
-  periodCode: string; // e.g. "PER-2026-08"
-  periodLabel: string; // e.g. "01/08/2026 - 31/08/2026"
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
-  completedToursCount: number;
-  grossRevenue: number;
-  commission: number;
+/** Backend errorCode values (UC-46 BE spec v3, Error contract). */
+export type PayoutErrorCode =
+  | 'VALIDATION_REQUIRED_FIELD'
+  | 'OPERATOR_NOT_APPROVED'
+  | 'NO_ELIGIBLE_BOOKING'
+  | 'PAYOUT_NOT_REQUESTABLE'
+  | 'ACTIVE_PAYOUT_EXISTS'
+  | 'BELOW_MINIMUM_PAYOUT'
+  | 'PAYOUT_NOT_FOUND'
+  | 'PAYOUT_NOT_CANCELLABLE'
+  | 'SYSTEM_ERROR';
+
+/** One settlement month, informational only — the request action is global, not per-row. */
+export interface SettlementMonthDto {
+  year: number;
+  month: number;
+  monthStatus: 'Open' | 'Closed';
+  eligibleBookingCount: number;
+  paymentsReceived: number;
+  discountsGiven: number;
+  refundedAmount: number;
+  netSales: number;
+  commissionAmount: number;
   payableNetAmount: number;
-  status: SettlementPeriodStatus;
-  hasPendingPayout: boolean;
+  coverage: MonthCoverage;
+  payoutCode: string | null;
 }
 
-export interface BeneficiaryBankDto {
-  operatorUserId: number | string;
-  accountHolder: string;
+/** The aggregate across every closed, eligible, not-yet-paid month — backs the single
+ * "Request Payout" action and its enabled/disabled state. */
+export interface AvailableBalanceDto {
+  periodCount: number;
+  paymentsReceived: number;
+  discountsGiven: number;
+  refundedAmount: number;
+  netSales: number;
+  commissionAmount: number;
+  adjustmentsOutstanding: number;
+  payableNetAmount: number;
+  requestable: boolean;
+  blockReason: PayoutErrorCode | null;
+  activePayoutCode: string | null;
+}
+
+export interface BeneficiaryBankAccountDto {
+  bankName: string | null;
+  accountHolderName: string | null;
+  maskedAccountNumber: string | null;
+  updatedAtUtc: string | null;
+}
+
+/** Only used to submit a bank-account update; the full number never comes back from the server. */
+export interface BeneficiaryBankAccountInput {
   bankName: string;
+  accountHolderName: string;
   accountNumber: string;
 }
 
-export interface PayoutRequestDto {
-  id: string;
-  requestCode: string; // e.g. "PO-20260901-0101"
-  operatorUserId: number | string;
-  periodId: string;
-  periodLabel: string;
-  requestedAmount: number;
-  status: PayoutRequestStatus;
-  requestedAt: string; // ISO date-time
-  settledAt?: string; // ISO date-time
-  rejectionReason?: string;
-  bankSnapshot: BeneficiaryBankDto;
+export interface PayoutMonthBreakdownDto {
+  year: number;
+  month: number;
+  eligibleBookingCount: number;
+  paymentsReceived: number;
+  discountsGiven: number;
+  refundedAmount: number;
+  commissionAmount: number;
+  payableNetAmount: number;
 }
 
-export interface RequestPayoutPayload {
-  periodId: string;
-  bankInfo: BeneficiaryBankDto;
+export interface PayoutSummaryDto {
+  payoutCode: string;
+  status: PayoutStatus;
+  periodCount: number;
+  periodStart: string; // YYYY-MM-DD
+  periodEnd: string; // YYYY-MM-DD
+  paymentsReceived: number;
+  discountsGiven: number;
+  refundedAmount: number;
+  netSales: number;
+  commissionAmount: number;
+  adjustmentsApplied: number;
+  payableNetAmount: number;
+  requestedAtUtc: string;
+  bankName: string;
+  accountHolderName: string;
+  maskedAccountNumber: string;
+  months: PayoutMonthBreakdownDto[];
 }
 
-export interface PayoutActionResult {
+export interface PayoutHistoryItemDto {
+  payoutCode: string;
+  periodCount: number;
+  periodStart: string; // YYYY-MM-DD
+  periodEnd: string; // YYYY-MM-DD
+  payableNetAmount: number;
+  status: PayoutStatus;
+  requestedAtUtc: string | null;
+  settledAtUtc: string | null;
+  rejectionReason: string | null;
+  cancellable: boolean;
+}
+
+export interface PayoutHistoryResponse {
+  items: PayoutHistoryItemDto[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface PayoutActionResult<T = undefined> {
   success: boolean;
-  payoutRequest?: PayoutRequestDto;
+  data?: T;
   message?: string;
-  messageCode?: string;
-}
-
-export interface PayoutWorkspaceData {
-  settlementPeriods: SettlementPeriodDto[];
-  beneficiaryBank: BeneficiaryBankDto;
-  payoutRequests: PayoutRequestDto[];
-  configuredMinimumPayoutAmount: number;
-  pendingBackendNotice?: string;
-  errorMessage?: string;
-  messageCode?: string;
+  errorCode?: PayoutErrorCode | 'PENDING_BE_INTEGRATION';
 }
 
 export const PAYOUT_CONFIG = {
-  DEFAULT_MINIMUM_PAYOUT_AMOUNT: 5000000, // 5,000,000 VND Demo configuration threshold
+  /** Production default (UC-46 BE spec OPEN-5, confirmed 2026-10-23); the server is
+   * authoritative, this is a display fallback only. */
+  DEFAULT_MINIMUM_PAYOUT_AMOUNT: 1_000_000,
 } as const;
 
-export const PAYOUT_ERROR_CODES = {
-  UNAUTHORIZED: 'MSG126',
-  MISSING_BENEFICIARY_FIELD: 'MSG01',
-  PERIOD_INELIGIBLE: 'MSG128',
-  REQUEST_ALREADY_PENDING: 'MSG119',
-  BELOW_MINIMUM_AMOUNT: 'MSG120',
-  REQUEST_SUBMITTED: 'MSG118',
-  REQUEST_CANCELLED: 'MSG129',
-  SYSTEM_FAILURE: 'MSG127',
-  CANNOT_CANCEL_NON_PENDING: 'CANNOT_CANCEL_NON_PENDING',
+/**
+ * Maps backend errorCode to a display message key (UC-46 FE spec, "Error code to display mapping").
+ * Never match on raw error strings elsewhere in the UI — always go through this table.
+ */
+export const PAYOUT_ERROR_DISPLAY: Record<string, string> = {
+  VALIDATION_REQUIRED_FIELD: 'MSG01',
+  OPERATOR_NOT_APPROVED: 'MSG126',
+  NO_ELIGIBLE_BOOKING: 'MSG128',
+  PAYOUT_NOT_FOUND: 'MSG128',
+  SYSTEM_ERROR: 'MSG127',
   PENDING_BE_INTEGRATION: 'PENDING_BE_INTEGRATION',
-} as const;
-
-export const PAYOUT_MESSAGES = {
-  PENDING_BE_INTEGRATION:
-    'Payout settlement and banking integration is pending. No financial requests are processed in production.',
-  MSG126: 'Access denied. You can only view and manage payouts for your own tour operator account.',
-  MSG01: 'Please provide complete beneficiary bank account information (Account Holder, Bank Name, Account Number).',
-  MSG128: 'The selected settlement period is not eligible (must be closed and contain at least one completed tour).',
-  MSG119: 'A payout request for this settlement period is already pending confirmation.',
-  MSG120: 'The payable amount is below the configured minimum payout threshold of 5,000,000 ₫.',
-  MSG118: 'Payout request submitted successfully and queued for administrator confirmation.',
-  MSG129: 'Payout request cancelled successfully. The settlement period is now requestable again.',
-  MSG127: 'Unable to record payout request due to a system error. Please retry.',
-  CANNOT_CANCEL_NON_PENDING: 'Only payout requests with Pending Confirmation status can be cancelled.',
-} as const;
+  // Pending PO message-number assignment (UC-46 BE spec OPEN-4): shown with neutral placeholder
+  // text until approved. Never MSG29/MSG31/MSG118/MSG119/MSG120/MSG131-136 (locked elsewhere).
+  PAYOUT_NOT_REQUESTABLE: 'PAYOUT_PLACEHOLDER_NOT_REQUESTABLE',
+  ACTIVE_PAYOUT_EXISTS: 'PAYOUT_PLACEHOLDER_ACTIVE_EXISTS',
+  BELOW_MINIMUM_PAYOUT: 'PAYOUT_PLACEHOLDER_BELOW_MINIMUM',
+  PAYOUT_NOT_CANCELLABLE: 'PAYOUT_PLACEHOLDER_NOT_CANCELLABLE',
+};

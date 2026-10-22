@@ -3,22 +3,20 @@
 import { useCallback, useState } from 'react';
 import { formatVndCurrency } from '../../utils/financeFormat';
 import { financeEn } from '../../resources/en';
-import type { PayoutRequestDto } from '../../types/payoutLifecycle';
+import { PAYOUT_ERROR_DISPLAY } from '../../types/payoutLifecycle';
+import type { PayoutErrorCode, PayoutHistoryItemDto } from '../../types/payoutLifecycle';
 import { useAccessibleFinanceDialog } from '../useAccessibleFinanceDialog';
 
 interface CancelPayoutDialogProps {
   isOpen: boolean;
-  request: PayoutRequestDto | null;
+  request: PayoutHistoryItemDto | null;
   onClose: () => void;
-  onConfirmCancel: (requestId: string) => Promise<boolean>;
+  onConfirmCancel: (
+    payoutCode: string
+  ) => Promise<{ success: boolean; errorCode?: PayoutErrorCode | 'SYSTEM_ERROR' | 'PENDING_BE_INTEGRATION' }>;
 }
 
-export function CancelPayoutDialog({
-  isOpen,
-  request,
-  onClose,
-  onConfirmCancel,
-}: CancelPayoutDialogProps) {
+export function CancelPayoutDialog({ isOpen, request, onClose, onConfirmCancel }: CancelPayoutDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -26,11 +24,7 @@ export function CancelPayoutDialog({
     setErrorMessage(null);
     onClose();
   }, [onClose]);
-  const dialogRef = useAccessibleFinanceDialog(
-    isOpen && Boolean(request),
-    handleClose,
-    isSubmitting
-  );
+  const dialogRef = useAccessibleFinanceDialog(isOpen && Boolean(request), handleClose, isSubmitting);
 
   if (!isOpen || !request) return null;
 
@@ -38,10 +32,16 @@ export function CancelPayoutDialog({
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      const success = await onConfirmCancel(request.id);
-      if (success) {
+      const result = await onConfirmCancel(request.payoutCode);
+      if (result.success) {
         handleClose();
+        return;
       }
+      // 409 PAYOUT_NOT_CANCELLABLE: the caller re-fetches history before this dialog is shown
+      // again, so the status here is already current when the operator retries.
+      const displayKey = result.errorCode ? PAYOUT_ERROR_DISPLAY[result.errorCode] : undefined;
+      const text = displayKey ? (financeEn.messages as Record<string, string>)[displayKey] : undefined;
+      setErrorMessage(text ?? financeEn.messages.MSG127);
     } catch {
       setErrorMessage(financeEn.messages.MSG127);
     } finally {
@@ -49,9 +49,9 @@ export function CancelPayoutDialog({
     }
   };
 
-  const formattedAmount = formatVndCurrency(request.requestedAmount);
+  const formattedAmount = formatVndCurrency(request.payableNetAmount);
   const subtitle = financeEn.cancelDialog.subtitle
-    .replace('{code}', request.requestCode)
+    .replace('{code}', request.payoutCode)
     .replace('{amount}', formattedAmount);
 
   return (
@@ -61,11 +61,7 @@ export function CancelPayoutDialog({
       aria-labelledby="cancel-payout-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs"
     >
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl transition-all"
-      >
+      <div ref={dialogRef} tabIndex={-1} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl transition-all">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
             <span className="material-symbols-outlined text-xl">warning</span>
@@ -83,10 +79,7 @@ export function CancelPayoutDialog({
         </div>
 
         {errorMessage && (
-          <div
-            role="alert"
-            className="mt-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700"
-          >
+          <div role="alert" className="mt-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700">
             <span className="material-symbols-outlined text-[16px]">error</span>
             <span>{errorMessage}</span>
           </div>
