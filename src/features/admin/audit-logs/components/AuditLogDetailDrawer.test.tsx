@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { AuditLogDetailDrawer } from './AuditLogDetailDrawer';
@@ -135,6 +135,40 @@ describe('AuditLogDetailDrawer', () => {
       expect(navigator.clipboard.writeText).toHaveBeenCalled();
       expect(screen.getByText('Copied')).toBeDefined();
     });
+  });
+
+  it('keeps copied feedback for two seconds after the latest copy', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
+    const view = render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+    const buttons = await screen.findAllByRole('button', { name: /content_copy Copy/ });
+    vi.useFakeTimers();
+    try {
+      await act(async () => { fireEvent.click(buttons[0]); });
+      act(() => { vi.advanceTimersByTime(1000); });
+      await act(async () => { fireEvent.click(buttons[0]); });
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(buttons[0].textContent).toContain('Copied');
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(buttons[0].textContent).toContain('Copy');
+      expect(buttons[0].textContent).not.toContain('Copied');
+    } finally {
+      view.unmount();
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not show a late clipboard result after closing and reopening', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
+    let completeCopy!: () => void;
+    vi.mocked(navigator.clipboard.writeText).mockReturnValueOnce(new Promise<void>((resolve) => {
+      completeCopy = resolve;
+    }));
+    const view = render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+    fireEvent.click((await screen.findAllByText('Copy'))[0].closest('button')!);
+    view.rerender(<AuditLogDetailDrawer logId={101} isOpen={false} onClose={mockOnClose} />);
+    view.rerender(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+    await act(async () => { completeCopy(); });
+    expect(screen.queryByText('Copied')).toBeNull();
   });
 
   it('shows safe feedback and does not report copied when clipboard access fails', async () => {
