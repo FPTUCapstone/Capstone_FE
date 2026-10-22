@@ -55,6 +55,21 @@ describe("proxyGetBookingRefundProgress", () => {
     expect(await response.json()).toEqual({ errorCode: "REFUND_UNAVAILABLE" });
   });
 
+  it.each([500, 503])(
+    "returns 503 rather than signing the user out when refresh returns %s",
+    async (status) => {
+      mocks.cookies.mockResolvedValue({ get: () => ({ value: "refresh" }) });
+      mocks.fetchBackend.mockResolvedValueOnce(new Response("{}", { status }));
+
+      const response = await proxyGetBookingRefundProgress(request(), "42");
+
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({
+        errorCode: "REFUND_UNAVAILABLE",
+      });
+    },
+  );
+
   it.each([404, 500])(
     "preserves 404 and safely maps backend %s",
     async (status) => {

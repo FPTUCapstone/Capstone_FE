@@ -29,7 +29,10 @@ async function bookingAccessToken(
   } catch {
     return { status: 503 };
   }
-  if (!response.ok) return { status: 401 };
+  // A browser session is invalid only when the refresh endpoint says so.
+  // Treat gateway/Backend failures as transient: the UI must offer retry
+  // instead of signing a valid user out.
+  if (!response.ok) return { status: response.status === 401 ? 401 : 503 };
 
   const body: unknown = await response.json().catch(() => null);
   const data =
