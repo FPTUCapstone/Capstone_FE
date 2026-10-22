@@ -1,90 +1,99 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RequestPayoutDialog } from './RequestPayoutDialog';
-import type { SettlementPeriodDto } from '../../types/payoutLifecycle';
+import type { AvailableBalanceDto, SettlementMonthDto } from '../../types/payoutLifecycle';
 
-describe('RequestPayoutDialog (Screen #92)', () => {
-  const mockPeriod: SettlementPeriodDto = {
-    id: 'per-101-08-2026',
-    operatorUserId: 101,
-    periodCode: 'PER-2026-08',
-    periodLabel: '01/08/2026 - 31/08/2026',
-    startDate: '2026-08-01',
-    endDate: '2026-08-31',
-    completedToursCount: 2,
-    grossRevenue: 19600000,
-    commission: 1960000,
-    payableNetAmount: 17640000,
-    status: 'Closed',
-    hasPendingPayout: false,
+describe('RequestPayoutDialog (UC-46)', () => {
+  const mockBalance: AvailableBalanceDto = {
+    periodCount: 2,
+    paymentsReceived: 23_600_000,
+    discountsGiven: 0,
+    refundedAmount: 0,
+    netSales: 23_600_000,
+    commissionAmount: 2_360_000,
+    adjustmentsOutstanding: 0,
+    payableNetAmount: 21_240_000,
+    requestable: true,
+    blockReason: null,
+    activePayoutCode: null,
   };
 
+  const mockClaimedMonths: SettlementMonthDto[] = [
+    {
+      year: 2026, month: 7, monthStatus: 'Closed', eligibleBookingCount: 1,
+      paymentsReceived: 4_000_000, discountsGiven: 0, refundedAmount: 0, netSales: 4_000_000,
+      commissionAmount: 400_000, payableNetAmount: 3_600_000,
+      coverage: 'AvailableBalance', payoutCode: null,
+    },
+    {
+      year: 2026, month: 8, monthStatus: 'Closed', eligibleBookingCount: 2,
+      paymentsReceived: 19_600_000, discountsGiven: 0, refundedAmount: 0, netSales: 19_600_000,
+      commissionAmount: 1_960_000, payableNetAmount: 17_640_000,
+      coverage: 'AvailableBalance', payoutCode: null,
+    },
+  ];
+
   const mockBank = {
-    operatorUserId: 101,
-    accountHolder: 'NGUYEN VAN AN',
     bankName: 'Vietcombank',
-    accountNumber: '1029384756',
+    accountHolderName: 'NGUYEN VAN AN',
+    maskedAccountNumber: '******4756',
+    updatedAtUtc: '2026-07-01T00:00:00Z',
   };
 
   const mockOnClose = vi.fn();
-  const mockOnSubmit = vi.fn().mockResolvedValue(true);
+  const mockOnSubmit = vi.fn().mockResolvedValue({ success: true });
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders period summary and read-only payable net amount', () => {
+  it('renders the claimed months and read-only payable net amount', () => {
     render(
-      <RequestPayoutDialog
-        isOpen={true}
-        period={mockPeriod}
-        bankInfo={mockBank}
-        onClose={mockOnClose}
-        onSubmit={mockOnSubmit}
-      />
+      <RequestPayoutDialog isOpen={true} balance={mockBalance} claimedMonths={mockClaimedMonths} bankInfo={mockBank} onClose={mockOnClose} onSubmit={mockOnSubmit} />
     );
 
     expect(screen.getByRole('dialog')).toBeDefined();
-    expect(screen.getByText(/01\/08\/2026 - 31\/08\/2026/i)).toBeDefined();
-    expect(screen.getByText(/17\.640\.000 ₫/i)).toBeDefined();
+    expect(screen.getByText(/July 2026/i)).toBeDefined();
+    expect(screen.getByText(/August 2026/i)).toBeDefined();
+    expect(screen.getByText(/21\.240\.000 ₫/i)).toBeDefined();
     expect(screen.getByText(/NGUYEN VAN AN/i)).toBeDefined();
-    expect(screen.getByText(/1029384756/i)).toBeDefined();
+    expect(screen.getByText(/\*{6}4756/)).toBeDefined();
+    expect(screen.queryByText('1029384756')).toBeNull();
   });
 
   it('enforces CR-05 confirmation checkbox: submit is disabled until checked', () => {
     render(
-      <RequestPayoutDialog
-        isOpen={true}
-        period={mockPeriod}
-        bankInfo={mockBank}
-        onClose={mockOnClose}
-        onSubmit={mockOnSubmit}
-      />
+      <RequestPayoutDialog isOpen={true} balance={mockBalance} claimedMonths={mockClaimedMonths} bankInfo={mockBank} onClose={mockOnClose} onSubmit={mockOnSubmit} />
     );
 
-    const submitBtn = screen.getByRole('button', {
-      name: /Confirm Payout Request/i,
-    });
+    const submitBtn = screen.getByRole('button', { name: /Confirm Payout Request/i });
     expect(submitBtn.hasAttribute('disabled')).toBe(true);
 
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox);
-
     expect(submitBtn.hasAttribute('disabled')).toBe(false);
 
     fireEvent.click(submitBtn);
-    expect(mockOnSubmit).toHaveBeenCalledWith('per-101-08-2026', mockBank);
+    expect(mockOnSubmit).toHaveBeenCalledWith();
+  });
+
+  it('shows the server error message inline and keeps the dialog open on failure', async () => {
+    const failingSubmit = vi.fn().mockResolvedValue({ success: false, errorCode: 'ACTIVE_PAYOUT_EXISTS' });
+    render(
+      <RequestPayoutDialog isOpen={true} balance={mockBalance} claimedMonths={mockClaimedMonths} bankInfo={mockBank} onClose={mockOnClose} onSubmit={failingSubmit} />
+    );
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Payout Request/i }));
+
+    expect(await screen.findByRole('alert')).toBeDefined();
+    expect(screen.getByRole('dialog')).toBeDefined();
+    expect(mockOnClose).not.toHaveBeenCalled();
   });
 
   it('calls onClose when Cancel or Escape key is pressed', () => {
     render(
-      <RequestPayoutDialog
-        isOpen={true}
-        period={mockPeriod}
-        bankInfo={mockBank}
-        onClose={mockOnClose}
-        onSubmit={mockOnSubmit}
-      />
+      <RequestPayoutDialog isOpen={true} balance={mockBalance} claimedMonths={mockClaimedMonths} bankInfo={mockBank} onClose={mockOnClose} onSubmit={mockOnSubmit} />
     );
 
     const cancelBtn = screen.getByRole('button', { name: /Cancel/i });
@@ -101,13 +110,7 @@ describe('RequestPayoutDialog (Screen #92)', () => {
     trigger.focus();
 
     const { unmount } = render(
-      <RequestPayoutDialog
-        isOpen={true}
-        period={mockPeriod}
-        bankInfo={mockBank}
-        onClose={mockOnClose}
-        onSubmit={mockOnSubmit}
-      />
+      <RequestPayoutDialog isOpen={true} balance={mockBalance} claimedMonths={mockClaimedMonths} bankInfo={mockBank} onClose={mockOnClose} onSubmit={mockOnSubmit} />
     );
 
     const closeButton = screen.getByRole('button', { name: /Close dialog/i });
@@ -128,19 +131,13 @@ describe('RequestPayoutDialog (Screen #92)', () => {
   });
 
   it('keeps every close path locked while payout submission is pending', async () => {
-    let resolveSubmit: ((value: boolean) => void) | undefined;
+    let resolveSubmit: ((value: { success: boolean }) => void) | undefined;
     const pendingSubmit = vi.fn(
-      () => new Promise<boolean>((resolve) => { resolveSubmit = resolve; })
+      () => new Promise<{ success: boolean }>((resolve) => { resolveSubmit = resolve; })
     );
 
     render(
-      <RequestPayoutDialog
-        isOpen={true}
-        period={mockPeriod}
-        bankInfo={mockBank}
-        onClose={mockOnClose}
-        onSubmit={pendingSubmit}
-      />
+      <RequestPayoutDialog isOpen={true} balance={mockBalance} claimedMonths={mockClaimedMonths} bankInfo={mockBank} onClose={mockOnClose} onSubmit={pendingSubmit} />
     );
 
     fireEvent.click(screen.getByRole('checkbox'));
@@ -152,6 +149,6 @@ describe('RequestPayoutDialog (Screen #92)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(mockOnClose).not.toHaveBeenCalled();
 
-    resolveSubmit?.(false);
+    resolveSubmit?.({ success: false });
   });
 });

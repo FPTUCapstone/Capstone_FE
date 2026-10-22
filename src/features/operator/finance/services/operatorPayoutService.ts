@@ -1,25 +1,26 @@
 /**
- * Service implementation for Payout Settlement & Requests (UC-46).
- * Enforces production NO_BACKEND truthfulness, period eligibility, minimum payout thresholds,
- * Demo-calculated payable amount estimations, and cancellation mechanics.
+ * Service implementation for Request Payout Settlement (UC-46).
+ * Production mode calls the live BFF routes under /api/operator/payouts/*, which forward to
+ * Capstone_BE's /api/v1/operator/payouts/* endpoints. Demo mode uses deterministic fixtures
+ * with strict actor isolation (BR-105), matching the pattern in operatorRevenueService.ts.
  */
 
 import {
   INITIAL_DEMO_BENEFICIARY_BANKS,
-  INITIAL_DEMO_PAYOUT_REQUESTS,
-  INITIAL_DEMO_SETTLEMENT_PERIODS,
+  INITIAL_DEMO_PAYOUT_HISTORY,
+  INITIAL_DEMO_SETTLEMENT_MONTHS,
 } from '../data/operatorPayoutDemoFixtures';
 import { isFinanceDemoAllowedInCurrentEnv } from '../data/operatorRevenueDemoFixtures';
 import {
   PAYOUT_CONFIG,
-  PAYOUT_ERROR_CODES,
-  PAYOUT_MESSAGES,
-  type BeneficiaryBankDto,
+  type AvailableBalanceDto,
+  type BeneficiaryBankAccountDto,
+  type BeneficiaryBankAccountInput,
   type PayoutActionResult,
-  type PayoutRequestDto,
-  type PayoutWorkspaceData,
-  type RequestPayoutPayload,
-  type SettlementPeriodDto,
+  type PayoutHistoryResponse,
+  type PayoutMonthBreakdownDto,
+  type PayoutSummaryDto,
+  type SettlementMonthDto,
 } from '../types/payoutLifecycle';
 
 export interface OperatorPayoutServiceOptions {
@@ -27,345 +28,366 @@ export interface OperatorPayoutServiceOptions {
   demoActorUserId?: number | string;
 }
 
+/**
+ * Thrown by the four read functions below on a non-ok response or a network failure, so a
+ * caller's load effect can distinguish "the backend said there is nothing" from "the request
+ * failed" instead of silently rendering an empty state on 401/403/500/network-down. `status` is
+ * the HTTP status when known (401/403 lets the caller redirect to sign-in), or null for a
+ * network-level failure.
+ */
+export class PayoutLoadError extends Error {
+  readonly status: number | null;
+
+  constructor(message: string, status: number | null) {
+    super(message);
+    this.name = 'PayoutLoadError';
+    this.status = status;
+  }
+}
+
 function isValidActor(id?: number | string): boolean {
   return id !== undefined && id !== null && String(id).trim().length > 0;
 }
 
-// In-memory state for Demo testing
-let inMemorySettlementPeriods: SettlementPeriodDto[] = JSON.parse(
-  JSON.stringify(INITIAL_DEMO_SETTLEMENT_PERIODS)
+// In-memory state for Demo testing, reset between tests via resetDemoPayoutState().
+let demoSettlementMonths: Record<string, SettlementMonthDto[]> = JSON.parse(
+  JSON.stringify(INITIAL_DEMO_SETTLEMENT_MONTHS)
 );
-let inMemoryBeneficiaryBanks: Record<string | number, BeneficiaryBankDto> = JSON.parse(
+let demoBeneficiaryBanks: Record<string, BeneficiaryBankAccountDto> = JSON.parse(
   JSON.stringify(INITIAL_DEMO_BENEFICIARY_BANKS)
 );
-let inMemoryPayoutRequests: PayoutRequestDto[] = JSON.parse(
-  JSON.stringify(INITIAL_DEMO_PAYOUT_REQUESTS)
+let demoPayoutHistory: Record<string, Array<PayoutHistoryResponse['items'][number]>> = JSON.parse(
+  JSON.stringify(INITIAL_DEMO_PAYOUT_HISTORY)
 );
+let demoPayoutSequence = 1000;
 
-/**
- * Resets in-memory demo state for test isolation.
- */
 export function resetDemoPayoutState(): void {
-  inMemorySettlementPeriods = JSON.parse(
-    JSON.stringify(INITIAL_DEMO_SETTLEMENT_PERIODS)
-  );
-  inMemoryBeneficiaryBanks = JSON.parse(
-    JSON.stringify(INITIAL_DEMO_BENEFICIARY_BANKS)
-  );
-  inMemoryPayoutRequests = JSON.parse(
-    JSON.stringify(INITIAL_DEMO_PAYOUT_REQUESTS)
-  );
+  demoSettlementMonths = JSON.parse(JSON.stringify(INITIAL_DEMO_SETTLEMENT_MONTHS));
+  demoBeneficiaryBanks = JSON.parse(JSON.stringify(INITIAL_DEMO_BENEFICIARY_BANKS));
+  demoPayoutHistory = JSON.parse(JSON.stringify(INITIAL_DEMO_PAYOUT_HISTORY));
+  demoPayoutSequence = 1000;
+}
+
+async function parseErrorCode(response: Response): Promise<string> {
+  const body = await response.json().catch(() => null) as { errorCode?: string } | null;
+  return body?.errorCode ?? 'SYSTEM_ERROR';
 }
 
 /**
- * Retrieves the payout workspace data (periods, bank details, and history) for UC-46.
+ * Lists settlement months with payable amounts and request eligibility for the authenticated
+ * operator (UC-46).
  */
-export async function getPayoutWorkspaceData(
+export async function getSettlementMonths(
+  year: number | undefined,
   options: OperatorPayoutServiceOptions = {}
-): Promise<PayoutWorkspaceData> {
+): Promise<SettlementMonthDto[]> {
   const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
 
-  // Production NO_BACKEND truthfulness
   if (!isDemoActive) {
-    return {
-      settlementPeriods: [],
-      beneficiaryBank: {
-        operatorUserId: 0,
-        accountHolder: '',
-        bankName: '',
-        accountNumber: '',
-      },
-      payoutRequests: [],
-      configuredMinimumPayoutAmount: PAYOUT_CONFIG.DEFAULT_MINIMUM_PAYOUT_AMOUNT,
-      pendingBackendNotice: PAYOUT_MESSAGES.PENDING_BE_INTEGRATION,
-      messageCode: PAYOUT_ERROR_CODES.PENDING_BE_INTEGRATION,
-    };
+    try {
+      const query = year ? `?year=${year}` : '';
+      const response = await fetch(`/api/operator/payouts/settlement-months${query}`, { cache: 'no-store' });
+      if (!response.ok) throw new PayoutLoadError('Failed to load settlement months.', response.status);
+      const body = await response.json();
+      return Array.isArray(body) ? (body as SettlementMonthDto[]) : [];
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading settlement months.', null);
+    }
   }
 
-  // BR-105 Fail-closed if actor identity is missing in demo mode
-  if (!isValidActor(options.demoActorUserId)) {
-    return {
-      settlementPeriods: [],
-      beneficiaryBank: {
-        operatorUserId: 0,
-        accountHolder: '',
-        bankName: '',
-        accountNumber: '',
-      },
-      payoutRequests: [],
-      configuredMinimumPayoutAmount: PAYOUT_CONFIG.DEFAULT_MINIMUM_PAYOUT_AMOUNT,
-      errorMessage: PAYOUT_MESSAGES.MSG126,
-      messageCode: PAYOUT_ERROR_CODES.UNAUTHORIZED,
-    };
-  }
-
+  if (!isValidActor(options.demoActorUserId)) return [];
   const actorKey = String(options.demoActorUserId);
-
-  // Filter periods strictly owned by actor (BR-105)
-  const periods = inMemorySettlementPeriods.filter(
-    (p) => String(p.operatorUserId) === actorKey
-  );
-
-  // Retrieve bank account for actor
-  const bank = inMemoryBeneficiaryBanks[actorKey] || {
-    operatorUserId: options.demoActorUserId!,
-    accountHolder: '',
-    bankName: '',
-    accountNumber: '',
-  };
-
-  // Filter payout requests strictly owned by actor (BR-105)
-  const requests = inMemoryPayoutRequests.filter(
-    (r) => String(r.operatorUserId) === actorKey
-  );
-
-  return {
-    settlementPeriods: JSON.parse(JSON.stringify(periods)),
-    beneficiaryBank: JSON.parse(JSON.stringify(bank)),
-    payoutRequests: JSON.parse(JSON.stringify(requests)),
-    configuredMinimumPayoutAmount: PAYOUT_CONFIG.DEFAULT_MINIMUM_PAYOUT_AMOUNT,
-  };
+  const months = demoSettlementMonths[actorKey] ?? [];
+  const filtered = year ? months.filter((m) => m.year === year) : months;
+  return JSON.parse(JSON.stringify(filtered));
 }
 
 /**
- * Updates beneficiary bank information for the authenticated Tour Operator.
+ * Returns the beneficiary bank account for the authenticated operator, with the account number
+ * masked. The full number is never returned by the server.
  */
-export async function updateBeneficiaryBank(
-  payload: BeneficiaryBankDto,
+export async function getBeneficiaryBankAccount(
   options: OperatorPayoutServiceOptions = {}
-): Promise<PayoutActionResult> {
+): Promise<BeneficiaryBankAccountDto> {
+  const empty: BeneficiaryBankAccountDto = {
+    bankName: null, accountHolderName: null, maskedAccountNumber: null, updatedAtUtc: null,
+  };
   const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
 
   if (!isDemoActive) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.PENDING_BE_INTEGRATION,
-      messageCode: PAYOUT_ERROR_CODES.PENDING_BE_INTEGRATION,
-    };
+    try {
+      const response = await fetch('/api/operator/payouts/bank-account', { cache: 'no-store' });
+      if (!response.ok) throw new PayoutLoadError('Failed to load the beneficiary bank account.', response.status);
+      return (await response.json()) as BeneficiaryBankAccountDto;
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading the beneficiary bank account.', null);
+    }
+  }
+
+  if (!isValidActor(options.demoActorUserId)) return empty;
+  const actorKey = String(options.demoActorUserId);
+  return JSON.parse(JSON.stringify(demoBeneficiaryBanks[actorKey] ?? empty));
+}
+
+/**
+ * Updates the beneficiary bank account. The browser sends the plaintext account number once;
+ * the server stores it protected and returns only the masked form.
+ */
+export async function updateBeneficiaryBankAccount(
+  payload: BeneficiaryBankAccountInput,
+  options: OperatorPayoutServiceOptions = {}
+): Promise<PayoutActionResult<BeneficiaryBankAccountDto>> {
+  const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
+
+  if (!payload.bankName.trim() || !payload.accountHolderName.trim() || !payload.accountNumber.trim()) {
+    return { success: false, errorCode: 'VALIDATION_REQUIRED_FIELD' };
+  }
+
+  if (!isDemoActive) {
+    try {
+      const response = await fetch('/api/operator/payouts/bank-account', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) return { success: false, errorCode: await parseErrorCode(response) as PayoutActionResult['errorCode'] };
+      return { success: true, data: (await response.json()) as BeneficiaryBankAccountDto };
+    } catch { return { success: false, errorCode: 'SYSTEM_ERROR' }; }
   }
 
   if (!isValidActor(options.demoActorUserId)) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG126,
-      messageCode: PAYOUT_ERROR_CODES.UNAUTHORIZED,
-    };
-  }
-
-  if (
-    !payload.accountHolder.trim() ||
-    !payload.bankName.trim() ||
-    !payload.accountNumber.trim()
-  ) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG01,
-      messageCode: PAYOUT_ERROR_CODES.MISSING_BENEFICIARY_FIELD,
-    };
+    return { success: false, errorCode: 'OPERATOR_NOT_APPROVED' };
   }
 
   const actorKey = String(options.demoActorUserId);
-  inMemoryBeneficiaryBanks[actorKey] = {
-    operatorUserId: options.demoActorUserId!,
-    accountHolder: payload.accountHolder.trim().toUpperCase(),
+  const trimmedNumber = payload.accountNumber.trim();
+  const masked = trimmedNumber.length <= 4
+    ? '*'.repeat(trimmedNumber.length)
+    : '*'.repeat(trimmedNumber.length - 4) + trimmedNumber.slice(-4);
+  const updated: BeneficiaryBankAccountDto = {
     bankName: payload.bankName.trim(),
-    accountNumber: payload.accountNumber.trim(),
+    accountHolderName: payload.accountHolderName.trim(),
+    maskedAccountNumber: masked,
+    updatedAtUtc: new Date().toISOString(),
   };
-
-  return {
-    success: true,
-    message: 'Beneficiary bank details saved successfully.',
-    messageCode: 'BANK_SAVED',
-  };
+  demoBeneficiaryBanks[actorKey] = updated;
+  return { success: true, data: JSON.parse(JSON.stringify(updated)) };
 }
 
 /**
- * Submits a new payout request for an eligible closed settlement period (UC-46).
+ * Returns the operator's current claimable balance: every closed, eligible, not-yet-paid
+ * settlement month aggregated into one figure, plus whether a request is currently allowed.
  */
-export async function requestPayoutSettlement(
-  payload: RequestPayoutPayload,
+export async function getAvailableBalance(
   options: OperatorPayoutServiceOptions = {}
-): Promise<PayoutActionResult> {
+): Promise<AvailableBalanceDto> {
+  const empty: AvailableBalanceDto = {
+    periodCount: 0, paymentsReceived: 0, discountsGiven: 0, refundedAmount: 0, netSales: 0,
+    commissionAmount: 0, adjustmentsOutstanding: 0, payableNetAmount: 0,
+    requestable: false, blockReason: 'NO_ELIGIBLE_BOOKING', activePayoutCode: null,
+  };
   const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
 
-  // Production NO_BACKEND truthfulness
   if (!isDemoActive) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.PENDING_BE_INTEGRATION,
-      messageCode: PAYOUT_ERROR_CODES.PENDING_BE_INTEGRATION,
-    };
+    try {
+      const response = await fetch('/api/operator/payouts/available-balance', { cache: 'no-store' });
+      if (!response.ok) throw new PayoutLoadError('Failed to load the available balance.', response.status);
+      return (await response.json()) as AvailableBalanceDto;
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading the available balance.', null);
+    }
   }
 
-  // BR-105 Fail-closed if actor identity is missing in demo mode
-  if (!isValidActor(options.demoActorUserId)) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG126,
-      messageCode: PAYOUT_ERROR_CODES.UNAUTHORIZED,
-    };
-  }
-
+  if (!isValidActor(options.demoActorUserId)) return empty;
   const actorKey = String(options.demoActorUserId);
-
-  // Beneficiary bank completeness validation (MSG01)
-  if (
-    !payload.bankInfo ||
-    !payload.bankInfo.accountHolder.trim() ||
-    !payload.bankInfo.bankName.trim() ||
-    !payload.bankInfo.accountNumber.trim()
-  ) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG01,
-      messageCode: PAYOUT_ERROR_CODES.MISSING_BENEFICIARY_FIELD,
-    };
+  const history = demoPayoutHistory[actorKey] ?? [];
+  const activePayout = history.find((item) => item.status !== 'Rejected' && item.status !== 'Cancelled' && item.status !== 'Settled');
+  if (activePayout) {
+    return JSON.parse(JSON.stringify({
+      ...empty, requestable: false, blockReason: 'ACTIVE_PAYOUT_EXISTS', activePayoutCode: activePayout.payoutCode,
+    }));
   }
 
-  // Find the selected period
-  const period = inMemorySettlementPeriods.find(
-    (p) => p.id === payload.periodId && String(p.operatorUserId) === actorKey
-  );
+  const months = (demoSettlementMonths[actorKey] ?? []).filter((m) => m.coverage === 'AvailableBalance');
+  if (months.length === 0) return JSON.parse(JSON.stringify(empty));
 
-  if (!period) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG128,
-      messageCode: PAYOUT_ERROR_CODES.PERIOD_INELIGIBLE,
-    };
-  }
+  const totals = months.reduce((acc, m) => ({
+    paymentsReceived: acc.paymentsReceived + m.paymentsReceived,
+    discountsGiven: acc.discountsGiven + m.discountsGiven,
+    refundedAmount: acc.refundedAmount + m.refundedAmount,
+    commissionAmount: acc.commissionAmount + m.commissionAmount,
+    payableNetAmount: acc.payableNetAmount + m.payableNetAmount,
+  }), { paymentsReceived: 0, discountsGiven: 0, refundedAmount: 0, commissionAmount: 0, payableNetAmount: 0 });
 
-  // Period eligibility validation (BR-111: Closed and completedToursCount > 0)
-  if (period.status !== 'Closed' || period.completedToursCount <= 0) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG128,
-      messageCode: PAYOUT_ERROR_CODES.PERIOD_INELIGIBLE,
-    };
-  }
-
-  // Duplicate pending validation (BR-113 / MSG119)
-  const existingPending = inMemoryPayoutRequests.find(
-    (r) =>
-      r.periodId === period.id &&
-      String(r.operatorUserId) === actorKey &&
-      r.status === 'Pending Confirmation'
-  );
-  if (period.hasPendingPayout || existingPending) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG119,
-      messageCode: PAYOUT_ERROR_CODES.REQUEST_ALREADY_PENDING,
-    };
-  }
-
-  // Minimum payout threshold validation (BR-112 / MSG120)
-  if (period.payableNetAmount < PAYOUT_CONFIG.DEFAULT_MINIMUM_PAYOUT_AMOUNT) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG120,
-      messageCode: PAYOUT_ERROR_CODES.BELOW_MINIMUM_AMOUNT,
-    };
-  }
-
-  // Create Payout Request DTO (Demo-calculated requested amount equals payableNetAmount estimate)
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const requestCode = `PO-${dateStr}-${actorKey}-${Math.floor(100 + Math.random() * 900)}`;
-
-  const newRequest: PayoutRequestDto = {
-    id: `po-req-${Date.now()}`,
-    requestCode,
-    operatorUserId: options.demoActorUserId!,
-    periodId: period.id,
-    periodLabel: period.periodLabel,
-    requestedAmount: period.payableNetAmount, // Demo-calculated payable net amount estimate (BR-112)
-    status: 'Pending Confirmation',
-    requestedAt: new Date().toISOString(),
-    bankSnapshot: {
-      operatorUserId: options.demoActorUserId!,
-      accountHolder: payload.bankInfo.accountHolder.trim().toUpperCase(),
-      bankName: payload.bankInfo.bankName.trim(),
-      accountNumber: payload.bankInfo.accountNumber.trim(),
-    },
+  const requestable = totals.payableNetAmount >= PAYOUT_CONFIG.DEFAULT_MINIMUM_PAYOUT_AMOUNT;
+  const balance: AvailableBalanceDto = {
+    periodCount: months.length,
+    paymentsReceived: totals.paymentsReceived,
+    discountsGiven: totals.discountsGiven,
+    refundedAmount: totals.refundedAmount,
+    netSales: totals.paymentsReceived - totals.refundedAmount,
+    commissionAmount: totals.commissionAmount,
+    adjustmentsOutstanding: 0,
+    payableNetAmount: totals.payableNetAmount,
+    requestable,
+    blockReason: requestable ? null : 'BELOW_MINIMUM_PAYOUT',
+    activePayoutCode: null,
   };
-
-  // State transitions
-  period.hasPendingPayout = true;
-  inMemoryPayoutRequests.unshift(newRequest);
-
-  return {
-    success: true,
-    payoutRequest: JSON.parse(JSON.stringify(newRequest)),
-    message: PAYOUT_MESSAGES.MSG118,
-    messageCode: PAYOUT_ERROR_CODES.REQUEST_SUBMITTED,
-  };
+  return JSON.parse(JSON.stringify(balance));
 }
 
 /**
- * Cancels a pending payout request (Alternative Flow §3.8.5.3).
- * Allowed ONLY for requests with status 'Pending Confirmation'.
- * On cancellation, the associated settlement period becomes requestable again.
+ * Submits a payout request claiming the operator's entire available balance — every closed,
+ * eligible, not-yet-paid settlement month at once (UC-46, "available balance" model).
  */
-export async function cancelPayoutRequest(
-  requestId: string,
+export async function requestPayout(
   options: OperatorPayoutServiceOptions = {}
-): Promise<PayoutActionResult> {
+): Promise<PayoutActionResult<PayoutSummaryDto>> {
   const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
 
-  // Production NO_BACKEND truthfulness
   if (!isDemoActive) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.PENDING_BE_INTEGRATION,
-      messageCode: PAYOUT_ERROR_CODES.PENDING_BE_INTEGRATION,
-    };
+    try {
+      const response = await fetch('/api/operator/payouts', { method: 'POST' });
+      if (!response.ok) return { success: false, errorCode: await parseErrorCode(response) as PayoutActionResult['errorCode'] };
+      return { success: true, data: (await response.json()) as PayoutSummaryDto };
+    } catch { return { success: false, errorCode: 'SYSTEM_ERROR' }; }
   }
 
-  // BR-105 Fail-closed if actor identity is missing in demo mode
   if (!isValidActor(options.demoActorUserId)) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG126,
-      messageCode: PAYOUT_ERROR_CODES.UNAUTHORIZED,
-    };
+    return { success: false, errorCode: 'OPERATOR_NOT_APPROVED' };
   }
 
   const actorKey = String(options.demoActorUserId);
-
-  const request = inMemoryPayoutRequests.find(
-    (r) => r.id === requestId && String(r.operatorUserId) === actorKey
-  );
-
-  if (!request) {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.MSG126,
-      messageCode: PAYOUT_ERROR_CODES.UNAUTHORIZED,
-    };
+  const balance = await getAvailableBalance(options);
+  if (!balance.requestable) {
+    return { success: false, errorCode: balance.blockReason ?? 'PAYOUT_NOT_REQUESTABLE' };
   }
 
-  // Cancellation restriction: only Pending Confirmation can be cancelled
-  if (request.status !== 'Pending Confirmation') {
-    return {
-      success: false,
-      message: PAYOUT_MESSAGES.CANNOT_CANCEL_NON_PENDING,
-      messageCode: PAYOUT_ERROR_CODES.CANNOT_CANCEL_NON_PENDING,
-    };
+  const bank = demoBeneficiaryBanks[actorKey];
+  if (!bank?.bankName || !bank.accountHolderName || !bank.maskedAccountNumber) {
+    return { success: false, errorCode: 'VALIDATION_REQUIRED_FIELD' };
   }
 
-  // Transition request to Cancelled
+  const months = (demoSettlementMonths[actorKey] ?? []).filter((m) => m.coverage === 'AvailableBalance');
+  const ordered = [...months].sort((a, b) => (a.year - b.year) || (a.month - b.month));
+
+  demoPayoutSequence += 1;
+  const nowDate = new Date();
+  const payoutCode = `PO-${nowDate.getUTCFullYear()}${String(nowDate.getUTCMonth() + 1).padStart(2, '0')}-${String(demoPayoutSequence).padStart(6, '0')}`;
+  const nowIso = nowDate.toISOString();
+  const first = ordered[0];
+  const last = ordered[ordered.length - 1];
+  const periodStart = `${first.year}-${String(first.month).padStart(2, '0')}-01`;
+  const lastDay = new Date(last.year, last.month, 0).getDate();
+  const periodEnd = `${last.year}-${String(last.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  for (const m of ordered) {
+    m.coverage = 'IncludedInPayout';
+    m.payoutCode = payoutCode;
+  }
+
+  const historyItem = {
+    payoutCode, periodCount: ordered.length, periodStart, periodEnd,
+    payableNetAmount: balance.payableNetAmount,
+    status: 'PendingReview' as const, requestedAtUtc: nowIso, settledAtUtc: null,
+    rejectionReason: null, cancellable: true,
+  };
+  demoPayoutHistory[actorKey] = [historyItem, ...(demoPayoutHistory[actorKey] ?? [])];
+
+  const monthBreakdowns: PayoutMonthBreakdownDto[] = ordered.map((m) => ({
+    year: m.year, month: m.month, eligibleBookingCount: m.eligibleBookingCount,
+    paymentsReceived: m.paymentsReceived, discountsGiven: m.discountsGiven,
+    refundedAmount: m.refundedAmount, commissionAmount: m.commissionAmount,
+    payableNetAmount: m.payableNetAmount,
+  }));
+
+  const summary: PayoutSummaryDto = {
+    payoutCode, status: 'PendingReview', periodCount: ordered.length, periodStart, periodEnd,
+    paymentsReceived: balance.paymentsReceived, discountsGiven: balance.discountsGiven,
+    refundedAmount: balance.refundedAmount, netSales: balance.netSales,
+    commissionAmount: balance.commissionAmount, adjustmentsApplied: 0,
+    payableNetAmount: balance.payableNetAmount, requestedAtUtc: nowIso,
+    bankName: bank.bankName, accountHolderName: bank.accountHolderName,
+    maskedAccountNumber: bank.maskedAccountNumber, months: monthBreakdowns,
+  };
+  return { success: true, data: JSON.parse(JSON.stringify(summary)) };
+}
+
+/**
+ * Returns the authenticated operator's payout request history, newest first.
+ */
+export async function getPayoutHistory(
+  page: number,
+  pageSize: number,
+  options: OperatorPayoutServiceOptions = {}
+): Promise<PayoutHistoryResponse> {
+  const empty: PayoutHistoryResponse = { items: [], page, pageSize, totalCount: 0, totalPages: 0 };
+  const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
+
+  if (!isDemoActive) {
+    try {
+      const response = await fetch(`/api/operator/payouts?page=${page}&pageSize=${pageSize}`, { cache: 'no-store' });
+      if (!response.ok) throw new PayoutLoadError('Failed to load the payout history.', response.status);
+      return (await response.json()) as PayoutHistoryResponse;
+    } catch (error) {
+      if (error instanceof PayoutLoadError) throw error;
+      throw new PayoutLoadError('Network error while loading the payout history.', null);
+    }
+  }
+
+  if (!isValidActor(options.demoActorUserId)) return empty;
+  const actorKey = String(options.demoActorUserId);
+  const items = demoPayoutHistory[actorKey] ?? [];
+  return JSON.parse(JSON.stringify({ items, page, pageSize, totalCount: items.length, totalPages: 1 }));
+}
+
+/**
+ * Cancels a payout request that is still PendingReview. The settlement month becomes
+ * requestable again on success.
+ */
+export async function cancelPayout(
+  payoutCode: string,
+  options: OperatorPayoutServiceOptions = {}
+): Promise<PayoutActionResult<{ payoutCode: string; status: string }>> {
+  const isDemoActive = Boolean(options.isDemo && isFinanceDemoAllowedInCurrentEnv());
+
+  if (!isDemoActive) {
+    try {
+      const response = await fetch(`/api/operator/payouts/${encodeURIComponent(payoutCode)}/cancel`, {
+        method: 'POST',
+      });
+      if (!response.ok) return { success: false, errorCode: await parseErrorCode(response) as PayoutActionResult['errorCode'] };
+      return { success: true, data: (await response.json()) as { payoutCode: string; status: string } };
+    } catch { return { success: false, errorCode: 'SYSTEM_ERROR' }; }
+  }
+
+  if (!isValidActor(options.demoActorUserId)) {
+    return { success: false, errorCode: 'OPERATOR_NOT_APPROVED' };
+  }
+
+  const actorKey = String(options.demoActorUserId);
+  const history = demoPayoutHistory[actorKey] ?? [];
+  const request = history.find((r) => r.payoutCode === payoutCode);
+  if (!request) return { success: false, errorCode: 'PAYOUT_NOT_FOUND' };
+  if (!request.cancellable || request.status !== 'PendingReview') {
+    return { success: false, errorCode: 'PAYOUT_NOT_CANCELLABLE' };
+  }
+
   request.status = 'Cancelled';
+  request.cancellable = false;
 
-  // Release period pending lock so the settlement period becomes requestable again
-  const period = inMemorySettlementPeriods.find((p) => p.id === request.periodId);
-  if (period) {
-    period.hasPendingPayout = false;
+  const months = demoSettlementMonths[actorKey] ?? [];
+  for (const month of months) {
+    if (month.payoutCode === payoutCode) {
+      month.coverage = 'AvailableBalance';
+      month.payoutCode = null;
+    }
   }
 
-  return {
-    success: true,
-    payoutRequest: JSON.parse(JSON.stringify(request)),
-    message: PAYOUT_MESSAGES.MSG129,
-    messageCode: PAYOUT_ERROR_CODES.REQUEST_CANCELLED,
-  };
+  return { success: true, data: { payoutCode, status: 'Cancelled' } };
 }
+
+export { PAYOUT_CONFIG };
