@@ -33,13 +33,15 @@ export function CancelPayoutDialog({ isOpen, request, onClose, onConfirmCancel }
     setErrorMessage(null);
     try {
       const result = await onConfirmCancel(request.payoutCode);
-      if (result.success) {
+      if (result.success || result.errorCode === 'PAYOUT_NOT_CANCELLABLE') {
+        // Success, or the payout already moved out of PendingReview server-side (e.g. Staff
+        // approved or rejected it) while this dialog was open. Either way retrying is pointless:
+        // the caller has already re-fetched months/balance/history with the authoritative status,
+        // so the dialog closes instead of staying open with a stale `request` and a re-clickable
+        // Confirm button. The caller shows a toast explaining the status change for this case.
         handleClose();
         return;
       }
-      // 409 PAYOUT_NOT_CANCELLABLE: the caller re-fetches months/balance/history right after this
-      // call regardless of outcome, so the underlying table is already corrected by the time this
-      // error renders — only this dialog's own copy of `request` is stale until it is closed.
       const displayKey = result.errorCode ? PAYOUT_ERROR_DISPLAY[result.errorCode] : undefined;
       const text = displayKey ? (financeEn.messages as Record<string, string>)[displayKey] : undefined;
       setErrorMessage(text ?? financeEn.messages.MSG127);

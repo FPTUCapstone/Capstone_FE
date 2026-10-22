@@ -125,7 +125,7 @@ describe('OperatorPayoutView (UC-46)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('re-fetches months/balance/history after a failed cancel (409), not only after a successful one', async () => {
+  it('re-fetches months/balance/history, closes the dialog, and warns the operator after a failed cancel (409)', async () => {
     mockSearchParams = new URLSearchParams('');
     let historyFetchCount = 0;
     const historyItem = {
@@ -171,6 +171,11 @@ describe('OperatorPayoutView (UC-46)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Confirm Cancellation/i }));
 
     await waitFor(() => expect(historyFetchCount).toBe(2));
+    // The dialog must close itself on PAYOUT_NOT_CANCELLABLE rather than stay open on the stale
+    // `request` with a re-clickable Confirm button, and the operator must be told why — not left
+    // to infer it from the table quietly changing underneath a dialog that just vanished.
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await screen.findByText(/can no longer be cancelled/i)).toBeDefined();
 
     vi.unstubAllGlobals();
   });
