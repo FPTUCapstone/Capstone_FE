@@ -80,9 +80,11 @@ export function OperatorPayoutView() {
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [requestToCancel, setRequestToCancel] = useState<PayoutHistoryItemDto | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastTone, setToastTone] = useState<'success' | 'warning'>('success');
 
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, tone: 'success' | 'warning' = 'success') => {
     setToastMessage(msg);
+    setToastTone(tone);
     setTimeout(() => setToastMessage(null), 5000);
   };
 
@@ -197,6 +199,12 @@ export function OperatorPayoutView() {
     const result = await cancelPayout(payoutCode, { isDemo, demoActorUserId: actorUserId });
     if (result.success) {
       showToast(financeEn.messages.MSG129);
+    } else if (result.errorCode === 'PAYOUT_NOT_CANCELLABLE') {
+      // The payout moved out of PendingReview server-side (e.g. Staff approved or rejected it)
+      // while the Cancel dialog was open. The dialog closes itself for this errorCode (see
+      // CancelPayoutDialog) instead of staying open on stale data, so this is where the operator
+      // learns why — the refetch below then shows the authoritative status in the table.
+      showToast(financeEn.messages.PAYOUT_PLACEHOLDER_NOT_CANCELLABLE, 'warning');
     }
     // Always re-fetch, success or failure: a 409 PAYOUT_NOT_CANCELLABLE means Staff/Admin moved
     // the request out from under the operator (e.g. approved it) while this dialog was open, so
@@ -237,8 +245,17 @@ export function OperatorPayoutView() {
       )}
 
       {toastMessage && (
-        <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800 flex items-center gap-2">
-          <span className="material-symbols-outlined text-emerald-600 text-[18px]">check_circle</span>
+        <div
+          role="status"
+          className={
+            toastTone === 'success'
+              ? 'rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800 flex items-center gap-2'
+              : 'rounded-2xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 flex items-center gap-2'
+          }
+        >
+          <span className={`material-symbols-outlined text-[18px] ${toastTone === 'success' ? 'text-emerald-600' : 'text-amber-600'}`}>
+            {toastTone === 'success' ? 'check_circle' : 'info'}
+          </span>
           <span className="font-medium">{toastMessage}</span>
         </div>
       )}
