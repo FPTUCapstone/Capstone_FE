@@ -36,9 +36,54 @@ describe('operatorRevenueExportProxy', () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   describe('proxyRevenueExports', () => {
+    it.each([undefined, 'null', 'https://foreign.test', 'invalid-origin'])(
+      'rejects POST origin %s before credentials, refresh or body processing',
+      async (origin) => {
+        vi.stubEnv('TRIPMATE_WEB_ORIGIN', '');
+        cookiesMock.mockResolvedValue(cookieJar('valid-refresh-token'));
+        mockOperatorRefresh();
+        const response = await proxyRevenueExports(new Request(
+          'http://localhost:3001/api/operator/revenue/exports', {
+            method: 'POST',
+            headers: origin === undefined ? {} : { Origin: origin },
+            body: 'malformed JSON',
+          },
+        ));
+
+        expect(response.status).toBe(403);
+        expect(await response.json()).toEqual({ errorCode: 'MSG126' });
+        expect(response.headers.get('Cache-Control')).toBe('no-store, max-age=0');
+        expect(cookiesMock).not.toHaveBeenCalled();
+        expect(fetchBackendMock).not.toHaveBeenCalled();
+      },
+    );
+
+    it('accepts the configured Web origin behind an internal proxy host', async () => {
+      vi.stubEnv('TRIPMATE_WEB_ORIGIN', 'https://tripmate.test');
+      cookiesMock.mockResolvedValue(cookieJar('valid-refresh-token'));
+      fetchBackendMock.mockResolvedValueOnce(new Response(JSON.stringify({
+        data: { accessToken: 'operator-token', role: 'TourOperator' },
+      }))).mockResolvedValueOnce(new Response(JSON.stringify({ id: 42 }), { status: 201 }));
+      const payload = { startDate: '2026-08-01', endDate: '2026-08-31' };
+
+      const response = await proxyRevenueExports(new Request(
+        'http://internal:3001/api/operator/revenue/exports', {
+          method: 'POST', headers: { Origin: 'https://tripmate.test' },
+          body: JSON.stringify(payload),
+        },
+      ));
+
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({ id: 42 });
+      expect(response.headers.get('Cache-Control')).toBe('no-store, max-age=0');
+      expect(fetchBackendMock.mock.calls[1][0]).toBe('/api/v1/operator/revenue/exports');
+      expect(JSON.parse(fetchBackendMock.mock.calls[1][1].body)).toEqual(payload);
+    });
+
     it('returns 401 UNAUTHENTICATED when refresh cookie is missing', async () => {
       cookiesMock.mockResolvedValue(cookieJar(undefined));
 
@@ -86,6 +131,7 @@ describe('operatorRevenueExportProxy', () => {
       };
       const request = new Request('http://localhost:3001/api/operator/revenue/exports', {
         method: 'POST',
+        headers: { Origin: 'http://localhost:3001' },
         body: JSON.stringify(payload),
       });
 
@@ -144,6 +190,7 @@ describe('operatorRevenueExportProxy', () => {
 
       const request = new Request('http://localhost:3001/api/operator/revenue/exports', {
         method: 'POST',
+        headers: { Origin: 'http://localhost:3001' },
         body: JSON.stringify({ startDate: '2026-08-01', endDate: '2026-08-31' }),
       });
       const response = await proxyRevenueExports(request);
