@@ -950,3 +950,19 @@ body {
               opacity 140ms ease;
   will-change: left, width, opacity;
 }
+
+/* Mapbox Container Full Coverage */
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mapboxgl-canvas-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

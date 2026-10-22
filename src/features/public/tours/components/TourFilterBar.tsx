@@ -106,7 +106,7 @@ export function TourFilterBar({
                 onChange={(e) => setDestination(e.target.value)}
                 placeholder="VD: Hội An, Đà Nẵng..."
                 maxLength={300}
-                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-9 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-11 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
               />
             </div>
           </div>
@@ -129,7 +129,7 @@ export function TourFilterBar({
                 type="date"
                 value={departureDate}
                 onChange={(e) => setDepartureDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-9 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-11 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
               />
             </div>
           </div>
@@ -155,7 +155,7 @@ export function TourFilterBar({
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 placeholder="VD: 500000"
-                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-9 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-11 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
               />
             </div>
           </div>
@@ -181,7 +181,7 @@ export function TourFilterBar({
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 placeholder="VD: 2000000"
-                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-9 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-11 text-xs font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-hidden"
               />
             </div>
           </div>

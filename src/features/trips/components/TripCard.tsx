@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import React, { useState } from 'react';
+import Link from "next/link";
+import React, { useState } from "react";
 
-import { ROUTES } from '@/lib/routes';
-import { tripReviewEn } from '../resources/en';
-import type { TripCardDto } from '../types/tripHistory';
-import { useModalFocusTrap } from './useModalFocusTrap';
+import { ROUTES } from "@/lib/routes";
+import { tripReviewEn } from "../resources/en";
+import type { TripCardDto } from "../types/tripHistory";
+import { useModalFocusTrap } from "./useModalFocusTrap";
 
 interface TripCardProps {
   trip: TripCardDto;
@@ -14,10 +14,10 @@ interface TripCardProps {
 }
 
 function formatVnd(amount?: number): string {
-  if (amount === undefined || amount === null) return '';
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
+  if (amount === undefined || amount === null) return "";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
     maximumFractionDigits: 0,
   }).format(amount);
 }
@@ -25,11 +25,11 @@ function formatVnd(amount?: number): string {
 function formatTripDate(isoString: string): string {
   try {
     const d = new Date(isoString);
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'Asia/Ho_Chi_Minh',
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "Asia/Ho_Chi_Minh",
     }).format(d);
   } catch {
     return isoString;
@@ -49,9 +49,15 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
   });
 
   const formattedDate = formatTripDate(trip.departureDatetime);
-  const isCompleted = trip.status === 'Completed';
-  const isCancelled = trip.status === 'Cancelled';
-  const isSelfPlanned = trip.tripType === 'SelfPlannedItinerary';
+  const isCompleted = trip.status === "Completed";
+  const isCancelled = trip.status === "Cancelled";
+  const isSelfPlanned = trip.tripType === "SelfPlannedItinerary";
+  const hasLiveRefundProgress =
+    !trip.isDemo &&
+    isCancelled &&
+    Boolean(trip.refundStatus?.trim()) &&
+    typeof trip.bookingId === "string" &&
+    /^\d+$/.test(trip.bookingId);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
@@ -63,14 +69,21 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             <div
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
                 isSelfPlanned
-                  ? 'bg-[#E6F4F1] text-[#006B5F]'
+                  ? "bg-[#E6F4F1] text-[#006B5F]"
                   : isCancelled
-                  ? 'bg-slate-100 text-slate-500'
-                  : 'bg-blue-50 text-blue-600'
+                    ? "bg-slate-100 text-slate-500"
+                    : "bg-blue-50 text-blue-600"
               }`}
             >
-              <span className="material-symbols-outlined text-[22px]" aria-hidden="true">
-                {isSelfPlanned ? 'route' : isCancelled ? 'event_busy' : 'explore'}
+              <span
+                className="material-symbols-outlined text-[22px]"
+                aria-hidden="true"
+              >
+                {isSelfPlanned
+                  ? "route"
+                  : isCancelled
+                    ? "event_busy"
+                    : "explore"}
               </span>
             </div>
 
@@ -79,10 +92,10 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                 <span
                   className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                     isCompleted
-                      ? 'bg-emerald-100 text-emerald-800'
+                      ? "bg-emerald-100 text-emerald-800"
                       : isCancelled
-                      ? 'bg-slate-100 text-slate-700'
-                      : 'bg-sky-100 text-sky-800'
+                        ? "bg-slate-100 text-slate-700"
+                        : "bg-sky-100 text-sky-800"
                   }`}
                 >
                   {trip.statusLabel || trip.status}
@@ -116,16 +129,21 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
         {isSelfPlanned ? (
           <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-800">
-              <span className="material-symbols-outlined text-[15px] text-[#006B5F]" aria-hidden="true">
+              <span
+                className="material-symbols-outlined text-[15px] text-[#006B5F]"
+                aria-hidden="true"
+              >
                 navigation
               </span>
               <span>
                 {trip.stopCount
                   ? tripReviewEn.tripHistory.card.stopsCount(trip.stopCount)
-                  : ''}
+                  : ""}
                 {trip.distanceKm
-                  ? tripReviewEn.tripHistory.card.distanceTravelled(trip.distanceKm)
-                  : ''}
+                  ? tripReviewEn.tripHistory.card.distanceTravelled(
+                      trip.distanceKm,
+                    )
+                  : ""}
               </span>
               {trip.durationLabel && (
                 <span className="ml-auto text-[11px] font-semibold text-slate-500">
@@ -139,24 +157,30 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                 <strong className="text-slate-800">
                   {tripReviewEn.tripHistory.card.visitedLabel}
                 </strong>
-                {trip.stopsSummary.join(', ')}
+                {trip.stopsSummary.join(", ")}
               </p>
             )}
 
             <div className="mt-2 flex flex-wrap gap-1.5">
               {trip.memberCount != null && trip.memberCount > 0 && (
                 <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
-                  <span className="material-symbols-outlined text-[13px] text-[#006B5F]" aria-hidden="true">
+                  <span
+                    className="material-symbols-outlined text-[13px] text-[#006B5F]"
+                    aria-hidden="true"
+                  >
                     group
                   </span>
                   {tripReviewEn.tripHistory.card.travelledWithMembers(
-                    trip.memberCount
+                    trip.memberCount,
                   )}
                 </span>
               )}
               {trip.isRerouted && (
                 <span className="inline-flex items-center gap-1 rounded bg-teal-50 px-2 py-0.5 text-[11px] text-teal-700">
-                  <span className="material-symbols-outlined text-[13px]" aria-hidden="true">
+                  <span
+                    className="material-symbols-outlined text-[13px]"
+                    aria-hidden="true"
+                  >
                     alt_route
                   </span>
                   {tripReviewEn.tripHistory.card.weatherReroutedBadge}
@@ -194,16 +218,16 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             {trip.participantsSummary && (
               <p className="mt-1 text-[11px] text-slate-500">
                 {tripReviewEn.tripHistory.card.participants(
-                  trip.participantsSummary
+                  trip.participantsSummary,
                 )}
               </p>
             )}
 
-            {isCancelled && trip.refundStatus && (
+            {isCancelled && trip.refundStatus && !hasLiveRefundProgress && (
               <div className="mt-2 rounded-lg bg-slate-100 p-2 text-xs text-slate-600">
                 <p className="font-semibold text-slate-700">
                   {tripReviewEn.tripHistory.card.refundStatus(
-                    trip.refundStatus
+                    trip.refundStatus,
                   )}
                 </p>
                 {trip.refundAmount !== undefined && (
@@ -211,7 +235,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
                     {tripReviewEn.tripHistory.card.refundAmountLine(
                       formatVnd(trip.refundAmount),
                       trip.refundChannel ||
-                        tripReviewEn.tripHistory.card.defaultRefundChannel
+                        tripReviewEn.tripHistory.card.defaultRefundChannel,
                     )}
                   </p>
                 )}
@@ -229,7 +253,10 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             href={ROUTES.itinerary(trip.itineraryId)}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-98"
           >
-            <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
+            <span
+              className="material-symbols-outlined text-[16px] text-slate-500"
+              aria-hidden="true"
+            >
               map
             </span>
             <span>{tripReviewEn.actions.viewItinerary}</span>
@@ -242,7 +269,10 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             href={ROUTES.bookingTicket(trip.ticketId)}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-98"
           >
-            <span className="material-symbols-outlined text-[16px] text-[#006B5F]" aria-hidden="true">
+            <span
+              className="material-symbols-outlined text-[16px] text-[#006B5F]"
+              aria-hidden="true"
+            >
               qr_code_2
             </span>
             <span>{tripReviewEn.actions.viewETicket}</span>
@@ -255,7 +285,10 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             href={ROUTES.account.tripReview(trip.tripId)}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#006B5F] py-2 px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D] active:scale-98"
           >
-            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+            <span
+              className="material-symbols-outlined text-[16px]"
+              aria-hidden="true"
+            >
               rate_review
             </span>
             <span>{tripReviewEn.actions.writeReview}</span>
@@ -269,7 +302,10 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             onClick={() => onViewReview?.(trip)}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2 px-3 text-xs font-bold text-[#006B5F] transition hover:bg-slate-200"
           >
-            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+            <span
+              className="material-symbols-outlined text-[16px]"
+              aria-hidden="true"
+            >
               visibility
             </span>
             <span>{tripReviewEn.actions.viewReview}</span>
@@ -282,7 +318,10 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
             href={ROUTES.tour(trip.tourId)}
             className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">
+            <span
+              className="material-symbols-outlined text-[15px]"
+              aria-hidden="true"
+            >
               replay
             </span>
             <span>{tripReviewEn.actions.bookAgain}</span>
@@ -290,14 +329,32 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
         )}
 
         {/* Action 6: Cancelled tour refund modal toggle */}
-        {isCancelled && trip.refundStatus && (
+        {hasLiveRefundProgress && trip.bookingId && (
+          <Link
+            href={`/bookings/${encodeURIComponent(trip.bookingId)}/refund`}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+          >
+            <span
+              className="material-symbols-outlined text-[16px] text-slate-500"
+              aria-hidden="true"
+            >
+              receipt_long
+            </span>
+            <span>{tripReviewEn.actions.refundDetails}</span>
+          </Link>
+        )}
+
+        {isCancelled && trip.refundStatus && !hasLiveRefundProgress && (
           <button
             ref={refundTriggerButtonRef}
             type="button"
             onClick={() => setShowRefundModal(true)}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
           >
-            <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
+            <span
+              className="material-symbols-outlined text-[16px] text-slate-500"
+              aria-hidden="true"
+            >
               receipt_long
             </span>
             <span>{tripReviewEn.actions.refundDetails}</span>
@@ -315,33 +372,46 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
         >
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <h4 id="refund-modal-title" className="text-base font-bold text-[#00152A]">
+            <h4
+              id="refund-modal-title"
+              className="text-base font-bold text-[#00152A]"
+            >
               {tripReviewEn.dialogs.refundDetails.title}
             </h4>
             <div className="mt-3 space-y-2 text-xs text-slate-600">
               <p>
-                <strong>{tripReviewEn.dialogs.refundDetails.bookingCodeLabel}</strong>{' '}
+                <strong>
+                  {tripReviewEn.dialogs.refundDetails.bookingCodeLabel}
+                </strong>{" "}
                 {trip.bookingCode || trip.tripId}
               </p>
               <p>
-                <strong>{tripReviewEn.dialogs.refundDetails.statusLabel}</strong>{' '}
+                <strong>
+                  {tripReviewEn.dialogs.refundDetails.statusLabel}
+                </strong>{" "}
                 {trip.refundStatus}
               </p>
               {trip.refundAmount !== undefined && (
                 <p>
-                  <strong>{tripReviewEn.dialogs.refundDetails.refundAmountLabel}</strong>{' '}
+                  <strong>
+                    {tripReviewEn.dialogs.refundDetails.refundAmountLabel}
+                  </strong>{" "}
                   {formatVnd(trip.refundAmount)}
                 </p>
               )}
               {trip.refundChannel && (
                 <p>
-                  <strong>{tripReviewEn.dialogs.refundDetails.refundChannelLabel}</strong>{' '}
+                  <strong>
+                    {tripReviewEn.dialogs.refundDetails.refundChannelLabel}
+                  </strong>{" "}
                   {trip.refundChannel}
                 </p>
               )}
               {trip.cancelledAt && (
                 <p>
-                  <strong>{tripReviewEn.dialogs.refundDetails.cancelledAtLabel}</strong>{' '}
+                  <strong>
+                    {tripReviewEn.dialogs.refundDetails.cancelledAtLabel}
+                  </strong>{" "}
                   {formatTripDate(trip.cancelledAt)}
                 </p>
               )}

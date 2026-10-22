@@ -190,10 +190,28 @@ async function requestJson(path: string, signal?: AbortSignal): Promise<unknown>
   return body;
 }
 
+import { getSamplePagedPois, getSamplePoiDetail } from '../data/samplePoiFixtures';
+
+function isDemoFixturesEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  return process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
+}
+
 export async function fetchPois(query: URLSearchParams, signal?: AbortSignal): Promise<PagedPois> {
+  if (isDemoFixturesEnabled()) {
+    return getSamplePagedPois(query);
+  }
+
   return parsePagedPois(await requestJson(`/api/pois?${query.toString()}`, signal));
 }
 
 export async function fetchPoiDetail(id: string, signal?: AbortSignal): Promise<PoiDetail> {
+  if (isDemoFixturesEnabled()) {
+    const sample = getSamplePoiDetail(id);
+    if (sample) return sample;
+  }
+
   return parsePoiDetail(await requestJson(`/api/pois/${encodeURIComponent(id)}`, signal));
 }
