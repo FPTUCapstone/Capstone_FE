@@ -140,7 +140,11 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
   }, [bookingId, router]);
 
   useEffect(() => {
-    if (sessionStatus === "authenticated") void load();
+    if (sessionStatus !== "authenticated") return;
+    const timeoutId = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [load, sessionStatus]);
 
   useEffect(() => {
