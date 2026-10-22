@@ -7,10 +7,13 @@ import { RefundProgressPage } from "./RefundProgressPage";
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   useWebSession: vi.fn(),
+  router: {} as { replace: ReturnType<typeof vi.fn> },
 }));
 
+mocks.router.replace = mocks.replace;
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: mocks.replace }),
+  useRouter: () => mocks.router,
 }));
 
 vi.mock("@/features/auth/session/useWebSession", () => ({
@@ -72,5 +75,23 @@ describe("RefundProgressPage", () => {
     expect(
       await screen.findByText("No refund record was found for this booking."),
     ).toBeDefined();
+  });
+
+  it("returns to sign-in when the BFF reports an expired session", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("{}", { status: 401 })),
+    );
+
+    render(<RefundProgressPage bookingId="42" />);
+
+    await waitFor(() =>
+      expect(mocks.replace).toHaveBeenCalledWith(
+        "/sign-in?returnUrl=%2Fbookings%2F42%2Frefund",
+      ),
+    );
+    expect(
+      screen.queryByText("Could not load refund progress. Please try again."),
+    ).toBeNull();
   });
 });

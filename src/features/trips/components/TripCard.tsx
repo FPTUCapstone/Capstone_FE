@@ -55,6 +55,7 @@ export function TripCard({ trip, onViewReview }: TripCardProps) {
   const hasLiveRefundProgress =
     !trip.isDemo &&
     isCancelled &&
+    Boolean(trip.refundStatus?.trim()) &&
     typeof trip.bookingId === "string" &&
     /^\d+$/.test(trip.bookingId);
 

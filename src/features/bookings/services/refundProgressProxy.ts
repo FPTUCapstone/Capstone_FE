@@ -15,15 +15,20 @@ function json(body: unknown, status: number): Response {
 
 async function bookingAccessToken(
   signal: AbortSignal,
-): Promise<{ token: string } | { status: number }> {
+): Promise<{ token: string } | { status: 401 | 403 | 503 }> {
   const refresh = (await cookies()).get(REFRESH_COOKIE)?.value;
   if (!refresh) return { status: 401 };
 
-  const response = await fetchBackend("/api/v1/auth/web/refresh", {
-    method: "POST",
-    headers: { Cookie: `${REFRESH_COOKIE}=${encodeURIComponent(refresh)}` },
-    signal,
-  });
+  let response: Response;
+  try {
+    response = await fetchBackend("/api/v1/auth/web/refresh", {
+      method: "POST",
+      headers: { Cookie: `${REFRESH_COOKIE}=${encodeURIComponent(refresh)}` },
+      signal,
+    });
+  } catch {
+    return { status: 503 };
+  }
   if (!response.ok) return { status: 401 };
 
   const body: unknown = await response.json().catch(() => null);
@@ -59,22 +64,34 @@ export async function proxyGetBookingRefundProgress(
   const auth = await bookingAccessToken(request.signal);
   if ("status" in auth) {
     return json(
-      { errorCode: auth.status === 403 ? "FORBIDDEN" : "UNAUTHENTICATED" },
+      {
+        errorCode:
+          auth.status === 403
+            ? "FORBIDDEN"
+            : auth.status === 401
+              ? "UNAUTHENTICATED"
+              : "REFUND_UNAVAILABLE",
+      },
       auth.status,
     );
   }
 
-  const response = await fetchBackend(
-    `/api/v1/bookings/${encodeURIComponent(bookingId)}/refund`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${auth.token}`,
-        Accept: "application/json",
+  let response: Response;
+  try {
+    response = await fetchBackend(
+      `/api/v1/bookings/${encodeURIComponent(bookingId)}/refund`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          Accept: "application/json",
+        },
+        signal: request.signal,
       },
-      signal: request.signal,
-    },
-  );
+    );
+  } catch {
+    return json({ errorCode: "REFUND_UNAVAILABLE" }, 503);
+  }
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const status =

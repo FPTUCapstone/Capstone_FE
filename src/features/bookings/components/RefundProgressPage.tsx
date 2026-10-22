@@ -115,6 +115,12 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
         { cache: "no-store" },
       );
       const payload: unknown = await response.json().catch(() => null);
+      if (response.status === 401) {
+        router.replace(
+          `${ROUTES.signIn}?returnUrl=${encodeURIComponent(`/bookings/${bookingId}/refund`)}`,
+        );
+        return;
+      }
       if (!response.ok || !payload || typeof payload !== "object") {
         setError(
           response.status === 404
@@ -131,7 +137,7 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
     } finally {
       setLoading(false);
     }
-  }, [bookingId]);
+  }, [bookingId, router]);
 
   useEffect(() => {
     if (sessionStatus === "authenticated") void load();
