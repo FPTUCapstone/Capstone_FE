@@ -18,7 +18,7 @@ Ngày đối chiếu: 23/10/2026. Trạng thái tổng thể: **MIGRATION_PARTIA
 
 Nguồn sản phẩm được kiểm tra là **original, non-V2** `Report3_Software-Requirement-Specification.docx` có SHA-256 `22371e92506b098a9a546069038b58b75003371b3b7f85d5cfd6dd913f0d295a`. Catalogue XML có **74 hàng / 74 UC duy nhất, UC-01 đến UC-74**. File original có sẵn ở máy, không thuộc trường hợp SOURCE_NOT_AVAILABLE; chưa chứng minh byte-identical với bản Google Drive. Bản V2 local có hash `c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`, chỉ là nguồn lịch sử khi mâu thuẫn với original.
 
-Change history original ghi thay đổi Staff/Admin ngày 11/10; screen flow, mô tả và authorization ngày 15/10; snapshot/ownership/idempotency hủy booking và refund UC-41/42 ngày 15/10; hình auth ngày 16/10/2026. Đây là chứng cứ thay đổi tài liệu, không tự giải quyết các đoạn mâu thuẫn nội bộ. UC-52 catalogue/authorization cho Staff và Admin trong khi chi tiết §3.9.3.1/BR115 còn Admin-only; FE hiện Staff-only. Active trips còn catalogue/auth Staff đối lập detail/BR111 Admin; route master và payout approval/settlement cũng cần BA xác nhận. Migration không sửa role, classification hay công thức.
+Change history original ghi thay đổi Staff/Admin ngày 11/10; screen flow, mô tả và authorization ngày 15/10; snapshot/ownership/idempotency hủy booking và refund UC-41/42 ngày 15/10; hình auth ngày 16/10/2026. Đây là chứng cứ thay đổi tài liệu, không tự giải quyết các đoạn mâu thuẫn nội bộ. UC-52 catalogue/authorization cho Staff và Admin trong khi chi tiết §3.9.3.1/BR115 còn Admin-only; FE hiện Staff-only. Active trips còn catalogue/auth Staff đối lập detail/BR115 và BR124 Admin; route master và payout approval/settlement cũng cần BA xác nhận. Migration không sửa role, classification hay công thức.
 
 README, convention và Web scope matrix có thông báo provenance theo ngày; bảng 72 UC và actor/platform cũ được đánh dấu lịch sử chờ đối soát. Chưa viết lại từng UC thành một classification mới. Tài liệu SRS chính thức không bị sửa.
 
@@ -39,7 +39,7 @@ PR liên quan tại lần kiểm tra cuối: #108 trip history, #112 và #113 pa
 | 2 / A5 legacy reviews | Public compatibility contract sau #108 | Hoàn tất giới hạn import | 05ed1e7 | 42 tests / 5 files trước/sau; lint/typecheck |
 | 2 / A2, A4 | Auth transport; coupon page orchestration | BLOCKED | — | Session/config/refresh contract; PR #91 |
 | 3 / U1 | Hai icon wrapper tương đương | Hoàn tất | b6d9390 | Red→green; 12 tests; lint/typecheck; ảnh responsive |
-| 3 / U2 | Auth hero primitive và wrapper giữ biến thể | Hoàn tất | 03cc3c6 | 9 tests; lint/typecheck/build; 6/6 ảnh ổn định bằng pixel |
+| 3 / U2 | Auth hero primitive và wrapper giữ biến thể | Hoàn tất | 03cc3c6 | 9 tests; lint/typecheck/build; 6/6 cặp ảnh lịch sử bằng pixel; exact captured revisions NOT_VERIFIED |
 | 3 / U3 | Token normalization | DEFERRED | — | Chưa có bằng chứng semantic/computed-style tương đương |
 | 4 / D1 | Tách geometry thuần khỏi scheduling form | PARTIALLY_RESOLVED | 0032d0e | Red→green; 46 tests; lint/typecheck |
 | 4 / D2 | Statistical report parser | NO_LONGER_APPLICABLE | — | Service hiện không có production response parser để tách |
@@ -133,7 +133,7 @@ Guard chỉ có thể kiểm tra import literal và module được đánh dấu
 
 | ID | Trước | Sau | Chứng cứ và giới hạn |
 |---|---|---|---|
-| C01 | MISMATCH / P0 | BLOCKED | `lib/authApi.ts` saveTokens vẫn được registration Google/VerifyEmailHandler gọi; UC-01 yêu cầu lưu token, UC-04 hoãn verification-link migration. Cần session/registration contract thay thế được duyệt. |
+| C01 | MISMATCH / P0 | BLOCKED | `lib/authApi.ts` saveTokens vẫn được registration Google/VerifyEmailHandler gọi; Supporting spec `specs/UC-01-web-spec.md:49` mô tả saves tokens; `specs/UC-04-web-spec.md:13` hoãn consumer migration, nhưng §6 cấm browser token storage. Original SRS §4.2.4 quy định secure storage/HttpOnly Cookies; deferral không phải security waiver. Cần session/registration contract thay thế được duyệt. |
 | C02 | MISMATCH / P0 | RESOLVED | S2/S3 guard payout effective method và POST export trước cookies/network; foreign/null/missing origin từ chối, same-origin/configured public origin theo policy có sẵn được test; không có Referer fallback. Chưa chứng minh exploit trên deployment thật. |
 | C03 | MISMATCH / P1 | BLOCKED | Auth API vẫn fallback localhost khi thiếu public env; cần deployment/API-base decision. Không fail-fast module import làm hỏng build CI không env. |
 | C04 | MISMATCH / P1 | BLOCKED | `lib/authApi.ts` còn phụ thuộc authSession; convention ghi legacy coupling. A2 cần S1 và ownership refresh/config trước khi tách. |
@@ -146,10 +146,10 @@ Guard chỉ có thể kiểm tra import literal và module được đánh dấu
 | C11 | MISMATCH / P1 | BLOCKED | Payout service còn DTO assumptions; source global available balance/bodyless request và spec period-based chưa khớp. Không tự đặt enum/date/money bounds. |
 | C12 | MISMATCH / P1 | RESOLVED | D5 giữ HTTP status/stable code; network/non-JSON/malformed khác [] hợp lệ; only consumed id/code/title được narrow; không yêu cầu unused metadata. |
 | C13 | MISMATCH / P1 | DEFERRED | Payment DTO mới kiểm một số field; full approved schema cần task riêng. Chưa sửa amount/status business rules. |
-| C14 | NOT_VERIFIED / P1 | NOT_VERIFIED | Refresh lặp ở nhiều proxy; rotation forwarding/concurrency ownership chưa có bằng chứng hợp đồng/live. Không tự kết luận security bug hay gom helper. |
+| C14 | NOT_VERIFIED / P1 | NOT_VERIFIED | Supporting UC-04:116 ghi NO rotation; thiếu rotated-cookie forwarding không phải confirmed defect. Refresh concurrency/live deployment chưa xác minh. Không tự kết luận security bug hay gom helper. |
 | C15 | MISMATCH / P1 | BLOCKED | Signed download fetch vẫn dùng backend URL, redirects mặc định, chưa có destination policy/timeout riêng; cần Backend/DevOps duyệt. SSRF thực chưa được chứng minh. |
 | C16 | MISMATCH / P2 | RESOLVED | BrandIcon chia sẻ implementation, compatibility default/type exports và inverse/className được test; full contextual brand logo không gộp. |
-| C17 | MISMATCH / P2 | RESOLVED | AuthHeroPanel primitive; wrapper giữ khác biệt default text/sticky; 9 tests và 6/6 ảnh ổn định bằng pixel. |
+| C17 | MISMATCH / P2 | RESOLVED | AuthHeroPanel primitive; wrapper giữ khác biệt default text/sticky; 9 tests và 6/6 cặp ảnh lịch sử bằng pixel; exact captured revisions NOT_VERIFIED. |
 | C18 | MISMATCH / P1 | PARTIALLY_RESOLVED | Geometry tách và kiểm thử; form/report lớn còn tồn tại. Cáo buộc report có production parser không đúng source hiện tại. |
 | C19 | NOT_VERIFIED / P3 | NOT_VERIFIED | Feature loading/error có sẵn; chưa xác nhận unexpected render failure/retry từng route. Không scaffold error boundary hàng loạt. |
 | C20 | COMPLIANT | NO_LONGER_APPLICABLE | Cơ chế seal HMAC/fingerprint/expiry Admin và memory-only shared session giữ nguyên; không có remediation cần làm ở cơ chế này. C01 là đường legacy riêng còn mở. |
@@ -162,10 +162,10 @@ Guard chỉ có thể kiểm tra import literal và module được đánh dấu
 | C27 | MISMATCH / P1 | PARTIALLY_RESOLVED | Provenance, historical notices, PR template và báo cáo hiện tại đã cập nhật; chưa reconcile tất cả 74 UC/actor/platform, không coi bảng cũ là hiện hành. |
 | C28 | NOT_VERIFIED / P2 | DEFERRED | Tokens/hex hiện hữu; chưa chứng minh semantic role và computed style tương đương trên các màn hình. Không đổi palette. |
 | C29 | NOT_VERIFIED / P1 | PARTIALLY_RESOLVED | Có test/UI evidence cho phần chạm và public auth responsive/keyboard/sticky; contrast/zoom/full-dialog matrix, role/live journeys chưa đủ. Không chứng nhận WCAG. |
-| C30 | COMPLIANT | RESOLVED | Snapshot graph được chuyển thành guard có fixture âm/dương chạy trong npm test; giới hạn AST/static/server-only markers nêu ở §3. Không tuyên bố kiểm toàn bộ kiến trúc. |
+| C30 | COMPLIANT | RESOLVED | Snapshot graph được chuyển thành guard có fixture âm/dương chạy trong npm test; Local declaration ownership đã được bổ sung cùng regression d.ts/d.mts/d.cts; declarations không tạo runtime edges. Giới hạn AST/static/server-only markers nêu ở §3. Không tuyên bố kiểm toàn bộ kiến trúc. |
 | C31 | COMPLIANT | NO_LONGER_APPLICABLE | CI baseline hiện tại success, workflow bắt buộc checks hiện hữu. Chưa xác minh branch protection; unpushed local commits không có CI riêng. |
 | C32 | NOT_VERIFIED / P0 triage | BLOCKED | Audit mới vẫn 18 package findings; cần security reachability assessment và approved upgrade. Không npm audit fix tự động. |
-| C33 | MISMATCH / P0 | BLOCKED | Staff approve/reject payout còn thiếu origin guard tại các đường đã audit; phụ thuộc PR #110 và authorization reconciliation. Không coi SameSite Strict là policy origin. |
+| C33 | MISMATCH / P0 | BLOCKED | Staff approve/reject payout còn thiếu origin guard tại các đường đã audit; PR #110 đã đóng không merge; cần maintainer chỉ định owner và authorization reconciliation. Không coi SameSite Strict là policy origin. |
 
 ## 5. Đánh giá bảo mật
 
@@ -218,7 +218,7 @@ Dùng Playwright Node đã có và Chrome local, không cài dependency/browser 
 |---|---|---|
 | Guest /sign-in và /register | 360/768/1440 × 900, reduced motion, không overflow ngang, headings giữ nguyên | Không có auth credentials/live sign-in |
 | Brand icon U1 | 5/6 ảnh pixel-identical; desktop sign-in có diff trong vùng card animation | Không claim 6/6 cho bộ ảnh U1 |
-| Hero U2 | Screenshot animations disabled tại phép chụp; 6/6 trước/sau pixel-identical; kích thước giữ nguyên | Không sửa CSS/animation sản phẩm; không kiểm mọi nội dung dài |
+| Hero U2 | Screenshot animations disabled tại phép chụp; 6/6 cặp file lịch sử pixel-identical; không có captured SHA/build-ID nên exact baseline→migration equivalence NOT_VERIFIED | Không sửa CSS/animation sản phẩm; không kiểm mọi nội dung dài |
 | Registration desktop | Sticky computed position, height 900; top sau scroll khoảng -0,5 CSS px, tolerance ≤1 px; tab qua 8 controls | Assertion đầu top===0 thất bại do subpixel, phép đo sửa tolerance; không sửa app để qua |
 | Dialog / feedback | Drawer timer/copy và existing dialog tests; brand aria/currentColor/inverse; D5 role=alert và retry button | Chưa browser-audit mọi focus trap, zoom/contrast/full WCAG |
 | Scheduling / external reviews | 46 form+geometry, 43 dialog tests; attribution/import contract giữ nguyên | Maps/WebGL/backend itinerary thật chưa xác minh |
@@ -285,3 +285,15 @@ Nhánh local: `refactor/frontend-convention-migration`. Worktree: `C:/Users/asus
 Trước commit báo cáo, working tree chỉ có chính tệp báo cáo thay đổi; bàn giao sau commit với working tree sạch, được kiểm tra lại bằng git status. Không push, không tạo PR, không merge migration vào develop/main. Có **một merge local từ origin/develop vào migration** (`42ed52a`) để tích hợp baseline tiến lên theo §15 master task; đây không phải merge giao hàng vào nhánh đích. Không rebase/reset/force-push hoặc sửa lịch sử đồng đội.
 
 Kiểm tra read-only bàn giao tại checkout gốc thấy nhánh hiện là `develop`, HEAD `9b9124403b6ac9b29164963bed01b04fd578c88d`, có untracked `.agents/`, `audit-output/`, `skills-lock.json`, khác snapshot lúc bắt đầu. Migration không thực hiện checkout/reset/stash/add/commit các tệp đó; giữ nguyên trạng thái hiện có, không nhận là checkout gốc vẫn sạch hoặc vẫn ở nhánh ban đầu. Các worktree khác được giữ lại. Sau bàn giao, giữ nhánh/worktree để developer review; chỉ push, mở PR, merge hoặc discard khi có chỉ dẫn riêng. Pre-PR gate vẫn yêu cầu `npm install` → `npm test` → `npm run lint` → `npm run typecheck` → `npm run build` và CI/reviewer theo AGENTS; `npm ci`/local validation phiên này không tự cấp quyền tạo PR.
+
+## 11. Independent review reconciliation — 23/10/2026
+
+Original SRS chính thức được independent reviewer lấy qua Drive: SHA-256 `c7636775d4208d8284905a04af5f79eacd4d2d05cb72d1022b12e7e830390be5`, modified `2026-10-20T16:11:21.141Z`. Snapshot này khác bản local `22371…` đã dùng ở §1; hash tải về không tự là fingerprint được BA phê duyệt. XML diff có thay đổi refund-before-commission theo từng booking trong UC-44/BR-112 và bổ sung BR-139/BR-140 cho payout. Đây là yêu cầu cần finance/BA reconciliation, không cho phép FE tự đổi phép tính trong migration.
+
+PR #110 đã CLOSED, không merged (`2026-10-23T11:02:08Z`). Những câu “#110 còn mở” phía trên là snapshot lịch sử; C33 cần maintainer chỉ định owner tiếp nhận, không tiếp tục dựa vào PR đang mở. HEAD audit trước remediation là `5185177ecbee4a2f3d9c4dcfb3b895a831593eba`.
+
+Visual claim được giới hạn lại: 12 PNG gốc U2 tồn tại; sáu cặp before/after bằng SHA-256 và decoded pixels. Scripts ghi Chrome headless, localhost3019, viewport360/768/1440×900, fullPage, reducedMotion reduce, screenshot animations disabled. Không có captured source SHA/build-ID/browser version, nên không chứng minh ảnh thuộc exact baseline/migration revision. Width360/768 không hiện hero desktop; chỉ hai ảnh1440 trực tiếp kiểm vùng hero. Không dùng ảnh lịch sử làm evidence rerun ở HEAD remediation hoặc WCAG certification. Artifact/attachment references sẽ được ghi trong PR handoff sau verification.
+
+Origin policy ownership (EXT-03): import shared server-only `isSameOriginRequest` từ `src/lib/server/adminSession.ts` không vi phạm convention §3. Tên module có thể cải thiện sau này, nhưng không extraction chỉ để đồng nhất tên và không đổi CSRF semantics trong remediation.
+
+Refresh C14: supporting `specs/UC-04-web-spec.md:116` ghi NO rotation. Không coi thiếu rotated-cookie forwarding là confirmed defect theo contract này; live deployment/concurrency verification vẫn chưa có.
