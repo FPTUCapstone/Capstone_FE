@@ -4,9 +4,7 @@
  */
 export const tripReviewEn = {
   bff: {
-    badRequestTitle: 'Bad Request',
     notImplementedTitle: 'Not Implemented',
-    invalidTripIdDetail: 'Invalid trip identifier.',
     tripHistoryPendingDetail:
       'Trip history service is pending backend integration.',
     tripReviewPendingDetail:
@@ -16,7 +14,6 @@ export const tripReviewEn = {
   errors: {
     systemError:
       'TripMate is temporarily unable to process your request. Please check your connection and try again.',
-    tripNotFound: 'The requested trip could not be found.',
     tripByIdNotFound: (tripId: string) =>
       `Trip #${tripId} could not be found.`,
     tripNotFoundOrForbidden: (tripId: string) =>
@@ -26,6 +23,7 @@ export const tripReviewEn = {
       'You do not have permission to access this trip history.',
     tripDetailAccessDenied:
       'You do not have permission to view this trip.',
+    tripRecordUnavailable: 'This trip is no longer available.',
     reviewAccessDenied:
       'You do not have permission to review this trip.',
   },
@@ -50,7 +48,6 @@ export const tripReviewEn = {
 
   demo: {
     badgeLabel: 'DEMO ONLY',
-    shortBadge: 'DEMO',
     tripHistoryBannerPrefix: 'DEMO Preview:',
     tripHistoryBannerText:
       'Sample trip data is displayed for design and workflow preview.',
@@ -79,21 +76,13 @@ export const tripReviewEn = {
     summary: {
       headingBadge: 'Trip Summary',
       completedTripsCount: (count: number) => `${count} Completed Trips`,
-      distanceUnit: 'km',
       distanceLabel: 'Total Distance',
       visitedPoisLabel: 'Visited Stops',
-      cspMatchRateLabel: 'Route Match (Demo)',
-      averageRatingLabel: 'Average Rating',
     },
     filters: {
-      searchPlaceholder:
-        'Search by tour name, destination, booking code...',
       allTypes: 'All Trip Types',
       tourBooking: 'Booked Tours',
       selfPlannedItinerary: 'Self-Planned Itineraries',
-    },
-    pending: {
-      title: 'Trip History Service',
     },
     error: {
       title: 'Unable to Load Data',
@@ -106,23 +95,34 @@ export const tripReviewEn = {
     showingSeparator: '/',
     showingSuffix: 'trips',
     timezoneNotice: 'Times shown in GMT+7 (Asia/Ho_Chi_Minh)',
+    statusLabels: {
+      Completed: 'Completed',
+      Confirmed: 'Confirmed',
+      PendingPayment: 'Awaiting payment',
+      Cancelled: 'Cancelled',
+      Expired: 'Expired',
+      Active: 'Planned',
+    } as Record<string, string>,
+    refundStatusLabels: {
+      Pending: 'Pending',
+      Processing: 'Processing',
+      RetryPending: 'Processing',
+      ManualReview: 'Under review',
+      Processed: 'Refunded',
+      Failed: 'Failed',
+      Rejected: 'Rejected',
+    } as Record<string, string>,
     card: {
+      participantCount: (count: number) =>
+        `${count} ${count === 1 ? 'participant' : 'participants'}`,
+      visitedOf: (visited: number, total: number) => `Visited ${visited} of ${total}`,
       departureDate: (formattedDate: string) =>
         `Departure: ${formattedDate}`,
       stopsCount: (count: number) => `${count} Stops`,
       distanceTravelled: (km: number) => ` • ${km} km traveled`,
-      visitedLabel: 'Visited: ',
-      travelledWithMembers: (count: number) =>
-        `Traveled with ${count} members`,
-      weatherReroutedBadge: 'Weather reroute accepted',
-      defaultOperatorName: 'Tour Operator',
       bookingCode: (code: string) => `Code: ${code}`,
-      paidVia: (method: string) => `Paid via ${method}`,
       participants: (summary: string) => `Participants: ${summary}`,
       refundStatus: (status: string) => `Refund: ${status}`,
-      refundAmountLine: (amount: string, channel: string) =>
-        `Refund amount: ${amount} (${channel})`,
-      defaultRefundChannel: 'Original payment method',
     },
   },
 
@@ -226,18 +226,15 @@ export const tripReviewEn = {
   },
 
   actions: {
-    search: 'Search',
-    retryConnection: 'Retry Connection',
-    planNewItinerary: 'Plan New Itinerary',
     retry: 'Try Again',
     planSmartItinerary: 'Plan Smart Itinerary',
     exploreLocalTours: 'Explore Local Tours',
     close: 'Close',
     viewItinerary: 'View Itinerary',
+    viewDetails: 'View Details',
     viewETicket: 'View E-Ticket',
     writeReview: 'Write Review',
     viewReview: 'View Review',
-    bookAgain: 'Book Again',
     refundDetails: 'Refund Details',
     backToTrips: 'Back to My Trips',
     cancelLater: 'Cancel / Later',
@@ -250,8 +247,6 @@ export const tripReviewEn = {
   accessibility: {
     breadcrumbAria: 'Breadcrumb',
     tripSummaryAria: 'Trip summary statistics',
-    searchTripsLabel: 'Search trips',
-    searchButtonAria: 'Search',
     tripTypeFilterLabel: 'Trip type',
     fromDateAria: 'From date',
     toDateAria: 'To date',
@@ -271,13 +266,6 @@ export const tripReviewEn = {
   },
 
   dialogs: {
-    submittedReview: {
-      badge: 'Reviewed',
-      ratingCaption: '(Experience rating)',
-      commentHeading: 'Review comment:',
-      submittedAt: (formattedDate: string) =>
-        `Submitted at: ${formattedDate}`,
-    },
     refundDetails: {
       title: 'Trip Refund Information',
       bookingCodeLabel: 'Booking Code:',
@@ -285,6 +273,41 @@ export const tripReviewEn = {
       refundAmountLabel: 'Refund Amount:',
       refundChannelLabel: 'Refund Channel:',
       cancelledAtLabel: 'Cancelled At:',
+    },
+    tripDetail: {
+      loading: 'Loading trip details…',
+      tourHeading: 'Tour',
+      destinationLabel: 'Destination',
+      scheduleHeading: 'Schedule',
+      startsLabel: 'Starts',
+      endsLabel: 'Ends',
+      meetingPointLabel: 'Meeting point',
+      participantsHeading: 'Participants',
+      adults: (count: number) => `${count} ${count === 1 ? 'adult' : 'adults'}`,
+      children: (count: number) => `${count} ${count === 1 ? 'child' : 'children'}`,
+      infants: (count: number) => `${count} ${count === 1 ? 'infant' : 'infants'}`,
+      cancellationHeading: 'Cancellation',
+      cancellationReasonLabel: 'Reason',
+      refundHeading: 'Refund',
+      channelUnavailable: 'Not available',
+      stopsHeading: 'Stops',
+      stopStatus: {
+        Reached: 'Visited',
+        Skipped: 'Skipped',
+        Pending: 'Not visited',
+      },
+      reachedAt: (formattedDateTime: string) => `Reached ${formattedDateTime}`,
+      skippedAt: (formattedDateTime: string) => `Skipped ${formattedDateTime}`,
+      plannedWindow: (from: string, to: string) => `Planned ${from}–${to}`,
+      sessionHeading: 'Trip session',
+      sessionStartedLabel: 'Started',
+      sessionEndedLabel: 'Ended',
+      sessionReasonLabel: 'How it ended',
+      completionReasons: {
+        RouteFinished: 'Route completed',
+        TravelerStopped: 'Stopped by you',
+        Expired: 'Ended automatically when the trip time ran out',
+      } as Record<string, string>,
     },
   },
 

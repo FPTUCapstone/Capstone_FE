@@ -25,6 +25,7 @@ export type PayoutItem = {
   operator: PayoutOperator;
   periodStart: string;
   periodEnd: string;
+  periodCount: number;
   grossRevenue: number;
   commissionAmount: number;
   netAmount: number;
@@ -66,11 +67,14 @@ const isUtcTimestamp = (value: unknown): value is string | null =>
     /(?:Z|\+00:00)$/.test(value) && Number.isFinite(Date.parse(value)));
 
 function parseItem(value: unknown): PayoutItem {
+  // payoutCode is the persisted code UC-46 issued to the Tour Operator. It is displayed and searched
+  // as-is; it is never derived from payoutId, so only its presence is validated here.
   if (!isRecord(value) || typeof value.payoutId !== 'string' || !/^\d+$/.test(value.payoutId) ||
-      value.payoutCode !== `PO-${value.payoutId}` ||
+      typeof value.payoutCode !== 'string' || value.payoutCode.trim() === '' ||
       !isRecord(value.operator) || typeof value.operator.userId !== 'string' || !/^\d+$/.test(value.operator.userId) ||
       typeof value.operator.companyName !== 'string' ||
       !isDateOnly(value.periodStart) || !isDateOnly(value.periodEnd) ||
+      typeof value.periodCount !== 'number' || !Number.isSafeInteger(value.periodCount) || value.periodCount < 1 ||
       !isNonNegativeMoney(value.grossRevenue) || !isNonNegativeMoney(value.commissionAmount) ||
       !isNonNegativeMoney(value.netAmount) || !isUtcTimestamp(value.requestedAtUtc) ||
       !PAYOUT_STATUSES.includes(value.status as PayoutStatus)) {
