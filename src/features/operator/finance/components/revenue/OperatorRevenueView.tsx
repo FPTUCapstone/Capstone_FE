@@ -56,7 +56,17 @@ export function OperatorRevenueView() {
   const [reportResult, setReportResult] = useState<RevenueReportResult | null>(
     null
   );
-  const [tours, setTours] = useState<DemoTourPackage[]>([]);
+  const [tourLoad, setTourLoad] = useState<{
+    isDemo: boolean;
+    actorUserId: typeof actorUserId;
+    tours: DemoTourPackage[];
+    failed: boolean;
+  } | null>(null);
+  const [tourRetryToken, setTourRetryToken] = useState(0);
+  const tourContextMatches = tourLoad?.isDemo === isDemo &&
+    tourLoad?.actorUserId === actorUserId;
+  const tours = tourContextMatches ? tourLoad.tours : [];
+  const toursFailed = tourContextMatches && tourLoad.failed;
   const [currentPage, setCurrentPage] = useState(1);
   // Starts true so the first mount shows a loading state without an effect setting it
   // synchronously; every later load is triggered by an event handler that sets this itself.
@@ -90,17 +100,21 @@ export function OperatorRevenueView() {
   useEffect(() => {
     let isMounted = true;
     async function loadTours() {
-      const data = await getOperatorRevenueTours({
-        isDemo,
-        demoActorUserId: actorUserId,
-      });
-      if (isMounted) setTours(data);
+      try {
+        const data = await getOperatorRevenueTours({
+          isDemo,
+          demoActorUserId: actorUserId,
+        });
+        if (isMounted) setTourLoad({ isDemo, actorUserId, tours: data, failed: false });
+      } catch {
+        if (isMounted) setTourLoad({ isDemo, actorUserId, tours: [], failed: true });
+      }
     }
-    loadTours();
+    void loadTours();
     return () => {
       isMounted = false;
     };
-  }, [isDemo, actorUserId]);
+  }, [isDemo, actorUserId, tourRetryToken]);
 
   // Single data-fetch path shared by the initial load, Apply/Reset filters, the manual Refresh
   // button, tab-focus refresh, and background polling. It never flips `isLoading` on; the caller
@@ -324,6 +338,25 @@ export function OperatorRevenueView() {
             info
           </span>
           <span className="font-medium">{reportResult.errorMessage}</span>
+        </div>
+      )}
+
+      {toursFailed && (
+        <div
+          role="alert"
+          className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-800 flex flex-wrap items-center gap-2"
+        >
+          <span>{financeEn.revenue.tourFiltersError}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setTourLoad(null);
+              setTourRetryToken((token) => token + 1);
+            }}
+            className="rounded-lg border border-amber-300 px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {financeEn.revenue.retryTourFiltersBtn}
+          </button>
         </div>
       )}
 

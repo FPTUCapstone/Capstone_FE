@@ -69,6 +69,43 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
       expect(result.messageCode).toBe(REVENUE_ERROR_CODES.SUCCESS);
     });
 
+    it.each([401, 403, 500])('rejects tour HTTP %i instead of reporting an empty list', async (status) => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+        JSON.stringify({ errorCode: 'BACKEND_CODE', detail: 'private detail' }), { status }
+      )));
+      await expect(getOperatorRevenueTours()).rejects.toMatchObject({
+        name: 'RevenueToursLoadError', status, code: 'BACKEND_CODE',
+      });
+    });
+
+    it.each([
+      ['network', () => Promise.reject(new Error('private network detail')), REVENUE_ERROR_CODES.SYSTEM_FAILURE],
+      ['non-JSON', () => Promise.resolve(new Response('<html>private</html>')), 'INVALID_RESPONSE'],
+      ['object', () => Promise.resolve(new Response(JSON.stringify({ items: [] }))), 'INVALID_RESPONSE'],
+      ['invalid item', () => Promise.resolve(new Response(JSON.stringify([{ id: 7, code: 'T', title: null, isActive: true }]))), 'INVALID_RESPONSE'],
+    ])('rejects %s tour failures', async (_label, response, code) => {
+      vi.stubGlobal('fetch', vi.fn(response));
+      await expect(getOperatorRevenueTours()).rejects.toMatchObject({
+        name: 'RevenueToursLoadError', code,
+      });
+    });
+
+    it('accepts mapped tour fields without requiring unused metadata', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify([
+        { id: 7, code: 'T7', title: 'Owned tour', extraMetadata: { source: 'backend' } },
+        { id: 8, code: 'T8', title: 'Other tour', isActive: 'unused' },
+      ]))));
+      await expect(getOperatorRevenueTours()).resolves.toEqual([
+        { id: '7', tourCode: 'T7', title: 'Owned tour', operatorUserId: 0 },
+        { id: '8', tourCode: 'T8', title: 'Other tour', operatorUserId: 0 },
+      ]);
+    });
+
+    it('preserves a successful empty owned-tour list', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('[]')));
+      await expect(getOperatorRevenueTours()).resolves.toEqual([]);
+    });
+
     it('uses the production tour filter endpoint when isDemo is false', async () => {
       const fetchMock = vi.fn().mockResolvedValue(
         new Response(JSON.stringify([{ id: 7, code: 'TOUR-007', title: 'API tour', isActive: true }]), {

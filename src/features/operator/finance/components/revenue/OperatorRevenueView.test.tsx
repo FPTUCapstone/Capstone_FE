@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OperatorRevenueView } from './OperatorRevenueView';
 
+let mockActorUserId = 101;
 let mockSearchParams = new URLSearchParams('demo=1');
 
 vi.mock('next/navigation', () => ({
@@ -16,7 +17,7 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
   useWebSession: () => ({
     status: 'authenticated',
     context: {
-      userId: 101,
+      userId: mockActorUserId,
       role: 'TourOperator',
       status: 'Active',
       applicationStatus: 'Approved',
@@ -30,6 +31,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockActorUserId = 101;
     process.env = {
       ...originalEnv,
       NODE_ENV: 'test',
@@ -87,6 +89,75 @@ describe('OperatorRevenueView (Screen #89)', () => {
       );
     });
     expect(screen.queryByText(/Backend Integration Pending/i)).toBeNull();
+  });
+
+  function productionFetch(toursResponse: () => Promise<Response>) {
+    return vi.fn((url: string) => {
+      if (url.includes('/tours')) return toursResponse();
+      if (url.includes('/exports')) return Promise.resolve(new Response(JSON.stringify({
+        items: [], totalCount: 0, page: 1, pageSize: 20, totalPages: 0,
+      })));
+      return Promise.resolve(new Response(JSON.stringify({
+        summary: { grossRevenue: 0, platformCommission: 0, netAmount: 0, totalBookings: 0, totalParticipants: 0, refundedAmount: 0, commissionRatePercent: 10 },
+        chartData: [], tourDetails: [], totalToursCount: 0, page: 1, pageSize: 20, totalPages: 0,
+      })));
+    });
+  }
+
+  it('shows a safe tour-filter error independently of report success and retries only tours', async () => {
+    mockSearchParams = new URLSearchParams('');
+    const toursResponse = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'private backend detail' }), { status: 403 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 7, code: 'T7', title: 'Recovered tour', isActive: true }])));
+    const fetchMock = productionFetch(toursResponse);
+    vi.stubGlobal('fetch', fetchMock);
+    render(<OperatorRevenueView />);
+    expect(await screen.findByText(/Unable to load tour filters/i)).toBeDefined();
+    expect(screen.queryByText(/private backend detail/)).toBeNull();
+    expect(screen.getByText(/Settlement Breakdown/)).toBeDefined();
+    const reportCalls = fetchMock.mock.calls.filter(([url]) => url.includes('/report')).length;
+    fireEvent.click(screen.getByRole('button', { name: /Retry tour filters/i }));
+    expect(await screen.findByRole('option', { name: /Recovered tour/ })).toBeDefined();
+    expect(screen.queryByText(/Unable to load tour filters/i)).toBeNull();
+    expect(fetchMock.mock.calls.filter(([url]) => url.includes('/report')).length).toBe(reportCalls);
+  });
+
+  it('does not label a successful empty tour list as a failure', async () => {
+    mockSearchParams = new URLSearchParams('');
+    vi.stubGlobal('fetch', productionFetch(() => Promise.resolve(new Response('[]'))));
+    render(<OperatorRevenueView />);
+    await waitFor(() => expect(screen.getByTestId('revenue-last-updated').textContent).toMatch(/^Updated /));
+    expect(screen.queryByText(/Unable to load tour filters/i)).toBeNull();
+  });
+
+  it('hides previous actor tours and ignores late previous-actor completion', async () => {
+    mockSearchParams = new URLSearchParams('');
+    let resolveOld!: (value: Response) => void;
+    const toursResponse = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 1, code: 'OLD', title: 'Old actor tour', isActive: true }])))
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { resolveOld = resolve; }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 2, code: 'NEW', title: 'New actor tour', isActive: true }])));
+    vi.stubGlobal('fetch', productionFetch(toursResponse));
+    const view = render(<OperatorRevenueView />);
+    expect(await screen.findByRole('option', { name: /Old actor tour/ })).toBeDefined();
+    mockActorUserId = 202;
+    view.rerender(<OperatorRevenueView />);
+    expect(screen.queryByRole('option', { name: /Old actor tour/ })).toBeNull();
+    mockActorUserId = 303;
+    view.rerender(<OperatorRevenueView />);
+    expect(await screen.findByRole('option', { name: /New actor tour/ })).toBeDefined();
+    await act(async () => resolveOld(new Response(JSON.stringify([{ id: 9, code: 'STALE', title: 'Stale tour', isActive: true }]))));
+    expect(screen.queryByRole('option', { name: /Stale tour/ })).toBeNull();
+  });
+
+  it('handles a tour request rejection after unmount', async () => {
+    mockSearchParams = new URLSearchParams('');
+    let rejectTours!: (reason: Error) => void;
+    vi.stubGlobal('fetch', productionFetch(() => new Promise<Response>((_resolve, reject) => { rejectTours = reject; })));
+    const view = render(<OperatorRevenueView />);
+    view.unmount();
+    await act(async () => rejectTours(new Error('private network failure')));
+    expect(screen.queryByText(/Unable to load tour filters/i)).toBeNull();
   });
 
   it('enforces CR-02 draft filter behavior: does not re-query until Apply Filters is clicked', async () => {
