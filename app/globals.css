@@ -134,12 +134,127 @@
   --brand-textSecondary: #64748B;
 }
 
-html {
+/* ==========================================================================
+   GLOBAL PREMIUM MOTION & LENIS INTEGRATION SYSTEM
+   ========================================================================== */
+
+/* 1. Core Lenis Smooth Scroll Configuration */
+html.lenis,
+html.lenis body,
+html.lenis-smooth {
+  height: auto;
+}
+
+html.lenis,
+html.lenis.lenis-smooth,
+html.lenis.lenis-scrolling {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent],
+[data-lenis-prevent],
+[role="dialog"],
+.modal-scrollable,
+.table-scrollable {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+html:not(.lenis) {
   scroll-behavior: smooth;
+}
+
+/* 2. Global Motion Timing & Easing Tokens */
+:root {
+  --motion-ease-out-cubic: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --motion-ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-duration-fast: 150ms;
+  --motion-duration-normal: 300ms;
+  --motion-duration-slow: 500ms;
+  --motion-duration-editorial: 700ms;
+}
+
+/* 3. Global ScrollReveal Base States & Stagger Utilities */
+[data-revealed] {
+  transition-property: opacity, transform, filter;
+  transition-timing-function: var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1));
+  will-change: opacity, transform;
+}
+
+[data-revealed="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-revealed="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale(1) !important;
+  filter: blur(0px) !important;
+}
+
+/* Stagger animation utilities for list and card sequences */
+.stagger-1 { transition-delay: 50ms; }
+.stagger-2 { transition-delay: 100ms; }
+.stagger-3 { transition-delay: 150ms; }
+.stagger-4 { transition-delay: 200ms; }
+.stagger-5 { transition-delay: 250ms; }
+.stagger-6 { transition-delay: 300ms; }
+
+/* 4. Global Page Entrance Transition */
+@keyframes page-enter-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.page-enter,
+.animate-page-enter {
+  animation: page-enter-fade 320ms var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+
+/* 5. Image Reveal Transition Utilities */
+.image-reveal-container {
+  overflow: hidden;
+}
+
+.image-reveal-container img {
+  transition: transform 700ms var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1)),
+              filter 700ms var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1));
+  will-change: transform, filter;
+}
+
+[data-revealed="false"] .image-reveal-container img {
+  transform: scale(1.06);
+  filter: blur(4px);
+}
+
+[data-revealed="true"] .image-reveal-container img {
+  transform: scale(1);
+  filter: blur(0px);
+}
+
+html {
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
+  overflow-x: clip;
   font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #F4F7FC;
   color: #0F1B2D;
@@ -307,13 +422,37 @@ body {
   animation: scale-in 180ms ease-out both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-
-  .animate-fade-in,
-  .animate-scale-in {
-    animation: none;
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
+
+.animate-page-enter {
+  animation: page-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes editorial-crossfade {
+  from {
+    opacity: 0.35;
+    transform: scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-crossfade {
+  animation: editorial-crossfade 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Reduced motion override removed: full premium motion always active */
 
 .pulse-marker {
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -607,56 +746,223 @@ body {
   text-wrap: pretty;
 }
 
-/* Global Reduced-Motion Enforcements */
+/* Heritage Atmosphere Background Animations */
+@keyframes river-drift {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-8px) scaleY(1.02);
+  }
+}
+
+@keyframes dash-flow {
+  from {
+    stroke-dashoffset: 120;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes orb-float-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.14;
+  }
+  50% {
+    transform: translate3d(24px, -20px, 0) scale(1.08);
+    opacity: 0.22;
+  }
+}
+
+@keyframes orb-float-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate3d(-20px, 18px, 0) scale(1.06);
+    opacity: 0.20;
+  }
+}
+
+.animate-river-drift {
+  animation: river-drift 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-dash-flow {
+  animation: dash-flow 24s linear infinite;
+}
+
+.animate-orb-1 {
+  animation: orb-float-1 12s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-orb-2 {
+  animation: orb-float-2 16s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Running Ticker / Marquee Animations */
+@keyframes marquee-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-left 58s linear infinite;
+}
+
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-right 64s linear infinite;
+}
+
+.animate-marquee-left:hover,
+.animate-marquee-right:hover {
+  animation-play-state: paused;
+}
+
+/* Route Dash Flow Animation (Continuous Living Path) */
+@keyframes route-dash-flow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -32;
+  }
+}
+
+.animate-route-dash-flow {
+  stroke-dasharray: 8 6;
+  animation: route-dash-flow 3.8s linear infinite;
+}
+
+
+/* Global Reduced-Motion Enforcements (applied only when data-motion is NOT full) */
 @media (prefers-reduced-motion: reduce) {
-  .animate-route-draw {
+  html:not([data-motion="full"]) .animate-route-draw {
     stroke-dashoffset: 0 !important;
     animation: none !important;
   }
-  .animate-ping,
-  .animate-pulse,
-  .animate-pulse-glow,
-  .animate-pulse-subtle,
-  .pulse-marker,
-  .pulse-coral {
+  html:not([data-motion="full"]) .animate-ping,
+  html:not([data-motion="full"]) .animate-pulse,
+  html:not([data-motion="full"]) .animate-pulse-glow,
+  html:not([data-motion="full"]) .animate-pulse-subtle,
+  html:not([data-motion="full"]) .pulse-marker,
+  html:not([data-motion="full"]) .pulse-coral {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
-  .animate-spin {
+  html:not([data-motion="full"]) .animate-spin {
     animation: none !important;
     transform: none !important;
   }
-  .animate-in,
-  .fade-in,
-  .zoom-in-95,
-  .zoom-in-75,
-  .slide-in-from-top-1,
-  .animate-fade-in,
-  .animate-scale-in {
+  html:not([data-motion="full"]) .animate-in,
+  html:not([data-motion="full"]) .fade-in,
+  html:not([data-motion="full"]) .zoom-in-95,
+  html:not([data-motion="full"]) .zoom-in-75,
+  html:not([data-motion="full"]) .slide-in-from-top-1,
+  html:not([data-motion="full"]) .animate-fade-in,
+  html:not([data-motion="full"]) .animate-scale-in,
+  html:not([data-motion="full"]) .animate-page-enter,
+  html:not([data-motion="full"]) .animate-crossfade {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
-  .animate-ambient-float,
-  .animate-float-gentle,
-  .animate-float-1,
-  .animate-float-2,
-  .animate-float-3,
-  .hero-float-1,
-  .hero-float-2,
-  .hero-float-3,
-  .animate-float,
-  .animate-waypoint-beacon,
-  .animate-radar {
+  html:not([data-motion="full"]) .animate-ambient-float,
+  html:not([data-motion="full"]) .animate-float-gentle,
+  html:not([data-motion="full"]) .animate-float-1,
+  html:not([data-motion="full"]) .animate-float-2,
+  html:not([data-motion="full"]) .animate-float-3,
+  html:not([data-motion="full"]) .hero-float-1,
+  html:not([data-motion="full"]) .hero-float-2,
+  html:not([data-motion="full"]) .hero-float-3,
+  html:not([data-motion="full"]) .animate-float,
+  html:not([data-motion="full"]) .animate-waypoint-beacon,
+  html:not([data-motion="full"]) .animate-radar {
     animation: none !important;
     transform: none !important;
   }
-  .tilt-card:hover,
-  .card-hover-lift:hover {
+  html:not([data-motion="full"]) .tilt-card:hover,
+  html:not([data-motion="full"]) .card-hover-lift:hover {
     transform: none !important;
   }
-  .btn-press:active {
+  html:not([data-motion="full"]) .btn-press:active {
     transform: none !important;
   }
+  html:not([data-motion="full"]) .nav-sliding-pill,
+  html:not([data-motion="full"]) .nav-hover-pill {
+    transition: none !important;
+  }
+  html:not([data-motion="full"]) .page-enter,
+  html:not([data-motion="full"]) .animate-page-enter {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  html:not([data-motion="full"]) .image-reveal-container img {
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
+
+/* Public Navigation Desktop Capsule Sliding Pill Indicator */
+.nav-sliding-pill {
+  transition: left 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              top 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              height 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 150ms ease;
+  will-change: left, width;
+}
+
+/* Public Navigation Desktop Capsule Translucent Hover Indicator */
+.nav-hover-pill {
+  transition: left 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              width 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              top 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              height 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 140ms ease;
+  will-change: left, width, opacity;
+}
+
+/* Mapbox Container Full Coverage */
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mapboxgl-canvas-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
 }

@@ -1,8 +1,11 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
 
 import { WebSessionProvider } from '@/features/auth/session/WebSessionProvider';
+import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvider';
+import { ScrollResetHandler } from '@/components/providers/ScrollResetHandler';
+import { PersistentPublicLayout } from '@/components/layout/PersistentPublicLayout';
 
 import './globals.css';
 
@@ -23,6 +26,11 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: {
     default: 'TripMate - Explore Central Vietnam',
@@ -33,7 +41,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="vi" data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html lang="vi">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -46,7 +54,14 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} antialiased bg-brand-surface font-sans text-brand-textPrimary selection:bg-brand-lightTeal selection:text-brand-teal`}
         suppressHydrationWarning
       >
-        <WebSessionProvider>{children}</WebSessionProvider>
+        <WebSessionProvider>
+          <SmoothScrollProvider>
+            <ScrollResetHandler />
+            <PersistentPublicLayout>
+              {children}
+            </PersistentPublicLayout>
+          </SmoothScrollProvider>
+        </WebSessionProvider>
       </body>
     </html>
   );

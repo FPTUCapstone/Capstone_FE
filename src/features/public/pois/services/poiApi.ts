@@ -8,6 +8,7 @@ import type {
   PoiTag,
 } from '../types/poi';
 import { PoiApiError } from '../types/poi';
+import { COST_KINDS, type CostKind } from '@/lib/priceLabel';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -122,7 +123,9 @@ export function parsePoiDetail(value: unknown): PoiDetail {
     !Array.isArray(value.photos) ||
     !Array.isArray(value.tags) ||
     typeof value.createdAtUtc !== 'string' ||
-    typeof value.updatedAtUtc !== 'string'
+    typeof value.updatedAtUtc !== 'string' ||
+    (value.estimatedVisitCost !== undefined && !isNullableNumber(value.estimatedVisitCost)) ||
+    (value.costKind !== undefined && value.costKind !== null && !COST_KINDS.includes(value.costKind as CostKind))
   ) {
     throw new Error('Dữ liệu địa điểm không hợp lệ.');
   }
@@ -150,6 +153,8 @@ export function parsePoiDetail(value: unknown): PoiDetail {
     tags: value.tags.map(parseTag),
     createdAtUtc: value.createdAtUtc,
     updatedAtUtc: value.updatedAtUtc,
+    estimatedVisitCost: typeof value.estimatedVisitCost === 'number' ? value.estimatedVisitCost : null,
+    costKind: COST_KINDS.includes(value.costKind as CostKind) ? (value.costKind as CostKind) : null,
   };
 }
 
@@ -185,10 +190,28 @@ async function requestJson(path: string, signal?: AbortSignal): Promise<unknown>
   return body;
 }
 
+import { getSamplePagedPois, getSamplePoiDetail } from '../data/samplePoiFixtures';
+
+function isDemoFixturesEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  return process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
+}
+
 export async function fetchPois(query: URLSearchParams, signal?: AbortSignal): Promise<PagedPois> {
+  if (isDemoFixturesEnabled()) {
+    return getSamplePagedPois(query);
+  }
+
   return parsePagedPois(await requestJson(`/api/pois?${query.toString()}`, signal));
 }
 
 export async function fetchPoiDetail(id: string, signal?: AbortSignal): Promise<PoiDetail> {
+  if (isDemoFixturesEnabled()) {
+    const sample = getSamplePoiDetail(id);
+    if (sample) return sample;
+  }
+
   return parsePoiDetail(await requestJson(`/api/pois/${encodeURIComponent(id)}`, signal));
 }

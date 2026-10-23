@@ -114,21 +114,21 @@ export function WeatherReroutingSection() {
                 <span className="material-symbols-outlined text-sm">
                   {isRerouted ? 'restart_alt' : 'bolt'}
                 </span>
-                <span>{isRerouted ? 'Xem lại sự cố ban đầu' : 'Xem đề xuất cứu nguy (Đổi lịch)'}</span>
+                <span>{isRerouted ? 'Xem lại sự cố ban đầu' : 'Xem đề xuất đổi lịch trình'}</span>
               </button>
             </div>
 
-            {/* FSM Engine Event Log Ticker */}
+            {/* Weather Event Log Ticker */}
             <div className="my-5 p-4 rounded-2xl bg-black/50 border border-white/10 text-xs font-mono">
               <div className="flex items-center justify-between text-slate-400 pb-2 mb-3 border-b border-white/10 text-[11px]">
                 <span className="flex items-center gap-2 text-teal-300 font-bold">
                   <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
-                  FSM Real-time Monitor Stream
+                  Theo dõi thời tiết thời gian thực
                 </span>
                 <span className="font-bold text-xs">
                   Trạng thái:{' '}
                   <span className={isRerouted ? 'text-teal-400' : 'text-rose-400'}>
-                    {isRerouted ? 'STATE_NEW_ITINERARY_ACCEPTED ✓' : 'STATE_WEATHER_ALERT (DISRUPTION)'}
+                    {isRerouted ? 'LỊCH TRÌNH ĐÃ ĐƯỢC CẬP NHẬT ✓' : 'CẢNH BÁO THỜI TIẾT KÍCH HOẠT'}
                   </span>
                 </span>
               </div>
@@ -163,51 +163,60 @@ export function WeatherReroutingSection() {
             {/* Before and After Route Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Original Card */}
-              <div
-                className={`p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
-                  isRerouted
-                    ? 'border-white/10 bg-white/5 opacity-50 scale-95'
-                    : 'border-rose-400/50 bg-rose-500/10 shadow-lg shadow-rose-500/10'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-rose-300">
-                      Lộ trình Gốc (Bị gián đoạn)
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500 text-white">
-                      {scenario.originalActivity.badgeText}
+              <div className="relative group/orig h-full">
+                {!isRerouted && (
+                  <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-br from-rose-500/25 via-amber-500/15 to-transparent blur-xl opacity-60 animate-orb-1 pointer-events-none" />
+                )}
+                <div
+                  className={`relative z-10 p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between h-full backdrop-blur-xs ${
+                    isRerouted
+                      ? 'border-white/10 bg-white/5 opacity-50 scale-95'
+                      : 'border-rose-400/50 bg-[#160B14]/90 shadow-lg shadow-rose-500/10'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-rose-300">
+                        Lộ trình ban đầu
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500 text-white">
+                        {scenario.originalActivity.badgeText}
+                      </span>
+                    </div>
+                    <h4 className="text-base font-bold text-white">
+                      {scenario.originalActivity.time}: {scenario.originalActivity.title}
+                    </h4>
+                    <p className="text-xs text-slate-300 mt-2.5 leading-relaxed">
+                      {scenario.originalActivity.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+                    <span>Mức độ rủi ro: <strong>{scenario.originalActivity.riskLevel}</strong></span>
+                    <span className="text-rose-400 font-bold flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">dangerous</span>
+                      Khuyến nghị đổi
                     </span>
                   </div>
-                  <h4 className="text-base font-bold text-white">
-                    {scenario.originalActivity.time}: {scenario.originalActivity.title}
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-2.5 leading-relaxed">
-                    {scenario.originalActivity.description}
-                  </p>
-                </div>
-
-                <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
-                  <span>Mức độ rủi ro: <strong>{scenario.originalActivity.riskLevel}</strong></span>
-                  <span className="text-rose-400 font-bold flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">dangerous</span>
-                    Khuyến nghị đổi
-                  </span>
                 </div>
               </div>
 
               {/* Rerouted Card */}
-              <div
-                className={`p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
-                  isRerouted
-                    ? 'border-teal-400/80 bg-teal-500/15 shadow-2xl shadow-teal-500/20 scale-[1.02]'
-                    : 'border-white/10 bg-white/5 opacity-70'
-                }`}
-              >
+              <div className="relative group/reroute h-full">
+                {isRerouted && (
+                  <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-br from-teal-400/30 via-emerald-400/20 to-sky-400/15 blur-xl opacity-75 animate-orb-2 pointer-events-none" />
+                )}
+                <div
+                  className={`relative z-10 p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between h-full backdrop-blur-xs ${
+                    isRerouted
+                      ? 'border-teal-400/80 bg-[#061D24]/95 shadow-2xl shadow-teal-500/20 scale-[1.02]'
+                      : 'border-white/10 bg-white/5 opacity-70'
+                  }`}
+                >
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-bold uppercase tracking-wider text-teal-300">
-                      Đề xuất Cứu nguy (Điểm trú mưa an toàn)
+                      Phương án thay thế an toàn
                     </span>
                     {isRerouted && (
                       <span className="text-[10px] px-2 py-0.5 rounded bg-teal-400 text-slate-950 font-bold">
@@ -240,6 +249,7 @@ export function WeatherReroutingSection() {
                   </span>
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Bottom Note */}

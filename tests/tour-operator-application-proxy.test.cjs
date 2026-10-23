@@ -86,10 +86,14 @@ test('rejects cross-origin mutations and forwards a valid rejection reason', asy
   assert.equal(called, true);
 });
 
-test('clears an invalid session and does not expose upstream server failures', async () => {
+test('clears an invalid session on 401, preserves session on 403, and does not expose upstream server failures', async () => {
   const denied = await setup('expired', async () => Response.json({ detail: 'private' }, { status: 401 }))(request(), '2');
   assert.equal(denied.status, 401);
   assert.match(denied.headers.get('Set-Cookie'), /Max-Age=0/);
+
+  const forbidden = await setup('staff-token', async () => Response.json({ detail: 'private' }, { status: 403 }))(request(), '2');
+  assert.equal(forbidden.status, 403);
+  assert.equal(forbidden.headers.get('Set-Cookie'), null);
 
   const failed = await setup('admin-token', async () => Response.json({ detail: 'database-secret' }, { status: 500 }))(request(), '2');
   assert.equal(failed.status, 503);

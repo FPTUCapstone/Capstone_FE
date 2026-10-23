@@ -1,9 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
+'use client';
+
 import { useState } from 'react';
 import Link from 'next/link';
 
 import type { TourDetailDto, TourScheduleDto } from '../types/tour';
-import { formatDateDisplay, formatVndPrice } from '../utils/tourQuery';
+import { describeCancellationRules } from '../services/tourDetailResponse';
+import { formatDateDisplay, formatDateTimeVietnam, formatVndPrice } from '../utils/tourQuery';
+import { ROUTES } from '@/lib/routes';
 
 interface TourDetailViewProps {
   tour: TourDetailDto;
@@ -11,11 +15,25 @@ interface TourDetailViewProps {
   isAuthenticated?: boolean;
 }
 
+/**
+ * A departure can be chosen when the server says it is bookable (real data). Demo fixtures carry no such flag, so
+ * they fall back to the old rule. Unknown capacity and closed registration are never selectable.
+ */
+function isSelectable(schedule: TourScheduleDto): boolean {
+  if (schedule.bookable !== undefined) return schedule.bookable;
+  return schedule.status === 'Available' && schedule.remainingSlots > 0;
+}
+
+function scheduleAvailabilityLabel(schedule: TourScheduleDto): { text: string; warning: boolean } {
+  if (isSelectable(schedule)) return { text: `Còn ${schedule.remainingSlots} chỗ`, warning: false };
+  if (schedule.status === 'Scheduled') return { text: 'Chưa xác định số chỗ', warning: true };
+  if (schedule.status === 'SoldOut' || schedule.remainingSlots <= 0) return { text: 'Hết chỗ (MSG65)', warning: true };
+  return { text: 'Đã đóng đăng ký', warning: true };
+}
+
 export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourDetailViewProps) {
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>(() => {
-    const available = tour.schedules.find(
-      (s) => s.status.toLowerCase() !== 'soldout' && s.remainingSlots > 0,
-    );
+    const available = tour.schedules.find(isSelectable);
     return available ? available.scheduleId : tour.schedules[0]?.scheduleId ?? '';
   });
 
@@ -25,14 +43,20 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
     (s) => s.scheduleId === selectedScheduleId,
   );
 
-  const hasAvailableSchedules = tour.schedules.some(
-    (s) => s.status.toLowerCase() !== 'soldout' && s.remainingSlots > 0,
-  );
+  const hasAvailableSchedules = tour.hasBookableSchedule ?? tour.schedules.some(isSelectable);
+  const isCurrentScheduleAvailable = selectedSchedule !== undefined && isSelectable(selectedSchedule);
 
-  const isCurrentScheduleAvailable =
-    selectedSchedule &&
-    selectedSchedule.status.toLowerCase() !== 'soldout' &&
-    selectedSchedule.remainingSlots > 0;
+  // Real data carries the meeting point per departure: never borrow another departure's. Demo data has a
+  // single tour-level meeting point.
+  const meetingPoint =
+    selectedSchedule?.bookable !== undefined ? selectedSchedule.meetingPoint : tour.meetingPoint;
+  const cancellationLines = tour.cancellationRules ? describeCancellationRules(tour.cancellationRules) : [];
+
+  // Images for asymmetric gallery
+  const images = tour.images && tour.images.length > 0 ? tour.images : [];
+  const mainImage = images[activeImageIndex] || images[0] || null;
+  const sideImage1 = images.length > 1 ? images[(activeImageIndex + 1) % images.length] : null;
+  const sideImage2 = images.length > 2 ? images[(activeImageIndex + 2) % images.length] : null;
 
   return (
     <article aria-labelledby="tour-detail-title" className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -79,13 +103,13 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
         <div className="mb-6 flex items-center gap-2.5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs font-semibold text-amber-900 shadow-xs">
           <span className="material-symbols-outlined text-lg text-amber-600">info</span>
           <span>
-            CHẾ ĐỘ MÔ PHỎNG (DEMO ONLY) — Đang hiển thị giao diện mẫu cho UC-26 (View Tour Detail) khi đang chờ kết nối Backend chính thức (PENDING_BE_INTEGRATION).
+            CHẾ ĐỘ MÔ PHỎNG (DEMO ONLY) — Đang hiển thị giao diện mẫu chi tiết tour trong thời gian hoàn tất kết nối.
           </span>
         </div>
       )}
 
-      {/* Main Header Information Area */}
-      <header className="mb-8">
+      {/* Tour Identity Header */}
+      <header className="mb-6">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {tour.destinations.map((dest) => (
             <span
@@ -125,38 +149,94 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             <span>Nhà tổ chức: <strong className="text-slate-900">{tour.operatorName}</strong></span>
           </span>
           {tour.operatorContact && (
-            <span className="text-slate-400">| Liên hệ: {tour.operatorContact}</span>
+            <span className="text-slate-500">| Liên hệ: {tour.operatorContact}</span>
           )}
         </div>
       </header>
 
-      {/* Gallery Area */}
-      <div className="mb-10 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-xs">
-        <div className="relative aspect-16/9 md:aspect-21/9 w-full bg-slate-200">
-          {tour.images.length > 0 ? (
-            <img
-              src={tour.images[activeImageIndex] || tour.images[0]}
-              alt={`${tour.title} - Ảnh ${activeImageIndex + 1}`}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-slate-400">
-              <span className="material-symbols-outlined text-6xl">landscape</span>
+      {/* Asymmetric Photo Gallery (2/3 Main Image + 1/3 Supporting Images) */}
+      <div className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-md">
+        {images.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 p-2 bg-slate-900/5">
+            {/* Main Featured Photo (~68% on desktop) */}
+            <div className="relative aspect-16/10 md:aspect-auto md:col-span-8 md:h-[420px] overflow-hidden rounded-2xl bg-slate-200">
+              <img
+                src={mainImage || ''}
+                alt={`${tour.title} - Ảnh tiêu biểu`}
+                className="h-full w-full object-cover transition-transform duration-500 hover:scale-102"
+              />
+              <div className="absolute top-3 left-3 rounded-lg bg-slate-900/70 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-xs">
+                Ảnh tiêu biểu
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Thumbnail Selector */}
-        {tour.images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto bg-white p-3">
-            {tour.images.map((img, idx) => (
+            {/* Supporting Images Column (~32% on desktop) */}
+            <div className="hidden md:flex md:col-span-4 flex-col gap-2 h-[420px]">
+              {sideImage1 ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveImageIndex((activeImageIndex + 1) % images.length)}
+                  className="relative flex-1 overflow-hidden rounded-2xl bg-slate-200 cursor-pointer group"
+                  aria-label="Xem ảnh phụ 1"
+                >
+                  <img
+                    src={sideImage1}
+                    alt=""
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-slate-950/10 group-hover:bg-transparent transition-colors" />
+                </button>
+              ) : (
+                <div className="flex-1 rounded-2xl bg-slate-200/60 flex items-center justify-center text-slate-400">
+                  <span className="material-symbols-outlined text-3xl">image</span>
+                </div>
+              )}
+
+              {sideImage2 ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveImageIndex((activeImageIndex + 2) % images.length)}
+                  className="relative flex-1 overflow-hidden rounded-2xl bg-slate-200 cursor-pointer group"
+                  aria-label="Xem ảnh phụ 2"
+                >
+                  <img
+                    src={sideImage2}
+                    alt=""
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-slate-950/10 group-hover:bg-transparent transition-colors" />
+                  {images.length > 3 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs font-bold text-white text-xs">
+                      +{images.length - 3} ảnh khác
+                    </div>
+                  )}
+                </button>
+              ) : (
+                <div className="flex-1 rounded-2xl bg-slate-200/60 flex items-center justify-center text-slate-400">
+                  <span className="material-symbols-outlined text-3xl">image</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex h-72 w-full items-center justify-center bg-slate-200 text-slate-400">
+            <span className="material-symbols-outlined text-6xl">landscape</span>
+          </div>
+        )}
+
+        {/* Horizontal Thumbnail Selector */}
+        {images.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto bg-white p-3 border-t border-slate-100">
+            {images.map((img, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => setActiveImageIndex(idx)}
                 aria-label={`Xem ảnh ${idx + 1}`}
-                className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-xl border-2 transition ${
-                  idx === activeImageIndex ? 'border-[#007d6e] ring-2 ring-teal-200' : 'border-transparent opacity-70 hover:opacity-100'
+                className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition cursor-pointer ${
+                  idx === activeImageIndex
+                    ? 'border-[#007d6e] ring-2 ring-teal-200'
+                    : 'border-transparent opacity-70 hover:opacity-100'
                 }`}
               >
                 <img src={img} alt="" className="h-full w-full object-cover" />
@@ -166,14 +246,99 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
         )}
       </div>
 
-      {/* 2-Column Responsive Body */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column (2 spans): Sections */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Description Section */}
+      {/* Quick Tour Information Row */}
+      <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+            <span className="material-symbols-outlined text-base text-[#007d6e]">schedule</span>
+            <span>Thời lượng</span>
+          </div>
+          <p className="text-sm font-bold text-slate-900">{tour.durationDays} ngày</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+            <span className="material-symbols-outlined text-base text-[#007d6e]">route</span>
+            <span>Chặng hành trình</span>
+          </div>
+          <p className="text-sm font-bold text-slate-900">
+            {tour.itinerary.length > 0 ? `${tour.itinerary.length} ngày khám phá` : 'Đang cập nhật'}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+            <span className="material-symbols-outlined text-base text-[#007d6e]">calendar_month</span>
+            <span>Khởi hành gần nhất</span>
+          </div>
+          <p className="text-sm font-bold text-slate-900">
+            {formatDateDisplay(tour.schedules[0]?.startDatetime || null)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+            <span className="material-symbols-outlined text-base text-[#007d6e]">policy</span>
+            <span>Chính sách hoàn hủy</span>
+          </div>
+          <p className="text-sm font-bold text-slate-900">Hỗ trợ linh hoạt</p>
+        </div>
+
+        <div className="col-span-2 sm:col-span-4 lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+            <span className="material-symbols-outlined text-base text-[#007d6e]">verified</span>
+            <span>Tiêu chuẩn</span>
+          </div>
+          <p className="text-sm font-bold text-slate-900">Đã kiểm duyệt</p>
+        </div>
+      </div>
+
+      {/* Accessible Section Navigation Anchors Bar */}
+      <nav
+        aria-label="Điều hướng phân đoạn tour"
+        className="sticky top-20 z-10 mb-8 flex items-center gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-xs backdrop-blur-md"
+      >
+        <a
+          href="#section-description"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+        >
+          Tổng quan
+        </a>
+        <a
+          href="#section-itinerary"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+        >
+          Lịch trình
+        </a>
+        <a
+          href="#section-inclusions"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+        >
+          Bao gồm
+        </a>
+        <a
+          href="#section-policy"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+        >
+          Chính sách
+        </a>
+        <a
+          href="#section-reviews"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+        >
+          Đánh giá
+        </a>
+      </nav>
+
+      {/* 2-Column Responsive Body (68% Main Content + 32% Sticky Sidebar) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column (68% ~ lg:col-span-8): Sections */}
+        <div className="lg:col-span-8 space-y-8">
+          {/* Section 1: Overview */}
           <section
+            id="section-description"
             aria-labelledby="section-description"
-            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
+            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
             <h2 id="section-description" className="mb-4 text-lg sm:text-xl font-bold text-[#00152a]">
               Giới Thiệu Chuyến Đi
@@ -182,21 +347,24 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
               {tour.description}
             </p>
 
-            <div className="mt-6 flex items-start gap-3 rounded-2xl bg-teal-50/60 p-4 border border-teal-100">
-              <span className="material-symbols-outlined text-xl text-[#007d6e] mt-0.5">
-                pin_drop
-              </span>
-              <div>
-                <strong className="block text-xs font-bold text-slate-900">Điểm hẹn tập trung:</strong>
-                <span className="text-xs text-slate-600">{tour.meetingPoint}</span>
+            {meetingPoint && (
+              <div className="mt-6 flex items-start gap-3 rounded-2xl bg-teal-50/60 p-4 border border-teal-100">
+                <span className="material-symbols-outlined text-xl text-[#007d6e] mt-0.5">
+                  pin_drop
+                </span>
+                <div>
+                  <strong className="block text-xs font-bold text-slate-900">Điểm hẹn tập trung:</strong>
+                  <span className="text-xs text-slate-600">{meetingPoint}</span>
+                </div>
               </div>
-            </div>
+            )}
           </section>
 
-          {/* Day-by-Day Itinerary Section */}
+          {/* Section 2: Day-by-Day Journey Timeline */}
           <section
+            id="section-itinerary"
             aria-labelledby="section-itinerary"
-            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
+            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
             <h2 id="section-itinerary" className="mb-6 text-lg sm:text-xl font-bold text-[#00152a]">
               Lịch Trình Chi Tiết
@@ -206,7 +374,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
               <div className="relative pl-6 sm:pl-8 before:absolute before:top-2 before:bottom-2 before:left-2.5 sm:before:left-3.5 before:w-0.5 before:bg-teal-200 space-y-6">
                 {tour.itinerary.map((day) => (
                   <div key={day.dayNumber} className="relative">
-                    {/* Step Icon */}
+                    {/* Step Icon Milestone Badge */}
                     <div className="absolute -left-6 sm:-left-8 top-0 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#007d6e] text-white text-xs font-black shadow-xs">
                       {day.dayNumber}
                     </div>
@@ -224,18 +392,49 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                         )}
                       </div>
 
-                      <p className="text-xs sm:text-sm text-slate-600 mb-3">{day.description}</p>
+                      {day.description && (
+                        <p className="text-xs sm:text-sm text-slate-600 mb-3">{day.description}</p>
+                      )}
 
-                      <ul className="space-y-1.5 border-t border-slate-200/60 pt-3">
-                        {day.activities.map((act, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                            <span className="material-symbols-outlined text-xs text-[#007d6e] mt-0.5">
-                              arrow_right
-                            </span>
-                            <span>{act}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {day.stops && day.stops.length > 0 ? (
+                        <ol className="space-y-3 border-t border-slate-200/60 pt-3">
+                          {day.stops.map((stop) => (
+                            <li key={stop.sequenceNo} className="flex items-start gap-3 text-xs text-slate-700">
+                              <span className="material-symbols-outlined text-base text-[#007d6e]">
+                                place
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                  {stop.plannedTime && (
+                                    <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-[#007d6e]">
+                                      {stop.plannedTime}
+                                    </span>
+                                  )}
+                                  <span className="text-sm font-bold text-slate-900">{stop.poiName}</span>
+                                </div>
+                                {stop.address && (
+                                  <span className="block text-[11px] text-slate-500">{stop.address}</span>
+                                )}
+                                <span className="block text-[11px] text-slate-500">
+                                  Lưu lại {stop.stayDurationMinutes} phút
+                                </span>
+                                {stop.notes && <p className="mt-1 text-xs text-slate-600">{stop.notes}</p>}
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <ul className="space-y-1.5 border-t border-slate-200/60 pt-3">
+                          {day.activities.map((act, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                              <span className="material-symbols-outlined text-xs text-[#007d6e] mt-0.5">
+                                arrow_right
+                              </span>
+                              <span>{act}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -245,10 +444,11 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             )}
           </section>
 
-          {/* Inclusions and Exclusions Section */}
+          {/* Section 3: Inclusions and Exclusions */}
           <section
+            id="section-inclusions"
             aria-labelledby="section-inclusions"
-            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
+            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
             <h2 id="section-inclusions" className="mb-6 text-lg sm:text-xl font-bold text-[#00152a]">
               Dịch Vụ Bao Gồm & Không Bao Gồm
@@ -261,16 +461,20 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                   <span className="material-symbols-outlined text-base">check_circle</span>
                   <span>Bao gồm trong tour</span>
                 </h3>
-                <ul className="space-y-2">
-                  {tour.inclusions.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                      <span className="material-symbols-outlined text-xs text-teal-600 mt-0.5">
-                        done
-                      </span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {tour.inclusions.length > 0 ? (
+                  <ul className="space-y-2">
+                    {tour.inclusions.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                        <span className="material-symbols-outlined text-xs text-teal-600 mt-0.5">
+                          done
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-500">Nhà tổ chức chưa cung cấp thông tin này.</p>
+                )}
               </div>
 
               {/* Exclusions */}
@@ -279,24 +483,29 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                   <span className="material-symbols-outlined text-base text-slate-500">cancel</span>
                   <span>Không bao gồm</span>
                 </h3>
-                <ul className="space-y-2">
-                  {tour.exclusions.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
-                      <span className="material-symbols-outlined text-xs text-slate-400 mt-0.5">
-                        close
-                      </span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {tour.exclusions.length > 0 ? (
+                  <ul className="space-y-2">
+                    {tour.exclusions.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                        <span className="material-symbols-outlined text-xs text-slate-400 mt-0.5">
+                          close
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-500">Nhà tổ chức chưa cung cấp thông tin này.</p>
+                )}
               </div>
             </div>
           </section>
 
-          {/* Cancellation Policy Section */}
+          {/* Section 4: Cancellation Policy */}
           <section
+            id="section-policy"
             aria-labelledby="section-policy"
-            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
+            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
             <h2 id="section-policy" className="mb-4 text-lg sm:text-xl font-bold text-[#00152a]">
               Chính Sách Hoàn Hủy Tour
@@ -305,16 +514,27 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
               <span className="material-symbols-outlined text-xl text-slate-600 mt-0.5">
                 policy
               </span>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                {tour.cancellationPolicy}
-              </p>
+              {cancellationLines.length > 0 ? (
+                <ul className="space-y-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  {cancellationLines.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              ) : tour.cancellationPolicy ? (
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  {tour.cancellationPolicy}
+                </p>
+              ) : (
+                <p className="text-xs sm:text-sm text-slate-500">Chưa có thông tin về chính sách hoàn hủy.</p>
+              )}
             </div>
           </section>
 
-          {/* Reviews Section */}
+          {/* Section 5: Reviews */}
           <section
+            id="section-reviews"
             aria-labelledby="section-reviews"
-            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
+            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 id="section-reviews" className="text-lg sm:text-xl font-bold text-[#00152a]">
@@ -360,6 +580,11 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                   </div>
                 ))}
               </div>
+            ) : tour.reviewCount > 0 ? (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 text-center text-xs text-slate-600">
+                <p>Điểm trung bình từ {tour.reviewCount} đánh giá của du khách đã trải nghiệm tour.</p>
+                <p className="mt-1 text-slate-500">Hệ thống chưa hiển thị nội dung từng đánh giá.</p>
+              </div>
             ) : (
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 text-center text-xs text-slate-500">
                 Chưa có đánh giá nào cho tour này (MSG128). Hãy là người đầu tiên trải nghiệm!
@@ -368,9 +593,9 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
           </section>
         </div>
 
-        {/* Right Column (1 span): Departure Schedule & Sticky Booking Card */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 rounded-3xl border border-teal-200 bg-white p-6 shadow-lg">
+        {/* Right Column (32% ~ lg:col-span-4): Sticky Booking Sidebar */}
+        <div className="lg:col-span-4">
+          <div className="sticky top-24 rounded-3xl border border-teal-200/90 bg-white p-6 shadow-xl">
             <div className="mb-4">
               <span className="block text-xs font-semibold text-slate-500">Giá tour trọn gói</span>
               <div className="flex items-baseline gap-2">
@@ -379,6 +604,17 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                 </span>
                 <span className="text-xs text-slate-500">/ khách</span>
               </div>
+              {(selectedSchedule?.childPrice !== undefined || selectedSchedule?.infantPrice !== undefined) && (
+                <p className="mt-1 text-[11px] text-slate-500">
+                  {selectedSchedule?.childPrice !== undefined &&
+                    `Trẻ em: ${formatVndPrice(selectedSchedule.childPrice)}`}
+                  {selectedSchedule?.childPrice !== undefined && selectedSchedule?.infantPrice !== undefined && ' • '}
+                  {selectedSchedule?.infantPrice !== undefined &&
+                    `Em bé: ${
+                      selectedSchedule.infantPrice === 0 ? 'Miễn phí' : formatVndPrice(selectedSchedule.infantPrice)
+                    }`}
+                </p>
+              )}
             </div>
 
             {/* Schedule Selector */}
@@ -391,22 +627,23 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
               </label>
 
               {tour.schedules.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                   {tour.schedules.map((schedule) => {
-                    const isSoldOut =
-                      schedule.status.toLowerCase() === 'soldout' || schedule.remainingSlots <= 0;
+                    const selectable = isSelectable(schedule);
                     const isSelected = schedule.scheduleId === selectedScheduleId;
+                    const availability = scheduleAvailabilityLabel(schedule);
 
                     return (
                       <button
                         key={schedule.scheduleId}
                         type="button"
                         onClick={() => setSelectedScheduleId(schedule.scheduleId)}
-                        disabled={isSoldOut}
+                        disabled={!selectable}
+                        aria-pressed={isSelected}
                         className={`w-full flex items-center justify-between rounded-xl p-3 text-left transition border ${
                           isSelected
-                            ? 'border-[#007d6e] bg-teal-50/70 ring-2 ring-teal-200'
-                            : isSoldOut
+                            ? 'border-[#007d6e] bg-teal-50/70 ring-2 ring-teal-200 shadow-xs'
+                            : !selectable
                             ? 'border-slate-200 bg-slate-100 opacity-50 cursor-not-allowed'
                             : 'border-slate-200 bg-white hover:bg-slate-50 cursor-pointer'
                         }`}
@@ -416,20 +653,25 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                             <span className="material-symbols-outlined text-sm text-[#007d6e]">
                               event
                             </span>
-                            <span>{formatDateDisplay(schedule.startDatetime)}</span>
+                            <span>{formatDateTimeVietnam(schedule.startDatetime)}</span>
                           </div>
-                          <span className="text-[11px] text-slate-500">
-                            Về: {formatDateDisplay(schedule.endDatetime)}
+                          <span className="block text-[11px] text-slate-500">
+                            Về: {formatDateTimeVietnam(schedule.endDatetime)}
                           </span>
+                          {schedule.registrationDeadline && (
+                            <span className="block text-[11px] text-slate-400">
+                              Hạn đăng ký: {formatDateTimeVietnam(schedule.registrationDeadline)}
+                            </span>
+                          )}
                         </div>
 
                         <div className="text-right">
                           <span
                             className={`block text-[11px] font-bold ${
-                              isSoldOut ? 'text-red-600' : 'text-teal-700'
+                              availability.warning ? 'text-red-600' : 'text-teal-700'
                             }`}
                           >
-                            {isSoldOut ? 'Hết chỗ (MSG65)' : `Còn ${schedule.remainingSlots} chỗ`}
+                            {availability.text}
                           </span>
                         </div>
                       </button>
@@ -443,31 +685,40 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
               )}
             </div>
 
-            {/* Booking CTA Button (PC-02: Enabled only when schedule available) */}
+            {/* Booking CTA Button (BR-54, PC-02) */}
             <div className="space-y-2">
               {isCurrentScheduleAvailable ? (
-                isAuthenticated ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      alert(
-                        'Tính năng Đặt tour (UC-27) thuộc lộ trình phát triển tiếp theo. Cảm ơn bạn đã lựa chọn TripMate!',
-                      );
-                    }}
-                    className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
-                  >
-                    <span>Đặt tour ngay (UC-27)</span>
-                    <span className="material-symbols-outlined text-base">arrow_forward</span>
-                  </button>
-                ) : (
-                  <Link
-                    href={`/sign-in?redirect=${encodeURIComponent(`/tours/${tour.tourId}`)}`}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
-                  >
-                    <span>Đăng nhập để đặt tour</span>
-                    <span className="material-symbols-outlined text-base">login</span>
-                  </Link>
-                )
+                (() => {
+                  const bookingUrl = `${ROUTES.tourBooking(tour.tourId)}?scheduleId=${encodeURIComponent(
+                    selectedScheduleId,
+                  )}${tour.isDemo ? '&demo=1' : ''}`;
+
+                  if (isAuthenticated) {
+                    return (
+                      <Link
+                        href={bookingUrl}
+                        className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+                      >
+                        <span>Đặt tour ngay</span>
+                        <span className="material-symbols-outlined text-base">arrow_forward</span>
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      href={
+                        tour.isDemo
+                          ? bookingUrl
+                          : `${ROUTES.signIn}?returnUrl=${encodeURIComponent(bookingUrl)}`
+                      }
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+                    >
+                      <span>Đăng nhập để đặt tour</span>
+                      <span className="material-symbols-outlined text-base">login</span>
+                    </Link>
+                  );
+                })()
               ) : (
                 <button
                   type="button"
@@ -478,6 +729,11 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                 </button>
               )}
 
+              {tour.asOfUtc && (
+                <p className="text-center text-[11px] text-slate-500">
+                  Số chỗ cập nhật lúc {formatDateTimeVietnam(tour.asOfUtc)}. Số chỗ còn lại chỉ để tham khảo, không phải là giữ chỗ.
+                </p>
+              )}
               <p className="text-center text-[11px] text-slate-400">
                 Bảo chứng bởi TripMate • Hỗ trợ hoàn hủy theo chính sách
               </p>

@@ -3,14 +3,17 @@
 import React, { useEffect, useRef, useState, ElementType, ReactNode } from 'react';
 
 export type RevealAnimation =
+  | 'editorial-text'
+  | 'card-reveal'
   | 'fade-up'
   | 'fade-down'
   | 'fade-left'
   | 'fade-right'
   | 'zoom-in'
+  | 'image-reveal'
   | 'fade';
 
-interface ScrollRevealProps {
+export interface ScrollRevealProps {
   children: ReactNode;
   animation?: RevealAnimation;
   delay?: number; // milliseconds
@@ -35,12 +38,14 @@ export function ScrollReveal({
   const elementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    // Graceful fallback for reduced motion preference
-    if (
+    // Accessibility fallback when in test environment without full motion context
+    const isReduced =
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
+      window.matchMedia('(prefers-reduced-motion: reduce)')?.matches &&
+      (typeof document === 'undefined' || document.documentElement?.dataset?.motion !== 'full');
+
+    if (isReduced) {
       queueMicrotask(() => {
         setIsRevealed(true);
       });
@@ -68,12 +73,17 @@ export function ScrollReveal({
     }
 
     let observerTimer: NodeJS.Timeout | undefined;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          observerTimer = setTimeout(() => {
+          if (delay > 0) {
+            observerTimer = setTimeout(() => {
+              setIsRevealed(true);
+            }, delay);
+          } else {
             setIsRevealed(true);
-          }, delay);
+          }
 
           if (triggerOnce) {
             observer.unobserve(entry.target);
@@ -89,6 +99,7 @@ export function ScrollReveal({
     );
 
     observer.observe(element);
+
     return () => {
       if (observerTimer) {
         clearTimeout(observerTimer);
@@ -99,6 +110,12 @@ export function ScrollReveal({
 
   const getTransformClasses = () => {
     switch (animation) {
+      case 'card-reveal':
+        return isRevealed
+          ? 'opacity-100 translate-y-0 scale-100 filter-none'
+          : 'opacity-0 translate-y-8 scale-[0.97] blur-[2px]';
+      case 'editorial-text':
+        return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4';
       case 'fade-up':
         return isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-7';
       case 'fade-down':
@@ -107,6 +124,8 @@ export function ScrollReveal({
         return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-7';
       case 'fade-right':
         return isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-7';
+      case 'image-reveal':
+        return isRevealed ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-[0.97] translate-y-4';
       case 'zoom-in':
         return isRevealed ? 'opacity-100 scale-100' : 'opacity-0 scale-95';
       case 'fade':
@@ -127,5 +146,74 @@ export function ScrollReveal({
     >
       {children}
     </Component>
+  );
+}
+
+/**
+ * Editorial Text Reveal helper component
+ */
+export function EditorialTextReveal({
+  children,
+  delay = 0,
+  duration = 500,
+  className = '',
+  as = 'div',
+}: Omit<ScrollRevealProps, 'animation'>) {
+  return (
+    <ScrollReveal
+      animation="editorial-text"
+      delay={delay}
+      duration={duration}
+      className={className}
+      as={as}
+    >
+      {children}
+    </ScrollReveal>
+  );
+}
+
+/**
+ * Image Reveal helper component
+ */
+export function ImageReveal({
+  children,
+  delay = 0,
+  duration = 700,
+  className = '',
+  as = 'div',
+}: Omit<ScrollRevealProps, 'animation'>) {
+  return (
+    <ScrollReveal
+      animation="image-reveal"
+      delay={delay}
+      duration={duration}
+      className={className}
+      as={as}
+    >
+      {children}
+    </ScrollReveal>
+  );
+}
+
+/**
+ * Card Reveal helper component
+ */
+export function CardReveal({
+  children,
+  delay = 0,
+  duration = 700,
+  className = '',
+  as = 'div',
+}: Omit<ScrollRevealProps, 'animation'>) {
+  return (
+    <ScrollReveal
+      animation="card-reveal"
+      delay={delay}
+      duration={duration}
+      className={className}
+      as={as}
+    >
+      {children}
+    </ScrollReveal>
   );
 }

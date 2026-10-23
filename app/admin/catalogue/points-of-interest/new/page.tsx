@@ -1,17 +1,38 @@
 import type { Metadata } from 'next';
-import { CreatePoiPage } from '@/features/admin/create-poi';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { ADMIN_ACCESS_TOKEN_COOKIE } from '@/lib/server/adminSession';
+
+import { CreatePoiPage } from '@/features/admin/create-poi';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
+import { adminStaffEn } from '@/features/admin/staff/resources/en';
 import { ROUTES } from '@/lib/routes';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
   title: 'Create Point of Interest (POI) | TripMate Admin',
-  description: 'UC-52: Admin interface to create and configure Points of Interest for TripMate catalog.',
+  description: 'UC-52: Staff interface to create and configure Points of Interest for TripMate catalog.',
 };
 
 export default async function NewPoiPage() {
-  // Presence is only a navigation hint; BE verifies token, role and active account on every API call.
-  if (!(await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value) redirect(ROUTES.admin.login);
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
+
+  if (!session) {
+    return redirect(ROUTES.admin.login);
+  }
+
+  if (session.role !== 'Staff') {
+    return (
+      <AdminAccessDeniedView
+        requiredRole="Staff"
+        description={adminStaffEn.staffAccessDenied.poiDescription}
+      />
+    );
+  }
+
   return <CreatePoiPage />;
 }

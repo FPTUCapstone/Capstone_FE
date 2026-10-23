@@ -1,0 +1,49 @@
+name: TripMate FE CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-validation:
+    name: frontend-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22 LTS
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Validate TypeScript
+        run: npm run typecheck
+
+      - name: Validate ESLint
+        run: npm run lint
+
+      - name: Validate production build
+        # Keep the normal Next.js build: no mocked fonts or credential fallbacks.
+        run: npm run build

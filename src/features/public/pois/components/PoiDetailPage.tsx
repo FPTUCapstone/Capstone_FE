@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { fetchPoiDetail } from '../services/poiApi';
 import { PoiApiError, type PoiDetail } from '../types/poi';
 import { formatDuration, formatReviewCount } from '../utils/poiPresentation';
 import { PoiImage } from './PoiImage';
+import { PoiDetailMapboxView } from './PoiDetailMapboxView';
+import { formatPriceLabel } from '@/lib/priceLabel';
+import { useWebSession } from '@/features/auth/session/useWebSession';
+import { TripadvisorReviews } from './TripadvisorReviews';
 
 interface PoiDetailPageProps {
   id: string;
@@ -41,12 +44,22 @@ function DetailLoading() {
 
 export function PoiDetailPage({ id }: PoiDetailPageProps) {
   const router = useRouter();
+  // Tripadvisor reviews are for signed-in Travelers only (Review 2, §3.6).
+  const { status: sessionStatus, context: sessionContext } = useWebSession();
+  const isTraveler = sessionStatus === 'authenticated' && sessionContext?.role === 'Traveler';
   const validId = /^\d+$/.test(id) && Number(id) > 0;
   const [detail, setDetail] = useState<PoiDetail | null>(null);
   const [failure, setFailure] = useState<DetailFailure | null>(validId ? null : 'invalid');
   const [loading, setLoading] = useState(validId);
   const [requestVersion, setRequestVersion] = useState(0);
   const [copyMessage, setCopyMessage] = useState('Sao chép tọa độ');
+  const copyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    };
+  }, []);
   const [todayVietnam] = useState(() => new Date(Date.now() + 7 * 60 * 60 * 1000).getUTCDay());
 
   useEffect(() => {
@@ -77,7 +90,8 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
     } catch {
       setCopyMessage('Không thể sao chép');
     }
-    window.setTimeout(() => setCopyMessage('Sao chép tọa độ'), 1600);
+    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => setCopyMessage('Sao chép tọa độ'), 1600);
   }
 
   function goBack() {
@@ -86,14 +100,13 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-white" lang="vi"><PublicNavigation /><DetailLoading /></div>;
+    return <div className="min-h-screen bg-white" lang="vi"><DetailLoading /></div>;
   }
 
   if (failure || !detail) {
     const content = detailStatusText(failure ?? 'network');
     return (
       <div className="min-h-screen bg-[#f3f6f7]" lang="vi">
-        <PublicNavigation />
         <main className="mx-auto flex min-h-[70vh] max-w-2xl items-center px-4 py-12 sm:px-8">
           <section className="w-full rounded-[28px] border border-[#d5e0e3] bg-white p-8 text-center shadow-[0_18px_50px_rgba(0,21,42,.08)]">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#edf1f2] text-2xl text-[#5f6c73]" aria-hidden="true">⌖</div>
@@ -116,7 +129,7 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
 
   return (
     <div className="min-h-screen bg-white text-[#00152a]" lang="vi">
-      <PublicNavigation />
+      
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={goBack} className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-extrabold text-[#006b5f] hover:bg-[#edf8f5]">← Quay lại kết quả khám phá</button>
@@ -162,7 +175,8 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Thông tin nhanh">
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" aria-label="Thông tin nhanh">
+          <InfoCard eyebrow={detail.costKind === 'AverageSpend' ? 'Chi tiêu' : 'Giá vé'} value={formatPriceLabel(detail.estimatedVisitCost, detail.costKind)} detail="Ước tính theo dữ liệu catalogue" />
           <InfoCard eyebrow="Thời lượng gợi ý" value={formatDuration(detail.averageVisitDurationMinutes)} detail="Thời lượng trung bình" />
           <InfoCard eyebrow="Không gian" value={detail.indoorOutdoor === 'Outdoor' ? 'Ngoài trời' : detail.indoorOutdoor === 'Indoor' ? 'Trong nhà' : 'Hỗn hợp'} detail="Theo thông tin catalogue" />
           <InfoCard eyebrow="Mái che" value={detail.hasShelter ? 'Có mái che' : 'Không có mái che'} detail="Cân nhắc thời tiết khi tham quan" />
@@ -183,6 +197,30 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
                 </div>
               </section>
             ) : null}
+            {isTraveler ? (
+              <section id="danh-gia" className="mt-8 rounded-2xl bg-[#f0f4f5] p-5" aria-labelledby="external-reviews-heading">
+                <h3 id="external-reviews-heading" className="mb-3 text-xl font-black">Đánh giá từ du khách</h3>
+                <TripadvisorReviews poiId={detail.id} />
+              </section>
+            ) : null}
+            {/* Add to Itinerary Reservation (UC-12 / BR-51 Design Reservation) */}
+            <div className="mt-8 rounded-2xl border border-[#b4dbd3] bg-[#edf8f5] p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-black text-[#006b5f] text-base">Lập lịch trình cùng địa điểm này</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[#2d6259]">
+                    Thêm điểm tham quan này vào hành trình tự động cân đối thời gian và cung đường tại công cụ Lập lịch trình TripMate.
+                  </p>
+                </div>
+                <Link
+                  href="/plan"
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-[#007d6e] px-4 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+                >
+                  Lập lịch trình →
+                </Link>
+              </div>
+            </div>
+
             <div className="mt-8 rounded-2xl border border-[#cfe1de] bg-[#eef9f6] p-5">
               <h3 className="font-black text-[#075b52]">Thông tin tham quan phi thương mại</h3>
               <p className="mt-2 text-sm leading-relaxed text-[#37665f]">TripMate hiển thị thông tin catalogue để hỗ trợ khám phá. Màn hình này không bán vé, nhận đặt chỗ hoặc thu phí giao dịch.</p>
@@ -212,9 +250,13 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
             <section className="rounded-[24px] bg-[#f0f4f5] p-5" aria-labelledby="location-heading">
               <h2 id="location-heading" className="text-xl font-black">Vị trí và tọa độ</h2>
               <p className="mt-3 text-sm leading-relaxed text-[#46575f]">{detail.address ?? 'Địa chỉ đang được cập nhật'}</p>
-              <div className="relative mt-4 min-h-44 overflow-hidden rounded-2xl bg-[linear-gradient(35deg,transparent_45%,white_46%,white_49%,transparent_50%),linear-gradient(115deg,#d3e9e4,#e5ecef)]" aria-label="Vị trí minh họa của địa điểm">
-                <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white bg-[#007d6e] font-black text-white shadow-lg" aria-hidden="true">⌖</span>
-                <span className="absolute bottom-3 left-3 rounded-lg bg-white/90 px-2 py-1 text-[11px] font-bold text-[#365058]">Bản đồ minh họa vị trí</span>
+              <div className="mt-4">
+                <PoiDetailMapboxView
+                  latitude={detail.latitude}
+                  longitude={detail.longitude}
+                  name={detail.name}
+                  address={detail.address}
+                />
               </div>
               <p className="mt-3 break-all rounded-xl bg-white px-3 py-2 font-mono text-xs text-[#526169]">{detail.latitude.toFixed(6)}, {detail.longitude.toFixed(6)}</p>
               <button type="button" onClick={copyCoordinates} className="mt-3 min-h-11 w-full rounded-xl border border-[#a9c9c3] bg-white px-4 text-sm font-extrabold text-[#006b5f]">{copyMessage}</button>

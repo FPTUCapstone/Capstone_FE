@@ -20,14 +20,17 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
   useWebSession: vi.fn(),
 }));
 
-vi.mock('../travelerProfileApi', () => ({
-  getTravelerProfile: vi.fn().mockResolvedValue({
+vi.mock('../travelerProfileApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../travelerProfileApi')>();
+  return { ...actual,
+    getTravelerProfile: vi.fn().mockResolvedValue({
     fullName: 'Test Traveler',
     email: 'traveler@tripmate.com',
     phoneNumber: '0901234567',
   }),
   updateTravelerProfile: vi.fn(),
-}));
+  };
+});
 
 describe('TravelerProfilePage', () => {
   beforeEach(() => {
@@ -76,9 +79,10 @@ describe('TravelerProfilePage', () => {
 
     render(<TravelerProfilePage />);
 
-    expect(screen.getByText('Hồ sơ cá nhân')).toBeDefined();
-    expect(screen.getByText('Sở thích du lịch')).toBeDefined();
-    expect(screen.getByText('Bảo mật & Mật khẩu')).toBeDefined();
+    expect(screen.getByText('Personal Profile')).toBeDefined();
+    expect(screen.getByText('Travel Preferences')).toBeDefined();
+    expect(screen.getByText('Security & Password')).toBeDefined();
+    expect(screen.getByText('My Trips')).toBeDefined();
   });
 
   it('redirects an authenticated Tour Operator to partner dashboard without rendering traveler profile', () => {

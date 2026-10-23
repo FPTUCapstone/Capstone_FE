@@ -297,4 +297,29 @@ describe('ExplorePoisPage', () => {
     fireEvent.click(resetBtn);
     expect(push).toHaveBeenCalledWith('/pois');
   });
+  it('synchronizes card selection state when a card is clicked', async () => {
+    render(<ExplorePoisPage />);
+    await screen.findAllByText('Bãi biển Mỹ Khê');
+
+    const card1 = screen.getByTestId('poi-card-1');
+    const card2 = screen.getByTestId('poi-card-2');
+
+    // First card is initially selected by default
+    expect(card1.getAttribute('data-selected')).toBe('true');
+    expect(card2.getAttribute('data-selected')).toBe('false');
+
+    // Clicking card2 updates selection without navigating away
+    fireEvent.click(card2);
+    expect(card2.getAttribute('data-selected')).toBe('true');
+    expect(card1.getAttribute('data-selected')).toBe('false');
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('renders the 42/58 split view layout container on desktop', async () => {
+    const { container } = render(<ExplorePoisPage />);
+    await screen.findAllByText('Bãi biển Mỹ Khê');
+
+    const splitGrid = container.querySelector('.lg\\:grid-cols-\\[minmax\\(0\\,42fr\\)_minmax\\(0\\,58fr\\)\\]');
+    expect(splitGrid).toBeTruthy();
+  });
 });

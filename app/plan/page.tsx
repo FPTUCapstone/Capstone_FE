@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CreateSchedulingRequestPage } from '@/features/scheduling/components/CreateSchedulingRequestPage';
+import { PageTransition } from '@/components/navigation/PageTransition';
 
 export const metadata: Metadata = {
   title: 'Lập lịch trình du lịch thông minh | TripMate',
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function PlanPage() {
-  return <CreateSchedulingRequestPage />;
+  return (
+    <PageTransition>
+      <CreateSchedulingRequestPage />
+    </PageTransition>
+  );
 }

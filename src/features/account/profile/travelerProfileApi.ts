@@ -1,277 +1,77 @@
-import { AuthStorage } from '@/features/auth/session/authSession';
+import { AUTH_ERROR_MESSAGES } from '@/lib/authErrorMapper';
 
 export interface TravelerProfileDto {
-  userId?: number;
+  userId: number;
   fullName: string;
   email: string;
-  phoneNumber?: string;
-  dateOfBirth?: string;
-  gender?: 'Male' | 'Female' | 'Other' | '';
-  address?: string;
-  avatarUrl?: string;
+  phoneNumber: string | null;
+  dateOfBirth: string | null;
+  avatarUrl: string | null;
 }
 
 export interface UpdateTravelerProfilePayload {
   fullName: string;
   phoneNumber?: string;
   dateOfBirth?: string;
-  gender?: 'Male' | 'Female' | 'Other' | '';
-  address?: string;
-  avatarUrl?: string;
+  avatarFile?: File;
+  removeAvatar?: boolean;
 }
 
 export interface UpdateTravelerProfileResult {
-  success: boolean;
-  messageCode: 'LOCAL_DRAFT';
+  messageCode: string;
   message: string;
-  notice: string;
   profile: TravelerProfileDto;
-  storageMode: 'LOCAL_DRAFT';
-  integrationStatus: 'PENDING_BE_INTEGRATION';
 }
 
-export class LocalProfileStorageError extends Error {
-  constructor(
-    public readonly code: 'LOCAL_DRAFT_STORAGE_FAILED' | 'UNAUTHORIZED_ROLE' | 'NO_SESSION',
-    message: string,
-  ) {
-    super(message);
-    this.name = 'LocalProfileStorageError';
-  }
-}
+export const TRAVELER_PROFILE_UPDATED_EVENT = 'tripmate:traveler-profile-updated';
 
-export interface StoredProfileDraftEnvelope {
-  ownerUserId: number;
-  profile: {
-    fullName: string;
-    email?: string;
-    phoneNumber?: string;
-    dateOfBirth?: string;
-    gender?: 'Male' | 'Female' | 'Other' | '';
-    address?: string;
-  };
-}
-
-export const USER_PROFILE_DRAFT_KEY_PREFIX = 'tripmate_traveler_profile_draft:';
-export const LEGACY_STORAGE_KEYS = [
-  'tripmate_traveler_profile_draft',
-  'tripmate_traveler_profile_mock',
-] as const;
-
-export function getUserProfileDraftKey(userId: number): string {
-  return `${USER_PROFILE_DRAFT_KEY_PREFIX}${userId}`;
-}
-
-export function purgeLegacyGenericDrafts(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    for (const key of LEGACY_STORAGE_KEYS) {
-      localStorage.removeItem(key);
-    }
-  } catch {
-    // Ignore storage purge errors
+export function announceTravelerProfileUpdated(profile: TravelerProfileDto): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent<TravelerProfileDto>(
+      TRAVELER_PROFILE_UPDATED_EVENT, { detail: profile },
+    ));
   }
 }
 
-export function getLocalProfileDraft(
-  userId?: number,
-  defaultEmail = '',
-  defaultName = '',
-): TravelerProfileDto {
-  const fallbackProfile: TravelerProfileDto = {
-    userId,
-    fullName: defaultName,
-    email: defaultEmail,
-    phoneNumber: '',
-    dateOfBirth: '',
-    gender: '',
-    address: '',
-    avatarUrl: '',
-  };
-
-  if (typeof window === 'undefined') {
-    return fallbackProfile;
-  }
-
-  // Purge legacy generic drafts so they are never adopted
-  purgeLegacyGenericDrafts();
-
-  // Fail closed if trusted userId is missing
-  if (!userId || userId <= 0) {
-    return fallbackProfile;
-  }
-
-  const key = getUserProfileDraftKey(userId);
-
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) {
-      return fallbackProfile;
-    }
-
-    const parsed = JSON.parse(raw) as Partial<StoredProfileDraftEnvelope>;
-
-    // Verify ownership envelope
-    if (!parsed || parsed.ownerUserId !== userId || !parsed.profile) {
-      // Mismatched or corrupted draft - remove and reject
-      localStorage.removeItem(key);
-      return fallbackProfile;
-    }
-
-    const draft = parsed.profile;
-
-    return {
-      userId,
-      fullName: draft.fullName ?? defaultName,
-      email: defaultEmail,
-      phoneNumber: draft.phoneNumber ?? '',
-      dateOfBirth: draft.dateOfBirth ?? '',
-      gender: (draft.gender as TravelerProfileDto['gender']) ?? '',
-      address: draft.address ?? '',
-      // Avatar is session-preview-only and never restored from localStorage
-      avatarUrl: '',
-    };
-  } catch {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      // Ignore
-    }
-    return fallbackProfile;
+export class TravelerProfileApiError extends Error {
+  constructor(public readonly status: number, public readonly code: string) {
+    super(code === 'MSG_PHONE_DUP' ? AUTH_ERROR_MESSAGES.MSG_PHONE_DUP :
+      code === 'MSG19' ? 'Ảnh đại diện không hợp lệ.' :
+      code === 'MSG04' ? 'Số điện thoại không hợp lệ.' :
+      code === 'MSG01' ? 'Vui lòng nhập họ và tên.' :
+      code === 'MSG02' ? 'Thông tin hồ sơ không hợp lệ.' :
+      status === 403 ? 'Tài khoản không có quyền truy cập hồ sơ Du khách.' :
+      status === 404 ? 'Không tìm thấy hồ sơ Du khách.' :
+      'Không thể xử lý hồ sơ lúc này. Vui lòng thử lại.');
+    this.name = 'TravelerProfileApiError';
   }
 }
 
-export function saveLocalProfileDraft(
-  userId: number,
-  draftOrEnvelope: Partial<TravelerProfileDto> | StoredProfileDraftEnvelope,
-): void {
-  if (typeof window === 'undefined') return;
-
-  if (!userId || userId <= 0) {
-    throw new LocalProfileStorageError(
-      'LOCAL_DRAFT_STORAGE_FAILED',
-      'Không thể lưu thông tin vào bộ nhớ thiết bị mà không có định danh người dùng hợp lệ.',
-    );
+async function parseResponse<T>(response: Response): Promise<T> {
+  const data: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const body = data && typeof data === 'object' ? data as Record<string, unknown> : {};
+    throw new TravelerProfileApiError(response.status,
+      typeof body.errorCode === 'string' ? body.errorCode : 'MSG127');
   }
-
-  // Purge legacy generic drafts
-  purgeLegacyGenericDrafts();
-
-  let profileData: StoredProfileDraftEnvelope['profile'];
-
-  if ('ownerUserId' in draftOrEnvelope && 'profile' in draftOrEnvelope) {
-    profileData = { ...draftOrEnvelope.profile };
-  } else {
-    const p = draftOrEnvelope as Partial<TravelerProfileDto>;
-    profileData = {
-      fullName: p.fullName ?? '',
-      email: p.email,
-      phoneNumber: p.phoneNumber ?? '',
-      dateOfBirth: p.dateOfBirth ?? '',
-      gender: p.gender ?? '',
-      address: p.address ?? '',
-    };
-  }
-
-  // Enforce: avatarUrl is NEVER persisted to localStorage
-  delete (profileData as Record<string, unknown>).avatarUrl;
-
-  const envelope: StoredProfileDraftEnvelope = {
-    ownerUserId: userId,
-    profile: profileData,
-  };
-
-  try {
-    localStorage.setItem(getUserProfileDraftKey(userId), JSON.stringify(envelope));
-  } catch {
-    throw new LocalProfileStorageError(
-      'LOCAL_DRAFT_STORAGE_FAILED',
-      'Không thể lưu thông tin vào bộ nhớ thiết bị. Vui lòng kiểm tra dung lượng trình duyệt.',
-    );
-  }
+  if (!data || typeof data !== 'object') throw new TravelerProfileApiError(503, 'MSG127');
+  return data as T;
 }
 
-/**
- * UC-08 Get Traveler Profile
- *
- * ⚠️ PENDING_BE_INTEGRATION:
- * The backend endpoint GET /api/v1/traveler/profile is NOT YET IMPLEMENTED in Capstone_BE.
- * In accordance with TripMate integration policy, phantom HTTP calls are omitted.
- * Profile data is loaded from the authenticated session context and any user-scoped local draft.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function getTravelerProfile(_options?: {
-  accessToken?: string;
-}): Promise<TravelerProfileDto> {
-  const context = AuthStorage.getContext();
-  const defaultEmail = context?.email ?? '';
-  const defaultName = context?.fullName ?? '';
-
-  if (!context || context.role !== 'Traveler' || !context.userId) {
-    return {
-      fullName: defaultName,
-      email: defaultEmail,
-      phoneNumber: '',
-      dateOfBirth: '',
-      gender: '',
-      address: '',
-      avatarUrl: '',
-    };
-  }
-
-  return getLocalProfileDraft(context.userId, defaultEmail, defaultName);
+export async function getTravelerProfile(): Promise<TravelerProfileDto> {
+  const response = await fetch('/api/traveler/profile', { cache: 'no-store' });
+  return parseResponse<TravelerProfileDto>(response);
 }
 
-/**
- * UC-08 Update Traveler Profile
- *
- * ⚠️ PENDING_BE_INTEGRATION:
- * The backend endpoint PUT /api/v1/traveler/profile is NOT YET IMPLEMENTED in Capstone_BE.
- * In accordance with TripMate integration policy, phantom HTTP calls are omitted.
- * Edits are persisted locally as a user-scoped device draft (LOCAL_DRAFT).
- * Canonical AuthStorage session is NOT mutated to preserve verified server identity.
- */
 export async function updateTravelerProfile(
   payload: UpdateTravelerProfilePayload,
-  _options?: { accessToken?: string },
 ): Promise<UpdateTravelerProfileResult> {
-  void _options;
-  const context = AuthStorage.getContext();
-  if (!context || context.role !== 'Traveler' || !context.userId || context.userId <= 0) {
-    throw new LocalProfileStorageError(
-      'UNAUTHORIZED_ROLE',
-      'Không thể cập nhật hồ sơ. Yêu cầu đăng nhập với tài khoản Du khách.',
-    );
-  }
-
-  saveLocalProfileDraft(context.userId, {
-    fullName: payload.fullName,
-    email: context.email,
-    phoneNumber: payload.phoneNumber,
-    dateOfBirth: payload.dateOfBirth,
-    gender: payload.gender,
-    address: payload.address,
-  });
-
-  const updatedProfile: TravelerProfileDto = {
-    userId: context.userId,
-    fullName: payload.fullName,
-    email: context.email,
-    phoneNumber: payload.phoneNumber ?? '',
-    dateOfBirth: payload.dateOfBirth ?? '',
-    gender: payload.gender ?? '',
-    address: payload.address ?? '',
-    // Ephemeral in-memory avatar remains in returned result for current session UI preview
-    avatarUrl: payload.avatarUrl,
-  };
-
-  return {
-    success: true,
-    messageCode: 'LOCAL_DRAFT',
-    message: 'Thông tin tạm thời đã được lưu trên thiết bị này.',
-    notice: 'Đồng bộ hồ sơ với máy chủ đang chờ tích hợp.',
-    profile: updatedProfile,
-    storageMode: 'LOCAL_DRAFT',
-    integrationStatus: 'PENDING_BE_INTEGRATION',
-  };
+  const form = new FormData();
+  form.set('fullName', payload.fullName);
+  form.set('phoneNumber', payload.phoneNumber ?? '');
+  if (payload.dateOfBirth) form.set('dateOfBirth', payload.dateOfBirth);
+  if (payload.avatarFile) form.set('avatar', payload.avatarFile);
+  form.set('removeAvatar', String(Boolean(payload.removeAvatar)));
+  const response = await fetch('/api/traveler/profile', { method: 'PUT', body: form });
+  return parseResponse<UpdateTravelerProfileResult>(response);
 }

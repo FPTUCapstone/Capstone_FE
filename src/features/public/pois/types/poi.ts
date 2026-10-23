@@ -1,3 +1,5 @@
+import type { CostKind } from '@/lib/priceLabel';
+
 export type PoiSort = 'name' | 'distance' | 'rating';
 
 export interface PoiSearchState {
@@ -60,6 +62,9 @@ export interface PoiTag {
 }
 
 export interface PoiDetail extends Omit<PoiSummary, 'thumbnailUrl' | 'distanceKm'> {
+  /** Expected price per person (Review 2, §3.3); null = unknown. */
+  estimatedVisitCost: number | null;
+  costKind: CostKind | null;
   description: string | null;
   status: string;
   scenicScore: number | null;

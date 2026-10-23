@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import HeroPanel from '@/components/registration/HeroPanel';
 import BrandLogo from '@/components/registration/BrandLogo';
 import { VerifyEmailHandler } from '@/features/traveler/registration/VerifyEmailHandler';
+import { OperatorMobileVerifyEmailHandler } from '@/features/operator/application/OperatorMobileVerifyEmailHandler';
 
 export const metadata: Metadata = { title: 'Xác minh email' };
 
@@ -10,11 +11,25 @@ type PageProps = {
     mode?: string;
     oobCode?: string;
     apiKey?: string;
+    flow?: string;
+    continueUrl?: string;
   }>;
 };
 
 export default async function VerifyEmailRoute({ searchParams }: PageProps) {
-  const { mode, oobCode } = await searchParams;
+  const { mode, oobCode, flow, continueUrl } = await searchParams;
+  let verificationFlow = flow === 'operator' || flow === 'operator-mobile' ? flow : undefined;
+  if (!verificationFlow && continueUrl) {
+    try {
+      const continued = new URL(continueUrl);
+      if (continued.pathname === '/verify-email') {
+        const continuedFlow = continued.searchParams.get('flow');
+        if (continuedFlow === 'operator' || continuedFlow === 'operator-mobile') {
+          verificationFlow = continuedFlow;
+        }
+      }
+    } catch { /* Ignore malformed Firebase continue URLs. */ }
+  }
 
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr] lg:items-start">
@@ -34,7 +49,11 @@ export default async function VerifyEmailRoute({ searchParams }: PageProps) {
         </div>
 
         <div className="w-full max-w-[480px]">
-          <VerifyEmailHandler mode={mode} oobCode={oobCode} />
+          {verificationFlow === 'operator-mobile' ? (
+            <OperatorMobileVerifyEmailHandler mode={mode} oobCode={oobCode} />
+          ) : (
+            <VerifyEmailHandler mode={mode} oobCode={oobCode} flow={verificationFlow} />
+          )}
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
             Need help? Contact TripMate Customer Support.

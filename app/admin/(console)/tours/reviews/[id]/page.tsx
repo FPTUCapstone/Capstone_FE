@@ -1,24 +1,43 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
-import { findAdminTourReview } from '@/data/adminTourQueue';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { TourReview } from '@/features/admin/tour-reviews/TourReview';
+import { tourModerationEn } from '@/features/admin/tour-reviews/resources/en';
+import { ROUTES } from '@/lib/routes';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 type TourReviewPageProps = {
   params: Promise<{ id: string }>;
 };
 
 export const metadata: Metadata = {
-  title: 'Tour Review',
+  title: tourModerationEn.metadata.detailTitle,
 };
 
 export default async function AdminTourReviewPage({ params }: TourReviewPageProps) {
-  const { id } = await params;
-  const review = findAdminTourReview(id);
-
-  if (!review) {
-    notFound();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
   }
 
-  return <TourReview review={review} />;
+  if (!session) {
+    return redirect(ROUTES.admin.login);
+  }
+
+  if (session.role === 'Staff') {
+    return <AdminAccessDeniedView />;
+  }
+
+  const { id } = await params;
+
+  return (
+    <Suspense fallback={null}>
+      <TourReview id={id} />
+    </Suspense>
+  );
 }

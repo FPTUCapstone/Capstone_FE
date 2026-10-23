@@ -14,7 +14,7 @@ const ctx = (overrides: Record<string, unknown> = {}): WebAuthContext => AuthSto
   accessTokenExpiresAtUtc: new Date(Date.now() + 60000).toISOString(), ...overrides,
 } as unknown as WebAuthContext, false);
 
-function Guarded({ route }: { route: 'register' | 'dashboard' | 'application' | 'resubmit' }) {
+function Guarded({ route }: { route: 'register' | 'dashboard' | 'application' | 'resubmit' | 'couponCreate' }) {
   return (
     <PartnerRouteGuard route={route}>
       <p>protected:{route}</p>

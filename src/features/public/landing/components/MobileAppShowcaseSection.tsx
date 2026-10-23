@@ -104,7 +104,7 @@ export function MobileAppShowcaseSection() {
                     <span className="material-symbols-outlined">cloud_sync</span>
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Bản đồ Ngoại tuyến (Offline Maps)</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Bản đồ Ngoại tuyến</h4>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">Tự động tải trước dữ liệu lịch trình và bản đồ chi tiết để sử dụng mượt mà ngay cả khi mất sóng di động.</p>
                   </div>
                 </div>

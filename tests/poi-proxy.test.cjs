@@ -2,7 +2,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
-function setup(token, backend) {
+// role: the sealed administration session role; null means no valid session, the default is Staff.
+function setup(token, backend, role = 'Staff') {
   return loadTs('src/features/admin/create-poi/services/poi-proxy.ts', {
     'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
@@ -10,6 +11,7 @@ function setup(token, backend) {
       ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
       isSameOriginRequest: r => r.headers.get('origin') === new URL(r.url).origin,
       jsonNoStore: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
+      verifyAdminSessionFromCookies: () => (role === null ? null : { role }),
       clearAdminSession: r => { r.headers.set('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0'); return r; },
     },
   }).proxyPoi;
@@ -29,13 +31,31 @@ test('forwards flat JSON with bearer and returns real status/body', async () => 
   const response = await proxy(req(), '/api/v1/admin/pois');
   assert.equal(response.status, 201); assert.deepEqual(await response.json(), { id: 51 });
 });
-test('BE auth denials clear session without exposing upstream details', async () => {
-  for (const status of [401, 403]) {
-    const response = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status }))(req(), '/api/v1/admin/pois');
-    assert.equal(response.status, status);
-    assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
-    assert.deepEqual(await response.json(), { title: status === 401 ? 'Administrator sign-in required.' : 'Administrator access is not allowed.' });
-  }
+test('BE 401 clears session while BE 403 preserves session without exposing upstream details', async () => {
+  const unauthenticated = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status: 401 }))(req(), '/api/v1/admin/pois');
+  assert.equal(unauthenticated.status, 401);
+  assert.match(unauthenticated.headers.get('Set-Cookie'), /Max-Age=0/);
+  assert.deepEqual(await unauthenticated.json(), { title: 'Staff sign-in required.' });
+
+  const forbidden = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status: 403 }))(req(), '/api/v1/admin/pois');
+  assert.equal(forbidden.status, 403);
+  assert.equal(forbidden.headers.get('Set-Cookie'), null);
+  assert.deepEqual(await forbidden.json(), { title: 'Staff access is required.' });
+});
+test('only Staff may create POIs: an Administrator session is rejected before the BE is called', async () => {
+  const forbidden = async () => { throw new Error('Should not call BE'); };
+  const response = await setup('secret', forbidden, 'Administrator')(req(), '/api/v1/admin/pois');
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { title: 'Staff access is required.' });
+});
+test('a Staff session reaches the BE and an invalid session is rejected with 401', async () => {
+  let called = 0;
+  const ok = await setup('secret', async () => { called += 1; return Response.json({ id: 7 }, { status: 201 }); }, 'Staff')(req(), '/api/v1/admin/pois');
+  assert.equal(ok.status, 201);
+  assert.equal(called, 1);
+  const noSession = await setup('secret', async () => { called += 1; return Response.json({}); }, null)(req(), '/api/v1/admin/pois');
+  assert.equal(noSession.status, 401);
+  assert.equal(called, 1);
 });
 test('upstream and network failures return safe documented 503', async () => {
   const upstream = await setup('secret', async () => Response.json({ detail: 'database-password-secret' }, { status: 500 }))(req(), '/api/v1/admin/pois');

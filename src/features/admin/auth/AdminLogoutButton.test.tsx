@@ -30,7 +30,7 @@ describe('AdminLogoutButton', () => {
     render(<AdminLogoutButton />);
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
     fireEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Đăng xuất' }),
+      within(screen.getByRole('dialog')).getByRole('button', { name: /Log out|Đăng xuất/i }),
     );
 
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin/login'));
@@ -52,7 +52,7 @@ describe('AdminLogoutButton', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
 
     const confirm = within(screen.getByRole('dialog')).getByRole('button', {
-      name: 'Đăng xuất',
+      name: /Log out|Đăng xuất/i,
     });
     act(() => {
       confirm.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -75,19 +75,19 @@ describe('AdminLogoutButton', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
 
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Đăng xuất' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
     expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'Không thể đăng xuất. Vui lòng thử lại.',
+      'Unable to sign out of the administration workspace. Please try again.',
     );
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();
     await waitFor(() => {
-      const retryButton = within(dialog).getByRole('button', { name: 'Đăng xuất' });
+      const retryButton = within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i });
       expect((retryButton as HTMLButtonElement).disabled).toBe(false);
     });
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Đăng xuất' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin/login'));
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -103,10 +103,10 @@ describe('AdminLogoutButton', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
 
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Đăng xuất' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
     expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'Không thể đăng xuất. Vui lòng thử lại.',
+      'Unable to sign out of the administration workspace. Please try again.',
     );
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();

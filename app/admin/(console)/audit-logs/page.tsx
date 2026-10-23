@@ -3,8 +3,9 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { AuditLogManagementView } from '@/features/admin/audit-logs/components/AuditLogManagementView';
-import { ADMIN_ACCESS_TOKEN_COOKIE } from '@/lib/server/adminSession';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { ROUTES } from '@/lib/routes';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
   title: 'System Audit Logs | TripMate Admin Console',
@@ -12,9 +13,19 @@ export const metadata: Metadata = {
 };
 
 export default async function AuditLogsPage() {
-  // Cookie presence is a navigation hint; BE remains the authorization authority.
-  if (!(await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value) {
-    redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.auditLogs)}`);
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
+
+  if (!session) {
+    return redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.auditLogs)}`);
+  }
+
+  if (session.role === 'Staff') {
+    return <AdminAccessDeniedView />;
   }
 
   return <AuditLogManagementView />;

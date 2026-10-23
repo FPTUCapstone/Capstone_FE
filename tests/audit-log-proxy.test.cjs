@@ -57,17 +57,24 @@ test('forwards supported filters and the Admin cookie token only', async () => {
   assert.equal(calls[0].init.signal, inboundRequest.signal);
 });
 
-test('clears invalid Admin sessions for authentication and authorization failures', async () => {
-  for (const status of [401, 403]) {
-    const response = await setup('invalid-token', async () => Response.json(
-      { detail: 'private upstream detail' },
-      { status },
-    ))(request());
+test('clears invalid Admin sessions on 401 authentication failure and preserves session on 403 authorization denial', async () => {
+  const unauthenticated = await setup('invalid-token', async () => Response.json(
+    { detail: 'private upstream detail' },
+    { status: 401 },
+  ))(request());
 
-    assert.equal(response.status, status);
-    assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
-    assert.doesNotMatch(await response.text(), /private upstream detail/);
-  }
+  assert.equal(unauthenticated.status, 401);
+  assert.match(unauthenticated.headers.get('Set-Cookie'), /Max-Age=0/);
+  assert.doesNotMatch(await unauthenticated.text(), /private upstream detail/);
+
+  const forbidden = await setup('staff-token', async () => Response.json(
+    { detail: 'private upstream detail' },
+    { status: 403 },
+  ))(request());
+
+  assert.equal(forbidden.status, 403);
+  assert.equal(forbidden.headers.get('Set-Cookie'), null);
+  assert.doesNotMatch(await forbidden.text(), /private upstream detail/);
 });
 
 test('maps upstream and network failures to safe no-store responses', async () => {

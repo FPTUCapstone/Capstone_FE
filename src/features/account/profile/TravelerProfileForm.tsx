@@ -1,13 +1,12 @@
 'use client';
 
-import { useId, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { TextField } from '@/components/ui/FormControls';
 import {
   useTravelerProfile,
-  type TravelerProfileFormFields,
   type UseTravelerProfileOptions,
 } from './useTravelerProfile';
 
@@ -26,7 +25,6 @@ function getInitials(name?: string, email?: string): string {
 }
 
 export function TravelerProfileForm({
-  accessToken,
   initialProfile,
   onSuccess,
   onUnauthorized,
@@ -34,23 +32,21 @@ export function TravelerProfileForm({
   className = '',
 }: TravelerProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const genderSelectId = useId();
 
   const {
     fields,
     errors,
     loading,
+    loadError,
+    retryLoad,
     submitting,
     success,
-    successMessage,
-    backendFallbackNotice,
     setField,
     handleAvatarChange,
     handleAvatarRemove,
     handleSubmit,
     reset,
   } = useTravelerProfile({
-    accessToken,
     initialProfile,
     onSuccess,
     onUnauthorized,
@@ -100,6 +96,15 @@ export function TravelerProfileForm({
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <FeedbackAlert tone="error" title="Không thể tải hồ sơ">{loadError}</FeedbackAlert>
+        <ActionButton type="button" variant="outline" onClick={retryLoad}>Thử tải lại</ActionButton>
+      </div>
+    );
+  }
+
   return (
     <section
       aria-labelledby="traveler-profile-heading"
@@ -121,22 +126,11 @@ export function TravelerProfileForm({
         </p>
       </div>
 
-      {/* Top-Level Feedback (LOCAL_DRAFT & PENDING_BE_INTEGRATION) */}
+      {/* Feedback from the saved server profile */}
       {success ? (
-        <div className="mb-6 space-y-3">
-          <FeedbackAlert tone="info" title="Lưu tạm trên thiết bị">
-            {successMessage || 'Thông tin tạm thời đã được lưu trên thiết bị này.'}
-          </FeedbackAlert>
-          {backendFallbackNotice ? (
-            <FeedbackAlert tone="warning" title="Chờ tích hợp máy chủ">
-              {backendFallbackNotice}
-            </FeedbackAlert>
-          ) : null}
-        </div>
-      ) : backendFallbackNotice ? (
         <div className="mb-6">
-          <FeedbackAlert tone="warning" title="Chờ tích hợp máy chủ">
-            {backendFallbackNotice}
+          <FeedbackAlert tone="success" title="Cập nhật hồ sơ thành công">
+            Thông tin của bạn đã được lưu.
           </FeedbackAlert>
         </div>
       ) : null}
@@ -210,10 +204,6 @@ export function TravelerProfileForm({
               Định dạng cho phép: JPG, PNG, WEBP. Dung lượng tối đa: 5MB (BR-16).
             </p>
 
-            <div className="rounded-lg border border-[#F3E2B8] bg-[#FFF8E6] p-2 text-[11px] leading-relaxed text-[#805B10]">
-              <span className="font-semibold">Lưu ý:</span> Tính năng tải ảnh đại diện lên máy chủ đang chờ tích hợp. Ảnh được chọn chỉ hiển thị xem trước trong phiên làm việc hiện tại và không lưu vào bộ nhớ thiết bị.
-            </div>
-
             {errors.avatar ? (
               <p role="alert" className="text-[11px] font-semibold text-red-600">
                 <span aria-hidden="true">⚠ </span>
@@ -284,7 +274,7 @@ export function TravelerProfileForm({
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {/* Phone Number (Required, 10 digits starting with 0, MSG04) */}
+          {/* Optional phone number */}
           <TextField
             id="profile-phone"
             label="Số điện thoại"
@@ -296,7 +286,7 @@ export function TravelerProfileForm({
             placeholder="0912345678"
             autoComplete="tel"
             disabled={submitting}
-            required
+            optional
             help="Số điện thoại di động 10 chữ số bắt đầu bằng 0 (MSG04)."
           />
 
@@ -344,49 +334,6 @@ export function TravelerProfileForm({
                 Người dùng phải từ 16 tuổi trở lên tính đến thời điểm hiện tại.
               </span>
             )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {/* Gender */}
-          <div>
-            <label
-              htmlFor={genderSelectId}
-              className="block text-xs font-semibold uppercase tracking-wider text-slate-700"
-            >
-              Giới tính
-            </label>
-            <div className="relative mt-1.5">
-              <select
-                id={genderSelectId}
-                name="gender"
-                value={fields.gender}
-                onChange={(e) =>
-                  setField('gender', e.target.value as TravelerProfileFormFields['gender'])
-                }
-                disabled={submitting}
-                className="w-full rounded-xl border border-[#D8E1E4] bg-white px-3.5 py-3 text-sm text-slate-800 shadow-[0_1px_2px_rgba(15,27,45,0.06)] transition hover:border-slate-400 focus:border-[#006B5F] focus:outline-none focus:ring-2 focus:ring-[#006B5F]/30"
-              >
-                <option value="">-- Chưa chọn --</option>
-                <option value="Male">Nam</option>
-                <option value="Female">Nữ</option>
-                <option value="Other">Khác</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Address (Full-width on sm+ for longer address strings) */}
-          <div className="sm:col-span-2">
-            <TextField
-              id="profile-address"
-              label="Địa chỉ cư trú"
-              name="address"
-              value={fields.address}
-              onChange={(e) => setField('address', e.target.value)}
-              placeholder="Ví dụ: Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
-              disabled={submitting}
-              optional
-            />
           </div>
         </div>
 

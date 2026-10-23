@@ -1,124 +1,159 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
-import { ScrollReveal } from '@/components/ui/ScrollReveal';
-import { LandingEyebrow } from './LandingEyebrow';
-import { JourneyCanvas } from './JourneyCanvas';
+import { CENTRAL_DESTINATIONS } from '@/data/landingData';
 
 interface LandingHeroProps {
   activeCity: 'danang' | 'hoian' | 'hue';
   onSelectCity: (city: 'danang' | 'hoian' | 'hue') => void;
 }
 
+const DESTINATION_HERO_IMAGES: Record<
+  'danang' | 'hoian' | 'hue',
+  { src: string; alt: string; caption: string }
+> = {
+  danang: {
+    src: CENTRAL_DESTINATIONS[0].image,
+    alt: 'Bãi biển Mỹ Khê và bán đảo Sơn Trà tại Đà Nẵng',
+    caption: 'Đà Nẵng — Biển Mỹ Khê & Bán đảo Sơn Trà',
+  },
+  hoian: {
+    src: CENTRAL_DESTINATIONS[1].image,
+    alt: 'Phố cổ Hội An lung linh sắc đèn lồng bên sông Hoài',
+    caption: 'Hội An — Di sản UNESCO bên sông Hoài',
+  },
+  hue: {
+    src: CENTRAL_DESTINATIONS[2].image,
+    alt: 'Quần thể Cố đô Huế và sông Hương thơ mộng',
+    caption: 'Cố Đô Huế — Di tích triều Nguyễn & Sông Hương',
+  },
+};
+
 export function LandingHero({ activeCity, onSelectCity }: LandingHeroProps) {
+  const currentHero = DESTINATION_HERO_IMAGES[activeCity] || DESTINATION_HERO_IMAGES.danang;
+
   return (
-    <section className="relative overflow-hidden border-b border-slate-200 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(0,125,110,0.12),rgba(255,255,255,0))] px-4 py-14 sm:px-8 md:py-20 lg:py-24">
-      <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
-        {/* Left Hero Content */}
-        <div className="relative z-10 max-w-2xl">
-          {/* Eyebrow */}
-          <ScrollReveal animation="fade-down" delay={50}>
-            <LandingEyebrow icon="explore" className="mb-5">
-              Central Vietnam Travel Atlas • Da Nang - Hoi An - Hue
-            </LandingEyebrow>
-          </ScrollReveal>
+    <section className="relative overflow-hidden min-h-[480px] lg:h-[540px] flex items-center bg-[#00152a] text-white">
+      {/* Scenic Travel Photography Background with Graceful Multi-Layer Overlay */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <img
+          key={activeCity}
+          src={currentHero.src}
+          alt={currentHero.alt}
+          className="h-full w-full object-cover object-center animate-in fade-in duration-700"
+          loading="eager"
+        />
+        {/* Soft Multi-Directional Gradient Overlays for Guaranteed Text Legibility */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#00152a]/95 via-[#00152a]/80 to-transparent sm:w-4/5 md:w-3/4 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#00152a] via-[#00152a]/40 to-transparent pointer-events-none" />
+      </div>
+
+      {/* Hero Content Container */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 sm:px-8 w-full">
+        <div className="max-w-2xl">
+          {/* Calm Travel Eyebrow */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/15 px-3.5 py-1 text-xs font-bold text-teal-300 backdrop-blur-md mb-4">
+            <span className="material-symbols-outlined text-sm" aria-hidden="true">
+              explore
+            </span>
+            <span>Central Vietnam Travel Atlas • Da Nang - Hoi An - Hue</span>
+          </div>
 
           {/* Main Headline */}
-          <ScrollReveal animation="fade-up" delay={120}>
-            <h1 className="text-4xl font-black leading-[1.08] tracking-[-0.03em] text-[#00152a] sm:text-5xl md:text-6xl text-balance">
-              Khám phá Miền Trung với{' '}
-              <span className="text-[#007d6e] inline-block">Lịch trình Tối ưu Thông minh.</span>
-            </h1>
-          </ScrollReveal>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-black tracking-tight text-white leading-[1.15] text-balance">
+            Khám phá miền Trung theo cách của bạn
+          </h1>
 
-          {/* Subtitle / Lead Copy */}
-          <ScrollReveal animation="fade-up" delay={200}>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg text-pretty">
-              Nền tảng du lịch thông minh Miền Trung kết hợp thuật toán tối ưu đa ràng buộc (CSP) và giám sát thời gian thực.
-              Tự động điều phối một ngày trọn vẹn theo sở thích của bạn — từ giờ mở cửa di tích đến thời khắc hoàng hôn biển tuyệt đẹp.
-            </p>
-          </ScrollReveal>
+          {/* Supporting Copy */}
+          <p className="mt-4 text-base sm:text-lg text-slate-200 leading-relaxed text-pretty max-w-xl">
+            Tìm những điểm đến đáng nhớ, khám phá tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn.
+          </p>
 
-          {/* Interactive 3-Pill Destination Switcher */}
-          <ScrollReveal animation="fade-up" delay={280}>
-            <div className="mt-7 flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs max-w-fit">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2.5">
-                Điểm đến:
+          {/* Destination Switcher Quick Chips */}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mr-1">
+              Điểm đến:
+            </span>
+            <button
+              type="button"
+              onClick={() => onSelectCity('danang')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeCity === 'danang'
+                  ? 'bg-[#007d6e] text-white shadow-md'
+                  : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
+              }`}
+            >
+              Đà Nẵng
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectCity('hoian')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeCity === 'hoian'
+                  ? 'bg-[#d97706] text-white shadow-md'
+                  : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
+              }`}
+            >
+              Hội An
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectCity('hue')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeCity === 'hue'
+                  ? 'bg-[#7c3aed] text-white shadow-md'
+                  : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
+              }`}
+            >
+              Cố Đô Huế
+            </button>
+          </div>
+
+          {/* Clear Travel CTAs */}
+          <div className="mt-8 flex flex-wrap items-center gap-3.5">
+            <Link
+              href={ROUTES.plan}
+              aria-label="Lập lịch trình"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#007d6e] px-6 py-3 text-sm font-bold text-white shadow-md shadow-teal-900/40 hover:bg-[#006b5f] transition-all cursor-pointer hover:scale-[1.01]"
+            >
+              <span>Lập lịch trình</span>
+              <span className="material-symbols-outlined text-base" aria-hidden="true">
+                calendar_month
               </span>
-              <button
-                type="button"
-                onClick={() => onSelectCity('danang')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer btn-press ${
-                  activeCity === 'danang'
-                    ? 'bg-[#007d6e] text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Đà Nẵng
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectCity('hoian')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer btn-press ${
-                  activeCity === 'hoian'
-                    ? 'bg-[#d97706] text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Hội An
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectCity('hue')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer btn-press ${
-                  activeCity === 'hue'
-                    ? 'bg-[#7c3aed] text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Cố Đô Huế
-              </button>
-            </div>
-          </ScrollReveal>
+            </Link>
 
-          {/* Exactly 2 Dominant CTAs */}
-          <ScrollReveal animation="fade-up" delay={360}>
-            <div className="mt-8 flex flex-wrap items-center gap-3.5">
-              <Link
-                href={ROUTES.plan}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#007d6e] px-6 py-3 text-sm font-bold text-white shadow-md shadow-teal-700/25 hover:bg-[#006b5f] transition-all cursor-pointer btn-press"
-              >
-                <span>Lập hành trình của bạn</span>
-                <span className="material-symbols-outlined text-base">bolt</span>
-              </Link>
-              <a
-                href="#destinations"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white border border-slate-300 px-6 py-3 text-sm font-bold text-slate-800 shadow-xs hover:bg-slate-50 hover:border-slate-400 transition-all cursor-pointer btn-press"
-              >
-                <span className="material-symbols-outlined text-base text-[#007d6e]">explore</span>
-                <span>Khám phá điểm đến</span>
-              </a>
-            </div>
-          </ScrollReveal>
-
-          {/* Web & Mobile Platform Note */}
-          <ScrollReveal animation="fade-up" delay={440}>
-            <div className="mt-8 flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/70 p-3.5 text-xs leading-relaxed text-slate-600 backdrop-blur-xs max-w-lg">
-              <span className="material-symbols-outlined text-xl text-[#007d6e] shrink-0" aria-hidden="true">
-                devices
+            <Link
+              href={ROUTES.pois}
+              aria-label="Khám phá điểm đến"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/25 px-6 py-3 text-sm font-bold text-white backdrop-blur-md shadow-xs hover:bg-white/20 hover:border-white/40 transition-all cursor-pointer hover:scale-[1.01]"
+            >
+              <span className="material-symbols-outlined text-base text-teal-300" aria-hidden="true">
+                explore
               </span>
-              <p>
-                <strong>Đồng bộ trải nghiệm:</strong> Lên lịch trình và chọn tour trên Web; dẫn đường GPS và vé QR điện tử đồng hành trên Mobile.
-              </p>
-            </div>
-          </ScrollReveal>
+              <span>Khám phá điểm đến</span>
+            </Link>
+
+            <Link
+              href={ROUTES.tours}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-300 hover:text-teal-200 transition-colors ml-1 py-2"
+            >
+              <span>Xem các tour bản địa</span>
+              <span className="material-symbols-outlined text-sm" aria-hidden="true">
+                arrow_forward
+              </span>
+            </Link>
+          </div>
         </div>
+      </div>
 
-        {/* Right Hero: Journey Canvas */}
-        <ScrollReveal animation="zoom-in" delay={180} duration={850}>
-          <JourneyCanvas activeCity={activeCity} onSelectCity={onSelectCity} />
-        </ScrollReveal>
+      {/* Subtle Caption on Bottom Right */}
+      <div className="hidden md:flex absolute bottom-4 right-8 z-10 items-center gap-2 rounded-full bg-black/40 px-3.5 py-1 text-[11px] font-medium text-slate-300 backdrop-blur-md border border-white/10 pointer-events-none">
+        <span className="material-symbols-outlined text-sm text-teal-400" aria-hidden="true">
+          photo_camera
+        </span>
+        <span>{currentHero.caption}</span>
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/lib/routes';
 import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 interface AdminHeaderProps {
   onSave?: () => void;
@@ -56,15 +57,7 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
           <div className="w-72 h-full bg-[#102a43] text-white p-5 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-slate-700/60 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#006b5f] text-white flex items-center justify-center">
-                    <span className="material-symbols-outlined text-xl">explore</span>
-                  </div>
-                  <div>
-                    <span className="font-bold tracking-tight text-white block text-sm">TripMate</span>
-                    <span className="text-[10px] text-[#6df5e1] font-semibold tracking-wider uppercase">ADMIN CONSOLE</span>
-                  </div>
-                </div>
+                <BrandLogo context="admin" inverse size={20} />
                 <button
                   type="button"
                   onClick={() => setDrawerOpen(false)}
@@ -116,7 +109,7 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
                   AD
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white">Administrator</p>
+                  <p className="text-xs font-semibold text-white">Staff</p>
                   <p className="text-[10px] text-slate-400">Active Session</p>
                 </div>
               </div>

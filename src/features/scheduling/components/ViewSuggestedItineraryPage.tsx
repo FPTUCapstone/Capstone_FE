@@ -2,23 +2,68 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import { getMapboxPublicToken } from '@/lib/mapboxToken';
 import { ROUTES } from '@/lib/routes';
 
 import {
   acceptItinerary,
-  adjustItineraryItems,
   getItineraryById,
   ItineraryHttpError,
+  NAVIGATION_IN_PROGRESS_CODE,
   regenerateItinerary,
+  StopInfeasibleError,
+  updateItineraryStops,
 } from '../services/schedulingApi';
-import { formatVietnamTime, ItineraryDetailDto } from '../types/schedulingTypes';
+import {
+  formatVietnamTime,
+  ItineraryDetailDto,
+  ItineraryDetailItemDto,
+  ItineraryStopInput,
+  ItinerarySuggestionDto,
+  SuggestionQuery,
+} from '../types/schedulingTypes';
+import { handOffEdit, LastItineraryEdit, takeEditHandoff } from '../utils/itineraryEditHandoff';
+import {
+  describeStopInfeasible,
+  diffArrivalMinutes,
+  formatMinutes,
+  stopDisplayName,
+} from '../utils/itineraryPresentation';
+import {
+  currentStops,
+  insertAfterItem,
+  removeStop,
+  reorderStops,
+  replaceStop,
+  withLegMode,
+} from '../utils/itineraryStops';
+import { buildItineraryMapModel, MARKER_COLORS, MapMarkerKind } from '../utils/mapGeometry';
+import { ItineraryReviewsDialog } from './ItineraryReviewsDialog';
+import { LazyItineraryMap } from './maps/LazyMaps';
+import { ItinerarySuggestionsDialog } from './ItinerarySuggestionsDialog';
 import { ItineraryRouteMapPreview } from './ItineraryRouteMapPreview';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
 import { ItineraryTimeline } from './ItineraryTimeline';
+
+/** How long the Undo toast stays after an edit (Review 2, D11-4). */
+const UNDO_VISIBLE_MS = 8000;
+
+const REMOVE_MANDATORY_CONFIRM = 'Đây là điểm bạn đã chọn, chắc chắn bỏ?';
+
+const NO_SHIFTS: ReadonlyMap<number, number> = new Map();
+
+const MAP_LEGEND: Array<{ kind: MapMarkerKind; label: string }> = [
+  { kind: 'start', label: 'Xuất phát (B)' },
+  { kind: 'attraction', label: 'Tham quan' },
+  { kind: 'food', label: 'Ăn uống' },
+  { kind: 'end', label: 'Kết thúc (K)' },
+];
+
+/** Where a chosen suggestion goes: after an item (food) or in place of a stop (replace). */
+type SuggestionTarget = { query: SuggestionQuery; title: string; item: ItineraryDetailItemDto };
 
 interface ViewSuggestedItineraryPageProps {
   itineraryId: string;
@@ -49,6 +94,35 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState(false);
   const [orderedVisitPoiIds, setOrderedVisitPoiIds] = useState<number[]>([]);
+  // Review 2 (D11-3/4): stops whose arrival moved in the last edit, and the stops to restore on undo.
+  // Tied to the version they belong to, and handed over when the edit moves the page to a new id.
+  const [lastEdit, setLastEdit] = useState<LastItineraryEdit | null>(null);
+  const editMatches = Boolean(lastEdit && itinerary && lastEdit.itineraryId === itinerary.itineraryId);
+  const arrivalShifts = editMatches && lastEdit ? lastEdit.arrivalShifts : NO_SHIFTS;
+  const undoStops = editMatches && lastEdit?.undo ? lastEdit.undo.stops : null;
+  const undoUntil = lastEdit?.undo?.until ?? null;
+  const [suggestionTarget, setSuggestionTarget] = useState<SuggestionTarget | null>(null);
+  const [reviewsFor, setReviewsFor] = useState<ItineraryDetailItemDto | null>(null);
+  // Review 2 (D9): map ↔ timeline highlight; the order diagram returns if the map cannot load.
+  const [highlightedItemId, setHighlightedItemId] = useState<number | null>(null);
+  const [mapFailed, setMapFailed] = useState(false);
+  const mapboxToken = getMapboxPublicToken();
+  const mapModel = useMemo(() => (itinerary ? buildItineraryMapModel(itinerary) : null), [itinerary]);
+  const showMap = Boolean(mapboxToken && !mapFailed && mapModel && mapModel.markers.length > 0);
+
+  const selectFromMap = (itemId: number) => {
+    setHighlightedItemId(itemId);
+    document.querySelector(`[data-item-id="${itemId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  useEffect(() => {
+    if (undoUntil === null) return;
+    const timer = setTimeout(
+      () => setLastEdit((current) => (current ? { ...current, undo: null } : current)),
+      Math.max(0, undoUntil - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [undoUntil]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -69,6 +143,15 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
     let isMounted = true;
     async function loadItinerary() {
+      const handoff = takeEditHandoff(Number(itineraryId));
+      if (handoff) {
+        // The edit that moved us here already returned this version.
+        setItinerary(handoff.itinerary);
+        setLastEdit(handoff.lastEdit);
+        setError(null);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
       setItinerary(null);
@@ -108,27 +191,130 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
     }
   };
 
-  const applyMutation = async (operation: () => Promise<ItineraryDetailDto>) => {
+  const applyMutation = async (
+    operation: () => Promise<ItineraryDetailDto>,
+    edit?: {
+      /** Stops to restore with Undo; omitted for non-stop mutations and for the undo itself. */
+      undoTo?: ItineraryStopInput[];
+      /** Names of places not yet in the itinerary, for infeasibility messages. */
+      extraNames?: ReadonlyMap<number, string>;
+    },
+  ) => {
     if (!itinerary || mutationPending) return;
+    const before = itinerary;
     setMutationPending(true);
     setMutationError(null);
+    setLastEdit((current) => (current ? { ...current, undo: null } : current));
     try {
       const successor = await operation();
+      const nextEdit: LastItineraryEdit | null = edit
+        ? {
+            itineraryId: successor.itineraryId,
+            arrivalShifts: diffArrivalMinutes(before.items, successor.items),
+            undo: edit.undoTo ? { stops: edit.undoTo, until: Date.now() + UNDO_VISIBLE_MS } : null,
+          }
+        : null;
       setEditingOrder(false);
       setItinerary(successor);
-      if (successor.itineraryId !== itinerary.itineraryId) {
+      setLastEdit(nextEdit);
+      if (successor.itineraryId !== before.itineraryId) {
+        // The [id] page remounts for the new id: hand it the result so badges and Undo survive.
+        handOffEdit({ itinerary: successor, lastEdit: nextEdit });
         router.replace(ROUTES.itinerary(successor.itineraryId));
       }
     } catch (mutationFailure) {
-      setMutationError(
-        mutationFailure instanceof Error
-          ? mutationFailure.message
-          : 'Không thể cập nhật lịch trình. Vui lòng thử lại sau.',
-      );
+      if (
+        mutationFailure instanceof ItineraryHttpError &&
+        mutationFailure.code === NAVIGATION_IN_PROGRESS_CODE
+      ) {
+        // Someone started navigating meanwhile: lock the page like a fresh load would.
+        setEditingOrder(false);
+        setItinerary({ ...before, isNavigationInProgress: true });
+      }
+      if (mutationFailure instanceof StopInfeasibleError) {
+        const nameOf = (poiId: number | null) =>
+          poiId === null
+            ? null
+            : before.items.find((entry) => entry.poiId === poiId)?.poiName ??
+              edit?.extraNames?.get(poiId) ??
+              null;
+        setMutationError(describeStopInfeasible(mutationFailure.details, nameOf));
+      } else {
+        setMutationError(
+          mutationFailure instanceof Error
+            ? mutationFailure.message
+            : 'Không thể cập nhật lịch trình. Vui lòng thử lại sau.',
+        );
+      }
     } finally {
       setMutationPending(false);
     }
   };
+
+  /** Review 2 (§3.4): every stop edit sends the full stops list and can be undone. */
+  const applyStops = (stops: ItineraryStopInput[], extraNames?: ReadonlyMap<number, string>) => {
+    if (!itinerary) return;
+    const itineraryId = itinerary.itineraryId;
+    void applyMutation(() => updateItineraryStops(itineraryId, stops), {
+      undoTo: currentStops(itinerary.items),
+      extraNames,
+    });
+  };
+
+  const undoLastEdit = () => {
+    if (!itinerary || !undoStops) return;
+    const itineraryId = itinerary.itineraryId;
+    const stops = undoStops;
+    void applyMutation(() => updateItineraryStops(itineraryId, stops), {});
+  };
+
+  const canEditStops = Boolean(itinerary?.canManage && !itinerary.isNavigationInProgress);
+
+  const openFoodSuggestions = (afterItem: ItineraryDetailItemDto) =>
+    setSuggestionTarget({
+      query: { kind: 'Food', afterItemId: afterItem.itemId },
+      title: `Thêm quán ăn sau ${stopDisplayName(afterItem)}`,
+      item: afterItem,
+    });
+
+  const openReplaceSuggestions = (target: ItineraryDetailItemDto) => {
+    // D4: replacing a stop the traveler chose drops it, so it needs the same confirmation as removing it.
+    if (target.isMandatory && !window.confirm(REMOVE_MANDATORY_CONFIRM)) return;
+    setSuggestionTarget({
+      query: { kind: 'Replace', replaceItemId: target.itemId },
+      title: `Thay ${stopDisplayName(target)}`,
+      item: target,
+    });
+  };
+
+  const chooseSuggestion = (suggestion: ItinerarySuggestionDto) => {
+    if (!itinerary || !suggestionTarget) return;
+    if (suggestion.overflowMinutes && suggestion.overflowMinutes > 0) {
+      const confirmMessage = `Địa điểm này cần thêm thời gian di chuyển/ăn uống. Lịch trình sẽ tự động kéo dài thêm ${formatMinutes(suggestion.overflowMinutes)}. Bạn có muốn tiếp tục?`;
+      if (!window.confirm(confirmMessage)) return;
+    }
+    const { query, item } = suggestionTarget;
+    setSuggestionTarget(null);
+    let stops: ItineraryStopInput[];
+    if (query.kind === 'Food') {
+      stops = insertAfterItem(itinerary.items, item, suggestion.poiId);
+    } else {
+      if (item.poiId === null) return;
+      stops = replaceStop(currentStops(itinerary.items), item.poiId, suggestion.poiId);
+    }
+    applyStops(stops, new Map([[suggestion.poiId, suggestion.name]]));
+  };
+
+  const removeItem = (item: ItineraryDetailItemDto) => {
+    if (!itinerary || item.poiId === null) return;
+    // D4: a stop the traveler chose is removed only after confirmation.
+    if (item.isMandatory && !window.confirm(REMOVE_MANDATORY_CONFIRM)) return;
+    applyStops(removeStop(currentStops(itinerary.items), item.poiId));
+  };
+
+  const hasAddedRestaurant = Boolean(
+    itinerary?.items.some((item) => item.kind === 'Visit' && item.costKind === 'AverageSpend'),
+  );
 
   const startAdjustingOrder = () => {
     if (!itinerary) return;
@@ -177,7 +363,6 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <PublicNavigation />
 
       <main className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
@@ -328,10 +513,15 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                           <span>Chấp nhận lịch trình</span>
                         </button>
                       )}
+                      {!itinerary.isNavigationInProgress && (
+                      <>
                       <button
                         type="button"
                         onClick={() => {
-                          if (window.confirm('Tạo một phiên bản lịch trình mới từ các ràng buộc hiện tại?')) {
+                          const message = hasAddedRestaurant
+                            ? 'Tạo phương án khác? Các quán ăn bạn đã thêm sẽ không được giữ lại vì lịch trình được tạo lại từ yêu cầu ban đầu.'
+                            : 'Tạo phương án khác? TripMate sẽ ưu tiên những địa điểm chưa có trong lịch trình hiện tại; các điểm bạn muốn ghé được giữ nguyên.';
+                          if (window.confirm(message)) {
                             void applyMutation(() => regenerateItinerary(itinerary.itineraryId));
                           }
                         }}
@@ -350,10 +540,25 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                         <span className="material-symbols-outlined text-sm">reorder</span>
                         <span>Chỉnh sửa thứ tự</span>
                       </button>
+                      </>
+                      )}
                     </>
                   )}
                 </div>
               </div>
+
+              {itinerary.isNavigationInProgress && (
+                <div
+                  role="status"
+                  className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+                >
+                  <span className="material-symbols-outlined text-lg">smartphone</span>
+                  <span>
+                    Chuyến đi đang diễn ra trên ứng dụng TripMate. Lịch trình được khóa chỉnh sửa
+                    cho tới khi chuyến kết thúc trên app.
+                  </span>
+                </div>
+              )}
 
               {mutationError && (
                 <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -361,7 +566,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                 </div>
               )}
 
-              {editingOrder && itinerary.canManage && (
+              {editingOrder && itinerary.canManage && !itinerary.isNavigationInProgress && (
                 <section className="rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
                   <h2 className="text-base font-bold text-slate-900">Sắp xếp lại các điểm tham quan</h2>
                   <p className="mt-1 text-sm text-slate-600">Điểm nghỉ được hệ thống giữ nguyên; bạn chỉ thay đổi thứ tự các điểm tham quan.</p>
@@ -376,7 +581,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     ))}
                   </ol>
                   <div className="mt-4 flex gap-2">
-                    <button type="button" onClick={() => void applyMutation(() => adjustItineraryItems(itinerary.itineraryId, orderedVisitPoiIds))} disabled={mutationPending || orderedVisitPoiIds.length === 0} className="rounded-xl bg-[#007d6e] px-4 py-2 text-sm font-bold text-white disabled:opacity-60">Lưu thứ tự mới</button>
+                    <button type="button" onClick={() => applyStops(reorderStops(currentStops(itinerary.items), orderedVisitPoiIds))} disabled={mutationPending || orderedVisitPoiIds.length === 0} className="rounded-xl bg-[#007d6e] px-4 py-2 text-sm font-bold text-white disabled:opacity-60">Lưu thứ tự mới</button>
                     <button type="button" onClick={() => setEditingOrder(false)} disabled={mutationPending} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">Hủy</button>
                   </div>
                 </section>
@@ -389,12 +594,56 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
                 {/* Left Column: Timeline of Stops */}
                 <div className="lg:col-span-8">
-                  <ItineraryTimeline items={itinerary.items} />
+                  <ItineraryTimeline
+                    items={itinerary.items}
+                    tripStart={itinerary.validFrom}
+                    tripTransportMode={itinerary.transportMode}
+                    editable={canEditStops}
+                    busy={mutationPending}
+                    arrivalShifts={arrivalShifts}
+                    onChangeLegMode={(fromPoiId, mode) =>
+                      applyStops(withLegMode(currentStops(itinerary.items), fromPoiId, mode))
+                    }
+                    tripEnd={itinerary.validTo}
+                    onReplaceStop={openReplaceSuggestions}
+                    onRemoveStop={removeItem}
+                    onViewReviews={setReviewsFor}
+                    onAddFood={openFoodSuggestions}
+                    highlightedItemId={highlightedItemId}
+                    onHighlightItem={showMap ? setHighlightedItemId : undefined}
+                  />
                 </div>
 
                 {/* Right Column: Route Map Preview & Information */}
                 <aside className="space-y-6 lg:col-span-4">
-                  <ItineraryRouteMapPreview itinerary={itinerary} />
+                  {showMap && mapboxToken && mapModel && (
+                    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+                      <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+                        <span className="material-symbols-outlined text-lg text-[#007d6e]">map</span>
+                        Bản đồ lộ trình
+                      </h3>
+                      <LazyItineraryMap
+                        token={mapboxToken}
+                        model={mapModel}
+                        highlightedItemId={highlightedItemId}
+                        onSelectItem={selectFromMap}
+                        onUnavailable={() => setMapFailed(true)}
+                      />
+                      <ul className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-600" aria-label="Chú thích bản đồ">
+                        {MAP_LEGEND.map((entry) => (
+                          <li key={entry.kind} className="flex items-center gap-1">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: MARKER_COLORS[entry.kind] }}
+                            />
+                            {entry.label}
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-2 text-[11px] text-slate-500">Đường nối thẳng theo thứ tự ghé, không phải đường đi thực tế.</p>
+                    </section>
+                  )}
+                  <ItineraryRouteMapPreview itinerary={itinerary} showDiagram={!showMap} />
 
                   {/* Travel Tips Card */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
@@ -442,6 +691,42 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           )}
         </div>
       </main>
+
+      {suggestionTarget && itinerary && (
+        <ItinerarySuggestionsDialog
+          itineraryId={itinerary.itineraryId}
+          query={suggestionTarget.query}
+          title={suggestionTarget.title}
+          nameOf={(poiId) => itinerary.items.find((entry) => entry.poiId === poiId)?.poiName ?? null}
+          onChoose={chooseSuggestion}
+          onClose={() => setSuggestionTarget(null)}
+        />
+      )}
+
+      {reviewsFor && reviewsFor.poiId !== null && (
+        <ItineraryReviewsDialog
+          poiId={reviewsFor.poiId}
+          name={stopDisplayName(reviewsFor)}
+          onClose={() => setReviewsFor(null)}
+        />
+      )}
+
+      {undoStops && itinerary && (
+        <div
+          role="status"
+          className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm text-white shadow-lg"
+        >
+          <span>Đã cập nhật lịch trình.</span>
+          <button
+            type="button"
+            onClick={undoLastEdit}
+            disabled={mutationPending}
+            className="rounded-lg px-2 py-1 font-bold text-teal-300 hover:bg-white/10 disabled:opacity-60"
+          >
+            Hoàn tác
+          </button>
+        </div>
+      )}
 
       <footer className="mt-16 border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
         <div className="mx-auto max-w-7xl px-4">

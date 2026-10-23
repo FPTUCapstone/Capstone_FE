@@ -16,7 +16,7 @@ export function PartnerEcosystemSection() {
               </LandingEyebrow>
 
               <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15]">
-                Số hóa Tour &amp; Tiếp cận <span className="text-teal-300">Khách du lịch Tự túc (FIT)</span>
+                Số hóa Tour &amp; Tiếp cận <span className="text-teal-300">Khách du lịch tự túc</span>
               </h2>
 
               <p className="mt-3 text-slate-300 text-sm sm:text-base leading-relaxed text-pretty">
@@ -90,7 +90,7 @@ export function PartnerEcosystemSection() {
                       TM
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white">Bảng điều khiển Đối tác (Operator Console)</h3>
+                      <h3 className="text-sm font-bold text-white">Bảng điều khiển Đối tác</h3>
                       <p className="text-xs text-slate-400">Danang Green Travel • Verified Operator</p>
                     </div>
                   </div>
@@ -101,17 +101,29 @@ export function PartnerEcosystemSection() {
 
                 {/* Metrics */}
                 <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                    <p className="text-[11px] text-slate-400 font-medium">Đơn đặt tuần này</p>
-                    <p className="text-lg font-black text-white mt-0.5">48 Đơn</p>
+                  <div className="relative group/metric">
+                    {/* Soft dynamic colored shadow behind metric card */}
+                    <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-teal-500/30 to-sky-400/20 blur-md opacity-45 group-hover/metric:opacity-80 transition-opacity duration-500 animate-orb-1 pointer-events-none" />
+                    <div className="relative z-10 p-3 rounded-xl bg-[#00172D]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
+                      <p className="text-[11px] text-slate-400 font-medium">Đơn đặt tuần này</p>
+                      <p className="text-lg font-black text-white mt-0.5">48 Đơn</p>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                    <p className="text-[11px] text-slate-400 font-medium">Doanh thu Escrow</p>
-                    <p className="text-lg font-black text-teal-300 mt-0.5">26.4M</p>
+                  <div className="relative group/metric">
+                    {/* Soft dynamic colored shadow behind metric card */}
+                    <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-emerald-500/35 to-teal-400/25 blur-md opacity-45 group-hover/metric:opacity-80 transition-opacity duration-500 animate-orb-2 pointer-events-none" />
+                    <div className="relative z-10 p-3 rounded-xl bg-[#00172D]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
+                      <p className="text-[11px] text-slate-400 font-medium">Doanh thu Escrow</p>
+                      <p className="text-lg font-black text-teal-300 mt-0.5">26.4M</p>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                    <p className="text-[11px] text-slate-400 font-medium">Tỉ lệ Check-in</p>
-                    <p className="text-lg font-black text-emerald-400 mt-0.5">99.2%</p>
+                  <div className="relative group/metric">
+                    {/* Soft dynamic colored shadow behind metric card */}
+                    <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-amber-500/30 to-orange-400/20 blur-md opacity-45 group-hover/metric:opacity-80 transition-opacity duration-500 animate-orb-1 pointer-events-none" />
+                    <div className="relative z-10 p-3 rounded-xl bg-[#00172D]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
+                      <p className="text-[11px] text-slate-400 font-medium">Tỉ lệ Check-in</p>
+                      <p className="text-lg font-black text-emerald-400 mt-0.5">99.2%</p>
+                    </div>
                   </div>
                 </div>
 
@@ -123,7 +135,7 @@ export function PartnerEcosystemSection() {
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center justify-between text-xs">
                     <div>
                       <p className="font-bold text-white">#TRP-8829 • Tour Bán Đảo Sơn Trà</p>
-                      <p className="text-[11px] text-slate-300">Khách: Michael Brown (2 pax) • Đón lúc 15:30</p>
+                      <p className="text-[11px] text-slate-300">Khách: Michael Brown (2 khách) • Đón lúc 15:30</p>
                     </div>
                     <span className="px-2.5 py-1 rounded-lg bg-teal-400/20 text-teal-300 font-bold text-[10px]">
                       Sẵn sàng quét QR

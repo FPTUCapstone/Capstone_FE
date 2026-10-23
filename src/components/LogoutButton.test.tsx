@@ -22,6 +22,8 @@ vi.mock('@/lib/authApi', () => ({
 
 import LogoutButton from './LogoutButton';
 
+import { operatorCommonEn } from '@/features/operator/common/resources/en';
+
 describe('LogoutButton navbar layout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -31,7 +33,7 @@ describe('LogoutButton navbar layout', () => {
   it('keeps the logout action at the compact navbar control height', () => {
     render(<LogoutButton />);
 
-    const button = screen.getByRole('button', { name: /Đăng xuất/i });
+    const button = screen.getByRole('button', { name: /Log out/i });
 
     expect(button.className).toContain('min-h-9');
     expect(button.className).toContain('text-xs');
@@ -41,7 +43,7 @@ describe('LogoutButton navbar layout', () => {
   it('portals the fixed dialog outside the filtered sticky header', () => {
     render(<LogoutButton />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Đăng xuất/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Log out/i }));
 
     const dialog = screen.getByRole('dialog');
     const overlay = dialog.parentElement;
@@ -53,7 +55,7 @@ describe('LogoutButton navbar layout', () => {
   it('contains keyboard focus and restores it to the trigger after closing', () => {
     render(<LogoutButton />);
 
-    const trigger = screen.getByRole('button', { name: /Đăng xuất/i });
+    const trigger = screen.getByRole('button', { name: /Log out/i });
     trigger.focus();
     fireEvent.click(trigger);
 
@@ -76,13 +78,13 @@ describe('LogoutButton navbar layout', () => {
   it('offers a single current-session logout action', async () => {
     render(<LogoutButton />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Đăng xuất/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Log out/i }));
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).queryByRole('radiogroup')).toBeNull();
     expect(within(dialog).getAllByRole('button')).toHaveLength(2);
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Đăng xuất' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Log out' }));
 
     await waitFor(() => expect(mocks.webLogout).toHaveBeenCalledTimes(1));
   });
@@ -95,10 +97,10 @@ describe('LogoutButton navbar layout', () => {
     mocks.webLogout.mockImplementation(() => pendingLogout);
 
     render(<LogoutButton />);
-    fireEvent.click(screen.getByRole('button', { name: /Đăng xuất/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Log out/i }));
 
     const confirm = within(screen.getByRole('dialog')).getByRole('button', {
-      name: 'Đăng xuất',
+      name: 'Log out',
     });
     act(() => {
       confirm.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -125,9 +127,9 @@ describe('LogoutButton navbar layout', () => {
     mocks.webLogout.mockResolvedValue(undefined);
 
     render(<LogoutButton />);
-    fireEvent.click(screen.getByRole('button', { name: /Đăng xuất/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Log out/i }));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {
-      name: 'Đăng xuất',
+      name: 'Log out',
     }));
 
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/sign-in'));
@@ -148,13 +150,13 @@ describe('LogoutButton navbar layout', () => {
     mocks.webLogout.mockRejectedValue({ code: 'NETWORK', status: 0 });
 
     render(<LogoutButton />);
-    fireEvent.click(screen.getByRole('button', { name: /Đăng xuất/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Log out/i }));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {
-      name: 'Đăng xuất',
+      name: 'Log out',
     }));
 
     expect((await screen.findByRole('alert')).textContent).toBe(
-      'Chưa thể hoàn tất việc kết thúc phiên đăng nhập. Vui lòng thử lại.',
+      operatorCommonEn.logout.errorMessage,
     );
     expect(AuthStorage.getContext()?.userId).toBe(42);
     expect(mocks.replace).not.toHaveBeenCalled();

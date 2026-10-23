@@ -22,15 +22,37 @@ export type ChangePasswordCapability =
   | AvailableChangePasswordCapability;
 
 /**
- * Production capability for UC-07.
+ * Thrown by an `AvailableChangePasswordCapability.execute` adapter.
  *
- * Capstone_BE develop does not currently expose an authenticated Change
- * Password endpoint. A future verified adapter will implement
- * `AvailableChangePasswordCapability` and be injected by the actor-specific
- * page composition after its route, DTOs, auth transport, and session
- * semantics are confirmed. Traveler/Tour Operator and Administrator adapters
- * must continue using their separate canonical session architectures. Until
- * then, production cannot send credentials.
+ * - `field` routes the message to the matching form field (BE spec §5:
+ *   `MSG17` -> currentPassword, `MSG05` -> newPassword).
+ * - `kind: 'sessionExpired'` (401) means the caller's session is no longer
+ *   valid; the page must clear it and redirect to sign-in (UC-07 spec §6/§7).
+ * - `kind: 'forbidden'` means the caller is not authorized for this action;
+ *   the page shows an access-denied message without clearing a valid session.
+ * - `kind: 'localPasswordUnavailable'` identifies an authenticated
+ *   Google-only public account. It keeps its session and explains that this
+ *   account has no local password to change.
+ * - Omit both for a safe generic form-level failure (network, 5xx/MSG127).
+ */
+export class ChangePasswordApiError extends Error {
+  constructor(
+    message: string,
+    public readonly field?: 'currentPassword' | 'newPassword',
+    public readonly kind?: 'sessionExpired' | 'forbidden' | 'localPasswordUnavailable',
+  ) {
+    super(message);
+    this.name = 'ChangePasswordApiError';
+  }
+}
+
+/**
+ * Fallback capability for an actor/route whose adapter is not yet injected
+ * by its page composition. Traveler/Tour Operator and Administrator each use
+ * their own canonical session architecture and inject a real
+ * `AvailableChangePasswordCapability` (see webChangePasswordCapability.ts and
+ * the admin account feature) once wired; production never sends credentials
+ * through this pending placeholder.
  */
 export const pendingChangePasswordCapability: PendingChangePasswordCapability =
   Object.freeze({

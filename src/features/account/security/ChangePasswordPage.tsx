@@ -9,8 +9,8 @@ import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceN
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
-import { pendingChangePasswordCapability } from './changePasswordCapability';
 import { ChangePasswordForm } from './ChangePasswordForm';
+import { createWebChangePasswordCapability } from './webChangePasswordCapability';
 
 export function ChangePasswordPage() {
   const router = useRouter();
@@ -61,13 +61,16 @@ export function ChangePasswordPage() {
 
         {/* Change Password Card */}
         <ChangePasswordForm
-          capability={pendingChangePasswordCapability}
+          capability={createWebChangePasswordCapability()}
           userDisplay={{
             name: context.fullName,
             email: context.email,
             role: context.role,
           }}
           onCancel={() => router.push(ROUTES.home)}
+          onSessionExpired={() =>
+            router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.security)}`)
+          }
         />
       </main>
     </div>
