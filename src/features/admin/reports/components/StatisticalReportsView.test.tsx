@@ -50,8 +50,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'false';
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
 
-      expect(screen.getAllByText(statisticalReportsEn.modeBanner.productionBadge).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText(statisticalReportsEn.modeBanner.productionModeHeading)).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.modeBanner.demoModeHeading)).toBeNull();
       expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
     });
 
@@ -174,7 +173,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
     it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to the production API workspace with zero fixture data', () => {
       render(<StatisticalReportsView actorRole="Administrator" />);
 
-      expect(screen.getByRole('heading', { name: statisticalReportsEn.modeBanner.productionModeHeading })).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.modeBanner.demoModeHeading)).toBeNull();
 
       // Verify no user-facing Production/Demo switcher button exists
       expect(screen.queryByRole('button', { name: /Demo Mode/i })).toBeNull();
@@ -235,7 +234,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
 
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
 
-      expect(screen.getByRole('heading', { name: statisticalReportsEn.modeBanner.productionModeHeading })).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.modeBanner.demoModeHeading)).toBeNull();
       expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
       expect(screen.queryByRole('table')).toBeNull();
 
@@ -260,7 +259,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
   });
 
   describe.skip('3. Removed demo fixtures', () => {
-    it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with a report breakdown list', () => {
+    it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with a distribution chart list', () => {
       const { container } = render(
         <StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />,
       );
@@ -293,9 +292,8 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         );
 
         expect(screen.getByRole('heading', { level: 3, name: rt.expectedHeading })).toBeTruthy();
-        expect(screen.queryByRole('img')).toBeNull();
-        expect(screen.getByRole('table')).toBeTruthy();
-        expect(screen.queryByRole('list')).toBeNull();
+        expect(screen.queryByRole('table')).toBeNull();
+        expect(screen.getByRole('list', { name: statisticalReportsEn.results.chartSvgAriaLabel })).toBeTruthy();
         expect(container.textContent ?? '').not.toContain('Tertiary');
         expect(container.textContent ?? '').not.toContain('Primary value');
         expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);

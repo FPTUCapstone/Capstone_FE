@@ -36,15 +36,8 @@ export const statisticalReportsEn = {
     currencyBadge: 'Currency: VND',
   },
   modeBanner: {
-    groupAriaLabel: 'Reporting data source status',
-    productionModeHeading: 'Production Reporting Workspace',
     demoModeHeading: 'Non-Production Demo Fixture Workspace (?demo=1)',
     productionBadge: 'LIVE CLOSED-PERIOD DATA',
-    demoBadge: 'DEMO FIXTURE DATA — Not Production Authority',
-    productionNotice:
-      'Reports are generated from a persisted snapshot for the selected closed period. CSV and Excel downloads reuse the same snapshot so the displayed and exported figures remain aligned.',
-    demoNotice:
-      'Development-only Demo mode (?demo=1) uses deterministic closed and open period fixtures to preview all five report types, closed-period validation, chart/table rendering, and real CSV file download workflows.',
   },
   criteriaForm: {
     sectionTitle: 'Report Criteria & Period Selection',
@@ -187,8 +180,8 @@ export const statisticalReportsEn = {
     completedGrossLabel: 'Completed Bookings Gross',
     recordedRefundsLabel: 'Less Recorded Refunds',
     netPlatformRevenueLabel: 'Net Platform Revenue',
-    tableFallbackTitle: 'Report Breakdown',
-    tableCaptionPrefix: 'Detailed tabular breakdown for',
+    chartSectionTitle: 'Distribution at a glance',
+    chartSvgAriaLabel: 'Horizontal bar chart of report segments, sized by share of the period total',
     shareOfTotalSuffix: 'of period total',
   },
   reportTemplates: {

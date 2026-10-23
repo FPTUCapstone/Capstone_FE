@@ -260,7 +260,7 @@ export function StatisticalReportsView({
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:px-8 md:py-10">
         {/* Top Page Header */}
-        <header className="mb-6 rounded-2xl border border-[#314863] bg-[#00152a] p-6 text-white shadow-md sm:p-8">
+        <header className="mb-4 rounded-2xl border border-[#314863] bg-[#00152a] px-5 py-4 text-white shadow-md sm:px-6 sm:py-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#314863] bg-[#102a43] px-3 py-1 text-xs font-bold tracking-wider text-[#71f8e4] uppercase">
@@ -286,28 +286,6 @@ export function StatisticalReportsView({
           </div>
         </header>
 
-        {/* Read-only production data source status. */}
-        <section
-          aria-label={copy.modeBanner.groupAriaLabel}
-          className="mb-8 rounded-2xl border border-[#d0d7de] bg-white p-4 shadow-xs sm:p-5"
-        >
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-            <h2 className="text-sm font-extrabold tracking-tight text-[#00152a]">
-              {copy.modeBanner.productionModeHeading}
-            </h2>
-
-            <span
-              className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900"
-            >
-              {copy.modeBanner.productionBadge}
-            </span>
-          </div>
-
-          <p className="mt-2.5 text-xs leading-relaxed text-[#475467]">
-            {copy.modeBanner.productionNotice}
-          </p>
-        </section>
-
         {/* Criteria Form Panel */}
         <section
           aria-labelledby="statistical-criteria-heading"
@@ -325,91 +303,51 @@ export function StatisticalReportsView({
             </p>
           </div>
 
-          <form noValidate onSubmit={handleGenerateSubmit} className="space-y-6">
-            {/* Report Type Selection (Keyboard Accessible Radio Cards + Select) */}
-            <fieldset className="space-y-3">
-              <legend className="text-sm font-bold text-[#00152a]">
+          <form noValidate onSubmit={handleGenerateSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+            {/* Single report-type selector */}
+            <div className="space-y-2">
+              <label htmlFor="report-type-select" className="block text-sm font-bold text-[#00152a]">
                 {copy.criteriaForm.reportTypeLegend}
-              </legend>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                {REPORT_TYPE_KEYS.map((typeKey) => {
-                  const typeCopy = copy.reportTypes[typeKey];
-                  const isSelected = draftCriteria.reportType === typeKey;
-                  return (
-                    <label
-                      key={typeKey}
-                      className={`flex cursor-pointer flex-col justify-between rounded-xl border p-3.5 transition focus-within:ring-2 focus-within:ring-[#006b5f] ${
-                        isSelected
-                          ? 'border-[#006b5f] bg-[#f0fdf9]'
-                          : 'border-[#d0d7de] bg-white hover:border-[#94a3b8]'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <input
-                          type="radio"
-                          name="reportTypeRadio"
-                          value={typeKey}
-                          checked={isSelected}
-                          onChange={() => {
-                            setDraftCriteria((prev) => ({ ...prev, reportType: typeKey }));
-                            setFieldErrors((prev) => ({ ...prev, reportType: undefined }));
-                          }}
-                          className="mt-1 h-4 w-4 accent-[#006b5f]"
-                        />
-                        <div>
-                          <span className="block text-xs font-bold text-[#00152a] sm:text-sm">
-                            {typeCopy.label}
-                          </span>
-                          <span className="mt-1 block text-[11px] leading-snug text-[#475467]">
-                            {typeCopy.description}
-                          </span>
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-
-              <div className="max-w-md pt-1">
-                <label
-                  htmlFor="report-type-select"
-                  className="mb-1 block text-xs font-semibold text-[#344054]"
-                >
-                  {copy.criteriaForm.reportTypeSelectLabel}
-                </label>
-                <select
-                  id="report-type-select"
-                  value={draftCriteria.reportType}
-                  onChange={(e) => {
-                    setDraftCriteria((prev) => ({
-                      ...prev,
-                      reportType: e.target.value as StatisticalReportType | '',
-                    }));
-                    setFieldErrors((prev) => ({ ...prev, reportType: undefined }));
-                  }}
-                  aria-invalid={Boolean(fieldErrors.reportType)}
-                  aria-describedby={fieldErrors.reportType ? 'report-type-error' : undefined}
-                  className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 py-2.5 text-sm text-[#0f172a] focus:border-[#006b5f] focus:outline-none"
-                >
-                  <option value="">{copy.criteriaForm.reportTypePlaceholder}</option>
-                  {REPORT_TYPE_KEYS.map((typeKey) => (
-                    <option key={typeKey} value={typeKey}>
-                      {copy.reportTypes[typeKey].label}
-                    </option>
-                  ))}
-                </select>
-                {fieldErrors.reportType ? (
-                  <p
-                    id="report-type-error"
-                    role="alert"
-                    className="mt-1.5 text-xs font-semibold text-rose-700"
-                  >
-                    {fieldErrors.reportType}
-                  </p>
-                ) : null}
-              </div>
-            </fieldset>
+              </label>
+              <select
+                id="report-type-select"
+                value={draftCriteria.reportType}
+                onChange={(e) => {
+                  setDraftCriteria((prev) => ({
+                    ...prev,
+                    reportType: e.target.value as StatisticalReportType | '',
+                  }));
+                  setFieldErrors((prev) => ({ ...prev, reportType: undefined }));
+                }}
+                aria-invalid={Boolean(fieldErrors.reportType)}
+                aria-describedby={
+                  fieldErrors.reportType
+                    ? 'report-type-error'
+                    : draftCriteria.reportType
+                      ? 'report-type-description'
+                      : undefined
+                }
+                className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 py-2.5 text-sm text-[#0f172a] focus:border-[#006b5f] focus:outline-none"
+              >
+                <option value="">{copy.criteriaForm.reportTypePlaceholder}</option>
+                {REPORT_TYPE_KEYS.map((typeKey) => (
+                  <option key={typeKey} value={typeKey}>
+                    {copy.reportTypes[typeKey].label}
+                  </option>
+                ))}
+              </select>
+              {draftCriteria.reportType ? (
+                <p id="report-type-description" className="text-xs leading-relaxed text-[#475467]">
+                  {copy.reportTypes[draftCriteria.reportType].description}
+                </p>
+              ) : null}
+              {fieldErrors.reportType ? (
+                <p id="report-type-error" role="alert" className="text-xs font-semibold text-rose-700">
+                  {fieldErrors.reportType}
+                </p>
+              ) : null}
+            </div>
 
             {/* Period Selection (Closed Month / Closed Quarter / Closed Year) */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -475,13 +413,14 @@ export function StatisticalReportsView({
                 ) : null}
               </div>
             </div>
+            </div>
 
-            {/* Optional filters supplied by the production reporting API. */}
-            <fieldset className="rounded-xl border border-[#eaecf0] bg-[#f8fafc] p-4">
-              <legend className="px-1 text-xs font-bold tracking-wider text-[#475467] uppercase">
+            {/* Optional filters supplied by the production reporting API (collapsed by default). */}
+            <details className="rounded-xl border border-[#eaecf0] bg-[#f8fafc] p-4">
+              <summary className="cursor-pointer text-xs font-bold tracking-wider text-[#475467] uppercase">
                 {copy.criteriaForm.optionalFiltersHeading}
-              </legend>
-              <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              </summary>
+              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label
                     htmlFor="filter-operator-select"
@@ -557,7 +496,7 @@ export function StatisticalReportsView({
               <p className="mt-3 text-xs text-[#475467]">
                 {copy.filters.productionDynamicFiltersNotice}
               </p>
-            </fieldset>
+            </details>
 
             {/* Draft vs Applied Notice */}
             {isDraftDirty ? (
@@ -586,6 +525,93 @@ export function StatisticalReportsView({
               </button>
             </div>
           </form>
+        </section>
+
+        {/* Export Format & Export Action Panel */}
+        <section
+          aria-labelledby="statistical-export-heading"
+          className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs sm:p-6"
+        >
+          <div className="mb-4 border-b border-[#eaecf0] pb-4">
+            <h2
+              id="statistical-export-heading"
+              className="text-lg font-extrabold tracking-tight text-[#00152a]"
+            >
+              {copy.exportPanel.sectionTitle}
+            </h2>
+            <p className="mt-1 text-xs text-[#475467] sm:text-sm">
+              {copy.exportPanel.sectionDescription}
+            </p>
+          </div>
+
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <fieldset>
+              <legend className="mb-2 block text-sm font-bold text-[#00152a]">
+                {copy.exportPanel.formatLegend}
+              </legend>
+              <div className="flex flex-wrap gap-3">
+                {EXPORT_FORMAT_KEYS.map((fmt) => {
+                  const selected = exportFormat === fmt;
+                  return (
+                    <label
+                      key={fmt}
+                      className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition focus-within:ring-2 focus-within:ring-[#006b5f] ${
+                        selected
+                          ? 'border-[#006b5f] bg-[#f0fdf9] text-[#00152a]'
+                          : 'border-[#cbd5e1] bg-white text-[#334155]'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="exportFormat"
+                        value={fmt}
+                        checked={selected}
+                        onChange={() => setExportFormat(fmt)}
+                        className="h-4 w-4 accent-[#006b5f]"
+                      />
+                      <span>{copy.exportPanel.formats[fmt]}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <div className="flex flex-col items-start gap-2 md:items-end">
+              <button
+                type="button"
+                disabled={!canExport}
+                aria-describedby={!canExport ? 'export-disabled-reason' : undefined}
+                onClick={handleExportReport}
+                className="inline-flex items-center justify-center rounded-xl bg-[#00152a] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#102a43] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f] disabled:cursor-not-allowed disabled:bg-[#cbd5e1] disabled:text-[#475467]"
+              >
+                {copy.exportPanel.exportButton}
+              </button>
+              {!canExport ? (
+                <p id="export-disabled-reason" className="text-xs font-medium text-[#667085]">
+                  {exportDisabledExplanation}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Export Failure Banner (6.a1) */}
+          {exportStatus === 'ERROR' ? (
+            <div
+              role="alert"
+              className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900"
+            >
+              <h3 className="text-sm font-bold">{copy.exportPanel.exportErrorTitle}</h3>
+              <p className="mt-1 text-xs leading-relaxed">{copy.exportPanel.exportErrorMessage}</p>
+              <button
+                type="button"
+                onClick={handleExportReport}
+                className="mt-3 inline-flex items-center justify-center rounded-lg bg-rose-700 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-rose-800"
+              >
+                {copy.exportPanel.retryExportButton}
+              </button>
+            </div>
+          ) : null}
+
         </section>
 
         {/* Result Area */}
@@ -740,6 +766,47 @@ export function StatisticalReportsView({
                 ))}
               </div>
 
+              {/* Distribution chart: directly under the KPI cards so it is the first detail read */}
+              <section
+                aria-labelledby="statistical-chart-heading"
+                className="rounded-2xl border border-[#d0d7de] bg-white p-6 shadow-xs sm:p-8"
+              >
+                <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+                  <h4 id="statistical-chart-heading" className="text-xl font-extrabold text-[#00152a]">
+                    {copy.results.chartSectionTitle}
+                  </h4>
+                  <span className="text-sm font-semibold text-[#475467]">
+                    {generatedReport.chartUnitLabel}
+                  </span>
+                </div>
+                <ul aria-label={copy.results.chartSvgAriaLabel} className="space-y-6">
+                  {generatedReport.chartPoints.map((point) => (
+                    <li
+                      key={point.id}
+                      className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(14rem,1fr)_3fr] md:items-center md:gap-6"
+                    >
+                      <span className="text-base font-bold text-[#00152a] sm:text-lg">
+                        {point.label}
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <div
+                          aria-hidden="true"
+                          className="h-11 flex-1 overflow-hidden rounded-lg bg-[#eef2f6]"
+                        >
+                          <div
+                            className="h-full rounded-lg bg-[#006b5f]"
+                            style={{ width: `${Math.max(0, Math.min(100, point.sharePercent))}%` }}
+                          />
+                        </div>
+                        <span className="min-w-[15rem] shrink-0 text-right font-mono text-base font-bold text-[#00152a] sm:text-lg">
+                          {point.formattedPrimaryValue} · {point.sharePercent}%
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
               {/* Platform Revenue Formula Breakdown (Only for PLATFORM_REVENUE) */}
               {generatedReport.revenueBreakdown ? (
                 <section
@@ -793,139 +860,8 @@ export function StatisticalReportsView({
                 </section>
               ) : null}
 
-              <section
-                aria-labelledby="statistical-breakdown-heading"
-                className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs"
-              >
-                <h4
-                  id="statistical-breakdown-heading"
-                  className="mb-4 text-base font-extrabold text-[#00152a]"
-                >
-                  {copy.results.tableFallbackTitle}
-                </h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-xs sm:text-sm">
-                    <caption className="sr-only">
-                      {copy.results.tableCaptionPrefix}{' '}
-                      {copy.reportTypes[generatedReport.criteria.reportType].label} (
-                      {generatedReport.period.key})
-                    </caption>
-                    <thead>
-                      <tr className="border-b border-[#d0d7de] bg-[#f8fafc] text-[#344054]">
-                        {generatedReport.tableHeaders.slice(0, 3).map((header) => (
-                          <th key={header} scope="col" className="px-3.5 py-2.5 font-bold">
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#eaecf0]">
-                      {generatedReport.breakdownRows.map((row) => (
-                        <tr key={row.id} className="hover:bg-[#f8fafc]">
-                          <td className="px-3.5 py-3 font-semibold text-[#00152a]">
-                            {row.segmentLabel}
-                          </td>
-                          <td className="px-3.5 py-3 font-mono text-[#1e293b]">
-                            {row.primaryMetricLabel}
-                          </td>
-                          <td className="px-3.5 py-3 text-[#1e293b]">
-                            {row.secondaryMetricLabel}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
             </div>
           ) : null}
-        </section>
-
-        {/* Export Format & Export Action Panel */}
-        <section
-          aria-labelledby="statistical-export-heading"
-          className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs sm:p-6"
-        >
-          <div className="mb-4 border-b border-[#eaecf0] pb-4">
-            <h2
-              id="statistical-export-heading"
-              className="text-lg font-extrabold tracking-tight text-[#00152a]"
-            >
-              {copy.exportPanel.sectionTitle}
-            </h2>
-            <p className="mt-1 text-xs text-[#475467] sm:text-sm">
-              {copy.exportPanel.sectionDescription}
-            </p>
-          </div>
-
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <fieldset>
-              <legend className="mb-2 block text-sm font-bold text-[#00152a]">
-                {copy.exportPanel.formatLegend}
-              </legend>
-              <div className="flex flex-wrap gap-3">
-                {EXPORT_FORMAT_KEYS.map((fmt) => {
-                  const selected = exportFormat === fmt;
-                  return (
-                    <label
-                      key={fmt}
-                      className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition focus-within:ring-2 focus-within:ring-[#006b5f] ${
-                        selected
-                          ? 'border-[#006b5f] bg-[#f0fdf9] text-[#00152a]'
-                          : 'border-[#cbd5e1] bg-white text-[#334155]'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="exportFormat"
-                        value={fmt}
-                        checked={selected}
-                        onChange={() => setExportFormat(fmt)}
-                        className="h-4 w-4 accent-[#006b5f]"
-                      />
-                      <span>{copy.exportPanel.formats[fmt]}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <div className="flex flex-col items-start gap-2 md:items-end">
-              <button
-                type="button"
-                disabled={!canExport}
-                aria-describedby={!canExport ? 'export-disabled-reason' : undefined}
-                onClick={handleExportReport}
-                className="inline-flex items-center justify-center rounded-xl bg-[#00152a] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#102a43] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f] disabled:cursor-not-allowed disabled:bg-[#cbd5e1] disabled:text-[#475467]"
-              >
-                {copy.exportPanel.exportButton}
-              </button>
-              {!canExport ? (
-                <p id="export-disabled-reason" className="text-xs font-medium text-[#667085]">
-                  {exportDisabledExplanation}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Export Failure Banner (6.a1) */}
-          {exportStatus === 'ERROR' ? (
-            <div
-              role="alert"
-              className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900"
-            >
-              <h3 className="text-sm font-bold">{copy.exportPanel.exportErrorTitle}</h3>
-              <p className="mt-1 text-xs leading-relaxed">{copy.exportPanel.exportErrorMessage}</p>
-              <button
-                type="button"
-                onClick={handleExportReport}
-                className="mt-3 inline-flex items-center justify-center rounded-lg bg-rose-700 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-rose-800"
-              >
-                {copy.exportPanel.retryExportButton}
-              </button>
-            </div>
-          ) : null}
-
         </section>
       </main>
     </div>
