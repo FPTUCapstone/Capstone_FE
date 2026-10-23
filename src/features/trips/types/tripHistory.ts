@@ -8,6 +8,10 @@ export interface TripParticipant {
   notes?: string;
 }
 
+/**
+ * @deprecated Legacy shape used only by the old review page (`features/reviews`). Trip History uses the
+ * TM-78 contract in `tripHistoryContract.ts`; do not add new uses.
+ */
 export interface TripCardDto {
   tripId: string;
   tripType: TripType;
@@ -56,36 +60,6 @@ export interface TripCardDto {
   reviewComment?: string;
   reviewedAtUtc?: string;
 
-  isDemo?: boolean;
-}
-
-export interface TripSummaryStatsDto {
-  totalCompletedTrips: number;
-  totalDistanceKm?: number;
-  totalVisitedPois?: number;
-  cspMatchRate?: number;
-  averageRating?: number;
-  isDemo?: boolean;
-}
-
-export interface TripHistoryFilter {
-  tab: TripState;
-  tripType?: 'ALL' | 'TourBooking' | 'SelfPlannedItinerary';
-  fromDate?: string;
-  toDate?: string;
-  searchQuery?: string;
-  page?: number;
-  pageSize?: number;
-}
-
-export interface TripHistoryResponseDto {
-  status: 'SUCCESS' | 'PENDING_BE_INTEGRATION' | 'ERROR';
-  message?: string;
-  trips: TripCardDto[];
-  summary?: TripSummaryStatsDto;
-  totalCount: number;
-  page: number;
-  pageSize: number;
   isDemo?: boolean;
 }
 
