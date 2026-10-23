@@ -35,7 +35,7 @@ describe('couponApi', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await createCoupon({
-      code: 'flat100', discountType: 'Flat', discountValue: 100000,
+      code: 'flat100', name: 'Flat one hundred', discountType: 'Flat', discountValue: 100000,
       minOrderAmount: 200000, usageLimit: null, usageLimitPerUser: null,
       validFromUtc: '2026-10-05T00:00:00Z', validToUtc: '2026-10-06T00:00:00Z', applicableTourIds: [1],
     });
@@ -53,7 +53,7 @@ describe('couponApi', () => {
     }), { status: 409 })));
 
     await expect(createCoupon({
-      code: 'TRIP10', discountType: 'Flat', discountValue: 100000,
+      code: 'TRIP10', name: 'Trip ten', discountType: 'Flat', discountValue: 100000,
       minOrderAmount: 0, usageLimit: null, usageLimitPerUser: null,
       validFromUtc: '2026-10-05T00:00:00Z', validToUtc: '2026-10-06T00:00:00Z', applicableTourIds: [1],
     })).rejects.toMatchObject({ status: 409, code: 'coupon.code_conflict' });

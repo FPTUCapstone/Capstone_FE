@@ -131,26 +131,6 @@ export function OperatorCouponListView({
 
   return (
     <div className="space-y-6">
-      {/* Production Truthfulness Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-blue-900 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[20px] text-blue-600 shrink-0">
-              info
-            </span>
-            <div className="space-y-1">
-              <p className="font-extrabold">{couponEn.list.banners.productionTitle}</p>
-              <p className="text-blue-700 leading-relaxed">
-                {couponEn.list.banners.productionBody}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Demo Mode Notice */}
       {isDemo && (
         <div

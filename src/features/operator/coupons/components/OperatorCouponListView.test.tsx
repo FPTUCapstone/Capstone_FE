@@ -30,10 +30,9 @@ describe('OperatorCouponListView (Supporting Promotional Coupons List)', () => {
     expect(screen.getByText(String(INITIAL_DEMO_COUPONS.length))).toBeDefined();
   });
 
-  it('displays truthful PENDING_BE_INTEGRATION banner when not in demo mode', () => {
+  it('does not display the retired integration-pending banner in production mode', () => {
     render(<OperatorCouponListView coupons={INITIAL_DEMO_COUPONS} isDemo={false} />);
-    expect(screen.getByRole('status')).toBeDefined();
-    expect(screen.getByText(couponEn.list.banners.productionTitle)).toBeDefined();
+    expect(screen.queryByText(couponEn.list.banners.productionTitle)).toBeNull();
     expect(screen.queryByText(couponEn.list.banners.demoTitle)).toBeNull();
   });
 
