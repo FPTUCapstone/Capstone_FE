@@ -2,6 +2,8 @@
 
 Ngày đối chiếu: 23/10/2026. Trạng thái tổng thể: **MIGRATION_PARTIALLY_COMPLETE**.
 
+> **Lưu ý đọc báo cáo:** §§1–10 là ledger/snapshot của đợt migration ban đầu. Trạng thái remediation hiện hành và các cập nhật nguồn sau independent review nằm ở §§11–12; khi có khác biệt, §§11–12 là handoff mới hơn.
+
 ## 1. Kết quả thực thi và nguồn yêu cầu
 
 Đã thực thi các thay đổi kỹ thuật đủ điều kiện trong worktree riêng, kiểm thử theo từng task và tạo commit local. Các phần phụ thuộc yêu cầu, hợp đồng Backend hoặc quyết định bảo mật vẫn được giữ lại có chủ đích. Không tuyên bố hoàn tất 100%, tích hợp thật hoặc sẵn sàng phát hành.
