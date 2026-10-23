@@ -98,10 +98,10 @@ function checkArchitecture(projectRoot) {
       if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) break;
       directives.push(statement.expression.text);
     }
-    const info = { all: new Set(), runtime: new Set(), client: directives.includes('use client'), serverOnly: false };
+    const info = { all: new Set(), runtime: new Set(), client: !source.isDeclarationFile && directives.includes('use client'), serverOnly: false };
     modules.set(file, info);
     for (const { specifier, runtime } of importsFrom(source)) {
-      if (specifier === 'server-only' && runtime) info.serverOnly = true;
+      if (specifier === 'server-only' && runtime && !source.isDeclarationFile) info.serverOnly = true;
       if (assetExtension.test(specifier)) continue;
       const resolved = ts.resolveModuleName(specifier, file, options, ts.sys, resolverCache).resolvedModule;
       const local = specifier.startsWith('.') || path.isAbsolute(specifier) || aliases.some((alias) => alias.test(specifier));
@@ -110,9 +110,10 @@ function checkArchitecture(projectRoot) {
         continue;
       }
       const target = path.resolve(resolved.resolvedFileName);
-      if (!isInside(target) || target.split(path.sep).includes('node_modules') || declaration.test(target) || !codeExtension.test(target)) continue;
+      if (!isInside(target) || target.split(path.sep).includes('node_modules') || !codeExtension.test(target)) continue;
       info.all.add(target);
-      if (runtime) info.runtime.add(target);
+      // Declarations participate in ownership only, even with value import syntax.
+      if (runtime && !source.isDeclarationFile && !declaration.test(target)) info.runtime.add(target);
       if (!modules.has(target)) queue.push(target);
     }
   }

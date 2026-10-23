@@ -154,3 +154,45 @@ test('current production graph satisfies the enforced convention boundaries', ()
   assert.ok(result.stats.modules > 0);
   console.log('Architecture graph:', JSON.stringify(result.stats));
 });
+for (const [extension, specifier] of [['ts', 'types'], ['mts', 'types.mjs'], ['cts', 'types.cjs']]) {
+  test(`generic UI follows local .d.${extension} ownership directly and through reexports`, () => {
+    for (const bridge of [false, true]) {
+      const target = `src/features/auth/types.d.${extension}`;
+      const result = inspect({
+        'src/components/ui/Button.tsx': `import type { User } from '${bridge ? '@/lib/bridge' : '@/features/auth/' + specifier}';`,
+        ...(bridge ? { 'src/lib/bridge.d.ts': `export type { User } from '@/features/auth/${specifier}';` } : {}),
+        [target]: 'export interface User { id: string }',
+      });
+      assert.deepEqual(result.issues, [{
+        rule: 'generic-ui',
+        path: ['src/components/ui/Button.tsx', ...(bridge ? ['src/lib/bridge.d.ts'] : []), target],
+        message: 'Generic UI depends on feature, route, session or service code',
+      }]);
+      assert.equal(result.stats.runtimeEdges, 0);
+    }
+  });
+}
+
+test('declarations retain ownership edges without emitting runtime imports or directives', () => {
+  const result = inspect({
+    'src/view.ts': "'use client'; import { value } from './types';",
+    'src/types.d.ts': "'use client'; import 'server-only'; export { value } from './secret'; import './other';",
+    'src/other.d.ts': "import './types';",
+    'src/secret.ts': "import 'server-only'; export const value = 1;",
+  });
+  assert.deepEqual(result.issues, []);
+  assert.equal(result.stats.allEdges, 4);
+  assert.equal(result.stats.runtimeEdges, 0);
+  assert.equal(result.stats.clientModules, 1);
+  assert.equal(result.stats.serverOnlyModules, 1);
+});
+
+test('resolved package declarations stay outside the source graph', () => {
+  const result = inspect({
+    'src/view.ts': "import type { Value } from 'fixture';",
+    'node_modules/fixture/package.json': '{"name":"fixture","types":"index.d.ts"}',
+    'node_modules/fixture/index.d.ts': "import './missing'; export type Value = string;",
+  });
+  assert.deepEqual(result.issues, []);
+  assert.equal(result.stats.modules, 1);
+});
