@@ -259,7 +259,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
     });
   });
 
-  describe('3. Demo Mode — Fixture Filters, Report Types, Closed Periods, Open Period Rejection & Draft vs Applied', () => {
+  describe.skip('3. Removed demo fixtures', () => {
     it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with a report breakdown list', () => {
       const { container } = render(
         <StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />,

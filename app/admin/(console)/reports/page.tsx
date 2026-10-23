@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { StatisticalReportsView } from '@/features/admin/reports/components/StatisticalReportsView';
-import { resolveStatisticalWorkspaceMode } from '@/features/admin/reports/guards/statisticalReportAuth';
 import { statisticalReportsEn } from '@/features/admin/reports/resources/en';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { ROUTES } from '@/lib/routes';
@@ -14,11 +13,13 @@ export const metadata: Metadata = {
   description: statisticalReportsEn.metadata.description,
 };
 
+/** Legacy query shape retained while the demo switch is ignored. */
 export interface StatisticalReportsPageProps {
   readonly searchParams?: Promise<{ readonly demo?: string | string[] }>;
 }
 
-export default async function StatisticalReportsPage(props: StatisticalReportsPageProps) {
+export default async function StatisticalReportsPage(_props: StatisticalReportsPageProps = {}) {
+  void _props;
   let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
   try {
     session = verifyAdminSessionFromCookies(await cookies());
@@ -34,10 +35,5 @@ export default async function StatisticalReportsPage(props: StatisticalReportsPa
     return <AdminAccessDeniedView />;
   }
 
-  const resolvedSearchParams = props?.searchParams ? await props.searchParams : undefined;
-  const mode = resolveStatisticalWorkspaceMode({
-    demoQueryParam: resolvedSearchParams?.demo,
-  });
-
-  return <StatisticalReportsView actorRole={session.role} initialMode={mode} />;
+  return <StatisticalReportsView actorRole={session.role} initialMode="PRODUCTION" />;
 }

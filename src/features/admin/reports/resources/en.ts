@@ -182,7 +182,7 @@ export const statisticalReportsEn = {
     summarySectionTitle: 'Aggregated Summary Figures',
     revenueFormulaTitle: 'Platform Revenue Calculation Breakdown (VND)',
     revenueFormulaNote:
-      'Computed from Confirmed and Completed bookings, net of recorded refunds (Demo fixture calculation).',
+      'Computed from confirmed and completed bookings, net of recorded refunds in the closed-period snapshot.',
     confirmedGrossLabel: 'Confirmed Bookings Gross',
     completedGrossLabel: 'Completed Bookings Gross',
     recordedRefundsLabel: 'Less Recorded Refunds',
@@ -391,12 +391,12 @@ export const statisticalReportsEn = {
   exportPanel: {
     sectionTitle: 'Export Statistical Report',
     sectionDescription:
-      'In Demo mode, CSV (.csv) triggers a real browser file download matching the applied report scope. Excel (.xlsx) and PDF (.pdf) require Backend binary generation and are available as structured previews only.',
+      'Download the selected closed-period report as CSV or Excel. The export uses the same backend snapshot as the displayed report.',
     formatLegend: 'Export Format',
     formatSelectLabel: 'Export Format',
     formats: {
-      CSV: 'CSV (.csv) — Real Download (Demo)',
-      EXCEL: 'Excel (.xlsx) — Demo Preview Only',
+      CSV: 'CSV (.csv)',
+      EXCEL: 'Excel (.xlsx)',
       PDF: 'PDF (.pdf) — Not Supported',
     },
     exportButton: 'Export',
@@ -404,7 +404,7 @@ export const statisticalReportsEn = {
     retryExportButton: 'Retry Export',
     disabledNoGeneratedReportReason:
       'Generate a valid closed-period report with available records before exporting.',
-    exportSuccessTitle: 'Demo CSV Report Downloaded',
+    exportSuccessTitle: 'Report Download Started',
     exportSuccessMessage:
       'The CSV statistical report file has been generated from the currently displayed result and downloaded to your device.',
     previewOnlyTitle: 'Demo Preview Only',

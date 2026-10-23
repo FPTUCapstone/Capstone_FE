@@ -8,28 +8,20 @@ import { ROUTES } from '@/lib/routes';
 
 import {
   canAccessStatisticalReports,
-  isStatisticalDemoAllowedInEnv,
 } from '../guards/statisticalReportAuth';
 import { statisticalReportsEn } from '../resources/en';
 import {
   DEFAULT_DRAFT_CRITERIA,
   areCriteriaEqual,
-  buildDemoExportArtifact,
-  findDemoPeriodFixture,
   fetchProductionReportingPeriods,
   fetchProductionStatisticalReport,
   formatVndCurrency,
-  generateDemoStatisticalReport,
-  getDemoPeriodFixturesByGranularity,
   getFilterOptionsByMode,
-  getPeriodsByGranularity,
-  triggerBrowserCsvDownload,
   productionExportUrl,
 } from '../services/statisticalReportService';
 import type {
   AppliedStatisticalReportCriteria,
   BookingTypeFilter,
-  DemoExportArtifact,
   ExportFormat,
   GeneratedStatisticalReport,
   PeriodGranularity,
@@ -41,6 +33,7 @@ import type {
 
 export interface StatisticalReportsViewProps {
   readonly actorRole?: string | null;
+  /** Retained temporarily so older callers do not break; reports always use backend data. */
   readonly initialMode?: StatisticalWorkspaceMode;
 }
 
@@ -69,33 +62,16 @@ const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['CSV', 'EXCEL'];
 
 export function StatisticalReportsView({
   actorRole,
-  initialMode = 'PRODUCTION',
 }: StatisticalReportsViewProps) {
   const copy = statisticalReportsEn;
   const effectiveRole = actorRole ?? null;
-  const effectiveMode: StatisticalWorkspaceMode = isStatisticalDemoAllowedInEnv()
-    ? initialMode
-    : 'PRODUCTION';
 
   const [draftCriteria, setDraftCriteria] =
     useState<StatisticalReportCriteria>(DEFAULT_DRAFT_CRITERIA);
   const [appliedCriteria, setAppliedCriteria] =
     useState<AppliedStatisticalReportCriteria | null>(null);
-  const [resultState, setResultState] = useState<ResultLifecycleState>(
-    effectiveMode === 'PRODUCTION' ? 'IDLE' : 'GENERATED',
-  );
-  const [generatedReport, setGeneratedReport] = useState<GeneratedStatisticalReport | null>(() => {
-    if (effectiveMode === 'PRODUCTION') return null;
-    const initialApplied: AppliedStatisticalReportCriteria = {
-      reportType: 'PLATFORM_REVENUE',
-      periodGranularity: 'CLOSED_MONTH',
-      periodKey: '2026-09',
-      operatorId: 'ALL',
-      destinationId: 'ALL',
-      bookingType: 'ALL',
-    };
-    return generateDemoStatisticalReport(initialApplied);
-  });
+  const [resultState, setResultState] = useState<ResultLifecycleState>('IDLE');
+  const [generatedReport, setGeneratedReport] = useState<GeneratedStatisticalReport | null>(null);
 
   const resolvedAppliedCriteria: AppliedStatisticalReportCriteria | null =
     appliedCriteria ?? (generatedReport ? generatedReport.criteria : null);
@@ -104,18 +80,14 @@ export function StatisticalReportsView({
     reportType?: string;
     periodKey?: string;
   }>({});
-  const [simulateGenerationError, setSimulateGenerationError] = useState(false);
-  const [simulateExportError, setSimulateExportError] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('CSV');
   const [exportStatus, setExportStatus] = useState<'IDLE' | 'READY' | 'PREVIEW_ONLY' | 'ERROR'>(
     'IDLE',
   );
-  const [exportedArtifact, setExportedArtifact] = useState<DemoExportArtifact | null>(null);
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>('');
   const [productionPeriods, setProductionPeriods] = useState<readonly ProductionReportingPeriodOption[]>([]);
 
   useEffect(() => {
-    if (effectiveMode !== 'PRODUCTION') return;
     const controller = new AbortController();
     void fetchProductionReportingPeriods(controller.signal)
       .then((periods) => {
@@ -131,7 +103,7 @@ export function StatisticalReportsView({
         if (!controller.signal.aborted) setLiveAnnouncement(error instanceof Error ? error.message : 'Unable to load closed reporting periods.');
       });
     return () => controller.abort();
-  }, [effectiveMode]);
+  }, []);
 
   if (!canAccessStatisticalReports(effectiveRole)) {
     return (
@@ -188,30 +160,19 @@ export function StatisticalReportsView({
     );
   }
 
-  const availablePeriods = effectiveMode === 'PRODUCTION'
-    ? productionPeriods.filter((period) => period.granularity === draftCriteria.periodGranularity)
-    : getPeriodsByGranularity(draftCriteria.periodGranularity, effectiveMode);
-  const activeFilterOptions = getFilterOptionsByMode(effectiveMode);
+  const availablePeriods = productionPeriods.filter(
+    (period) => period.granularity === draftCriteria.periodGranularity,
+  );
+  const activeFilterOptions = getFilterOptionsByMode('PRODUCTION');
   const isDraftDirty =
     resolvedAppliedCriteria !== null && !areCriteriaEqual(draftCriteria, resolvedAppliedCriteria);
 
   function handleGranularityChange(nextGranularity: PeriodGranularity) {
-    if (effectiveMode === 'PRODUCTION') {
-      const periodsForGranularity = productionPeriods.filter((period) => period.granularity === nextGranularity);
-      setDraftCriteria((prev) => ({
-        ...prev,
-        periodGranularity: nextGranularity,
-        periodKey: periodsForGranularity[0]?.key ?? '',
-      }));
-      return;
-    }
-
-    const demoPeriods = getDemoPeriodFixturesByGranularity(nextGranularity);
-    const firstClosed = demoPeriods.find((p) => p.isClosed);
+    const periodsForGranularity = productionPeriods.filter((period) => period.granularity === nextGranularity);
     setDraftCriteria((prev) => ({
       ...prev,
       periodGranularity: nextGranularity,
-      periodKey: firstClosed?.key ?? '',
+      periodKey: periodsForGranularity[0]?.key ?? '',
     }));
   }
 
@@ -234,63 +195,26 @@ export function StatisticalReportsView({
       reportType: draftCriteria.reportType as StatisticalReportType,
       periodGranularity: draftCriteria.periodGranularity,
       periodKey: draftCriteria.periodKey,
-      operatorId: effectiveMode === 'PRODUCTION' ? 'ALL' : draftCriteria.operatorId,
-      destinationId: effectiveMode === 'PRODUCTION' ? 'ALL' : draftCriteria.destinationId,
+      operatorId: 'ALL',
+      destinationId: 'ALL',
       bookingType: draftCriteria.bookingType,
     };
 
-    if (effectiveMode === 'PRODUCTION') {
-      setFieldErrors({});
-      setExportStatus('IDLE');
-      setExportedArtifact(null);
-      setAppliedCriteria(nextApplied);
-      setGeneratedReport(null);
-      setResultState('LOADING');
-      setLiveAnnouncement('Generating the closed-period report.');
-      try {
-        const report = await fetchProductionStatisticalReport(nextApplied);
-        setGeneratedReport(report);
-        setResultState(report.breakdownRows.length ? 'GENERATED' : 'NO_DATA');
-        setLiveAnnouncement(report.breakdownRows.length ? 'Statistical report generated.' : copy.states.noDataMessage);
-      } catch (error) {
-        setResultState('GENERATION_ERROR');
-        setLiveAnnouncement(error instanceof Error ? error.message : copy.states.generationErrorMessage);
-      }
-      return;
-    }
-
-    const selectedDemoPeriod = findDemoPeriodFixture(draftCriteria.periodKey);
-    if (!selectedDemoPeriod || !selectedDemoPeriod.isClosed) {
-      setFieldErrors({ periodKey: copy.validation.openPeriodRejected });
-      setLiveAnnouncement(copy.validation.openPeriodRejected);
-      return;
-    }
-
     setFieldErrors({});
     setExportStatus('IDLE');
-    setExportedArtifact(null);
-
-    if (simulateGenerationError) {
-      setResultState('GENERATION_ERROR');
-      setLiveAnnouncement(copy.states.generationErrorMessage);
-      return;
-    }
-
-    const demoReport = generateDemoStatisticalReport(nextApplied);
     setAppliedCriteria(nextApplied);
-
-    if (!demoReport || demoReport.breakdownRows.length === 0) {
-      setGeneratedReport(demoReport);
-      setResultState('NO_DATA');
-      setLiveAnnouncement(copy.states.noDataMessage);
-      return;
+    setGeneratedReport(null);
+    setResultState('LOADING');
+    setLiveAnnouncement('Generating the closed-period report.');
+    try {
+      const report = await fetchProductionStatisticalReport(nextApplied);
+      setGeneratedReport(report);
+      setResultState(report.breakdownRows.length ? 'GENERATED' : 'NO_DATA');
+      setLiveAnnouncement(report.breakdownRows.length ? 'Statistical report generated.' : copy.states.noDataMessage);
+    } catch (error) {
+      setResultState('GENERATION_ERROR');
+      setLiveAnnouncement(error instanceof Error ? error.message : copy.states.generationErrorMessage);
     }
-
-    setGeneratedReport(demoReport);
-    setResultState('GENERATED');
-    setLiveAnnouncement(
-      `${copy.results.appliedHeaderTitle}: ${copy.reportTypes[nextApplied.reportType].label} (${selectedDemoPeriod.label})`,
-    );
   }
 
   function handleGenerateSubmit(event: FormEvent<HTMLFormElement>) {
@@ -314,40 +238,10 @@ export function StatisticalReportsView({
       return;
     }
 
-    if (effectiveMode === 'PRODUCTION') {
-      const format = exportFormat === 'EXCEL' ? 'EXCEL' : 'CSV';
-      window.location.assign(productionExportUrl(generatedReport.criteria, format));
-      setExportStatus('READY');
-      setLiveAnnouncement(copy.exportPanel.exportSuccessMessage);
-      return;
-    }
-
-    if (simulateExportError) {
-      setExportStatus('ERROR');
-      setExportedArtifact(null);
-      setLiveAnnouncement(copy.exportPanel.exportErrorMessage);
-      return;
-    }
-
-    const artifact = buildDemoExportArtifact(generatedReport, exportFormat);
-    if (!artifact.isDownloadable) {
-      setExportedArtifact(artifact);
-      setExportStatus('PREVIEW_ONLY');
-      setLiveAnnouncement(copy.exportPanel.previewOnlyMessage);
-      return;
-    }
-
-    const downloaded = triggerBrowserCsvDownload(artifact);
-    if (!downloaded) {
-      setExportStatus('ERROR');
-      setExportedArtifact(null);
-      setLiveAnnouncement(copy.exportPanel.exportErrorMessage);
-      return;
-    }
-
-    setExportedArtifact(artifact);
+    const format = exportFormat === 'EXCEL' ? 'EXCEL' : 'CSV';
+    window.location.assign(productionExportUrl(generatedReport.criteria, format));
     setExportStatus('READY');
-    setLiveAnnouncement(`${copy.exportPanel.exportSuccessMessage} (${artifact.fileName})`);
+    setLiveAnnouncement(copy.exportPanel.exportSuccessMessage);
   }
 
   const canExport =
@@ -392,35 +286,25 @@ export function StatisticalReportsView({
           </div>
         </header>
 
-        {/* Read-Only Data Source Status Banner (No User-Facing Production->Demo Toggle) */}
+        {/* Read-only production data source status. */}
         <section
           aria-label={copy.modeBanner.groupAriaLabel}
           className="mb-8 rounded-2xl border border-[#d0d7de] bg-white p-4 shadow-xs sm:p-5"
         >
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <h2 className="text-sm font-extrabold tracking-tight text-[#00152a]">
-              {effectiveMode === 'PRODUCTION'
-                ? copy.modeBanner.productionModeHeading
-                : copy.modeBanner.demoModeHeading}
+              {copy.modeBanner.productionModeHeading}
             </h2>
 
             <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
-                effectiveMode === 'PRODUCTION'
-                  ? 'border border-amber-300 bg-amber-50 text-amber-900'
-                  : 'border border-teal-300 bg-teal-50 text-teal-900'
-              }`}
+              className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900"
             >
-              {effectiveMode === 'PRODUCTION'
-                ? copy.modeBanner.productionBadge
-                : copy.modeBanner.demoBadge}
+              {copy.modeBanner.productionBadge}
             </span>
           </div>
 
           <p className="mt-2.5 text-xs leading-relaxed text-[#475467]">
-            {effectiveMode === 'PRODUCTION'
-              ? copy.modeBanner.productionNotice
-              : copy.modeBanner.demoNotice}
+            {copy.modeBanner.productionNotice}
           </p>
         </section>
 
@@ -592,7 +476,7 @@ export function StatisticalReportsView({
               </div>
             </div>
 
-            {/* Optional Filters (PRODUCTION_FILTER_OPTIONS vs DEMO_FILTER_FIXTURES) */}
+            {/* Optional filters supplied by the production reporting API. */}
             <fieldset className="rounded-xl border border-[#eaecf0] bg-[#f8fafc] p-4">
               <legend className="px-1 text-xs font-bold tracking-wider text-[#475467] uppercase">
                 {copy.criteriaForm.optionalFiltersHeading}
@@ -670,41 +554,10 @@ export function StatisticalReportsView({
                   </select>
                 </div>
               </div>
-              {effectiveMode === 'PRODUCTION' ? (
-                <p className="mt-3 text-xs text-[#475467]">
-                  {copy.filters.productionDynamicFiltersNotice}
-                </p>
-              ) : null}
+              <p className="mt-3 text-xs text-[#475467]">
+                {copy.filters.productionDynamicFiltersNotice}
+              </p>
             </fieldset>
-
-            {/* Demo Failure Simulation Controls (Non-Production Demo Only) */}
-            {effectiveMode === 'DEMO' ? (
-              <fieldset className="rounded-xl border border-dashed border-[#cbd5e1] bg-[#fcfcfd] p-3.5">
-                <legend className="px-1 text-xs font-bold text-[#475467]">
-                  {copy.criteriaForm.simulationHeading}
-                </legend>
-                <div className="flex flex-wrap gap-6 pt-1">
-                  <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-[#344054]">
-                    <input
-                      type="checkbox"
-                      checked={simulateGenerationError}
-                      onChange={(e) => setSimulateGenerationError(e.target.checked)}
-                      className="h-4 w-4 accent-[#006b5f]"
-                    />
-                    <span>{copy.criteriaForm.simulateGenerationErrorLabel}</span>
-                  </label>
-                  <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-[#344054]">
-                    <input
-                      type="checkbox"
-                      checked={simulateExportError}
-                      onChange={(e) => setSimulateExportError(e.target.checked)}
-                      className="h-4 w-4 accent-[#006b5f]"
-                    />
-                    <span>{copy.criteriaForm.simulateExportErrorLabel}</span>
-                  </label>
-                </div>
-              </fieldset>
-            ) : null}
 
             {/* Draft vs Applied Notice */}
             {isDraftDirty ? (
@@ -817,7 +670,7 @@ export function StatisticalReportsView({
             </div>
           ) : null}
 
-          {/* Generated Report Result (Summary Figures + Revenue Formula + SVG Chart + Accessible Table) */}
+          {/* Generated Report Result */}
           {resultState === 'GENERATED' &&
           generatedReport &&
           generatedReport.breakdownRows.length > 0 ? (
@@ -833,9 +686,6 @@ export function StatisticalReportsView({
                       {copy.reportTypes[generatedReport.criteria.reportType].label}
                     </h3>
                   </div>
-                  <span className="rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-bold text-teal-900">
-                    {copy.results.demoWatermarkBadge}
-                  </span>
                 </div>
 
                 <dl className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
@@ -1076,95 +926,6 @@ export function StatisticalReportsView({
             </div>
           ) : null}
 
-          {/* Export Ready Artifact Preview — Real CSV Download Only (Step 6 & 7) */}
-          {exportStatus === 'READY' && exportedArtifact && exportedArtifact.isDownloadable ? (
-            <div
-              role="status"
-              className="mt-5 rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 sm:p-5"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-extrabold text-emerald-950">
-                  {copy.exportPanel.exportSuccessTitle}
-                </h3>
-                <span className="rounded-full bg-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-950">
-                  {copy.exportPanel.demoFileBadge}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-emerald-900">
-                {copy.exportPanel.exportSuccessMessage}
-              </p>
-              <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                <div>
-                  <dt className="font-semibold text-emerald-900">
-                    {copy.exportPanel.fileNameLabel}:
-                  </dt>
-                  <dd className="font-mono font-bold text-emerald-950">
-                    {exportedArtifact.fileName}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-emerald-900">
-                    {copy.exportPanel.auditEntryLabel}:
-                  </dt>
-                  <dd className="font-mono text-emerald-950">
-                    {exportedArtifact.auditEventSummary}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-3">
-                <p className="mb-1 text-xs font-bold text-emerald-950">
-                  {copy.exportPanel.previewHeading}
-                </p>
-                <pre className="max-h-48 overflow-x-auto rounded-lg border border-emerald-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-[#0f172a]">
-                  {exportedArtifact.contentPreview}
-                </pre>
-              </div>
-            </div>
-          ) : null}
-
-          {/* Binary Format Preview Only — No File Downloaded (Excel / PDF) */}
-          {exportStatus === 'PREVIEW_ONLY' &&
-          exportedArtifact &&
-          !exportedArtifact.isDownloadable ? (
-            <div
-              role="status"
-              className="mt-5 rounded-xl border border-amber-300 bg-amber-50/70 p-4 sm:p-5"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-extrabold text-amber-950">
-                  {copy.exportPanel.previewOnlyTitle}
-                </h3>
-                <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-950">
-                  {copy.exportPanel.previewOnlyBadge}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-amber-900">{copy.exportPanel.previewOnlyMessage}</p>
-              <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                <div>
-                  <dt className="font-semibold text-amber-900">
-                    {copy.exportPanel.targetFormatLabel}:
-                  </dt>
-                  <dd className="font-mono font-bold text-amber-950">{exportedArtifact.format}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-amber-900">
-                    {copy.exportPanel.auditEntryLabel}:
-                  </dt>
-                  <dd className="font-mono text-amber-950">
-                    {exportedArtifact.auditEventSummary}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-3">
-                <p className="mb-1 text-xs font-bold text-amber-950">
-                  {copy.exportPanel.previewHeading}
-                </p>
-                <pre className="max-h-48 overflow-x-auto rounded-lg border border-amber-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-[#0f172a]">
-                  {exportedArtifact.contentPreview}
-                </pre>
-              </div>
-            </div>
-          ) : null}
         </section>
       </main>
     </div>
