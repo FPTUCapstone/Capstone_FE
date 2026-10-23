@@ -54,6 +54,7 @@ describe('PayoutRecordsScreen', () => {
     expect(screen.getByText('Total Net Payout')).toBeTruthy();
     expect(screen.getByText('PO-12')).toBeTruthy();
     expect(screen.getByText('01/08/2026 – 31/08/2026')).toBeTruthy();
+    expect(screen.getByText('· 3 months')).toBeTruthy();
     expect(screen.getByText('Not available')).toBeTruthy();
     expect(screen.getAllByText('Pending review').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Approved for settlement').length).toBeGreaterThan(0);
