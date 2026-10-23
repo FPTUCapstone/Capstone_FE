@@ -1011,3 +1011,115 @@ export function triggerBrowserCsvDownload(artifact: DemoExportArtifact): boolean
     }
   }
 }
+
+interface BackendMetric { key: string; label: string; value: number; isCurrency: boolean; }
+interface BackendRow { key: string; label: string; primaryValue: number; secondaryValue: number; tertiaryValue: number; isCurrency: boolean; }
+interface BackendReport { reportType: string; period: { periodKey: string; startDate: string; endDate: string }; generatedAtUtc: string; metrics: BackendMetric[]; breakdown: BackendRow[]; }
+
+function displayDate(value: string): string {
+  const matched = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  return matched ? `${matched[3]}/${matched[2]}/${matched[1]}` : value;
+}
+
+function parseBackendReport(value: unknown, criteria: AppliedStatisticalReportCriteria): GeneratedStatisticalReport {
+  if (!value || typeof value !== 'object') throw new Error('Invalid statistical report response.');
+  const report = value as Partial<BackendReport>;
+  if (!report.period || !Array.isArray(report.metrics) || !Array.isArray(report.breakdown)) throw new Error('Invalid statistical report response.');
+  const periodKey = typeof report.period.periodKey === 'string' ? report.period.periodKey : criteria.periodKey;
+  const metrics = report.metrics.map((metric) => ({
+    id: metric.key,
+    label: metric.label,
+    formattedValue: metric.isCurrency ? formatVndCurrency(metric.value) : formatIntegerCount(metric.value),
+    contextNote: metric.isCurrency ? 'Closed-period accounting snapshot' : 'Closed-period statistical snapshot',
+  }));
+  const rows = report.breakdown.map((row) => ({
+    id: row.key,
+    segmentLabel: row.label,
+    primaryMetricLabel: row.isCurrency ? formatVndCurrency(row.primaryValue) : formatIntegerCount(row.primaryValue),
+    secondaryMetricLabel: row.isCurrency ? formatVndCurrency(row.secondaryValue) : formatIntegerCount(row.secondaryValue),
+    tertiaryMetricLabel: row.isCurrency ? formatVndCurrency(row.tertiaryValue) : formatIntegerCount(row.tertiaryValue),
+  }));
+  const points = report.breakdown.map((row) => ({
+    id: row.key,
+    label: row.label,
+    primaryValue: row.primaryValue,
+    formattedPrimaryValue: row.isCurrency ? formatVndCurrency(row.primaryValue) : formatIntegerCount(row.primaryValue),
+    sharePercent: 0,
+  }));
+  const denominator = points.reduce((total, point) => total + Math.max(0, point.primaryValue), 0);
+  const chartPoints = points.map((point) => ({ ...point, sharePercent: denominator ? Math.round((Math.max(0, point.primaryValue) / denominator) * 100) : 0 }));
+  return {
+    criteria,
+    period: { key: periodKey, granularity: criteria.periodGranularity, label: periodKey, startDateDisplay: displayDate(report.period.startDate), endDateDisplay: displayDate(report.period.endDate), isClosed: true },
+    generatedAtDisplay: formatVietnamDateDdMmYyyy(report.generatedAtUtc ?? new Date()),
+    summaryMetrics: metrics,
+    chartUnitLabel: criteria.reportType === 'PLATFORM_REVENUE' ? 'VND' : 'Count',
+    chartPoints,
+    tableHeaders: ['Segment', 'Primary value', 'Secondary value', 'Tertiary value'],
+    breakdownRows: rows,
+  };
+}
+
+export async function fetchProductionStatisticalReport(criteria: AppliedStatisticalReportCriteria, signal?: AbortSignal): Promise<GeneratedStatisticalReport> {
+  const query = new URLSearchParams({ reportType: criteria.reportType, periodKey: criteria.periodKey, bookingType: criteria.bookingType });
+  if (criteria.operatorId !== 'ALL') query.set('operatorUserId', criteria.operatorId);
+  if (criteria.destinationId !== 'ALL') query.set('destinationId', criteria.destinationId);
+  const response = await fetch(`/api/admin/statistical-reports?${query.toString()}`, { credentials: 'same-origin', headers: { Accept: 'application/json' }, signal });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(body && typeof body === 'object' && 'title' in body && typeof (body as { title?: unknown }).title === 'string' ? (body as { title: string }).title : 'Unable to generate the statistical report.');
+  return parseBackendReport(body, criteria);
+}
+
+type BackendPeriod = {
+  readonly periodKey?: unknown;
+  readonly startDate?: unknown;
+  readonly endDate?: unknown;
+};
+
+function periodGranularityFromKey(key: string): PeriodGranularity | null {
+  if (/^\d{4}-\d{2}$/.test(key)) return 'CLOSED_MONTH';
+  if (/^\d{4}-Q[1-4]$/.test(key)) return 'CLOSED_QUARTER';
+  if (/^\d{4}$/.test(key)) return 'CLOSED_YEAR';
+  return null;
+}
+
+function displayPeriodLabel(key: string, startDate: string, endDate: string): string {
+  return `${key} (${displayDate(startDate)}–${displayDate(endDate)})`;
+}
+
+/** Reads the periods closed by UC-67 rather than relying on release-specific fixtures. */
+export async function fetchProductionReportingPeriods(signal?: AbortSignal): Promise<readonly ProductionReportingPeriodOption[]> {
+  const response = await fetch('/api/admin/statistical-reports/periods', {
+    credentials: 'same-origin', headers: { Accept: 'application/json' }, signal,
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok || !Array.isArray(body)) {
+    throw new Error('Unable to load closed reporting periods.');
+  }
+  return body.flatMap((value) => {
+    const period = value as BackendPeriod;
+    if (typeof period.periodKey !== 'string' || typeof period.startDate !== 'string' || typeof period.endDate !== 'string') return [];
+    const granularity = periodGranularityFromKey(period.periodKey);
+    if (!granularity) return [];
+    return [{
+      key: period.periodKey,
+      granularity,
+      label: displayPeriodLabel(period.periodKey, period.startDate, period.endDate),
+      startDateDisplay: displayDate(period.startDate),
+      endDateDisplay: displayDate(period.endDate),
+    }];
+  });
+}
+
+export function productionExportUrl(criteria: AppliedStatisticalReportCriteria, format: 'CSV' | 'EXCEL'): string {
+  const operationId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, (character) => {
+      const value = Math.floor(Math.random() * 16);
+      return (character === 'x' ? value : ((value & 0x3) | 0x8)).toString(16);
+    });
+  const query = new URLSearchParams({ reportType: criteria.reportType, periodKey: criteria.periodKey, bookingType: criteria.bookingType, format: format === 'EXCEL' ? 'xlsx' : 'csv', exportOperationId: operationId });
+  if (criteria.operatorId !== 'ALL') query.set('operatorUserId', criteria.operatorId);
+  if (criteria.destinationId !== 'ALL') query.set('destinationId', criteria.destinationId);
+  return `/api/admin/statistical-reports/export?${query.toString()}`;
+}

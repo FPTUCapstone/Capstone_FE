@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { ROUTES } from '@/lib/routes';
@@ -16,14 +16,15 @@ import {
   areCriteriaEqual,
   buildDemoExportArtifact,
   findDemoPeriodFixture,
-  findProductionPeriodOption,
+  fetchProductionReportingPeriods,
+  fetchProductionStatisticalReport,
   formatVndCurrency,
   generateDemoStatisticalReport,
   getDemoPeriodFixturesByGranularity,
   getFilterOptionsByMode,
   getPeriodsByGranularity,
-  getProductionPeriodsByGranularity,
   triggerBrowserCsvDownload,
+  productionExportUrl,
 } from '../services/statisticalReportService';
 import type {
   AppliedStatisticalReportCriteria,
@@ -35,6 +36,7 @@ import type {
   StatisticalReportCriteria,
   StatisticalReportType,
   StatisticalWorkspaceMode,
+  ProductionReportingPeriodOption,
 } from '../types/statisticalReports';
 
 export interface StatisticalReportsViewProps {
@@ -44,7 +46,7 @@ export interface StatisticalReportsViewProps {
 
 type ResultLifecycleState =
   | 'IDLE'
-  | 'PENDING_BE_INTEGRATION'
+  | 'LOADING'
   | 'NO_DATA'
   | 'GENERATION_ERROR'
   | 'GENERATED';
@@ -63,7 +65,7 @@ const GRANULARITY_KEYS: readonly PeriodGranularity[] = [
   'CLOSED_YEAR',
 ];
 
-const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['CSV', 'EXCEL', 'PDF'];
+const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['CSV', 'EXCEL'];
 
 export function StatisticalReportsView({
   actorRole,
@@ -79,10 +81,9 @@ export function StatisticalReportsView({
     useState<StatisticalReportCriteria>(DEFAULT_DRAFT_CRITERIA);
   const [appliedCriteria, setAppliedCriteria] =
     useState<AppliedStatisticalReportCriteria | null>(null);
-  const [resultState, setResultState] = useState<ResultLifecycleState>(() => {
-    if (effectiveMode === 'PRODUCTION') return 'PENDING_BE_INTEGRATION';
-    return 'GENERATED';
-  });
+  const [resultState, setResultState] = useState<ResultLifecycleState>(
+    effectiveMode === 'PRODUCTION' ? 'IDLE' : 'GENERATED',
+  );
   const [generatedReport, setGeneratedReport] = useState<GeneratedStatisticalReport | null>(() => {
     if (effectiveMode === 'PRODUCTION') return null;
     const initialApplied: AppliedStatisticalReportCriteria = {
@@ -111,6 +112,26 @@ export function StatisticalReportsView({
   );
   const [exportedArtifact, setExportedArtifact] = useState<DemoExportArtifact | null>(null);
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>('');
+  const [productionPeriods, setProductionPeriods] = useState<readonly ProductionReportingPeriodOption[]>([]);
+
+  useEffect(() => {
+    if (effectiveMode !== 'PRODUCTION') return;
+    const controller = new AbortController();
+    void fetchProductionReportingPeriods(controller.signal)
+      .then((periods) => {
+        setProductionPeriods(periods);
+        setDraftCriteria((current) => {
+          const currentPeriodIsAvailable = periods.some((period) => period.key === current.periodKey && period.granularity === current.periodGranularity);
+          if (currentPeriodIsAvailable) return current;
+          const first = periods.find((period) => period.granularity === current.periodGranularity) ?? periods[0];
+          return first ? { ...current, periodGranularity: first.granularity, periodKey: first.key } : current;
+        });
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setLiveAnnouncement(error instanceof Error ? error.message : 'Unable to load closed reporting periods.');
+      });
+    return () => controller.abort();
+  }, [effectiveMode]);
 
   if (!canAccessStatisticalReports(effectiveRole)) {
     return (
@@ -167,21 +188,20 @@ export function StatisticalReportsView({
     );
   }
 
-  const availablePeriods = getPeriodsByGranularity(
-    draftCriteria.periodGranularity,
-    effectiveMode,
-  );
+  const availablePeriods = effectiveMode === 'PRODUCTION'
+    ? productionPeriods.filter((period) => period.granularity === draftCriteria.periodGranularity)
+    : getPeriodsByGranularity(draftCriteria.periodGranularity, effectiveMode);
   const activeFilterOptions = getFilterOptionsByMode(effectiveMode);
   const isDraftDirty =
     resolvedAppliedCriteria !== null && !areCriteriaEqual(draftCriteria, resolvedAppliedCriteria);
 
   function handleGranularityChange(nextGranularity: PeriodGranularity) {
     if (effectiveMode === 'PRODUCTION') {
-      const productionPeriods = getProductionPeriodsByGranularity(nextGranularity);
+      const periodsForGranularity = productionPeriods.filter((period) => period.granularity === nextGranularity);
       setDraftCriteria((prev) => ({
         ...prev,
         periodGranularity: nextGranularity,
-        periodKey: productionPeriods[0]?.key ?? '',
+        periodKey: periodsForGranularity[0]?.key ?? '',
       }));
       return;
     }
@@ -195,7 +215,7 @@ export function StatisticalReportsView({
     }));
   }
 
-  function executeGenerateReport() {
+  async function executeGenerateReport() {
     const nextErrors: { reportType?: string; periodKey?: string } = {};
     if (!draftCriteria.reportType) {
       nextErrors.reportType = copy.validation.requiredField;
@@ -220,20 +240,22 @@ export function StatisticalReportsView({
     };
 
     if (effectiveMode === 'PRODUCTION') {
-      const requestedProductionPeriod = findProductionPeriodOption(draftCriteria.periodKey);
-      if (!requestedProductionPeriod) {
-        setFieldErrors({ periodKey: copy.validation.requiredField });
-        setLiveAnnouncement(copy.validation.requiredField);
-        return;
-      }
-
       setFieldErrors({});
       setExportStatus('IDLE');
       setExportedArtifact(null);
       setAppliedCriteria(nextApplied);
       setGeneratedReport(null);
-      setResultState('PENDING_BE_INTEGRATION');
-      setLiveAnnouncement(copy.states.pendingBackendTitle);
+      setResultState('LOADING');
+      setLiveAnnouncement('Generating the closed-period report.');
+      try {
+        const report = await fetchProductionStatisticalReport(nextApplied);
+        setGeneratedReport(report);
+        setResultState(report.breakdownRows.length ? 'GENERATED' : 'NO_DATA');
+        setLiveAnnouncement(report.breakdownRows.length ? 'Statistical report generated.' : copy.states.noDataMessage);
+      } catch (error) {
+        setResultState('GENERATION_ERROR');
+        setLiveAnnouncement(error instanceof Error ? error.message : copy.states.generationErrorMessage);
+      }
       return;
     }
 
@@ -273,7 +295,7 @@ export function StatisticalReportsView({
 
   function handleGenerateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    executeGenerateReport();
+    void executeGenerateReport();
   }
 
   function handleCancelCriteriaChanges() {
@@ -288,7 +310,15 @@ export function StatisticalReportsView({
   }
 
   function handleExportReport() {
-    if (effectiveMode === 'PRODUCTION' || resultState !== 'GENERATED' || !generatedReport) {
+    if (resultState !== 'GENERATED' || !generatedReport) {
+      return;
+    }
+
+    if (effectiveMode === 'PRODUCTION') {
+      const format = exportFormat === 'EXCEL' ? 'EXCEL' : 'CSV';
+      window.location.assign(productionExportUrl(generatedReport.criteria, format));
+      setExportStatus('READY');
+      setLiveAnnouncement(copy.exportPanel.exportSuccessMessage);
       return;
     }
 
@@ -321,15 +351,12 @@ export function StatisticalReportsView({
   }
 
   const canExport =
-    effectiveMode === 'DEMO' &&
     resultState === 'GENERATED' &&
     generatedReport !== null &&
     generatedReport.breakdownRows.length > 0;
 
   const exportDisabledExplanation =
-    effectiveMode === 'PRODUCTION'
-      ? copy.exportPanel.disabledProductionReason
-      : copy.exportPanel.disabledNoGeneratedReportReason;
+    copy.exportPanel.disabledNoGeneratedReportReason;
 
   return (
     <div className="min-h-screen bg-[#f7f9fc] pb-20 text-[#191c1e]">
@@ -714,11 +741,10 @@ export function StatisticalReportsView({
             {copy.results.appliedHeaderTitle}
           </h2>
 
-          {/* Production Mode: PENDING_BE_INTEGRATION */}
-          {effectiveMode === 'PRODUCTION' || resultState === 'PENDING_BE_INTEGRATION' ? (
+          {resultState === 'LOADING' ? (
             <div
               role="region"
-              aria-label={copy.states.pendingBackendTitle}
+              aria-label={copy.states.loadingTitle}
               className="rounded-2xl border border-amber-300 bg-amber-50/70 p-6 sm:p-8"
             >
               <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
@@ -737,10 +763,10 @@ export function StatisticalReportsView({
                 <span>{copy.modeBanner.productionBadge}</span>
               </div>
               <h3 className="text-lg font-extrabold text-[#00152a]">
-                {copy.states.pendingBackendTitle}
+                {copy.states.loadingTitle}
               </h3>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#344054]">
-                {copy.states.pendingBackendDescription}
+                {copy.states.loadingDescription}
               </p>
               {resolvedAppliedCriteria ? (
                 <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4 text-xs text-[#344054]">
@@ -760,7 +786,7 @@ export function StatisticalReportsView({
           ) : null}
 
           {/* Generation Error State (4.a2) */}
-          {effectiveMode === 'DEMO' && resultState === 'GENERATION_ERROR' ? (
+          {resultState === 'GENERATION_ERROR' ? (
             <div
               role="alert"
               className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900 sm:p-8"
@@ -778,7 +804,7 @@ export function StatisticalReportsView({
           ) : null}
 
           {/* No Data State (4.a1) */}
-          {effectiveMode === 'DEMO' && resultState === 'NO_DATA' ? (
+          {resultState === 'NO_DATA' ? (
             <div
               role="status"
               className="rounded-2xl border border-[#d0d7de] bg-white p-6 text-center sm:p-8"
@@ -792,8 +818,7 @@ export function StatisticalReportsView({
           ) : null}
 
           {/* Generated Report Result (Summary Figures + Revenue Formula + SVG Chart + Accessible Table) */}
-          {effectiveMode === 'DEMO' &&
-          resultState === 'GENERATED' &&
+          {resultState === 'GENERATED' &&
           generatedReport &&
           generatedReport.breakdownRows.length > 0 ? (
             <div className="space-y-6">

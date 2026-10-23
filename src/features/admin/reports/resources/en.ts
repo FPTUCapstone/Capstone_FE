@@ -39,10 +39,10 @@ export const statisticalReportsEn = {
     groupAriaLabel: 'Reporting data source status',
     productionModeHeading: 'Production Reporting Workspace',
     demoModeHeading: 'Non-Production Demo Fixture Workspace (?demo=1)',
-    productionBadge: 'Pending Backend Integration',
+    productionBadge: 'LIVE CLOSED-PERIOD DATA',
     demoBadge: 'DEMO FIXTURE DATA — Not Production Authority',
     productionNotice:
-      'Backend statistical aggregation, accounting-period closure verification, and report export endpoints are not yet connected on this environment. Production mode preserves your requested criteria without fabricating platform statistics or generating synthetic export files.',
+      'Reports are generated from a persisted snapshot for the selected closed period. CSV and Excel downloads reuse the same snapshot so the displayed and exported figures remain aligned.',
     demoNotice:
       'Development-only Demo mode (?demo=1) uses deterministic closed and open period fixtures to preview all five report types, closed-period validation, chart/table rendering, and real CSV file download workflows.',
   },
@@ -157,9 +157,9 @@ export const statisticalReportsEn = {
     idleTitle: 'Ready to Generate Statistical Report',
     idleDescription:
       'Configure your report type, closed period, and optional filters above, then select Generate Report to view aggregated summary figures and charts.',
-    pendingBackendTitle: 'Pending Backend Statistical Aggregation Contract',
-    pendingBackendDescription:
-      'Your requested report criteria have been preserved. Authoritative accounting-period closure verification, live platform statistical aggregation, and file export will become active once the Backend reporting endpoint is deployed. No synthetic figures are displayed in Production mode.',
+    loadingTitle: 'Generating Statistical Report',
+    loadingDescription:
+      'TripMate is reading the immutable snapshot for the selected closed period.',
     noDataTitle: 'No Statistical Data Available',
     noDataMessage: 'No records found matching your criteria.',
     noDataDescription:
@@ -398,29 +398,27 @@ export const statisticalReportsEn = {
     formatSelectLabel: 'Export Format',
     formats: {
       CSV: 'CSV (.csv) — Real Download (Demo)',
-      EXCEL: 'Excel (.xlsx) — Preview Only (Pending Binary Integration)',
-      PDF: 'PDF (.pdf) — Preview Only (Pending Binary Integration)',
+      EXCEL: 'Excel (.xlsx) — Demo Preview Only',
+      PDF: 'PDF (.pdf) — Not Supported',
     },
     exportButton: 'Export',
     previewButton: 'Preview Format Scope',
     retryExportButton: 'Retry Export',
-    disabledProductionReason:
-      'Export is unavailable in Production mode until the Backend statistical reporting endpoint is connected.',
     disabledNoGeneratedReportReason:
       'Generate a valid closed-period report with available records before exporting.',
     exportSuccessTitle: 'Demo CSV Report Downloaded',
     exportSuccessMessage:
       'The CSV statistical report file has been generated from the currently displayed result and downloaded to your device.',
-    previewOnlyTitle: 'Binary Format Pending Backend Integration — Preview Only',
+    previewOnlyTitle: 'Demo Preview Only',
     previewOnlyMessage:
-      'Genuine Excel (.xlsx) and PDF (.pdf) binary generation requires Backend reporting integration. No file download was initiated; select CSV (.csv) to download a real file in Demo mode.',
+      'Demo mode does not generate an Excel file. No file download was initiated; select CSV (.csv) to download a real file in Demo mode.',
     previewOnlyBadge: 'PREVIEW ONLY — NO FILE DOWNLOADED',
     exportErrorTitle: 'Export File Generation Failed',
     exportErrorMessage:
       'The report file could not be generated at this time. The displayed report result remains intact; please try again.',
     demoFileBadge: 'DEMO CSV DOWNLOAD — NOT PRODUCTION ACCOUNTING DATA',
     fileNameLabel: 'Downloaded File',
-    targetFormatLabel: 'Requested Binary Format (Pending Backend)',
+    targetFormatLabel: 'Requested Demo Format',
     auditEntryLabel: 'Recorded Audit Log Preview',
     previewHeading: 'Exported File Content Preview',
   },

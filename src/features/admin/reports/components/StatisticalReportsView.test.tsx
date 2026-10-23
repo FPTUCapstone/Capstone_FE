@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({
@@ -171,14 +171,10 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
   });
 
   describe('2. Production Truthfulness Default, Filter Truthfulness & Environment Lockdown', () => {
-    it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to PRODUCTION mode with PENDING_BE_INTEGRATION, zero fixture filter options, and zero fabricated report data', () => {
+    it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to the production API workspace with zero fixture data', () => {
       render(<StatisticalReportsView actorRole="Administrator" />);
 
-      expect(
-        screen.getByRole('heading', {
-          name: statisticalReportsEn.states.pendingBackendTitle,
-        }),
-      ).toBeTruthy();
+      expect(screen.getByRole('heading', { name: statisticalReportsEn.modeBanner.productionModeHeading })).toBeTruthy();
 
       // Verify no user-facing Production/Demo switcher button exists
       expect(screen.queryByRole('button', { name: /Demo Mode/i })).toBeNull();
@@ -234,28 +230,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         name: statisticalReportsEn.exportPanel.exportButton,
       }) as HTMLButtonElement;
       expect(exportButton.disabled).toBe(true);
-      expect(
-        screen.getByText(statisticalReportsEn.exportPanel.disabledProductionReason),
-      ).toBeTruthy();
-
-      // Change criteria in Production mode and click Generate Report -> preserves criteria in PENDING_BE_INTEGRATION
-      fireEvent.change(
-        screen.getByLabelText(statisticalReportsEn.criteriaForm.reportTypeSelectLabel),
-        {
-          target: { value: 'USER_GROWTH' },
-        },
-      );
-      fireEvent.click(
-        screen.getByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
-      );
-
-      const pendingRegion = screen.getByRole('region', {
-        name: statisticalReportsEn.states.pendingBackendTitle,
-      });
-      expect(within(pendingRegion).getByText(/User Growth/i)).toBeTruthy();
-      expect(within(pendingRegion).getByText(/Period: 2026-09/i)).toBeTruthy();
-      expect(exportButton.disabled).toBe(true);
-      expect(screen.queryByRole('table')).toBeNull();
+      expect(screen.getByText(statisticalReportsEn.exportPanel.disabledNoGeneratedReportReason)).toBeTruthy();
     });
 
     it('forces PRODUCTION mode and blocks fixture filters and fixture report data when NODE_ENV is production even if initialMode="DEMO" is passed', () => {
@@ -263,11 +238,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
 
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
 
-      expect(
-        screen.getByRole('heading', {
-          name: statisticalReportsEn.states.pendingBackendTitle,
-        }),
-      ).toBeTruthy();
+      expect(screen.getByRole('heading', { name: statisticalReportsEn.modeBanner.productionModeHeading })).toBeTruthy();
       expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
       expect(screen.queryByRole('table')).toBeNull();
 
@@ -439,15 +410,12 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         screen.getAllByText(/DEMO-TripMate-PLATFORM_REVENUE-2026-09\.csv/).length,
       ).toBeGreaterThan(0);
 
-      // 2. Excel (.xlsx) and PDF (.pdf) do NOT trigger a browser download and do NOT claim file download success
+      // 2. Excel (.xlsx) stays a demo preview and does not claim a file download.
       createObjectUrlSpy.mockClear();
       anchorClickSpy.mockClear();
       revokeObjectUrlSpy.mockClear();
 
-      for (const previewFormatLabel of [
-        statisticalReportsEn.exportPanel.formats.EXCEL,
-        statisticalReportsEn.exportPanel.formats.PDF,
-      ] as const) {
+      for (const previewFormatLabel of [statisticalReportsEn.exportPanel.formats.EXCEL] as const) {
         fireEvent.click(screen.getByLabelText(previewFormatLabel));
         fireEvent.click(
           screen.getByRole('button', { name: statisticalReportsEn.exportPanel.exportButton }),
