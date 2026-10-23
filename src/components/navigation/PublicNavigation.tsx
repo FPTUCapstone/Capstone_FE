@@ -326,9 +326,9 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
       : []),
     {
       key: 'weather',
-      href: isLanding ? '#weather-rerouting' : `${ROUTES.home}#weather-rerouting`,
+      href: `${ROUTES.about}#weather`,
       label: strings.links.weatherRerouting,
-      isAnchor: isLanding,
+      isAnchor: false,
     },
     { key: 'tours', href: ROUTES.tours, label: strings.links.localTours },
   ];
@@ -721,8 +721,8 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                   </div>
                 </Link>
 
-                <a
-                  href={isLanding ? '#weather-rerouting' : `${ROUTES.home}#weather-rerouting`}
+                <Link
+                  href={`${ROUTES.about}#weather`}
                   onClick={() => setIsDrawerOpen(false)}
                   className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#121E28] hover:bg-[#EFECE4] transition btn-press"
                 >
@@ -733,7 +733,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                       {drawerStrings.weatherDesc}
                     </div>
                   </div>
-                </a>
+                </Link>
 
                 <Link
                   href={ROUTES.tours}

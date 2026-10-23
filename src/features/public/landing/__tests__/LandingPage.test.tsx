@@ -42,17 +42,23 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('LandingPage integration & synchronization', () => {
-  it('renders landing page with hero, and main sections', () => {
+describe('LandingPage integration & simplified architecture', () => {
+  it('renders simplified calm editorial landing page with hero, destinations, how it works, tours, and CTA', () => {
     render(<LandingPage />);
 
     expect(screen.getByRole('heading', { level: 1 })).toBeDefined();
     expect(screen.getByText(/Central Vietnam Travel Atlas/i)).toBeDefined();
+    expect(screen.getByRole('heading', { level: 2, name: /Ba Bước Khởi Hành Trọn Vẹn/i })).toBeDefined();
     expect(screen.getByRole('contentinfo')).toBeDefined();
+
+    // Verify relocated sections are no longer present on Homepage (moved to /about)
+    expect(document.getElementById('csp-simulator')).toBeNull();
+    expect(document.getElementById('weather-rerouting')).toBeNull();
+    expect(document.getElementById('mobile-app')).toBeNull();
   });
 
   describe('City state synchronization', () => {
-    it('synchronizes active destination across LandingHero, CentralVietnamShowcase, and CspSimulatorSection', () => {
+    it('synchronizes active destination across LandingHero and CentralVietnamShowcase', () => {
       render(<LandingPage />);
 
       // Initial active city is 'danang'
@@ -68,16 +74,11 @@ describe('LandingPage integration & synchronization', () => {
       expect(hoianHeroBtn.className).toContain('bg-[#d97706]');
       expect(danangHeroBtn.className).not.toContain('bg-[#007d6e]');
 
-      // CspSimulatorSection reflects Hoi An preset
-      const cspSection = document.getElementById('csp-simulator') as HTMLElement;
-      expect(within(cspSection).getAllByText(/Hội An/i).length).toBeGreaterThan(0);
-
       // Switch to Hue from Hero
       const hueHeroBtn = within(heroSection).getByRole('button', { name: 'Cố Đô Huế' });
       fireEvent.click(hueHeroBtn);
 
       expect(hueHeroBtn.className).toContain('bg-[#7c3aed]');
-      expect(within(cspSection).getAllByText(/Huế/i).length).toBeGreaterThan(0);
     });
 
     it('synchronizes active destination when clicked from CentralVietnamShowcase destination cards', () => {
@@ -109,6 +110,15 @@ describe('LandingPage integration & synchronization', () => {
       expect(finalPlanLink.getAttribute('href')).toBe(ROUTES.plan);
     });
 
+    it('routes destination exploration in CentralVietnamShowcase to ROUTES.pois (/pois)', () => {
+      render(<LandingPage />);
+
+      const destinationsSection = document.getElementById('destinations') as HTMLElement;
+      const explorePoiLinks = within(destinationsSection).getAllByRole('link', { name: /Khám phá địa điểm/i });
+      expect(explorePoiLinks.length).toBeGreaterThan(0);
+      expect(explorePoiLinks[0].getAttribute('href')).toBe(ROUTES.pois);
+    });
+
     it('routes marketplace tour exploration CTAs to ROUTES.tours (/tours)', () => {
       render(<LandingPage />);
 
@@ -124,6 +134,13 @@ describe('LandingPage integration & synchronization', () => {
       const footer = screen.getByRole('contentinfo');
       const footerToursLink = within(footer).getByRole('link', { name: /Tour kiểm duyệt bản địa/i });
       expect(footerToursLink.getAttribute('href')).toBe(ROUTES.tours);
+    });
+
+    it('routes HowItWorks deep learning link to /about#planning', () => {
+      render(<LandingPage />);
+
+      const deepLearnLink = screen.getByRole('link', { name: /Tìm hiểu sâu về công nghệ TripMate/i });
+      expect(deepLearnLink.getAttribute('href')).toBe(`${ROUTES.about}#planning`);
     });
 
     it('renders Partner registration and sign-in entries in the redesigned Footer (BR6 / v2.0)', () => {
