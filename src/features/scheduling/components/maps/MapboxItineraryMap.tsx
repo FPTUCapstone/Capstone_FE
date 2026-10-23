@@ -13,7 +13,7 @@ interface MapboxItineraryMapProps {
   model: ItineraryMapModel;
   highlightedItemId: number | null;
   onSelectItem: (itemId: number) => void;
-  /** WebGL, the library or the token is unusable: the page shows the order diagram instead. */
+  /** WebGL, the library or the token is unusable: the page shows the order diagram/fallback card instead. */
   onUnavailable?: () => void;
 }
 
@@ -33,17 +33,24 @@ function markerElement(label: string, title: string, color: string): HTMLButtonE
   element.setAttribute('aria-label', title);
   element.style.setProperty('background-color', color);
   element.className =
-    'flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-md transition-transform';
+    'flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-md transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#007d6e] hover:scale-115';
   return element;
 }
 
 function applyHighlight(markers: DrawnMarker[], highlightedItemId: number | null) {
   for (const { itemId, element } of markers) {
     const active = itemId !== null && itemId === highlightedItemId;
-    if (active) element.setAttribute('aria-current', 'true');
-    else element.removeAttribute('aria-current');
-    element.style.setProperty('transform', active ? 'scale(1.35)' : '');
-    element.style.setProperty('z-index', active ? '2' : '');
+    if (active) {
+      element.setAttribute('aria-current', 'true');
+      element.style.setProperty('transform', 'scale(1.35)');
+      element.style.setProperty('z-index', '10');
+      element.style.setProperty('box-shadow', '0 0 0 4px rgba(0, 125, 110, 0.45), 0 4px 12px rgba(0,0,0,0.25)');
+    } else {
+      element.removeAttribute('aria-current');
+      element.style.setProperty('transform', '');
+      element.style.setProperty('z-index', '');
+      element.style.setProperty('box-shadow', '');
+    }
   }
 }
 
@@ -84,9 +91,17 @@ export function MapboxItineraryMap({
     void import('mapbox-gl')
       .then(({ default: mapboxgl }) => {
         if (cancelled || !containerRef.current) return;
+        if (typeof mapboxgl.supported === 'function' && !mapboxgl.supported()) {
+          giveUp();
+          return;
+        }
         mapboxgl.accessToken = token;
-        map = new mapboxgl.Map({ container: containerRef.current, style: MAPBOX_STYLE });
-        map.addControl(new mapboxgl.NavigationControl({ showCompass: false }));
+        map = new mapboxgl.Map({
+          container: containerRef.current,
+          style: MAPBOX_STYLE,
+        });
+        map.scrollZoom?.enable?.();
+        map.addControl(new mapboxgl.NavigationControl({ showCompass: true, showZoom: true }));
         mapRef.current = map;
         map.on('error', (event) => {
           if (isFatalMapError(event, loaded)) giveUp();
@@ -138,7 +153,13 @@ export function MapboxItineraryMap({
         const source = map.getSource(ROUTE_SOURCE) as { setData?: (data: unknown) => void } | undefined;
         source?.setData?.({ type: 'Feature', properties: {}, geometry: model.route });
         const bounds = boundsOf(model.markers.map((entry) => entry.position));
-        if (bounds) map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 0 });
+        if (bounds) {
+          if (bounds[0][0] === bounds[1][0] && bounds[0][1] === bounds[1][1] && typeof map.easeTo === 'function') {
+            map.easeTo({ center: bounds[0], zoom: 14, duration: 0 });
+          } else {
+            map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 0 });
+          }
+        }
       });
     };
     drawRef.current();
@@ -152,7 +173,8 @@ export function MapboxItineraryMap({
   return (
     <div
       ref={containerRef}
-      className="h-72 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-80"
+      data-lenis-prevent
+      className="relative h-[360px] w-full overflow-hidden rounded-xl bg-slate-100 sm:h-[400px] lg:h-[420px]"
       role="region"
       aria-label="Bản đồ lộ trình"
     />
