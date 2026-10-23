@@ -44,7 +44,7 @@ export function CreateSchedulingRequestPage() {
     <div className="min-h-screen bg-[#F8FAFC]">
 
       <main className="px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-7xl">
           {/* Breadcrumb */}
           <nav
             aria-label="Breadcrumb"

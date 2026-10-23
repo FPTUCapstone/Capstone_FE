@@ -165,9 +165,12 @@ export function ItineraryTimeline({
               onBlur={onHighlightItem ? () => onHighlightItem(null) : undefined}
             >
               {startsNewDay && (
-                <p className="mb-3 text-sm font-bold capitalize text-slate-800">
-                  {formatVietnamDayLabel(item.plannedArrival)}
-                </p>
+                <div id={`day-section-${vietnamDayKey(item.plannedArrival)}`} className="scroll-mt-28 mb-3">
+                  <p className="text-sm font-bold capitalize text-slate-800 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base text-[#007d6e]">event</span>
+                    <span>{formatVietnamDayLabel(item.plannedArrival)}</span>
+                  </p>
+                </div>
               )}
               {/* Incoming leg from the previous stop (Review 2, D5) */}
               {index > 0 &&
