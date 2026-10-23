@@ -247,6 +247,7 @@ export function TripHistoryView() {
                 key={`${item.kind}:${item.id}`}
                 item={item}
                 onOpenDetail={(opened, focus) => setOpenDetail({ item: opened, focus })}
+                isDemo={showDemoBanner}
               />
             ))}
           </div>

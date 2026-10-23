@@ -387,7 +387,19 @@ describe('TripHistoryView — trip details', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('opens on the refund when the refund action is used', async () => {
+  it('links a real booking to its live refund progress', async () => {
+    await renderLoaded([refundable]);
+
+    const link = screen.getByRole('link', { name: tripReviewEn.actions.refundDetails });
+
+    expect(link.getAttribute('href')).toBe(`/bookings/${refundable.id}/refund`);
+    expect(screen.queryByRole('button', { name: tripReviewEn.actions.refundDetails })).toBeNull();
+  });
+
+  it('opens demo records on the refund inside the dialog', async () => {
+    searchParamMock.mockImplementation((key: string) => (key === 'demo' ? '1' : null));
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'true');
     const { demoTripDetail } = await import('../data/tripHistoryDemoFixtures');
     fetchDetailMock.mockResolvedValue(demoTripDetail('commerceBooking', '9004'));
     await renderLoaded([refundable]);

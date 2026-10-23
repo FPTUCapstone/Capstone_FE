@@ -39,8 +39,8 @@ const itinerary = (over: Partial<ItineraryTripItem> = {}): ItineraryTripItem => 
   ...over,
 });
 
-function renderCard(item: TripListItem, onOpenDetail = vi.fn()) {
-  render(<TripCard item={item} onOpenDetail={onOpenDetail} />);
+function renderCard(item: TripListItem, onOpenDetail = vi.fn(), isDemo = false) {
+  render(<TripCard item={item} onOpenDetail={onOpenDetail} isDemo={isDemo} />);
   return onOpenDetail;
 }
 
@@ -189,14 +189,26 @@ describe('TripCard — e-ticket, refund and details actions', () => {
     expect(link('View E-Ticket')).toBeNull();
   });
 
-  it('View refund appears when canViewRefund is true and opens the detail dialog on the refund', () => {
-    const item = booking({
+  const refundable = () =>
+    booking({
       tab: 'Cancelled',
       status: 'Cancelled',
       actions: { canReview: false, canViewETicket: false, ticketId: null, canViewRefund: true },
     });
-    const onOpenDetail = renderCard(item);
 
+  it('View refund links to the live refund progress of the booking', () => {
+    const onOpenDetail = renderCard(refundable());
+
+    expect(link('Refund Details')?.getAttribute('href')).toBe('/bookings/123/refund');
+    expect(button('Refund Details')).toBeNull();
+    expect(onOpenDetail).not.toHaveBeenCalled();
+  });
+
+  it('in demo mode View refund opens the detail dialog on the refund and never links to the API page', () => {
+    const item = refundable();
+    const onOpenDetail = renderCard(item, vi.fn(), true);
+
+    expect(link('Refund Details')).toBeNull();
     fireEvent.click(button('Refund Details')!);
 
     expect(onOpenDetail).toHaveBeenCalledWith(item, 'refund');

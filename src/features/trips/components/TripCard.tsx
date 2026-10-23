@@ -14,6 +14,11 @@ interface TripCardProps {
   item: TripListItem;
   /** Opens the detail dialog for this record; `'refund'` scrolls the dialog to the refund. */
   onOpenDetail: (item: TripListItem, focus?: TripDetailFocus) => void;
+  /**
+   * True while demo fixtures are on screen. A demo id must never reach the refund API, so demo records
+   * open the detail dialog on the refund instead of the live refund-progress page.
+   */
+  isDemo?: boolean;
 }
 
 function formatVnd(amount: number): string {
@@ -27,7 +32,7 @@ function formatVnd(amount: number): string {
 const LINK_ACTION =
   'inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-98';
 
-export function TripCard({ item, onOpenDetail }: TripCardProps) {
+export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) {
   const titleId = useId();
   const isItinerary = item.kind === 'itinerary';
   const isCancelled = item.tab === 'Cancelled';
@@ -164,14 +169,22 @@ export function TripCard({ item, onOpenDetail }: TripCardProps) {
           </Link>
         )}
 
-        {item.actions.canViewRefund && (
-          <button type="button" onClick={() => onOpenDetail(item, 'refund')} className={LINK_ACTION}>
-            <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
-              receipt_long
-            </span>
-            <span>{tripReviewEn.actions.refundDetails}</span>
-          </button>
-        )}
+        {item.actions.canViewRefund &&
+          (!isDemo && item.kind === 'commerceBooking' ? (
+            <Link href={`/bookings/${encodeURIComponent(item.id)}/refund`} className={LINK_ACTION}>
+              <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
+                receipt_long
+              </span>
+              <span>{tripReviewEn.actions.refundDetails}</span>
+            </Link>
+          ) : (
+            <button type="button" onClick={() => onOpenDetail(item, 'refund')} className={LINK_ACTION}>
+              <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
+                receipt_long
+              </span>
+              <span>{tripReviewEn.actions.refundDetails}</span>
+            </button>
+          ))}
 
         <button type="button" onClick={() => onOpenDetail(item, undefined)} className={LINK_ACTION}>
           <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
