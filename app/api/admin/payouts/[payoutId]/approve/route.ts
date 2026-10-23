@@ -3,9 +3,9 @@ import { proxyApprovePayout } from '@/features/admin/payout-review/payoutReviewP
 export const dynamic = 'force-dynamic';
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ payoutId: string }> },
 ) {
   const { payoutId } = await context.params;
-  return proxyApprovePayout(payoutId);
+  return proxyApprovePayout(payoutId, request);
 }
