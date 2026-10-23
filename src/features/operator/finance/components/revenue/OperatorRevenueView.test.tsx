@@ -265,4 +265,176 @@ describe('OperatorRevenueView (Screen #89)', () => {
     fireEvent.click(applyButton());
     await waitFor(() => expect(applyButton().disabled).toBe(false));
   });
+
+  function deferredResponse() {
+    let resolve!: (response: Response) => void;
+    const promise = new Promise<Response>((done) => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  function reportResponse(marker?: string) {
+    return new Response(JSON.stringify({
+      summary: { grossRevenue: 0, platformCommission: 0, netAmount: 0, totalBookings: 0, totalParticipants: 0, refundedAmount: 0, commissionRatePercent: 10 },
+      chartData: [], tourDetails: [], totalToursCount: 0, page: 1, pageSize: 20, totalPages: 0,
+      ...(marker ? { errorMessage: marker } : {}),
+    }));
+  }
+
+  function ownedTourResponse(id = 7) {
+    return new Response(JSON.stringify([{ id, code: `T${id}`, title: `Owned tour ${id}`, isActive: true }]));
+  }
+
+  it('announces initial tour loading independently of the report and distinguishes successful empty results', async () => {
+    mockSearchParams = new URLSearchParams('');
+    const tours = deferredResponse();
+    vi.stubGlobal('fetch', productionFetch(() => tours.promise));
+    render(<OperatorRevenueView />);
+    await waitFor(() => expect((screen.getByRole('button', { name: /Apply Filters/i }) as HTMLButtonElement).disabled).toBe(false));
+    const select = screen.getByLabelText(/Tour Package/i) as HTMLSelectElement;
+    expect(select.disabled).toBe(true);
+    expect(select.getAttribute('aria-busy')).toBe('true');
+    expect(screen.getByText('Loading tour filters…').getAttribute('role')).toBe('status');
+    expect(screen.getByText('Loading tour filters…').getAttribute('aria-live')).toBe('polite');
+    await act(async () => tours.resolve(new Response('[]')));
+    expect(select.disabled).toBe(false);
+    expect(screen.queryByText('Loading tour filters…')).toBeNull();
+    expect(select.value).toBe('all');
+    expect(screen.queryByText(/Unable to load tour filters/)).toBeNull();
+  });
+
+  it('announces retry loading while preserving same-actor draft filters and leaving the report alone', async () => {
+    mockSearchParams = new URLSearchParams('');
+    const retry = deferredResponse();
+    const tours = vi.fn().mockResolvedValueOnce(new Response('{}', { status: 500 })).mockReturnValueOnce(retry.promise);
+    const fetchMock = productionFetch(tours);
+    vi.stubGlobal('fetch', fetchMock);
+    render(<OperatorRevenueView />);
+    await screen.findByText(/Unable to load tour filters/);
+    fireEvent.change(screen.getByLabelText(/Start Date/), { target: { value: '2026-09-01' } });
+    fireEvent.change(screen.getByLabelText(/Granularity/), { target: { value: 'weekly' } });
+    const reportCalls = fetchMock.mock.calls.filter(([url]) => url.includes('/report')).length;
+    fireEvent.click(screen.getByRole('button', { name: /Retry tour filters/ }));
+    expect(screen.queryByText(/Unable to load tour filters/)).toBeNull();
+    expect((screen.getByLabelText(/Tour Package/) as HTMLSelectElement).disabled).toBe(true);
+    expect(screen.getByText('Loading tour filters…')).toBeDefined();
+    await act(async () => retry.resolve(ownedTourResponse()));
+    expect((screen.getByLabelText(/Start Date/) as HTMLInputElement).value).toBe('2026-09-01');
+    expect((screen.getByLabelText(/Granularity/) as HTMLSelectElement).value).toBe('weekly');
+    expect(fetchMock.mock.calls.filter(([url]) => url.includes('/report')).length).toBe(reportCalls);
+  });
+
+  it.each([false, true])('resets actor-owned tour filters when switching actor (applied=%s)', async (apply) => {
+    mockSearchParams = new URLSearchParams('');
+    const fetchMock = productionFetch(() => Promise.resolve(ownedTourResponse()));
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<OperatorRevenueView />);
+    await screen.findByRole('option', { name: /Owned tour/ });
+    fireEvent.change(screen.getByLabelText(/Tour Package/), { target: { value: '7' } });
+    fireEvent.change(screen.getByLabelText(/Start Date/), { target: { value: '2026-09-01' } });
+    fireEvent.change(screen.getByLabelText(/Granularity/), { target: { value: 'weekly' } });
+    if (apply) {
+      fireEvent.click(screen.getByRole('button', { name: /Apply Filters/ }));
+      await waitFor(() => expect((screen.getByRole('button', { name: /Apply Filters/ }) as HTMLButtonElement).disabled).toBe(false));
+    }
+    // Same-actor session rerenders must retain both applied and unapplied edits.
+    view.rerender(<OperatorRevenueView />);
+    expect((screen.getByLabelText(/Start Date/) as HTMLInputElement).value).toBe('2026-09-01');
+    expect((screen.getByLabelText(/Granularity/) as HTMLSelectElement).value).toBe('weekly');
+    expect((screen.getByLabelText(/Tour Package/) as HTMLSelectElement).value).toBe('7');
+    fireEvent.click(screen.getAllByRole('button', { name: /Export Report/ })[0]);
+    const callsBeforeSwitch = fetchMock.mock.calls.length;
+    mockActorUserId = 202;
+    view.rerender(<OperatorRevenueView />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect((screen.getByLabelText(/Tour Package/) as HTMLSelectElement).value).toBe('all');
+    await waitFor(() => expect((screen.getByRole('button', { name: /Apply Filters/ }) as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(screen.getByRole('button', { name: /Apply Filters/ }));
+    await waitFor(() => {
+      const requests = fetchMock.mock.calls.slice(callsBeforeSwitch).filter(([url]) => url.includes('/report'));
+      expect(requests.length).toBeGreaterThanOrEqual(2);
+      expect(requests.every(([url]) => !new URL(url, 'https://test').searchParams.has('tourId'))).toBe(true);
+    });
+  });
+
+  it('resets the selected tour on demo to production transition for the same actor', async () => {
+    const view = render(<OperatorRevenueView />);
+    await waitFor(() => expect((screen.getByRole('button', { name: /Apply Filters/ }) as HTMLButtonElement).disabled).toBe(false));
+    const select = screen.getByLabelText(/Tour Package/) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: select.options[1].value } });
+    fireEvent.click(screen.getByRole('button', { name: /Apply Filters/ }));
+    await waitFor(() => expect((screen.getByRole('button', { name: /Apply Filters/ }) as HTMLButtonElement).disabled).toBe(false));
+    const fetchMock = productionFetch(() => Promise.resolve(ownedTourResponse()));
+    vi.stubGlobal('fetch', fetchMock);
+    mockSearchParams = new URLSearchParams('');
+    view.rerender(<OperatorRevenueView />);
+    await screen.findByRole('option', { name: /Owned tour/ });
+    expect((screen.getByLabelText(/Tour Package/) as HTMLSelectElement).value).toBe('all');
+    expect(fetchMock.mock.calls.filter(([url]) => url.includes('/report')).every(([url]) => !url.includes('tourId='))).toBe(true);
+  });
+
+  it('ignores a late report from the previous actor', async () => {
+    mockSearchParams = new URLSearchParams('');
+    const oldReport = deferredResponse();
+    let reportCalls = 0;
+    const fallback = productionFetch(() => Promise.resolve(ownedTourResponse()));
+    vi.stubGlobal('fetch', vi.fn((url: string) => url.includes('/report')
+      ? (++reportCalls === 1 ? oldReport.promise : Promise.resolve(reportResponse('Current actor report')))
+      : fallback(url)));
+    const view = render(<OperatorRevenueView />);
+    mockActorUserId = 202;
+    view.rerender(<OperatorRevenueView />);
+    await screen.findByText('Current actor report');
+    await act(async () => oldReport.resolve(reportResponse('Previous actor report')));
+    expect(screen.queryByText('Previous actor report')).toBeNull();
+    expect(screen.getByText('Current actor report')).toBeDefined();
+  });
+
+  it.each([{ oldFirst: true, changedFilters: false }, { oldFirst: false, changedFilters: false }, { oldFirst: true, changedFilters: true }, { oldFirst: false, changedFilters: true }])('ignores obsolete report completion (oldFirst=$oldFirst, changedFilters=$changedFilters)', async ({ oldFirst, changedFilters }) => {
+    mockSearchParams = new URLSearchParams('');
+    const foreground = deferredResponse();
+    const focused = deferredResponse();
+    let reportCalls = 0;
+    const fallback = productionFetch(() => Promise.resolve(ownedTourResponse()));
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (!url.includes('/report')) return fallback(url);
+      reportCalls++;
+      return reportCalls === 1 ? Promise.resolve(reportResponse()) : reportCalls === 2 ? foreground.promise : focused.promise;
+    }));
+    render(<OperatorRevenueView />);
+    const applyButton = () => screen.getByRole('button', { name: /Apply Filters/ }) as HTMLButtonElement;
+    await waitFor(() => expect(applyButton().disabled).toBe(false));
+    if (changedFilters) fireEvent(window, new Event('focus'));
+    fireEvent.change(screen.getByLabelText(/Start Date/), { target: { value: '2026-09-01' } });
+    fireEvent.click(applyButton());
+    if (!changedFilters) fireEvent(window, new Event('focus'));
+    if (oldFirst) {
+      await act(async () => foreground.resolve(reportResponse('Obsolete report')));
+      expect(applyButton().disabled).toBe(true);
+      expect(screen.queryByText('Obsolete report')).toBeNull();
+    }
+    await act(async () => focused.resolve(reportResponse('Latest report')));
+    expect(applyButton().disabled).toBe(false);
+    expect(screen.getByText('Latest report')).toBeDefined();
+    if (!oldFirst) await act(async () => foreground.resolve(reportResponse('Obsolete report')));
+    expect(screen.queryByText('Obsolete report')).toBeNull();
+    expect(screen.getByText('Latest report')).toBeDefined();
+  });
+
+  it('does not automatically download a previous actor export that completes after switching', async () => {
+    mockSearchParams = new URLSearchParams('');
+    const created = deferredResponse();
+    const fallback = productionFetch(() => Promise.resolve(ownedTourResponse()));
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => init?.method === 'POST' ? created.promise : fallback(url));
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<OperatorRevenueView />);
+    await screen.findByRole('option', { name: /Owned tour/ });
+    fireEvent.click(screen.getAllByRole('button', { name: /Export Report/ })[0]);
+    fireEvent.submit(screen.getByRole('dialog').querySelector('form')!);
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true));
+    mockActorUserId = 202;
+    view.rerender(<OperatorRevenueView />);
+    await act(async () => created.resolve(new Response(JSON.stringify({ id: 42, status: 'Ready', fileName: 'old.xlsx' }), { status: 201 })));
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('/42/download'))).toBe(false);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });
