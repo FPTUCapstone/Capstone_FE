@@ -6,12 +6,12 @@ import React, { useEffect, useState } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
 import {
   getTripById,
   PENDING_BE_INTEGRATION_ERROR_CODE,
-} from '@/features/trips/services/tripHistoryApi';
-import type { TripCardDto } from '@/features/trips/types/tripHistory';
+} from '@/features/trips/legacyReviewContext';
+import type { TripCardDto } from '@/features/trips/legacyReviewContext';
 import { ROUTES } from '@/lib/routes';
 import { TripReviewView } from './TripReviewView';
 
