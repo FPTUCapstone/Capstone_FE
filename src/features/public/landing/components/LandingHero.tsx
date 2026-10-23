@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
 import { CENTRAL_DESTINATIONS } from '@/data/landingData';
@@ -9,6 +10,9 @@ interface LandingHeroProps {
   activeCity: 'danang' | 'hoian' | 'hue';
   onSelectCity: (city: 'danang' | 'hoian' | 'hue') => void;
 }
+
+const CITIES: Array<'danang' | 'hoian' | 'hue'> = ['danang', 'hoian', 'hue'];
+const AUTO_ROTATE_INTERVAL_MS = 8000;
 
 const DESTINATION_HERO_IMAGES: Record<
   'danang' | 'hoian' | 'hue',
@@ -32,22 +36,100 @@ const DESTINATION_HERO_IMAGES: Record<
 };
 
 export function LandingHero({ activeCity, onSelectCity }: LandingHeroProps) {
-  const currentHero = DESTINATION_HERO_IMAGES[activeCity] || DESTINATION_HERO_IMAGES.danang;
+  const [prevActiveCity, setPrevActiveCity] = useState(activeCity);
+  const [currentCity, setCurrentCity] = useState<'danang' | 'hoian' | 'hue'>(activeCity);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isIntersecting, setIsIntersecting] = useState(true);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  // Synchronize internal state during render when activeCity prop changes from parent (React pattern)
+  if (prevActiveCity !== activeCity) {
+    setPrevActiveCity(activeCity);
+    setCurrentCity(activeCity);
+  }
+
+  // Pause auto-rotation when the Hero is scrolled out of viewport
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // 8-second auto-rotation cycle (Option 1: Scoped to Hero)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Respect reduced motion preference (WCAG 2.2.2)
+    const mediaQuery =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : null;
+    if (mediaQuery?.matches) return;
+
+    if (isPaused || !isIntersecting) return;
+
+    const timer = setInterval(() => {
+      setCurrentCity((prev) => {
+        const nextIdx = (CITIES.indexOf(prev) + 1) % CITIES.length;
+        return CITIES[nextIdx];
+      });
+    }, AUTO_ROTATE_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, [isPaused, isIntersecting, currentCity]);
+
+  // Manual city selection resets cycle and notifies parent
+  const handleUserSelectCity = useCallback(
+    (city: 'danang' | 'hoian' | 'hue') => {
+      setCurrentCity(city);
+      onSelectCity(city);
+    },
+    [onSelectCity]
+  );
+
+  const currentHero = DESTINATION_HERO_IMAGES[currentCity] || DESTINATION_HERO_IMAGES.danang;
 
   return (
-    <section className="relative overflow-hidden min-h-[480px] lg:h-[540px] flex items-center bg-[#00152a] text-white">
-      {/* Scenic Travel Photography Background with Graceful Multi-Layer Overlay */}
+    <section
+      ref={sectionRef}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={() => setIsPaused(false)}
+      aria-roledescription="carousel"
+      aria-label="Khám phá điểm đến miền Trung"
+      className="relative overflow-hidden min-h-[480px] lg:h-[540px] flex items-center bg-[#00152a] text-white"
+    >
+      {/* Scenic Travel Photography Background with Graceful Multi-Layer Overlay & Cinematic Crossfade */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        <img
-          key={activeCity}
-          src={currentHero.src}
-          alt={currentHero.alt}
-          className="h-full w-full object-cover object-center animate-in fade-in duration-700"
-          loading="eager"
-        />
+        {CITIES.map((city) => {
+          const hero = DESTINATION_HERO_IMAGES[city];
+          const isActive = currentCity === city;
+          return (
+            <img
+              key={city}
+              src={hero.src}
+              alt={hero.alt}
+              aria-hidden={!isActive}
+              className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ease-in-out ${
+                isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0 pointer-events-none'
+              }`}
+              loading={city === 'danang' ? 'eager' : 'lazy'}
+            />
+          );
+        })}
         {/* Soft Multi-Directional Gradient Overlays for Guaranteed Text Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#00152a]/95 via-[#00152a]/80 to-transparent sm:w-4/5 md:w-3/4 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#00152a] via-[#00152a]/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-[#00152a]/95 via-[#00152a]/80 to-transparent sm:w-4/5 md:w-3/4 pointer-events-none" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-t from-[#00152a] via-[#00152a]/40 to-transparent pointer-events-none" />
       </div>
 
       {/* Hero Content Container */}
@@ -71,16 +153,17 @@ export function LandingHero({ activeCity, onSelectCity }: LandingHeroProps) {
             Tìm những điểm đến đáng nhớ, khám phá tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn.
           </p>
 
-          {/* Destination Switcher Quick Chips */}
+          {/* Destination Switcher Quick Chips with Active Indicator */}
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mr-1">
               Điểm đến:
             </span>
             <button
               type="button"
-              onClick={() => onSelectCity('danang')}
+              onClick={() => handleUserSelectCity('danang')}
+              aria-pressed={currentCity === 'danang'}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeCity === 'danang'
+                currentCity === 'danang'
                   ? 'bg-[#007d6e] text-white shadow-md'
                   : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
               }`}
@@ -89,9 +172,10 @@ export function LandingHero({ activeCity, onSelectCity }: LandingHeroProps) {
             </button>
             <button
               type="button"
-              onClick={() => onSelectCity('hoian')}
+              onClick={() => handleUserSelectCity('hoian')}
+              aria-pressed={currentCity === 'hoian'}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeCity === 'hoian'
+                currentCity === 'hoian'
                   ? 'bg-[#d97706] text-white shadow-md'
                   : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
               }`}
@@ -100,9 +184,10 @@ export function LandingHero({ activeCity, onSelectCity }: LandingHeroProps) {
             </button>
             <button
               type="button"
-              onClick={() => onSelectCity('hue')}
+              onClick={() => handleUserSelectCity('hue')}
+              aria-pressed={currentCity === 'hue'}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeCity === 'hue'
+                currentCity === 'hue'
                   ? 'bg-[#7c3aed] text-white shadow-md'
                   : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
               }`}
@@ -144,16 +229,39 @@ export function LandingHero({ activeCity, onSelectCity }: LandingHeroProps) {
                 arrow_forward
               </span>
             </Link>
+
+            <Link
+              href={ROUTES.about}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white transition-colors ml-1 py-2"
+            >
+              <span>Tìm hiểu TripMate</span>
+              <span className="material-symbols-outlined text-sm" aria-hidden="true">
+                info
+              </span>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Subtle Caption on Bottom Right */}
-      <div className="hidden md:flex absolute bottom-4 right-8 z-10 items-center gap-2 rounded-full bg-black/40 px-3.5 py-1 text-[11px] font-medium text-slate-300 backdrop-blur-md border border-white/10 pointer-events-none">
-        <span className="material-symbols-outlined text-sm text-teal-400" aria-hidden="true">
-          photo_camera
-        </span>
-        <span>{currentHero.caption}</span>
+      {/* Subtle Caption on Bottom Right with Carousel Indicators */}
+      <div className="hidden md:flex absolute bottom-4 right-8 z-10 items-center gap-3 rounded-full bg-black/45 px-3.5 py-1.5 text-[11px] font-medium text-slate-200 backdrop-blur-md border border-white/15 shadow-sm">
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+          {CITIES.map((city) => (
+            <span
+              key={city}
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                currentCity === city ? 'w-4 bg-teal-400' : 'w-1.5 bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+        <span className="h-3 w-px bg-white/20" aria-hidden="true" />
+        <div className="flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-sm text-teal-400" aria-hidden="true">
+            photo_camera
+          </span>
+          <span>{currentHero.caption}</span>
+        </div>
       </div>
     </section>
   );

@@ -2,8 +2,10 @@
 'use client';
 
 import type { KeyboardEvent } from 'react';
+import Link from 'next/link';
 import { CENTRAL_DESTINATIONS } from '@/data/landingData';
 import { EditorialTextReveal, CardReveal } from '@/components/ui/ScrollReveal';
+import { ROUTES } from '@/lib/routes';
 
 interface CentralVietnamShowcaseProps {
   activeCity?: 'danang' | 'hoian' | 'hue';
@@ -16,10 +18,6 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
       onSelectCity(cityId);
     }
     window.dispatchEvent(new CustomEvent('tripmate:select-city', { detail: cityId }));
-    const section = document.getElementById('csp-simulator');
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
-    }
   }
 
   function handleCardKeyDown(e: KeyboardEvent<HTMLDivElement>, cityId: string) {
@@ -103,23 +101,22 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                     {/* Active City Indicator Badge */}
                     {isCurrentActive && (
                       <div className="absolute top-3.5 left-1/2 -translate-x-1/2 z-10">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-bold bg-[#004D40]/90 backdrop-blur-md text-emerald-200 shadow-md border border-emerald-400/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                          Điểm đến đang chọn
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#007d6e] text-white shadow-sm border border-white/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                          <span>Đang chọn</span>
                         </span>
                       </div>
                     )}
 
-                    {/* Card Image & Header */}
-                    <div className="relative aspect-16/10 overflow-hidden bg-slate-100">
+                    {/* Image Header with Aspect Ratio & Overlays */}
+                    <div className="relative aspect-16/10 sm:aspect-16/9 w-full overflow-hidden bg-slate-900">
                       <img
                         src={dest.image}
-                        alt={dest.name}
+                        alt={`Thắng cảnh tại ${dest.name}`}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
 
                       {/* Top Left Badge */}
                       <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
@@ -187,20 +184,19 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                           </span>
                         </div>
 
-                        <button
-                          type="button"
-                          aria-label={`Lập lịch cho ${dest.name}`}
+                        <Link
+                          href={ROUTES.pois}
+                          aria-label={`Khám phá địa điểm tại ${dest.name}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSelectCity(dest.id);
                           }}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-[#007d6e] group-hover:translate-x-1 transition-transform cursor-pointer"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-[#007d6e] hover:text-[#005f56] group-hover:translate-x-1 transition-transform cursor-pointer"
                         >
-                          <span>Lập lịch CSP</span>
+                          <span>Khám phá địa điểm</span>
                           <span className="material-symbols-outlined text-sm" aria-hidden="true">
                             arrow_forward
                           </span>
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   </div>

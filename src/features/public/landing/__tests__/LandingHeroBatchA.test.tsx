@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LandingHero } from '../components/LandingHero';
 import { CentralVietnamShowcase } from '../components/CentralVietnamShowcase';
@@ -86,6 +86,105 @@ describe('Homepage v2.0: LandingHero Editorial Travel & Destination Discovery', 
 
     const toursLink = screen.getByRole('link', { name: /Xem các tour bản địa/i });
     expect(toursLink.getAttribute('href')).toBe(ROUTES.tours);
+  });
+
+  it('automatically rotates destination hero image every 8 seconds', () => {
+    vi.useFakeTimers();
+    try {
+      const handleSelectCity = vi.fn();
+      render(<LandingHero activeCity="danang" onSelectCity={handleSelectCity} />);
+
+      const danangBtn = screen.getByRole('button', { name: 'Đà Nẵng' });
+      const hoianBtn = screen.getByRole('button', { name: 'Hội An' });
+      const hueBtn = screen.getByRole('button', { name: 'Cố Đô Huế' });
+
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Advance by 8000ms
+      act(() => {
+        vi.advanceTimersByTime(8000);
+      });
+
+      // Should advance to Hoi An
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Advance by another 8000ms
+      act(() => {
+        vi.advanceTimersByTime(8000);
+      });
+
+      // Should advance to Hue
+      expect(hueBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // In Option 1, auto-rotation is scoped to hero and does not mutate parent onSelectCity
+      expect(handleSelectCity).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('pauses auto-rotation on mouse enter and resumes on mouse leave', () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
+      const section = container.querySelector('section')!;
+      const danangBtn = screen.getByRole('button', { name: 'Đà Nẵng' });
+      const hoianBtn = screen.getByRole('button', { name: 'Hội An' });
+
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
+
+      // Hover over hero section
+      fireEvent.mouseEnter(section);
+      act(() => {
+        vi.advanceTimersByTime(16000);
+      });
+
+      // Still Danang because rotation is paused
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Leave hover
+      fireEvent.mouseLeave(section);
+      act(() => {
+        vi.advanceTimersByTime(8000);
+      });
+
+      // Now advances to Hoi An
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not auto-rotate when prefers-reduced-motion is active', () => {
+    vi.useFakeTimers();
+    try {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
+      const danangBtn = screen.getByRole('button', { name: 'Đà Nẵng' });
+      const hoianBtn = screen.getByRole('button', { name: 'Hội An' });
+
+      vi.advanceTimersByTime(24000);
+
+      // Stays Danang
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
