@@ -12,7 +12,12 @@ interface AuditLogDetailDrawerProps {
   onClose: () => void;
 }
 
-export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
+export function AuditLogDetailDrawer(props: AuditLogDetailDrawerProps) {
+  if (!props.isOpen) return null;
+  return <AuditLogDetailSession key={props.logId} {...props} />;
+}
+
+function AuditLogDetailSession({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
   const router = useRouter();
   const [detail, setDetail] = useState<AuditLogDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);

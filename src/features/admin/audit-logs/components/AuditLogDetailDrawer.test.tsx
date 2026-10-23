@@ -60,6 +60,69 @@ describe('AuditLogDetailDrawer', () => {
     ...overrides,
   });
 
+  it.each(['success', 'error'] as const)('resets prior %s when selecting another log', async (state) => {
+    const request = vi.mocked(service.getAuditLogDetail);
+    request.mockReset();
+    if (state === 'success') request.mockResolvedValueOnce(buildDetail({ actionType: 'Old action' }));
+    else request.mockRejectedValueOnce(new Error('Old error'));
+    let finish!: (value: ReturnType<typeof buildDetail>) => void;
+    request.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const view = render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    await screen.findByText(state === 'success' ? 'Old action' : 'Old error');
+    view.rerender(<AuditLogDetailDrawer logId={102} isOpen onClose={mockOnClose} />);
+    expect(screen.queryByText('Old action')).toBeNull();
+    expect(screen.queryByText('Old error')).toBeNull();
+    expect(screen.getByText('Fetching log entry details...')).toBeDefined();
+    await act(async () => { finish(buildDetail({ id: 102, actionType: 'New action' })); });
+    expect(screen.getByText('New action')).toBeDefined();
+  });
+
+  it('ignores a late detail response from the previous selection', async () => {
+    let finish!: (value: ReturnType<typeof buildDetail>) => void;
+    vi.mocked(service.getAuditLogDetail).mockReset()
+      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }))
+      .mockResolvedValue(buildDetail({ id: 102, actionType: 'Current action' }));
+    const view = render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    view.rerender(<AuditLogDetailDrawer logId={102} isOpen onClose={mockOnClose} />);
+    await screen.findByText('Current action');
+    await act(async () => { finish(buildDetail({ actionType: 'Stale action' })); });
+    expect(screen.queryByText('Stale action')).toBeNull();
+    expect(screen.getByText('Current action')).toBeDefined();
+  });
+
+  it('ignores late clipboard rejection when selecting a different log', async () => {
+    vi.mocked(service.getAuditLogDetail).mockReset().mockResolvedValue(buildDetail());
+    let rejectCopy!: (reason: Error) => void;
+    vi.mocked(navigator.clipboard.writeText).mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectCopy = reject; }));
+    const view = render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    fireEvent.click((await screen.findAllByText('Copy'))[0].closest('button')!);
+    view.rerender(<AuditLogDetailDrawer logId={102} isOpen onClose={mockOnClose} />);
+    await screen.findAllByText('Copy');
+    await act(async () => { rejectCopy(new Error('Late clipboard error')); });
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText('Copied')).toBeNull();
+  });
+
+  it('starts fresh after parent close and restores trigger focus', async () => {
+    vi.mocked(service.getAuditLogDetail).mockReset().mockResolvedValueOnce(buildDetail())
+      .mockImplementation(() => new Promise(() => {}));
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+    const view = render(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    await screen.findByText('ApproveOperatorApplication');
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close audit log details' })));
+    view.rerender(<AuditLogDetailDrawer logId={102} isOpen onClose={mockOnClose} />);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close audit log details' })));
+    view.rerender(<AuditLogDetailDrawer logId={102} isOpen={false} onClose={mockOnClose} />);
+    expect(document.activeElement).toBe(trigger);
+    view.rerender(<AuditLogDetailDrawer logId={101} isOpen onClose={mockOnClose} />);
+    expect(screen.queryByText('ApproveOperatorApplication')).toBeNull();
+    expect(screen.getByText('Fetching log entry details...')).toBeDefined();
+    view.unmount();
+    trigger.remove();
+  });
+
   it('renders nothing when isOpen is false', () => {
     render(<AuditLogDetailDrawer logId={101} isOpen={false} onClose={mockOnClose} />);
     expect(screen.queryByText('Audit Log Details')).toBeNull();
