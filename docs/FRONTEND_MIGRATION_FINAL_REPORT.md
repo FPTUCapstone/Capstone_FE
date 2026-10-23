@@ -133,9 +133,9 @@ Guard chỉ có thể kiểm tra import literal và module được đánh dấu
 
 | ID | Trước | Sau | Chứng cứ và giới hạn |
 |---|---|---|---|
-| C01 | MISMATCH / P0 | BLOCKED | `lib/authApi.ts` saveTokens vẫn được registration Google/VerifyEmailHandler gọi; Supporting spec `specs/UC-01-web-spec.md:49` mô tả saves tokens; `specs/UC-04-web-spec.md:13` hoãn consumer migration, nhưng §6 cấm browser token storage. Original SRS §4.2.4 quy định secure storage/HttpOnly Cookies; deferral không phải security waiver. Cần session/registration contract thay thế được duyệt. |
+| C01 | MISMATCH / P0 | PARTIALLY_RESOLVED | VerifyEmailHandler đã dùng Web verify-only endpoint và không còn lưu access/refresh token hoặc tạo session (`faad2bd`). Google registration vẫn gọi legacy `saveTokens`; Supporting spec `specs/UC-01-web-spec.md:49` mô tả hành vi cũ, còn UC-04 §6 cấm browser token storage. Original SRS §4.2.4 quy định secure storage/HttpOnly Cookies; cần approved Google registration/session contract trước khi bỏ consumer cuối. |
 | C02 | MISMATCH / P0 | RESOLVED | S2/S3 guard payout effective method và POST export trước cookies/network; foreign/null/missing origin từ chối, same-origin/configured public origin theo policy có sẵn được test; không có Referer fallback. Chưa chứng minh exploit trên deployment thật. |
-| C03 | MISMATCH / P1 | BLOCKED | Auth API vẫn fallback localhost khi thiếu public env; cần deployment/API-base decision. Không fail-fast module import làm hỏng build CI không env. |
+| C03 | MISMATCH / P1 | FIXED_VERIFIED | Khi thiếu `NEXT_PUBLIC_API_URL`, production dùng same-origin `/api/v1` theo rewrite/deployment contract hiện hữu; development vẫn dùng localhost và explicit config giữ nguyên (`8fa89c9`). Live deployment vẫn cần `TRIPMATE_API_BASE_URL` HTTPS hợp lệ. |
 | C04 | MISMATCH / P1 | BLOCKED | `lib/authApi.ts` còn phụ thuộc authSession; convention ghi legacy coupling. A2 cần S1 và ownership refresh/config trước khi tách. |
 | C05 | MISMATCH / P1 | NO_LONGER_APPLICABLE | SignIn/Login/Logout composites COMPLIANT với §3.2; không phải generic `components/ui`. Audit cũ áp sai ranh giới. |
 | C06 | MISMATCH / P1 | NO_LONGER_APPLICABLE | PublicNavigation là high-level composite được phép. Kích thước là chỉ báo bảo trì, không tự chứng minh dependency violation. |
@@ -164,8 +164,8 @@ Guard chỉ có thể kiểm tra import literal và module được đánh dấu
 | C29 | NOT_VERIFIED / P1 | PARTIALLY_RESOLVED | Có test/UI evidence cho phần chạm và public auth responsive/keyboard/sticky; contrast/zoom/full-dialog matrix, role/live journeys chưa đủ. Không chứng nhận WCAG. |
 | C30 | COMPLIANT | RESOLVED | Snapshot graph được chuyển thành guard có fixture âm/dương chạy trong npm test; Local declaration ownership đã được bổ sung cùng regression d.ts/d.mts/d.cts; declarations không tạo runtime edges. Giới hạn AST/static/server-only markers nêu ở §3. Không tuyên bố kiểm toàn bộ kiến trúc. |
 | C31 | COMPLIANT | NO_LONGER_APPLICABLE | CI baseline hiện tại success, workflow bắt buộc checks hiện hữu. Chưa xác minh branch protection; unpushed local commits không có CI riêng. |
-| C32 | NOT_VERIFIED / P0 triage | BLOCKED | Audit mới vẫn 18 package findings; cần security reachability assessment và approved upgrade. Không npm audit fix tự động. |
-| C33 | MISMATCH / P0 | BLOCKED | Staff approve/reject payout còn thiếu origin guard tại các đường đã audit; PR #110 đã đóng không merge; cần maintainer chỉ định owner và authorization reconciliation. Không coi SameSite Strict là policy origin. |
+| C32 | NOT_VERIFIED / P0 triage | PARTIALLY_RESOLVED | Vitest được cập nhật chính xác `3.2.4 → 3.2.7` (`1bf4f9b`), loại GHSA-5xrq-8626-4rwp. Audit refresh vẫn còn 13 package findings (3 critical, 9 high, 1 moderate); Next/Firebase/toolchain cần owner và compatible upgrade, không dùng force/downgrade. |
+| C33 | MISMATCH / P0 | FIXED_VERIFIED | Staff approve/reject payout dùng policy origin hiện hữu trước cookies, body và upstream; missing/null/foreign origin bị từ chối, same/configured origin và Staff role/payload/status giữ nguyên (`1ded7e7`). PR #110 vẫn đóng không merge; actor conflict là governance issue riêng. |
 
 ## 5. Đánh giá bảo mật
 
@@ -297,3 +297,9 @@ Visual claim được giới hạn lại: 12 PNG gốc U2 tồn tại; sáu cặ
 Origin policy ownership (EXT-03): import shared server-only `isSameOriginRequest` từ `src/lib/server/adminSession.ts` không vi phạm convention §3. Tên module có thể cải thiện sau này, nhưng không extraction chỉ để đồng nhất tên và không đổi CSRF semantics trong remediation.
 
 Refresh C14: supporting `specs/UC-04-web-spec.md:116` ghi NO rotation. Không coi thiếu rotated-cookie forwarding là confirmed defect theo contract này; live deployment/concurrency verification vẫn chưa có.
+
+## 12. Consolidated remediation addendum — PR #114
+
+Các finding đủ điều kiện được xử lý theo TDD và commit tập trung: declaration ownership `8327663`, drawer session `f98f70f`, revenue actor/loading/request ordering `277f229`, review/evidence corrections `fc6970d`, Staff payout origin `1ded7e7`, production auth base `8fa89c9`, verify-email sessionless `faad2bd`, và Vitest patch `1bf4f9b`. Nhánh đã tích hợp `origin/develop` tại `f5d71c9` bằng merge `4a052c6`; thay đổi incoming là Design System và scheduling, không ghi đè remediation. Full validation và CI của final pushed HEAD được ghi trong PR description và consolidated artifact, không suy từ baseline cũ.
+
+R05 còn Google registration legacy token persistence, R06 còn thiếu approved signed-download destination/redirect/timeout/size policy, R09 còn advisories chưa có compatible scoped correction, và R10 còn mâu thuẫn actor/finance cần BA/Backend approval. Không đổi quyền Staff/Admin, công thức payout/refund hoặc signed-storage policy trong remediation. EXT-03 được giữ `FALSE_POSITIVE`: vị trí helper origin hiện tại không vi phạm convention. Evidence U2 xác nhận sáu cặp file lịch sử bằng bytes/pixels; exact revision của lần chụp lịch sử vẫn `NOT_VERIFIED`. Fresh final-build browser evidence được tách khỏi claim lịch sử và phải ghi source HEAD/build/browser cụ thể.

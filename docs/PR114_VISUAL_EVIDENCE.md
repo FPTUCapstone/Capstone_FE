@@ -13,4 +13,4 @@ Settings: Chrome headless; localhost3019/sign-in và /register; networkidle; vie
 | sign-in |1440|76633dfcc22f3c0c1822844777666ff4d2e1bf9d0d55273b47965023f19fb7f9|
 | register |1440|9974ba055ead2fb418790918fe04e2cc07876f5ba7c59a00a56dbe89cc72c04f|
 
-Original files sẽ được đính vào description PR #114 bằng native GitHub attachment workflow; không commit PNG vào application repository. Chỉ sau upload thành công, PR body chứa asset URLs mới được gọi là reviewer-accessible evidence. Không suy luận WCAG, animation runtime hoặc live authenticated UAT từ bộ ảnh này.
+Original files chưa được gọi là reviewer-accessible cho đến khi native GitHub attachment workflow upload thành công và PR body chứa asset URLs đã kiểm tra. Không commit PNG vào application repository. Không suy luận WCAG, animation runtime hoặc live authenticated UAT từ bộ ảnh này.
