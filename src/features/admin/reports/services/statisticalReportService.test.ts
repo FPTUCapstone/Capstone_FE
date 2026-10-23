@@ -294,7 +294,7 @@ describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
         '[DEMO FIXTURE EXPORT — NOT PRODUCTION ACCOUNTING DATA]',
       );
       expect(csvArtifact.csvContent).toContain(
-        'Booking Status Category,Booking Count,Associated Value (VND),Settlement State',
+        'Booking Status Category,Booking Count,Associated Value (VND)',
       );
       expect(csvArtifact.csvContent).toContain('"880,588,800 VND"');
       expect(csvArtifact.contentPreview).toContain('Operator=OP-102');

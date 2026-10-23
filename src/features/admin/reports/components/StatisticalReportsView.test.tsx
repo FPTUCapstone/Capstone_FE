@@ -222,9 +222,6 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
 
       // Verify zero fabricated statistics, zero charts, and disabled export
       expect(screen.queryByRole('table')).toBeNull();
-      expect(
-        screen.queryByRole('img', { name: statisticalReportsEn.results.chartSvgAriaLabel }),
-      ).toBeNull();
 
       const exportButton = screen.getByRole('button', {
         name: statisticalReportsEn.exportPanel.exportButton,
@@ -263,7 +260,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
   });
 
   describe('3. Demo Mode — Fixture Filters, Report Types, Closed Periods, Open Period Rejection & Draft vs Applied', () => {
-    it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with SVG chart and tabular fallback', () => {
+    it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with a report breakdown list', () => {
       const { container } = render(
         <StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />,
       );
@@ -296,10 +293,11 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         );
 
         expect(screen.getByRole('heading', { level: 3, name: rt.expectedHeading })).toBeTruthy();
-        expect(
-          screen.getByRole('img', { name: statisticalReportsEn.results.chartSvgAriaLabel }),
-        ).toBeTruthy();
+        expect(screen.queryByRole('img')).toBeNull();
         expect(screen.getByRole('table')).toBeTruthy();
+        expect(screen.queryByRole('list')).toBeNull();
+        expect(container.textContent ?? '').not.toContain('Tertiary');
+        expect(container.textContent ?? '').not.toContain('Primary value');
         expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
         expect(container.textContent ?? '').not.toMatch(RAW_CODE_REGEX);
       }

@@ -943,112 +943,50 @@ export function StatisticalReportsView({
                 </section>
               ) : null}
 
-              {/* Accessible Visual Chart + Tabular Data Fallback */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                {/* Lightweight Accessible SVG / Proportional Bar Chart */}
-                <section
-                  aria-label={copy.results.chartSectionTitle}
-                  className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs lg:col-span-5"
+              <section
+                aria-labelledby="statistical-breakdown-heading"
+                className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs"
+              >
+                <h4
+                  id="statistical-breakdown-heading"
+                  className="mb-4 text-base font-extrabold text-[#00152a]"
                 >
-                  <div className="mb-4 flex items-center justify-between">
-                    <h4 className="text-base font-extrabold text-[#00152a]">
-                      {copy.results.chartSectionTitle}
-                    </h4>
-                    <span className="text-xs font-semibold text-[#475467]">
-                      {generatedReport.chartUnitLabel}
-                    </span>
-                  </div>
-
-                  <svg
-                    role="img"
-                    aria-label={copy.results.chartSvgAriaLabel}
-                    viewBox="0 0 400 180"
-                    className="mb-4 h-40 w-full rounded-xl bg-[#f8fafc] p-3"
-                  >
-                    <title>{copy.results.chartSvgAriaLabel}</title>
-                    {generatedReport.chartPoints.map((point, index) => {
-                      const y = 18 + index * 46;
-                      const barWidth = Math.max(12, Math.round((point.sharePercent / 100) * 260));
-                      return (
-                        <g key={point.id}>
-                          <text x="8" y={y + 12} fontSize="11" fill="#0f172a" fontWeight="bold">
-                            {point.label} ({point.sharePercent}%)
-                          </text>
-                          <rect
-                            x="8"
-                            y={y + 18}
-                            width={barWidth}
-                            height="14"
-                            rx="4"
-                            fill="#006b5f"
-                          />
-                        </g>
-                      );
-                    })}
-                  </svg>
-
-                  <ul className="space-y-2.5 text-xs">
-                    {generatedReport.chartPoints.map((point) => (
-                      <li
-                        key={point.id}
-                        className="flex items-center justify-between rounded-lg bg-[#f8fafc] px-3 py-2"
-                      >
-                        <span className="font-semibold text-[#00152a]">{point.label}</span>
-                        <span className="font-mono font-bold text-[#006b5f]">
-                          {point.formattedPrimaryValue} ({point.sharePercent}%{' '}
-                          {copy.results.shareOfTotalSuffix})
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-
-                {/* Accessible Tabular Fallback */}
-                <section
-                  aria-label={copy.results.tableFallbackTitle}
-                  className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs lg:col-span-7"
-                >
-                  <h4 className="mb-4 text-base font-extrabold text-[#00152a]">
-                    {copy.results.tableFallbackTitle}
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left text-xs sm:text-sm">
-                      <caption className="sr-only">
-                        {copy.results.tableCaptionPrefix}{' '}
-                        {copy.reportTypes[generatedReport.criteria.reportType].label} (
-                        {generatedReport.period.key})
-                      </caption>
-                      <thead>
-                        <tr className="border-b border-[#d0d7de] bg-[#f8fafc] text-[#344054]">
-                          {generatedReport.tableHeaders.map((header) => (
-                            <th key={header} scope="col" className="px-3.5 py-2.5 font-bold">
-                              {header}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#eaecf0]">
-                        {generatedReport.breakdownRows.map((row) => (
-                          <tr key={row.id} className="hover:bg-[#f8fafc]">
-                            <td className="px-3.5 py-3 font-semibold text-[#00152a]">
-                              {row.segmentLabel}
-                            </td>
-                            <td className="px-3.5 py-3 font-mono text-[#1e293b]">
-                              {row.primaryMetricLabel}
-                            </td>
-                            <td className="px-3.5 py-3 font-mono text-[#1e293b]">
-                              {row.secondaryMetricLabel}
-                            </td>
-                            <td className="px-3.5 py-3 font-mono font-bold text-[#006b5f]">
-                              {row.tertiaryMetricLabel}
-                            </td>
-                          </tr>
+                  {copy.results.tableFallbackTitle}
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left text-xs sm:text-sm">
+                    <caption className="sr-only">
+                      {copy.results.tableCaptionPrefix}{' '}
+                      {copy.reportTypes[generatedReport.criteria.reportType].label} (
+                      {generatedReport.period.key})
+                    </caption>
+                    <thead>
+                      <tr className="border-b border-[#d0d7de] bg-[#f8fafc] text-[#344054]">
+                        {generatedReport.tableHeaders.slice(0, 3).map((header) => (
+                          <th key={header} scope="col" className="px-3.5 py-2.5 font-bold">
+                            {header}
+                          </th>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              </div>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#eaecf0]">
+                      {generatedReport.breakdownRows.map((row) => (
+                        <tr key={row.id} className="hover:bg-[#f8fafc]">
+                          <td className="px-3.5 py-3 font-semibold text-[#00152a]">
+                            {row.segmentLabel}
+                          </td>
+                          <td className="px-3.5 py-3 font-mono text-[#1e293b]">
+                            {row.primaryMetricLabel}
+                          </td>
+                          <td className="px-3.5 py-3 text-[#1e293b]">
+                            {row.secondaryMetricLabel}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           ) : null}
         </section>

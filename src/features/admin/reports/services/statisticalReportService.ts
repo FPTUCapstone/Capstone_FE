@@ -916,13 +916,12 @@ export function buildDemoExportArtifact(
     `${exportCopy.exportFormatPrefix}: ${format} (.${ext})`,
     `${exportCopy.exportedDatePrefix}: ${exportedAtDisplay}`,
     exportCopy.sectionDivider,
-    report.tableHeaders.join(colSep),
+    report.tableHeaders.slice(0, 3).join(colSep),
     ...report.breakdownRows.map((row) =>
       [
         row.segmentLabel,
         row.primaryMetricLabel,
         row.secondaryMetricLabel,
-        row.tertiaryMetricLabel,
       ].join(colSep),
     ),
   ];
@@ -946,13 +945,12 @@ export function buildDemoExportArtifact(
       .join(','),
     [exportCopy.exportedDatePrefix, exportedAtDisplay].map(escapeCsvCell).join(','),
     '',
-    report.tableHeaders.map(escapeCsvCell).join(','),
+    report.tableHeaders.slice(0, 3).map(escapeCsvCell).join(','),
     ...report.breakdownRows.map((row) =>
       [
         row.segmentLabel,
         row.primaryMetricLabel,
         row.secondaryMetricLabel,
-        row.tertiaryMetricLabel,
       ]
         .map(escapeCsvCell)
         .join(','),
@@ -1021,6 +1019,23 @@ function displayDate(value: string): string {
   return matched ? `${matched[3]}/${matched[2]}/${matched[1]}` : value;
 }
 
+function countLabel(value: number, singular: string): string {
+  return `${formatIntegerCount(value)} ${value === 1 ? singular : `${singular}s`}`;
+}
+
+function platformRevenueCalculationBasis(row: BackendRow): string {
+  switch (row.key) {
+    case 'tour':
+      return `Payments received: ${formatVndCurrency(row.secondaryValue)} · ${countLabel(row.tertiaryValue, 'eligible booking')}`;
+    case 'service':
+      return `Service value: ${formatVndCurrency(row.secondaryValue)} · ${countLabel(row.tertiaryValue, 'eligible booking')}`;
+    case 'refund':
+      return `Refunded amount: ${formatVndCurrency(row.secondaryValue)} · ${countLabel(row.tertiaryValue, 'processed refund')}`;
+    default:
+      return `Related amount: ${formatVndCurrency(row.secondaryValue)}`;
+  }
+}
+
 function parseBackendReport(value: unknown, criteria: AppliedStatisticalReportCriteria): GeneratedStatisticalReport {
   if (!value || typeof value !== 'object') throw new Error('Invalid statistical report response.');
   const report = value as Partial<BackendReport>;
@@ -1032,13 +1047,21 @@ function parseBackendReport(value: unknown, criteria: AppliedStatisticalReportCr
     formattedValue: metric.isCurrency ? formatVndCurrency(metric.value) : formatIntegerCount(metric.value),
     contextNote: metric.isCurrency ? 'Closed-period accounting snapshot' : 'Closed-period statistical snapshot',
   }));
-  const rows = report.breakdown.map((row) => ({
-    id: row.key,
-    segmentLabel: row.label,
-    primaryMetricLabel: row.isCurrency ? formatVndCurrency(row.primaryValue) : formatIntegerCount(row.primaryValue),
-    secondaryMetricLabel: row.isCurrency ? formatVndCurrency(row.secondaryValue) : formatIntegerCount(row.secondaryValue),
-    tertiaryMetricLabel: row.isCurrency ? formatVndCurrency(row.tertiaryValue) : formatIntegerCount(row.tertiaryValue),
-  }));
+  const rows = report.breakdown.map((row) => {
+    const isPlatformRevenue = criteria.reportType === 'PLATFORM_REVENUE';
+    const primaryValue = row.isCurrency ? formatVndCurrency(row.primaryValue) : formatIntegerCount(row.primaryValue);
+    return {
+      id: row.key,
+      segmentLabel: row.label,
+      primaryMetricLabel: isPlatformRevenue && row.key === 'refund' ? `-${primaryValue}` : primaryValue,
+      secondaryMetricLabel: isPlatformRevenue && row.isCurrency
+        ? platformRevenueCalculationBasis(row)
+        : row.isCurrency
+          ? `Related amount: ${formatVndCurrency(row.secondaryValue)}`
+          : `Related value: ${formatIntegerCount(row.secondaryValue)}`,
+      tertiaryMetricLabel: '',
+    };
+  });
   const points = report.breakdown.map((row) => ({
     id: row.key,
     label: row.label,
@@ -1055,7 +1078,9 @@ function parseBackendReport(value: unknown, criteria: AppliedStatisticalReportCr
     summaryMetrics: metrics,
     chartUnitLabel: criteria.reportType === 'PLATFORM_REVENUE' ? 'VND' : 'Count',
     chartPoints,
-    tableHeaders: ['Segment', 'Primary value', 'Secondary value', 'Tertiary value'],
+    tableHeaders: criteria.reportType === 'PLATFORM_REVENUE'
+      ? ['Component', 'Commission impact', 'Calculation basis', '']
+      : ['Segment', 'Primary value', 'Related value', ''],
     breakdownRows: rows,
   };
 }
