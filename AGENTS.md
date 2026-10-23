@@ -57,6 +57,8 @@ architecture and delivery rules below.
 ## Before Editing
 
 - Inspect `README.md`, `CONTRIBUTING.md`, `docs/CODEBASE_RULES.md`, `.github/pull_request_template.md`, `package.json`, and nearby code.
+- For UI/UX work, consult `DESIGN.md` at the project root for visual hierarchy, canonical design tokens, component styling, layout, typography, and motion rules.
+- When working on UI components or screens, activate the internal Design System Skill at `.agents/skills/tripmate-design-system/SKILL.md` (derived from VoltAgent/awesome-design-md methodology).
 - Preserve established libraries and patterns; do not invent requirements or add unrequested features.
 - Keep changes scoped; do not rewrite, remove, or reformat unrelated working code.
 
