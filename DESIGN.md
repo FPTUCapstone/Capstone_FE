@@ -1,5 +1,5 @@
 ---
-version: 1.0.0
+version: 1.0.1
 name: TripMate Web Design System
 description: Official design system specification for TripMate Web (Capstone_FE) — documenting the production visual identity, design tokens, typography, layout, component architecture, responsive rules, motion, and accessibility conventions. Grounded in actual implementation evidence and structured using the design methodology from VoltAgent/awesome-design-md.
 source-attribution:
@@ -8,7 +8,7 @@ source-attribution:
   methodology: "Curated design-system documentation schema synthesizing Linear, Airbnb, Vercel, and Apple standards adapted for TripMate"
 
 colors:
-  # Primary Brand Palette (Public & Travel Identity)
+  # Primary Brand Palette (Public Travel Discovery)
   brand-teal: "#006B5F"
   brand-brightTeal: "#007D6E"
   brand-lightTeal: "#E8F7F4"
@@ -25,6 +25,7 @@ colors:
   # Functional Accents & Semantic Status
   secondary-coral: "#FF6A3D"
   secondary-container: "#FFF0EA"
+  secondary-hover: "#E8582C"
   tertiary-violet: "#7C3AED"
   tertiary-container: "#F1EBFE"
   error: "#E02D4D"
@@ -54,8 +55,11 @@ colors:
   outline: "#6B7C97"
 
 typography:
-  font-sans: "'Segoe UI', Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
-  font-mono: "Consolas, 'Courier New', monospace"
+  font-jakarta: "var(--font-jakarta)"
+  font-geist-sans: "var(--font-geist-sans)"
+  font-geist-mono: "var(--font-geist-mono)"
+  font-sans-fallback: "'Segoe UI', Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+  font-mono-fallback: "Consolas, 'Courier New', monospace"
   font-icon: "'Material Symbols Outlined'"
 
 radii:
@@ -81,42 +85,42 @@ shadows:
 TripMate Web is an intelligent travel atlas and multi-tenant portal for Central Vietnam (Đà Nẵng, Hội An, Cố Đô Huế). The visual identity combines **editorial cultural heritage** with **clean operational utility**:
 
 1. **Atmospheric Cultural Clarity**: Public interfaces leverage high-fidelity photographic landscapes, rich Navy (`#00152A`) backgrounds, deep Brand Teal (`#006B5F`), and energetic Coral (`#FF7043` / `#FF6A3D`) accents to evoke Vietnam's central coastline and ancient architectural heritage.
-2. **Operational Rigor & Legibility**: Management, administrator, and partner workspaces utilize a crisp, structured Slate/White palette (`#FFFFFF` surfaces over `#F4F7FC` canvas) anchored by functional Blue (`#1D4ED8`) and Slate typography for optimal data density and rapid scanning.
+2. **Operational Rigor & Legibility**: Management, administrator, and partner workspaces utilize a crisp, structured Slate/White palette (`#FFFFFF` surfaces over `#F4F7FC` / `#F7F9FC` canvas) anchored by functional Blue (`#1D4ED8`) and Slate typography for optimal data density and rapid scanning.
 3. **Continuous Motion & Flow**: Interactions feel fluid rather than abrupt, utilizing Lenis smooth scrolling, subtle ScrollReveal staggered fades, and physics-based capsule indicator transitions.
 4. **Zero Unjustified Decoration**: UI chrome recedes behind authentic photography and verified travel data; rounded corners, borders, and shadows have clear functional roles.
 
 > [!NOTE]
-> This document documents the **CURRENT production design language** of TripMate Web as implemented in Next.js 16 (App Router) and Tailwind CSS. It is the baseline authority for frontend visual consistency.
+> This document specifies the **CURRENT production design language** of TripMate Web as implemented in Next.js 16 (App Router) and Tailwind CSS. It is the baseline authority for frontend visual consistency.
 
 ---
 
 ## 2. Color Palette & Canonical Token Architecture
 
-TripMate uses a hybrid semantic token architecture defined in `app/globals.css` with Tailwind CSS v4 `@theme` and dynamic CSS custom properties.
+TripMate uses a hybrid semantic token architecture defined in `app/globals.css` with Tailwind CSS v4 `@theme` and dynamic CSS custom properties in `:root`.
 
 ### 2.1 Color Tokens & Semantic Roles
 
-| Token | Hex Value | Primary Role & Consumers |
-|---|---|---|
-| `--color-brand-teal` / `--brand-teal` | `#006B5F` | Primary travel public actions, brand buttons, active destination chips, public search CTAs. |
-| `--color-brand-brightTeal` / `--brand-brightTeal` | `#007D6E` | Hover/focus states on teal elements, icon badges, active highlight accents. |
-| `--color-brand-lightTeal` / `--brand-lightTeal` | `#E8F7F4` | Tinted background for active navigation items, status pills, and highlight containers. |
-| `--color-brand-navy` / `--brand-navy` | `#00152A` | Hero sections, dark public footer, high-contrast headings, card hover backdrops. |
-| `--color-brand-navyContainer` | `#102A43` | Dark elevation surfaces, secondary navigation containers on dark surfaces. |
-| `--color-primary` / `--brand` | `#1D4ED8` | Operational primary actions (admin, partner, traveler profile, checkout), focus rings. |
-| `--color-primary-container` / `--brand6` | `#2563EB` | Active operational buttons, hover states on operational primary elements. |
-| `--color-primary-fixed` / `--brand1` | `#EAF1FE` | Operational badge backgrounds, selected list item highlights. |
-| `--color-brand-coral` / `--color-secondary` | `#FF7043` / `#FF6A3D` | Key waypoints, promotional badges, attention alerts, rating icons, secondary highlights. |
-| `--color-coral-hover` | `#E8582C` | Interactive hover state for coral buttons and links. |
-| `--color-tertiary` / `--vio` | `#7C3AED` | AI itinerary generation badges, intelligent rerouting highlights, algorithmic tags. |
-| `--color-tertiary-container` / `--vio1` | `#F1EBFE` | Background for AI and algorithmic feature containers. |
-| `--color-error` / `--red` | `#E02D4D` | Form validation errors, destructive modal actions, failed payment or cancellation badges. |
-| `--color-error-container` / `--red1` | `#FDECEF` | Alert backgrounds for errors and rejections. |
-| `--color-surface` / `--bg` | `#F4F7FC` | Global page canvas background (light, clean, modern cool-slate). |
-| `--color-brand-card` / `surface-card` | `#FFFFFF` | Standard card, modal, dialog, and panel background. |
-| `--color-brand-border` / `--line` | `#E2E8F0` / `#E1E8F3` | Card dividers, input borders, table borders, panel separators. |
-| `--color-brand-textPrimary` / `--ink` | `#0F172A` / `#0F1B2D` | Primary body copy, table text, form labels, card titles. |
-| `--color-brand-textSecondary` / `--ink2` | `#64748B` / `#33425A` | Subtitles, helper text, timestamps, table column headers, metadata. |
+| Tailwind Utility | CSS Token (`@theme` / `:root`) | Hex Value | Primary Role & Consumers |
+|---|---|---|---|
+| `bg-brand-teal` / `text-brand-teal` | `--color-brand-teal` / `--brand-teal` | `#006B5F` | Primary travel public actions, brand buttons, active destination chips, public search CTAs. |
+| `bg-brand-brightTeal` / `text-brand-brightTeal` | `--color-brand-brightTeal` / `--brand-brightTeal` | `#007D6E` | Hover/focus states on teal elements, icon badges, active highlight accents. |
+| `bg-brand-lightTeal` / `text-brand-lightTeal` | `--color-brand-lightTeal` / `--brand-lightTeal` | `#E8F7F4` | Tinted background for active navigation items, status pills, text selection highlight. |
+| `bg-brand-navy` / `text-brand-navy` | `--color-brand-navy` / `--brand-navy` | `#00152A` | Hero sections, dark public footer, high-contrast headings, card hover backdrops. |
+| `bg-brand-navyContainer` | `--color-brand-navyContainer` / `--brand-navyContainer` | `#102A43` | Dark elevation surfaces, secondary navigation containers on dark surfaces. |
+| `bg-primary` / `text-primary` | `--color-primary` / `--brand` | `#1D4ED8` | Operational primary actions (admin, partner, traveler profile, checkout), focus rings. |
+| `bg-primary-container` | `--color-primary-container` / `--brand6` | `#2563EB` | Active operational buttons, hover states on operational primary elements. |
+| `bg-primary-fixed` | `--color-primary-fixed` / `--brand1` | `#EAF1FE` | Operational badge backgrounds, selected list item highlights. |
+| `bg-brand-coral` / `bg-secondary` | `--color-brand-coral` / `--color-secondary` / `--acc` | `#FF7043` / `#FF6A3D` | Key waypoints, promotional badges, attention alerts, rating icons, secondary highlights. |
+| `hover:bg-coral-hover` | `--color-coral-hover` | `#E8582C` | Interactive hover state for coral buttons and links. |
+| `bg-tertiary` / `text-tertiary` | `--color-tertiary` / `--vio` | `#7C3AED` | AI itinerary generation badges, intelligent rerouting highlights, algorithmic tags. |
+| `bg-tertiary-container` | `--color-tertiary-container` / `--vio1` | `#F1EBFE` | Background for AI and algorithmic feature containers. |
+| `bg-error` / `text-error` | `--color-error` / `--red` | `#E02D4D` | Form validation errors, destructive modal actions, failed payment or cancellation badges. |
+| `bg-error-container` | `--color-error-container` / `--red1` | `#FDECEF` | Alert backgrounds for errors and rejections. |
+| `bg-surface` / `bg-brand-surface` | `--color-surface` / `--color-brand-surface` / `--bg` | `#F4F7FC` / `#F7F9FC` | Global page canvas background (light, clean, modern cool-slate; applied on `<body>`). |
+| `bg-brand-card` | `--color-brand-card` / `--color-surface-bright` | `#FFFFFF` | Standard card, modal, dialog, and panel background. |
+| `border-brand-border` | `--color-brand-border` / `--color-outline-variant` / `--line` | `#E2E8F0` / `#E1E8F3` | Card dividers, input borders, table borders, panel separators. |
+| `text-brand-textPrimary` | `--color-brand-textPrimary` / `--color-on-surface` / `--ink` | `#0F172A` / `#0F1B2D` | Primary body copy, table text, form labels, card titles. |
+| `text-brand-textSecondary` | `--color-brand-textSecondary` / `--color-on-surface-variant` / `--ink2` | `#64748B` / `#33425A` | Subtitles, helper text, timestamps, table column headers, metadata. |
 
 ### 2.2 Semantic Color Rule: Dual-Primary Architecture
 
@@ -131,16 +135,26 @@ TripMate uses a hybrid semantic token architecture defined in `app/globals.css` 
 
 ## 3. Typography & Hierarchy
 
-### 3.1 Font Families
+### 3.1 Font Configuration
+
+TripMate Web integrates modern typography through Next.js Font in `app/layout.tsx` and CSS token definitions in `app/globals.css`:
+
+```tsx
+// app/layout.tsx font imports
+const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin', 'vietnamese'] });
+const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin', 'vietnamese'] });
+const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'] });
+```
 
 ```css
+/* app/globals.css font fallbacks */
 --font-sans: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 --font-mono: Consolas, "Courier New", monospace;
 ```
 
-- **Body & Headings**: Segoe UI / Inter fallback chain provides optimal rendering across Windows, macOS, Android, and iOS.
-- **Iconography**: Google Material Symbols Outlined (`.material-symbols-outlined`), loaded with variable axis `wght 400`, `opsz 24`.
-- **Code & IDs**: Consolas / monospace for booking reference codes, UUIDs, and API tokens.
+- **Primary UI Type**: Plus Jakarta Sans and Geist Sans provide optimal legibility, clean geometry, and full Vietnamese diacritics support.
+- **Iconography**: Google Material Symbols Outlined (`.material-symbols-outlined`), loaded via Google Fonts with variable axis `wght 400`, `opsz 24`.
+- **Code & IDs**: Geist Mono / Consolas for booking reference codes, UUIDs, and API tokens.
 
 ### 3.2 Typographic Hierarchy Scale
 
@@ -217,7 +231,7 @@ TripMate adheres to the Tailwind 4px base increment (`p-1` = 4px, `p-2` = 8px, `
 
 ### 6.2 Status Badges
 
-Utilize [`StatusBadge.tsx`](file:///D:/FPT_University_các%20kì/CapStone_TripMate_DoAn/Capstone_FE-design-md/src/components/ui/StatusBadge.tsx):
+Utilize [`StatusBadge.tsx`](src/components/ui/StatusBadge.tsx):
 
 - **Active / Approved / Paid**: `bg-emerald-50 text-emerald-700 border-emerald-200`
 - **Pending / In Review**: `bg-amber-50 text-amber-700 border-amber-200`
@@ -226,7 +240,7 @@ Utilize [`StatusBadge.tsx`](file:///D:/FPT_University_các%20kì/CapStone_TripMa
 
 ### 6.3 Form Controls
 
-Utilize [`FormControls.tsx`](file:///D:/FPT_University_các%20kì/CapStone_TripMate_DoAn/Capstone_FE-design-md/src/components/ui/FormControls.tsx):
+Utilize [`FormControls.tsx`](src/components/ui/FormControls.tsx):
 
 - Height: 44px minimum for touch target compliance.
 - Border: `border border-slate-200 rounded-xl bg-white px-3.5 py-2.5 text-sm`.
@@ -235,7 +249,7 @@ Utilize [`FormControls.tsx`](file:///D:/FPT_University_các%20kì/CapStone_TripM
 
 ### 6.4 Modals & Dialogs
 
-Utilize [`LegalModal.tsx`](file:///D:/FPT_University_các%20kì/CapStone_TripMate_DoAn/Capstone_FE-design-md/src/components/ui/LegalModal.tsx) or pattern:
+Utilize [`LegalModal.tsx`](src/components/ui/LegalModal.tsx) or pattern:
 
 - Backdrop: `fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4`.
 - Dialog Container: `w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-100`.
@@ -279,7 +293,7 @@ TripMate incorporates a curated motion system designed for smooth, premium feel 
 
 1. **Inspect Before Creating**: Always check `src/components/ui/`, `src/components/layout/`, and existing feature modules before authoring a new component.
 2. **Adhere to Server Component Default**: Place components in `src/features/<feature>/components/` or `src/components/`. Mark with `'use client'` only when interactive browser state (hooks, event listeners) is required.
-3. **Token Compliance**: Always reference canonical tokens (`#006B5F`, `#1D4ED8`, `#00152A`, `#F4F7FC`) or Tailwind theme classes (`bg-[#006B5F]`, `text-[#0F172A]`). Never introduce arbitrary new brand colors.
+3. **Token Compliance**: Always reference canonical tokens (`#006B5F`, `#1D4ED8`, `#00152A`, `#F4F7FC`) or Tailwind theme classes (`bg-brand-teal`, `text-brand-textPrimary`, `bg-primary`). Never introduce arbitrary new brand colors.
 4. **Responsive Testing**: Every new component must be verified across Mobile (375px), Tablet (768px), and Desktop (1280px+).
 
 ---
