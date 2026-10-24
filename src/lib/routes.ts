@@ -52,5 +52,15 @@ export const ROUTES = {
     payoutDetails: (id: string) => `/admin/payouts/${encodeURIComponent(id)}`,
     algorithmParameters: '/admin/settings/algorithm-parameters',
     activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
+    users: '/admin/users',
+    userDetail: (id: string | number) => `/admin/users/${encodeURIComponent(id)}`,
+    tourOperatorApplications: '/admin/tour-operator-applications',
+    tourOperatorApplicationDetail: (userId: string | number) =>
+      `/admin/tour-operator-applications/${encodeURIComponent(userId)}`,
+    routesList: '/admin/routes',
+    routeCreate: '/admin/routes/create',
+    pois: '/admin/catalogue/points-of-interest',
+    landingContent: '/admin/landing-content',
+    payoutSettlement: '/admin/payouts/settlement',
   },
 } as const;

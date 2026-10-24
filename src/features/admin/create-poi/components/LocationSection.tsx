@@ -18,14 +18,14 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
   };
 
   return (
-    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-200 relative">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-[#E6E4DD] relative">
+      <div className="flex items-center justify-between pb-3 border-b border-[#F0EFEA] mb-4">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#006b5f] text-xl">location_on</span>
-          <h2 className="text-sm sm:text-base text-[#00152a] font-bold">2. Location & Coordinates</h2>
+          <span className="material-symbols-outlined text-[#245747] text-xl">location_on</span>
+          <h2 className="text-sm sm:text-base text-[#1C2923] font-bold">2. Location & Coordinates</h2>
         </div>
-        <span className="text-[11px] text-[#006b5f] font-semibold flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#006b5f]"></span>
+        <span className="text-[11px] text-[#245747] font-semibold flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8EFEA]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#245747]"></span>
           WGS84
         </span>
       </div>
@@ -39,12 +39,12 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
           disabled={disabled}
         />
 
-        <p className="text-[11px] text-slate-500">Tap and drag pin to refine location. Coordinate inputs sync automatically.</p>
+        <p className="text-[11px] text-[#758B74]">Tap and drag pin to refine location. Coordinate inputs sync automatically.</p>
 
         {/* Lat / Lng Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
           <div>
-            <label className="text-xs font-semibold text-slate-900 block mb-1.5" htmlFor="poi-lat">
+            <label className="text-xs font-semibold text-[#1C2923] block mb-1.5" htmlFor="poi-lat">
               Latitude <span className="text-red-600">*</span>
             </label>
             <div className="relative">
@@ -57,13 +57,13 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
                 onChange={(e) => onChange('latitude', e.target.value)}
                 placeholder="16.003890"
                 aria-invalid={Boolean(errors.latitude)}
-                className={`w-full px-3.5 py-2.5 rounded-lg bg-[#f2f4f7] text-slate-900 text-sm font-mono focus:bg-white focus:outline-none focus:shadow-md transition-all border ${
-                  errors.latitude ? 'border-red-500 bg-red-50/50' : 'border-transparent'
+                className={`w-full px-3.5 py-2.5 rounded-lg bg-[#F7F6F2] text-[#1C2923] text-sm font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#245747]/20 focus:border-[#245747] transition-all border ${
+                  errors.latitude ? 'border-red-500 bg-red-50/50' : 'border-[#E6E4DD]'
                 }`}
               />
-              <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">deg N</span>
+              <span className="absolute right-3 top-2.5 text-xs text-[#758B74] font-medium">deg N</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Accepts -90.0 to 90.0 with 6 decimals</p>
+            <p className="text-[11px] text-[#758B74] mt-1">Accepts -90.0 to 90.0 with 6 decimals</p>
             {errors.latitude ? (
               <p className="text-xs text-red-600 mt-1 flex items-center gap-1 font-medium">
                 <span className="material-symbols-outlined text-[16px]">error</span>
@@ -73,7 +73,7 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-900 block mb-1.5" htmlFor="poi-lng">
+            <label className="text-xs font-semibold text-[#1C2923] block mb-1.5" htmlFor="poi-lng">
               Longitude <span className="text-red-600">*</span>
             </label>
             <div className="relative">
@@ -86,13 +86,13 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
                 onChange={(e) => onChange('longitude', e.target.value)}
                 placeholder="108.264178"
                 aria-invalid={Boolean(errors.longitude)}
-                className={`w-full px-3.5 py-2.5 rounded-lg bg-[#f2f4f7] text-slate-900 text-sm font-mono focus:bg-white focus:outline-none focus:shadow-md transition-all border ${
-                  errors.longitude ? 'border-red-500 bg-red-50/50' : 'border-transparent'
+                className={`w-full px-3.5 py-2.5 rounded-lg bg-[#F7F6F2] text-[#1C2923] text-sm font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#245747]/20 focus:border-[#245747] transition-all border ${
+                  errors.longitude ? 'border-red-500 bg-red-50/50' : 'border-[#E6E4DD]'
                 }`}
               />
-              <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">deg E</span>
+              <span className="absolute right-3 top-2.5 text-xs text-[#758B74] font-medium">deg E</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Accepts -180.0 to 180.0 with 6 decimals</p>
+            <p className="text-[11px] text-[#758B74] mt-1">Accepts -180.0 to 180.0 with 6 decimals</p>
             {errors.longitude ? (
               <p className="text-xs text-red-600 mt-1 flex items-center gap-1 font-medium">
                 <span className="material-symbols-outlined text-[16px]">error</span>
@@ -103,8 +103,8 @@ export function LocationSection({ formData, errors, onChange, disabled }: Locati
         </div>
 
         {/* Info Box */}
-        <div className="p-3 rounded-lg bg-[#f2f4f7] text-slate-600 text-xs flex items-start gap-2 border border-slate-200">
-          <span className="material-symbols-outlined text-[18px] text-[#006b5f] mt-0.5">info</span>
+        <div className="p-3 rounded-lg bg-[#F7F6F2] text-[#1C2923] text-xs flex items-start gap-2 border border-[#E6E4DD]">
+          <span className="material-symbols-outlined text-[18px] text-[#245747] mt-0.5">info</span>
           <span>The map is an illustrative preview. Enter the exact coordinates below; live map selection and address geocoding are not available.</span>
         </div>
       </div>
