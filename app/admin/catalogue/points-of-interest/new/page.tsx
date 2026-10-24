@@ -3,10 +3,13 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { CreatePoiPage } from '@/features/admin/create-poi';
+import { AdminConsoleShell } from '@/features/admin/shared/components/AdminConsoleShell';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
 import { ROUTES } from '@/lib/routes';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
+
+import '@/features/admin/shared/styles/admin-theme.css';
 
 export const metadata: Metadata = {
   title: 'Create Point of Interest (POI) | TripMate Admin',
@@ -27,12 +30,22 @@ export default async function NewPoiPage() {
 
   if (session.role !== 'Staff') {
     return (
-      <AdminAccessDeniedView
-        requiredRole="Staff"
-        description={adminStaffEn.staffAccessDenied.poiDescription}
-      />
+      <div className="admin-theme min-h-screen bg-[#F7F6F2] text-[#1C2923]">
+        <AdminConsoleShell role={session.role}>
+          <AdminAccessDeniedView
+            requiredRole="Staff"
+            description={adminStaffEn.staffAccessDenied.poiDescription}
+          />
+        </AdminConsoleShell>
+      </div>
     );
   }
 
-  return <CreatePoiPage />;
+  return (
+    <div className="admin-theme min-h-screen bg-[#F7F6F2] text-[#1C2923]">
+      <AdminConsoleShell role="Staff">
+        <CreatePoiPage />
+      </AdminConsoleShell>
+    </div>
+  );
 }
