@@ -2,12 +2,16 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
-const { adminProxyStubs } = require('./admin-proxy-stubs.cjs');
 
 function setup(token, backend) {
   return loadTs('src/features/admin/active-trips/activeTripsProxy.ts', {
+    'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
-    ...adminProxyStubs(token ? { accessToken: token, role: 'Administrator' } : null),
+    '@/lib/server/adminSession': {
+      ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
+      jsonNoStore: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
+      clearAdminSession: response => { response.headers.set('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0'); return response; },
+    },
   }).proxyActiveTrips;
 }
 
@@ -39,11 +43,11 @@ test('enforces pageSize 20 even when the caller supplies a larger or duplicate v
   assert.equal(response.status, 200);
 });
 
-test('passes upstream 401 and 403 through without cookies or leaked details', async () => {
+test('clears the local session for upstream 401 and 403 without leaking details', async () => {
   for (const status of [401, 403]) {
     const response = await setup('secret', async () => Response.json({ detail: 'private upstream data' }, { status }))(request());
     assert.equal(response.status, status);
-    assert.equal(response.headers.get('Set-Cookie'), null);
+    assert.match(response.headers.get('Set-Cookie'), /Max-Age=0/);
     assert.doesNotMatch(await response.text(), /private upstream data/);
   }
 });

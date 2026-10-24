@@ -1,10 +1,11 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { TourOperatorApplicationDetailView } from '@/features/admin/tour-operator-applications/components/TourOperatorApplicationDetailView';
 import { tourOperatorApplicationEn } from '@/features/admin/tour-operator-applications/resources/en';
 import { parseApplicationId } from '@/features/admin/tour-operator-applications/utils/applicationId';
 import { ROUTES } from '@/lib/routes';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 interface PageProps {
   params: Promise<{
@@ -13,10 +14,15 @@ interface PageProps {
 }
 
 export default async function TourOperatorApplicationDetailPage({ params }: PageProps) {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    return redirect(ROUTES.signIn);
+    return redirect(ROUTES.admin.login);
   }
 
   if (session.role === 'Staff') {

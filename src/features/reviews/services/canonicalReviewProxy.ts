@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { cookies } from 'next/headers';
-import { isSameOriginRequest } from '@/lib/server/sameOrigin';
+import { isSameOriginRequest } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
 import type { ReviewableRecordKind } from '../types/canonicalReview';
 import { isPositiveInt64 } from '../types/reviewableRecordId';

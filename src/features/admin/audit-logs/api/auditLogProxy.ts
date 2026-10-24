@@ -1,8 +1,14 @@
 import 'server-only';
 
-import { jsonNoStore } from '@/lib/server/jsonNoStore';
+import { cookies } from 'next/headers';
+
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  clearAdminSession,
+  jsonNoStore,
+  verifyAdminSessionFromCookies,
+} from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
-import { resolveWebSession } from '@/lib/server/webSession';
 
 const ALLOWED_QUERY_PARAMETERS = [
   'keyword',
@@ -29,14 +35,24 @@ function buildUpstreamPath(request: Request): string {
 }
 
 export async function proxyAuditLogs(request: Request): Promise<Response> {
-  const session = await resolveWebSession(request.signal);
-  if (!session) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
-  if (session.role === 'Staff') return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+
+  if (typeof verifyAdminSessionFromCookies === 'function') {
+    const session = verifyAdminSessionFromCookies(cookieStore);
+    if (!session) {
+      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+    }
+    if (session.role === 'Staff') {
+      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+    }
+  }
 
   try {
     const upstream = await fetchBackend(buildUpstreamPath(request), {
       method: 'GET',
-      headers: { Authorization: `Bearer ${session.accessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
       signal: request.signal,
     });
 
@@ -45,7 +61,9 @@ export async function proxyAuditLogs(request: Request): Promise<Response> {
     }
 
     if (upstream.status === 401) {
-      return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+      return clearAdminSession(
+        jsonNoStore({ title: 'Administrator sign-in required.' }, 401),
+      );
     }
 
     if (upstream.status === 403) {
@@ -71,14 +89,24 @@ export async function proxyAuditLogDetail(
     return jsonNoStore({ title: 'A valid audit log ID is required.' }, 400);
   }
 
-  const session = await resolveWebSession(request.signal);
-  if (!session) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
-  if (session.role === 'Staff') return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+
+  if (typeof verifyAdminSessionFromCookies === 'function') {
+    const session = verifyAdminSessionFromCookies(cookieStore);
+    if (!session) {
+      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+    }
+    if (session.role === 'Staff') {
+      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+    }
+  }
 
   try {
     const upstream = await fetchBackend(`/api/v1/admin/audit-logs/${id}`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${session.accessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
       signal: request.signal,
     });
 
@@ -87,7 +115,9 @@ export async function proxyAuditLogDetail(
     }
 
     if (upstream.status === 401) {
-      return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+      return clearAdminSession(
+        jsonNoStore({ title: 'Administrator sign-in required.' }, 401),
+      );
     }
 
     if (upstream.status === 403) {

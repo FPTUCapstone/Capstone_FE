@@ -56,10 +56,11 @@ describe('Backend-only Web sign-in', () => {
     };
     mocks.login.mockResolvedValue(context);
 
-    expect(await loginWithWebRecovery(input)).toBe(context);
+    expect(await loginWithWebRecovery(input, false)).toBe(context);
     expect(mocks.login).toHaveBeenCalledTimes(1);
     expect(mocks.login).toHaveBeenCalledWith(
       { email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true },
+      false,
     );
     // Firebase must never be touched by the Web password sign-in flow.
     expect(mocks.firebase).not.toHaveBeenCalled();
@@ -76,7 +77,7 @@ describe('Backend-only Web sign-in', () => {
   ])('propagates Backend failure %s without falling back to Firebase', async (code, status) => {
     const error = { code, status, message: 'internal detail' };
     mocks.login.mockRejectedValue(error);
-    await expect(loginWithWebRecovery(input)).rejects.toMatchObject({ code });
+    await expect(loginWithWebRecovery(input, false)).rejects.toMatchObject({ code });
     expect(mocks.firebase).not.toHaveBeenCalled();
     expect(mocks.send).not.toHaveBeenCalled();
     expect(mocks.verify).not.toHaveBeenCalled();
