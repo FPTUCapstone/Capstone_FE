@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoutDialog from "@/components/LogoutDialog";
 import { ROUTES } from "@/lib/routes";
+import { webLogout } from "@/lib/authApi";
+import { AuthStorage } from "@/features/auth/session/authSession";
 import { adminStaffEn } from "@/features/admin/staff/resources/en";
-import { signOutAdminSession } from "./services/adminSessionClient";
 
 const logoutErrorMessage = adminStaffEn.login.logoutError;
 
@@ -21,7 +22,8 @@ export default function AdminLogoutButton() {
     setErrorMessage(null);
 
     try {
-      await signOutAdminSession();
+      await webLogout();
+      AuthStorage.clear();
     } catch {
       setErrorMessage(logoutErrorMessage);
       return;
@@ -30,7 +32,7 @@ export default function AdminLogoutButton() {
     }
 
     setOpen(false);
-    router.replace(ROUTES.admin.login);
+    router.replace(ROUTES.signIn);
     router.refresh();
   };
 

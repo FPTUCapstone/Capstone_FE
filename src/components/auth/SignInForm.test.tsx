@@ -27,14 +27,6 @@ beforeEach(() => {
 describe('SignInForm Google access', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('does not offer Google in the administrator login', () => {
-    render(<SignInForm admin />);
-    expect(screen.queryByRole('button', { name: /continue with google/i })).toBeNull();
-    expect(screen.getByLabelText('Email address')).toBeDefined();
-    expect(screen.getByLabelText('Password')).toBeDefined();
-    expect(mocks.popup).not.toHaveBeenCalled();
-  });
-
   it('shows a useful message when public Google sign-in rejects an administrator', async () => {
     mocks.popup.mockResolvedValue({ user: { getIdToken: vi.fn().mockResolvedValue('firebase-token') } });
     mocks.webGoogleAuth.mockRejectedValue({
@@ -59,16 +51,15 @@ function enterPassword() {
 }
 describe('Web password sign-in', () => {
   beforeEach(() => vi.clearAllMocks());
-  it.each([false, true])('submits real public/Admin password login (%s)', async (admin) => {
-    mocks.webLogin.mockResolvedValue({ role: admin ? 'Administrator' : 'Traveler', status: 'Active' });
-    render(<SignInForm admin={admin} />); enterPassword();
+  it('submits the real password login through the single web route', async () => {
+    mocks.webLogin.mockResolvedValue({ role: 'Traveler', status: 'Active' });
+    render(<SignInForm />); enterPassword();
     fireEvent.click(screen.getByLabelText('Keep me signed in'));
     fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-    await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true }, admin));
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(admin ? '/admin' : '/'));
+    await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true }));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
     expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.saveTokens).not.toHaveBeenCalled();
-    expect(screen.queryByText('Open Admin Prototype')).toBeNull();
   });
   it('requires both fields without calling the API', async () => {
     render(<SignInForm />); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
@@ -84,9 +75,9 @@ describe('Web password sign-in', () => {
   });
   it('disables submit and inputs while waiting', async () => {
     let resolve!: (value: object) => void; mocks.webLogin.mockReturnValue(new Promise((done) => { resolve = done; }));
-    render(<SignInForm admin />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     await waitFor(() => expect((screen.getByLabelText('Email address') as HTMLInputElement).disabled).toBe(true));
-    resolve({ role: 'Administrator', status: 'Active' }); await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin'));
+    resolve({ role: 'Traveler', status: 'Active' }); await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
   });
 });
 
@@ -95,9 +86,9 @@ describe('Web password failures', () => {
   it.each([
     ['auth.account_locked', 'Your account is locked. Please contact support.'],
     ['auth.account_inactive', 'Your account is inactive. Please contact support.'],
-  ])('keeps account restriction %s ahead of Admin success', async (code, message) => {
+  ])('keeps account restriction %s ahead of a successful sign-in', async (code, message) => {
     mocks.webLogin.mockRejectedValue({ code, status: 403, message: 'internal detail' });
-    render(<SignInForm admin />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
     await waitFor(() => expect(screen.getByText(message)).toBeDefined());
     expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled();
   });
@@ -112,10 +103,10 @@ describe('Web password failures', () => {
     const { AuthStorage } = await import('@/features/auth/session/authSession');
     const context = { userId: 42, email: 'a@example.com', fullName: '', role: 'Traveler', status: 'Active', applicationStatus: null, accessToken: 'test-access', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z' };
     AuthStorage.accept(context, true); mocks.webLogin.mockImplementation(api.webLogin);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ errorCode: 'auth.admin_access_required' }), { status: 403 })));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ errorCode: 'auth.account_locked' }), { status: 403 })));
     try {
-      render(<SignInForm admin />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-      await waitFor(() => expect(screen.getByRole('link', { name: 'Go to public sign-in' })).toBeDefined());
+      render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+      await waitFor(() => expect(screen.getByText('Your account is locked. Please contact support.')).toBeDefined());
       await waitFor(() => expect(screen.getByRole('button', { name: /^sign in$/i }).hasAttribute('disabled')).toBe(false));
       expect(AuthStorage.getContext()?.userId).toBe(42); expect(AuthStorage.getAccessToken()).toBe('test-access');
       expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled();
@@ -334,11 +325,5 @@ describe('UC-06 forgot-password entry points', () => {
     render(<SignInForm />);
     const link = screen.getByRole('link', { name: /forgot password/i });
     expect(link.getAttribute('href')).toBe('/forgot-password');
-  });
-
-  it('keeps the administrator Forgot password link pointing to the admin recovery route', () => {
-    render(<SignInForm admin />);
-    const link = screen.getByRole('link', { name: /forgot password/i });
-    expect(link.getAttribute('href')).toBe('/admin/forgot-password');
   });
 });

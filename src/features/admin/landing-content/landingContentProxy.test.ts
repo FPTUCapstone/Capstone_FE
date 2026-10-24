@@ -1,39 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({ cookiesMock: vi.fn(), fetchBackendMock: vi.fn() }));
+const { resolveWebSessionMock, fetchBackendMock } = vi.hoisted(() => ({
+  resolveWebSessionMock: vi.fn(),
+  fetchBackendMock: vi.fn(),
+}));
 vi.mock('server-only', () => ({}));
-vi.mock('next/headers', () => ({ cookies: cookiesMock }));
+vi.mock('@/lib/server/webSession', () => ({ resolveWebSession: resolveWebSessionMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
-vi.mock('@/lib/server/adminSession', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/server/adminSession')>();
-  return { ...actual, verifyAdminSessionFromCookies: vi.fn(actual.verifyAdminSessionFromCookies) };
-});
 
-import {
-  ADMIN_ACCESS_TOKEN_COOKIE,
-  ADMIN_SESSION_SEAL_COOKIE,
-  ADMIN_SESSION_SECRET_ENV,
-  createAdminSessionSeal,
-  verifyAdminSessionFromCookies,
-} from '@/lib/server/adminSession';
 import { proxyLandingContent } from './landingContentProxy';
 
-const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
 const UPSTREAM = '/api/v1/admin/landing-content';
 const SAME_ORIGIN = 'http://localhost:3000';
 const ROUTE_URL = `${SAME_ORIGIN}/api/admin/landing-content`;
 
-function cookieJar(token?: string, role: 'Administrator' | 'Staff' = 'Administrator') {
-  const sealed = token
-    ? createAdminSessionSeal({ token, role, expiresAt: new Date(Date.now() + 10 * 60 * 1000), secret: TEST_SECRET })
-    : null;
-  return {
-    get: (name: string) => {
-      if (name === ADMIN_ACCESS_TOKEN_COOKIE && token) return { value: token };
-      if (name === ADMIN_SESSION_SEAL_COOKIE && sealed) return { value: sealed.seal };
-      return undefined;
-    },
-  };
+function mockSession(role: string | null, accessToken = 'admin-token') {
+  resolveWebSessionMock.mockResolvedValue(role ? { accessToken, role } : null);
 }
 
 function makeRequest(
@@ -52,18 +34,9 @@ function upstreamReply(status: number, body: unknown = {}) {
   );
 }
 
-let priorSecret: string | undefined;
-
 beforeEach(() => {
-  priorSecret = process.env[ADMIN_SESSION_SECRET_ENV];
-  process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
-  cookiesMock.mockResolvedValue(cookieJar('admin-token'));
-});
-
-afterEach(() => {
   vi.clearAllMocks();
-  if (priorSecret === undefined) delete process.env[ADMIN_SESSION_SECRET_ENV];
-  else process.env[ADMIN_SESSION_SECRET_ENV] = priorSecret;
+  mockSession('Administrator');
 });
 
 describe('landing content proxy', () => {
@@ -79,37 +52,22 @@ describe('landing content proxy', () => {
   });
 
   it('forwards a Staff session as well', async () => {
-    cookiesMock.mockResolvedValue(cookieJar('staff-token', 'Staff'));
+    mockSession('Staff', 'staff-token');
     upstreamReply(200);
     const res = await proxyLandingContent(makeRequest('GET'), ['approved-tours']);
     expect(res.status).toBe(200);
     expect(fetchBackendMock.mock.calls[0][0]).toBe(`${UPSTREAM}/approved-tours`);
   });
 
-  it('returns 401 without a backend call when the cookie is missing', async () => {
-    cookiesMock.mockResolvedValue(cookieJar(undefined));
+  it('returns 401 without a backend call when there is no web session', async () => {
+    mockSession(null);
     const res = await proxyLandingContent(makeRequest('GET'), undefined);
     expect(res.status).toBe(401);
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it('returns 401 when the session seal is invalid', async () => {
-    cookiesMock.mockResolvedValue({
-      get: (name: string) => (name === ADMIN_ACCESS_TOKEN_COOKIE ? { value: 'unsealed' } : undefined),
-    });
-    const res = await proxyLandingContent(makeRequest('GET'), undefined);
-    expect(res.status).toBe(401);
-    expect(fetchBackendMock).not.toHaveBeenCalled();
-  });
-
-  it('defense in depth: returns 403 if the verifier ever yields a role other than Administrator or Staff', async () => {
-    vi.mocked(verifyAdminSessionFromCookies).mockReturnValueOnce({
-      role: 'Operator',
-      userId: 1,
-      issuedAtMs: 0,
-      expiresAtMs: Date.now() + 60_000,
-      tokenFingerprint: 'x',
-    } as never);
+  it('defense in depth: returns 403 if the resolver ever yields a role other than Administrator or Staff', async () => {
+    mockSession('Operator');
     const res = await proxyLandingContent(makeRequest('GET'), undefined);
     expect(res.status).toBe(403);
     expect(fetchBackendMock).not.toHaveBeenCalled();

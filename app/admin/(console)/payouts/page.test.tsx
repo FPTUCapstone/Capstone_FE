@@ -1,117 +1,49 @@
-import { render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
 const mocks = vi.hoisted(() => ({
-  getCookie: vi.fn(),
+  resolveWebSession: vi.fn(),
   redirect: vi.fn(),
+  notFound: vi.fn(),
 }));
 
-vi.mock('next/headers', () => ({
-  cookies: async () => ({ get: mocks.getCookie }),
-}));
-vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
-vi.mock('@/features/admin/payout-records/PayoutRecordsScreen', () => ({
-  PayoutRecordsScreen: () => <div>PayoutRecordsScreenMock</div>,
-}));
+vi.mock('@/lib/server/webSession', () => ({ resolveWebSession: mocks.resolveWebSession }));
+vi.mock('next/navigation', () => ({ redirect: mocks.redirect, notFound: mocks.notFound }));
+vi.mock('@/features/admin/payout-records/PayoutRecordsScreen', () => ({ PayoutRecordsScreen: () => null }));
 
-import {
-  ADMIN_ACCESS_TOKEN_COOKIE,
-  ADMIN_SESSION_SEAL_COOKIE,
-  ADMIN_SESSION_SECRET_ENV,
-  createAdminSessionSeal,
-} from '@/lib/server/adminSession';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
+import { PayoutRecordsScreen } from '@/features/admin/payout-records/PayoutRecordsScreen';
 import PayoutsPage from './page';
 
-const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
-
-function mockSealedSession(role: 'Administrator' | 'Staff', token = 'valid-backend-token') {
-  const sealed = createAdminSessionSeal({
-    token,
-    role,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    secret: TEST_SECRET,
-  })!;
-  mocks.getCookie.mockImplementation((name: string) => {
-    if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: token };
-    if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: sealed.seal };
-    return undefined;
-  });
-}
-
-describe('UC-63 protected payout review route', () => {
-  let priorSecret: string | undefined;
-
+describe('PayoutsPage protected route', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    priorSecret = process.env[ADMIN_SESSION_SECRET_ENV];
-    process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
   });
 
-  afterEach(() => {
-    if (priorSecret === undefined) delete process.env[ADMIN_SESSION_SECRET_ENV];
-    else process.env[ADMIN_SESSION_SECRET_ENV] = priorSecret;
+  it('redirects to sign-in when there is no administration session', async () => {
+    mocks.resolveWebSession.mockResolvedValue(null);
+
+    await PayoutsPage();
+
+    expect(mocks.redirect).toHaveBeenCalledWith('/sign-in?returnUrl=%2Fadmin%2Fpayouts');
   });
 
-  it('redirects missing, malformed, expired, or token-mismatched sessions before the Staff screen renders', async () => {
-    mocks.getCookie.mockReturnValue(undefined);
-    await PayoutsPage();
-    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fpayouts');
+  it.each(['Staff'])('renders the page view for an allowed %s session', async (role) => {
+    mocks.resolveWebSession.mockResolvedValue({ accessToken: 'tok', role });
 
-    mocks.redirect.mockClear();
-    const now = Date.now();
-    const expired = createAdminSessionSeal({
-      token: 'expired-token',
-      role: 'Staff',
-      expiresAt: new Date(now - 60_000),
-      nowMs: now - 120_000,
-      secret: TEST_SECRET,
-    })!;
-    mocks.getCookie.mockImplementation((name: string) => {
-      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'expired-token' };
-      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: expired.seal };
-      return undefined;
-    });
-    await PayoutsPage();
-    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fpayouts');
+    const view = await PayoutsPage();
 
-    mocks.redirect.mockClear();
-    mocks.getCookie.mockImplementation((name: string) =>
-      name === ADMIN_ACCESS_TOKEN_COOKIE ? { value: 'unsealed-token' } : undefined,
-    );
-    await PayoutsPage();
-    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fpayouts');
-
-    mocks.redirect.mockClear();
-    mockSealedSession('Staff', 'sealed-token');
-    mocks.getCookie.mockImplementation((name: string) => {
-      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'modified-token' };
-      const sealed = createAdminSessionSeal({
-        token: 'sealed-token',
-        role: 'Staff',
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        secret: TEST_SECRET,
-      })!;
-      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: sealed.seal };
-      return undefined;
-    });
-    await PayoutsPage();
-    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fpayouts');
-  });
-
-  it('renders the Staff review screen for a valid Staff session', async () => {
-    mockSealedSession('Staff');
-    render(await PayoutsPage());
     expect(mocks.redirect).not.toHaveBeenCalled();
-    expect(screen.getByText('PayoutRecordsScreenMock')).toBeTruthy();
+    expect(view?.type).toBe(PayoutRecordsScreen);
   });
 
-  it('blocks a valid Administrator session before Staff data or actions render', async () => {
-    mockSealedSession('Administrator');
-    render(await PayoutsPage());
+  it.each(['Administrator'])('renders AdminAccessDeniedView for a %s session', async (role) => {
+    mocks.resolveWebSession.mockResolvedValue({ accessToken: 'tok', role });
+
+    const view = await PayoutsPage();
+
     expect(mocks.redirect).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { name: 'Staff Access Required' })).toBeTruthy();
-    expect(screen.queryByText('PayoutRecordsScreenMock')).toBeNull();
+    expect(view?.type).toBe(AdminAccessDeniedView);
   });
 });

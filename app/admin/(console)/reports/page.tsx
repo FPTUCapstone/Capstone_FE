@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { StatisticalReportsView } from '@/features/admin/reports/components/StatisticalReportsView';
@@ -7,7 +6,7 @@ import { resolveStatisticalWorkspaceMode } from '@/features/admin/reports/guards
 import { statisticalReportsEn } from '@/features/admin/reports/resources/en';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { ROUTES } from '@/lib/routes';
-import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
+import { resolveWebSession } from '@/lib/server/webSession';
 
 export const metadata: Metadata = {
   title: statisticalReportsEn.metadata.title,
@@ -19,15 +18,10 @@ export interface StatisticalReportsPageProps {
 }
 
 export default async function StatisticalReportsPage(props: StatisticalReportsPageProps) {
-  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
-  try {
-    session = verifyAdminSessionFromCookies(await cookies());
-  } catch {
-    session = null;
-  }
+  const session = await resolveWebSession();
 
   if (!session) {
-    return redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.reports)}`);
+    return redirect(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.admin.reports)}`);
   }
 
   if (session.role === 'Staff') {

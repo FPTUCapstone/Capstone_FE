@@ -56,7 +56,7 @@ export function AlgorithmConfigForm() {
       .catch((error) => {
         if (!isMounted) return;
         if (error instanceof AlgorithmConfigError && error.status === 401) {
-          router.replace(`/admin/login?returnUrl=${encodeURIComponent(ROUTE)}`);
+          router.replace(`/sign-in?returnUrl=${encodeURIComponent(ROUTE)}`);
           return;
         }
         if (error instanceof AlgorithmConfigError && error.status === 403) {
@@ -108,7 +108,7 @@ export function AlgorithmConfigForm() {
       setFeedback({ tone: 'success', message: CONFIG_MESSAGES.success });
     } catch (error) {
       if (error instanceof AlgorithmConfigError && error.status === 401) {
-        router.replace(`/admin/login?returnUrl=${encodeURIComponent(ROUTE)}`);
+        router.replace(`/sign-in?returnUrl=${encodeURIComponent(ROUTE)}`);
         return;
       }
       if (error instanceof AlgorithmConfigError && error.status === 403) {

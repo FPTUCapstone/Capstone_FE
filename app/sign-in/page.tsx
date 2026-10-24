@@ -5,7 +5,13 @@ import LoginForm from "@/components/LoginForm";
 
 export const metadata: Metadata = { title: "Đăng nhập" };
 
-export default function SignInPage() {
+interface SignInPageProps {
+  searchParams: Promise<{ returnUrl?: string | string[] }>;
+}
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const { returnUrl } = await searchParams;
+  const safeReturnUrl = typeof returnUrl === "string" ? returnUrl : undefined;
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr]">
       {/* LEFT: HERO */}
@@ -32,7 +38,7 @@ export default function SignInPage() {
         </div>
 
         <div className="w-full max-w-[480px]">
-          <LoginForm />
+          <LoginForm returnUrl={safeReturnUrl} />
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
             Bằng việc đăng nhập, bạn đã đồng ý với các điều khoản của TripMate.

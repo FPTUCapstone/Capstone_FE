@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { isValidPayoutId } from '@/features/admin/payout-review/payoutReview';
 import { PayoutReviewScreen } from '@/features/admin/payout-review/PayoutReviewScreen';
-import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
+import { resolveWebSession } from '@/lib/server/webSession';
 import { ROUTES } from '@/lib/routes';
 
 interface PageProps {
@@ -21,15 +20,10 @@ export default async function PayoutReviewPage({ params }: PageProps) {
   const { payoutId } = await params;
   if (!isValidPayoutId(payoutId)) notFound();
 
-  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
-  try {
-    session = verifyAdminSessionFromCookies(await cookies());
-  } catch {
-    session = null;
-  }
+  const session = await resolveWebSession();
 
   if (!session) {
-    redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.payoutDetails(payoutId))}`);
+    redirect(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.admin.payoutDetails(payoutId))}`);
     return null;
   }
 

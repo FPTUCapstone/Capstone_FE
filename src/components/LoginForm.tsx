@@ -9,7 +9,12 @@ import { ROUTES } from "@/lib/routes";
 
 import FormField from "./FormField";
 
-export default function LoginForm() {
+type LoginFormProps = {
+  /** Raw `returnUrl` from the sign-in query string. */
+  returnUrl?: string;
+};
+
+export default function LoginForm({ returnUrl }: LoginFormProps) {
   const {
     email,
     password,
@@ -29,7 +34,7 @@ export default function LoginForm() {
     handleSubmit,
     handleGoogle,
     handleResendEmail,
-  } = useSignInEngine();
+  } = useSignInEngine({ returnUrl });
 
   return (
     <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">

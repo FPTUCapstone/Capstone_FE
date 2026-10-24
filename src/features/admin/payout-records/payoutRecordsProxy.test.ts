@@ -1,47 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({ cookiesMock: vi.fn(), fetchBackendMock: vi.fn() }));
+const { resolveWebSessionMock, fetchBackendMock } = vi.hoisted(() => ({
+  resolveWebSessionMock: vi.fn(),
+  fetchBackendMock: vi.fn(),
+}));
 vi.mock('server-only', () => ({}));
-vi.mock('next/headers', () => ({ cookies: cookiesMock }));
+vi.mock('@/lib/server/webSession', () => ({ resolveWebSession: resolveWebSessionMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
 
-import {
-  ADMIN_ACCESS_TOKEN_COOKIE,
-  ADMIN_SESSION_SEAL_COOKIE,
-  ADMIN_SESSION_SECRET_ENV,
-  createAdminSessionSeal,
-} from '@/lib/server/adminSession';
 import { proxyPayoutRecords } from './payoutRecordsProxy';
 
-const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
-
-function mockSealedCookies(role: 'Administrator' | 'Staff', token = 'admin-token') {
-  const sealed = createAdminSessionSeal({
-    token,
-    role,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    secret: TEST_SECRET,
-  })!;
-  cookiesMock.mockResolvedValue({
-    get: (name: string) => {
-      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: token };
-      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: sealed.seal };
-      return undefined;
-    },
-  });
+function mockSession(role: 'Administrator' | 'Staff' | null, accessToken = 'admin-token') {
+  resolveWebSessionMock.mockResolvedValue(role ? { accessToken, role } : null);
 }
-
-let priorSecret: string | undefined;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  priorSecret = process.env[ADMIN_SESSION_SECRET_ENV];
-  process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
-  mockSealedCookies('Staff');
-});
-afterEach(() => {
-  if (priorSecret === undefined) delete process.env[ADMIN_SESSION_SECRET_ENV];
-  else process.env[ADMIN_SESSION_SECRET_ENV] = priorSecret;
+  mockSession('Staff');
 });
 
 function requestWithQuery(query: string) {
@@ -58,57 +33,29 @@ describe('payout records proxy', () => {
     expect(init.headers.Authorization).toBe('Bearer admin-token');
   });
 
-  it('answers 401 without contacting the backend when the signed session is missing, malformed, or expired', async () => {
-    cookiesMock.mockResolvedValue({ get: () => undefined });
+  it('answers 401 without contacting the backend when there is no web session', async () => {
+    mockSession(null);
     const res = await proxyPayoutRecords(requestWithQuery(''));
     expect(res.status).toBe(401);
-    expect(fetchBackendMock).not.toHaveBeenCalled();
-
-    cookiesMock.mockResolvedValue({
-      get: (name: string) => name === ADMIN_ACCESS_TOKEN_COOKIE ? { value: 'admin-token' } : undefined,
-    });
-    const malformed = await proxyPayoutRecords(requestWithQuery(''));
-    expect(malformed.status).toBe(401);
-    expect(fetchBackendMock).not.toHaveBeenCalled();
-
-    const now = Date.now();
-    const expired = createAdminSessionSeal({
-      token: 'expired-token',
-      role: 'Staff',
-      expiresAt: new Date(now - 60_000),
-      nowMs: now - 120_000,
-      secret: TEST_SECRET,
-    })!;
-    cookiesMock.mockResolvedValue({
-      get: (name: string) => {
-        if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: 'expired-token' };
-        if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: expired.seal };
-        return undefined;
-      },
-    });
-    const expiredResponse = await proxyPayoutRecords(requestWithQuery(''));
-    expect(expiredResponse.status).toBe(401);
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
   it('rejects Administrator before calling the Staff review endpoint', async () => {
-    mockSealedCookies('Administrator');
+    mockSession('Administrator');
     const res = await proxyPayoutRecords(requestWithQuery(''));
     expect(res.status).toBe(403);
     expect(fetchBackendMock).not.toHaveBeenCalled();
     expect(res.headers.getSetCookie()).toHaveLength(0);
   });
 
-  it('clears the admin session cookie only when upstream answers 401', async () => {
+  it('answers 401 when upstream rejects the token, without setting cookies', async () => {
     fetchBackendMock.mockResolvedValue(new Response('denied', { status: 401 }));
     const res = await proxyPayoutRecords(requestWithQuery(''));
     expect(res.status).toBe(401);
-    const cookies = res.headers.getSetCookie();
-    expect(cookies.some(c => c.startsWith(`${ADMIN_ACCESS_TOKEN_COOKIE}=`) && c.includes('Max-Age=0'))).toBe(true);
-    expect(cookies.some(c => c.startsWith(`${ADMIN_SESSION_SEAL_COOKIE}=`) && c.includes('Max-Age=0'))).toBe(true);
+    expect(res.headers.getSetCookie()).toHaveLength(0);
   });
 
-  it('preserves a valid admin session when upstream answers 403', async () => {
+  it('passes upstream 403 through without setting cookies', async () => {
     fetchBackendMock.mockResolvedValue(new Response('denied', { status: 403 }));
     const res = await proxyPayoutRecords(requestWithQuery(''));
     expect(res.status).toBe(403);

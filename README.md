@@ -132,7 +132,7 @@ The SRS permits future approved feature modules under `src/features/public`, `sr
 
 ### Admin Web
 
-- `/admin/login` — Real Administrator sign-in through the backend; access token is held in an HttpOnly cookie
+- `/admin/login` — Redirects to `/sign-in`, where Administrators and Staff sign in with the same form as every other role; the server resolves the access token from the HttpOnly refresh cookie for each admin request
 - `/admin/catalogue/points-of-interest/new` — UC-52 Create POI with live catalogue IDs, API validation and duplicate confirmation
 - `/admin/forgot-password` — Progressive Administrator password-recovery prototype
 - `/admin` — Administrator dashboard

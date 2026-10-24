@@ -1,28 +1,15 @@
 import 'server-only';
-import { cookies } from 'next/headers';
 import { fetchBackend } from '@/lib/server/backend';
-import {
-  ADMIN_ACCESS_TOKEN_COOKIE,
-  clearAdminSession,
-  isSameOriginRequest,
-  jsonNoStore,
-  verifyAdminSessionFromCookies,
-} from '@/lib/server/adminSession';
+import { jsonNoStore } from '@/lib/server/jsonNoStore';
+import { isSameOriginRequest } from '@/lib/server/sameOrigin';
+import { resolveWebSession } from '@/lib/server/webSession';
 
 export async function proxyPoi(request: Request, path: '/api/v1/admin/pois' | '/api/v1/admin/pois/catalogue') {
   if (request.method !== 'GET' && !isSameOriginRequest(request)) return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return jsonNoStore({ title: 'Staff sign-in required.' }, 401);
-  if (typeof verifyAdminSessionFromCookies === 'function') {
-    const session = verifyAdminSessionFromCookies(cookieStore);
-    if (!session) {
-      return clearAdminSession(jsonNoStore({ title: 'Staff sign-in required.' }, 401));
-    }
-    if (session.role !== 'Staff') {
-      return jsonNoStore({ title: 'Staff access is required.' }, 403);
-    }
-  }
+  const session = await resolveWebSession(request.signal);
+  if (!session) return jsonNoStore({ title: 'Staff sign-in required.' }, 401);
+  if (session.role !== 'Staff') return jsonNoStore({ title: 'Staff access is required.' }, 403);
+  const token = session.accessToken;
   let body: string | undefined;
   if (request.method === 'POST') {
     if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return jsonNoStore({ title: 'JSON content is required.' }, 415);
@@ -33,7 +20,7 @@ export async function proxyPoi(request: Request, path: '/api/v1/admin/pois' | '/
     const upstream = await fetchBackend(path, { method: request.method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body });
     if (upstream.status >= 500) return jsonNoStore({ title: 'The POI service is unavailable. The save could not be confirmed.' }, 503);
     if (upstream.status === 401) {
-      return clearAdminSession(jsonNoStore({ title: 'Staff sign-in required.' }, 401));
+      return jsonNoStore({ title: 'Staff sign-in required.' }, 401);
     }
     if (upstream.status === 403) {
       return jsonNoStore({ title: 'Staff access is required.' }, 403);

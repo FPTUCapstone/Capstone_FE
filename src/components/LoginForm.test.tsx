@@ -27,6 +27,7 @@ vi.mock('@/lib/authApi', async (importOriginal) => ({
   webResendVerification: mocks.webResendVerification,
 }));
 
+import { ROUTES } from '@/lib/routes';
 import LoginForm from './LoginForm';
 
 describe('LoginForm production sign-in route', () => {
@@ -75,5 +76,34 @@ describe('LoginForm production sign-in route', () => {
     expect(await screen.findByText(
       'A fresh verification link has been sent to your email. Please check your inbox.',
     )).toBeDefined();
+  });
+});
+
+describe('LoginForm post sign-in destination', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  async function signInAs(role: string, returnUrl?: string) {
+    mocks.webLogin.mockResolvedValue({ role, status: 'Active', applicationStatus: null });
+    render(<LoginForm returnUrl={returnUrl} />);
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'user@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^Mật khẩu/), { target: { value: 'secret-pass' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledTimes(1));
+    return mocks.replace.mock.calls[0]?.[0];
+  }
+
+  it.each([
+    ['Administrator', '/admin/audit-logs', '/admin/audit-logs'],
+    ['Administrator', 'https://attacker.example/admin', '/admin'],
+    ['Administrator', '/admin/login', '/admin'],
+    ['Administrator', undefined, '/admin'],
+    ['Staff', '/admin/payouts', '/admin/payouts'],
+    ['Staff', '/admin/reports', '/admin/staff'],
+    ['Staff', undefined, '/admin/staff'],
+    ['Traveler', '/admin/audit-logs', ROUTES.home],
+  ])('signs %s in and lands on %s as %s', async (role, returnUrl, expected) => {
+    expect(await signInAs(role, returnUrl)).toBe(expected);
   });
 });

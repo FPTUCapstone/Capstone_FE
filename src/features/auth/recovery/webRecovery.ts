@@ -20,12 +20,9 @@ const normalize = (email: string) => email.trim().toLowerCase();
  * the authoritative source of that decision — re-asking Firebase to "evidence"
  * it would amount to a second password authority and is intentionally absent.
  */
-export async function loginWithWebRecovery(
-  input: WebLoginRequest,
-  administrator: boolean,
-): Promise<WebAuthContext> {
+export async function loginWithWebRecovery(input: WebLoginRequest): Promise<WebAuthContext> {
   const request = { ...input, email: normalize(input.email) };
-  return webLogin(request, administrator);
+  return webLogin(request);
 }
 
 /**

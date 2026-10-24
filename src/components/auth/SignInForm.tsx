@@ -10,11 +10,7 @@ import { ROUTES } from '@/lib/routes';
 import { GoogleConsentModal } from '@/features/auth/google/GoogleConsentModal';
 import { useSignInEngine } from '@/features/auth/sign-in/useSignInEngine';
 
-type SignInFormProps = {
-  admin?: boolean;
-};
-
-export function SignInForm({ admin = false }: SignInFormProps) {
+export function SignInForm() {
   const {
     email,
     password,
@@ -34,7 +30,7 @@ export function SignInForm({ admin = false }: SignInFormProps) {
     handleSubmit,
     handleGoogle,
     handleResendEmail,
-  } = useSignInEngine({ admin });
+  } = useSignInEngine();
 
   const [loginMethod, setLoginMethod] = useState<'email' | 'otp'>('email');
 
@@ -77,7 +73,7 @@ export function SignInForm({ admin = false }: SignInFormProps) {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder={admin ? 'admin@tripmate.com' : 'phuc.nguyen@gmail.com'}
+          placeholder="phuc.nguyen@gmail.com"
           value={email}
           disabled={loading}
           error={errors.email}
@@ -98,7 +94,7 @@ export function SignInForm({ admin = false }: SignInFormProps) {
           <CheckboxField name="remember" checked={remember} disabled={loading} onChange={(event) => setRemember(event.target.checked)}>
             Keep me signed in
           </CheckboxField>
-          <Link href={admin ? ROUTES.admin.forgotPassword : ROUTES.forgotPassword} className="font-semibold text-[#1D4ED8] hover:underline">
+          <Link href={ROUTES.forgotPassword} className="font-semibold text-[#1D4ED8] hover:underline">
             Forgot password?
           </Link>
         </div>
@@ -108,29 +104,22 @@ export function SignInForm({ admin = false }: SignInFormProps) {
         </ActionButton>
       </form>
 
-      {!admin ? (
-        <>
-          <div className="my-4 flex items-center gap-3 text-xs text-[#6B7C97]" aria-hidden="true">
-            <span className="h-px flex-1 bg-[#E1E8F3]" /> or continue with <span className="h-px flex-1 bg-[#E1E8F3]" />
-          </div>
-          <ActionButton type="button" variant="outline" loading={loading} className="w-full font-semibold" onClick={() => { if (!loading) setGoogleConsent(true); }}>
-            <span className="text-base font-bold text-[#4285f4]" aria-hidden="true">G</span>
-            Continue with Google
-          </ActionButton>
-          <div className="mt-5 text-center text-xs text-[#6B7C97]">
-            New to TripMate?{' '}
-            <Link href={ROUTES.register} className="font-semibold text-[#1D4ED8] hover:underline">Create an account</Link>
-          </div>
-        </>
-      ) : null}
+      <div className="my-4 flex items-center gap-3 text-xs text-[#6B7C97]" aria-hidden="true">
+        <span className="h-px flex-1 bg-[#E1E8F3]" /> or continue with <span className="h-px flex-1 bg-[#E1E8F3]" />
+      </div>
+      <ActionButton type="button" variant="outline" loading={loading} className="w-full font-semibold" onClick={() => { if (!loading) setGoogleConsent(true); }}>
+        <span className="text-base font-bold text-[#4285f4]" aria-hidden="true">G</span>
+        Continue with Google
+      </ActionButton>
+      <div className="mt-5 text-center text-xs text-[#6B7C97]">
+        New to TripMate?{' '}
+        <Link href={ROUTES.register} className="font-semibold text-[#1D4ED8] hover:underline">Create an account</Link>
+      </div>
 
-      {googleConsent && !admin ? <GoogleConsentModal onCancel={() => setGoogleConsent(false)} onAgree={handleGoogle} /> : null}
+      {googleConsent ? <GoogleConsentModal onCancel={() => setGoogleConsent(false)} onAgree={handleGoogle} /> : null}
       {feedback ? (
         <div className="mt-4 space-y-3">
           <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert>
-          {admin && feedback.tone === 'error' ? (
-            <Link href={ROUTES.signIn} className="font-semibold text-[#1D4ED8] hover:underline">Go to public sign-in</Link>
-          ) : null}
           {googlePasswordHint ? <Link href={ROUTES.signIn} className="font-semibold text-[#1D4ED8] hover:underline">Sign in with email and password</Link> : null}
           {unverifiedEmail ? (
             <div className="flex flex-col gap-2 rounded-xl border border-[#E1E8F3] bg-[#F4F7FC] p-3 text-xs text-[#6B7C97]">
