@@ -56,7 +56,7 @@ describe('Web password sign-in', () => {
     render(<PublicSignInForm />); enterPassword();
     fireEvent.click(screen.getByLabelText('Ghi nhớ đăng nhập'));
     fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
-    await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true }));
+    await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true }, false));
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
     expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.saveTokens).not.toHaveBeenCalled();

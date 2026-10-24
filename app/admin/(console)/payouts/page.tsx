@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { PayoutRecordsScreen } from '@/features/admin/payout-records/PayoutRecordsScreen';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 import { ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = {
@@ -12,10 +13,15 @@ export const metadata: Metadata = {
 };
 
 export default async function PayoutsPage() {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    redirect(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.admin.payouts)}`);
+    redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.payouts)}`);
     return null;
   }
 

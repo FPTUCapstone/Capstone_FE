@@ -10,9 +10,20 @@ import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { StaffDashboardView } from '@/features/admin/staff/components/StaffDashboardView';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
+import { createAdminSessionSeal, parseAdminRoleFromToken } from '@/lib/server/adminSession';
 
 const VIETNAMESE_DIACRITIC_REGEX =
   /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+
+const TEST_SESSION_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString(
+  'base64url',
+);
+
+function createJwtWithRole(role: string, claimKey = 'role'): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ sub: '15', [claimKey]: role })).toString('base64url');
+  return `${header}.${payload}.signature`;
+}
 
 describe('Screen #35 StaffDashboardView and Administration Role Foundation', () => {
   it('renders Screen #35 Staff Operations Dashboard with 100% English resource-backed copy and no Vietnamese characters', () => {
@@ -161,5 +172,50 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     });
     expect(staffLink.getAttribute('href')).toBe('/admin/staff');
     expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
+  });
+
+  it('requires a valid BFF HMAC session seal to resolve Staff or Administrator roles and rejects unsealed or non-administration tokens', () => {
+    const nowMs = Date.parse('2026-10-09T02:00:00.000Z');
+    const expiresAt = new Date(nowMs + 10 * 60 * 1000);
+    const staffToken = createJwtWithRole('Staff');
+    const adminToken = createJwtWithRole('Administrator');
+
+    const staffSeal = createAdminSessionSeal({
+      token: staffToken,
+      role: 'Staff',
+      expiresAt,
+      nowMs,
+      secret: TEST_SESSION_SECRET,
+    })!;
+    const adminSeal = createAdminSessionSeal({
+      token: adminToken,
+      role: 'Administrator',
+      expiresAt,
+      nowMs,
+      secret: TEST_SESSION_SECRET,
+    })!;
+
+    expect(
+      parseAdminRoleFromToken(staffToken, staffSeal.seal, {
+        nowMs: nowMs + 1000,
+        secret: TEST_SESSION_SECRET,
+      }),
+    ).toBe('Staff');
+    expect(
+      parseAdminRoleFromToken(adminToken, adminSeal.seal, {
+        nowMs: nowMs + 1000,
+        secret: TEST_SESSION_SECRET,
+      }),
+    ).toBe('Administrator');
+
+    // Unsealed tokens, hardcoded strings, and non-administration roles fail closed
+    expect(parseAdminRoleFromToken(staffToken)).toBeNull();
+    expect(parseAdminRoleFromToken(adminToken)).toBeNull();
+    expect(parseAdminRoleFromToken('staff-only-token')).toBeNull();
+    expect(parseAdminRoleFromToken('server-only-token')).toBeNull();
+    expect(parseAdminRoleFromToken(createJwtWithRole('Traveler'))).toBeNull();
+    expect(parseAdminRoleFromToken(createJwtWithRole('TourOperator'))).toBeNull();
+    expect(parseAdminRoleFromToken('')).toBeNull();
+    expect(parseAdminRoleFromToken(null)).toBeNull();
   });
 });

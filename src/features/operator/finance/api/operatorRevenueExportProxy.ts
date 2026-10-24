@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-import { isSameOriginRequest } from '@/lib/server/sameOrigin';
+import { isSameOriginRequest } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
 
 const REFRESH_COOKIE = 'tripmate_refresh';

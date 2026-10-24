@@ -1,23 +1,40 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { resolveWebSessionMock, fetchBackendMock } = vi.hoisted(() => ({
-  resolveWebSessionMock: vi.fn(),
-  fetchBackendMock: vi.fn(),
-}));
-vi.mock('@/lib/server/webSession', () => ({
-  WEB_REFRESH_COOKIE: 'tripmate_refresh',
-  resolveWebSession: resolveWebSessionMock,
-}));
+const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({ cookiesMock: vi.fn(), fetchBackendMock: vi.fn() }));
+vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
 
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  ADMIN_SESSION_SEAL_COOKIE,
+  ADMIN_SESSION_SECRET_ENV,
+  createAdminSessionSeal,
+  verifyAdminSessionFromCookies,
+} from '@/lib/server/adminSession';
 import { proxyAdminChangePassword } from './changePasswordProxy';
 
+const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
 const UPSTREAM = '/api/v1/auth/web/change-password';
 const SAME_ORIGIN = 'http://localhost:3000';
 const ROUTE_URL = `${SAME_ORIGIN}/api/admin/account/security/change-password`;
 
-function mockSession(role: 'Administrator' | 'Staff' | null, accessToken = 'admin-token') {
-  resolveWebSessionMock.mockResolvedValue(role ? { accessToken, role } : null);
+function cookieJar(token?: string, role: 'Administrator' | 'Staff' = 'Administrator', includeSeal = true) {
+  const sealed =
+    token && includeSeal
+      ? createAdminSessionSeal({
+          token,
+          role,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          secret: TEST_SECRET,
+        })
+      : null;
+  return {
+    get: (name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE && token) return { value: token };
+      if (name === ADMIN_SESSION_SEAL_COOKIE && sealed) return { value: sealed.seal };
+      return undefined;
+    },
+  };
 }
 
 function jsonRequest(init: { origin?: string; body?: unknown; contentType?: string } = {}) {
@@ -33,18 +50,21 @@ function jsonRequest(init: { origin?: string; body?: unknown; contentType?: stri
   });
 }
 
-function successReply(setCookie?: string) {
-  const headers: Record<string, string> = {};
-  if (setCookie) headers['Set-Cookie'] = setCookie;
-  return new Response(
-    JSON.stringify({ success: true, data: { accessToken: 'next-token', accessTokenExpiresAtUtc: new Date(Date.now() + 5 * 60 * 1000).toISOString() } }),
-    { status: 200, headers },
-  );
-}
+let priorSecret: string | undefined;
 
 beforeEach(() => {
+  priorSecret = process.env[ADMIN_SESSION_SECRET_ENV];
+  process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
+  cookiesMock.mockResolvedValue(cookieJar('admin-token'));
+});
+
+afterEach(() => {
   vi.clearAllMocks();
-  mockSession('Administrator');
+  if (priorSecret === undefined) {
+    delete process.env[ADMIN_SESSION_SECRET_ENV];
+  } else {
+    process.env[ADMIN_SESSION_SECRET_ENV] = priorSecret;
+  }
 });
 
 describe('admin change-password proxy', () => {
@@ -54,28 +74,63 @@ describe('admin change-password proxy', () => {
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it('forwards a Staff session to the backend with the resolved bearer', async () => {
-    mockSession('Staff', 'staff-token');
-    fetchBackendMock.mockResolvedValue(successReply());
+  it('forwards a verified Staff session to the backend', async () => {
+    cookiesMock.mockResolvedValue(cookieJar('staff-token', 'Staff'));
+    fetchBackendMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            accessToken: 'next-token',
+            accessTokenExpiresAtUtc: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          },
+        }),
+        { status: 200 },
+      ),
+    );
 
     const res = await proxyAdminChangePassword(jsonRequest());
-
     expect(res.status).toBe(200);
     expect(fetchBackendMock).toHaveBeenCalledOnce();
     expect(fetchBackendMock.mock.calls[0]?.[1]).toMatchObject({
       headers: expect.objectContaining({ Authorization: 'Bearer staff-token' }),
     });
+
+    const setCookies = res.headers.getSetCookie?.() ?? [res.headers.get('set-cookie') ?? ''];
+    const replacementToken = setCookies
+      .find((cookie) => cookie.startsWith(`${ADMIN_ACCESS_TOKEN_COOKIE}=`))
+      ?.split(';')[0]
+      ?.split('=')[1];
+    const replacementSeal = setCookies
+      .find((cookie) => cookie.startsWith(`${ADMIN_SESSION_SEAL_COOKIE}=`))
+      ?.split(';')[0]
+      ?.split('=')[1];
+    expect(
+      verifyAdminSessionFromCookies({
+        get: (name) =>
+          name === ADMIN_ACCESS_TOKEN_COOKIE
+            ? { value: replacementToken! }
+            : name === ADMIN_SESSION_SEAL_COOKIE
+              ? { value: replacementSeal! }
+              : undefined,
+      }),
+    ).toMatchObject({ role: 'Staff' });
   });
 
-  it('returns 401 without touching the backend when there is no web session', async () => {
-    mockSession(null);
+  it('returns 401 without touching the backend when the admin cookie or BFF seal is missing', async () => {
+    cookiesMock.mockResolvedValue(cookieJar(undefined));
     const res = await proxyAdminChangePassword(jsonRequest());
     expect(res.status).toBe(401);
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it('forwards the bearer to the upstream endpoint with only the allow-listed fields', async () => {
-    fetchBackendMock.mockResolvedValue(successReply());
+  it('forwards the admin cookie bearer to the upstream endpoint with only the allow-listed fields', async () => {
+    fetchBackendMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({ success: true, data: { accessToken: 'next-token', accessTokenExpiresAtUtc: new Date(Date.now() + 5 * 60 * 1000).toISOString() } }),
+        { status: 200 },
+      ),
+    );
 
     const res = await proxyAdminChangePassword(jsonRequest());
 
@@ -87,36 +142,29 @@ describe('admin change-password proxy', () => {
     expect(JSON.parse(init.body)).toEqual({ currentPassword: 'Current1!', newPassword: 'New2@aaaa' });
   });
 
-  it('forwards the backend replacement refresh cookie and sets no admin cookie on success', async () => {
-    fetchBackendMock.mockResolvedValue(successReply('tripmate_refresh=new-refresh-value; Path=/; HttpOnly; SameSite=Lax'));
+  it('re-seals the admin session cookie with the replacement access token on success', async () => {
+    const expiresAtUtc = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    fetchBackendMock.mockResolvedValue(
+      new Response(JSON.stringify({ success: true, data: { accessToken: 'next-token', accessTokenExpiresAtUtc: expiresAtUtc } }), { status: 200 }),
+    );
 
     const res = await proxyAdminChangePassword(jsonRequest());
 
-    expect(res.status).toBe(200);
-    const setCookies = res.headers.getSetCookie();
-    expect(setCookies).toEqual(['tripmate_refresh=new-refresh-value; Path=/; HttpOnly; SameSite=Lax']);
-    expect(setCookies.some((c) => c.startsWith('tripmate_admin_'))).toBe(false);
+    const setCookies = res.headers.getSetCookie?.() ?? [res.headers.get('set-cookie') ?? ''];
+    expect(setCookies.some((c) => c.startsWith(`${ADMIN_ACCESS_TOKEN_COOKIE}=next-token`))).toBe(true);
   });
 
-  it('succeeds without setting cookies when the backend returns no replacement refresh cookie', async () => {
-    fetchBackendMock.mockResolvedValue(successReply());
-
-    const res = await proxyAdminChangePassword(jsonRequest());
-
-    expect(res.status).toBe(200);
-    expect(res.headers.getSetCookie()).toEqual([]);
-  });
-
-  it('answers 401 when the upstream rejects the bearer token, without setting cookies', async () => {
+  it('clears the admin session and returns 401 when the upstream rejects the bearer token', async () => {
     fetchBackendMock.mockResolvedValue(new Response(null, { status: 401 }));
 
     const res = await proxyAdminChangePassword(jsonRequest());
 
     expect(res.status).toBe(401);
-    expect(res.headers.getSetCookie()).toEqual([]);
+    const setCookies = res.headers.getSetCookie?.() ?? [];
+    expect(setCookies.some((c) => c.startsWith(`${ADMIN_ACCESS_TOKEN_COOKIE}=;`))).toBe(true);
   });
 
-  it('forwards a 400 MSG17 business failure as-is without setting cookies', async () => {
+  it('forwards a 400 MSG17/MSG05 business failure as-is without touching the session', async () => {
     fetchBackendMock.mockResolvedValue(
       new Response(JSON.stringify({ errorCode: 'MSG17', title: 'Current password does not match our records.' }), { status: 400 }),
     );
@@ -125,7 +173,7 @@ describe('admin change-password proxy', () => {
 
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ errorCode: 'MSG17' });
-    expect(res.headers.getSetCookie()).toEqual([]);
+    expect(res.headers.getSetCookie?.() ?? []).toHaveLength(0);
   });
 
   it('returns 503 when the backend cannot be reached', async () => {

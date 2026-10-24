@@ -77,7 +77,7 @@ describe('LandingContentScreen shell', () => {
     service.getLandingContent.mockRejectedValue(new LandingContentError(401));
     render(<LandingContentScreen />);
     await waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith('/sign-in?returnUrl=%2Fadmin%2Flanding-content'),
+      expect(router.replace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Flanding-content'),
     );
   });
 

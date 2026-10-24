@@ -105,7 +105,7 @@ describe('AlgorithmConfigForm', () => {
   it('redirects to login when the API rejects an expired session (401)', async () => {
     vi.mocked(service.getAlgorithmParameters).mockRejectedValue(new service.AlgorithmConfigError(401));
     render(<AlgorithmConfigForm />);
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/sign-in?returnUrl=%2Fadmin%2Fsettings%2Falgorithm-parameters'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fsettings%2Falgorithm-parameters'));
   });
 
   it('shows MSG126 when the API denies permission (403)', async () => {

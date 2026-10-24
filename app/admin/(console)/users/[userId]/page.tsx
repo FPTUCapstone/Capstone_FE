@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { UserAccountDetailUnavailableView } from '@/features/admin/user-accounts/components/UserAccountDetailUnavailableView';
 import { parseUserAccountRouteId } from '@/features/admin/user-accounts/server/userAccountRouteId';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 interface UserAccountDetailPageProps {
   params: Promise<{ userId: string }>;
@@ -16,10 +17,15 @@ export const metadata: Metadata = {
 };
 
 export default async function UserAccountDetailPage({ params }: UserAccountDetailPageProps) {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    return redirect('/sign-in?returnUrl=%2Fadmin%2Fusers');
+    return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
   }
 
   if (session.role === 'Staff') {

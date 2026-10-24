@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -6,17 +7,22 @@ import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAc
 import { TourReviewQueue } from '@/features/admin/tour-reviews/TourReviewQueue';
 import { tourModerationEn } from '@/features/admin/tour-reviews/resources/en';
 import { ROUTES } from '@/lib/routes';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
   title: tourModerationEn.metadata.queueTitle,
 };
 
 export default async function AdminTourReviewQueuePage() {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    return redirect(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.admin.tourReviews)}`);
+    return redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.tourReviews)}`);
   }
 
   if (session.role === 'Staff') {

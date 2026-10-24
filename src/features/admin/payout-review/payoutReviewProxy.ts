@@ -1,9 +1,15 @@
 import 'server-only';
 
-import { jsonNoStore } from '@/lib/server/jsonNoStore';
-import { isSameOriginRequest } from '@/lib/server/sameOrigin';
+import { cookies } from 'next/headers';
+
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  clearAdminSession,
+  isSameOriginRequest,
+  jsonNoStore,
+  verifyAdminSessionFromCookies,
+} from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
-import { resolveWebSession } from '@/lib/server/webSession';
 
 import { isValidPayoutId } from './payoutReview';
 
@@ -40,14 +46,16 @@ function isSafeReasonErrors(value: unknown): value is { reason: string[] } {
 async function authorizeStaffRequest(): Promise<
   { token: string } | { response: Response }
 > {
-  const session = await resolveWebSession();
-  if (!session) {
-    return { response: jsonNoStore({ title: 'Administrator sign-in required.' }, 401) };
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  const session = verifyAdminSessionFromCookies(cookieStore);
+  if (!token || !session) {
+    return { response: clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401)) };
   }
   if (session.role !== 'Staff') {
     return { response: jsonNoStore({ title: 'Staff access is required for payout review.' }, 403) };
   }
-  return { token: session.accessToken };
+  return { token };
 }
 
 async function forwardToBackend(
@@ -68,7 +76,7 @@ async function forwardToBackend(
       return jsonNoStore({ title: 'The payout service is unavailable.' }, 503);
     }
     if (upstream.status === 401) {
-      return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
     }
     if (upstream.status === 403) {
       return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);

@@ -1,17 +1,34 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { resolveWebSessionMock, fetchBackendMock } = vi.hoisted(() => ({
-  resolveWebSessionMock: vi.fn(),
-  fetchBackendMock: vi.fn(),
-}));
+const { cookiesMock, fetchBackendMock } = vi.hoisted(() => ({ cookiesMock: vi.fn(), fetchBackendMock: vi.fn() }));
 vi.mock('server-only', () => ({}));
-vi.mock('@/lib/server/webSession', () => ({ resolveWebSession: resolveWebSessionMock }));
+vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/server/backend', () => ({ fetchBackend: fetchBackendMock }));
 
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  ADMIN_SESSION_SEAL_COOKIE,
+  ADMIN_SESSION_SECRET_ENV,
+  createAdminSessionSeal,
+} from '@/lib/server/adminSession';
 import { proxyApprovePayout, proxyGetPayoutDetail, proxyRejectPayout } from './payoutReviewProxy';
 
-function mockSession(role: 'Administrator' | 'Staff' | null, accessToken = 'admin-token') {
-  resolveWebSessionMock.mockResolvedValue(role ? { accessToken, role } : null);
+const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
+
+function mockSealedCookies(role: 'Administrator' | 'Staff', token = 'admin-token') {
+  const sealed = createAdminSessionSeal({
+    token,
+    role,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    secret: TEST_SECRET,
+  })!;
+  cookiesMock.mockResolvedValue({
+    get: (name: string) => {
+      if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: token };
+      if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: sealed.seal };
+      return undefined;
+    },
+  });
 }
 
 const SAME_ORIGIN = 'http://localhost:3000';
@@ -31,13 +48,19 @@ function mutationRequest(
   });
 }
 
+let priorSecret: string | undefined;
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv('TRIPMATE_WEB_ORIGIN', '');
-  mockSession('Staff');
+  priorSecret = process.env[ADMIN_SESSION_SECRET_ENV];
+  process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
+  mockSealedCookies('Staff');
 });
 afterEach(() => {
   vi.unstubAllEnvs();
+  if (priorSecret === undefined) delete process.env[ADMIN_SESSION_SECRET_ENV];
+  else process.env[ADMIN_SESSION_SECRET_ENV] = priorSecret;
 });
 
 describe('proxyGetPayoutDetail', () => {
@@ -58,14 +81,14 @@ describe('proxyGetPayoutDetail', () => {
   });
 
   it('answers 401 without contacting the backend when the session is missing', async () => {
-    mockSession(null);
+    cookiesMock.mockResolvedValue({ get: () => undefined });
     const res = await proxyGetPayoutDetail('123');
     expect(res.status).toBe(401);
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
   it('rejects Administrator before calling the Staff review endpoint', async () => {
-    mockSession('Administrator');
+    mockSealedCookies('Administrator');
     const res = await proxyGetPayoutDetail('123');
     expect(res.status).toBe(403);
     expect(fetchBackendMock).not.toHaveBeenCalled();
@@ -100,7 +123,7 @@ describe('proxyApprovePayout', () => {
       expect(res.status).toBe(403);
       await expect(res.json()).resolves.toEqual({ title: 'Request origin is not allowed.' });
       expect(res.headers.get('Cache-Control')).toBe('no-store');
-      expect(resolveWebSessionMock).not.toHaveBeenCalled();
+      expect(cookiesMock).not.toHaveBeenCalled();
       expect(fetchBackendMock).not.toHaveBeenCalled();
     },
   );
@@ -146,7 +169,7 @@ describe('proxyApprovePayout', () => {
       mutationRequest('approve', undefined, 'https://public.tripmate.test'),
     );
     expect(res.status).toBe(200);
-    expect(resolveWebSessionMock).toHaveBeenCalledOnce();
+    expect(cookiesMock).toHaveBeenCalledOnce();
     expect(fetchBackendMock).toHaveBeenCalledOnce();
   });
 });
@@ -165,7 +188,7 @@ describe('proxyRejectPayout', () => {
       await expect(res.json()).resolves.toEqual({ title: 'Request origin is not allowed.' });
       expect(res.headers.get('Cache-Control')).toBe('no-store');
       expect(request.bodyUsed).toBe(false);
-      expect(resolveWebSessionMock).not.toHaveBeenCalled();
+      expect(cookiesMock).not.toHaveBeenCalled();
       expect(fetchBackendMock).not.toHaveBeenCalled();
     },
   );
@@ -203,7 +226,7 @@ describe('proxyRejectPayout', () => {
   });
 
   it('rejects Administrator before reading the body or calling the backend', async () => {
-    mockSession('Administrator');
+    mockSealedCookies('Administrator');
     const res = await proxyRejectPayout('123', mutationRequest('reject', { reason: 'anything at all here' }));
     expect(res.status).toBe(403);
     expect(fetchBackendMock).not.toHaveBeenCalled();
