@@ -64,7 +64,7 @@ app route
         -> neutral transport helper
 ```
 
-Guard tĩnh sau thay đổi báo 561 module, 1.247 edge tổng, 1.129 runtime edge và 0 issue. Không có feature import từ `app`, không có cycle runtime mới, generic UI không kéo feature/service và client module không chạm server-only module.
+Guard tĩnh sau review báo 561 module, 1.246 edge tổng, 1.128 runtime edge và 0 issue. Không có feature import từ `app`, không có cycle runtime mới, generic UI không kéo feature/service và client module không chạm server-only module.
 
 ## Regression và bằng chứng UI
 
