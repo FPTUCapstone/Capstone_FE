@@ -2,18 +2,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
-// role: the sealed administration session role; null means no valid session, the default is Staff.
+const { adminProxyStubs } = require('./admin-proxy-stubs.cjs');
+// role: the web session role; null means no valid session, the default is Staff.
 function setup(token, backend, role = 'Staff') {
   return loadTs('src/features/admin/create-poi/services/poi-proxy.ts', {
-    'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
-    '@/lib/server/adminSession': {
-      ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
-      isSameOriginRequest: r => r.headers.get('origin') === new URL(r.url).origin,
-      jsonNoStore: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
-      verifyAdminSessionFromCookies: () => (role === null ? null : { role }),
-      clearAdminSession: r => { r.headers.set('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0'); return r; },
-    },
+    ...adminProxyStubs(token && role ? { accessToken: token, role } : null),
   }).proxyPoi;
 }
 const req = (origin = 'http://localhost:3001') => new Request('http://localhost:3001/api/admin/pois', { method: 'POST', headers: { origin, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'A', categoryId: 5 }) });
@@ -31,10 +25,10 @@ test('forwards flat JSON with bearer and returns real status/body', async () => 
   const response = await proxy(req(), '/api/v1/admin/pois');
   assert.equal(response.status, 201); assert.deepEqual(await response.json(), { id: 51 });
 });
-test('BE 401 clears session while BE 403 preserves session without exposing upstream details', async () => {
+test('BE 401 answers 401 without cookies while BE 403 answers 403 without exposing upstream details', async () => {
   const unauthenticated = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status: 401 }))(req(), '/api/v1/admin/pois');
   assert.equal(unauthenticated.status, 401);
-  assert.match(unauthenticated.headers.get('Set-Cookie'), /Max-Age=0/);
+  assert.equal(unauthenticated.headers.get('Set-Cookie'), null);
   assert.deepEqual(await unauthenticated.json(), { title: 'Staff sign-in required.' });
 
   const forbidden = await setup('secret', async () => Response.json({ detail: 'internal sensitive text', traceId: 'private-trace' }, { status: 403 }))(req(), '/api/v1/admin/pois');
