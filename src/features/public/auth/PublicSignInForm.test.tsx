@@ -27,15 +27,15 @@ vi.mock('@/lib/authApi', async (importOriginal) => ({
   webResendVerification: mocks.webResendVerification,
 }));
 
-import LoginForm from './LoginForm';
+import { PublicSignInForm } from './PublicSignInForm';
 
-describe('LoginForm production sign-in route', () => {
+describe('PublicSignInForm production sign-in route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('associates validation errors with the production sign-in fields', async () => {
-    render(<LoginForm />);
+    render(<PublicSignInForm />);
 
     fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
 
@@ -56,7 +56,7 @@ describe('LoginForm production sign-in route', () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
     mocks.webResendVerification.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });
 
-    render(<LoginForm />);
+    render(<PublicSignInForm />);
     fireEvent.change(screen.getByLabelText(/^Email/), {
       target: { value: ' User@Example.com ' },
     });

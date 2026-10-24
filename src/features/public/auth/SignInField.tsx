@@ -2,7 +2,7 @@
 
 import { useState, type InputHTMLAttributes, type ReactNode } from "react";
 
-type FormFieldProps = {
+type SignInFieldProps = {
   id: string;
   label: string;
   icon: string;
@@ -11,7 +11,7 @@ type FormFieldProps = {
   toggleable?: boolean;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, "id">;
 
-export default function FormField({
+export function SignInField({
   id,
   label,
   icon,
@@ -19,7 +19,7 @@ export default function FormField({
   toggleable = false,
   type = "text",
   ...inputProps
-}: FormFieldProps) {
+}: SignInFieldProps) {
   const [visible, setVisible] = useState(false);
   const inputType = toggleable ? (visible ? "text" : "password") : type;
 

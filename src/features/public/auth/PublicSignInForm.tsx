@@ -7,9 +7,9 @@ import { GoogleConsentModal } from "@/features/auth/google/GoogleConsentModal";
 import { useSignInEngine } from "@/features/auth/sign-in/useSignInEngine";
 import { ROUTES } from "@/lib/routes";
 
-import FormField from "./FormField";
+import { SignInField } from './SignInField';
 
-export default function LoginForm() {
+export function PublicSignInForm() {
   const {
     email,
     password,
@@ -44,7 +44,7 @@ export default function LoginForm() {
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-        <FormField
+        <SignInField
           id="email"
           name="email"
           type="email"
@@ -65,7 +65,7 @@ export default function LoginForm() {
           </p>
         ) : null}
 
-        <FormField
+        <SignInField
           id="password"
           name="password"
           label="Mật khẩu"
