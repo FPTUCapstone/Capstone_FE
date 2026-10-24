@@ -1,6 +1,6 @@
 import BrandLogo from '@/components/registration/BrandLogo';
 import HeroPanel from '@/components/registration/HeroPanel';
-import { TravelerRegistrationForm } from '@/features/traveler/registration/TravelerRegistrationForm';
+import { TravelerRegistrationForm } from './TravelerRegistrationForm';
 
 export function TravelerRegistrationPage() {
   return (
