@@ -74,6 +74,11 @@ export const adminStaffEn = {
       'Operational throughput charts and moderation turnaround summaries will be enabled once reporting aggregation endpoints are finalized. No synthetic chart figures are displayed.',
     openModuleLabel: 'Open Workspace',
     unavailableModuleLabel: 'Module Unavailable',
+    tabs: {
+      overview: 'Overview',
+      analytics: 'Analytics',
+    },
+    analyticsBadge: 'New',
     statusBadges: {
       available: 'Available in Console',
       pendingBackend: 'Pending Backend Contract',
@@ -146,7 +151,8 @@ export const adminStaffEn = {
         description:
           'Monitor active traveler itineraries and review operational alerts across regions.',
         status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting real-time active trip monitoring endpoints.',
+        availabilityNote:
+          'Screen and BFF are integrated in console navigation (/admin/trips/active); awaiting real-time WebSocket alerts and streaming events integration.',
       },
       {
         id: 'platform-booking-oversight',
@@ -164,7 +170,8 @@ export const adminStaffEn = {
         description:
           'Verify Tour Operator payout settlement requests and coordinate disbursement processing.',
         status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting administration payout queue and settlement decision endpoints.',
+        availabilityNote:
+          'Payout records review is active in console (/admin/payouts); final banking settlement disbursement is pending SRS Table 5 reconciliation and financial service contracts.',
       },
       {
         id: 'landing-content-management',
