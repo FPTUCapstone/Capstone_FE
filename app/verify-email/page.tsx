@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import HeroPanel from '@/components/registration/HeroPanel';
-import BrandLogo from '@/components/registration/BrandLogo';
-import { VerifyEmailHandler } from '@/features/traveler/registration/VerifyEmailHandler';
+import { VerifyEmailHandler } from '@/features/auth/verification/VerifyEmailHandler';
+import { VerificationPageShell } from '@/features/auth/verification/VerificationPageShell';
+import { resolveVerificationFlow } from '@/features/auth/verification/verificationFlow';
 import { OperatorMobileVerifyEmailHandler } from '@/features/operator/application/OperatorMobileVerifyEmailHandler';
 
 export const metadata: Metadata = { title: 'Xác minh email' };
@@ -18,49 +18,15 @@ type PageProps = {
 
 export default async function VerifyEmailRoute({ searchParams }: PageProps) {
   const { mode, oobCode, flow, continueUrl } = await searchParams;
-  let verificationFlow = flow === 'operator' || flow === 'operator-mobile' ? flow : undefined;
-  if (!verificationFlow && continueUrl) {
-    try {
-      const continued = new URL(continueUrl);
-      if (continued.pathname === '/verify-email') {
-        const continuedFlow = continued.searchParams.get('flow');
-        if (continuedFlow === 'operator' || continuedFlow === 'operator-mobile') {
-          verificationFlow = continuedFlow;
-        }
-      }
-    } catch { /* Ignore malformed Firebase continue URLs. */ }
-  }
+  const verificationFlow = resolveVerificationFlow({ flow, continueUrl });
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr] lg:items-start">
-      {/* LEFT: HERO PANEL */}
-      <HeroPanel />
-
-      {/* RIGHT: VERIFY HANDLER */}
-      <main className="flex min-h-screen items-center justify-center p-6 sm:p-10 lg:p-12 xl:p-16 bg-brand-surface relative">
-        {/* Mobile brand header (hidden on desktop) */}
-        <div className="absolute top-6 left-6 lg:hidden flex items-center space-x-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-navy to-brand-navyContainer flex items-center justify-center shadow-md text-white">
-            <BrandLogo size={22} />
-          </div>
-          <span className="text-xl font-extrabold tracking-tight text-brand-navy">
-            TripMate
-          </span>
-        </div>
-
-        <div className="w-full max-w-[480px]">
-          {verificationFlow === 'operator-mobile' ? (
-            <OperatorMobileVerifyEmailHandler mode={mode} oobCode={oobCode} />
-          ) : (
-            <VerifyEmailHandler mode={mode} oobCode={oobCode} flow={verificationFlow} />
-          )}
-
-          <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
-            Need help? Contact TripMate Customer Support.
-            <br />© 2026 TripMate — Your Journey, Powered by Technology.
-          </p>
-        </div>
-      </main>
-    </div>
+    <VerificationPageShell>
+      {verificationFlow === 'operator-mobile' ? (
+        <OperatorMobileVerifyEmailHandler mode={mode} oobCode={oobCode} />
+      ) : (
+        <VerifyEmailHandler mode={mode} oobCode={oobCode} flow={verificationFlow} />
+      )}
+    </VerificationPageShell>
   );
 }

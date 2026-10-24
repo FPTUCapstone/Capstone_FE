@@ -7,14 +7,14 @@ import { GoogleConsentModal } from "@/features/auth/google/GoogleConsentModal";
 import { useSignInEngine } from "@/features/auth/sign-in/useSignInEngine";
 import { ROUTES } from "@/lib/routes";
 
-import FormField from "./FormField";
+import { SignInField } from './SignInField';
 
-type LoginFormProps = {
+type PublicSignInFormProps = {
   /** Raw `returnUrl` from the sign-in query string. */
   returnUrl?: string;
 };
 
-export default function LoginForm({ returnUrl }: LoginFormProps) {
+export function PublicSignInForm({ returnUrl }: PublicSignInFormProps) {
   const {
     email,
     password,
@@ -49,7 +49,7 @@ export default function LoginForm({ returnUrl }: LoginFormProps) {
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-        <FormField
+        <SignInField
           id="email"
           name="email"
           type="email"
@@ -70,7 +70,7 @@ export default function LoginForm({ returnUrl }: LoginFormProps) {
           </p>
         ) : null}
 
-        <FormField
+        <SignInField
           id="password"
           name="password"
           label="Mật khẩu"

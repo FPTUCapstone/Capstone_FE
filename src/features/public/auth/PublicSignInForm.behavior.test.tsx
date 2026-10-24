@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SignInForm } from './SignInForm';
+import { PublicSignInForm } from './PublicSignInForm';
 
 const mocks = vi.hoisted(() => ({
   webVerifyEmail: vi.fn(), webResendVerification: vi.fn(), firebaseSignIn: vi.fn(), verifyEmail: vi.fn(), resend: vi.fn(), webLogin: vi.fn(), webGoogleAuth: vi.fn(), popup: vi.fn(), googleAuth: vi.fn(), saveTokens: vi.fn(), push: vi.fn(), replace: vi.fn(),
@@ -24,7 +24,7 @@ beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value() { this.removeAttribute('open'); } });
 });
 
-describe('SignInForm Google access', () => {
+describe('PublicSignInForm Google access', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('shows a useful message when public Google sign-in rejects an administrator', async () => {
@@ -32,8 +32,8 @@ describe('SignInForm Google access', () => {
     mocks.webGoogleAuth.mockRejectedValue({
       code: 'auth.admin_google_sign_in_disabled', status: 403, message: 'internal detail',
     });
-    render(<SignInForm />);
-    fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    render(<PublicSignInForm />);
+    fireEvent.click(screen.getByRole('button', { name: /tiếp tục với google/i }));
     fireEvent.click(screen.getByRole('button', { name: /agree and continue/i }));
 
     await waitFor(() => expect(screen.getByText(
@@ -46,37 +46,37 @@ describe('SignInForm Google access', () => {
 });
 
 function enterPassword() {
-  fireEvent.change(screen.getByLabelText('Email address'), { target: { value: ' user@example.com ' } });
-  fireEvent.change(screen.getByLabelText('Password'), { target: { value: ' unchanged ' } });
+  fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: ' user@example.com ' } });
+  fireEvent.change(screen.getByLabelText(/^Mật khẩu/), { target: { value: ' unchanged ' } });
 }
 describe('Web password sign-in', () => {
   beforeEach(() => vi.clearAllMocks());
-  it('submits the real password login through the single web route', async () => {
+  it('submits the public password login contract', async () => {
     mocks.webLogin.mockResolvedValue({ role: 'Traveler', status: 'Active' });
-    render(<SignInForm />); enterPassword();
-    fireEvent.click(screen.getByLabelText('Keep me signed in'));
-    fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<PublicSignInForm />); enterPassword();
+    fireEvent.click(screen.getByLabelText('Ghi nhớ đăng nhập'));
+    fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
     await waitFor(() => expect(mocks.webLogin).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ', keepMeSignedIn: true }));
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
     expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.saveTokens).not.toHaveBeenCalled();
   });
   it('requires both fields without calling the API', async () => {
-    render(<SignInForm />); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<PublicSignInForm />); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
     expect(screen.getByText('Please enter your email.')).toBeDefined(); expect(screen.getByText('Please enter your password.')).toBeDefined();
     expect(mocks.webLogin).not.toHaveBeenCalled();
   });
   it('shows safe credential errors and keeps values for retry', async () => {
     mocks.webLogin.mockRejectedValue({ status: 401, code: 'auth.invalid_credentials', message: 'internal database detail' });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
     await waitFor(() => expect(screen.getByText('Invalid email or password. Please try again.')).toBeDefined());
     expect(screen.queryByText('internal database detail')).toBeNull(); expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled();
-    expect((screen.getByLabelText('Password') as HTMLInputElement).value).toBe(' unchanged ');
+    expect((screen.getByLabelText(/^Mật khẩu/) as HTMLInputElement).value).toBe(' unchanged ');
   });
   it('disables submit and inputs while waiting', async () => {
     let resolve!: (value: object) => void; mocks.webLogin.mockReturnValue(new Promise((done) => { resolve = done; }));
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-    await waitFor(() => expect((screen.getByLabelText('Email address') as HTMLInputElement).disabled).toBe(true));
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+    await waitFor(() => expect((screen.getByLabelText(/^Email/) as HTMLInputElement).disabled).toBe(true));
     resolve({ role: 'Traveler', status: 'Active' }); await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
   });
 });
@@ -86,15 +86,15 @@ describe('Web password failures', () => {
   it.each([
     ['auth.account_locked', 'Your account is locked. Please contact support.'],
     ['auth.account_inactive', 'Your account is inactive. Please contact support.'],
-  ])('keeps account restriction %s ahead of a successful sign-in', async (code, message) => {
+  ])('keeps account restriction %s ahead of public success', async (code, message) => {
     mocks.webLogin.mockRejectedValue({ code, status: 403, message: 'internal detail' });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
     await waitFor(() => expect(screen.getByText(message)).toBeDefined());
     expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled();
   });
   it('renders server field codes without displaying internals', async () => {
     mocks.webLogin.mockRejectedValue({ status: 400, code: 'auth.request_invalid', errors: { email: 'MSG02', password: 'MSG01' }, message: 'internal validation' });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
     await waitFor(() => expect(screen.getByText('Please enter your password.')).toBeDefined());
     expect(screen.getByText('Invalid email format. Please enter a valid email address.')).toBeDefined(); expect(screen.queryByText('internal validation')).toBeNull();
   });
@@ -105,9 +105,9 @@ describe('Web password failures', () => {
     AuthStorage.accept(context, true); mocks.webLogin.mockImplementation(api.webLogin);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ errorCode: 'auth.account_locked' }), { status: 403 })));
     try {
-      render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-      await waitFor(() => expect(screen.getByText('Your account is locked. Please contact support.')).toBeDefined());
-      await waitFor(() => expect(screen.getByRole('button', { name: /^sign in$/i }).hasAttribute('disabled')).toBe(false));
+      render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+      await screen.findByText('Your account is locked. Please contact support.');
+      await waitFor(() => expect(screen.getByRole('button', { name: /^Đăng nhập/ }).hasAttribute('disabled')).toBe(false));
       expect(AuthStorage.getContext()?.userId).toBe(42); expect(AuthStorage.getAccessToken()).toBe('test-access');
       expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled();
     } finally { vi.unstubAllGlobals(); AuthStorage.clear(); mocks.webLogin.mockReset(); }
@@ -118,12 +118,12 @@ describe('Password verification guidance without Firebase sign-in', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
   it('surfaces Backend MSG_UNVERIFIED guidance without any Firebase authentication step', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-    await waitFor(() => expect((screen.getByLabelText('Email address') as HTMLInputElement).disabled).toBe(false));
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+    await waitFor(() => expect((screen.getByLabelText(/^Email/) as HTMLInputElement).disabled).toBe(false));
     expect(screen.getByText('Please verify your email before signing in.')).toBeDefined();
     // The resend action remains reachable, but it no longer depends on a
     // Firebase session or a Firebase sendEmailVerification call.
-    expect(screen.getByRole('button', { name: 'Resend Verification Email' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Gửi lại email xác minh' })).toBeDefined();
     expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
     expect(mocks.resend).not.toHaveBeenCalled();
     expect(mocks.verifyEmail).not.toHaveBeenCalled();
@@ -138,8 +138,8 @@ describe('Resend Verification Email uses the Backend contract', () => {
   it('shows success and never calls Firebase', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
     mocks.webResendVerification.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-    const resend = await screen.findByRole('button', { name: 'Resend Verification Email' });
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+    const resend = await screen.findByRole('button', { name: 'Gửi lại email xác minh' });
     fireEvent.click(resend);
     await screen.findByText('A fresh verification link has been sent to your email. Please check your inbox.');
     expect(mocks.webResendVerification).toHaveBeenCalledWith({ email: 'user@example.com', password: ' unchanged ' });
@@ -150,9 +150,9 @@ describe('Resend Verification Email uses the Backend contract', () => {
   });
   it('still blocks resending after the form email changes', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-    const resend = await screen.findByRole('button', { name: 'Resend Verification Email' });
-    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'other@example.com' } });
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+    const resend = await screen.findByRole('button', { name: 'Gửi lại email xác minh' });
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'other@example.com' } });
     fireEvent.click(resend);
     await screen.findByText('Please sign in with the email you want to verify before requesting a new link.');
     expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
@@ -167,13 +167,13 @@ describe('Web Google consent', () => {
     Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value() { this.removeAttribute('open'); } });
   });
   it('requires affirmative consent before opening a popup and can cancel without API calls', () => {
-    render(<SignInForm />); fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    render(<PublicSignInForm />); fireEvent.click(screen.getByRole('button', { name: /tiếp tục với google/i }));
     expect(screen.getByRole('dialog')).toBeDefined(); expect(screen.getByText(/creates a Traveler account, not a TourOperator account/i)).toBeDefined();
     expect(mocks.popup).not.toHaveBeenCalled(); expect(mocks.webGoogleAuth).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' })); expect(screen.queryByRole('dialog')).toBeNull(); expect(mocks.popup).not.toHaveBeenCalled();
   });
   it('offers legal content and Partner registration without starting Google', () => {
-    render(<SignInForm />); fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    render(<PublicSignInForm />); fireEvent.click(screen.getByRole('button', { name: /tiếp tục với google/i }));
     expect(screen.getByRole('link', { name: 'Register as TourOperator' }).getAttribute('href')).toBe('/partner/register');
     fireEvent.click(screen.getByRole('link', { name: 'Terms of Service' })); expect(screen.getByText('1. Acceptance of Terms')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Back to consent' })); fireEvent.click(screen.getByRole('link', { name: 'Privacy Policy' }));
@@ -183,7 +183,7 @@ describe('Web Google consent', () => {
     const getIdToken = vi.fn().mockResolvedValue('test-firebase');
     mocks.popup.mockResolvedValue({ user: { email: 'different@example.com', getIdToken } });
     mocks.webGoogleAuth.mockResolvedValue({ role: 'TourOperator', status: 'Active', applicationStatus: 'PendingApproval', isNewAccount: false });
-    render(<SignInForm />); fireEvent.click(screen.getByLabelText('Keep me signed in')); fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    render(<PublicSignInForm />); fireEvent.click(screen.getByLabelText('Ghi nhớ đăng nhập')); fireEvent.click(screen.getByRole('button', { name: /tiếp tục với google/i }));
     fireEvent.click(screen.getByRole('button', { name: /agree and continue/i }));
     await waitFor(() => expect(mocks.webGoogleAuth).toHaveBeenCalledWith('test-firebase', true));
     await screen.findByText('Signed in with Google successfully! Redirecting...');
@@ -192,18 +192,18 @@ describe('Web Google consent', () => {
 });
 
 function agreeGoogle() {
-  fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+  fireEvent.click(screen.getByRole('button', { name: /tiếp tục với google/i }));
   fireEvent.click(screen.getByRole('button', { name: /agree and continue/i }));
 }
 describe('Web Google failure boundaries', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webGoogleAuth.mockReset(); mocks.popup.mockReset(); });
   it.each(['auth/popup-closed-by-user', 'auth/cancelled-popup-request'])('silently cancels popup %s', async (code) => {
-    mocks.popup.mockRejectedValue({ code, message: 'raw SDK detail' }); render(<SignInForm />); agreeGoogle();
-    await waitFor(() => expect((screen.getByLabelText('Email address') as HTMLInputElement).disabled).toBe(false));
+    mocks.popup.mockRejectedValue({ code, message: 'raw SDK detail' }); render(<PublicSignInForm />); agreeGoogle();
+    await waitFor(() => expect((screen.getByLabelText(/^Email/) as HTMLInputElement).disabled).toBe(false));
     expect(screen.queryByRole('alert')).toBeNull(); expect(screen.queryByText('raw SDK detail')).toBeNull(); expect(mocks.webGoogleAuth).not.toHaveBeenCalled(); expect(mocks.push).not.toHaveBeenCalled();
   });
   it('requires explicit retry when popup is blocked', async () => {
-    mocks.popup.mockRejectedValue({ code: 'auth/popup-blocked', message: 'raw SDK detail' }); render(<SignInForm />); agreeGoogle();
+    mocks.popup.mockRejectedValue({ code: 'auth/popup-blocked', message: 'raw SDK detail' }); render(<PublicSignInForm />); agreeGoogle();
     await screen.findByText('Please allow popups for TripMate and try again.'); expect(mocks.popup).toHaveBeenCalledTimes(1); expect(mocks.webGoogleAuth).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull(); expect(mocks.push).not.toHaveBeenCalled();
   });
@@ -217,12 +217,12 @@ describe('Web Google failure boundaries', () => {
   ])('handles BE failure %s without recovery or token persistence', async (code, message) => {
     mocks.popup.mockResolvedValue({ user: { getIdToken: vi.fn().mockResolvedValue('test-firebase') } });
     mocks.webGoogleAuth.mockRejectedValue({ code, status: code === 'auth.firebase_unavailable' ? 503 : 403, message: 'raw backend detail' });
-    render(<SignInForm />); agreeGoogle(); await screen.findByText(message);
+    render(<PublicSignInForm />); agreeGoogle(); await screen.findByText(message);
     expect(mocks.verifyEmail).not.toHaveBeenCalled(); expect(mocks.firebaseSignIn).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled(); expect(mocks.push).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: /resend verification/i })).toBeNull(); expect(screen.queryByText('raw backend detail')).toBeNull();
+    expect(screen.queryByRole('button', { name: /gửi lại email xác minh/i })).toBeNull(); expect(screen.queryByText('raw backend detail')).toBeNull();
   });
   it('closes consent on Escape without opening Google', () => {
-    render(<SignInForm />); fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    render(<PublicSignInForm />); fireEvent.click(screen.getByRole('button', { name: /tiếp tục với google/i }));
     fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: true, cancelable: true }));
     expect(screen.queryByRole('dialog')).toBeNull(); expect(mocks.popup).not.toHaveBeenCalled();
   });
@@ -233,7 +233,7 @@ describe('Web Google failure boundaries', () => {
     const data = { userId: 42, email: 'db@example.com', fullName: '', role: 'Traveler', status: 'Active', applicationStatus: null, accessToken: 'test-access', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z', isNewAccount: true };
     const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true, data }), { status: 200 })); vi.stubGlobal('fetch', request);
     try {
-      render(<SignInForm />); agreeGoogle(); await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
+      render(<PublicSignInForm />); agreeGoogle(); await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'));
       expect(AuthStorage.getContext()?.email).toBe('db@example.com'); expect(AuthStorage.getAccessToken()).toBe('test-access');
       const [url, options] = request.mock.calls[0]; expect(url).toMatch(/\/auth\/web\/google$/); expect(options.credentials).toBe('include'); expect(JSON.parse(options.body)).toEqual({ idToken: 'test-firebase', keepMeSignedIn: false });
       expect(localStorage.getItem('tripmate_access_token')).toBeNull(); expect(localStorage.getItem('tripmate_refresh_token')).toBeNull(); expect(mocks.googleAuth).not.toHaveBeenCalled(); expect(mocks.saveTokens).not.toHaveBeenCalled();
@@ -245,9 +245,9 @@ describe('Web Google failure boundaries', () => {
     mocks.webGoogleAuth.mockImplementation(api.webGoogleAuth); mocks.popup.mockResolvedValue({ user: { getIdToken: vi.fn().mockResolvedValue('test-firebase') } });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ errorCode: 'auth.admin_google_sign_in_disabled' }), { status: 403 })));
     try {
-      render(<SignInForm />); agreeGoogle(); await screen.findByText('Administrator accounts must sign in with email and password.');
+      render(<PublicSignInForm />); agreeGoogle(); await screen.findByText('Administrator accounts must sign in with email and password.');
       expect(AuthStorage.getContext()?.userId).toBe(42); expect(AuthStorage.getAccessToken()).toBe('test-access'); expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.verifyEmail).not.toHaveBeenCalled();
-      expect((screen.getByLabelText('Email address') as HTMLInputElement).value).toBe('');
+      expect((screen.getByLabelText(/^Email/) as HTMLInputElement).value).toBe('');
     } finally { vi.unstubAllGlobals(); AuthStorage.clear(); mocks.webGoogleAuth.mockReset(); }
   });
 });
@@ -256,7 +256,7 @@ describe('Web recovery form integration', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
   it('never calls Firebase sign-in or verify-email and surfaces the BE guidance', async () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
     await screen.findByText('Please verify your email before signing in.');
     expect(mocks.webLogin).toHaveBeenCalledTimes(1);
     expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
@@ -270,8 +270,8 @@ describe('Resend Verification Email cooldown', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.webLogin.mockReset(); });
   async function showGuidance() {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
-    render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
-    return screen.findByRole('button', { name: 'Resend Verification Email' });
+    render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
+    return screen.findByRole('button', { name: 'Gửi lại email xác minh' });
   }
   it('starts the cooldown after Backend success without Firebase', async () => {
     mocks.webResendVerification.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });
@@ -280,7 +280,7 @@ describe('Resend Verification Email cooldown', () => {
     await screen.findByText('A fresh verification link has been sent to your email. Please check your inbox.');
     expect(mocks.firebaseSignIn).not.toHaveBeenCalled();
     expect(mocks.resend).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /Resend Email \(\d+s\)/ })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Gửi lại \(\d+s\)/ })).toBeDefined();
   });
 
   it('starts the cooldown when the Backend rate-limits resend', async () => {
@@ -290,7 +290,7 @@ describe('Resend Verification Email cooldown', () => {
     fireEvent.click(resend);
 
     await screen.findByText('Please wait before requesting another verification email.');
-    expect(screen.getByRole('button', { name: /Resend Email \(\d+s\)/ })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Gửi lại \(\d+s\)/ })).toBeDefined();
   });
 });
 
@@ -299,7 +299,7 @@ describe('authoritative Partner routing', () => {
  beforeEach(() => vi.clearAllMocks());
  it.each(['Approved', 'PendingApproval', 'Rejected', null])('routes password context %s', async (applicationStatus) => {
   mocks.webLogin.mockResolvedValue({role:'TourOperator',status:'Active',applicationStatus});
-  render(<SignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button',{name:/^sign in$/i}));
+  render(<PublicSignInForm />); enterPassword(); fireEvent.click(screen.getByRole('button',{name:/^Đăng nhập/}));
   if (applicationStatus === null) { await screen.findByText(/Partner\./); expect(mocks.push).not.toHaveBeenCalled(); }
   else await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(applicationStatus === 'Approved' ? '/partner' : '/partner/application'));
   expect(mocks.saveTokens).not.toHaveBeenCalled();
@@ -311,7 +311,7 @@ describe('Google Partner final context', () => {
  it.each(['Approved','PendingApproval','Rejected',null,'unexpected'])('uses BE application %s despite Firebase identity', async (applicationStatus) => {
   mocks.popup.mockResolvedValue({user:{email:'admin@example.com',getIdToken:vi.fn().mockResolvedValue('firebase')}});
   mocks.webGoogleAuth.mockResolvedValue({role:'TourOperator',status:'Active',applicationStatus});
-  render(<SignInForm />); agreeGoogle();
+  render(<PublicSignInForm />); agreeGoogle();
   if (applicationStatus === null || applicationStatus === 'unexpected') {await screen.findByText(/Partner\./);expect(mocks.push).not.toHaveBeenCalled();}
   else await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(applicationStatus === 'Approved' ? '/partner' : '/partner/application'));
   expect(mocks.saveTokens).not.toHaveBeenCalled();expect(mocks.verifyEmail).not.toHaveBeenCalled();expect(mocks.webVerifyEmail).not.toHaveBeenCalled();
@@ -322,8 +322,9 @@ describe('UC-06 forgot-password entry points', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('keeps the public Forgot password link pointing to the public recovery route', () => {
-    render(<SignInForm />);
-    const link = screen.getByRole('link', { name: /forgot password/i });
+    render(<PublicSignInForm />);
+    const link = screen.getByRole('link', { name: /quên mật khẩu/i });
     expect(link.getAttribute('href')).toBe('/forgot-password');
   });
+
 });

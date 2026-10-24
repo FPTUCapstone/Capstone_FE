@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { OperatorRevenueView } from '@/features/operator/finance/components/revenue/OperatorRevenueView';
-import { PartnerRouteGuard } from '@/features/auth/routing/PartnerRouteGuard';
+import { PartnerRouteGuard } from '@/features/operator/access/PartnerRouteGuard';
 import { FinanceNavigationSlot } from '@/features/operator/finance/components/layout/FinanceNavigationSlot';
 
 export const metadata: Metadata = {

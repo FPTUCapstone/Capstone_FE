@@ -28,15 +28,15 @@ vi.mock('@/lib/authApi', async (importOriginal) => ({
 }));
 
 import { ROUTES } from '@/lib/routes';
-import LoginForm from './LoginForm';
+import { PublicSignInForm } from './PublicSignInForm';
 
-describe('LoginForm production sign-in route', () => {
+describe('PublicSignInForm production sign-in route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('associates validation errors with the production sign-in fields', async () => {
-    render(<LoginForm />);
+    render(<PublicSignInForm />);
 
     fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
 
@@ -57,7 +57,7 @@ describe('LoginForm production sign-in route', () => {
     mocks.webLogin.mockRejectedValue({ code: 'MSG_UNVERIFIED', status: 403 });
     mocks.webResendVerification.mockResolvedValue({ messageCode: 'MSG_RESEND_SUCCESS' });
 
-    render(<LoginForm />);
+    render(<PublicSignInForm />);
     fireEvent.change(screen.getByLabelText(/^Email/), {
       target: { value: ' User@Example.com ' },
     });
@@ -79,14 +79,14 @@ describe('LoginForm production sign-in route', () => {
   });
 });
 
-describe('LoginForm post sign-in destination', () => {
+describe('PublicSignInForm post sign-in destination', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   async function signInAs(role: string, returnUrl?: string) {
     mocks.webLogin.mockResolvedValue({ role, status: 'Active', applicationStatus: null });
-    render(<LoginForm returnUrl={returnUrl} />);
+    render(<PublicSignInForm returnUrl={returnUrl} />);
     fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'user@example.com' } });
     fireEvent.change(screen.getByLabelText(/^Mật khẩu/), { target: { value: 'secret-pass' } });
     fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập/ }));
