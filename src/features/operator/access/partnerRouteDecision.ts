@@ -1,5 +1,5 @@
 import { ROUTES } from '@/lib/routes';
-import type { WebAuthContext } from '../session/authSession';
+import type { WebAuthContext } from '@/features/auth/session/authSession';
 
 export type PartnerRoute = 'register' | 'dashboard' | 'application' | 'resubmit' | 'profile' | 'couponCreate';
 export type PartnerRouteDecision = { action: 'allow' } | { action: 'redirect'; href: string };

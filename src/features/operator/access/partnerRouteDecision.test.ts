@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AuthStorage, type WebAuthContext } from '../session/authSession';
+import { AuthStorage, type WebAuthContext } from '@/features/auth/session/authSession';
 import { partnerRouteDecision } from './partnerRouteDecision';
 
 const ctx = (overrides: Record<string, unknown> = {}): WebAuthContext => AuthStorage.accept({
