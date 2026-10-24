@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { CreatePoiPage } from '@/features/admin/create-poi';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
 import { ROUTES } from '@/lib/routes';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
   title: 'Create Point of Interest (POI) | TripMate Admin',
@@ -13,10 +14,15 @@ export const metadata: Metadata = {
 };
 
 export default async function NewPoiPage() {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    return redirect(ROUTES.signIn);
+    return redirect(ROUTES.admin.login);
   }
 
   if (session.role !== 'Staff') {

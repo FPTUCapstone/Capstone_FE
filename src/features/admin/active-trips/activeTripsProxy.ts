@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { jsonNoStore } from '@/lib/server/jsonNoStore';
+import { cookies } from 'next/headers';
+
+import { ADMIN_ACCESS_TOKEN_COOKIE, clearAdminSession, jsonNoStore } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
-import { resolveWebSession } from '@/lib/server/webSession';
 import { ACTIVE_TRIPS_MESSAGES } from './activeTrips';
 
 const ALLOWED_QUERY_KEYS = new Set([
@@ -22,8 +23,8 @@ const invalidFilter = {
 } as const;
 
 export async function proxyActiveTrips(request: Request): Promise<Response> {
-  const session = await resolveWebSession(request.signal);
-  if (!session) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+  const token = (await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
 
   const source = new URL(request.url).searchParams;
   const query = new URLSearchParams();
@@ -36,14 +37,14 @@ export async function proxyActiveTrips(request: Request): Promise<Response> {
   try {
     const upstream = await fetchBackend(path, {
       method: 'GET',
-      headers: { Accept: 'application/json', Authorization: `Bearer ${session.accessToken}` },
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       signal: request.signal,
     });
     if (upstream.status === 401 || upstream.status === 403) {
       const title = upstream.status === 401
         ? 'Administrator sign-in required.'
         : 'You do not have permission to access this function.';
-      return jsonNoStore({ title }, upstream.status);
+      return clearAdminSession(jsonNoStore({ title }, upstream.status));
     }
     if (upstream.status >= 500) {
       return jsonNoStore({ title: 'TripMate is temporarily unable to process your request.' }, 503);

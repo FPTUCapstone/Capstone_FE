@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { CreateRouteUnavailableView } from '@/features/admin/routes/components/CreateRouteUnavailableView';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
   title: 'Create Route (Backend Integration Pending) | TripMate Administration',
@@ -11,10 +12,15 @@ export const metadata: Metadata = {
 };
 
 export default async function CreateRoutePage() {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    return redirect('/sign-in?returnUrl=%2Fadmin%2Froutes%2Fcreate');
+    return redirect('/admin/login?returnUrl=%2Fadmin%2Froutes%2Fcreate');
   }
 
   if (session.role === 'Staff') {

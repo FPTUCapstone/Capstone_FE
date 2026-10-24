@@ -1,14 +1,16 @@
 import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
 const mocks = vi.hoisted(() => ({
-  resolveWebSession: vi.fn(),
+  getCookie: vi.fn(),
   redirect: vi.fn(),
 }));
 
-vi.mock('@/lib/server/webSession', () => ({ resolveWebSession: mocks.resolveWebSession }));
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ get: mocks.getCookie }),
+}));
 vi.mock('next/navigation', () => ({
   redirect: mocks.redirect,
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
@@ -36,6 +38,12 @@ vi.mock(
 );
 
 import NewPoiPage from '@/../app/admin/catalogue/points-of-interest/new/page';
+import {
+  ADMIN_ACCESS_TOKEN_COOKIE,
+  ADMIN_SESSION_SEAL_COOKIE,
+  ADMIN_SESSION_SECRET_ENV,
+  createAdminSessionSeal,
+} from '@/lib/server/adminSession';
 import AdminConsoleLayout from './layout';
 import AdminConsolePage from './page';
 import AlgorithmParametersPage from './settings/algorithm-parameters/page';
@@ -43,52 +51,84 @@ import StaffDashboardPage from './staff/page';
 import TourOperatorApplicationDetailPage from './tour-operator-applications/[userId]/page';
 import AdminTourReviewQueuePage from './tours/reviews/page';
 
-function mockSession(role: 'Administrator' | 'Staff') {
-  mocks.resolveWebSession.mockResolvedValue({ accessToken: 'valid-backend-token', role });
+const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
+
+function mockSealedSession(role: 'Administrator' | 'Staff', token = 'valid-backend-token') {
+  const sealed = createAdminSessionSeal({
+    token,
+    role,
+    userId: role === 'Administrator' ? 1 : 2,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    secret: TEST_SECRET,
+  })!;
+  mocks.getCookie.mockImplementation((name: string) => {
+    if (name === ADMIN_ACCESS_TOKEN_COOKIE) return { value: token };
+    if (name === ADMIN_SESSION_SEAL_COOKIE) return { value: sealed.seal };
+    return undefined;
+  });
 }
 
 describe('Administration Console Route Access Control (Fail-Closed BFF Session)', () => {
+  let priorSecret: string | undefined;
+
   beforeEach(() => {
     vi.resetAllMocks();
+    priorSecret = process.env[ADMIN_SESSION_SECRET_ENV];
+    process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
   });
 
-  it('AdminConsoleLayout redirects unauthenticated requests to /sign-in and renders navigation for valid sessions', async () => {
-    mocks.resolveWebSession.mockResolvedValue(null);
+  afterEach(() => {
+    if (priorSecret === undefined) {
+      delete process.env[ADMIN_SESSION_SECRET_ENV];
+    } else {
+      process.env[ADMIN_SESSION_SECRET_ENV] = priorSecret;
+    }
+  });
+
+  it('AdminConsoleLayout redirects unauthenticated or unsealed requests to /admin/login and renders navigation for valid sessions', async () => {
+    mocks.getCookie.mockReturnValue(undefined);
     await AdminConsoleLayout({ children: <div>ChildContent</div> });
-    expect(mocks.redirect).toHaveBeenCalledWith('/sign-in');
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login');
 
     mocks.redirect.mockClear();
-    mockSession('Staff');
+    mocks.getCookie.mockImplementation((name: string) =>
+      name === ADMIN_ACCESS_TOKEN_COOKIE ? { value: 'forged-unsealed-token' } : undefined,
+    );
+    await AdminConsoleLayout({ children: <div>ChildContent</div> });
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login');
+
+    mocks.redirect.mockClear();
+    mockSealedSession('Staff');
     render(await AdminConsoleLayout({ children: <div>ChildContent</div> }));
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(screen.getByText('ChildContent')).toBeTruthy();
   });
 
-  it('AdminConsolePage (/admin) redirects unauthenticated users to sign-in, redirects Staff to /admin/staff, and renders AdminDashboard for Administrator', async () => {
-    mocks.resolveWebSession.mockResolvedValue(null);
+  it('AdminConsolePage (/admin) redirects unauthenticated users to login, redirects Staff to /admin/staff, and renders AdminDashboard for Administrator', async () => {
+    mocks.getCookie.mockReturnValue(undefined);
     await AdminConsolePage();
-    expect(mocks.redirect).toHaveBeenCalledWith('/sign-in?returnUrl=%2Fadmin');
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin');
 
     mocks.redirect.mockClear();
-    mockSession('Staff');
+    mockSealedSession('Staff');
     await AdminConsolePage();
     expect(mocks.redirect).toHaveBeenCalledWith('/admin/staff');
 
     mocks.redirect.mockClear();
-    mockSession('Administrator');
+    mockSealedSession('Administrator');
     render(await AdminConsolePage());
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(screen.getByText('AdminDashboardMock')).toBeTruthy();
   });
 
-  it('StaffDashboardPage (/admin/staff) redirects unauthenticated requests to sign-in and allows Staff and Administrator', async () => {
-    mocks.resolveWebSession.mockResolvedValue(null);
+  it('StaffDashboardPage (/admin/staff) redirects unauthenticated or unsealed requests to login and allows Staff and Administrator', async () => {
+    mocks.getCookie.mockReturnValue(undefined);
     await StaffDashboardPage();
-    expect(mocks.redirect).toHaveBeenCalledWith('/sign-in?returnUrl=%2Fadmin%2Fstaff');
+    expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Fstaff');
 
     for (const role of ['Staff', 'Administrator'] as const) {
       mocks.redirect.mockClear();
-      mockSession(role);
+      mockSealedSession(role);
       const { unmount } = render(await StaffDashboardPage());
       expect(mocks.redirect).not.toHaveBeenCalled();
       expect(screen.getByText('StaffDashboardMock')).toBeTruthy();
@@ -96,27 +136,27 @@ describe('Administration Console Route Access Control (Fail-Closed BFF Session)'
     }
   });
 
-  it('AlgorithmParametersPage redirects unauthenticated requests to sign-in, blocks Staff with AdminAccessDeniedView, and renders for Administrator', async () => {
-    mocks.resolveWebSession.mockResolvedValue(null);
+  it('AlgorithmParametersPage redirects unauthenticated requests to login, blocks Staff with AdminAccessDeniedView, and renders for Administrator', async () => {
+    mocks.getCookie.mockReturnValue(undefined);
     await AlgorithmParametersPage();
     expect(mocks.redirect).toHaveBeenCalledWith(
-      '/sign-in?returnUrl=%2Fadmin%2Fsettings%2Falgorithm-parameters',
+      '/admin/login?returnUrl=%2Fadmin%2Fsettings%2Falgorithm-parameters',
     );
 
     mocks.redirect.mockClear();
-    mockSession('Staff');
+    mockSealedSession('Staff');
     const denied = render(await AlgorithmParametersPage());
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
     denied.unmount();
 
-    mockSession('Administrator');
+    mockSealedSession('Administrator');
     render(await AlgorithmParametersPage());
     expect(screen.getByText('AlgorithmConfigMock')).toBeTruthy();
   });
 
   it('AdminTourReviewQueuePage and TourOperatorApplicationDetailPage block Staff with AdminAccessDeniedView', async () => {
-    mockSession('Staff');
+    mockSealedSession('Staff');
     const reviewDenied = render(await AdminTourReviewQueuePage());
     expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
     reviewDenied.unmount();
@@ -129,13 +169,13 @@ describe('Administration Console Route Access Control (Fail-Closed BFF Session)'
   });
 
   it('NewPoiPage allows Staff and blocks Administrator with the Staff-required view', async () => {
-    mockSession('Administrator');
+    mockSealedSession('Administrator');
     const denied = render(await NewPoiPage());
     expect(screen.getByRole('heading', { name: 'Staff Access Required' })).toBeTruthy();
     expect(screen.queryByText('CreatePoiMock')).toBeNull();
     denied.unmount();
 
-    mockSession('Staff');
+    mockSealedSession('Staff');
     render(await NewPoiPage());
     expect(screen.getByText('CreatePoiMock')).toBeTruthy();
   });

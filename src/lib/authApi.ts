@@ -233,9 +233,9 @@ async function webSignIn(path: string, body: object, keepMeSignedIn: boolean, go
   }
 }
 
-export function webLogin(data: WebLoginRequest): Promise<WebAuthContext> {
+export function webLogin(data: WebLoginRequest, administrator = false): Promise<WebAuthContext> {
   const keepMeSignedIn = data.keepMeSignedIn ?? false;
-  return webSignIn('login', {
+  return webSignIn(administrator ? 'admin/login' : 'login', {
     email: data.email.trim().toLowerCase(), password: data.password, keepMeSignedIn,
   }, keepMeSignedIn, false);
 }

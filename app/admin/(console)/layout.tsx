@@ -1,15 +1,22 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { ROUTES } from '@/lib/routes';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export default async function AdminConsoleLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    const cookieStore = await cookies();
+    session = verifyAdminSessionFromCookies(cookieStore);
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    return redirect(ROUTES.signIn);
+    return redirect(ROUTES.admin.login);
   }
 
   return (

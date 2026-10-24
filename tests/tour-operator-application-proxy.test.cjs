@@ -2,12 +2,20 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
-const { adminProxyStubs } = require('./admin-proxy-stubs.cjs');
 
 function setup(token, backend) {
   return loadTs('src/features/admin/tour-operator-applications/api/tourOperatorApplicationProxy.ts', {
+    'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
-    ...adminProxyStubs(token ? { accessToken: token, role: 'Administrator' } : null),
+    '@/lib/server/adminSession': {
+      ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
+      isSameOriginRequest: request => request.headers.get('origin') === new URL(request.url).origin,
+      jsonNoStore: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
+      clearAdminSession: response => {
+        response.headers.set('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0');
+        return response;
+      },
+    },
   }).proxyTourOperatorApplication;
 }
 
@@ -81,7 +89,7 @@ test('rejects cross-origin mutations and forwards a valid rejection reason', asy
 test('clears an invalid session on 401, preserves session on 403, and does not expose upstream server failures', async () => {
   const denied = await setup('expired', async () => Response.json({ detail: 'private' }, { status: 401 }))(request(), '2');
   assert.equal(denied.status, 401);
-  assert.equal(denied.headers.get('Set-Cookie'), null);
+  assert.match(denied.headers.get('Set-Cookie'), /Max-Age=0/);
 
   const forbidden = await setup('staff-token', async () => Response.json({ detail: 'private' }, { status: 403 }))(request(), '2');
   assert.equal(forbidden.status, 403);

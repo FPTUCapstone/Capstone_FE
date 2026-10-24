@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { StaffDashboardView } from '@/features/admin/staff/components/StaffDashboardView';
 import { ROUTES } from '@/lib/routes';
-import { resolveWebSession } from '@/lib/server/webSession';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
   title: 'Staff Operations Dashboard | TripMate Administration',
@@ -11,10 +12,15 @@ export const metadata: Metadata = {
 };
 
 export default async function StaffDashboardPage() {
-  const session = await resolveWebSession();
+  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
+  try {
+    session = verifyAdminSessionFromCookies(await cookies());
+  } catch {
+    session = null;
+  }
 
   if (!session) {
-    return redirect(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.admin.staffDashboard)}`);
+    return redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.staffDashboard)}`);
   }
 
   return <StaffDashboardView />;

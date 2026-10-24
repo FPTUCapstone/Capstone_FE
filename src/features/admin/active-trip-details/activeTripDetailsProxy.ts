@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { jsonNoStore } from '@/lib/server/jsonNoStore';
+import { cookies } from 'next/headers';
+
+import { ADMIN_ACCESS_TOKEN_COOKIE, clearAdminSession, jsonNoStore } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
-import { resolveWebSession } from '@/lib/server/webSession';
 import { isValidTripId } from './activeTripDetails';
 
 /**
@@ -11,18 +12,18 @@ import { isValidTripId } from './activeTripDetails';
  */
 export async function proxyActiveTripDetails(id: string): Promise<Response> {
   if (!isValidTripId(id)) return jsonNoStore({ title: 'The trip reference is invalid.' }, 400);
-  const session = await resolveWebSession();
-  if (!session) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+  const token = (await cookies()).get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
   try {
     const upstream = await fetchBackend(`/api/v1/admin/trips/active/${id}`, {
       method: 'GET',
-      headers: { Accept: 'application/json', Authorization: `Bearer ${session.accessToken}` },
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
     });
     if (upstream.status === 401 || upstream.status === 403) {
       const title = upstream.status === 401
         ? 'Administrator sign-in required.'
         : 'You do not have permission to access this function.';
-      return jsonNoStore({ title }, upstream.status);
+      return clearAdminSession(jsonNoStore({ title }, upstream.status));
     }
     if (upstream.status >= 500) {
       return jsonNoStore({ title: 'TripMate is temporarily unable to process your request.' }, 503);

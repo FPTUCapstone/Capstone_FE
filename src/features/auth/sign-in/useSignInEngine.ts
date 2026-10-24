@@ -12,7 +12,6 @@ import { type ApiError, webGoogleAuth, isApiError } from '@/lib/authApi';
 import { mapGoogleSignInError, mapWebRecoveryError } from '@/lib/authErrorMapper';
 import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
 import { signInDestination, partnerUnresolvedMessage } from '@/features/auth/routing/signInDestination';
-import { resolveSignInReturnUrl } from '@/features/auth/routing/signInReturnUrl';
 import { loginWithWebRecovery, resendWebVerification } from '@/features/auth/recovery/webRecovery';
 
 export type SignInFeedback = {
@@ -47,8 +46,6 @@ export type SignInEngine = {
 };
 
 export type SignInEngineOptions = {
-  /** Raw `returnUrl` from the sign-in query string; honored only for a role allowed to open it. */
-  returnUrl?: string;
   /** Overrides the default email placeholders / labels if needed. */
   invalidEmailMessage?: string;
   emailRequiredMessage?: string;
@@ -60,7 +57,6 @@ const defaultPasswordRequiredMessage = 'Please enter your password.';
 const defaultInvalidEmailMessage = 'Invalid email format. Please enter a valid email address.';
 
 export function useSignInEngine({
-  returnUrl,
   emailRequiredMessage = defaultEmailRequiredMessage,
   passwordRequiredMessage = defaultPasswordRequiredMessage,
   invalidEmailMessage = defaultInvalidEmailMessage,
@@ -115,14 +111,14 @@ export function useSignInEngine({
     setLoading(true);
 
     try {
-      const res = await loginWithWebRecovery({ email: email.trim().toLowerCase(), password, keepMeSignedIn: remember });
+      const res = await loginWithWebRecovery({ email: email.trim().toLowerCase(), password, keepMeSignedIn: remember }, false);
 
-      const destination = resolveSignInReturnUrl(returnUrl, res.role, signInDestination(res));
       setFeedback({
         tone: 'success',
-        message: destination ? 'Signed in successfully! Redirecting...' : partnerUnresolvedMessage,
+        message: signInDestination(res) ? 'Signed in successfully! Redirecting...' : partnerUnresolvedMessage,
       });
 
+      const destination = signInDestination(res);
       if (destination) router.replace(destination);
     } catch (err: unknown) {
       const apiErr = err as ApiError;
@@ -160,7 +156,7 @@ export function useSignInEngine({
       const idToken = await result.user.getIdToken();
 
       const res = await webGoogleAuth(idToken, remember);
-      const destination = resolveSignInReturnUrl(returnUrl, res.role, signInDestination(res));
+      const destination = signInDestination(res);
       setFeedback({ tone: 'success', message: destination ? 'Signed in with Google successfully! Redirecting...' : partnerUnresolvedMessage });
       if (destination) router.replace(destination);
 
