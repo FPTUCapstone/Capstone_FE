@@ -34,8 +34,8 @@ export interface ResolveStatisticalWorkspaceModeOptions {
  *     catalog terminates at MSG130.
  *
  * BFF Architecture Integration:
- * - Server component `/admin/reports` authenticates via `@/lib/server/adminSession` using signed
- *   HMAC-SHA256 session seals (`TRIPMATE_ADMIN_SESSION_SECRET`).
+ * - Server component `/admin/reports` authenticates via `@/lib/server/webSession`, which resolves
+ *   the signed-in session from the HttpOnly refresh cookie on the server.
  * - `canAccessStatisticalReports` acts as a defense-in-depth gate to ensure only verified
  *   `Administrator` sessions can view or operate statistical reporting screens.
  */

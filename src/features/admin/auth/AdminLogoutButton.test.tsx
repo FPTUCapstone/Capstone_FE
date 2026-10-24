@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   refresh: vi.fn(),
+  webLogout: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -13,19 +14,22 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('@/lib/authApi', () => ({ webLogout: mocks.webLogout }));
+
 import AdminLogoutButton from './AdminLogoutButton';
+
+const LOGOUT_ERROR = 'Unable to sign out of the administration workspace. Please try again.';
 
 describe('AdminLogoutButton', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mocks.replace.mockReset();
     mocks.refresh.mockReset();
+    mocks.webLogout.mockReset();
   });
 
-  it('deletes the current admin session and redirects only after logout succeeds', async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+  it('signs out through the web logout and redirects to sign-in only after it succeeds', async () => {
+    mocks.webLogout.mockResolvedValue(undefined);
 
     render(<AdminLogoutButton />);
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
@@ -33,20 +37,19 @@ describe('AdminLogoutButton', () => {
       within(screen.getByRole('dialog')).getByRole('button', { name: /Log out|Đăng xuất/i }),
     );
 
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin/login'));
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/admin/session');
-    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'DELETE' });
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/sign-in'));
+    expect(mocks.webLogout).toHaveBeenCalledTimes(1);
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('sends one request when two confirmations arrive before React re-renders', async () => {
-    let resolveLogout!: (response: Response) => void;
-    const pendingLogout = new Promise<Response>((resolve) => {
-      resolveLogout = resolve;
-    });
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(() => pendingLogout);
+    let resolveLogout!: () => void;
+    mocks.webLogout.mockImplementation(
+      () => new Promise<void>((resolve) => {
+        resolveLogout = resolve;
+      }),
+    );
 
     render(<AdminLogoutButton />);
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
@@ -59,17 +62,16 @@ describe('AdminLogoutButton', () => {
       confirm.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(mocks.webLogout).toHaveBeenCalledTimes(1);
 
-    resolveLogout(new Response(null, { status: 204 }));
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin/login'));
+    resolveLogout();
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/sign-in'));
   });
 
-  it('keeps the admin signed in after an HTTP error and allows a successful retry', async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+  it('keeps the admin signed in after a failed logout and allows a successful retry', async () => {
+    mocks.webLogout
+      .mockRejectedValueOnce({ status: 500, message: 'internal detail' })
+      .mockResolvedValueOnce(undefined);
 
     render(<AdminLogoutButton />);
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
@@ -77,9 +79,7 @@ describe('AdminLogoutButton', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
-    expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'Unable to sign out of the administration workspace. Please try again.',
-    );
+    expect((await within(dialog).findByRole('alert')).textContent).toBe(LOGOUT_ERROR);
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();
     await waitFor(() => {
@@ -89,15 +89,15 @@ describe('AdminLogoutButton', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/admin/login'));
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/sign-in'));
+    expect(mocks.webLogout).toHaveBeenCalledTimes(2);
   });
 
   it.each([
-    ['network failure', new TypeError('Failed to fetch')],
+    ['network failure', { code: 'NETWORK', message: 'Sign out unavailable.', status: 0 }],
     ['request timeout', new DOMException('The operation was aborted', 'AbortError')],
   ])('keeps the admin signed in after %s', async (_case, error) => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(error);
+    mocks.webLogout.mockRejectedValue(error);
 
     render(<AdminLogoutButton />);
     fireEvent.click(screen.getByRole('button', { name: 'Sign out of administration' }));
@@ -105,9 +105,7 @@ describe('AdminLogoutButton', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: /Log out|Đăng xuất/i }));
 
-    expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'Unable to sign out of the administration workspace. Please try again.',
-    );
+    expect((await within(dialog).findByRole('alert')).textContent).toBe(LOGOUT_ERROR);
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();
   });

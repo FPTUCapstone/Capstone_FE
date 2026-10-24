@@ -1,15 +1,9 @@
 import 'server-only';
 
-import { cookies } from 'next/headers';
-
-import {
-  ADMIN_ACCESS_TOKEN_COOKIE,
-  clearAdminSession,
-  isSameOriginRequest,
-  jsonNoStore,
-  verifyAdminSessionFromCookies,
-} from '@/lib/server/adminSession';
+import { jsonNoStore } from '@/lib/server/jsonNoStore';
+import { isSameOriginRequest } from '@/lib/server/sameOrigin';
 import { fetchBackend } from '@/lib/server/backend';
+import { resolveWebSession } from '@/lib/server/webSession';
 import { parseApplicationId } from '../utils/applicationId';
 
 type ApplicationAction = 'approve' | 'reject';
@@ -26,19 +20,9 @@ export async function proxyTourOperatorApplication(
     return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
-
-  if (typeof verifyAdminSessionFromCookies === 'function') {
-    const session = verifyAdminSessionFromCookies(cookieStore);
-    if (!session) {
-      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
-    }
-    if (session.role === 'Staff') {
-      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
-    }
-  }
+  const session = await resolveWebSession(request.signal);
+  if (!session) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+  if (session.role === 'Staff') return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
 
   let body: string | undefined;
   if (action === 'reject') {
@@ -56,16 +40,14 @@ export async function proxyTourOperatorApplication(
   try {
     const upstream = await fetchBackend(`/api/v1/admin/tour-operator-applications/${userId}${suffix}`, {
       method: request.method,
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${session.accessToken}`, 'Content-Type': 'application/json' },
       body,
     });
     if (upstream.status >= 500) {
       return jsonNoStore({ title: 'The Tour Operator application service is unavailable.' }, 503);
     }
     if (upstream.status === 401) {
-      return clearAdminSession(
-        jsonNoStore({ title: 'Administrator sign-in required.' }, 401),
-      );
+      return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
     }
     if (upstream.status === 403) {
       return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);

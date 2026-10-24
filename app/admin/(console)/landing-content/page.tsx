@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { LandingContentScreen } from '@/features/admin/landing-content/LandingContentScreen';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
-import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
+import { resolveWebSession } from '@/lib/server/webSession';
 
 export const metadata: Metadata = {
   title: 'Landing Page Content Management | TripMate Administration',
@@ -12,15 +11,10 @@ export const metadata: Metadata = {
 };
 
 export default async function LandingContentPage() {
-  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
-  try {
-    session = verifyAdminSessionFromCookies(await cookies());
-  } catch {
-    session = null;
-  }
+  const session = await resolveWebSession();
 
   if (!session) {
-    return redirect('/admin/login?returnUrl=%2Fadmin%2Flanding-content');
+    return redirect('/sign-in?returnUrl=%2Fadmin%2Flanding-content');
   }
 
   if (session.role !== 'Administrator' && session.role !== 'Staff') {

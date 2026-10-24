@@ -9,7 +9,12 @@ import { ROUTES } from "@/lib/routes";
 
 import { SignInField } from './SignInField';
 
-export function PublicSignInForm() {
+type PublicSignInFormProps = {
+  /** Raw `returnUrl` from the sign-in query string. */
+  returnUrl?: string;
+};
+
+export function PublicSignInForm({ returnUrl }: PublicSignInFormProps) {
   const {
     email,
     password,
@@ -29,7 +34,7 @@ export function PublicSignInForm() {
     handleSubmit,
     handleGoogle,
     handleResendEmail,
-  } = useSignInEngine();
+  } = useSignInEngine({ returnUrl });
 
   return (
     <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">

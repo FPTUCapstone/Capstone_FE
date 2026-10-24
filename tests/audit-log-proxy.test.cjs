@@ -2,22 +2,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
+const { adminProxyStubs } = require('./admin-proxy-stubs.cjs');
 
 function setup(token, backend) {
   return loadTs('src/features/admin/audit-logs/api/auditLogProxy.ts', {
-    'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
-    '@/lib/server/adminSession': {
-      ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
-      jsonNoStore: (body, status = 200) => Response.json(body, {
-        status,
-        headers: { 'Cache-Control': 'no-store' },
-      }),
-      clearAdminSession: response => {
-        response.headers.set('Set-Cookie', 'tripmate_admin_access_token=; Max-Age=0');
-        return response;
-      },
-    },
+    ...adminProxyStubs(token ? { accessToken: token, role: 'Administrator' } : null),
   }).proxyAuditLogs;
 }
 
@@ -57,14 +47,14 @@ test('forwards supported filters and the Admin cookie token only', async () => {
   assert.equal(calls[0].init.signal, inboundRequest.signal);
 });
 
-test('clears invalid Admin sessions on 401 authentication failure and preserves session on 403 authorization denial', async () => {
+test('answers 401 without cookies on upstream 401 and 403 without cookies on upstream 403', async () => {
   const unauthenticated = await setup('invalid-token', async () => Response.json(
     { detail: 'private upstream detail' },
     { status: 401 },
   ))(request());
 
   assert.equal(unauthenticated.status, 401);
-  assert.match(unauthenticated.headers.get('Set-Cookie'), /Max-Age=0/);
+  assert.equal(unauthenticated.headers.get('Set-Cookie'), null);
   assert.doesNotMatch(await unauthenticated.text(), /private upstream detail/);
 
   const forbidden = await setup('staff-token', async () => Response.json(

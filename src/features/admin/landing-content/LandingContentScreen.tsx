@@ -36,7 +36,7 @@ type Message = {
   action?: { label: string; run: () => void };
 };
 
-const LOGIN_URL = '/admin/login?returnUrl=%2Fadmin%2Flanding-content';
+const LOGIN_URL = '/sign-in?returnUrl=%2Fadmin%2Flanding-content';
 
 export function LandingContentScreen() {
   const copy = landingContentEn;

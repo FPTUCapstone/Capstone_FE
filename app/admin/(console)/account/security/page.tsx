@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { AdminChangePasswordView } from '@/features/admin/account/AdminChangePasswordView';
 import { ROUTES } from '@/lib/routes';
-import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
+import { resolveWebSession } from '@/lib/server/webSession';
 
 export const metadata: Metadata = {
   title: 'Change Password | TripMate Administration',
@@ -12,15 +11,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminAccountSecurityPage() {
-  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
-  try {
-    session = verifyAdminSessionFromCookies(await cookies());
-  } catch {
-    session = null;
-  }
+  const session = await resolveWebSession();
 
   if (!session) {
-    return redirect(ROUTES.admin.login);
+    return redirect(ROUTES.signIn);
   }
 
   // UC-07 permits both internal roles to change only their own password.

@@ -3,7 +3,12 @@ import HeroPanel from '@/components/HeroPanel';
 
 import { PublicSignInForm } from './PublicSignInForm';
 
-export function PublicSignInPage() {
+type PublicSignInPageProps = {
+  /** Raw `returnUrl` from the sign-in query string. */
+  returnUrl?: string;
+};
+
+export function PublicSignInPage({ returnUrl }: PublicSignInPageProps) {
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr]">
       <HeroPanel
@@ -27,7 +32,7 @@ export function PublicSignInPage() {
         </div>
 
         <div className="w-full max-w-[480px]">
-          <PublicSignInForm />
+          <PublicSignInForm returnUrl={returnUrl} />
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
             Bằng việc đăng nhập, bạn đã đồng ý với các điều khoản của TripMate.

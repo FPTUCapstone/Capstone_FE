@@ -1,14 +1,8 @@
 import 'server-only';
 
-import { cookies } from 'next/headers';
-
-import {
-  ADMIN_ACCESS_TOKEN_COOKIE,
-  clearAdminSession,
-  jsonNoStore,
-  verifyAdminSessionFromCookies,
-} from '@/lib/server/adminSession';
+import { jsonNoStore } from '@/lib/server/jsonNoStore';
 import { fetchBackend } from '@/lib/server/backend';
+import { resolveWebSession } from '@/lib/server/webSession';
 
 import { PAYOUTS_PAGE_SIZE } from './payoutRecords';
 
@@ -52,12 +46,8 @@ function safeErrorBody(value: unknown, fallbackTitle: string): { title: string; 
 }
 
 export async function proxyPayoutRecords(request: Request): Promise<Response> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
-  const session = verifyAdminSessionFromCookies(cookieStore);
-  if (!token || !session) {
-    return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
-  }
+  const session = await resolveWebSession(request.signal);
+  if (!session) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
 
   if (session.role !== 'Staff') {
     return jsonNoStore({ title: 'Staff access is required for payout review.' }, 403);
@@ -66,7 +56,7 @@ export async function proxyPayoutRecords(request: Request): Promise<Response> {
   try {
     const upstream = await fetchBackend(buildUpstreamPath(request), {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${session.accessToken}` },
       signal: request.signal,
     });
 
@@ -75,9 +65,7 @@ export async function proxyPayoutRecords(request: Request): Promise<Response> {
     }
 
     if (upstream.status === 401) {
-      return clearAdminSession(jsonNoStore({
-        title: 'Administrator sign-in required.',
-      }, 401));
+      return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
     }
 
     if (upstream.status === 403) {

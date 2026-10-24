@@ -1,14 +1,16 @@
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-import { AdminLoginPage } from '@/features/admin/auth/AdminLoginPage';
-
-export const metadata: Metadata = { title: 'Admin Login' };
+import { safeAdminReturnPath } from '@/features/auth/routing/signInReturnUrl';
+import { ROUTES } from '@/lib/routes';
 
 interface AdminLoginRouteProps {
   searchParams: Promise<{ returnUrl?: string | string[] }>;
 }
 
+// Administrators and Staff sign in at /sign-in like every other role. A safe administration
+// returnUrl is forwarded; the role check happens after sign-in.
 export default async function AdminLoginRoute({ searchParams }: AdminLoginRouteProps) {
   const { returnUrl } = await searchParams;
-  return <AdminLoginPage returnUrl={typeof returnUrl === 'string' ? returnUrl : undefined} />;
+  const safeReturnPath = safeAdminReturnPath(returnUrl);
+  redirect(safeReturnPath ? `${ROUTES.signIn}?returnUrl=${encodeURIComponent(safeReturnPath)}` : ROUTES.signIn);
 }
