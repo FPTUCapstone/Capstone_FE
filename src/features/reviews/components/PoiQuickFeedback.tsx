@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
 import type { PoiReviewFeedback } from '../types/review';
 
 interface PoiQuickFeedbackProps {

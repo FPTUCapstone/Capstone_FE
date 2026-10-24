@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { resolveWebSessionMock, fetchBackendMock } = vi.hoisted(() => ({
   resolveWebSessionMock: vi.fn(),
@@ -14,17 +14,30 @@ function mockSession(role: 'Administrator' | 'Staff' | null, accessToken = 'admi
   resolveWebSessionMock.mockResolvedValue(role ? { accessToken, role } : null);
 }
 
-function rejectRequest(body: unknown) {
-  return new Request('http://localhost:3000/api/admin/payouts/123/reject', {
+const SAME_ORIGIN = 'http://localhost:3000';
+
+function mutationRequest(
+  action: 'approve' | 'reject',
+  body?: unknown,
+  origin: string | null = SAME_ORIGIN,
+) {
+  return new Request(`${SAME_ORIGIN}/api/admin/payouts/123/${action}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      ...(origin === null ? {} : { Origin: origin }),
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv('TRIPMATE_WEB_ORIGIN', '');
   mockSession('Staff');
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('proxyGetPayoutDetail', () => {
@@ -44,7 +57,7 @@ describe('proxyGetPayoutDetail', () => {
     expect(init.headers.Authorization).toBe('Bearer admin-token');
   });
 
-  it('answers 401 without contacting the backend when there is no web session', async () => {
+  it('answers 401 without contacting the backend when the session is missing', async () => {
     mockSession(null);
     const res = await proxyGetPayoutDetail('123');
     expect(res.status).toBe(401);
@@ -80,11 +93,23 @@ describe('proxyGetPayoutDetail', () => {
 });
 
 describe('proxyApprovePayout', () => {
+  it.each([null, 'null', 'https://attacker.example'])(
+    'rejects an approve mutation from origin %s before reading the Staff session',
+    async (origin) => {
+      const res = await proxyApprovePayout('123', mutationRequest('approve', undefined, origin));
+      expect(res.status).toBe(403);
+      await expect(res.json()).resolves.toEqual({ title: 'Request origin is not allowed.' });
+      expect(res.headers.get('Cache-Control')).toBe('no-store');
+      expect(resolveWebSessionMock).not.toHaveBeenCalled();
+      expect(fetchBackendMock).not.toHaveBeenCalled();
+    },
+  );
+
   it('forwards a POST with no body to the approve endpoint', async () => {
     fetchBackendMock.mockResolvedValue(Response.json({
       payoutId: '123', status: 'ApprovedForSettlement', decidedAtUtc: '2026-10-14T09:00:00Z',
     }));
-    const res = await proxyApprovePayout('123');
+    const res = await proxyApprovePayout('123', mutationRequest('approve'));
     expect(res.status).toBe(200);
     const [path, init] = fetchBackendMock.mock.calls[0];
     expect(path).toBe('/api/v1/admin/payouts/123/approve');
@@ -98,7 +123,7 @@ describe('proxyApprovePayout', () => {
       errorCode: 'payout.not_pending_review',
       currentStatus: 'Rejected',
     }, { status: 409 }));
-    const res = await proxyApprovePayout('123');
+    const res = await proxyApprovePayout('123', mutationRequest('approve'));
     expect(res.status).toBe(409);
     await expect(res.json()).resolves.toEqual({
       title: 'The payout request is no longer pending review.',
@@ -108,19 +133,49 @@ describe('proxyApprovePayout', () => {
   });
 
   it('rejects a malformed payoutId before contacting the backend', async () => {
-    const res = await proxyApprovePayout('../etc/passwd');
+    const res = await proxyApprovePayout('../etc/passwd', mutationRequest('approve'));
     expect(res.status).toBe(400);
     expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts the configured public origin behind a reverse proxy', async () => {
+    vi.stubEnv('TRIPMATE_WEB_ORIGIN', 'https://public.tripmate.test');
+    fetchBackendMock.mockResolvedValue(Response.json({ payoutId: '123', status: 'ApprovedForSettlement' }));
+    const res = await proxyApprovePayout(
+      '123',
+      mutationRequest('approve', undefined, 'https://public.tripmate.test'),
+    );
+    expect(res.status).toBe(200);
+    expect(resolveWebSessionMock).toHaveBeenCalledOnce();
+    expect(fetchBackendMock).toHaveBeenCalledOnce();
   });
 });
 
 describe('proxyRejectPayout', () => {
+  it.each([null, 'null', 'https://attacker.example'])(
+    'rejects a reject mutation from origin %s before reading the Staff session or body',
+    async (origin) => {
+      const request = mutationRequest(
+        'reject',
+        { reason: 'Bank details could not be verified.' },
+        origin,
+      );
+      const res = await proxyRejectPayout('123', request);
+      expect(res.status).toBe(403);
+      await expect(res.json()).resolves.toEqual({ title: 'Request origin is not allowed.' });
+      expect(res.headers.get('Cache-Control')).toBe('no-store');
+      expect(request.bodyUsed).toBe(false);
+      expect(resolveWebSessionMock).not.toHaveBeenCalled();
+      expect(fetchBackendMock).not.toHaveBeenCalled();
+    },
+  );
+
   it('forwards only the reason field, even when the browser sends more', async () => {
     fetchBackendMock.mockResolvedValue(Response.json({
       payoutId: '123', status: 'Rejected', decidedAtUtc: '2026-10-14T09:00:00Z',
       rejectionReason: 'Bank details could not be verified.',
     }));
-    const res = await proxyRejectPayout('123', rejectRequest({
+    const res = await proxyRejectPayout('123', mutationRequest('reject', {
       reason: 'Bank details could not be verified.',
       currentStatus: 'ApprovedForSettlement', // must never be forwarded
     }));
@@ -136,7 +191,7 @@ describe('proxyRejectPayout', () => {
       errorCode: 'payout.rejection_reason_invalid',
       errors: { reason: ['Rejection reason must be between 10 and 500 characters.'] },
     }, { status: 400 }));
-    const res = await proxyRejectPayout('123', rejectRequest({}));
+    const res = await proxyRejectPayout('123', mutationRequest('reject', {}));
     expect(res.status).toBe(400);
     const [, init] = fetchBackendMock.mock.calls[0];
     expect(JSON.parse(init.body)).toEqual({ reason: '' });
@@ -149,7 +204,7 @@ describe('proxyRejectPayout', () => {
 
   it('rejects Administrator before reading the body or calling the backend', async () => {
     mockSession('Administrator');
-    const res = await proxyRejectPayout('123', rejectRequest({ reason: 'anything at all here' }));
+    const res = await proxyRejectPayout('123', mutationRequest('reject', { reason: 'anything at all here' }));
     expect(res.status).toBe(403);
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });

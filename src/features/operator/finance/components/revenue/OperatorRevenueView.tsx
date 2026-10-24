@@ -43,6 +43,15 @@ export function OperatorRevenueView() {
   const isDemo = demoQuery && isFinanceDemoAllowedInCurrentEnv();
   const actorUserId = context?.userId;
 
+  return <RevenueWorkspace key={JSON.stringify([actorUserId, isDemo])} actorUserId={actorUserId} isDemo={isDemo} />;
+}
+
+// Actor/mode changes discard the complete private workspace, including child drafts and exports.
+// Ordinary session rerenders keep the same key and preserve the current filter edits.
+function RevenueWorkspace({ actorUserId, isDemo }: {
+  actorUserId: string | number | undefined;
+  isDemo: boolean;
+}) {
   // Seeded development records are in the current reporting month.
   const initialFilters: RevenueFilterInput = {
     startDate: '2026-10-01',
@@ -56,7 +65,18 @@ export function OperatorRevenueView() {
   const [reportResult, setReportResult] = useState<RevenueReportResult | null>(
     null
   );
-  const [tours, setTours] = useState<DemoTourPackage[]>([]);
+  const [tourLoad, setTourLoad] = useState<{
+    isDemo: boolean;
+    actorUserId: typeof actorUserId;
+    tours: DemoTourPackage[];
+    failed: boolean;
+  } | null>(null);
+  const [tourRetryToken, setTourRetryToken] = useState(0);
+  const tourContextMatches = tourLoad?.isDemo === isDemo &&
+    tourLoad?.actorUserId === actorUserId;
+  const tours = tourContextMatches ? tourLoad.tours : [];
+  const toursFailed = tourContextMatches && tourLoad.failed;
+  const isToursLoading = !tourContextMatches;
   const [currentPage, setCurrentPage] = useState(1);
   // Starts true so the first mount shows a loading state without an effect setting it
   // synchronously; every later load is triggered by an event handler that sets this itself.
@@ -79,10 +99,12 @@ export function OperatorRevenueView() {
   // Guards every setState below against firing after unmount, across all four callers of
   // loadReport (initial/filter-change load, manual refresh, tab-focus refresh, background poll).
   const isMountedRef = useRef(true);
+  const reportRequestRef = useRef(0);
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      reportRequestRef.current = reportRequestRef.current + 1;
     };
   }, []);
 
@@ -90,36 +112,39 @@ export function OperatorRevenueView() {
   useEffect(() => {
     let isMounted = true;
     async function loadTours() {
-      const data = await getOperatorRevenueTours({
-        isDemo,
-        demoActorUserId: actorUserId,
-      });
-      if (isMounted) setTours(data);
+      try {
+        const data = await getOperatorRevenueTours({
+          isDemo,
+          demoActorUserId: actorUserId,
+        });
+        if (isMounted) setTourLoad({ isDemo, actorUserId, tours: data, failed: false });
+      } catch {
+        if (isMounted) setTourLoad({ isDemo, actorUserId, tours: [], failed: true });
+      }
     }
-    loadTours();
+    void loadTours();
     return () => {
       isMounted = false;
     };
-  }, [isDemo, actorUserId]);
+  }, [isDemo, actorUserId, tourRetryToken]);
 
-  // Single data-fetch path shared by the initial load, Apply/Reset filters, the manual Refresh
-  // button, tab-focus refresh, and background polling. It never flips `isLoading` on; the caller
-  // that wants a visible spinner sets that synchronously itself (an event handler, never an
-  // effect body) before triggering this. `silent` skips turning it back off, so a background
-  // refresh that didn't turn it on also never touches it.
+  // The initial load, filters, manual refresh, focus and polling share one request sequence.
+  // Callers start visible loading. Only the newest request may publish data and settle it,
+  // including a newer background request that overlaps a user-triggered load.
   const loadReport = useCallback(
-    async (options?: { silent?: boolean }) => {
+    async () => {
+      const requestId = ++reportRequestRef.current;
       try {
         const result = await getOperatorRevenueReport(
           appliedFilters,
           { isDemo, demoActorUserId: actorUserId },
           { page: currentPage, pageSize: REVENUE_DEFAULT_PAGE_SIZE }
         );
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current || requestId !== reportRequestRef.current) return;
         setReportResult(result);
         setLastUpdatedAt(new Date());
       } finally {
-        if (isMountedRef.current && !options?.silent) setIsLoading(false);
+        if (isMountedRef.current && requestId === reportRequestRef.current) setIsLoading(false);
       }
     },
     // requestToken is intentionally unused in the body: it exists only to force this
@@ -135,6 +160,7 @@ export function OperatorRevenueView() {
   // these dependencies (Apply/Reset/manual Refresh) — never from this effect setting it.
   useEffect(() => {
     void loadReport();
+    return () => { reportRequestRef.current = reportRequestRef.current + 1; };
   }, [loadReport]);
 
   // Keep the dashboard fresh while it is actually being looked at: refresh immediately when the
@@ -154,7 +180,7 @@ export function OperatorRevenueView() {
     const startPolling = () => {
       if (intervalId !== undefined) return;
       intervalId = setInterval(() => {
-        void loadReport({ silent: true });
+        void loadReport();
       }, REVENUE_POLL_INTERVAL_MS);
     };
 
@@ -163,7 +189,7 @@ export function OperatorRevenueView() {
         stopPolling();
         return;
       }
-      void loadReport({ silent: true });
+      void loadReport();
       startPolling();
     };
 
@@ -211,6 +237,8 @@ export function OperatorRevenueView() {
       demoActorUserId: actorUserId,
     });
 
+    if (!isMountedRef.current) return result;
+
     if (result.success) {
       // A just-created export (Ready or Queued) always belongs in the history list.
       setExportHistoryRefreshToken((token) => token + 1);
@@ -218,6 +246,7 @@ export function OperatorRevenueView() {
 
     if (result.success && result.record?.status === 'Ready' && result.record.fileName) {
       const downloadResult = await downloadRevenueExport(result.record.id, result.record.fileName);
+      if (!isMountedRef.current) return result;
       setToastMessage(
         downloadResult.success
           ? result.message || financeEn.messages.MSG116
@@ -327,6 +356,25 @@ export function OperatorRevenueView() {
         </div>
       )}
 
+      {toursFailed && (
+        <div
+          role="alert"
+          className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-800 flex flex-wrap items-center gap-2"
+        >
+          <span>{financeEn.revenue.tourFiltersError}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setTourLoad(null);
+              setTourRetryToken((token) => token + 1);
+            }}
+            className="rounded-lg border border-amber-300 px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {financeEn.revenue.retryTourFiltersBtn}
+          </button>
+        </div>
+      )}
+
       {/* Filter Controls (Screen #89) */}
       <RevenueFilterControls
         appliedFilters={appliedFilters}
@@ -335,6 +383,7 @@ export function OperatorRevenueView() {
         onResetFilters={handleResetFilters}
         onOpenExport={() => setIsExportDialogOpen(true)}
         isLoading={isLoading}
+        isToursLoading={isToursLoading}
       />
 
       {/* Summary Cards */}

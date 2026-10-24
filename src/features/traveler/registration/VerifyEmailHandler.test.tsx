@@ -32,18 +32,16 @@ describe('VerifyEmailHandler', () => {
     firebaseMocks.checkActionCode.mockResolvedValue({
       data: { email: 'traveler@example.com' },
     });
-    apiMocks.verifyEmail.mockResolvedValue({
-      accessToken: 'access-token',
-      refreshToken: 'refresh-token',
-    });
     apiMocks.webVerifyEmail.mockResolvedValue({ emailVerified: true });
   });
 
-  it('shows success only after Firebase and Backend verification both succeed', async () => {
+  it('syncs traveler verification through the Web verify-only endpoint without creating a session', async () => {
     render(<VerifyEmailHandler mode="verifyEmail" oobCode="valid-code" />);
 
     expect(await screen.findByText('Email Verified!')).toBeDefined();
-    expect(apiMocks.saveTokens).toHaveBeenCalledWith('access-token', 'refresh-token');
+    expect(apiMocks.webVerifyEmail).toHaveBeenCalledWith('verified-token');
+    expect(apiMocks.verifyEmail).not.toHaveBeenCalled();
+    expect(apiMocks.saveTokens).not.toHaveBeenCalled();
   });
 
   it('does not show success when the link is opened without a Firebase session', async () => {
@@ -52,6 +50,7 @@ describe('VerifyEmailHandler', () => {
 
     expect(await screen.findByText('Verification Incomplete')).toBeDefined();
     expect(screen.queryByText('Email Verified!')).toBeNull();
+    expect(apiMocks.webVerifyEmail).not.toHaveBeenCalled();
     expect(apiMocks.verifyEmail).not.toHaveBeenCalled();
   });
 
@@ -64,7 +63,7 @@ describe('VerifyEmailHandler', () => {
   });
 
   it('does not show success when Backend synchronization fails', async () => {
-    apiMocks.verifyEmail.mockRejectedValue({
+    apiMocks.webVerifyEmail.mockRejectedValue({
       code: 'MSG127',
       message: 'database host db-prod-01 unavailable',
       status: 500,
@@ -85,6 +84,7 @@ describe('VerifyEmailHandler', () => {
 
     expect(await screen.findByText('Verification Incomplete')).toBeDefined();
     expect(screen.queryByText('Email Verified!')).toBeNull();
+    expect(apiMocks.webVerifyEmail).not.toHaveBeenCalled();
     expect(apiMocks.verifyEmail).not.toHaveBeenCalled();
   });
 

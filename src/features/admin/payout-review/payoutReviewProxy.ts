@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { jsonNoStore } from '@/lib/server/jsonNoStore';
+import { isSameOriginRequest } from '@/lib/server/sameOrigin';
 import { fetchBackend } from '@/lib/server/backend';
 import { resolveWebSession } from '@/lib/server/webSession';
 
@@ -93,8 +94,11 @@ export async function proxyGetPayoutDetail(payoutId: string): Promise<Response> 
   return forwardToBackend(`/api/v1/admin/payouts/${payoutId}`, { method: 'GET', token: authorized.token });
 }
 
-export async function proxyApprovePayout(payoutId: string): Promise<Response> {
+export async function proxyApprovePayout(payoutId: string, request: Request): Promise<Response> {
   if (!isValidPayoutId(payoutId)) return jsonNoStore({ title: 'The payout reference is invalid.' }, 400);
+  if (!isSameOriginRequest(request)) {
+    return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
+  }
   const authorized = await authorizeStaffRequest();
   if ('response' in authorized) return authorized.response;
   return forwardToBackend(`/api/v1/admin/payouts/${payoutId}/approve`, { method: 'POST', token: authorized.token });
@@ -102,6 +106,9 @@ export async function proxyApprovePayout(payoutId: string): Promise<Response> {
 
 export async function proxyRejectPayout(payoutId: string, request: Request): Promise<Response> {
   if (!isValidPayoutId(payoutId)) return jsonNoStore({ title: 'The payout reference is invalid.' }, 400);
+  if (!isSameOriginRequest(request)) {
+    return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
+  }
   const authorized = await authorizeStaffRequest();
   if ('response' in authorized) return authorized.response;
 

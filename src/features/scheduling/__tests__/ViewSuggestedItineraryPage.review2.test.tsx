@@ -379,11 +379,13 @@ describe('ViewSuggestedItineraryPage — Review 2 itinerary map (D9)', () => {
     vi.unstubAllEnvs();
   });
 
-  it('keeps the order diagram without a Mapbox token', async () => {
+  it('displays informative fallback card without a Mapbox token and never renders arrow diagram', async () => {
     vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', '');
     await renderLoaded(mapped);
 
-    expect(screen.getByText('Sơ đồ thứ tự điểm dừng')).toBeDefined();
+    expect(screen.getByText('Bản đồ lộ trình')).toBeDefined();
+    expect(screen.getByText('Chưa cấu hình Mapbox Access Token')).toBeDefined();
+    expect(screen.queryByText('Sơ đồ thứ tự điểm dừng')).toBeNull();
     expect(screen.queryByTestId('itinerary-map')).toBeNull();
   });
 
@@ -406,11 +408,14 @@ describe('ViewSuggestedItineraryPage — Review 2 itinerary map (D9)', () => {
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
-  it('keeps the diagram when the stops have no coordinates', async () => {
+  it('displays informative empty coordinates card when the stops have no coordinates and never renders arrow diagram', async () => {
     vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
     await renderLoaded(itinerary);
 
-    expect(screen.getByText('Sơ đồ thứ tự điểm dừng')).toBeDefined();
+    expect(screen.getByText('Bản đồ lộ trình')).toBeDefined();
+    expect(screen.getByText('Chưa có tọa độ hiển thị')).toBeDefined();
+    expect(screen.queryByText('Sơ đồ thứ tự điểm dừng')).toBeNull();
+    expect(screen.queryByTestId('itinerary-map')).toBeNull();
   });
 });
 

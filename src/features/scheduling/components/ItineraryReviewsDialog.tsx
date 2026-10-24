@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRef } from 'react';
 
-import { TripadvisorReviews } from '@/features/public/pois/components/TripadvisorReviews';
+import { TripadvisorReviews } from '@/features/public/pois/externalReviews';
 import { ROUTES } from '@/lib/routes';
 
 import { useDialogFocus } from './useDialogFocus';

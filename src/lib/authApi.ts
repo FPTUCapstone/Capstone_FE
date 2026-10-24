@@ -8,7 +8,11 @@ import { extractFieldErrors } from './authErrorMapper';
 
 export const getApiBase = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!envUrl) return 'http://localhost:5021/api/v1';
+  if (!envUrl) {
+    return process.env.NODE_ENV === 'production'
+      ? '/api/v1'
+      : 'http://localhost:5021/api/v1';
+  }
   return envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/$/, '')}/api/v1`;
 };
 const API_BASE = getApiBase();
