@@ -13,10 +13,14 @@ describe('platform booking contract', () => {
     expect(() => parsePlatformBookingsResponse({ ...response, items: [{ ...response.items[0], paymentStatus: 'Mystery' }] })).toThrow();
   });
 
-  it('serializes a Vietnam calendar-day filter as UTC-offset instants', () => {
-    const search = parsePlatformBookingsSearch(new URLSearchParams('status=Confirmed&paymentStatus=Paid&bookedFrom=2026-10-20&bookedTo=2026-10-21'));
-    const query = serializePlatformBookingsSearch(search);
+  it('round-trips Vietnam calendar-day filters through URL query parameters', () => {
+    const query = serializePlatformBookingsSearch({
+      keyword: '', status: 'Confirmed', paymentStatus: 'Paid', bookedFrom: '2026-10-20', bookedTo: '2026-10-21', pageNumber: 1,
+    });
     expect(query.get('bookedFromUtc')).toBe('2026-10-20T00:00:00+07:00');
     expect(query.get('bookedToUtc')).toBe('2026-10-21T23:59:59.999+07:00');
+    expect(parsePlatformBookingsSearch(query)).toMatchObject({
+      status: 'Confirmed', paymentStatus: 'Paid', bookedFrom: '2026-10-20', bookedTo: '2026-10-21',
+    });
   });
 });

@@ -16,6 +16,19 @@ const isPositiveSafeInteger = (value: unknown): value is number => typeof value 
 const isTimestamp = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const isDate = (value: string) => value === '' || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
+function vietnamCalendarDate(value: string | null): string {
+  if (!value || !isTimestamp(value)) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value;
+  const year = part('year'); const month = part('month'); const day = part('day');
+  return year && month && day ? `${year}-${month}-${day}` : '';
+}
+
 export function parsePlatformBookingsResponse(value: unknown): PlatformBookingsResponse {
   if (!isRecord(value) || !Number.isSafeInteger(value.pageNumber) || !Number.isSafeInteger(value.pageSize) || !Number.isSafeInteger(value.totalCount) || !Number.isSafeInteger(value.totalPages) || !Array.isArray(value.items)) throw new Error('Invalid platform bookings response.');
   const items = value.items.map((item): PlatformBooking => {
@@ -28,7 +41,8 @@ export function parsePlatformBookingsResponse(value: unknown): PlatformBookingsR
 export function parsePlatformBookingsSearch(params: URLSearchParams): PlatformBookingsSearch {
   const page = Number(params.get('pageNumber'));
   const status = params.get('status'); const paymentStatus = params.get('paymentStatus');
-  const bookedFrom = params.get('bookedFrom') ?? ''; const bookedTo = params.get('bookedTo') ?? '';
+  const bookedFrom = vietnamCalendarDate(params.get('bookedFromUtc'));
+  const bookedTo = vietnamCalendarDate(params.get('bookedToUtc'));
   return { keyword: (params.get('keyword') ?? '').trim().slice(0, 200), status: PLATFORM_BOOKING_STATUSES.includes(status as PlatformBookingStatus) ? status as PlatformBookingStatus : '', paymentStatus: PLATFORM_PAYMENT_STATUSES.includes(paymentStatus as PlatformPaymentStatus) ? paymentStatus as PlatformPaymentStatus : '', bookedFrom: isDate(bookedFrom) ? bookedFrom : '', bookedTo: isDate(bookedTo) ? bookedTo : '', pageNumber: Number.isSafeInteger(page) && page > 0 ? page : 1 };
 }
 
