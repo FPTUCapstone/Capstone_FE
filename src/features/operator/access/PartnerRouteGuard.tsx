@@ -3,7 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useWebSession } from '../session/useWebSession';
+import { useWebSession } from '@/features/auth/session/useWebSession';
 import { partnerRouteDecision, type PartnerRoute } from './partnerRouteDecision';
 
 /**

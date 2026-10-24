@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { PartnerRouteGuard } from '@/features/auth/routing/PartnerRouteGuard';
+import { PartnerRouteGuard } from '@/features/operator/access/PartnerRouteGuard';
 import { OperatorProfilePage } from '@/features/operator/profile/components/OperatorProfilePage';
 
 export const metadata: Metadata = {

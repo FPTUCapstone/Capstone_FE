@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthStorage, type WebAuthContext } from '../session/authSession';
+import { AuthStorage, type WebAuthContext } from '@/features/auth/session/authSession';
 
 const mocks = vi.hoisted(() => ({ webRefresh: vi.fn(), push: vi.fn(), replace: vi.fn() }));
 vi.mock('@/lib/authApi', () => ({ webRefresh: mocks.webRefresh }));
