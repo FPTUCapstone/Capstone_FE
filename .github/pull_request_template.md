@@ -17,7 +17,7 @@
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run build`
-- [ ] Applicable automated tests (or no test suite/test is applicable)
+- [ ] `npm test` (required for every PR, including documentation-only changes)
 - [ ] Manual route and responsive checks for UI changes (or not applicable)
 - [ ] Keyboard and basic accessibility checks for UI changes (or not applicable)
 

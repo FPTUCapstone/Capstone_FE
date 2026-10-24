@@ -1,21 +1,16 @@
 # TripMate Web Scope Matrix
 
-Finance traceability for PR #54 is recorded in [PR54-FINANCE-SCREEN-SPEC-AUDIT.md](./PR54-FINANCE-SCREEN-SPEC-AUDIT.md). The revenue and payout Web Screen Specification approval remains pending, so financial mutation triggers remain disabled.
+Governance reconciliation: 2026-10-23. The original, non-V2 `Report3_Software-Requirement-Specification.docx` is the requirements authority, after explicitly approved newer requirements with traceable approval. The local original inspected during migration has SHA-256 `22371e92506b098a9a546069038b58b75003371b3b7f85d5cfd6dd913f0d295a`. Historical V2 is not a fallback authority.
 
-Audit date: 2026-09-06
+The tables and coverage below are the historical 2026-09-06 matrix snapshot, not a reconciled classification of the current original SRS. Their 72-UC catalog, totals, actor assignments, financial status, and references to “Current R3” remain historical claims pending reconciliation. The original contains newer Staff/Administrator and payout material, including UC-73/UC-74. This notice does not renumber UCs, change permissions or platform classifications, or approve screens or financial contracts. Conflicting implementation tasks remain `BLOCKED_REQUIREMENT_APPROVAL`.
 
-This document is the repository-facing Web scope authority derived from the official TripMate project documents. It does not replace the approved SRS. A use case being listed here does not by itself authorize implementation: a new visual Web screen still requires an approved Web Screen Specification, reviewed UI, and an approved implementation task.
+Finance traceability for PR #54 is retained in [PR54-FINANCE-SCREEN-SPEC-AUDIT.md](./PR54-FINANCE-SCREEN-SPEC-AUDIT.md) as a historical review. Its V2 authority and disabled-mutation statements do not establish current implementation or approval status; verify current source and traceable approvals separately.
 
-## A. Scope Verification
+This document does not replace the approved SRS. A listed use case does not authorize implementation: a new visual Web screen still requires an approved Web Screen Specification, reviewed UI, and an approved implementation task.
 
-The authoritative source for the current review is Report 3 SRS V2,
-`Report3_Software-Requirement-Specification.docx` (workspace SHA-256
-`EF675A01A1F459C1A0994AB0F40B0C99BBAF55CCD68A0F882787D37A12C681B3`).
-The previously recorded path under `D:/FPT_University_các kì/...` and SHA-256
-`c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`
-refer to an older Report 3 copy and are retained here only as a stale provenance
-record; they do not override V2. This narrow correction does not independently
-reapprove the broader matrix or any Web Screen Specification.
+## A. Historical Scope Verification
+
+Earlier provenance recorded hashes `EF675A01A1F459C1A0994AB0F40B0C99BBAF55CCD68A0F882787D37A12C681B3` and `c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`. They are historical records, not fingerprints of the current original. The latter matches the local V2 copy inspected on 2026-10-23. The original SRS and traceable newer approvals take precedence over all historical V2-based statements below, including the former precedence and actor-resolution rules.
 
 | Verification | Confirmed result | Current R3 evidence |
 |---|---|---|

@@ -12,7 +12,12 @@ interface AuditLogDetailDrawerProps {
   onClose: () => void;
 }
 
-export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
+export function AuditLogDetailDrawer(props: AuditLogDetailDrawerProps) {
+  if (!props.isOpen) return null;
+  return <AuditLogDetailSession key={props.logId} {...props} />;
+}
+
+function AuditLogDetailSession({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
   const router = useRouter();
   const [detail, setDetail] = useState<AuditLogDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +27,18 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedRef = useRef<Element | null>(null);
+  const copyTimersRef = useRef<Partial<Record<'before' | 'after', ReturnType<typeof setTimeout>>>>({});
+  const copySessionRef = useRef(0);
+
+  const clearCopyFeedback = useCallback(() => {
+    copySessionRef.current += 1;
+    Object.values(copyTimersRef.current).forEach(clearTimeout);
+    copyTimersRef.current = {};
+    setCopiedBefore(false);
+    setCopiedAfter(false);
+  }, []);
+
+  useEffect(() => clearCopyFeedback, [isOpen, logId, clearCopyFeedback]);
 
   // Loading is derived: an open drawer with neither data nor error is fetching.
   const isLoading = isOpen && logId !== null && detail === null && error === null;
@@ -30,10 +47,9 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
     setDetail(null);
     setError(null);
     setCopyError(null);
-    setCopiedBefore(false);
-    setCopiedAfter(false);
+    clearCopyFeedback();
     onClose();
-  }, [onClose]);
+  }, [onClose, clearCopyFeedback]);
 
   useEffect(() => {
     if (!isOpen || logId === null) {
@@ -80,11 +96,12 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
     if (!isOpen) return;
 
     previouslyFocusedRef.current = document.activeElement;
-    window.setTimeout(() => {
+    const focusTimer = window.setTimeout(() => {
       closeButtonRef.current?.focus();
     }, 0);
 
     return () => {
+      window.clearTimeout(focusTimer);
       const previouslyFocused = previouslyFocusedRef.current;
       if (previouslyFocused instanceof HTMLElement) {
         previouslyFocused.focus();
@@ -143,6 +160,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
 
   const handleCopy = async (text: string, type: 'before' | 'after') => {
     setCopyError(null);
+    const copySession = copySessionRef.current;
 
     try {
       if (!navigator.clipboard?.writeText) {
@@ -150,14 +168,17 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
       }
 
       await navigator.clipboard.writeText(text);
+      if (copySession !== copySessionRef.current) return;
+      clearTimeout(copyTimersRef.current[type]);
       if (type === 'before') {
         setCopiedBefore(true);
-        setTimeout(() => setCopiedBefore(false), 2000);
+        copyTimersRef.current.before = setTimeout(() => setCopiedBefore(false), 2000);
       } else {
         setCopiedAfter(true);
-        setTimeout(() => setCopiedAfter(false), 2000);
+        copyTimersRef.current.after = setTimeout(() => setCopiedAfter(false), 2000);
       }
     } catch {
+      if (copySession !== copySessionRef.current) return;
       setCopyError('Unable to copy audit data. Please select and copy the text manually.');
     }
   };
