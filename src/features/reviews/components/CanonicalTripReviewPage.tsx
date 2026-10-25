@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ROUTES } from '@/lib/routes';
+import { formatTripDateTime } from '@/features/trips/utils/formatTripDate';
 import { createReview, getReviewContext, updateReview } from '../services/canonicalReviewApi';
 import type { CanonicalReview, ReviewableRecordRef, TripReviewContext } from '../types/canonicalReview';
 import { CanonicalReviewApiError } from '../types/canonicalReview';
@@ -104,17 +105,46 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
     }
   };
 
-  return <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]">
-        <main className="mx-auto max-w-2xl px-4 py-10">
-      <Link href={ROUTES.account.trips} className="text-sm font-semibold text-[#006B5F]">← Back to trip history</Link>
-      <h1 className="mt-5 text-3xl font-black">Trip review</h1>
+  return (
+    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
+      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
+          <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+            Home
+          </Link>
+          <span aria-hidden="true">/</span>
+          <Link href={ROUTES.account.trips} className="hover:text-[#006B5F] hover:underline">
+            My Trips
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span className="text-[#00152A]">Trip Review</span>
+        </nav>
+
+        <div className="mb-6">
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#006B5F]">
+              UC-33
+            </span>
+            <span className="text-xs font-semibold text-slate-500">
+              Review &amp; Rating
+            </span>
+          </div>
+          <h1 className="mt-1 text-2xl font-black text-[#00152A] sm:text-3xl">Trip review</h1>
+          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+            Share your travel experience to help future travelers and improve services.
+          </p>
+        </div>
+
+        <Link href={ROUTES.account.trips} className="inline-flex items-center gap-1 text-xs font-bold text-[#006B5F] hover:underline">
+          ← Back to trip history
+        </Link>
       {busy && !context ? <p className="mt-6" role="status">Loading review…</p> : null}
       {message ? <p className="mt-4 rounded-xl border bg-white p-3 text-sm" role="status">{message}</p> : null}
       {context ? <>
         <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
           <h2 className="font-extrabold">{context.summary?.name ?? 'Review subject'}</h2>
           <p className="mt-1 text-sm text-slate-600">{context.summary?.bookingReference}</p>
-          <p className="text-sm text-slate-600">{context.summary?.departureAtUtc ? new Date(context.summary.departureAtUtc).toLocaleString() : ''}</p>
+          <p className="text-sm text-slate-600">{context.summary?.departureAtUtc ? formatTripDateTime(context.summary.departureAtUtc) : ''}</p>
         </section>
         {context.existingReviewKind === 'legacy' ? <p className="mt-5 rounded-xl bg-amber-50 p-4">This legacy review is read-only.</p>
         : !current && !context.canSubmit ? <p className="mt-5 rounded-xl bg-amber-50 p-4">Review unavailable: {context.submitUnavailableReason}</p>
@@ -151,6 +181,7 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
           </fieldset>
         </form>}
       </> : null}
-    </main>
-  </div>;
+      </main>
+    </div>
+  );
 }
