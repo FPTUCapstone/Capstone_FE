@@ -50,6 +50,7 @@ export const ROUTES = {
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
     createPoi: '/admin/catalogue/points-of-interest/new',
     activeTrips: '/admin/trips/active',
+    bookings: '/admin/bookings',
     payouts: '/admin/payouts',
     payoutDetails: (id: string) => `/admin/payouts/${encodeURIComponent(id)}`,
     algorithmParameters: '/admin/settings/algorithm-parameters',
