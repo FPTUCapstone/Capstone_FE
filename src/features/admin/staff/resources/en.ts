@@ -159,9 +159,10 @@ export const adminStaffEn = {
         title: 'Platform Booking & Refund Operations',
         category: 'Commercial Operations',
         description:
-          'Inspect platform-wide tour bookings, verify payment states, and process eligible traveler refunds.',
-        status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting administration booking list and refund processing endpoints.',
+          'Inspect platform-wide tour bookings and verify booking and payment states without exposing payment credentials.',
+        status: 'available' as const,
+        href: '/admin/bookings',
+        actionLabel: 'Open Booking Register',
       },
       {
         id: 'payout-settlement-review',
