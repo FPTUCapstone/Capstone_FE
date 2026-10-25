@@ -57,6 +57,9 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(
       within(activeSection).getByRole('link', { name: /Open POI Creator/i }).getAttribute('href'),
     ).toBe('/admin/catalogue/points-of-interest/new');
+    expect(
+      within(activeSection).getByRole('link', { name: /Open Booking Register/i }).getAttribute('href'),
+    ).toBe('/admin/bookings');
     expect(container.innerHTML).not.toContain('/admin/tour-operator-applications/1');
 
     const pendingSection = screen.getByRole('region', {
@@ -65,12 +68,12 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     const disabledButtons = within(pendingSection).getAllByRole('button', {
       name: adminStaffEn.staffDashboard.unavailableModuleLabel,
     });
-    expect(disabledButtons.length).toBe(8);
+    expect(disabledButtons.length).toBe(7);
     for (const button of disabledButtons) {
       expect((button as HTMLButtonElement).disabled).toBe(true);
     }
 
-    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(7);
+    expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.pendingBackend).length).toBe(6);
     expect(screen.getAllByText(adminStaffEn.staffDashboard.statusBadges.scheduledBatch).length).toBe(1);
     expect(screen.getByText(adminStaffEn.staffDashboard.analyticsNoticeStatus)).toBeTruthy();
 
