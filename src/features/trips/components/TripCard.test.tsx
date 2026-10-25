@@ -174,7 +174,7 @@ describe('TripCard — e-ticket, refund and details actions', () => {
   it('E-ticket links to the ticket id, never the booking id', () => {
     renderCard(booking({ actions: { canReview: false, canViewETicket: true, ticketId: '77', canViewRefund: false } }));
 
-    expect(link('View E-Ticket')?.getAttribute('href')).toBe('/bookings/77/ticket');
+    expect(link('View E-Ticket')?.getAttribute('href')).toBe('/account/tickets/77');
   });
 
   it('E-ticket is absent when canViewETicket is false, even if a ticket id is present', () => {

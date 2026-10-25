@@ -1,5 +1,5 @@
 import type { BookingDto, BookingQuoteDto, ParticipantCounts } from '../types/booking';
-import type { TicketDto } from '../types/ticket';
+import type { TicketView } from '../types/ticket';
 
 /**
  * EXPLICIT DEMO FIXTURES (DEMO_ONLY)
@@ -74,24 +74,29 @@ export function createDemoBooking(overrides?: Partial<BookingDto>): BookingDto {
 
 export const DEMO_BOOKING_HOI_AN: BookingDto = createDemoBooking();
 
-export const DEMO_TICKET_HOI_AN: TicketDto = {
-  ticketId: 'tkt-demo-03',
-  ticketCode: 'TKT-8F4K29QX-03',
-  bookingId: 'bk-demo-0148',
-  bookingCode: 'BK-20261015-0148',
-  tourId: '9007199254740995',
-  tourTitle: 'Hành Trình Di Sản Phố Cổ Hội An & Rừng Dừa Bảy Mẫu 2N1Đ',
+/** UC-29 demo ticket in the Backend contract shape; served only behind the demo gate. */
+export const DEMO_TICKET_VIEW: TicketView = {
+  ticketId: '9007199254740993',
+  ticketCode: 'TK-0000000148',
+  bookingId: '148',
+  bookingCode: 'BK-20261015-00148',
+  ticketStatus: 'Valid',
+  tour: { tourId: '9007199254740995', title: 'Hành Trình Di Sản Phố Cổ Hội An & Rừng Dừa Bảy Mẫu 2N1Đ' },
   operatorName: 'Endpoint Travel Miền Trung',
-  departureDatetime: '2026-10-15T07:30:00Z',
-  meetingPoint: '01 Đường 2 Tháng 9, Quận Hải Châu, TP. Đà Nẵng (Bảo tàng Điêu khắc Chăm)',
-  travelerSummary: '2 người lớn, 1 trẻ em',
-  leadTravelerName: 'Nguyễn Minh Phúc',
-  leadTravelerPhone: '0905 123 456',
-  paidAmount: 1700000,
-  currency: 'VND',
-  paymentMethod: 'VNPay',
-  status: 'Valid',
-  issuedAtUtc: '2026-10-02T10:45:00Z',
-  qrPayload: 'TRIPMATE-TKT-8F4K29QX-03-VERIFIED',
+  schedule: {
+    startAtUtc: '2026-10-15T00:30:00+00:00',
+    endAtUtc: '2026-10-16T10:00:00+00:00',
+    meetingPoint: '01 Đường 2 Tháng 9, Quận Hải Châu, TP. Đà Nẵng (Bảo tàng Điêu khắc Chăm)',
+  },
+  participantCount: 3,
+  participants: { adult: 2, child: 1, infant: 0 },
+  validity: {
+    departureDate: '2026-10-15',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    validFromUtc: '2026-10-14T17:00:00+00:00',
+    validUntilUtc: '2026-10-15T16:59:59.9999999+00:00',
+  },
+  checkedInAtUtc: null,
+  qr: { content: 'TM1.DEMO-NOT-A-REAL-TICKET.DEMO', issuedAtUtc: '2026-10-02T10:45:00+00:00' },
   isDemo: true,
 };

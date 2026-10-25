@@ -1,7 +1,6 @@
 import {
   createDemoQuote,
   DEMO_BOOKING_HOI_AN,
-  DEMO_TICKET_HOI_AN,
 } from '../data/bookingDemoFixtures';
 import type {
   BookingDto,
@@ -13,7 +12,6 @@ import type {
   PaymentVerifyResultDto,
 } from '../types/booking';
 import { BookingApiError } from '../types/booking';
-import type { TicketDto } from '../types/ticket';
 
 /**
  * Production gate for booking demo fixtures.
@@ -289,48 +287,6 @@ export async function verifyPayment(
 
   throw new BookingApiError(
     'Xác thực kết quả thanh toán điện tử đang chờ kết nối API từ máy chủ (UC-28 — PENDING_BE_INTEGRATION). Cần xác thực chữ ký số từ máy chủ để đảm bảo an toàn giao dịch.',
-    501,
-    { errorCode: 'PENDING_BE_INTEGRATION' },
-  );
-}
-
-/**
- * UC-29: View QR E-ticket. Out of scope for UC-27; kept pending its own integration task.
- */
-export async function getTicket(
-  ticketId: string,
-  options?: {
-    allowDemo?: boolean;
-    signal?: AbortSignal;
-  },
-): Promise<TicketDto> {
-  const demoAllowed = options?.allowDemo === true && isBookingDemoAllowedInCurrentEnv();
-
-  if (demoAllowed) {
-    return {
-      ...DEMO_TICKET_HOI_AN,
-      ticketId: ticketId || DEMO_TICKET_HOI_AN.ticketId,
-    };
-  }
-
-  try {
-    const raw = await requestJson(`/api/tickets/${encodeURIComponent(ticketId)}`, {
-      signal: options?.signal,
-    });
-    if (isRecord(raw) && typeof raw.ticketId === 'string') {
-      return raw as unknown as TicketDto;
-    }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    throw new BookingApiError(
-      'Chi tiết vé điện tử QR đang chờ hoàn tất kết nối API từ máy chủ (UC-29 — PENDING_BE_INTEGRATION).',
-      501,
-      { errorCode: 'PENDING_BE_INTEGRATION' },
-    );
-  }
-
-  throw new BookingApiError(
-    'Chi tiết vé điện tử QR đang chờ hoàn tất kết nối API từ máy chủ (UC-29 — PENDING_BE_INTEGRATION).',
     501,
     { errorCode: 'PENDING_BE_INTEGRATION' },
   );
