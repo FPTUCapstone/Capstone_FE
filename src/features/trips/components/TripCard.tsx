@@ -137,7 +137,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
         )}
 
         {ticketId !== null && (
-          <Link href={ROUTES.bookingTicket(ticketId)} className={LINK_ACTION}>
+          <Link href={ROUTES.account.ticket(ticketId)} className={LINK_ACTION}>
             <span className="material-symbols-outlined text-[16px] text-[#006B5F]" aria-hidden="true">
               qr_code_2
             </span>
