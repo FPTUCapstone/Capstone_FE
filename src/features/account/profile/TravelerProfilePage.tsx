@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 
 import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
+import { useAccountWorkspace } from '@/features/account/common/AccountWorkspaceContext';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 import { TravelerProfileForm } from './TravelerProfileForm';
@@ -12,6 +13,7 @@ import { announceTravelerProfileUpdated } from './travelerProfileApi';
 
 export function TravelerProfilePage() {
   const router = useRouter();
+  const { isInsideShell } = useAccountWorkspace();
   const { status, context } = useWebSession();
   const redirectToSignIn = useCallback(() => {
     router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.profile)}`);
@@ -45,11 +47,9 @@ export function TravelerProfilePage() {
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
-
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        {/* Breadcrumb Navigation */}
+  const content = (
+    <>
+      {!isInsideShell && (
         <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
           <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
             Trang chủ
@@ -57,20 +57,32 @@ export function TravelerProfilePage() {
           <span aria-hidden="true">/</span>
           <span className="text-[#00152A]">Tài khoản cá nhân</span>
         </nav>
+      )}
 
-        {/* Account Workspace Navigation Tabs */}
-        <AccountWorkspaceNav activeTab="profile" />
+      {/* Account Workspace Navigation Tabs (suppressed automatically inside shell) */}
+      <AccountWorkspaceNav activeTab="profile" />
 
-        {/* Profile Update Form */}
-        <TravelerProfileForm
-          initialProfile={{
-            fullName: context.fullName,
-            email: context.email,
-          }}
-          onCancel={() => router.push(ROUTES.home)}
-          onUnauthorized={redirectToSignIn}
-          onSuccess={announceTravelerProfileUpdated}
-        />
+      {/* Profile Update Form */}
+      <TravelerProfileForm
+        initialProfile={{
+          fullName: context.fullName,
+          email: context.email,
+        }}
+        onCancel={() => router.push(ROUTES.home)}
+        onUnauthorized={redirectToSignIn}
+        onSuccess={announceTravelerProfileUpdated}
+      />
+    </>
+  );
+
+  if (isInsideShell) {
+    return <div className="w-full">{content}</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+        {content}
       </main>
     </div>
   );
