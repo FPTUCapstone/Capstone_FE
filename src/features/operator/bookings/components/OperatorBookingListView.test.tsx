@@ -430,7 +430,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('executes refund initiation flow even when notes contain "timeout", "retry", or "system" (UC-42)', async () => {
+    it('does not render an Initiate Refund action anywhere in the booking detail drawer (UC-42/UC-71: refund is automatic)', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -441,30 +441,10 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       const detailButtons = screen.getAllByRole('button', { name: /Details/i });
       fireEvent.click(detailButtons[0]);
 
-      // Click refund action in drawer
-      const refundDrawerBtn = await screen.findByRole('button', {
-        name: /Initiate Refund \(UC-42\)/i,
-      });
-      fireEvent.click(refundDrawerBtn);
-
-      // Refund dialog opens; enter notes containing words that previously triggered hidden failures
-      const textarea = await screen.findByLabelText(/Refund Notes/i);
-      fireEvent.change(textarea, {
-        target: { value: 'Customer reported timeout during retry on old system' },
-      });
-
-      const submitRefundBtn = screen.getByRole('button', {
-        name: /send.*Initiate Refund/i,
-      });
-      fireEvent.click(submitRefundBtn);
-
-      // Verify feedback banner succeeds normally with MSG83
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeDefined();
-        expect(
-          screen.getByText(new RegExp(bookingEn.messages.MSG83, 'i'))
-        ).toBeDefined();
+        expect(screen.getByRole('dialog')).toBeDefined();
       });
+      expect(screen.queryByRole('button', { name: /Initiate Refund/i })).toBeNull();
     });
   });
 });

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useId, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { BookingDto } from '../types/bookingLifecycle';
+import type { BookingDto, GetBookingRefundStatusResult } from '../types/bookingLifecycle';
+import { getBookingRefundStatus } from '../services/operatorBookingService';
 import { BookingStatusBadge, CheckInStatusBadge } from './OperatorBookingStatusBadge';
 import { formatCurrencyVND, formatVietnamDate, formatVietnamDateTime } from '../utils/dateFormat';
 import { bookingEn } from '../resources/en';
@@ -13,7 +14,6 @@ interface BookingDetailPanelProps {
   isDemo?: boolean;
   onClose: () => void;
   onOpenCancelDialog: (booking: BookingDto) => void;
-  onOpenRefundDialog: (booking: BookingDto) => void;
 }
 
 export function BookingDetailPanel({
@@ -22,12 +22,39 @@ export function BookingDetailPanel({
   isDemo = false,
   onClose,
   onOpenCancelDialog,
-  onOpenRefundDialog,
 }: BookingDetailPanelProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descId = useId();
+
+  // UC-42/UC-71: refund is processed automatically by the Backend; this panel only
+  // tracks its live status for a Cancelled booking, never triggers it.
+  const [refundStatus, setRefundStatus] = useState<GetBookingRefundStatusResult | null>(null);
+  const [refundLoading, setRefundLoading] = useState(false);
+
+  useEffect(() => {
+    // Not applicable: RefundStatusCard only renders when booking.status === 'Cancelled',
+    // so any stale state here is simply never shown.
+    if (!open || !booking || booking.status !== 'Cancelled') return;
+
+    let isMounted = true;
+    async function fetchRefundStatus() {
+      setRefundLoading(true);
+      setRefundStatus(null);
+      const result = await getBookingRefundStatus(booking!.id);
+      if (isMounted) {
+        setRefundStatus(result);
+        setRefundLoading(false);
+      }
+    }
+    void fetchRefundStatus();
+    return () => {
+      isMounted = false;
+    };
+    // booking.id is the only part of `booking` this fetch depends on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, booking?.id, booking?.status]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -94,13 +121,6 @@ export function BookingDetailPanel({
     booking.status !== 'Cancelled' &&
     booking.status !== 'Completed' &&
     booking.checkInStatus !== 'CheckedIn' &&
-    !booking.cancellationWindowExpired;
-
-  const isRefundable =
-    isDemo &&
-    booking.paidAmount > 0 &&
-    booking.paymentTransaction?.status === 'Success' &&
-    !booking.refund &&
     !booking.cancellationWindowExpired;
 
   const drawerContent = (
@@ -274,37 +294,10 @@ export function BookingDetailPanel({
             </div>
           </div>
 
-          {/* Refund record if any */}
-          {booking.refund && (
-            <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
-                  {bookingEn.detail.refundRecord}
-                </span>
-                <span className="rounded bg-teal-100 px-2 py-0.5 text-[10px] font-extrabold text-teal-800">
-                  {booking.refund.status}
-                </span>
-              </div>
-              <div className="space-y-1.5 text-xs text-slate-700">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">{bookingEn.detail.refundAmount}:</span>
-                  <span className="font-bold text-[#006B5F]">{formatCurrencyVND(booking.refund.refundableAmount)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">{bookingEn.detail.refundChannel}:</span>
-                  <span className="font-semibold text-slate-800">{booking.refund.paymentChannel}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">{bookingEn.detail.gatewayRef}:</span>
-                  <span className="font-mono text-slate-800">{booking.refund.gatewayReference || 'N/A'}</span>
-                </div>
-                {booking.refund.notes && (
-                  <div className="pt-1 text-[11px] text-slate-500 italic">
-                    {bookingEn.detail.refundNotes}: {booking.refund.notes}
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Refund status (UC-42/UC-71): live, read-only, fetched from the real Backend.
+              Refund processing is automatic — there is nothing to trigger here. */}
+          {booking.status === 'Cancelled' && (
+            <RefundStatusCard loading={refundLoading} result={refundStatus} />
           )}
 
           {/* Cancellation reason if cancelled */}
@@ -341,11 +334,6 @@ export function BookingDetailPanel({
             </div>
           )}
 
-          {booking.status === 'Cancelled' && booking.paidAmount > 0 && !booking.refund && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-[11px] text-amber-900">
-              <p className="font-medium">{bookingEn.detail.refundClarificationNotice}</p>
-            </div>
-          )}
         </div>
 
         {/* Drawer Footer Actions */}
@@ -376,24 +364,6 @@ export function BookingDetailPanel({
               <span className="material-symbols-outlined text-[16px]">cancel</span>
               <span>{bookingEn.detail.cancelBookingBtn}</span>
             </button>
-
-            {/* Initiate refund action (UC-42) */}
-            <button
-              type="button"
-              onClick={() => onOpenRefundDialog(booking)}
-              disabled={!isRefundable}
-              title={
-                !isDemo
-                  ? bookingEn.detail.productionLockedTooltip
-                  : !isRefundable
-                  ? bookingEn.detail.notRefundableTooltip
-                  : bookingEn.detail.refundBtn
-              }
-              className="rounded-xl bg-[#006B5F] px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-[16px]">currency_exchange</span>
-              <span>{bookingEn.detail.refundBtn}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -401,4 +371,97 @@ export function BookingDetailPanel({
   );
 
   return typeof document === 'undefined' ? null : createPortal(drawerContent, document.body);
+}
+
+const REFUND_STATUS_STYLES: Record<string, string> = {
+  Pending: 'border-amber-200 bg-amber-50/60 text-amber-800',
+  RetryPending: 'border-amber-200 bg-amber-50/60 text-amber-800',
+  Processing: 'border-sky-200 bg-sky-50/60 text-sky-800',
+  Processed: 'border-teal-200 bg-teal-50/60 text-teal-800',
+  Failed: 'border-rose-200 bg-rose-50/60 text-rose-800',
+  ManualReview: 'border-purple-200 bg-purple-50/60 text-purple-800',
+  Rejected: 'border-rose-200 bg-rose-50/60 text-rose-800',
+};
+
+function RefundStatusCard({
+  loading,
+  result,
+}: {
+  loading: boolean;
+  result: GetBookingRefundStatusResult | null;
+}) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-xs text-slate-500">
+        {bookingEn.refundStatus.loading}
+      </div>
+    );
+  }
+
+  if (!result || result.outcome === 'not_applicable') {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-3 text-[11px] text-slate-500">
+        {bookingEn.refundStatus.notApplicable}
+      </div>
+    );
+  }
+
+  if (result.outcome === 'error') {
+    return (
+      <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-3 text-[11px] text-rose-800">
+        {bookingEn.refundStatus.errorNote}
+      </div>
+    );
+  }
+
+  const { data } = result;
+  const colorClass = REFUND_STATUS_STYLES[data.status] ?? 'border-slate-200 bg-slate-50/60 text-slate-800';
+  const statusLabel = bookingEn.refundStatus.statusLabels[data.status] ?? data.status;
+
+  return (
+    <div className={`rounded-2xl border p-4 ${colorClass}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider">
+          {bookingEn.detail.refundRecord}
+        </span>
+        <span className="rounded bg-white/70 px-2 py-0.5 text-[10px] font-extrabold">
+          {statusLabel}
+        </span>
+      </div>
+      <div className="space-y-1.5 text-xs text-slate-700">
+        <div className="flex justify-between">
+          <span className="text-slate-500">{bookingEn.detail.refundAmount}:</span>
+          <span className="font-bold text-[#006B5F]">{formatCurrencyVND(data.refundAmount)}</span>
+        </div>
+        {data.gatewayReference && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">{bookingEn.detail.gatewayRef}:</span>
+            <span className="font-mono text-slate-800">{data.gatewayReference}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="text-slate-500">{bookingEn.refundStatus.attemptCountLabel}:</span>
+          <span className="font-semibold text-slate-800">{data.attemptCount}</span>
+        </div>
+        {data.processedAtUtc && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">{bookingEn.refundStatus.processedAtLabel}:</span>
+            <span className="text-slate-800">{formatVietnamDateTime(data.processedAtUtc)}</span>
+          </div>
+        )}
+        {data.nextAttemptAtUtc && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">{bookingEn.refundStatus.nextAttemptLabel}:</span>
+            <span className="text-slate-800">{formatVietnamDateTime(data.nextAttemptAtUtc)}</span>
+          </div>
+        )}
+        {data.lastErrorCode && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">{bookingEn.refundStatus.lastErrorLabel}:</span>
+            <span className="font-mono text-slate-800">{data.lastErrorCode}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

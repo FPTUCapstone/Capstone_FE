@@ -108,24 +108,41 @@ export const bookingEn = {
     paymentChannel: 'Payment Channel',
     transactionRef: 'Transaction Reference',
     verifiedAt: 'Verification Time',
-    refundRecord: 'Refund Record',
+    refundRecord: 'Refund Status',
     refundAmount: 'Refund Amount',
-    refundChannel: 'Refund Channel',
     gatewayRef: 'Gateway Reference',
-    refundNotes: 'Notes',
     cancellationRecord: 'Cancellation Record',
     cancellationReasonType: 'Reason Category',
     cancellationReasonDetail: 'Reason Details',
     cancellationReason: 'Cancellation Reason',
     cancelledAt: 'Cancelled At',
-    refundClarificationNotice:
-      'Refund follow-up: Report 3 V2 contains conflicting requirements regarding automatic cancellation refunds vs. separate refund requests. You can explicitly initiate a refund using the button below (UC-42).',
     closeBtn: 'Close',
     cancelBookingBtn: 'Cancel Booking (UC-41)',
-    refundBtn: 'Initiate Refund (UC-42)',
     notCancellableTooltip: 'This booking is not eligible for cancellation',
-    notRefundableTooltip: 'This booking is not eligible for refund',
     productionLockedTooltip: 'Action is locked pending Backend API integration',
+  },
+  /**
+   * UC-42 / UC-71: refund is processed automatically by the Backend once a
+   * booking is cancelled with a verified payment. There is no "initiate"
+   * action — this panel only displays the live status.
+   */
+  refundStatus: {
+    loading: 'Loading refund status…',
+    notApplicable: 'This cancellation did not produce a refund.',
+    errorNote: 'Refund status cannot be retrieved right now. Please try again later.',
+    attemptCountLabel: 'Attempts',
+    processedAtLabel: 'Processed At',
+    nextAttemptLabel: 'Next Attempt',
+    lastErrorLabel: 'Last Error',
+    statusLabels: {
+      Pending: 'Queued for processing',
+      RetryPending: 'Queued for processing',
+      Processing: 'Processing',
+      Processed: 'Refunded',
+      Failed: 'Refund failed',
+      ManualReview: 'Awaiting manual settlement',
+      Rejected: 'Refund rejected',
+    },
   },
   cancelReasons: {
     CUSTOMER_REQUEST: 'Customer requested cancellation',
@@ -147,7 +164,7 @@ export const bookingEn = {
     refundPreviewHeader: 'Estimated Refund Policy (Demo preview)',
     estimatedRefundLabel: 'Estimated Refund Amount:',
     refundNotice:
-      '* Cancellation updates booking status, releases held slots, and invalidates the QR ticket. Refund handling is pending clarification under SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER; explicit refund initiation is available via UC-42.',
+      '* Cancellation updates booking status, releases held slots, and invalidates the QR ticket. Any eligible refund is processed automatically by the Backend — view its status from the booking detail panel.',
     reasonTypeLabel: 'Cancellation Reason Category',
     reasonDetailLabel: 'Cancellation Reason Details',
     reasonDetailRequired: '* (Required)',
@@ -155,30 +172,6 @@ export const bookingEn = {
     closeBtn: 'Close',
     confirmBtn: 'Confirm Cancellation',
     processingBtn: 'Processing...',
-  },
-  refundDialog: {
-    title: 'Initiate Refund for Booking',
-    subtitle:
-      'Request refund through original payment gateway according to cancellation policy (UC-42).',
-    closeAria: 'Close dialog',
-    bookingCodeLabel: 'Booking Code:',
-    tourLabel: 'Tour Package:',
-    departureLabel: 'Departure Date:',
-    paidLabel: 'Customer Paid Amount:',
-    channelLabel: 'Refund Payment Channel:',
-    computationHeader: 'Refund Settlement (Demo preview)',
-    policyLabel: 'Policy:',
-    deductionLabel: 'Deduction / Cancellation Fee:',
-    refundableLabel: 'Net Refundable Amount:',
-    immutableNotice:
-      '* Original payment transaction remains immutable. Refund creates an independent record (settled by Backend in production).',
-    existingNoticeTitle: 'Integrity Notice:',
-    existingNoticeBody: 'This booking already has a refund record',
-    notesLabel: 'Refund Notes (Optional)',
-    notesPlaceholder: 'Enter settlement notes or audit reference information...',
-    closeBtn: 'Close',
-    confirmBtn: 'Initiate Refund',
-    processingBtn: 'Initiating...',
   },
   messages: {
     MSG126: 'Access denied. You can only view and manage bookings for your own tours.',
