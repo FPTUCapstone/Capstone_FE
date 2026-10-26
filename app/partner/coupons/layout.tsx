@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { CouponRouteGuard } from '@/features/operator/coupons/guards/CouponRouteGuard';
 import { couponEn } from '@/features/operator/coupons/resources/en';
 
@@ -9,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function PartnerCouponsLayout({ children }: { children: ReactNode }) {
-  return <CouponRouteGuard>{children}</CouponRouteGuard>;
+  return (
+    <Suspense fallback={null}>
+      <CouponRouteGuard>{children}</CouponRouteGuard>
+    </Suspense>
+  );
 }

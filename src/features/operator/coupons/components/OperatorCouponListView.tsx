@@ -11,14 +11,12 @@ import {
 import {
   OPERATOR_COUPON_ROUTES,
   buildCouponListUrl,
-  withCouponDemoMode,
 } from '../routes';
 import { OperatorCouponStatusBadge } from './OperatorCouponStatusBadge';
 import { couponEn } from '../resources/en';
 
 interface OperatorCouponListViewProps {
   coupons: CouponDto[];
-  isDemo?: boolean;
 }
 
 type FilterTab = 'ALL' | CouponStatus;
@@ -48,10 +46,7 @@ function formatDiscountSummary(coupon: CouponDto): string {
   return formatCurrency(coupon.discountValue);
 }
 
-export function OperatorCouponListView({
-  coupons,
-  isDemo = false,
-}: OperatorCouponListViewProps) {
+export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -88,12 +83,11 @@ export function OperatorCouponListView({
   const startIndexDisplay = totalItems === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const endIndexDisplay = Math.min(safePage * pageSize, totalItems);
 
-  // Update URL on filter or page change (preserving demo=1)
+  // Update URL on filter or page change.
   const updateUrl = (newPage: number, newStatus: FilterTab) => {
     const url = buildCouponListUrl({
       page: newPage,
       status: newStatus,
-      isDemo,
     });
     router.replace(url, { scroll: false });
   };
@@ -121,56 +115,12 @@ export function OperatorCouponListView({
   const currentListUrl = buildCouponListUrl({
     page: safePage,
     status: activeTab,
-    isDemo,
   });
 
-  const createHref = withCouponDemoMode(
-    `${OPERATOR_COUPON_ROUTES.create}?returnUrl=${encodeURIComponent(currentListUrl)}`,
-    isDemo
-  );
+  const createHref = `${OPERATOR_COUPON_ROUTES.create}?returnUrl=${encodeURIComponent(currentListUrl)}`;
 
   return (
     <div className="space-y-6">
-      {/* Production Truthfulness Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-blue-900 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[20px] text-blue-600 shrink-0">
-              info
-            </span>
-            <div className="space-y-1">
-              <p className="font-extrabold">{couponEn.list.banners.productionTitle}</p>
-              <p className="text-blue-700 leading-relaxed">
-                {couponEn.list.banners.productionBody}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Demo Mode Notice */}
-      {isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-xs text-amber-900 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[20px] text-amber-600 shrink-0">
-              science
-            </span>
-            <div className="space-y-1">
-              <p className="font-extrabold">{couponEn.list.banners.demoTitle}</p>
-              <p className="text-amber-800 leading-relaxed">
-                {couponEn.list.banners.demoBody}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Workspace Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -209,11 +159,11 @@ export function OperatorCouponListView({
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {couponEn.list.kpi.redemptions}
+            {couponEn.list.kpi.occupied}
           </p>
           <p className="mt-1 text-2xl font-black text-blue-600">{stats.totalRedemptions}</p>
           <p className="mt-1 text-[11px] text-slate-500">
-            {couponEn.list.kpi.redemptionsSubtext}
+            {couponEn.list.kpi.occupiedSubtext}
           </p>
         </div>
       </div>
@@ -278,7 +228,7 @@ export function OperatorCouponListView({
                     {couponEn.list.table.discount}
                   </th>
                   <th scope="col" className="px-5 py-3.5">
-                    {couponEn.list.table.usageProgress}
+                    {couponEn.list.kpi.occupied}
                   </th>
                   <th scope="col" className="px-5 py-3.5">
                     {couponEn.list.table.validityPeriod}
@@ -296,14 +246,10 @@ export function OperatorCouponListView({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedCoupons.map((coupon) => {
-                  const usagePercentage = Math.min(
-                    100,
-                    Math.round(((coupon.usageCount || 0) / coupon.usageLimit) * 100)
+                  const usagePercentage = coupon.usageLimit === null ? 0 : Math.min(
+                    100, Math.round((coupon.usageCount / coupon.usageLimit) * 100)
                   );
-                  const editHref = withCouponDemoMode(
-                    `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`,
-                    isDemo
-                  );
+                  const editHref = `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`;
 
                   return (
                     <tr key={coupon.id} className="hover:bg-slate-50/60 transition">
@@ -326,15 +272,11 @@ export function OperatorCouponListView({
                         <div className="w-32">
                           <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
                             <span>
-                              {couponEn.list.table.usagesCount.replace(
-                                '{count}',
-                                String(coupon.usageCount)
-                              )}
+                              {couponEn.list.table.occupiedCount.replace('{count}', String(coupon.usageCount))}
                             </span>
                             <span>
-                              {couponEn.list.table.usagesLimit.replace(
-                                '{limit}',
-                                String(coupon.usageLimit)
+                              {coupon.usageLimit === null ? couponEn.list.table.unlimited : couponEn.list.table.usagesLimit.replace(
+                                '{limit}', String(coupon.usageLimit)
                               )}
                             </span>
                           </div>
@@ -394,14 +336,10 @@ export function OperatorCouponListView({
           {/* Mobile / Tablet Cards View */}
           <div className="lg:hidden divide-y divide-slate-100">
             {paginatedCoupons.map((coupon) => {
-              const usagePercentage = Math.min(
-                100,
-                Math.round(((coupon.usageCount || 0) / coupon.usageLimit) * 100)
+              const usagePercentage = coupon.usageLimit === null ? 0 : Math.min(
+                100, Math.round((coupon.usageCount / coupon.usageLimit) * 100)
               );
-              const editHref = withCouponDemoMode(
-                `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`,
-                isDemo
-              );
+              const editHref = `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`;
 
               return (
                 <div key={coupon.id} className="p-4 space-y-3">
@@ -434,9 +372,9 @@ export function OperatorCouponListView({
 
                   <div className="space-y-1">
                     <div className="flex justify-between text-[11px] font-medium text-slate-500">
-                      <span>{couponEn.list.table.usageProgress}</span>
+                      <span>{couponEn.list.kpi.occupied}</span>
                       <span>
-                        {coupon.usageCount} / {coupon.usageLimit}
+                        {coupon.usageCount} / {coupon.usageLimit === null ? couponEn.list.table.unlimited : coupon.usageLimit}
                       </span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">

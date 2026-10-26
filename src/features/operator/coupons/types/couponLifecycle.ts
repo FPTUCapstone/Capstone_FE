@@ -31,10 +31,12 @@ export interface CouponDto {
   discountValue: number;
   maxDiscountAmount?: number | null;
   minSpend?: number | null;
-  usageLimit: number;
+  usageLimit: number | null;
   usageLimitPerTraveler?: number | null;
   validFrom: string; // YYYY-MM-DD
   validTo: string; // YYYY-MM-DD
+  validFromUtc?: string;
+  validToUtc?: string;
   appliesToAllTours: boolean;
   appliedTourIds: string[];
   appliedTours?: EligibleTourDto[];
@@ -66,7 +68,7 @@ export interface UpdateCouponPayload {
   discountValue: number;
   maxDiscountAmount?: number | null;
   minSpend?: number | null;
-  usageLimit: number;
+  usageLimit: number | null;
   usageLimitPerTraveler?: number | null;
   validFrom: string;
   validTo: string;
@@ -83,7 +85,8 @@ export type CouponActionStatus =
   | 'UNAUTHORIZED'
   | 'PENDING_BE_INTEGRATION'
   | 'SYSTEM_ERROR'
-  | 'NOT_FOUND';
+  | 'NOT_FOUND'
+  | 'CONFLICT';
 
 export interface CouponActionResult<T = CouponDto> {
   status: CouponActionStatus;
@@ -97,6 +100,7 @@ export const OPERATOR_COUPON_DEFAULT_PAGE_SIZE = 20;
 
 export const OPERATOR_COUPON_MESSAGES = {
   REQUIRED_FIELD: 'This field is required.',
+  NAME_TOO_LONG: 'Coupon name cannot exceed 120 characters.',
   REQUIRED_SUMMARY: 'Please fill in all required fields.',
   DUPLICATE_CODE: 'Coupon code already exists in the system.',
   INVALID_NUMERIC:
