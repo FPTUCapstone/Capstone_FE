@@ -117,6 +117,34 @@ real Backend (`GET /api/v1/bookings/{bookingId}/refund`), replacing the demo-onl
 
 ---
 
+## Ruling made during execution
+
+**Task 2/3 (BFF proxy + route) were dropped and replaced.** `Capstone_FE/develop`
+already contains a complete, tested implementation at the same URL —
+`app/api/v1/bookings/[bookingId]/refund` + `src/features/bookings/services/
+refundProgressProxy.ts` (Khánh, commits `18d0ee9`/`a592b8c`/`a11df61`), already
+serving the Traveler-facing `/bookings/[id]/refund` page
+(`RefundProgressPage.tsx`). This was missed during spec research. Discovered
+only when the project's own `tests/route-parameters.test.cjs` failed on a
+dynamic-segment name conflict (`[id]` vs `[bookingId]`) after Task 3 was
+implemented.
+
+**Ruling:** deleted the new duplicate route + proxy; `getBookingRefundStatus`
+(Task 4) now calls the pre-existing endpoint instead (identical URL, already
+authorizes both Traveler and TourOperator). Updated its error-code
+expectations to match the existing proxy's actual codes (`FORBIDDEN`,
+`REFUND_UNAVAILABLE`, `REFUND_NOT_FOUND`, `UNAUTHENTICATED`) rather than the
+ones invented for the now-deleted proxy. Cost if this ruling is wrong: low —
+the two proxies were functionally equivalent; the only risk was the error-code
+string mapping, which is now verified against the existing proxy's own test
+suite (`refundProgressProxy.test.ts`).
+
+The Operator in-panel display (Tasks 5-7) is NOT redundant with the existing
+`RefundProgressPage`: that page is a standalone, unauthenticated-redirect page
+meant for direct navigation/sharing, not integrated into the Operator booking
+workspace. This plan's value — seeing refund status inline while managing a
+booking, without navigating away — stands unchanged.
+
 ## Risks / Notes
 - No automated test harness currently point at the real Backend from FE CI — manual
   verification step 3 above is the only end-to-end proof; this matches how UC-27
