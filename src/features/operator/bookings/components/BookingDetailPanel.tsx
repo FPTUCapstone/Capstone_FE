@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { BookingDto, GetBookingRefundStatusResult } from '../types/bookingLifecycle';
+import type { BookingDto, BookingRefundDto, GetBookingRefundStatusResult } from '../types/bookingLifecycle';
 import { getBookingRefundStatus } from '../services/operatorBookingService';
 import { BookingStatusBadge, CheckInStatusBadge } from './OperatorBookingStatusBadge';
 import { formatCurrencyVND, formatVietnamDate, formatVietnamDateTime } from '../utils/dateFormat';
@@ -35,8 +35,10 @@ export function BookingDetailPanel({
 
   useEffect(() => {
     // Not applicable: RefundStatusCard only renders when booking.status === 'Cancelled',
-    // so any stale state here is simply never shown.
-    if (!open || !booking || booking.status !== 'Cancelled') return;
+    // so any stale state here is simply never shown. Demo bookings never have a
+    // Backend-issued numeric id, so a live fetch would always 404 — the demo
+    // fixture's own booking.refund is shown instead (see DemoRefundRecordCard).
+    if (!open || !booking || booking.status !== 'Cancelled' || isDemo) return;
 
     let isMounted = true;
     async function fetchRefundStatus() {
@@ -54,7 +56,7 @@ export function BookingDetailPanel({
     };
     // booking.id is the only part of `booking` this fetch depends on.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, booking?.id, booking?.status]);
+  }, [open, booking?.id, booking?.status, isDemo]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -294,10 +296,13 @@ export function BookingDetailPanel({
             </div>
           </div>
 
-          {/* Refund status (UC-42/UC-71): live, read-only, fetched from the real Backend.
-              Refund processing is automatic — there is nothing to trigger here. */}
+          {/* Refund status (UC-42/UC-71): read-only. Refund processing is automatic —
+              there is nothing to trigger here. Demo bookings have no Backend-issued
+              id to fetch live status for, so they show their own fixture data. */}
           {booking.status === 'Cancelled' && (
-            <RefundStatusCard loading={refundLoading} result={refundStatus} />
+            isDemo
+              ? <DemoRefundRecordCard refund={booking.refund} />
+              : <RefundStatusCard loading={refundLoading} result={refundStatus} />
           )}
 
           {/* Cancellation reason if cancelled */}
@@ -382,6 +387,43 @@ const REFUND_STATUS_STYLES: Record<string, string> = {
   ManualReview: 'border-purple-200 bg-purple-50/60 text-purple-800',
   Rejected: 'border-rose-200 bg-rose-50/60 text-rose-800',
 };
+
+/**
+ * Demo-mode only: demo bookings have no Backend-issued id, so there is nothing
+ * to fetch live status for. Shows the fixture's own booking.refund instead.
+ */
+function DemoRefundRecordCard({ refund }: { refund: BookingRefundDto | undefined }) {
+  if (!refund) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-3 text-[11px] text-slate-500">
+        {bookingEn.refundStatus.notApplicable}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
+          {bookingEn.detail.refundRecord}
+        </span>
+        <span className="rounded bg-teal-100 px-2 py-0.5 text-[10px] font-extrabold text-teal-800">
+          {refund.status}
+        </span>
+      </div>
+      <div className="space-y-1.5 text-xs text-slate-700">
+        <div className="flex justify-between">
+          <span className="text-slate-500">{bookingEn.detail.refundAmount}:</span>
+          <span className="font-bold text-[#006B5F]">{formatCurrencyVND(refund.refundableAmount)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-500">{bookingEn.detail.gatewayRef}:</span>
+          <span className="font-mono text-slate-800">{refund.gatewayReference || 'N/A'}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RefundStatusCard({
   loading,

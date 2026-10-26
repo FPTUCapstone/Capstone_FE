@@ -3,7 +3,12 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BookingDetailPanel } from './BookingDetailPanel';
 import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
-import type { BookingDto, GetBookingRefundStatusResult } from '../types/bookingLifecycle';
+import type {
+  BookingDto,
+  BookingRefundStatusDto,
+  GetBookingRefundStatusResult,
+  RefundStatusValue,
+} from '../types/bookingLifecycle';
 import { getBookingRefundStatus } from '../services/operatorBookingService';
 
 vi.mock('../services/operatorBookingService', () => ({
@@ -14,6 +19,7 @@ const mockedGetBookingRefundStatus = vi.mocked(getBookingRefundStatus);
 
 const cancellableBooking = INITIAL_DEMO_BOOKINGS[0]; // BK-20260919-0141 (Confirmed, paid)
 const checkedInBooking = INITIAL_DEMO_BOOKINGS[1]; // BK-20260912-0148 (CheckedIn)
+const refundedDemoBooking = INITIAL_DEMO_BOOKINGS[4]; // BK-20260820-0110 (Cancelled, demo refund rf-0110)
 
 function TestDrawerHarness({
   booking = cancellableBooking,
@@ -135,9 +141,31 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
   });
 });
 
-describe('BookingDetailPanel — live refund status (UC-42/UC-71, real Backend)', () => {
+function foundResult(
+  status: RefundStatusValue,
+  overrides: Partial<BookingRefundStatusDto> = {}
+): GetBookingRefundStatusResult {
+  return {
+    outcome: 'found',
+    data: {
+      bookingId: cancellableBooking.id,
+      bookingCode: cancellableBooking.bookingCode,
+      refundAmount: 10000,
+      status,
+      gatewayReference: null,
+      attemptCount: 1,
+      requestedAtUtc: '2026-10-26T01:14:16Z',
+      processedAtUtc: null,
+      nextAttemptAtUtc: null,
+      lastErrorCode: null,
+      ...overrides,
+    },
+  };
+}
+
+describe('BookingDetailPanel — live refund status (UC-42/UC-71, real Backend, isDemo=false)', () => {
   it('does not fetch refund status for a non-Cancelled booking', () => {
-    render(<TestDrawerHarness booking={cancellableBooking} />);
+    render(<TestDrawerHarness booking={cancellableBooking} isDemo={false} />);
     expect(mockedGetBookingRefundStatus).not.toHaveBeenCalled();
   });
 
@@ -149,122 +177,86 @@ describe('BookingDetailPanel — live refund status (UC-42/UC-71, real Backend)'
       })
     );
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
     expect(await screen.findByText(/Loading refund status/i)).toBeDefined();
     resolveFetch({ outcome: 'not_applicable' });
   });
 
-  it('renders the Processed status with amount and gateway reference', async () => {
-    mockedGetBookingRefundStatus.mockResolvedValue({
-      outcome: 'found',
-      data: {
-        bookingId: cancellableBooking.id,
-        bookingCode: cancellableBooking.bookingCode,
-        refundAmount: 10000,
-        status: 'Processed',
-        gatewayReference: 'MOCK-REFUND-9-1792977260581',
-        attemptCount: 1,
-        requestedAtUtc: '2026-10-26T01:14:16Z',
-        processedAtUtc: '2026-10-26T01:14:20Z',
-        nextAttemptAtUtc: null,
-        lastErrorCode: null,
-      },
-    });
+  it('renders the Pending status', async () => {
+    mockedGetBookingRefundStatus.mockResolvedValue(foundResult('Pending'));
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
+
+    expect(await screen.findByText(/Queued for processing/i)).toBeDefined();
+  });
+
+  it('renders the Processing status', async () => {
+    mockedGetBookingRefundStatus.mockResolvedValue(foundResult('Processing'));
+
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
+
+    expect(await screen.findByText(/^Processing$/i)).toBeDefined();
+  });
+
+  it('renders the Processed status with amount, gateway reference and processed-at time', async () => {
+    mockedGetBookingRefundStatus.mockResolvedValue(
+      foundResult('Processed', {
+        gatewayReference: 'MOCK-REFUND-9-1792977260581',
+        processedAtUtc: '2026-10-26T01:14:20Z',
+      })
+    );
+
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
     expect(mockedGetBookingRefundStatus).toHaveBeenCalledWith(cancellableBooking.id);
     expect(await screen.findByText(/Refunded/i)).toBeDefined();
     expect(screen.getByText(/MOCK-REFUND-9-1792977260581/i)).toBeDefined();
     expect(screen.getAllByText(/10.000/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Processed At/i)).toBeDefined();
   });
 
   it('renders the RetryPending status with the next attempt time', async () => {
-    mockedGetBookingRefundStatus.mockResolvedValue({
-      outcome: 'found',
-      data: {
-        bookingId: cancellableBooking.id,
-        bookingCode: cancellableBooking.bookingCode,
-        refundAmount: 10000,
-        status: 'RetryPending',
-        gatewayReference: null,
-        attemptCount: 1,
-        requestedAtUtc: '2026-10-26T01:14:16Z',
-        processedAtUtc: null,
+    mockedGetBookingRefundStatus.mockResolvedValue(
+      foundResult('RetryPending', {
         nextAttemptAtUtc: '2026-10-26T01:20:00Z',
         lastErrorCode: 'payment.refund.gateway_unavailable',
-      },
-    });
+      })
+    );
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
     expect(await screen.findByText(/Queued for processing/i)).toBeDefined();
+    expect(screen.getByText(/Next Attempt/i)).toBeDefined();
   });
 
   it('renders the Failed status with the last error code', async () => {
-    mockedGetBookingRefundStatus.mockResolvedValue({
-      outcome: 'found',
-      data: {
-        bookingId: cancellableBooking.id,
-        bookingCode: cancellableBooking.bookingCode,
-        refundAmount: 10000,
-        status: 'Failed',
-        gatewayReference: null,
-        attemptCount: 3,
-        requestedAtUtc: '2026-10-26T01:14:16Z',
-        processedAtUtc: null,
-        nextAttemptAtUtc: null,
-        lastErrorCode: 'payment.refund.gateway_rejected',
-      },
-    });
+    mockedGetBookingRefundStatus.mockResolvedValue(
+      foundResult('Failed', { attemptCount: 3, lastErrorCode: 'payment.refund.gateway_rejected' })
+    );
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
     expect(await screen.findByText(/Refund failed/i)).toBeDefined();
     expect(screen.getByText(/payment.refund.gateway_rejected/i)).toBeDefined();
   });
 
   it('renders the ManualReview status', async () => {
-    mockedGetBookingRefundStatus.mockResolvedValue({
-      outcome: 'found',
-      data: {
-        bookingId: cancellableBooking.id,
-        bookingCode: cancellableBooking.bookingCode,
-        refundAmount: 10000,
-        status: 'ManualReview',
-        gatewayReference: null,
-        attemptCount: 1,
-        requestedAtUtc: '2026-10-26T01:14:16Z',
-        processedAtUtc: null,
-        nextAttemptAtUtc: null,
-        lastErrorCode: 'payment.refund.manual_review_required',
-      },
-    });
+    mockedGetBookingRefundStatus.mockResolvedValue(
+      foundResult('ManualReview', { lastErrorCode: 'payment.refund.manual_review_required' })
+    );
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
     expect(await screen.findByText(/Awaiting manual settlement/i)).toBeDefined();
   });
 
   it('renders the Rejected status', async () => {
-    mockedGetBookingRefundStatus.mockResolvedValue({
-      outcome: 'found',
-      data: {
-        bookingId: cancellableBooking.id,
-        bookingCode: cancellableBooking.bookingCode,
-        refundAmount: 10000,
-        status: 'Rejected',
-        gatewayReference: null,
-        attemptCount: 1,
-        requestedAtUtc: '2026-10-26T01:14:16Z',
-        processedAtUtc: null,
-        nextAttemptAtUtc: null,
-        lastErrorCode: 'payment.refund.original_payment_invalid',
-      },
-    });
+    mockedGetBookingRefundStatus.mockResolvedValue(
+      foundResult('Rejected', { lastErrorCode: 'payment.refund.original_payment_invalid' })
+    );
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
     expect(await screen.findByText(/Refund rejected/i)).toBeDefined();
   });
@@ -272,19 +264,42 @@ describe('BookingDetailPanel — live refund status (UC-42/UC-71, real Backend)'
   it('renders a neutral note (not an error) when there is no refund record', async () => {
     mockedGetBookingRefundStatus.mockResolvedValue({ outcome: 'not_applicable' });
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
     expect(await screen.findByText(/did not produce a refund/i)).toBeDefined();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('renders a generic error note on a forbidden/failed fetch', async () => {
-    mockedGetBookingRefundStatus.mockResolvedValue({ outcome: 'error', messageCode: 'MSG127' });
+  it.each(['MSG127', 'FORBIDDEN', 'UNAUTHENTICATED'])(
+    'renders a generic error note on a %s fetch outcome',
+    async (messageCode) => {
+      mockedGetBookingRefundStatus.mockResolvedValue({ outcome: 'error', messageCode });
 
-    render(<TestDrawerHarness booking={cancelledBookingFixture()} />);
+      render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
-    await waitFor(() => {
-      expect(screen.getByText(/refund status cannot be retrieved/i)).toBeDefined();
-    });
+      await waitFor(() => {
+        expect(screen.getByText(/refund status cannot be retrieved/i)).toBeDefined();
+      });
+    }
+  );
+});
+
+describe('BookingDetailPanel — demo refund display (isDemo=true, no live fetch)', () => {
+  it('never calls the real refund-status endpoint in demo mode', () => {
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={true} />);
+    expect(mockedGetBookingRefundStatus).not.toHaveBeenCalled();
+  });
+
+  it('shows the demo fixture refund data for a Cancelled booking that has one', () => {
+    render(<TestDrawerHarness booking={refundedDemoBooking} isDemo={true} />);
+
+    expect(screen.getByText(/REFUND-VNPAY-20260815-1100/i)).toBeDefined();
+    expect(screen.queryByText(/did not produce a refund/i)).toBeNull();
+  });
+
+  it('shows the neutral note for a Cancelled demo booking with no refund', () => {
+    render(<TestDrawerHarness booking={cancelledBookingFixture({ refund: undefined })} isDemo={true} />);
+
+    expect(screen.getByText(/did not produce a refund/i)).toBeDefined();
   });
 });
