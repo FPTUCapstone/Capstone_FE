@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
+import { useAccountWorkspace } from '@/features/account/common/AccountWorkspaceContext';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
@@ -25,6 +26,7 @@ const SIGN_IN_RETURN = `${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.a
 
 export function TravelPreferencesPage() {
   const router = useRouter();
+  const { isInsideShell } = useAccountWorkspace();
   const { status, context } = useWebSession();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [reloadToken, setReloadToken] = useState(0);
@@ -75,7 +77,7 @@ export function TravelPreferencesPage() {
 
   if (status === 'restoring' || (isTraveler && state.status === 'loading')) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F6F7]" role="status">
+      <div className="flex min-h-[300px] items-center justify-center p-8" role="status">
         <div className="flex flex-col items-center gap-3">
           <div
             className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
@@ -91,10 +93,9 @@ export function TravelPreferencesPage() {
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
-
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+  const content = (
+    <>
+      {!isInsideShell && (
         <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
           <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
             Trang chủ
@@ -106,54 +107,67 @@ export function TravelPreferencesPage() {
           <span aria-hidden="true">/</span>
           <span className="text-[#00152A]">Sở thích du lịch</span>
         </nav>
+      )}
 
-        <AccountWorkspaceNav activeTab="preferences" />
+      {/* Account Workspace Navigation Tabs (suppressed automatically inside shell) */}
+      <AccountWorkspaceNav activeTab="preferences" />
 
-        <section className="rounded-2xl border border-[#D8E1E4] bg-white p-6 shadow-xs sm:p-8">
-          <header className="mb-6 border-b border-[#D8E1E4] pb-4">
-            <h1 className="text-xl font-black tracking-tight text-[#00152A] sm:text-2xl">Sở thích du lịch</h1>
-            <p className="mt-1 text-xs text-[#59616B] sm:text-sm">
-              Tùy chỉnh các tiêu chí ưu tiên để TripMate cá nhân hóa gợi ý và điền sẵn khi lập lịch trình.
-            </p>
-          </header>
+      <section className="rounded-2xl border border-[#D8E1E4] bg-white p-6 shadow-xs sm:p-8">
+        <header className="mb-6 border-b border-[#D8E1E4] pb-4">
+          <h1 className="text-xl font-black tracking-tight text-[#00152A] sm:text-2xl">Sở thích du lịch</h1>
+          <p className="mt-1 text-xs text-[#59616B] sm:text-sm">
+            Tùy chỉnh các tiêu chí ưu tiên để TripMate cá nhân hóa gợi ý và điền sẵn khi lập lịch trình.
+          </p>
+        </header>
 
-          {state.status === 'ready' ? (
-            <TravelPreferencesForm
-              options={state.options}
-              initialPreferences={state.preferences}
-              onAccessProblem={(kind) => setState({ status: kind })}
-            />
-          ) : null}
+        {state.status === 'ready' ? (
+          <TravelPreferencesForm
+            options={state.options}
+            initialPreferences={state.preferences}
+            onAccessProblem={(kind) => setState({ status: kind })}
+          />
+        ) : null}
 
-          {state.status === 'failure' ? (
-            <div className="space-y-3">
-              <FeedbackAlert tone="error">{preferenceMessages.locked.MSG127}</FeedbackAlert>
-              <button
-                type="button"
-                onClick={retry}
-                className="inline-flex min-h-[44px] items-center rounded-xl border border-[#D8E1E4] bg-white px-4 py-2.5 text-xs font-semibold text-[#00152A] hover:bg-[#F3F6F7]"
-              >
-                Thử lại
-              </button>
-            </div>
-          ) : null}
+        {state.status === 'failure' ? (
+          <div className="space-y-3">
+            <FeedbackAlert tone="error">{preferenceMessages.locked.MSG127}</FeedbackAlert>
+            <button
+              type="button"
+              onClick={retry}
+              className="inline-flex min-h-[44px] items-center rounded-xl border border-[#D8E1E4] bg-white px-4 py-2.5 text-xs font-semibold text-[#00152A] hover:bg-[#F3F6F7]"
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : null}
 
-          {state.status === 'sessionExpired' ? (
-            <div className="space-y-3">
-              <FeedbackAlert tone="warning">{preferenceMessages.locked.MSG125}</FeedbackAlert>
-              <Link
-                href={SIGN_IN_RETURN}
-                className="inline-flex min-h-[44px] items-center rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#00574D]"
-              >
-                Đăng nhập lại
-              </Link>
-            </div>
-          ) : null}
+        {state.status === 'sessionExpired' ? (
+          <div className="space-y-3">
+            <FeedbackAlert tone="warning">{preferenceMessages.locked.MSG125}</FeedbackAlert>
+            <Link
+              href={SIGN_IN_RETURN}
+              className="inline-flex min-h-[44px] items-center rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#00574D]"
+            >
+              Đăng nhập lại
+            </Link>
+          </div>
+        ) : null}
 
-          {state.status === 'forbidden' ? (
-            <FeedbackAlert tone="error">{preferenceMessages.locked.MSG126}</FeedbackAlert>
-          ) : null}
-        </section>
+        {state.status === 'forbidden' ? (
+          <FeedbackAlert tone="error">{preferenceMessages.locked.MSG126}</FeedbackAlert>
+        ) : null}
+      </section>
+    </>
+  );
+
+  if (isInsideShell) {
+    return <div className="w-full">{content}</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+        {content}
       </main>
     </div>
   );
