@@ -695,14 +695,14 @@ describe('operatorBookingService', () => {
       expect(result).toEqual({ outcome: 'not_applicable' });
     });
 
-    it('returns outcome "error" with REFUND_STATUS_FORBIDDEN on 403', async () => {
+    it('returns outcome "error" with FORBIDDEN on 403', async () => {
       globalThis.fetch = vi
         .fn()
-        .mockResolvedValue(new Response(JSON.stringify({ errorCode: 'REFUND_STATUS_FORBIDDEN' }), { status: 403 }));
+        .mockResolvedValue(new Response(JSON.stringify({ errorCode: 'FORBIDDEN' }), { status: 403 }));
 
       const result = await getBookingRefundStatus('60110');
 
-      expect(result).toEqual({ outcome: 'error', messageCode: 'REFUND_STATUS_FORBIDDEN' });
+      expect(result).toEqual({ outcome: 'error', messageCode: 'FORBIDDEN' });
     });
 
     it('returns outcome "error" with UNAUTHENTICATED on 401', async () => {
