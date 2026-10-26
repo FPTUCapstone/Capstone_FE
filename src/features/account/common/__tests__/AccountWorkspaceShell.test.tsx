@@ -153,4 +153,33 @@ describe('AccountWorkspaceShell', () => {
     expect(screen.queryByText('Du khách TripMate')).toBeNull();
     expect(screen.getByTestId('review-form-content')).toBeDefined();
   });
+
+  it('renders UC-29 e-ticket routes directly without the Master-Detail sidebar rail', () => {
+    vi.spyOn(useWebSessionModule, 'useWebSession').mockReturnValue({
+      status: 'authenticated',
+      context: {
+        userId: 10,
+        email: 'traveler@tripmate.vn',
+        fullName: 'Hoang Van Traveler',
+        role: 'Traveler',
+        status: 'Active',
+        applicationStatus: null,
+        applicationUnresolved: false,
+        accessToken: 'token',
+        accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z',
+      },
+    });
+    vi.spyOn(useSafePathnameModule, 'useSafePathname').mockReturnValue('/account/tickets/77');
+
+    render(
+      <AccountWorkspaceShell>
+        <div data-testid="ticket-content">E-ticket</div>
+      </AccountWorkspaceShell>
+    );
+
+    // The ticket page has its own breadcrumb and print layout; no profile header or sidebar.
+    expect(screen.queryByText('TripMate AI Atlas')).toBeNull();
+    expect(screen.queryByText('Hồ sơ cá nhân')).toBeNull();
+    expect(screen.getByTestId('ticket-content')).toBeDefined();
+  });
 });
