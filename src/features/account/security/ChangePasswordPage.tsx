@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
+import { useAccountWorkspace } from '@/features/account/common/AccountWorkspaceContext';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 
@@ -14,6 +15,7 @@ import { createWebChangePasswordCapability } from './webChangePasswordCapability
 
 export function ChangePasswordPage() {
   const router = useRouter();
+  const { isInsideShell } = useAccountWorkspace();
   const { status, context } = useWebSession();
 
   useEffect(() => {
@@ -42,36 +44,49 @@ export function ChangePasswordPage() {
     return null;
   }
 
+  const content = (
+    <>
+      {!isInsideShell && (
+        <>
+          <PublicNavigation />
+          {/* Breadcrumb Navigation */}
+          <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
+            <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+              Trang chủ
+            </Link>
+            <span aria-hidden="true">/</span>
+            <span className="text-[#00152A]">Bảo mật &amp; Mật khẩu</span>
+          </nav>
+        </>
+      )}
+
+      {/* Account Workspace Navigation Tabs (suppressed automatically inside shell) */}
+      <AccountWorkspaceNav activeTab="security" />
+
+      {/* Change Password Card */}
+      <ChangePasswordForm
+        capability={createWebChangePasswordCapability()}
+        userDisplay={{
+          name: context.fullName,
+          email: context.email,
+          role: context.role,
+        }}
+        onCancel={() => router.push(ROUTES.home)}
+        onSessionExpired={() =>
+          router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.security)}`)
+        }
+      />
+    </>
+  );
+
+  if (isInsideShell) {
+    return <div className="w-full">{content}</div>;
+  }
+
   return (
     <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
-      <PublicNavigation />
-
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
-          <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
-            Trang chủ
-          </Link>
-          <span aria-hidden="true">/</span>
-          <span className="text-[#00152A]">Bảo mật &amp; Mật khẩu</span>
-        </nav>
-
-        {/* Account Workspace Navigation Tabs */}
-        <AccountWorkspaceNav activeTab="security" />
-
-        {/* Change Password Card */}
-        <ChangePasswordForm
-          capability={createWebChangePasswordCapability()}
-          userDisplay={{
-            name: context.fullName,
-            email: context.email,
-            role: context.role,
-          }}
-          onCancel={() => router.push(ROUTES.home)}
-          onSessionExpired={() =>
-            router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.security)}`)
-          }
-        />
+        {content}
       </main>
     </div>
   );
