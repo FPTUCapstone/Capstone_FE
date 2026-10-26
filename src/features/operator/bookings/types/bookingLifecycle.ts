@@ -183,3 +183,42 @@ export interface InitiateRefundResult {
   message: string;
   refund?: BookingRefundDto;
 }
+
+/**
+ * Real Backend refund statuses (commerce.Refunds.status), mirrored from
+ * TripMate.Domain.Enums.RefundStatus. Distinct from BookingRefundDto.status,
+ * which is demo-fixture-only and uses a simplified 3-value union.
+ */
+export const REFUND_STATUS_VALUES = [
+  'Pending',
+  'Processing',
+  'Processed',
+  'RetryPending',
+  'Failed',
+  'ManualReview',
+  'Rejected',
+] as const;
+
+export type RefundStatusValue = (typeof REFUND_STATUS_VALUES)[number];
+
+/**
+ * Mirrors Capstone_BE's BookingRefundProgressResponse field-for-field
+ * (GET /api/v1/bookings/{bookingId}/refund).
+ */
+export interface BookingRefundStatusDto {
+  bookingId: string;
+  bookingCode: string;
+  refundAmount: number;
+  status: RefundStatusValue;
+  gatewayReference: string | null;
+  attemptCount: number;
+  requestedAtUtc: string;
+  processedAtUtc: string | null;
+  nextAttemptAtUtc: string | null;
+  lastErrorCode: string | null;
+}
+
+export type GetBookingRefundStatusResult =
+  | { outcome: 'found'; data: BookingRefundStatusDto }
+  | { outcome: 'not_applicable' }
+  | { outcome: 'error'; messageCode: string };

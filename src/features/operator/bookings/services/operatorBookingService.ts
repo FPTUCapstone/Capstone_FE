@@ -12,9 +12,11 @@ import {
   type BookingFilterParams,
   type BookingListResult,
   type BookingRefundDto,
+  type BookingRefundStatusDto,
   type BookingSummaryMetrics,
   type CancelBookingPayload,
   type CancelBookingResult,
+  type GetBookingRefundStatusResult,
   type InitiateRefundPayload,
   type InitiateRefundResult,
 } from '../types/bookingLifecycle';
@@ -556,5 +558,60 @@ export async function initiateBookingRefund(
     messageCode: 'MSG83',
     message: OPERATOR_BOOKING_MESSAGES.MSG83,
     refund: JSON.parse(JSON.stringify(newRefund)),
+  };
+}
+
+/**
+ * Fetches the real, automatically-processed refund status for a booking (UC-42 /
+ * UC-71 "Process Automatic Refund"). Always calls the real Backend via the
+ * authenticated BFF route — never demo-gated, unlike the rest of this module,
+ * because this call has nothing to do with the UC-40 list/demo problem.
+ *
+ * A 404 means no refund record exists for this booking (e.g. a PendingPayment
+ * cancellation with 0% refund) and is reported as 'not_applicable', not an error.
+ */
+export async function getBookingRefundStatus(bookingId: string): Promise<GetBookingRefundStatusResult> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/v1/bookings/${bookingId}/refund`, {
+      headers: { Accept: 'application/json' },
+    });
+  } catch {
+    return { outcome: 'error', messageCode: 'MSG127' };
+  }
+
+  if (response.status === 404) {
+    return { outcome: 'not_applicable' };
+  }
+
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const code =
+      body && typeof body === 'object' && 'errorCode' in body && typeof (body as Record<string, unknown>).errorCode === 'string'
+        ? ((body as Record<string, unknown>).errorCode as string)
+        : 'MSG127';
+    return { outcome: 'error', messageCode: code };
+  }
+
+  if (!body || typeof body !== 'object') {
+    return { outcome: 'error', messageCode: 'MSG127' };
+  }
+
+  const raw = body as Record<string, unknown>;
+  return {
+    outcome: 'found',
+    data: {
+      bookingId: String(raw.bookingId),
+      bookingCode: String(raw.bookingCode),
+      refundAmount: Number(raw.refundAmount),
+      status: raw.status as BookingRefundStatusDto['status'],
+      gatewayReference: (raw.gatewayReference as string | null) ?? null,
+      attemptCount: Number(raw.attemptCount),
+      requestedAtUtc: String(raw.requestedAtUtc),
+      processedAtUtc: (raw.processedAtUtc as string | null) ?? null,
+      nextAttemptAtUtc: (raw.nextAttemptAtUtc as string | null) ?? null,
+      lastErrorCode: (raw.lastErrorCode as string | null) ?? null,
+    },
   };
 }

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cancelCustomerBooking,
+  getBookingRefundStatus,
   getOperatorBookingById,
   getOperatorBookings,
   initiateBookingRefund,
@@ -634,6 +635,92 @@ describe('operatorBookingService', () => {
       expect(previewExpired.eligible).toBe(false);
       expect(previewExpired.refundableAmount).toBe(0);
       expect(previewExpired.deductionAmount).toBe(1100000);
+    });
+  });
+
+  describe('getBookingRefundStatus (UC-42: real Backend refund status, never demo-gated)', () => {
+    const originalFetch = globalThis.fetch;
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('returns outcome "found" with the parsed refund status on 200', async () => {
+      const backendBody = {
+        bookingId: 60110,
+        bookingCode: 'BK-20261026-00001',
+        refundAmount: 10000,
+        status: 'Processed',
+        gatewayReference: 'MOCK-REFUND-9-1792977260581',
+        attemptCount: 1,
+        requestedAtUtc: '2026-10-26T01:14:16.9635174+00:00',
+        processedAtUtc: '2026-10-26T01:14:20.6237355+00:00',
+        nextAttemptAtUtc: null,
+        lastErrorCode: null,
+      };
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(backendBody), { status: 200 }));
+
+      const result = await getBookingRefundStatus('60110');
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        '/api/v1/bookings/60110/refund',
+        expect.objectContaining({ headers: { Accept: 'application/json' } })
+      );
+      expect(result).toEqual({
+        outcome: 'found',
+        data: {
+          bookingId: '60110',
+          bookingCode: 'BK-20261026-00001',
+          refundAmount: 10000,
+          status: 'Processed',
+          gatewayReference: 'MOCK-REFUND-9-1792977260581',
+          attemptCount: 1,
+          requestedAtUtc: '2026-10-26T01:14:16.9635174+00:00',
+          processedAtUtc: '2026-10-26T01:14:20.6237355+00:00',
+          nextAttemptAtUtc: null,
+          lastErrorCode: null,
+        },
+      });
+    });
+
+    it('returns outcome "not_applicable" on 404 (no refund record exists)', async () => {
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ errorCode: 'booking.cancellation.not_found' }), { status: 404 }));
+
+      const result = await getBookingRefundStatus('60999');
+
+      expect(result).toEqual({ outcome: 'not_applicable' });
+    });
+
+    it('returns outcome "error" with REFUND_STATUS_FORBIDDEN on 403', async () => {
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ errorCode: 'REFUND_STATUS_FORBIDDEN' }), { status: 403 }));
+
+      const result = await getBookingRefundStatus('60110');
+
+      expect(result).toEqual({ outcome: 'error', messageCode: 'REFUND_STATUS_FORBIDDEN' });
+    });
+
+    it('returns outcome "error" with UNAUTHENTICATED on 401', async () => {
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ errorCode: 'UNAUTHENTICATED' }), { status: 401 }));
+
+      const result = await getBookingRefundStatus('60110');
+
+      expect(result).toEqual({ outcome: 'error', messageCode: 'UNAUTHENTICATED' });
+    });
+
+    it('returns outcome "error" with MSG127 on network failure', async () => {
+      globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+      const result = await getBookingRefundStatus('60110');
+
+      expect(result).toEqual({ outcome: 'error', messageCode: 'MSG127' });
     });
   });
 });
