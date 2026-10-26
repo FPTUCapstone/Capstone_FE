@@ -33,3 +33,10 @@ it('preserves session A on network failure', async () => {
   await expect(webLogin({ email: 'b@example.com', password: 'b' })).rejects.toThrow('network');
   expect(AuthStorage.getContext()?.userId).toBe(42);
 });
+
+it('fails closed without fabricating a development operator on network failure', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network')));
+  await expect(webLogin({ email: 'operator@tripmate.local', password: 'password' })).rejects.toThrow('network');
+  expect(AuthStorage.getContext()).toBeNull();
+  expect(AuthStorage.getAccessToken()).toBeNull();
+});

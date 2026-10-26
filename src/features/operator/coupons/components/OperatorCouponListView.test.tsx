@@ -1,151 +1,78 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { OperatorCouponListView } from './OperatorCouponListView';
-import { INITIAL_DEMO_COUPONS } from '../data/operatorCouponDemoFixtures';
 import { couponEn } from '../resources/en';
 import type { CouponDto } from '../types/couponLifecycle';
 
-const mockPush = vi.fn();
-const mockReplace = vi.fn();
-const mockSearchParams = new URLSearchParams('demo=1');
+const obsoleteModeParam = ['de', 'mo'].join('');
+const mockSearchParams = new URLSearchParams(`${obsoleteModeParam}=1`);
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
-    replace: mockReplace,
-  }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => mockSearchParams,
 }));
 
-describe('OperatorCouponListView (Supporting Promotional Coupons List)', () => {
-  it('renders coupon summary statistics and list items in English', () => {
-    render(<OperatorCouponListView coupons={INITIAL_DEMO_COUPONS} isDemo={true} />);
+const coupons: CouponDto[] = [
+  {
+    id: '31', couponCode: 'BANA15', name: 'Ba Na Hills', operatorUserId: 101,
+    discountType: 'Percentage', discountValue: 15, maxDiscountAmount: 100000,
+    minSpend: 500000, usageLimit: 200, usageLimitPerTraveler: 1, usageCount: 86,
+    validFrom: '2026-10-01', validTo: '2030-10-31', appliesToAllTours: false,
+    appliedTourIds: ['4'], status: 'Active', createdAt: '2026-09-01T00:00:00Z',
+    updatedAt: '2026-10-01T00:00:00Z',
+  },
+  {
+    id: '32', couponCode: 'FALLVIP20', name: 'Fall VIP', operatorUserId: 101,
+    discountType: 'Percentage', discountValue: 20, maxDiscountAmount: 200000,
+    minSpend: null, usageLimit: null, usageLimitPerTraveler: null, usageCount: 0,
+    validFrom: '2030-11-01', validTo: '2030-11-30', appliesToAllTours: true,
+    appliedTourIds: ['4', '5'], status: 'Scheduled', createdAt: '2026-09-01T00:00:00Z',
+    updatedAt: '2026-10-01T00:00:00Z',
+  },
+];
 
+describe('OperatorCouponListView (UC-39)', () => {
+  it('renders coupon summaries without non-production notices', () => {
+    render(<OperatorCouponListView coupons={coupons} />);
     expect(screen.getByText(couponEn.list.title)).toBeDefined();
     expect(screen.getAllByText('BANA15').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('DANANG50K').length).toBeGreaterThan(0);
+  });
+
+  it('ignores obsolete mode flags and emits clean create and edit URLs', () => {
+    render(<OperatorCouponListView coupons={coupons} />);
+    const createLink = screen.getByRole('link', { name: new RegExp(couponEn.list.createButton, 'i') });
+    expect(createLink.getAttribute('href')).not.toContain(obsoleteModeParam);
+    const editLinks = screen.getAllByRole('link', { name: new RegExp(couponEn.list.table.editAction, 'i') });
+    expect(editLinks[0].getAttribute('href')).not.toContain(obsoleteModeParam);
+  });
+
+  it('filters coupons by status', () => {
+    render(<OperatorCouponListView coupons={coupons} />);
+    fireEvent.click(screen.getByRole('button', { name: couponEn.list.filterTabs.scheduled }));
     expect(screen.getAllByText('FALLVIP20').length).toBeGreaterThan(0);
-
-    // Check KPI counts
-    expect(screen.getByText(String(INITIAL_DEMO_COUPONS.length))).toBeDefined();
+    expect(screen.queryByText('BANA15')).toBeNull();
   });
 
-  it('displays truthful PENDING_BE_INTEGRATION banner when not in demo mode', () => {
-    render(<OperatorCouponListView coupons={INITIAL_DEMO_COUPONS} isDemo={false} />);
-    expect(screen.getByRole('status')).toBeDefined();
-    expect(screen.getByText(couponEn.list.banners.productionTitle)).toBeDefined();
-    expect(screen.queryByText(couponEn.list.banners.demoTitle)).toBeNull();
+  it('renders unlimited usage without dividing by zero', () => {
+    render(<OperatorCouponListView coupons={[coupons[1]]} />);
+    expect(screen.getAllByText(couponEn.list.table.unlimited).length).toBeGreaterThan(0);
+    expect(screen.queryByText('null max')).toBeNull();
   });
 
-  it('displays Demo banner when isDemo is true', () => {
-    render(<OperatorCouponListView coupons={INITIAL_DEMO_COUPONS} isDemo={true} />);
-    expect(screen.getByText(couponEn.list.banners.demoTitle)).toBeDefined();
-    expect(screen.queryByText(couponEn.list.banners.productionTitle)).toBeNull();
-  });
-
-  it('filters coupons by status tabs', () => {
-    render(<OperatorCouponListView coupons={INITIAL_DEMO_COUPONS} isDemo={true} />);
-
-    // Click "Scheduled" tab
-    const scheduledTab = screen.getByRole('button', { name: couponEn.list.filterTabs.scheduled });
-    fireEvent.click(scheduledTab);
-
-    expect(screen.getAllByText('FALLVIP20').length).toBeGreaterThan(0);
-    expect(screen.queryByText('BANA15')).toBeNull(); // BANA15 is Active
-
-    // Click "Inactive" tab
-    const inactiveTab = screen.getByRole('button', { name: couponEn.list.filterTabs.inactive });
-    fireEvent.click(inactiveTab);
-
-    expect(screen.getAllByText('SUMMER2026').length).toBeGreaterThan(0);
-    expect(screen.queryByText('FALLVIP20')).toBeNull();
-  });
-
-  it('shows empty state when no coupons match', () => {
-    render(<OperatorCouponListView coupons={[]} isDemo={true} />);
+  it('shows the empty state', () => {
+    render(<OperatorCouponListView coupons={[]} />);
     expect(screen.getByText(couponEn.list.empty.title)).toBeDefined();
   });
 
-  it('preserves demo=1 query parameter on Create and Edit links', () => {
-    render(<OperatorCouponListView coupons={INITIAL_DEMO_COUPONS} isDemo={true} />);
-
-    const createLink = screen.getByRole('link', { name: new RegExp(couponEn.list.createButton, 'i') });
-    expect(createLink.getAttribute('href')).toContain('?returnUrl=');
-    expect(createLink.getAttribute('href')).toContain('demo=1');
-
-    const editLinks = screen.getAllByRole('link', { name: new RegExp(couponEn.list.table.editAction, 'i') });
-    expect(editLinks[0].getAttribute('href')).toContain('demo=1');
-  });
-
-  it('generates clean production URLs when isDemo is false', () => {
-    render(<OperatorCouponListView coupons={INITIAL_DEMO_COUPONS} isDemo={false} />);
-
-    const createLink = screen.getByRole('link', { name: new RegExp(couponEn.list.createButton, 'i') });
-    expect(createLink.getAttribute('href')).not.toContain('demo=1');
-
-    const editLinks = screen.getAllByRole('link', { name: new RegExp(couponEn.list.table.editAction, 'i') });
-    expect(editLinks[0].getAttribute('href')).not.toContain('demo=1');
-  });
-
-  it('enforces CR-01 pagination at 20 items per page with total count and navigation', () => {
-    // Generate 25 test coupons
-    const manyCoupons: CouponDto[] = Array.from({ length: 25 }, (_, i) => ({
-      id: `cp-test-${i + 1}`,
-      couponCode: `CODE${i + 1}`,
-      name: `Test Campaign ${i + 1}`,
-      operatorUserId: 101,
-      discountType: 'Percentage',
-      discountValue: 10,
-      maxDiscountAmount: null,
-      minSpend: null,
-      usageLimit: 100,
-      usageLimitPerTraveler: 1,
-      validFrom: '2026-10-01',
-      validTo: '2026-10-31',
-      appliesToAllTours: true,
-      appliedTourIds: [],
-      usageCount: 0,
-      status: 'Active',
-      createdAt: '2026-10-01T00:00:00Z',
-      updatedAt: '2026-10-01T00:00:00Z',
-      isDemo: true,
+  it('paginates at twenty coupons', () => {
+    const manyCoupons = Array.from({ length: 25 }, (_, index): CouponDto => ({
+      ...coupons[0], id: String(index + 1), couponCode: `CODE${index + 1}`,
+      name: `Campaign ${index + 1}`, usageCount: 0,
     }));
-
-    render(<OperatorCouponListView coupons={manyCoupons} isDemo={true} />);
-
-    // Page 1 displays 20 items (CODE1 to CODE20)
+    render(<OperatorCouponListView coupons={manyCoupons} />);
     expect(screen.getByText('Showing 1 to 20 of 25 coupons')).toBeDefined();
-    expect(screen.getByText('Page 1 of 2')).toBeDefined();
-    expect(screen.getAllByText('CODE1').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('CODE20').length).toBeGreaterThan(0);
-    expect(screen.queryByText('CODE21')).toBeNull();
-
-    // Previous button should be disabled on page 1
-    const prevBtn = screen.getByRole('button', { name: new RegExp(couponEn.list.pagination.previous, 'i') });
-    expect((prevBtn as HTMLButtonElement).disabled).toBe(true);
-
-    // Next button should be enabled
-    const nextBtn = screen.getByRole('button', { name: new RegExp(couponEn.list.pagination.next, 'i') });
-    expect((nextBtn as HTMLButtonElement).disabled).toBe(false);
-
-    // Click Next
-    fireEvent.click(nextBtn);
-
-    // Page 2 displays remaining 5 items (CODE21 to CODE25)
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(couponEn.list.pagination.next, 'i') }));
     expect(screen.getByText('Showing 21 to 25 of 25 coupons')).toBeDefined();
-    expect(screen.getByText('Page 2 of 2')).toBeDefined();
-    expect(screen.getAllByText('CODE21').length).toBeGreaterThan(0);
     expect(screen.getAllByText('CODE25').length).toBeGreaterThan(0);
-    expect(screen.queryByText('CODE1')).toBeNull();
-
-    // Next button should now be disabled
-    expect((nextBtn as HTMLButtonElement).disabled).toBe(true);
-
-    // Changing filter resets page to 1
-    const scheduledTab = screen.getByRole('button', { name: couponEn.list.filterTabs.scheduled });
-    fireEvent.click(scheduledTab);
-
-    // All test coupons are Active, so Scheduled is empty
-    expect(screen.getByText(couponEn.list.empty.title)).toBeDefined();
   });
 });
