@@ -145,6 +145,48 @@ meant for direct navigation/sharing, not integrated into the Operator booking
 workspace. This plan's value — seeing refund status inline while managing a
 booking, without navigating away — stands unchanged.
 
+## Final review (dispatched to a fresh Opus reviewer)
+
+**Important #1 — fixed.** Demo mode (the only reachable path today, since UC-40
+has no real list endpoint) showed "This cancellation did not produce a refund"
+for every Cancelled booking, including the one with a demo refund record,
+because demo `booking.id` values are non-numeric and always 404 against the
+real endpoint. Fixed by skipping the live fetch entirely when `isDemo` and
+rendering the fixture's own `booking.refund` via a new `DemoRefundRecordCard`.
+Verified: `shows the demo fixture refund data for a Cancelled booking that has
+one` RED→GREEN, suite 23/23 (component) and 2988/2988 (project).
+
+**Important #2 — fixed.** AC8 test gaps (missing Pending/Processing cases,
+under-asserting Processed/RetryPending tests, only one error code exercised)
+closed in the same pass.
+
+**Minors (deferred, not fixed):**
+- Stale refund content can flash briefly on reopen/booking-switch before the
+  effect clears it (cosmetic; `useLayoutEffect` or id-keyed state would close
+  it).
+- Any 404 — not just a Backend `REFUND_NOT_FOUND` — is treated as
+  `not_applicable`; a malformed-route 404 would be mis-reported the same way.
+- `bookingId` is not explicitly `encodeURIComponent`-wrapped in the client
+  fetch (the shared proxy validates it server-side regardless).
+- `initiateBookingRefund` / `InitiateRefundPayload` / `InitiateRefundResult`
+  remain in `operatorBookingService.ts` / `bookingLifecycle.ts` with no UI
+  caller — kept per the original plan's scope (it never asked for their
+  removal), not because they're still needed.
+- `REFUND_STATUS_STYLES` is `Record<string, string>` rather than
+  `Record<RefundStatusValue, string>`.
+- Loading state is text ("Loading refund status…"), not a spinner, despite
+  spec Behavior §2 saying "small inline spinner".
+- The spec's Component Architecture / Error Handling sections still describe
+  the now-deleted duplicate proxy/route and its invented error codes; this
+  plan's own "Ruling" section is the authoritative correction.
+- Raw Backend error codes (e.g. `payment.refund.gateway_rejected`) are shown
+  to operators verbatim, as the spec asked for.
+- `BookingRefundStatusDto.bookingId` is `string` (matching `BookingDto.id`),
+  while the Backend and spec use `number`; deliberate, but the doc comment
+  overstates it as "field-for-field".
+
+**Assessment after fix pass:** ready to merge.
+
 ## Risks / Notes
 - No automated test harness currently point at the real Backend from FE CI — manual
   verification step 3 above is the only end-to-end proof; this matches how UC-27
