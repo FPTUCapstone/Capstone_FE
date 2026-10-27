@@ -22,7 +22,7 @@ export function VerificationPageShell({ children }: VerificationPageShellProps) 
           </span>
         </div>
 
-        <div className="w-full max-w-[480px]">
+        <div className="w-full max-w-[480px] pt-16 sm:pt-20 lg:pt-0">
           {children}
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
