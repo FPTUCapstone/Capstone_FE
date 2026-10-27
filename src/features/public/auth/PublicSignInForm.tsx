@@ -165,6 +165,26 @@ export function PublicSignInForm() {
         </Link>
       </p>
 
+      {/* Admin/Staff entry point — separate session and security level; routes to /admin/login, not this form */}
+      <div className="relative my-5">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-[#2A3B33]/40" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="px-3 bg-brand-card text-[#758B74] font-medium flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">shield</span>
+            Dành cho nhân viên hệ thống?
+          </span>
+        </div>
+      </div>
+      <Link
+        href={ROUTES.admin.login}
+        className="w-full h-12 rounded-xl bg-[#1C2923] text-[#F7F6F2] font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#245747] active:scale-[0.98] transition-all duration-200"
+      >
+        <span className="material-symbols-outlined text-[18px] text-[#758B74]" aria-hidden="true">verified_user</span>
+        Đăng nhập quản trị
+      </Link>
+
       {/* Feedback / verification resend / google hint */}
       {feedback ? (
         <div className="mt-4 space-y-3">

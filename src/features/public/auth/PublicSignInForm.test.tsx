@@ -29,6 +29,20 @@ vi.mock('@/lib/authApi', async (importOriginal) => ({
 
 import { PublicSignInForm } from './PublicSignInForm';
 
+describe('PublicSignInForm admin/staff entry point', () => {
+  it('links to the separate /admin/login route, not the traveler sign-in form', () => {
+    render(<PublicSignInForm />);
+    const link = screen.getByRole('link', { name: /Đăng nhập quản trị/i });
+    expect(link.getAttribute('href')).toBe('/admin/login');
+  });
+
+  it('never submits through the traveler webLogin contract', () => {
+    render(<PublicSignInForm />);
+    fireEvent.click(screen.getByRole('link', { name: /Đăng nhập quản trị/i }));
+    expect(mocks.webLogin).not.toHaveBeenCalled();
+  });
+});
+
 describe('PublicSignInForm production sign-in route', () => {
   beforeEach(() => {
     vi.clearAllMocks();

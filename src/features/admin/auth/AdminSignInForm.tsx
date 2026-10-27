@@ -142,11 +142,11 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
           onChange={(event) => setPassword(event.target.value)}
         />
         <div className="flex justify-end">
-          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#006b5f] hover:underline">
+          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#758B74] hover:text-[#A3B3AB] hover:underline">
             {adminStaffEn.login.forgotPassword}
           </Link>
         </div>
-        <ActionButton type="submit" loading={loading} className="w-full">
+        <ActionButton type="submit" loading={loading} variant="admin" className="w-full">
           {adminStaffEn.login.submitButton}
         </ActionButton>
       </form>
