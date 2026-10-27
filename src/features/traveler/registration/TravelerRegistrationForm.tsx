@@ -316,10 +316,10 @@ export function TravelerRegistrationForm() {
       )}
 
       {/* Form card */}
-      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100">
         {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">
             Tạo tài khoản Traveler
           </h2>
           <p className="text-sm text-brand-textSecondary leading-relaxed">

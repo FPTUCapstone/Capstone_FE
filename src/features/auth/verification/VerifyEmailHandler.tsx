@@ -103,9 +103,9 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
 
   if (status === 'verifying') {
     return (
-      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100 text-center">
         <div className="mx-auto mb-6 h-12 w-12 animate-spin rounded-full border-4 border-brand-teal border-t-transparent" />
-        <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">Verifying Email...</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">Verifying Email...</h2>
         <p className="text-sm text-brand-textSecondary leading-relaxed">
           Please wait while we confirm your email verification link.
         </p>
@@ -115,11 +115,11 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
 
   if (status === 'success') {
     return (
-      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100 text-center">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-lightTeal text-brand-teal border border-brand-teal/20 shadow-sm">
           <span className="material-symbols-outlined text-3xl">check_circle</span>
         </div>
-        <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
+        <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">
           Email Verified!
         </h2>
         <p className="text-sm text-brand-textSecondary leading-relaxed max-w-sm mx-auto mb-8">
@@ -139,11 +139,11 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
 
   if (status === 'incomplete') {
     return (
-      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100 text-center">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 shadow-sm">
           <span className="material-symbols-outlined text-3xl" aria-hidden="true">warning</span>
         </div>
-        <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
+        <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">
           Verification Incomplete
         </h2>
         <p className="text-sm text-brand-textSecondary leading-relaxed max-w-sm mx-auto mb-4">{errorMessage}</p>
@@ -166,11 +166,11 @@ export function VerifyEmailHandler({ mode, oobCode }: VerifyEmailHandlerProps) {
   }
 
   return (
-    <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+    <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100 text-center">
       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 shadow-sm">
         <span className="material-symbols-outlined text-3xl">error</span>
       </div>
-      <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
+      <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">
         Verification Failed
       </h2>
       <p className="text-sm text-brand-textSecondary leading-relaxed max-w-sm mx-auto mb-4">

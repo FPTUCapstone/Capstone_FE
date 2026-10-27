@@ -91,13 +91,13 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '', flow }: 
   }
 
   return (
-    <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100 text-center">
+    <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100 text-center">
       {/* Icon Header */}
       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-lightTeal text-brand-teal border border-brand-teal/20 shadow-sm">
         <span className="material-symbols-outlined text-3xl">mark_email_read</span>
       </div>
 
-      <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
+      <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">
         Check your email
       </h2>
 
