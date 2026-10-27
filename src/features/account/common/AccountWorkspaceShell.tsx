@@ -67,6 +67,11 @@ function isReviewRoute(pathname: string | null): boolean {
   return pathname.includes('/review') || pathname.includes('/reviews/');
 }
 
+/** UC-29: the e-ticket page has its own breadcrumb, role guard and print layout, like the review pages. */
+function isTicketRoute(pathname: string | null): boolean {
+  return pathname?.startsWith(ROUTES.account.ticket('')) ?? false;
+}
+
 export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) {
   const router = useRouter();
   const pathname = useSafePathname();
@@ -76,7 +81,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
   const profileRevision = useRef(0);
 
   const activeTab = resolveAccountTab(pathname);
-  const isReview = isReviewRoute(pathname);
+  const isReview = isReviewRoute(pathname) || isTicketRoute(pathname);
 
   // Authenticated redirect guards
   useEffect(() => {

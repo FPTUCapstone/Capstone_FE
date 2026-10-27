@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import { isCouponDemoAllowedInCurrentEnv } from '../data/operatorCouponDemoFixtures';
 import { couponRouteDecision } from './couponRouteDecision';
 
 /**
@@ -11,13 +12,20 @@ import { couponRouteDecision } from './couponRouteDecision';
  * Enforces BR-07: Only authenticated Tour Operators with Active account status and
  * Approved application status may access the coupon management workspace.
  * Fails closed and prevents unauthorized content flash during session restoration.
- * Note: Demo mode does NOT bypass this authorization guard.
+ * UC-38 alone may expose its development-only creation fixture at /new.
  */
 export function CouponRouteGuard({ children }: { children: ReactNode }) {
   const { status, context } = useWebSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isCreateFixture = pathname === '/partner/coupons/new'
+    && searchParams?.get('demo') === '1'
+    && isCouponDemoAllowedInCurrentEnv();
 
-  const decision = status === 'restoring' ? null : couponRouteDecision(context);
+  const decision = isCreateFixture
+    ? { action: 'allow' as const }
+    : (status === 'restoring' ? null : couponRouteDecision(context));
   const redirectHref = decision?.action === 'redirect' ? decision.href : null;
 
   useEffect(() => {

@@ -54,7 +54,6 @@ export function CheckoutResultView() {
   const [retrying, setRetrying] = useState<boolean>(false);
   const [statusDto, setStatusDto] = useState<BookingPaymentStatusDto | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [secondsToHome, setSecondsToHome] = useState<number>(5);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -103,27 +102,6 @@ export function CheckoutResultView() {
       isMounted = false;
     };
   }, [bookingId, gatewayReportedSuccess, wasCancelledAtGateway]);
-
-  // Give the traveler a short, explicit confirmation before returning home.
-  // The backend remains authoritative: query parameters can never trigger this.
-  useEffect(() => {
-    const isPaid =
-      statusDto?.bookingStatus === 'Confirmed' || statusDto?.paymentStatus === 'Paid';
-    if (!isPaid) return;
-
-    const timer = window.setInterval(() => {
-      setSecondsToHome((previous) => {
-        if (previous <= 1) {
-          window.clearInterval(timer);
-          router.replace(ROUTES.home);
-          return 0;
-        }
-        return previous - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [router, statusDto?.bookingStatus, statusDto?.paymentStatus]);
 
   const handlePayAgain = async () => {
     if (!bookingId || retrying) return;
@@ -278,18 +256,22 @@ export function CheckoutResultView() {
               </div>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
               <Link
-                href={ROUTES.home}
+                href={ROUTES.bookingTicket(bookingId)}
                 className="flex items-center justify-center gap-2 rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#006b5f] transition text-center"
               >
-                <span className="material-symbols-outlined text-sm">home</span>
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">qr_code_2</span>
+                <span>Xem vé điện tử</span>
+              </Link>
+              <Link
+                href={ROUTES.home}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition text-center"
+              >
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">home</span>
                 <span>Về trang chủ</span>
               </Link>
             </div>
-            <p className="mt-4 text-center text-xs font-medium text-slate-500">
-              Tự động trở về trang chủ sau {secondsToHome} giây.
-            </p>
           </div>
         </div>
       </div>

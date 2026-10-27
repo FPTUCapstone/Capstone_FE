@@ -48,9 +48,7 @@ export const DEMO_TRIP_CARDS: TripCardDto[] = [
     currency: 'VND',
     paymentMethod: 'VNPay',
     participantsSummary: '2 adults, 1 child',
-    /**
-     * Real ticket identifier aligned with PR #43's DEMO_TICKET_HOI_AN
-     */
+    /** Demo-only id; in demo mode the ticket page serves `DEMO_TICKET_VIEW` whatever the id. */
     ticketId: 'tkt-demo-03',
     isReviewed: true,
     reviewId: 'rev-demo-02',

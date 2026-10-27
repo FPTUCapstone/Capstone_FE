@@ -14,7 +14,8 @@ export const ROUTES = {
   tour: (id: string | number) => `/tours/${id}`,
   tourBooking: (id: string | number) => `/tours/${id}/book`,
   checkoutResult: '/checkout/result',
-  bookingTicket: (ticketId: string | number) => `/bookings/${encodeURIComponent(ticketId)}/ticket`,
+  /** UC-29 e-ticket of a booking (payment result); Trip History links use `account.ticket`. */
+  bookingTicket: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/ticket`,
   partner: {
     dashboard: '/partner',
     profile: '/partner/profile',
@@ -32,6 +33,7 @@ export const ROUTES = {
     preferences: '/account/preferences',
     security: '/account/security',
     trips: '/account/trips',
+    ticket: (ticketId: string | number) => `/account/tickets/${encodeURIComponent(ticketId)}`,
     tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
     bookingReview: (kind: 'commerceBooking' | 'serviceBooking', id: string | number) =>
       `/account/reviews/${kind}/${encodeURIComponent(id)}`,
