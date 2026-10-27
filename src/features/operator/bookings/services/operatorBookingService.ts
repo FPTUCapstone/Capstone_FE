@@ -1,16 +1,25 @@
 import {
+  DEMO_OPERATOR_TOURS,
   INITIAL_DEMO_BOOKINGS,
   isBookingDemoAllowedInCurrentEnv,
+  toDemoDetailView,
+  toDemoListItem,
+  type DemoBookingRecord,
 } from '../data/operatorBookingDemoFixtures';
-import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
+import {
+  calculateDemoBookingRefundPreview,
+  evaluateDemoCancelEligibility,
+} from '../data/operatorBookingDemoPolicy';
 import {
   BOOKING_ERROR_CODES,
   isCancellationReasonValue,
   OPERATOR_BOOKING_DEFAULT_PAGE_SIZE,
   OPERATOR_BOOKING_MESSAGES,
-  type BookingDto,
+  type BookingDetailView,
   type BookingFilterParams,
+  type BookingListErrorCode,
   type BookingListResult,
+  type BookingTourOptionsResult,
   type BookingRefundDto,
   type BookingSummaryMetrics,
   type CancelBookingPayload,
@@ -18,9 +27,16 @@ import {
   type InitiateRefundPayload,
   type InitiateRefundResult,
 } from '../types/bookingLifecycle';
+import { toVietnamIsoDate } from '../utils/dateFormat';
+import {
+  fetchLiveBookingDetail,
+  fetchLiveBookingList,
+  fetchLiveTourOptions,
+  isLiveBookingId,
+} from './operatorBookingLiveClient';
 
 // In-memory state for Demo mode UI review
-let inMemoryDemoBookings: BookingDto[] = JSON.parse(JSON.stringify(INITIAL_DEMO_BOOKINGS));
+let inMemoryDemoBookings: DemoBookingRecord[] = JSON.parse(JSON.stringify(INITIAL_DEMO_BOOKINGS));
 
 export function resetDemoBookingsState(): void {
   inMemoryDemoBookings = JSON.parse(JSON.stringify(INITIAL_DEMO_BOOKINGS));
@@ -28,6 +44,23 @@ export function resetDemoBookingsState(): void {
 
 function isValidDemoActorUserId(userId: number | undefined): userId is number {
   return typeof userId === 'number' && Number.isFinite(userId) && userId > 0;
+}
+
+function emptyListResult(pageSize: number, errorCode?: BookingListErrorCode): BookingListResult {
+  const summary: BookingSummaryMetrics = {
+    totalBookings: 0,
+    totalParticipants: 0,
+    totalConfirmedAmount: 0,
+  };
+  return {
+    items: [],
+    summary,
+    totalCount: 0,
+    page: 1,
+    pageSize,
+    totalPages: 0,
+    ...(errorCode ? { errorCode, errorMessage: OPERATOR_BOOKING_MESSAGES[errorCode] } : {}),
+  };
 }
 
 export interface OperatorBookingServiceOptions {
@@ -42,9 +75,8 @@ export interface InitiateBookingRefundOptions extends OperatorBookingServiceOpti
 
 /**
  * Fetches customer bookings for the signed-in Tour Operator (UC-40).
- * Enforces BR-105: Operator may view only bookings on tours owned by that operator.
- * Fails closed (MSG126) if Demo mode is invoked without a valid actor identity.
- * In production NO_BACKEND mode, returns empty items with PENDING_BE_INTEGRATION notice.
+ * Live mode calls the BFF (BR-105 is enforced by the BE); demo mode serves fixtures only when the
+ * environment allows it and fails closed (MSG126) without a valid actor identity.
  */
 export async function getOperatorBookings(
   params: BookingFilterParams = {},
@@ -53,55 +85,18 @@ export async function getOperatorBookings(
   const isDemoActive = Boolean(options.isDemo && isBookingDemoAllowedInCurrentEnv());
   const defaultPageSize = Math.max(1, params.pageSize || OPERATOR_BOOKING_DEFAULT_PAGE_SIZE);
 
-  // Production NO_BACKEND truthfulness
   if (!isDemoActive) {
-    return {
-      items: [],
-      summary: {
-        totalBookings: 0,
-        totalParticipants: 0,
-        totalConfirmedAmount: 0,
-      },
-      totalCount: 0,
-      page: 1,
-      pageSize: defaultPageSize,
-      totalPages: 0,
-      pendingBackendNotice: OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION,
-    };
+    return getLiveBookings(params, defaultPageSize);
   }
 
   // BR-105 fail-closed when actor identity is missing in Demo mode
   if (!isValidDemoActorUserId(options.demoActorUserId)) {
-    return {
-      items: [],
-      summary: {
-        totalBookings: 0,
-        totalParticipants: 0,
-        totalConfirmedAmount: 0,
-      },
-      totalCount: 0,
-      page: 1,
-      pageSize: defaultPageSize,
-      totalPages: 0,
-      errorMessage: OPERATOR_BOOKING_MESSAGES.MSG126,
-    };
+    return emptyListResult(defaultPageSize, 'MSG126');
   }
 
-  // Date range validation (MSG29)
-  if (params.startDate && params.endDate) {
-    const start = new Date(params.startDate);
-    const end = new Date(params.endDate);
-    if (start > end) {
-      return {
-        items: [],
-        summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0 },
-        totalCount: 0,
-        page: 1,
-        pageSize: defaultPageSize,
-        totalPages: 0,
-        errorMessage: OPERATOR_BOOKING_MESSAGES.MSG29,
-      };
-    }
+  // Date range validation (MSG31)
+  if (params.startDate && params.endDate && params.startDate.slice(0, 10) > params.endDate.slice(0, 10)) {
+    return emptyListResult(defaultPageSize, 'MSG31');
   }
 
   const actorUserId = options.demoActorUserId;
@@ -111,7 +106,7 @@ export async function getOperatorBookings(
 
   // Filter by Tour Package
   if (params.tourId && params.tourId !== 'ALL') {
-    filtered = filtered.filter((b) => b.tourId === params.tourId);
+    filtered = filtered.filter((b) => b.tour.tourId === params.tourId);
   }
 
   // Filter by Booking Status
@@ -119,49 +114,38 @@ export async function getOperatorBookings(
     filtered = filtered.filter((b) => b.status === params.status);
   }
 
-  // Filter by Departure Date Range
+  // Filter by Departure Date Range (Vietnam-time calendar days, both bounds inclusive)
   if (params.startDate) {
     const filterStartDay = params.startDate.slice(0, 10);
-    filtered = filtered.filter((b) => b.departureDate.slice(0, 10) >= filterStartDay);
+    filtered = filtered.filter((b) => (toVietnamIsoDate(b.schedule.startAtUtc) ?? '') >= filterStartDay);
   }
   if (params.endDate) {
     const filterEndDay = params.endDate.slice(0, 10);
-    filtered = filtered.filter((b) => b.departureDate.slice(0, 10) <= filterEndDay);
+    filtered = filtered.filter((b) => (toVietnamIsoDate(b.schedule.startAtUtc) ?? '') <= filterEndDay);
   }
 
-  // Search by Booking Code or Contact Name
+  // Search by Booking Code, booker name or booker e-mail (same fields as the BE keyword)
   if (params.searchKeyword && params.searchKeyword.trim()) {
     const kw = params.searchKeyword.trim().toLowerCase();
     filtered = filtered.filter(
       (b) =>
         b.bookingCode.toLowerCase().includes(kw) ||
-        b.contactName.toLowerCase().includes(kw)
+        b.booker.fullName.toLowerCase().includes(kw) ||
+        (b.booker.email ?? '').toLowerCase().includes(kw)
     );
   }
 
-  // Summary Metrics calculated on applied filters
+  // Summary Metrics over the applied filters. Same basis as the BE: participants and amount count
+  // only Confirmed + Completed bookings; the booking count covers every status.
+  const travelling = filtered.filter((b) => b.status === 'Confirmed' || b.status === 'Completed');
   const summary: BookingSummaryMetrics = {
     totalBookings: filtered.length,
-    totalParticipants: filtered.reduce((acc, curr) => acc + curr.participantsCount, 0),
-    totalConfirmedAmount: filtered.reduce(
-      (acc, curr) =>
-        curr.status === 'Confirmed' || curr.status === 'Completed'
-          ? acc + curr.totalAmount
-          : acc,
-      0
-    ),
+    totalParticipants: travelling.reduce((acc, curr) => acc + curr.quantity, 0),
+    totalConfirmedAmount: travelling.reduce((acc, curr) => acc + curr.totalAmount, 0),
   };
 
   if (filtered.length === 0) {
-    return {
-      items: [],
-      summary,
-      totalCount: 0,
-      page: 1,
-      pageSize: defaultPageSize,
-      totalPages: 0,
-      errorMessage: OPERATOR_BOOKING_MESSAGES.MSG128,
-    };
+    return { ...emptyListResult(defaultPageSize, 'MSG128'), summary };
   }
 
   // Pagination (BR-52, CR-01: default 20 items per page)
@@ -173,13 +157,48 @@ export async function getOperatorBookings(
   const paginatedItems = filtered.slice(startIdx, startIdx + pageSize);
 
   return {
-    items: JSON.parse(JSON.stringify(paginatedItems)),
+    items: paginatedItems.map(toDemoListItem),
     summary,
     totalCount,
     page,
     pageSize,
     totalPages,
   };
+}
+
+async function getLiveBookings(
+  params: BookingFilterParams,
+  defaultPageSize: number
+): Promise<BookingListResult> {
+  // MSG31: block an inverted departure range before calling the BFF.
+  if (params.startDate && params.endDate && params.startDate.slice(0, 10) > params.endDate.slice(0, 10)) {
+    return emptyListResult(defaultPageSize, 'MSG31');
+  }
+
+  const response = await fetchLiveBookingList(params);
+  if (!response.ok) {
+    return emptyListResult(defaultPageSize, response.code);
+  }
+
+  // The BE summary, paging and items are shown as returned; an empty page is MSG128.
+  if (response.result.items.length === 0) {
+    return { ...response.result, errorCode: 'MSG128', errorMessage: OPERATOR_BOOKING_MESSAGES.MSG128 };
+  }
+  return response.result;
+}
+
+/**
+ * Owned tours for the tour filter. Live mode reads the existing revenue BFF route; a failure never
+ * blocks the list, it only disables the filter (`failed: true`).
+ */
+export async function getOperatorBookingTourOptions(
+  options: OperatorBookingServiceOptions = {}
+): Promise<BookingTourOptionsResult> {
+  const isDemoActive = Boolean(options.isDemo && isBookingDemoAllowedInCurrentEnv());
+  if (!isDemoActive) {
+    return fetchLiveTourOptions();
+  }
+  return { options: DEMO_OPERATOR_TOURS.map((tour) => ({ id: tour.id, title: tour.title })), failed: false };
 }
 
 /**
@@ -190,14 +209,19 @@ export async function getOperatorBookings(
 export async function getOperatorBookingById(
   bookingId: string,
   options: OperatorBookingServiceOptions = {}
-): Promise<{ booking?: BookingDto; error?: string; messageCode?: string }> {
+): Promise<{ booking?: BookingDetailView; error?: string; messageCode?: string }> {
   const isDemoActive = Boolean(options.isDemo && isBookingDemoAllowedInCurrentEnv());
 
   if (!isDemoActive) {
-    return {
-      error: OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION,
-      messageCode: 'PENDING_BE_INTEGRATION',
-    };
+    // A live booking id is always a digit string; anything else is not reachable by this operator.
+    if (!isLiveBookingId(bookingId)) {
+      return { error: OPERATOR_BOOKING_MESSAGES.MSG126, messageCode: 'MSG126' };
+    }
+    const response = await fetchLiveBookingDetail(bookingId);
+    if (!response.ok) {
+      return { error: OPERATOR_BOOKING_MESSAGES[response.code], messageCode: response.code };
+    }
+    return { booking: response.booking };
   }
 
   // BR-105 fail-closed when actor identity is missing
@@ -208,7 +232,7 @@ export async function getOperatorBookingById(
     };
   }
 
-  const booking = inMemoryDemoBookings.find((b) => b.id === bookingId);
+  const booking = inMemoryDemoBookings.find((b) => b.bookingId === bookingId);
 
   if (!booking) {
     return { error: 'Booking not found.', messageCode: 'MSG128' };
@@ -222,7 +246,7 @@ export async function getOperatorBookingById(
     };
   }
 
-  return { booking: JSON.parse(JSON.stringify(booking)) };
+  return { booking: toDemoDetailView(booking) };
 }
 
 /**
@@ -230,9 +254,9 @@ export async function getOperatorBookingById(
  * Validations:
  * - BR-105: Operator may cancel only owned-tour bookings; fails closed if actor identity is missing (MSG126)
  * - BR-106: Cancellation reason must be provided (MSG123)
- * - Cannot cancel if already Cancelled or Completed (MSG133)
+ * - Cannot cancel a booking that is already Cancelled, Completed or Expired (MSG133)
  * - Cannot cancel if already Checked In (MSG95)
- * - Cannot cancel if cancellation window passed (MSG82)
+ * UC-41 as built applies no time window to a Tour Operator, so there is no deadline check.
  * Effects:
  * - Status becomes Cancelled
  * - Releases held slots (BR-66)
@@ -264,7 +288,7 @@ export async function cancelCustomerBooking(
     };
   }
 
-  const booking = inMemoryDemoBookings.find((b) => b.id === bookingId);
+  const booking = inMemoryDemoBookings.find((b) => b.bookingId === bookingId);
   if (!booking) {
     return {
       success: false,
@@ -299,54 +323,36 @@ export async function cancelCustomerBooking(
     };
   }
 
-  // State checks: already cancelled or completed -> MSG133
-  if (booking.status === 'Cancelled' || booking.status === 'Completed') {
-    return {
-      success: false,
-      messageCode: 'MSG133',
-      message: OPERATOR_BOOKING_MESSAGES.MSG133,
-    };
-  }
-
-  // Checked-in -> MSG95
-  if (booking.checkInStatus === 'CheckedIn') {
-    return {
-      success: false,
-      messageCode: 'MSG95',
-      message: OPERATOR_BOOKING_MESSAGES.MSG95,
-    };
-  }
-
-  // Per approved detailed UC-41 SRS, cancellation is blocked when the cancellation window defined
-  // by the policy has passed (the 24h cutoff in fixtures is a test case, not canonical TripMate policy).
-  // Emergency tour cancellation belongs to UC-70 (out of scope for UC-41 / PR #53).
-  if (booking.cancellationWindowExpired) {
-    return {
-      success: false,
-      messageCode: 'MSG82',
-      message: OPERATOR_BOOKING_MESSAGES.MSG82,
-    };
+  // State checks mirror the BE rule: a terminal status blocks first (MSG133), then a check-in (MSG95).
+  const eligibility = evaluateDemoCancelEligibility(booking.status, booking.checkInStatus);
+  if (!eligibility.canCancel) {
+    return eligibility.cancelBlockedReason === 'CheckedIn'
+      ? { success: false, messageCode: 'MSG95', message: OPERATOR_BOOKING_MESSAGES.MSG95 }
+      : { success: false, messageCode: 'MSG133', message: OPERATOR_BOOKING_MESSAGES.MSG133 };
   }
 
   // Apply state transitions
   booking.status = 'Cancelled';
-  booking.qrTicketValid = false; // BR-86
+  if (booking.ticket) {
+    booking.ticket.status = 'Cancelled'; // BR-86
+  }
   booking.cancellationReasonType = payload.reasonType;
-  booking.cancellationReason = payload.reasonDetail.trim();
-  booking.cancelledAt = new Date().toISOString();
+  booking.cancelReason = payload.reasonDetail.trim();
+  booking.cancelledAtUtc = new Date().toISOString();
 
   // Preferred safe implementation under SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER:
   // Cancellation marks the booking as Cancelled, releases held slots (BR-66), and invalidates QR ticket (BR-86).
   // For verified paid bookings, cancellation does NOT automatically create a definitive refund record.
   // Instead, it exposes semantic state refundFollowUpRequired so the operator can explicitly review and
   // initiate the refund via UC-42, avoiding unadjudicated automated financial mutation in NO_BACKEND mode.
-  const refundFollowUpRequired = booking.paidAmount > 0;
+  const view = toDemoDetailView(booking);
+  const refundFollowUpRequired = view.paidAmount > 0;
 
   return {
     success: true,
     messageCode: 'MSG81',
     message: OPERATOR_BOOKING_MESSAGES.MSG81,
-    booking: JSON.parse(JSON.stringify(booking)),
+    booking: view,
     refundTriggered: false,
     refundFollowUpRequired,
   };
@@ -388,7 +394,7 @@ export async function initiateBookingRefund(
     };
   }
 
-  const booking = inMemoryDemoBookings.find((b) => b.id === bookingId);
+  const booking = inMemoryDemoBookings.find((b) => b.bookingId === bookingId);
   if (!booking) {
     return {
       success: false,
@@ -407,26 +413,15 @@ export async function initiateBookingRefund(
   }
 
   // Payment check: must have verified paid transaction
-  if (
-    booking.paidAmount <= 0 ||
-    !booking.paymentTransaction ||
-    booking.paymentTransaction.status !== 'Success'
-  ) {
+  const paidAmount = booking.payment?.status === 'Success' ? booking.payment.amount : 0;
+  if (paidAmount <= 0 || !booking.payment) {
     return {
       success: false,
       messageCode: 'MSG84',
       message: OPERATOR_BOOKING_MESSAGES.MSG84,
     };
   }
-
-  // Policy check
-  if (booking.cancellationWindowExpired) {
-    return {
-      success: false,
-      messageCode: 'MSG84',
-      message: OPERATOR_BOOKING_MESSAGES.MSG84,
-    };
-  }
+  const paymentGateway = booking.payment.gateway;
 
   // BR-74 & BR-134: Idempotency and retry handling when a refund record already exists.
   // Any existing refund (Pending, Success, or Failed) blocks manual duplicate creation (MSG133).
@@ -501,16 +496,16 @@ export async function initiateBookingRefund(
     };
   }
 
-  const preview = calculateDemoBookingRefundPreview(booking);
+  const preview = calculateDemoBookingRefundPreview({ paidAmount });
 
   if (failureMode === 'retry') {
     const failedRefund: BookingRefundDto = {
       id: `rf-${Date.now()}`,
-      bookingId: booking.id,
+      bookingId: booking.bookingId,
       refundableAmount: preview.refundableAmount,
       deductionAmount: preview.deductionAmount,
       policyApplied: preview.policyApplied,
-      paymentChannel: booking.paymentTransaction.paymentChannel,
+      paymentChannel: paymentGateway,
       status: 'Failed',
       attemptCount: 1,
       notes: payload.notes || 'Payment gateway connection failed; queued for retry',
@@ -536,11 +531,11 @@ export async function initiateBookingRefund(
   // Standard successful refund creation
   const newRefund: BookingRefundDto = {
     id: `rf-${Date.now()}`,
-    bookingId: booking.id,
+    bookingId: booking.bookingId,
     refundableAmount: preview.refundableAmount,
     deductionAmount: preview.deductionAmount,
     policyApplied: preview.policyApplied,
-    paymentChannel: booking.paymentTransaction.paymentChannel,
+    paymentChannel: paymentGateway,
     status: 'Success',
     gatewayReference: `REFUND-${booking.bookingCode}-${Math.floor(1000 + Math.random() * 9000)}`,
     attemptCount: 1,

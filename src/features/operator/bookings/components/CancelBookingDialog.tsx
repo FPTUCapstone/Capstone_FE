@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useId, useRef, useState
 import { createPortal } from 'react-dom';
 import {
   CANCELLATION_REASONS,
-  type BookingDto,
+  type BookingDetailView,
   type CancellationReasonValue,
   type CancelBookingPayload,
 } from '../types/bookingLifecycle';
@@ -14,14 +14,14 @@ import { bookingEn } from '../resources/en';
 
 interface CancelBookingDialogProps {
   open: boolean;
-  booking: BookingDto | null;
+  booking: BookingDetailView | null;
   loading?: boolean;
   onClose: () => void;
   onConfirm: (payload: CancelBookingPayload) => Promise<void> | void;
 }
 
 interface CancelBookingModalContentProps {
-  booking: BookingDto;
+  booking: BookingDetailView;
   loading: boolean;
   onClose: () => void;
   onConfirm: (payload: CancelBookingPayload) => Promise<void> | void;
@@ -152,19 +152,19 @@ function CancelBookingModalContent({
         <div className="my-4 rounded-xl bg-slate-50 p-4 border border-slate-100 text-xs space-y-2">
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.tourLabel}</span>
-            <span className="font-semibold text-slate-800 text-right">{booking.tourName}</span>
+            <span className="font-semibold text-slate-800 text-right">{booking.tour.title}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.departureLabel}</span>
-            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.departureDate)}</span>
+            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.schedule.startAtUtc)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.contactLabel}</span>
-            <span className="font-semibold text-slate-800">{booking.contactName} ({booking.contactPhone})</span>
+            <span className="font-semibold text-slate-800">{booking.booker.fullName} ({booking.booker.phoneNumber ?? '-'})</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.participantsLabel}</span>
-            <span className="font-semibold text-slate-800">{booking.participantsCount} {bookingEn.cancelDialog.passengers}</span>
+            <span className="font-semibold text-slate-800">{booking.quantity} {bookingEn.cancelDialog.passengers}</span>
           </div>
           <div className="flex justify-between border-t border-slate-200/60 pt-2">
             <span className="text-slate-500">{bookingEn.cancelDialog.totalLabel}</span>
