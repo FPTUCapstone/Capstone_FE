@@ -19,11 +19,21 @@ real Backend (`GET /api/v1/bookings/{bookingId}/refund`), replacing the demo-onl
    `BookingRefundDto` is untouched (still backs UC-40/41 demo fixtures/tests).
 3. **404 is not an error**: the client service returns a discriminated result
    (`{ found: false }` vs `{ found: true, data }`), never throws/rejects on 404.
-4. **No polling**: fetch once per panel-open when `booking.status === 'Cancelled'`.
-5. **Deletion**: `InitiateRefundDialog.tsx` + its test are removed in the same
+4. **Quy tắc demo/live** (thống nhất với spec):
+   - Booking thật (có Backend ID, `isDemo === false`) → gọi `GET /api/v1/bookings/{id}/refund`,
+     hiển thị trạng thái thật.
+   - Booking demo (`isDemo === true`) → **không gọi API**, hiển thị `DemoRefundRecordCard`
+     từ fixture, kèm nhãn "Demo data — not a live system status".
+   - Không bao giờ diễn giải dữ liệu demo là tiến trình refund thật.
+5. **Làm mới trạng thái**: nút "Refresh status" cho `Pending`, `Processing`, `RetryPending`.
+   Không polling tự động (spec: "không polling tự động").
+6. **Deletion**: `InitiateRefundDialog.tsx` + its test are removed in the same
    change (approved by developer), along with `isRefundable`, `onOpenRefundDialog`,
    `refundClarificationNotice`, and the now-dead `refundDialog.*` / `refundBtn` /
    `notRefundableTooltip` strings in `resources/en.ts`.
+7. **Ngoài phạm vi plan này** (task dọn dẹp riêng, xem Ruling): `initiateBookingRefund`,
+   `InitiateRefundPayload`, `InitiateRefundResult` vẫn còn trong service/types và đang được
+   19 chỗ trong test gọi. Chỉ xóa sau khi cập nhật các test đó.
 
 ---
 
@@ -40,20 +50,18 @@ real Backend (`GET /api/v1/bookings/{bookingId}/refund`), replacing the demo-onl
      | { outcome: 'not_applicable' }
      | { outcome: 'error'; messageCode: string }`.
 
-### Task 2: Server-only BFF proxy (no test file — mirrors untested `tourBookingProxy.ts`)
-- [NEW] `src/features/bookings/services/bookingRefundProxy.ts`
-  - `proxyGetBookingRefundStatus(request: Request, bookingId: string): Promise<Response>`
-  - Role check accepts `Traveler` or `TourOperator`.
-  - Maps Backend `booking.cancellation.not_found` -> `404` passthrough (route/client
-    treats this as "not_applicable", not a thrown error).
-  - Maps `booking.cancellation.forbidden` -> `403` `{ errorCode: 'REFUND_STATUS_FORBIDDEN' }`.
-  - No session / expired -> `401` `{ errorCode: 'UNAUTHENTICATED' }`.
-  - Anything else -> `503` `{ errorCode: 'MSG127' }`.
+### Task 2: BFF proxy — ĐÃ CÓ SẴN, TÁI SỬ DỤNG (không tạo mới)
+- [REUSE] `src/features/bookings/services/refundProgressProxy.ts`
+  — `proxyGetBookingRefundProgress(request, bookingId)`, đã phục vụ cả Traveler lẫn
+  TourOperator và đã có test `refundProgressProxy.test.ts`.
+- Mã lỗi thực tế do proxy này trả: `FORBIDDEN` (403), `UNAUTHENTICATED` (401),
+  `REFUND_NOT_FOUND` (404), `REFUND_UNAVAILABLE` (503).
+- **Không được tạo `bookingRefundProxy.ts` hoặc bất kỳ proxy trùng nào.**
 
-### Task 3: Route handler
-- [NEW] `app/api/v1/bookings/[id]/refund/route.ts`
-  - `GET` delegates to `proxyGetBookingRefundStatus`, same shape as
-    `app/api/v1/bookings/[id]/review/route.ts`.
+### Task 3: Route handler — ĐÃ CÓ SẴN, TÁI SỬ DỤNG (không tạo mới)
+- [REUSE] `app/api/v1/bookings/[bookingId]/refund/route.ts`.
+- **Không được tạo route `app/api/v1/bookings/[id]/refund/`**: Next.js không cho phép hai
+  tên tham số động khác nhau tại cùng một vị trí URL (xem `tests/route-parameters.test.cjs`).
 
 ### Task 4: Client service function (test first)
 - [NEW TEST] `src/features/operator/bookings/services/operatorBookingService.test.ts`
@@ -61,8 +69,12 @@ real Backend (`GET /api/v1/bookings/{bookingId}/refund`), replacing the demo-onl
   network failure.
 - [MODIFY] `src/features/operator/bookings/services/operatorBookingService.ts`
   - `getBookingRefundStatus(bookingId: string): Promise<GetBookingRefundStatusResult>`
-  - Real `fetch('/api/v1/bookings/{id}/refund')`, always real (not gated by
-    `isDemo` — this call is independent of the UC-40 demo problem).
+  - Real `fetch('/api/v1/bookings/{id}/refund')` chỉ khi booking là booking thật
+    (`isDemo === false`, có Backend ID). Không gọi API cho booking demo — xem
+    "Quy tắc demo/live" ở đầu plan.
+  - Validate payload `200 OK` trước khi dùng: kiểm tra `status` thuộc 7 giá trị cho phép,
+    `refundAmount` là số hữu hạn, `bookingId`/`bookingCode`/`requestedAtUtc` đúng kiểu. Payload
+    không hợp lệ trả `{ outcome: 'error', messageCode: 'MSG127' }`, không ép kiểu thẳng.
 
 ### Task 5: UI — remove dead Initiate-Refund code (test first: update, then delete)
 - [MODIFY TEST] `src/features/operator/bookings/components/BookingDetailPanel.test.tsx`
@@ -104,16 +116,24 @@ real Backend (`GET /api/v1/bookings/{bookingId}/refund`), replacing the demo-onl
   `operatorBookingService.test.ts` still pass unmodified)
 - `npm run build`
 
-### Manual (against the running local Backend, Mock payment gateway)
+### Manual — lộ trình thật (không dùng nút hủy trên Operator UI)
+Nút hủy trên Operator UI chỉ hoạt động với demo (`isCancellable` yêu cầu `isDemo`), nên
+không dùng để tạo booking thật. Thay vào đó:
 1. Start BE (`tools/run-local-api.ps1`) + FE (`npm run dev`).
-2. Cancel a `Confirmed` booking as Tour Operator via the existing Cancel dialog
-   (real API, UC-41 — already wired by teammate).
-3. Reopen the booking's detail panel: confirm refund status shows `Pending`
-   immediately, then `Processed` after the background sweep runs (~seconds,
-   Mock gateway) on a re-open.
-4. Cancel a `PendingPayment` booking (no payment yet): confirm detail panel shows
-   the "not applicable" note, not an error.
-5. Confirm no "Initiate Refund" button/dialog exists anywhere in the workspace.
+2. Tạo booking thật đã thanh toán (Mock gateway) và hủy qua API
+   `POST /api/v1/bookings/{id}/cancellation` (Idempotency-Key bắt buộc), hoặc dùng booking
+   đã seed sẵn trong DB local.
+3. Đăng nhập Operator sở hữu tour, mở booking thật đó (không dùng `?demo=1`): card hiển thị
+   `Pending` → bấm "Refresh status" → `Processed` sau khi worker chạy (~vài giây, Mock).
+4. Booking chưa thanh toán bị hủy (`PendingPayment`): card hiển thị
+   "No refund record was found for this booking." (trung tính, không phải lỗi).
+5. Mở `/partner/bookings?demo=1`, mở booking đã hủy có `refund` trong fixture: card hiển thị
+   nhãn "Demo data", không gọi API (kiểm tra tab Network không có request
+   `/api/v1/bookings/.../refund`).
+6. Không có nút "Initiate Refund" ở bất kỳ đâu trong workspace.
+
+Phương án thay thế nếu không có quyền truy cập tour thật: trang người dùng
+`/bookings/{id}/refund` (Traveler), đăng nhập bằng traveler sở hữu booking đó.
 
 ---
 
@@ -186,6 +206,24 @@ closed in the same pass.
   overstates it as "field-for-field".
 
 **Assessment after fix pass:** ready to merge.
+
+## Second review (2026-10-29) — fixed
+
+- Task 2/3 rewritten to say "reuse `refundProgressProxy.ts` / `[bookingId]` route",
+  no longer instructing a new proxy/route to be created.
+- Demo/live rule unified across spec and plan: demo never calls the API; real
+  bookings always do.
+- Manual verification rewritten: the Operator cancel button is demo-only
+  (`isCancellable` requires `isDemo`), so the steps now cancel via the real API
+  or use a seeded booking instead of the Operator UI's Cancel button.
+- Point 7 (payload validation) implemented: `parseBookingRefundStatusDto()`
+  validates every field of a 200 OK body before returning `'found'`; an
+  unknown status, non-finite amount, or missing field now returns
+  `{ outcome: 'error', messageCode: 'MSG127' }` instead of being cast through.
+  Verified RED→GREEN with 4 new tests; full suite 136/136 (module),
+  3047/3047 (project); build green.
+- Point 5 (dead `initiateBookingRefund` code) remains deferred, as already
+  scoped out of this plan in Technical Directive 7.
 
 ## Risks / Notes
 - No automated test harness currently point at the real Backend from FE CI — manual
