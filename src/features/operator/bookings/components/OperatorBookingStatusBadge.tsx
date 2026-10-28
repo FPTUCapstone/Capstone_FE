@@ -65,20 +65,20 @@ export function CheckInStatusBadge({ status, className = '' }: CheckInStatusBadg
   if (status === 'CheckedIn') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200/60 ${className}`}
+        className={`inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200/60 overflow-hidden ${className}`}
       >
-        <span className="material-symbols-outlined text-[14px]">done</span>
-        {bookingEn.checkInStatuses.CheckedIn}
+        <span className="material-symbols-outlined text-[14px] shrink-0">done</span>
+        <span className="truncate">{bookingEn.checkInStatuses.CheckedIn}</span>
       </span>
     );
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 border border-slate-200 ${className}`}
+      className={`inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 border border-slate-200 overflow-hidden ${className}`}
     >
-      <span className="material-symbols-outlined text-[14px]">schedule</span>
-      {bookingEn.checkInStatuses.NotCheckedIn}
+      <span className="material-symbols-outlined text-[14px] shrink-0">schedule</span>
+      <span className="truncate">{bookingEn.checkInStatuses.NotCheckedIn}</span>
     </span>
   );
 }

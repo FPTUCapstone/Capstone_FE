@@ -529,12 +529,12 @@ export function OperatorProfileView({
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <button
           type="button"
           onClick={handleCancel}
           disabled={!canEdit}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Hủy
         </button>
@@ -543,7 +543,7 @@ export function OperatorProfileView({
           type="submit"
           disabled={!canEdit}
           title={!isDemo ? 'Tính năng lưu đang chờ kết nối dịch vụ máy chủ' : undefined}
-          className={`rounded-xl px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 ${
+          className={`w-full sm:w-auto text-center rounded-xl px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 ${
             !isDemo
               ? 'bg-slate-400 cursor-not-allowed opacity-60'
               : 'bg-[#006B5F] hover:bg-[#00574D] disabled:opacity-50'
