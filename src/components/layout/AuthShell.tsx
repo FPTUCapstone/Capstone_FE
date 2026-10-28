@@ -40,6 +40,7 @@ export function AuthShell({
 
   return (
     <main className={`min-h-screen ${admin ? 'bg-[#F7F6F2]' : 'bg-brand-surface font-sans'}`}>
+
       <header className={`border-b px-4 py-3 sm:px-8 sm:py-4 ${admin ? 'border-[#2A3B33] bg-[#1C2923] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 sm:gap-4">
           <Link href={ROUTES.home} aria-label="TripMate home">
@@ -48,6 +49,7 @@ export function AuthShell({
           <Link
             href={returnHref}
             className={`rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold transition-colors ${admin ? 'text-[#A3B3AB] hover:text-white hover:bg-white/10' : 'text-brand-teal hover:bg-brand-lightTeal'}`}
+
           >
             {returnLabel}
           </Link>

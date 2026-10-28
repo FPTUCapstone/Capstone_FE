@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InitiateRefundDialog } from './InitiateRefundDialog';
-import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
+import { INITIAL_DEMO_BOOKINGS, toDemoDetailView } from '../data/operatorBookingDemoFixtures';
 import { bookingEn } from '../resources/en';
 import type { InitiateRefundPayload } from '../types/bookingLifecycle';
 
-const sampleBooking = INITIAL_DEMO_BOOKINGS[0]; // BK-20260919-0141
+const sampleBooking = toDemoDetailView(INITIAL_DEMO_BOOKINGS[0]); // BK-20260919-0141
 
 function TestHarness({
   onConfirm = vi.fn(),
@@ -37,6 +37,13 @@ afterEach(() => {
 });
 
 describe('InitiateRefundDialog (UC-42 Accessibility & Behavior)', () => {
+  it('shows the original payment gateway as the refund channel', () => {
+    render(<TestHarness />);
+
+    expect(screen.getByText('VNPAY')).toBeDefined();
+    expect(screen.getByText('Ba Na Hills full-day tour')).toBeDefined();
+  });
+
   it('renders modal dialog with aria-modal="true" and accessible title/description in English', () => {
     render(<TestHarness />);
 

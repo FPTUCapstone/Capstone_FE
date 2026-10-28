@@ -2,23 +2,35 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { BookingDto } from '../types/bookingLifecycle';
+import type { BookingDetailView, BookingListItemDto } from '../types/bookingLifecycle';
 import { BookingStatusBadge, CheckInStatusBadge } from './OperatorBookingStatusBadge';
 import { formatCurrencyVND, formatVietnamDate, formatVietnamDateTime } from '../utils/dateFormat';
 import { bookingEn } from '../resources/en';
 
+export type BookingDetailLoadState = 'loading' | 'ready' | 'error';
+
 interface BookingDetailPanelProps {
   open: boolean;
-  booking: BookingDto | null;
+  /** The full detail; null while it is loading or when loading failed. */
+  booking: BookingDetailView | null;
+  /** The list row the drawer was opened from: its basics are shown at once, before the detail arrives. */
+  summary?: BookingListItemDto | null;
+  loadState?: BookingDetailLoadState;
+  errorMessage?: string | null;
+  onRetry?: () => void;
   isDemo?: boolean;
   onClose: () => void;
-  onOpenCancelDialog: (booking: BookingDto) => void;
-  onOpenRefundDialog: (booking: BookingDto) => void;
+  onOpenCancelDialog: (booking: BookingDetailView) => void;
+  onOpenRefundDialog: (booking: BookingDetailView) => void;
 }
 
 export function BookingDetailPanel({
   open,
   booking,
+  summary = null,
+  loadState = 'ready',
+  errorMessage = null,
+  onRetry,
   isDemo = false,
   onClose,
   onOpenCancelDialog,
@@ -86,22 +98,50 @@ export function BookingDetailPanel({
     };
   }, [handleClose, open]);
 
-  if (!open || !booking) return null;
+  // The basics come from the detail when it is loaded, otherwise from the list row.
+  const basics = booking
+    ? {
+        bookingCode: booking.bookingCode,
+        status: booking.status,
+        startAtUtc: booking.schedule.startAtUtc,
+        tourTitle: booking.tour.title,
+        checkInStatus: booking.checkInStatus,
+        checkedInAtUtc: booking.checkedInAtUtc,
+        bookedAtUtc: booking.bookedAtUtc,
+      }
+    : summary
+      ? {
+          bookingCode: summary.bookingCode,
+          status: summary.status,
+          startAtUtc: summary.schedule.startAtUtc,
+          tourTitle: summary.tour.title,
+          checkInStatus: summary.checkInStatus,
+          checkedInAtUtc: summary.checkedInAtUtc,
+          bookedAtUtc: summary.bookedAtUtc,
+        }
+      : null;
 
-  // Eligibility evaluation for actions
-  const isCancellable =
-    isDemo &&
-    booking.status !== 'Cancelled' &&
-    booking.status !== 'Completed' &&
-    booking.checkInStatus !== 'CheckedIn' &&
-    !booking.cancellationWindowExpired;
+  // A ready drawer without a booking has nothing to show; loading and error drawers show the row basics.
+  if (!open || !basics || (loadState === 'ready' && booking === null)) return null;
+
+  // Eligibility evaluation for actions. Cancellation follows the BE decision (`canCancel`), which
+  // mirrors UC-41; the browser does not recompute it. Both actions stay locked outside demo mode
+  // until their UC-41/UC-42 integration.
+  const isCancellable = isDemo && booking !== null && booking.canCancel;
 
   const isRefundable =
     isDemo &&
+    booking !== null &&
     booking.paidAmount > 0 &&
-    booking.paymentTransaction?.status === 'Success' &&
-    !booking.refund &&
-    !booking.cancellationWindowExpired;
+    booking.payment?.status === 'Success' &&
+    !booking.refund;
+
+  const cancelBlockedTooltip =
+    booking?.cancelBlockedReason === 'CheckedIn'
+      ? bookingEn.detail.cancelBlockedCheckedInTooltip
+      : booking?.cancelBlockedReason === 'InvalidStatus'
+        ? bookingEn.detail.cancelBlockedInvalidStatusTooltip
+        : bookingEn.detail.notCancellableTooltip;
 
   const drawerContent = (
     <div
@@ -116,6 +156,7 @@ export function BookingDetailPanel({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
+        aria-busy={loadState === 'loading' ? true : undefined}
         className="flex h-full w-full max-w-xl flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-200"
       >
         {/* Drawer Header */}
@@ -123,12 +164,12 @@ export function BookingDetailPanel({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 id={titleId} className="text-base font-bold text-[#00152A] break-words">
-                {bookingEn.detail.title} {booking.bookingCode}
+                {bookingEn.detail.title} {basics.bookingCode}
               </h2>
-              <BookingStatusBadge status={booking.status} />
+              <BookingStatusBadge status={basics.status} />
             </div>
             <p id={descId} className="text-xs text-slate-500 mt-0.5">
-              {bookingEn.detail.departureDate}: {formatVietnamDate(booking.departureDate)}
+              {bookingEn.detail.departureDate}: {formatVietnamDate(basics.startAtUtc)}
             </p>
           </div>
           <button
@@ -144,33 +185,99 @@ export function BookingDetailPanel({
 
         {/* Drawer Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 text-xs">
+          {booking === null ? (
+            <>
+              {/* Row basics while the detail loads or when loading failed */}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  {bookingEn.detail.tourInfo}
+                </span>
+                <h3 className="mt-1 text-sm font-bold text-[#00152A]">{basics.tourTitle}</h3>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-slate-600">
+                  <div>
+                    <span className="text-slate-400 block">{bookingEn.detail.departureDate}:</span>
+                    <span className="font-semibold text-slate-800">{formatVietnamDate(basics.startAtUtc)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">{bookingEn.detail.checkInStatus}:</span>
+                    <CheckInStatusBadge status={basics.checkInStatus} />
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">{bookingEn.detail.createdAt}:</span>
+                    <span className="font-semibold text-slate-800">{formatVietnamDateTime(basics.bookedAtUtc)}</span>
+                  </div>
+                </div>
+              </div>
+              {loadState === 'error' ? (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900 space-y-3"
+                >
+                  <p className="font-bold">{errorMessage}</p>
+                  {onRetry && (
+                    <button
+                      type="button"
+                      onClick={onRetry}
+                      className="rounded-xl border border-rose-200 bg-white px-4 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition"
+                    >
+                      {bookingEn.list.retryBtn}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div
+                  role="status"
+                  aria-label={bookingEn.detail.loading}
+                  className="space-y-3 animate-pulse"
+                >
+                  <div className="h-24 rounded-2xl bg-slate-100" />
+                  <div className="h-32 rounded-2xl bg-slate-100" />
+                  <div className="h-28 rounded-2xl bg-slate-100" />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
           {/* Tour info card */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               {bookingEn.detail.tourInfo}
             </span>
-            <h3 className="mt-1 text-sm font-bold text-[#00152A]">{booking.tourName}</h3>
+            <h3 className="mt-1 text-sm font-bold text-[#00152A]">{booking.tour.title}</h3>
             <div className="mt-3 grid grid-cols-2 gap-3 text-slate-600">
               <div>
                 <span className="text-slate-400 block">{bookingEn.detail.departureDate}:</span>
                 <span className="font-semibold text-slate-800">
-                  {formatVietnamDate(booking.departureDate)}
+                  {formatVietnamDate(booking.schedule.startAtUtc)}
                 </span>
               </div>
+              {booking.schedule.meetingPoint && (
+                <div>
+                  <span className="text-slate-400 block">{bookingEn.detail.meetingPoint}:</span>
+                  <span className="font-semibold text-slate-800">{booking.schedule.meetingPoint}</span>
+                </div>
+              )}
               <div>
                 <span className="text-slate-400 block">{bookingEn.detail.checkInStatus}:</span>
                 <CheckInStatusBadge status={booking.checkInStatus} />
+                {booking.checkedInAtUtc && (
+                  <span className="mt-0.5 block text-[10px] text-slate-500">
+                    {bookingEn.detail.checkedInAt}: {formatVietnamDateTime(booking.checkedInAtUtc)}
+                  </span>
+                )}
               </div>
-              <div>
-                <span className="text-slate-400 block">{bookingEn.detail.qrTicket}:</span>
-                <span className="font-semibold text-slate-800">
-                  {booking.qrTicketValid ? bookingEn.detail.qrValid : bookingEn.detail.qrInvalid}
-                </span>
-              </div>
+              {booking.ticket && (
+                <div>
+                  <span className="text-slate-400 block">{bookingEn.detail.ticketCode}:</span>
+                  <span className="font-semibold text-slate-800">
+                    {booking.ticket.ticketCode} ({booking.ticket.status})
+                  </span>
+                </div>
+              )}
               <div>
                 <span className="text-slate-400 block">{bookingEn.detail.createdAt}:</span>
                 <span className="font-semibold text-slate-800">
-                  {formatVietnamDateTime(booking.createdAt)}
+                  {formatVietnamDateTime(booking.bookedAtUtc)}
                 </span>
               </div>
             </div>
@@ -184,15 +291,15 @@ export function BookingDetailPanel({
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700">
               <div>
                 <span className="text-slate-400 block">{bookingEn.detail.fullName}:</span>
-                <span className="font-bold text-slate-800">{booking.contactName}</span>
+                <span className="font-bold text-slate-800">{booking.booker.fullName}</span>
               </div>
               <div>
                 <span className="text-slate-400 block">{bookingEn.detail.phone}:</span>
-                <span className="font-semibold text-slate-800">{booking.contactPhone}</span>
+                <span className="font-semibold text-slate-800">{booking.booker.phoneNumber ?? '-'}</span>
               </div>
               <div>
                 <span className="text-slate-400 block">{bookingEn.detail.email}:</span>
-                <span className="font-semibold text-slate-800 truncate block">{booking.contactEmail}</span>
+                <span className="font-semibold text-slate-800 truncate block">{booking.booker.email ?? '-'}</span>
               </div>
             </div>
           </div>
@@ -201,13 +308,13 @@ export function BookingDetailPanel({
           <div className="rounded-2xl border border-slate-200 p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                {bookingEn.detail.participantsList} ({booking.participantsCount} {bookingEn.detail.personCount})
+                {bookingEn.detail.participantsList} ({booking.quantity} {bookingEn.detail.personCount})
               </span>
             </div>
             <div className="space-y-2">
               {booking.participants.map((pax, index) => (
                 <div
-                  key={pax.id}
+                  key={`${index}-${pax.fullName}`}
                   className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 border border-slate-100"
                 >
                   <div className="flex items-center gap-2">
@@ -215,15 +322,9 @@ export function BookingDetailPanel({
                       {index + 1}
                     </span>
                     <span className="font-bold text-slate-800">{pax.fullName}</span>
-                    {pax.specialNotes && (
-                      <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                        {pax.specialNotes}
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-2 text-slate-500">
-                    <span>{pax.paxType === 'Adult' ? bookingEn.paxTypes.Adult : bookingEn.paxTypes.Child}</span>
-                    {pax.age && <span>({pax.age} {bookingEn.paxTypes.yearsOld})</span>}
+                    <span>{bookingEn.paxTypes[pax.participantType]}</span>
                   </div>
                 </div>
               ))}
@@ -242,8 +343,8 @@ export function BookingDetailPanel({
             </div>
             <div className="space-y-2 text-slate-600">
               <div className="flex justify-between">
-                <span>{bookingEn.detail.totalAmount}:</span>
-                <span className="font-semibold text-slate-800">{formatCurrencyVND(booking.totalAmount)}</span>
+                <span>{bookingEn.detail.subtotalAmount}:</span>
+                <span className="font-semibold text-slate-800">{formatCurrencyVND(booking.subtotalAmount)}</span>
               </div>
               {booking.coupon && (
                 <div className="flex justify-between text-emerald-700">
@@ -251,23 +352,27 @@ export function BookingDetailPanel({
                   <span className="font-semibold">-{formatCurrencyVND(booking.coupon.discountAmount)}</span>
                 </div>
               )}
+              <div className="flex justify-between">
+                <span>{bookingEn.detail.totalAmount}:</span>
+                <span className="font-semibold text-slate-800">{formatCurrencyVND(booking.totalAmount)}</span>
+              </div>
               <div className="flex justify-between border-t border-slate-200/60 pt-2 font-bold text-slate-800">
                 <span>{bookingEn.detail.paidAmount}:</span>
                 <span className="text-emerald-700">{formatCurrencyVND(booking.paidAmount)}</span>
               </div>
-              {booking.paymentTransaction && (
+              {booking.payment && (
                 <div className="mt-2 rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-[11px]">
                   <div className="flex justify-between">
                     <span className="text-slate-400">{bookingEn.detail.paymentChannel}:</span>
-                    <span className="font-bold text-slate-700">{booking.paymentTransaction.paymentChannel}</span>
+                    <span className="font-bold text-slate-700">{booking.payment.gateway}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">{bookingEn.detail.transactionRef}:</span>
-                    <span className="font-mono text-slate-700">{booking.paymentTransaction.transactionReference}</span>
+                    <span className="font-mono text-slate-700">{booking.payment.gatewayTransactionRef ?? '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">{bookingEn.detail.verifiedAt}:</span>
-                    <span className="text-slate-700">{formatVietnamDateTime(booking.paymentTransaction.paidAt)}</span>
+                    <span className="text-slate-700">{formatVietnamDateTime(booking.payment.succeededAtUtc)}</span>
                   </div>
                 </div>
               )}
@@ -308,7 +413,7 @@ export function BookingDetailPanel({
           )}
 
           {/* Cancellation reason if cancelled */}
-          {(booking.cancellationReason || booking.cancellationReasonType) && (
+          {(booking.cancelReason || booking.cancellationReasonType) && (
             <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 text-xs text-rose-900 space-y-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block">
                 {bookingEn.detail.cancellationRecord}
@@ -323,19 +428,19 @@ export function BookingDetailPanel({
                   </p>
                 </div>
               )}
-              {booking.cancellationReason && (
+              {booking.cancelReason && (
                 <div>
                   {booking.cancellationReasonType && (
                     <span className="text-[11px] font-bold text-slate-500 block">
                       {bookingEn.detail.cancellationReasonDetail}:
                     </span>
                   )}
-                  <p className="font-medium text-slate-900">{booking.cancellationReason}</p>
+                  <p className="font-medium text-slate-900">{booking.cancelReason}</p>
                 </div>
               )}
-              {booking.cancelledAt && (
+              {booking.cancelledAtUtc && (
                 <span className="block mt-1 text-[10px] text-slate-500">
-                  {bookingEn.detail.cancelledAt}: {formatVietnamDateTime(booking.cancelledAt)}
+                  {bookingEn.detail.cancelledAt}: {formatVietnamDateTime(booking.cancelledAtUtc)}
                 </span>
               )}
             </div>
@@ -345,6 +450,8 @@ export function BookingDetailPanel({
             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-[11px] text-amber-900">
               <p className="font-medium">{bookingEn.detail.refundClarificationNotice}</p>
             </div>
+          )}
+            </>
           )}
         </div>
 
@@ -362,13 +469,13 @@ export function BookingDetailPanel({
             {/* Cancel booking action (UC-41) */}
             <button
               type="button"
-              onClick={() => onOpenCancelDialog(booking)}
+              onClick={() => booking && onOpenCancelDialog(booking)}
               disabled={!isCancellable}
               title={
                 !isDemo
                   ? bookingEn.detail.productionLockedTooltip
                   : !isCancellable
-                  ? bookingEn.detail.notCancellableTooltip
+                  ? cancelBlockedTooltip
                   : bookingEn.detail.cancelBookingBtn
               }
               className="w-full sm:w-auto justify-center rounded-xl border border-rose-200 bg-white px-3.5 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
@@ -380,7 +487,7 @@ export function BookingDetailPanel({
             {/* Initiate refund action (UC-42) */}
             <button
               type="button"
-              onClick={() => onOpenRefundDialog(booking)}
+              onClick={() => booking && onOpenRefundDialog(booking)}
               disabled={!isRefundable}
               title={
                 !isDemo
