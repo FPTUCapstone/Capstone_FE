@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — pending developer approval
+Approved — 2026-10-29. Chấp thuận bởi chủ phụ trách task (xác nhận trong phiên làm việc). Đã được cập nhật theo review ngày 2026-10-29: đổi tên file/route thành code thực tế, sửa tiêu chí demo/live, đổi cách hiển thị 404, và bổ sung nút làm mới trạng thái.
 
 ## Background / Why this spec exists
 
@@ -102,14 +102,15 @@ Backend response shape (`BookingRefundProgressResponse`):
 
 ```text
 Capstone_FE/
-├── app/api/v1/bookings/[id]/refund/
-│   └── route.ts                                  <-- NEW: GET handler, delegates to proxy
+├── app/api/v1/bookings/[bookingId]/refund/
+│   └── route.ts                                  <-- REUSED (đã có sẵn từ Khánh, không tạo mới)
 ├── src/features/bookings/services/
-│   └── bookingRefundProxy.ts                      <-- NEW: server-only BFF proxy (pattern: tourBookingProxy.ts)
-│       - accepts role Traveler OR TourOperator (tourBookingProxy.ts only allows Traveler)
+│   └── refundProgressProxy.ts                     <-- REUSED (đã có sẵn, không tạo mới)
+│       - accepts role Traveler OR TourOperator
 │       - reads tripmate_refresh cookie -> POST /api/v1/auth/web/refresh -> accessToken
 │       - calls fetchBackend(`/api/v1/bookings/${bookingId}/refund`, { Authorization })
 │       - maps Backend errors to a safe allowlist (never leaks raw Backend messages)
+│       - Mã lỗi thực tế: FORBIDDEN, UNAUTHENTICATED, REFUND_NOT_FOUND, REFUND_UNAVAILABLE
 ├── src/features/operator/bookings/
 │   ├── services/operatorBookingService.ts
 │   │   └── getBookingRefundStatus(bookingId): Promise<BookingRefundStatusResult>   <-- NEW client function
@@ -133,30 +134,36 @@ Capstone_FE/
 
 ## Behavior
 
-1. `BookingDetailPanel` fetches refund status **only when** `booking.status === 'Cancelled'`
-   and the panel is open, via `getBookingRefundStatus(booking.id)`, on open (and once,
-   not polled — Operators can close/reopen the panel to refresh).
+1. `BookingDetailPanel` fetches refund status **only when** `booking.status === 'Cancelled'`,
+   the panel is open, and the booking is **not demo** (`isDemo === false`), via
+   `getBookingRefundStatus(booking.id)`, on open. Khi trạng thái là `Pending`, `Processing`
+   hoặc `RetryPending`, card hiển thị nút **"Làm mới trạng thái"** (Refresh) để Operator gọi lại
+   API mà không cần đóng–mở drawer. Không polling tự động.
 2. While loading: show a small inline spinner in place of the current static
    "Refund Record" block.
-3. On `404` (no refund record): render a neutral note — "This cancellation did not
-   produce a refund" (e.g. unpaid booking cancelled before payment) — not an error
-   state, no red/alert styling.
-4. On success, render the "Refund Record" card (reusing existing visual style) with:
+3. On `404` (no refund record): render a neutral note — "No refund record was found
+   for this booking." — không khẳng định lý do. 404 có thể do booking đã hủy mà không phát
+   sinh hoàn tiền, hoặc do booking ID không tồn tại ở Backend; UI không phân biệt được hai
+   trường hợp này nên không được ghi "không áp dụng". Không dùng style lỗi/đỏ.
+4. **Demo booking** (`isDemo === true`): không gọi API. Hiển thị `DemoRefundRecordCard` từ
+   `booking.refund` của fixture, kèm dòng chú thích rõ ràng: "Dữ liệu demo — không phải trạng
+   thái từ hệ thống." Không được hiển thị như thể đây là trạng thái thật của Backend.
+5. On success (booking thật), render the "Refund Record" card (reusing existing visual style) with:
    - Status pill — one of 7 states, each with a distinct label/color:
      - `Pending` / `RetryPending` — amber, "Queued for processing"
      - `Processing` — blue, "Processing"
      - `Processed` — teal/green, "Refunded" + `gatewayReference` + `processedAtUtc`
      - `Failed` — rose, "Refund failed" + `lastErrorCode`
-     - `ManualReview` — purple/amber, "Awaiting manual settlement" (note: completed
-       only by an Administrator via a separate, not-yet-built screen — out of scope)
+     - `ManualReview` — purple/amber, "Awaiting manual settlement". Admin UI chưa có;
+       BE endpoint `complete-manual` đã tồn tại. Màn Admin nằm ngoài phạm vi spec này.
      - `Rejected` — rose, "Refund rejected" + `lastErrorCode`
    - `refundAmount`, `attemptCount`, `requestedAtUtc`, and (if present)
      `nextAttemptAtUtc` for `RetryPending`.
-5. On `403`/`401`/5xx: render the existing generic error pattern already used
+6. On `403`/`401`/5xx: render the existing generic error pattern already used
    elsewhere in this feature (`MSG127`-style), not a crash.
-6. The "Initiate Refund (UC-42)" button and its dialog are removed entirely —
+7. The "Initiate Refund (UC-42)" button and its dialog are removed entirely —
    there is nothing left to trigger.
-7. `BookingDetailPanel`'s `isRefundable` eligibility flag and the
+8. `BookingDetailPanel`'s `isRefundable` eligibility flag and the
    `onOpenRefundDialog` prop are removed; `OperatorBookingListView.tsx` no longer
    renders `InitiateRefundDialog`.
 
@@ -167,7 +174,9 @@ Capstone_FE/
 | Backend errorCode | Mapped client code | Notes |
 |---|---|---|
 | `booking.cancellation.not_found` | treated as "no refund" (not an error) | 404 is expected/normal here |
-| `booking.cancellation.forbidden` | `REFUND_STATUS_FORBIDDEN` | 403 |
+| Backend 403 | `FORBIDDEN` | 403 (tên mã thực tế trong `refundProgressProxy.ts`) |
+| Backend 404 | `REFUND_NOT_FOUND` | Hiển thị trung tính, không phải lỗi (xem Behavior §3) |
+| Backend 5xx / lỗi mạng | `REFUND_UNAVAILABLE` | Coi như lỗi tạm thời |
 | (no auth / expired session) | `UNAUTHENTICATED` | 401, same pattern as `tourBookingProxy.ts` |
 | anything else | `MSG127` | generic failure, matches existing convention |
 
@@ -175,18 +184,21 @@ Capstone_FE/
 
 ## Acceptance Criteria
 
-1. Opening the detail panel for a `Cancelled` booking with a real refund record
-   shows live status fetched from `GET /api/v1/bookings/{bookingId}/refund` — no
-   demo data involved, regardless of `isDemo`.
-2. All 7 real Backend statuses render with a distinct, correctly-labeled pill and
-   the fields relevant to that status (see Behavior §4).
-3. A `Cancelled` booking with **no** refund record (404) shows the neutral
-   "not applicable" note, not an error state.
-4. There is no "Initiate Refund" button, dialog, or clarification-notice banner
+1. **Booking thật** (`isDemo === false`): mở panel một booking `Cancelled` gọi
+   `GET /api/v1/bookings/{bookingId}/refund` và hiển thị trạng thái thật từ Backend.
+2. **Booking demo** (`isDemo === true`): không gọi API; hiển thị fixture với nhãn
+   "Dữ liệu demo". Không có trường hợp nào hiển thị dữ liệu demo như trạng thái thật.
+3. All 7 real Backend statuses render with a distinct, correctly-labeled pill and
+   the fields relevant to that status (see Behavior §5).
+4. A `Cancelled` booking with **no** refund record (404) shows the neutral
+   "No refund record was found" note, not an error state.
+5. Khi trạng thái là `Pending`, `Processing` hoặc `RetryPending`, nút "Làm mới trạng thái"
+   gọi lại API và cập nhật card.
+6. There is no "Initiate Refund" button, dialog, or clarification-notice banner
    anywhere in the Operator Booking workspace after this change.
-5. `isRefundable` logic, `onOpenRefundDialog` prop, and `InitiateRefundDialog`
+7. `isRefundable` logic, `onOpenRefundDialog` prop, and `InitiateRefundDialog`
    component + test file no longer exist in the codebase.
-6. UC-40 (list) and UC-41 (cancel dialog) demo-mode behavior is unchanged —
+8. UC-40 (list) and UC-41 (cancel dialog) demo-mode behavior is unchanged —
    verified by the existing `OperatorBookingListView.test.tsx` /
    `operatorBookingService.test.ts` suites continuing to pass without modification
    to their demo-mode assertions.
@@ -198,8 +210,6 @@ Capstone_FE/
 
 ## Open Question Carried Forward (not blocking this spec)
 
-`ManualReview` refunds are only resolvable today by an Administrator via the
-Backend's `POST /api/v1/admin/refunds/{refundId}/complete-manual` — there is no
-Admin-facing FE screen for this yet anywhere in the codebase. This spec only
-**displays** that state; building the Admin completion screen is a separate,
-future task and is intentionally not part of this spec.
+Admin UI chưa có; BE endpoint `POST /api/v1/admin/refunds/{refundId}/complete-manual` đã
+tồn tại. `ManualReview` chỉ được xử lý bởi Administrator qua endpoint này. Spec này chỉ
+**hiển thị** trạng thái đó; màn Admin là công việc riêng, nằm ngoài spec.

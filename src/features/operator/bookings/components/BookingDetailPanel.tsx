@@ -34,9 +34,7 @@ export function BookingDetailPanel({
   const [refundLoading, setRefundLoading] = useState(false);
 
   useEffect(() => {
-    // Not applicable: RefundStatusCard only renders when booking.status === 'Cancelled',
-    // so any stale state here is simply never shown. Demo bookings never have a
-    // Backend-issued numeric id, so a live fetch would always 404 — the demo
+    // Demo bookings never have a Backend-issued id, so the live fetch is skipped and the
     // fixture's own booking.refund is shown instead (see DemoRefundRecordCard).
     if (!open || !booking || booking.status !== 'Cancelled' || isDemo) return;
 
@@ -57,6 +55,16 @@ export function BookingDetailPanel({
     // booking.id is the only part of `booking` this fetch depends on.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, booking?.id, booking?.status, isDemo]);
+
+  const refreshRefundStatus = () => {
+    if (!booking) return;
+    setRefundLoading(true);
+    setRefundStatus(null);
+    void getBookingRefundStatus(booking.id).then((result) => {
+      setRefundStatus(result);
+      setRefundLoading(false);
+    });
+  };
 
   const handleClose = useCallback(() => {
     onClose();
@@ -302,7 +310,13 @@ export function BookingDetailPanel({
           {booking.status === 'Cancelled' && (
             isDemo
               ? <DemoRefundRecordCard refund={booking.refund} />
-              : <RefundStatusCard loading={refundLoading} result={refundStatus} />
+              : (
+                <RefundStatusCard
+                  loading={refundLoading}
+                  result={refundStatus}
+                  onRefresh={refreshRefundStatus}
+                />
+              )
           )}
 
           {/* Cancellation reason if cancelled */}
@@ -403,6 +417,7 @@ function DemoRefundRecordCard({ refund }: { refund: BookingRefundDto | undefined
 
   return (
     <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4">
+      <p className="mb-2 text-[11px] italic text-slate-500">{bookingEn.refundStatus.demoNote}</p>
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
           {bookingEn.detail.refundRecord}
@@ -425,12 +440,16 @@ function DemoRefundRecordCard({ refund }: { refund: BookingRefundDto | undefined
   );
 }
 
+const REFRESHABLE_REFUND_STATUSES = ['Pending', 'Processing', 'RetryPending'];
+
 function RefundStatusCard({
   loading,
   result,
+  onRefresh,
 }: {
   loading: boolean;
   result: GetBookingRefundStatusResult | null;
+  onRefresh?: () => void;
 }) {
   if (loading) {
     return (
@@ -504,6 +523,15 @@ function RefundStatusCard({
           </div>
         )}
       </div>
+      {onRefresh && REFRESHABLE_REFUND_STATUSES.includes(data.status) && (
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
+        >
+          {bookingEn.refundStatus.refresh}
+        </button>
+      )}
     </div>
   );
 }

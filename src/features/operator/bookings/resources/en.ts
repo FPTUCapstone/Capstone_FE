@@ -128,7 +128,9 @@ export const bookingEn = {
    */
   refundStatus: {
     loading: 'Loading refund status…',
-    notApplicable: 'This cancellation did not produce a refund.',
+    notApplicable: 'No refund record was found for this booking.',
+    demoNote: 'Demo data — not a live system status.',
+    refresh: 'Refresh status',
     errorNote: 'Refund status cannot be retrieved right now. Please try again later.',
     attemptCountLabel: 'Attempts',
     processedAtLabel: 'Processed At',

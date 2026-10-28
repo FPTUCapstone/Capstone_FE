@@ -266,7 +266,7 @@ describe('BookingDetailPanel — live refund status (UC-42/UC-71, real Backend, 
 
     render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
 
-    expect(await screen.findByText(/did not produce a refund/i)).toBeDefined();
+    expect(await screen.findByText(/No refund record was found/i)).toBeDefined();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -294,12 +294,38 @@ describe('BookingDetailPanel — demo refund display (isDemo=true, no live fetch
     render(<TestDrawerHarness booking={refundedDemoBooking} isDemo={true} />);
 
     expect(screen.getByText(/REFUND-VNPAY-20260815-1100/i)).toBeDefined();
-    expect(screen.queryByText(/did not produce a refund/i)).toBeNull();
+    expect(screen.queryByText(/No refund record was found/i)).toBeNull();
   });
 
   it('shows the neutral note for a Cancelled demo booking with no refund', () => {
     render(<TestDrawerHarness booking={cancelledBookingFixture({ refund: undefined })} isDemo={true} />);
 
-    expect(screen.getByText(/did not produce a refund/i)).toBeDefined();
+    expect(screen.getByText(/No refund record was found/i)).toBeDefined();
+  });
+});
+
+describe('BookingDetailPanel — spec 2026-10-29 additions', () => {
+  it('labels demo refund data as demo, not as a live backend status', () => {
+    render(<TestDrawerHarness booking={refundedDemoBooking} isDemo={true} />);
+    expect(screen.getByText(/Demo data/i)).toBeDefined();
+  });
+
+  it('refresh button re-fetches status for a Pending refund', async () => {
+    mockedGetBookingRefundStatus.mockResolvedValue(foundResult('Pending'));
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
+    const refresh = await screen.findByRole('button', { name: /Refresh status/i });
+    mockedGetBookingRefundStatus.mockResolvedValue(foundResult('Processed'));
+    fireEvent.click(refresh);
+    await waitFor(() => {
+      expect(mockedGetBookingRefundStatus).toHaveBeenCalledTimes(2);
+    });
+    expect(await screen.findByText(/Refunded/i)).toBeDefined();
+  });
+
+  it('does not show refresh for a terminal status', async () => {
+    mockedGetBookingRefundStatus.mockResolvedValue(foundResult('Processed'));
+    render(<TestDrawerHarness booking={cancelledBookingFixture()} isDemo={false} />);
+    await screen.findByText(/Refunded/i);
+    expect(screen.queryByRole('button', { name: /Refresh status/i })).toBeNull();
   });
 });
