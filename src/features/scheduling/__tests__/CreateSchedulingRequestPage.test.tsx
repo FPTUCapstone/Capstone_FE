@@ -53,8 +53,6 @@ describe('CreateSchedulingRequestPage (/plan - UC-10)', () => {
 
   it('renders page layout for authenticated Traveler', () => {
     render(<CreateSchedulingRequestPage />);
-
-    expect(screen.getByTestId('public-navigation')).toBeDefined();
     expect(screen.getByText('Lập lịch trình thông minh')).toBeDefined();
     expect(
       screen.getByRole('heading', { name: /Lập Lịch Trình Du Lịch Tối Ưu/i, level: 1 }),

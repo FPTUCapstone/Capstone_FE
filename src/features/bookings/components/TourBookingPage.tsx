@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { getTravelerProfile } from '@/features/account/profile/travelerProfileApi';
 import { getTourDetail, isTourDemoAllowedInCurrentEnv } from '@/features/public/tours/services/tourApi';
@@ -89,8 +88,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
   if (status === 'restoring' || loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8fafc]">
-        <PublicNavigation />
-        <main className="flex flex-1 items-center justify-center p-8">
+                <main className="flex flex-1 items-center justify-center p-8">
           <div className="flex flex-col items-center gap-3">
             <div
               className="h-9 w-9 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
@@ -109,8 +107,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
   if (status === 'authenticated' && context && context.role !== 'Traveler') {
     return (
       <div className="min-h-screen bg-[#f8fafc]">
-        <PublicNavigation />
-        <main className="mx-auto max-w-xl px-4 py-16 text-center">
+                <main className="mx-auto max-w-xl px-4 py-16 text-center">
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 mb-4">
               <span className="material-symbols-outlined text-3xl">block</span>
@@ -151,8 +148,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
   if (errorNotice || !tour) {
     return (
       <div className="min-h-screen bg-[#f8fafc]">
-        <PublicNavigation />
-        <main className="mx-auto max-w-2xl px-4 py-16 text-center">
+                <main className="mx-auto max-w-2xl px-4 py-16 text-center">
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 mb-4">
               <span className="material-symbols-outlined text-3xl">pending_actions</span>
@@ -196,8 +192,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <PublicNavigation />
-      <main className="pb-16 pt-4">
+            <main className="pb-16 pt-4">
         <TourBookingView
           tour={tour}
           initialScheduleId={scheduleId}

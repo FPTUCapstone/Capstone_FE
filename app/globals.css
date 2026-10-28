@@ -134,7 +134,11 @@
   --brand-textSecondary: #64748B;
 }
 
-/* Official Lenis Smooth Scroll Configuration */
+/* ==========================================================================
+   GLOBAL PREMIUM MOTION & LENIS INTEGRATION SYSTEM
+   ========================================================================== */
+
+/* 1. Core Lenis Smooth Scroll Configuration */
 html.lenis,
 html.lenis body,
 html.lenis-smooth {
@@ -147,8 +151,13 @@ html.lenis.lenis-scrolling {
   scroll-behavior: auto !important;
 }
 
-.lenis.lenis-smooth [data-lenis-prevent] {
+.lenis.lenis-smooth [data-lenis-prevent],
+[data-lenis-prevent],
+[role="dialog"],
+.modal-scrollable,
+.table-scrollable {
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .lenis.lenis-stopped {
@@ -161,6 +170,82 @@ html.lenis.lenis-scrolling {
 
 html:not(.lenis) {
   scroll-behavior: smooth;
+}
+
+/* 2. Global Motion Timing & Easing Tokens */
+:root {
+  --motion-ease-out-cubic: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --motion-ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-duration-fast: 150ms;
+  --motion-duration-normal: 300ms;
+  --motion-duration-slow: 500ms;
+  --motion-duration-editorial: 700ms;
+}
+
+/* 3. Global ScrollReveal Base States & Stagger Utilities */
+[data-revealed] {
+  transition-property: opacity, transform, filter;
+  transition-timing-function: var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1));
+  will-change: opacity, transform;
+}
+
+[data-revealed="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-revealed="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale(1) !important;
+  filter: blur(0px) !important;
+}
+
+/* Stagger animation utilities for list and card sequences */
+.stagger-1 { transition-delay: 50ms; }
+.stagger-2 { transition-delay: 100ms; }
+.stagger-3 { transition-delay: 150ms; }
+.stagger-4 { transition-delay: 200ms; }
+.stagger-5 { transition-delay: 250ms; }
+.stagger-6 { transition-delay: 300ms; }
+
+/* 4. Global Page Entrance Transition */
+@keyframes page-enter-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.page-enter,
+.animate-page-enter {
+  animation: page-enter-fade 320ms var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+
+/* 5. Image Reveal Transition Utilities */
+.image-reveal-container {
+  overflow: hidden;
+}
+
+.image-reveal-container img {
+  transition: transform 700ms var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1)),
+              filter 700ms var(--motion-ease-out-cubic, cubic-bezier(0.16, 1, 0.3, 1));
+  will-change: transform, filter;
+}
+
+[data-revealed="false"] .image-reveal-container img {
+  transform: scale(1.06);
+  filter: blur(4px);
+}
+
+[data-revealed="true"] .image-reveal-container img {
+  transform: scale(1);
+  filter: blur(0px);
 }
 
 html {
@@ -367,15 +452,7 @@ body {
   animation: editorial-crossfade 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-
-  .animate-fade-in,
-  .animate-scale-in,
-  .animate-page-enter,
-  .animate-crossfade {
-    animation: none;
-  }
-}
+/* Reduced motion override removed: full premium motion always active */
 
 .pulse-marker {
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -783,62 +860,73 @@ body {
 }
 
 
-/* Global Reduced-Motion Enforcements */
+/* Global Reduced-Motion Enforcements (applied only when data-motion is NOT full) */
 @media (prefers-reduced-motion: reduce) {
-  .animate-route-draw {
+  html:not([data-motion="full"]) .animate-route-draw {
     stroke-dashoffset: 0 !important;
     animation: none !important;
   }
-  .animate-ping,
-  .animate-pulse,
-  .animate-pulse-glow,
-  .animate-pulse-subtle,
-  .pulse-marker,
-  .pulse-coral {
+  html:not([data-motion="full"]) .animate-ping,
+  html:not([data-motion="full"]) .animate-pulse,
+  html:not([data-motion="full"]) .animate-pulse-glow,
+  html:not([data-motion="full"]) .animate-pulse-subtle,
+  html:not([data-motion="full"]) .pulse-marker,
+  html:not([data-motion="full"]) .pulse-coral {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
-  .animate-spin {
+  html:not([data-motion="full"]) .animate-spin {
     animation: none !important;
     transform: none !important;
   }
-  .animate-in,
-  .fade-in,
-  .zoom-in-95,
-  .zoom-in-75,
-  .slide-in-from-top-1,
-  .animate-fade-in,
-  .animate-scale-in,
-  .animate-page-enter,
-  .animate-crossfade {
+  html:not([data-motion="full"]) .animate-in,
+  html:not([data-motion="full"]) .fade-in,
+  html:not([data-motion="full"]) .zoom-in-95,
+  html:not([data-motion="full"]) .zoom-in-75,
+  html:not([data-motion="full"]) .slide-in-from-top-1,
+  html:not([data-motion="full"]) .animate-fade-in,
+  html:not([data-motion="full"]) .animate-scale-in,
+  html:not([data-motion="full"]) .animate-page-enter,
+  html:not([data-motion="full"]) .animate-crossfade {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
-  .animate-ambient-float,
-  .animate-float-gentle,
-  .animate-float-1,
-  .animate-float-2,
-  .animate-float-3,
-  .hero-float-1,
-  .hero-float-2,
-  .hero-float-3,
-  .animate-float,
-  .animate-waypoint-beacon,
-  .animate-radar {
+  html:not([data-motion="full"]) .animate-ambient-float,
+  html:not([data-motion="full"]) .animate-float-gentle,
+  html:not([data-motion="full"]) .animate-float-1,
+  html:not([data-motion="full"]) .animate-float-2,
+  html:not([data-motion="full"]) .animate-float-3,
+  html:not([data-motion="full"]) .hero-float-1,
+  html:not([data-motion="full"]) .hero-float-2,
+  html:not([data-motion="full"]) .hero-float-3,
+  html:not([data-motion="full"]) .animate-float,
+  html:not([data-motion="full"]) .animate-waypoint-beacon,
+  html:not([data-motion="full"]) .animate-radar {
     animation: none !important;
     transform: none !important;
   }
-  .tilt-card:hover,
-  .card-hover-lift:hover {
+  html:not([data-motion="full"]) .tilt-card:hover,
+  html:not([data-motion="full"]) .card-hover-lift:hover {
     transform: none !important;
   }
-  .btn-press:active {
+  html:not([data-motion="full"]) .btn-press:active {
     transform: none !important;
   }
-  .nav-sliding-pill,
-  .nav-hover-pill {
+  html:not([data-motion="full"]) .nav-sliding-pill,
+  html:not([data-motion="full"]) .nav-hover-pill {
+    transition: none !important;
+  }
+  html:not([data-motion="full"]) .page-enter,
+  html:not([data-motion="full"]) .animate-page-enter {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  html:not([data-motion="full"]) .image-reveal-container img {
+    transform: none !important;
+    filter: none !important;
     transition: none !important;
   }
 }

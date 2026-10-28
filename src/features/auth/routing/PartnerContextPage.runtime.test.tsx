@@ -9,7 +9,7 @@ vi.mock('@/features/operator/application/operatorApplicationApi', async (importO
   ...await importOriginal<typeof import('@/features/operator/application/operatorApplicationApi')>(),
   getOperatorApplication: mocks.getApplication,
 }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace, push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace, push: vi.fn() }), usePathname: () => '/partner/application' }));
 vi.mock('next/font/google', () => ({
   Geist: () => ({ variable: '' }),
   Geist_Mono: () => ({ variable: '' }),

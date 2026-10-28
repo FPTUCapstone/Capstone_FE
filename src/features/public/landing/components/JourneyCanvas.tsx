@@ -183,9 +183,38 @@ export function JourneyCanvas({
           className="animate-route-dash-flow"
         />
         {/* Waypoint Destination Beacons (Huế -> Đà Nẵng -> Hội An) */}
-        <g className="animate-pulse-subtle">
+        <g>
+          {/* Huế Beacon */}
+          <circle cx="50" cy="60" r="5" fill="#7C3AED" opacity="0.35">
+            <animate attributeName="r" from="5" to="18" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.35" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="50" cy="60" r="5" fill="none" stroke="#7C3AED" strokeWidth="1.4" opacity="0.8">
+            <animate attributeName="r" from="5" to="18" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
           <circle cx="50" cy="60" r="5" fill="#7C3AED" stroke="#FFFFFF" strokeWidth="2" />
+
+          {/* Đà Nẵng Beacon */}
+          <circle cx="390" cy="270" r="6" fill="#007D6E" opacity="0.35">
+            <animate attributeName="r" from="6" to="20" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.35" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="390" cy="270" r="6" fill="none" stroke="#007D6E" strokeWidth="1.6" opacity="0.8">
+            <animate attributeName="r" from="6" to="20" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
           <circle cx="390" cy="270" r="6" fill="#007D6E" stroke="#FFFFFF" strokeWidth="2.5" />
+
+          {/* Hội An Beacon */}
+          <circle cx="370" cy="500" r="5" fill="#D97706" opacity="0.35">
+            <animate attributeName="r" from="5" to="18" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.35" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="370" cy="500" r="5" fill="none" stroke="#D97706" strokeWidth="1.4" opacity="0.8">
+            <animate attributeName="r" from="5" to="18" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
           <circle cx="370" cy="500" r="5" fill="#D97706" stroke="#FFFFFF" strokeWidth="2" />
         </g>
       </svg>

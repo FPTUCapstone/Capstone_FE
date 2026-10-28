@@ -66,6 +66,11 @@ describe('OperatorRevenueView (Screen #89)', () => {
       if (url.includes('/tours')) {
         return Promise.resolve(new Response(JSON.stringify([{ id: 7, code: 'TOUR-007', title: 'API tour', isActive: true }]), { status: 200 }));
       }
+      if (url.includes('/exports')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          items: [], totalCount: 0, page: 1, pageSize: 20, totalPages: 0,
+        }), { status: 200 }));
+      }
       return Promise.resolve(new Response(JSON.stringify({
         summary: { grossRevenue: 10000, platformCommission: 1000, netAmount: 9000, totalBookings: 1, totalParticipants: 1, refundedAmount: 0, commissionRatePercent: 10 },
         chartData: [], tourDetails: [], totalToursCount: 1, page: 1, pageSize: 20, totalPages: 1,
@@ -106,29 +111,17 @@ describe('OperatorRevenueView (Screen #89)', () => {
     });
   });
 
-  it('disables the export trigger until UC-45 export is implemented', async () => {
+  it('opens the export dialog when Export Report is clicked (UC-45)', async () => {
     render(<OperatorRevenueView />);
 
     const exportButtons = screen.getAllByRole('button', { name: /Export Report/i });
     expect(exportButtons.length).toBeGreaterThan(0);
-    exportButtons.forEach((button) => expect(button.hasAttribute('disabled')).toBe(true));
-    exportButtons.forEach((button) =>
-      expect(button.getAttribute('title')).toBe('Xuất báo cáo sẽ được triển khai ở UC-45')
-    );
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
+    exportButtons.forEach((button) => expect(button.hasAttribute('disabled')).toBe(false));
 
-  it('does not expose the demo export simulation through the disabled workspace trigger', async () => {
-    render(<OperatorRevenueView />);
-
-    const exportButtons = screen.getAllByRole('button', { name: /Export Report/i });
-    expect(exportButtons[0].hasAttribute('disabled')).toBe(true);
     fireEvent.click(exportButtons[0]);
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(
-      screen.queryByText(/Revenue report exported successfully/i)
-    ).toBeNull();
-    expect(screen.queryByText(/queued successfully/i)).toBeNull();
+
+    expect(screen.getByRole('dialog')).toBeDefined();
+    expect(screen.getByText(/Excel Spreadsheet \(\.xlsx\)/i)).toBeDefined();
   });
 
   it('shows when the report was last loaded and lets the operator force a reload without changing filters', async () => {
@@ -140,7 +133,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
       );
     });
 
-    const refreshButton = screen.getByRole('button', { name: /Refresh/i });
+    const refreshButton = screen.getByRole('button', { name: /^Refresh$/i });
     expect(refreshButton.hasAttribute('disabled')).toBe(false);
 
     const updatedAtBeforeClick = screen.getByTestId(
@@ -176,7 +169,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
     // A background/silent refresh must never disable the controls the way an explicit,
     // user-initiated reload does.
     expect(
-      screen.getByRole('button', { name: /Refresh/i }).hasAttribute('disabled')
+      screen.getByRole('button', { name: /^Refresh$/i }).hasAttribute('disabled')
     ).toBe(false);
     expect(
       screen.getByRole('button', { name: /Apply Filters/i }).hasAttribute('disabled')

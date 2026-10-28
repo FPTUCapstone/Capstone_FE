@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import {
-  exportOperatorRevenueReport,
+  createRevenueExport,
+  downloadRevenueExport,
   getOperatorRevenueReport,
   getOperatorRevenueTours,
 } from '../../services/operatorRevenueService';
@@ -12,6 +13,7 @@ import { isFinanceDemoAllowedInCurrentEnv } from '../../data/operatorRevenueDemo
 import { financeEn } from '../../resources/en';
 import {
   REVENUE_DEFAULT_PAGE_SIZE,
+  type CreateRevenueExportResult,
   type ExportRevenuePayload,
   type RevenueFilterInput,
   type RevenueReportResult,
@@ -24,6 +26,7 @@ import { RevenueChart } from './RevenueChart';
 import { SettlementDetailsCard } from './SettlementDetailsCard';
 import { RevenueDetailTable } from './RevenueDetailTable';
 import { ExportRevenueDialog } from './ExportRevenueDialog';
+import { ExportHistoryPanel } from './ExportHistoryPanel';
 
 // A booking elsewhere (a Traveler completing payment) can change this report at any time; the
 // operator is a passive viewer, not the actor who triggers a change. Polling at this cadence
@@ -61,6 +64,9 @@ export function OperatorRevenueView() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  // Bumped after every create-export call so ExportHistoryPanel refreshes immediately instead
+  // of waiting for its own poll interval.
+  const [exportHistoryRefreshToken, setExportHistoryRefreshToken] = useState(0);
   // Bumped by every explicit user action (Apply, Reset, manual Refresh) so the fetch effect
   // below always re-fires, even when the submitted filters are value-identical to the current
   // ones (e.g. clicking Apply again without editing anything). appliedFilters alone cannot
@@ -198,40 +204,28 @@ export function OperatorRevenueView() {
 
   // Export report handler (UC-45)
   const handleExport = async (
-    payload: ExportRevenuePayload,
-    simulateAsync = false
-  ) => {
-    const result = await exportOperatorRevenueReport(
-      payload,
-      { isDemo, demoActorUserId: actorUserId },
-      simulateAsync
-    );
+    payload: ExportRevenuePayload
+  ): Promise<CreateRevenueExportResult> => {
+    const result = await createRevenueExport(payload, {
+      isDemo,
+      demoActorUserId: actorUserId,
+    });
 
-    if (
-      result.success &&
-      !result.isAsyncSimulated &&
-      !result.isAsyncQueued &&
-      payload.format === 'csv' &&
-      result.fileContent &&
-      result.fileName &&
-      result.fileName.toLowerCase().endsWith('.csv')
-    ) {
-      // Trigger client download of real CSV demo file only
-      const blob = new Blob([result.fileContent], {
-        type: result.mimeType || 'text/csv;charset=utf-8',
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = result.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+    if (result.success) {
+      // A just-created export (Ready or Queued) always belongs in the history list.
+      setExportHistoryRefreshToken((token) => token + 1);
+    }
 
-      setToastMessage(result.message || financeEn.messages.MSG116);
+    if (result.success && result.record?.status === 'Ready' && result.record.fileName) {
+      const downloadResult = await downloadRevenueExport(result.record.id, result.record.fileName);
+      setToastMessage(
+        downloadResult.success
+          ? result.message || financeEn.messages.MSG116
+          : downloadResult.message || financeEn.messages.MSG106
+      );
       setTimeout(() => setToastMessage(null), 5000);
     }
+
     return result;
   };
 
@@ -269,6 +263,7 @@ export function OperatorRevenueView() {
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
           >
             <span
+              aria-hidden="true"
               className={`material-symbols-outlined text-[16px] ${isLoading ? 'animate-spin' : ''}`}
             >
               refresh
@@ -279,8 +274,6 @@ export function OperatorRevenueView() {
           <button
             type="button"
             onClick={() => setIsExportDialogOpen(true)}
-            disabled
-            title="Xuất báo cáo sẽ được triển khai ở UC-45"
             className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
@@ -372,6 +365,13 @@ export function OperatorRevenueView() {
           onPageChange={setCurrentPage}
         />
       )}
+
+      {/* Export History (UC-45) */}
+      <ExportHistoryPanel
+        isDemo={isDemo}
+        demoActorUserId={actorUserId}
+        refreshToken={exportHistoryRefreshToken}
+      />
 
       {/* Export Report Dialog (Screen #90) */}
       <ExportRevenueDialog

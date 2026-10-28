@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
+import { useSafePathname } from '@/lib/routes/useSafePathname';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
@@ -15,33 +16,26 @@ import { ROUTES } from '@/lib/routes';
 import { publicNavigationEn } from './resources/en';
 import { publicNavigationVi } from './resources/vi';
 
+export const PersistentHeaderContext = createContext<boolean>(false);
+
 interface PublicNavigationProps {
   isLanding?: boolean;
   locale?: 'vi' | 'en';
 }
 
-function getWindowPathname(): string {
-  if (typeof window !== 'undefined' && window.location) {
-    return window.location.pathname || '';
-  }
-  return '';
-}
+
 
 export function PublicNavigation({ isLanding = false, locale }: PublicNavigationProps = {}) {
-  const [currentPath, setCurrentPath] = useState(getWindowPathname);
+  const isNestedUnderPersistentLayout = useContext(PersistentHeaderContext);
+  const pathname = useSafePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Default to Vietnamese in browser (app is lang="vi") and on landing, with English fallback for en tests
-  const resolvedLocale =
-    locale ??
-    (isLanding
-      ? 'vi'
-      : typeof document !== 'undefined' && document.documentElement.lang === 'vi'
-      ? 'vi'
-      : 'en');
+  // Default to Vietnamese in all environments (SSR & Client) to match <html lang="vi">.
+  // Explicit locale override can be provided via props (e.g. locale="en").
+  const resolvedLocale = locale ?? 'vi';
 
   const strings = resolvedLocale === 'vi' ? publicNavigationVi : publicNavigationEn;
   const drawerStrings = resolvedLocale === 'vi' ? publicNavigationVi.drawer : publicNavigationEn.drawer;
@@ -143,35 +137,26 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
   const itemRefs = useRef<Map<string, HTMLElement>>(new Map());
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [clickedKey, setClickedKey] = useState<string | null>(null);
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
-  useEffect(() => {
-    function handleLocationChange() {
-      if (typeof window !== 'undefined' && window.location) {
-        const path = window.location.pathname || '';
-        setCurrentPath(path);
-        if (path === '/' || isLanding) {
-          setClickedKey(null);
-        }
-      }
-    }
-    handleLocationChange();
-    window.addEventListener('popstate', handleLocationChange);
-    return () => window.removeEventListener('popstate', handleLocationChange);
-  }, [isLanding]);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setClickedKey(null);
+  }
 
-  const isHome = isLanding || currentPath === '/' || currentPath === '';
+  const isHome = isLanding || pathname === '/' || pathname === '';
 
   const activeRouteKey = isHome
     ? null
-    : currentPath.startsWith('/pois')
+    : pathname.startsWith('/pois')
     ? 'pois'
-    : currentPath.startsWith('/plan')
+    : pathname.startsWith('/plan')
     ? 'plan'
-    : currentPath.startsWith('/tours')
+    : pathname.startsWith('/tours')
     ? 'tours'
-    : currentPath.startsWith('/itinerar')
+    : pathname.startsWith('/itinerar')
     ? 'itineraries'
-    : currentPath.startsWith('/partner')
+    : pathname.startsWith('/partner')
     ? 'partner'
     : null;
 
@@ -323,6 +308,10 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
             : []),
         ];
 
+  if (isNestedUnderPersistentLayout) {
+    return null;
+  }
+
   return (
     <header
       className={`sticky top-0 z-40 w-full transition-all duration-200 px-4 sm:px-8 py-3.5 ${
@@ -337,7 +326,6 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
           href={ROUTES.home}
           onClick={() => {
             setClickedKey(null);
-            setCurrentPath('/');
             updateActivePill(null);
           }}
           aria-label={strings.brandAria}
@@ -398,28 +386,9 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                 setHoveredKey(null);
                 updateHoverPill(null);
 
-                // Save origin coordinates for continuous slide across page load
-                try {
-                  if (typeof window !== 'undefined' && window.sessionStorage && selectedKey) {
-                    const currentActiveEl = itemRefs.current.get(selectedKey);
-                    if (currentActiveEl) {
-                      sessionStorage.setItem(
-                        'tripmate_nav_origin',
-                        JSON.stringify({
-                          key: selectedKey,
-                          left: currentActiveEl.offsetLeft,
-                          top: currentActiveEl.offsetTop,
-                          width: currentActiveEl.offsetWidth,
-                          height: currentActiveEl.offsetHeight,
-                        })
-                      );
-                      sessionStorage.setItem('tripmate_nav_target', item.key);
-                    }
-                  }
-                } catch {}
+                
 
                 setClickedKey(item.key);
-                setCurrentPath(item.href);
                 updateActivePill(item.key, true);
               },
               'aria-current': isSelected ? ('page' as const) : undefined,

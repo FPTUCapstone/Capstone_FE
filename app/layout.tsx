@@ -3,7 +3,9 @@ import { Geist, Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
 
 import { WebSessionProvider } from '@/features/auth/session/WebSessionProvider';
+import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvider';
 import { ScrollResetHandler } from '@/components/providers/ScrollResetHandler';
+import { PersistentPublicLayout } from '@/components/layout/PersistentPublicLayout';
 
 import './globals.css';
 
@@ -39,7 +41,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="vi" data-force-motion="true" suppressHydrationWarning>
+    <html lang="vi">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -53,8 +55,12 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         suppressHydrationWarning
       >
         <WebSessionProvider>
-          <ScrollResetHandler />
-          {children}
+          <SmoothScrollProvider>
+            <ScrollResetHandler />
+            <PersistentPublicLayout>
+              {children}
+            </PersistentPublicLayout>
+          </SmoothScrollProvider>
         </WebSessionProvider>
       </body>
     </html>

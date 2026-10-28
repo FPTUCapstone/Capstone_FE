@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import {
   getTourRecommendations,
   isTourDemoAllowedInCurrentEnv,
@@ -172,7 +171,6 @@ function LegacyExploreToursPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900">
-      <PublicNavigation />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Page Banner / Hero Header */}

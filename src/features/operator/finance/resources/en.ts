@@ -116,32 +116,41 @@ export const financeEn = {
     filterTour: 'Tour Scope',
     allToursLabel: 'All Tour Packages',
     formatLabel: 'Export File Format',
-    formatXlsx: 'Excel Spreadsheet (.xlsx)',
-    formatCsv: 'CSV Document (.csv)',
-    formatPdf: 'PDF Document (.pdf)',
-    csvFormatSupportedBadge: 'Real CSV Download',
-    binaryFormatPendingBadge: 'Pending Binary Export Integration',
-    binaryFormatPendingNotice:
-      'Binary Excel (.xlsx) and PDF (.pdf) generation is pending backend export integration. In Demo mode, only CSV (.csv) triggers a downloadable file.',
-    productionExportDisabledNotice:
-      'Export is unavailable in Production mode until backend revenue export integration is complete.',
+    formatXlsxOnly: 'Excel Spreadsheet (.xlsx)',
+    demoNotSupportedNotice:
+      'Export requires the live backend integration and is unavailable while previewing with Demo mode data.',
     scopeLabel: 'Content Scope',
     scopeSummary: 'Summary metrics only',
     scopeSummaryHelp: 'Summary metrics cards only',
     scopeDetailed: 'Summary and tour package details',
     scopeDetailedHelp:
       'Includes summary metrics and full per-tour itemized breakdown',
-    simulateAsyncLabel: 'Simulate Large Async Export (Demo UI Preview)',
-    simulateAsyncHelp:
-      'Local UI preview only. Genuine background export jobs are pending backend integration.',
     exportBtn: 'Export File',
     exportingBtn: 'Generating Export…',
     cancelBtn: 'Cancel',
-    asyncTitle: 'Demo Async Export Simulation',
-    asyncDesc:
-      'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
-    demoWatermarkNotice:
-      'DEMO: This file was generated in demo mode for UI validation purposes only.',
+    closeBtn: 'Close',
+    queuedTitle: 'Export Queued',
+    queuedDesc:
+      'This report is large and is being generated in the background. Check Export History below once it is ready.',
+  },
+
+  exportHistory: {
+    title: 'Export History',
+    subtitle: 'Your recent revenue report exports, newest first.',
+    refreshBtn: 'Refresh History',
+    colRequested: 'Requested',
+    colStatus: 'Status',
+    colExpires: 'Expires',
+    colActions: 'Actions',
+    statusQueued: 'Queued',
+    statusProcessing: 'Processing',
+    statusReady: 'Ready',
+    statusFailed: 'Failed',
+    statusExpired: 'Expired',
+    downloadBtn: 'Download',
+    downloadingBtn: 'Downloading…',
+    retryBtn: 'Retry',
+    empty: 'No exports yet. Use Export Report above to create one.',
   },
 
   payouts: {

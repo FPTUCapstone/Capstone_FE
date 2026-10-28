@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
 import {
   POI_CATEGORY_PREVIEW_ENABLED,
   POI_CATEGORY_PREVIEW_FIXTURES,
@@ -128,7 +127,6 @@ export function ExplorePoisPage() {
 
   return (
     <div className="min-h-screen bg-[#f3f6f7] text-[#00152a]" lang="vi">
-      <PublicNavigation />
       <main>
         <section className="border-b border-[#d7e0e3] bg-[#001f35] px-4 py-10 text-white sm:px-8 sm:py-12">
           <div className="mx-auto max-w-7xl">
