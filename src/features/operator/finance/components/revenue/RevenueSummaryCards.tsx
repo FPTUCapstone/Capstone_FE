@@ -63,29 +63,29 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
       {cards.map((card, idx) => (
         <div
           key={idx}
-          className={`flex flex-col justify-between rounded-2xl border p-4 shadow-xs transition-shadow hover:shadow-sm ${
+          className={`flex min-w-0 flex-col justify-between rounded-2xl border p-4 shadow-xs transition-shadow hover:shadow-sm ${
             card.highlight
               ? 'border-[#006B5F]/30 bg-white ring-1 ring-[#006B5F]/20'
               : 'border-slate-200 bg-white'
           }`}
         >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold text-slate-500 truncate">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <span className="text-[11px] font-semibold text-slate-500 line-clamp-2 min-w-0">
               {card.title}
             </span>
             <div
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${card.color}`}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border overflow-hidden ${card.color}`}
             >
               <span className="material-symbols-outlined text-[16px]">
                 {card.icon}
               </span>
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-lg font-bold text-[#00152A] tracking-tight truncate">
+          <div className="mt-3 min-w-0">
+            <p className="text-base sm:text-lg font-bold text-[#00152A] tracking-tight break-words min-w-0">
               {card.value}
             </p>
-            <p className="mt-1 text-[10px] text-slate-400 leading-tight">
+            <p className="mt-1 text-[10px] text-slate-400 leading-tight break-words">
               {card.help}
             </p>
           </div>

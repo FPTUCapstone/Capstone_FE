@@ -262,11 +262,11 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <button
           type="button"
           onClick={() => router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(tour.id), isDemo))}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại chỉnh sửa
         </button>
@@ -274,7 +274,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           type="button"
           onClick={() => setShowConfirmModal(true)}
           disabled={!isSubmittableStatus || !completeness.isEligibleForSubmission || submitting}
-          className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+          className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
         >
           Gửi yêu cầu xét duyệt
         </button>
@@ -288,7 +288,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           aria-labelledby="modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs animate-in fade-in duration-150"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl">
             <h3 id="modal-title" className="text-base font-extrabold text-[#00152A]">
               Gửi gói tour này để xét duyệt?
             </h3>
@@ -296,12 +296,12 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
               Gói tour sẽ chuyển sang trạng thái <strong>Chờ duyệt</strong> và bị khóa chỉnh sửa cho đến khi Quản trị viên đưa ra quyết định. Bạn sẽ nhận được thông báo ngay khi quá trình kiểm duyệt hoàn tất.
             </p>
 
-            <div className="mt-6 flex items-center justify-end gap-3">
+            <div className="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
                 disabled={submitting}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+                className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
               >
                 Hủy bỏ
               </button>
@@ -309,7 +309,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={submitting}
-                className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+                className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
               >
                 {submitting ? 'Đang gửi...' : 'Xác nhận gửi'}
               </button>

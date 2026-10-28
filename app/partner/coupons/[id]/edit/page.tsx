@@ -4,7 +4,8 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { OperatorTourNav } from '@/features/operator/tours/components/OperatorTourNav';
+import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
+import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { UpdateCouponView } from '@/features/operator/coupons/components/UpdateCouponView';
 import { couponEn } from '@/features/operator/coupons/resources/en';
 import { OPERATOR_COUPON_ROUTES } from '@/features/operator/coupons/routes';
@@ -90,55 +91,50 @@ function EditCouponContent() {
   const isLoading = status === 'restoring' || loading;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-8 lg:flex-row">
-          <OperatorTourNav activeTab="coupons" />
-          <main className="flex-1 min-w-0">
-            {!isAuthorizedOperator && status !== 'restoring' ? (
-              <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-900">
-                <h2 className="text-lg font-bold">{couponEn.page.unauthorizedTitle}</h2>
-                <p className="mt-2 text-sm">{OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER}</p>
-              </div>
-            ) : isLoading ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500">
-                <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
-                  progress_activity
-                </span>
-                <p className="mt-2 text-xs font-bold">{couponEn.page.loadingDetails}</p>
-              </div>
-            ) : coupon ? (
-              <UpdateCouponView
-                key={coupon.id}
-                initialCoupon={coupon}
-                eligibleTours={eligibleTours}
-                currentUserId={actorUserId}
-              />
-            ) : (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-900">
-                <h2 className="text-lg font-bold">
-                  {errorStatus === 'UNAUTHORIZED' ? couponEn.page.unauthorizedTitle
-                    : errorStatus === 'SYSTEM_ERROR' ? couponEn.page.unableToLoadTitle
-                      : couponEn.page.notFoundTitle}
-                </h2>
-                <p className="mt-2 text-sm text-red-800">
-                  {errorMessage || couponEn.errors.notFound}
-                </p>
-                <div className="mt-6">
-                  <Link
-                    href={OPERATOR_COUPON_ROUTES.list}
-                    className="inline-flex items-center gap-2 rounded-xl bg-red-800 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-700"
-                  >
-                    <span className="material-symbols-outlined text-sm">arrow_back</span>
-                    {couponEn.page.backToList}
-                  </Link>
-                </div>
-              </div>
-            )}
-          </main>
-        </div>
-      </div>
-    </div>
+    <PartnerWorkspaceLayout activeTab="coupons">
+      <PageContentContainer>
+        {!isAuthorizedOperator && status !== 'restoring' ? (
+          <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-900">
+            <h2 className="text-lg font-bold">{couponEn.page.unauthorizedTitle}</h2>
+            <p className="mt-2 text-sm">{OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER}</p>
+          </div>
+        ) : isLoading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-xs">
+            <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
+              progress_activity
+            </span>
+            <p className="mt-2 text-xs font-bold">{couponEn.page.loadingDetails}</p>
+          </div>
+        ) : coupon ? (
+          <UpdateCouponView
+            key={coupon.id}
+            initialCoupon={coupon}
+            eligibleTours={eligibleTours}
+            currentUserId={actorUserId}
+          />
+        ) : (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-900">
+            <h2 className="text-lg font-bold">
+              {errorStatus === 'UNAUTHORIZED' ? couponEn.page.unauthorizedTitle
+                : errorStatus === 'SYSTEM_ERROR' ? couponEn.page.unableToLoadTitle
+                  : couponEn.page.notFoundTitle}
+            </h2>
+            <p className="mt-2 text-sm text-red-800">
+              {errorMessage || couponEn.errors.notFound}
+            </p>
+            <div className="mt-6">
+              <Link
+                href={OPERATOR_COUPON_ROUTES.list}
+                className="inline-flex items-center gap-2 rounded-xl bg-red-800 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-700"
+              >
+                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                {couponEn.page.backToList}
+              </Link>
+            </div>
+          </div>
+        )}
+      </PageContentContainer>
+    </PartnerWorkspaceLayout>
   );
 }
 
