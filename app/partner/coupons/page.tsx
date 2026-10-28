@@ -2,7 +2,8 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { OperatorTourNav } from '@/features/operator/tours/components/OperatorTourNav';
+import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
+import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { OperatorCouponListView } from '@/features/operator/coupons/components/OperatorCouponListView';
 import { getOperatorCoupons } from '@/features/operator/coupons/services/operatorCouponService';
 import type { CouponDto } from '@/features/operator/coupons/types/couponLifecycle';
@@ -62,37 +63,35 @@ function OperatorCouponsContent() {
   const isLoading = status === 'restoring' || loading;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-8 lg:flex-row">
-          <OperatorTourNav activeTab="coupons" />
-          <main className="flex-1 min-w-0">
-            {!isAuthorizedOperator && status !== 'restoring' ? (
-              <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">
-                {couponEn.list.authorizationRequired}
-              </div>
-            ) : isLoading ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500">
-                <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
-                  progress_activity
-                </span>
-                <p className="mt-2 text-xs font-bold">{couponEn.page.loadingList}</p>
-              </div>
-            ) : errorMessage ? (
-              <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900">
-                <p className="text-sm font-bold">{errorMessage}</p>
-                <button type="button" onClick={() => setRetryKey((key) => key + 1)}
-                  className="mt-3 rounded-xl border border-rose-300 px-4 py-2 text-xs font-bold hover:bg-rose-100">
-                  {couponEn.list.retry}
-                </button>
-              </div>
-            ) : (
-              <OperatorCouponListView coupons={coupons} />
-            )}
-          </main>
-        </div>
-      </div>
-    </div>
+    <PartnerWorkspaceLayout activeTab="coupons">
+      <PageContentContainer>
+        {!isAuthorizedOperator && status !== 'restoring' ? (
+          <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">
+            {couponEn.list.authorizationRequired}
+          </div>
+        ) : isLoading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-xs">
+            <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
+              progress_activity
+            </span>
+            <p className="mt-2 text-xs font-bold">{couponEn.page.loadingList}</p>
+          </div>
+        ) : errorMessage ? (
+          <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-xs">
+            <p className="text-sm font-bold">{errorMessage}</p>
+            <button
+              type="button"
+              onClick={() => setRetryKey((key) => key + 1)}
+              className="mt-3 rounded-xl border border-rose-300 px-4 py-2 text-xs font-bold hover:bg-rose-100 transition"
+            >
+              {couponEn.list.retry}
+            </button>
+          </div>
+        ) : (
+          <OperatorCouponListView coupons={coupons} />
+        )}
+      </PageContentContainer>
+    </PartnerWorkspaceLayout>
   );
 }
 

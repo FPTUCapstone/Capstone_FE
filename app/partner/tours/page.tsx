@@ -2,7 +2,8 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { OperatorTourNav } from '@/features/operator/tours/components/OperatorTourNav';
+import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
+import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { OperatorTourListView } from '@/features/operator/tours/components/OperatorTourListView';
 import { isTourDemoAllowedInCurrentEnv } from '@/features/operator/tours/data/operatorTourDemoFixtures';
 import { getOperatorTours } from '@/features/operator/tours/services/operatorTourService';
@@ -42,29 +43,24 @@ function OperatorToursContent() {
   }, [isDemo]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-8 lg:flex-row">
-          <OperatorTourNav activeTab="tours" isDemo={isDemo} />
-          <main className="flex-1 min-w-0">
-            {loading ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500">
-                <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
-                  progress_activity
-                </span>
-                <p className="mt-2 text-xs font-bold">Đang tải danh sách gói tour...</p>
-              </div>
-            ) : loadError ? (
-              <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
-                {loadError}
-              </div>
-            ) : (
-              <OperatorTourListView tours={tours} isDemo={isDemo} />
-            )}
-          </main>
-        </div>
-      </div>
-    </div>
+    <PartnerWorkspaceLayout activeTab="tours" isDemo={isDemo}>
+      <PageContentContainer>
+        {loading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-xs">
+            <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
+              progress_activity
+            </span>
+            <p className="mt-2 text-xs font-bold">Đang tải danh sách gói tour...</p>
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+            {loadError}
+          </div>
+        ) : (
+          <OperatorTourListView tours={tours} isDemo={isDemo} />
+        )}
+      </PageContentContainer>
+    </PartnerWorkspaceLayout>
   );
 }
 

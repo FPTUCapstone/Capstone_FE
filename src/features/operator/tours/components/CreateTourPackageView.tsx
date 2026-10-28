@@ -307,22 +307,22 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   return (
     <div className="space-y-6">
       {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl break-words">
               Tạo gói tour mới
             </h1>
             <OperatorTourStatusBadge status="Draft" />
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 break-words">
             Khởi tạo gói tour thương mại gồm lịch trình, các chuyến khởi hành, mức giá và chính sách hủy.
           </p>
         </div>
 
         <Link
           href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shrink-0"
         >
           Quay lại danh sách
         </Link>
@@ -810,10 +810,10 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <Link
           href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Hủy
         </Link>
@@ -821,7 +821,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           type="button"
           onClick={() => handleSave(false)}
           disabled={submitting}
-          className="rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
+          className="w-full sm:w-auto text-center rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
         >
           {submitting ? 'Đang lưu bản nháp…' : 'Lưu bản nháp'}
         </button>
@@ -829,7 +829,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           type="button"
           onClick={() => handleSave(true)}
           disabled={submitting}
-          className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+          className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
         >
           {submitting ? 'Đang lưu…' : 'Lưu và gửi xét duyệt'}
         </button>

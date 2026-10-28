@@ -160,10 +160,10 @@ export function BookingDetailPanel({
         className="flex h-full w-full max-w-xl flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-200"
       >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 id={titleId} className="text-base font-bold text-[#00152A]">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-6 py-4 gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 id={titleId} className="text-base font-bold text-[#00152A] break-words">
                 {bookingEn.detail.title} {basics.bookingCode}
               </h2>
               <BookingStatusBadge status={basics.status} />
@@ -176,7 +176,7 @@ export function BookingDetailPanel({
             ref={closeBtnRef}
             type="button"
             onClick={handleClose}
-            className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition"
+            className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition shrink-0"
             aria-label={bookingEn.detail.closeAria}
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
@@ -456,16 +456,16 @@ export function BookingDetailPanel({
         </div>
 
         {/* Drawer Footer Actions */}
-        <div className="border-t border-slate-200 p-5 bg-slate-50 flex items-center justify-between gap-3">
+        <div className="border-t border-slate-200 p-4 sm:p-5 bg-slate-50 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+            className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition text-center"
           >
             {bookingEn.detail.closeBtn}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             {/* Cancel booking action (UC-41) */}
             <button
               type="button"
@@ -478,7 +478,7 @@ export function BookingDetailPanel({
                   ? cancelBlockedTooltip
                   : bookingEn.detail.cancelBookingBtn
               }
-              className="rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="w-full sm:w-auto justify-center rounded-xl border border-rose-200 bg-white px-3.5 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">cancel</span>
               <span>{bookingEn.detail.cancelBookingBtn}</span>
@@ -496,7 +496,7 @@ export function BookingDetailPanel({
                   ? bookingEn.detail.notRefundableTooltip
                   : bookingEn.detail.refundBtn
               }
-              className="rounded-xl bg-[#006B5F] px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="w-full sm:w-auto justify-center rounded-xl bg-[#006B5F] px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">currency_exchange</span>
               <span>{bookingEn.detail.refundBtn}</span>

@@ -1,43 +1,26 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { OperatorRevenueView } from '@/features/operator/finance/components/revenue/OperatorRevenueView';
+import { PartnerRevenueClient } from '@/features/operator/finance/components/revenue/PartnerRevenueClient';
 import { PartnerRouteGuard } from '@/features/operator/access/PartnerRouteGuard';
-import { FinanceNavigationSlot } from '@/features/operator/finance/components/layout/FinanceNavigationSlot';
 
 export const metadata: Metadata = {
-  title: 'Revenue & Analytics | Tour Operator | TripMate',
+  title: 'Doanh thu & Báo cáo | Đối tác | TripMate',
   description:
-    'Review gross revenue, platform commission, completed refunds, and net earnings for your tour packages.',
+    'Theo dõi doanh thu, hoa hồng nền tảng, hoàn tiền và thu nhập thực nhận cho các gói tour.',
 };
 
 export default function PartnerRevenuePage() {
   return (
     <PartnerRouteGuard route="dashboard">
-      <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-8 lg:flex-row">
-            <Suspense fallback={<aside className="w-full shrink-0 lg:w-64" />}>
-              <FinanceNavigationSlot activeTab="revenue" />
-            </Suspense>
-            <main className="flex-1 min-w-0">
-              <Suspense
-                fallback={
-                  <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500">
-                    <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
-                      progress_activity
-                    </span>
-                    <p className="mt-2 text-xs font-bold">
-                      Loading revenue analytics…
-                    </p>
-                  </div>
-                }
-              >
-                <OperatorRevenueView />
-              </Suspense>
-            </main>
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#F8FAFC] p-8 text-center text-xs text-slate-500">
+            Đang tải dữ liệu doanh thu...
           </div>
-        </div>
-      </div>
+        }
+      >
+        <PartnerRevenueClient />
+      </Suspense>
     </PartnerRouteGuard>
   );
 }
