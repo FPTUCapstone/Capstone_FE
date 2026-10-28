@@ -3,20 +3,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { CancelPayoutDialog } from './CancelPayoutDialog';
 
 const request = {
-  id: 'pay-1',
-  operatorUserId: 101,
-  periodId: 'period-1',
-  requestCode: 'PAY-001',
-  periodLabel: 'September 2026',
-  requestedAmount: 8_000_000,
-  status: 'Pending Confirmation' as const,
-  requestedAt: '2026-10-01T00:00:00Z',
-  bankSnapshot: {
-    operatorUserId: 101,
-    accountHolder: 'NGUYEN VAN AN',
-    bankName: 'Vietcombank',
-    accountNumber: '1029384756',
-  },
+  payoutCode: 'PO-202609-000101',
+  periodCount: 1,
+  periodStart: '2026-09-01',
+  periodEnd: '2026-09-30',
+  payableNetAmount: 8_000_000,
+  status: 'PendingReview' as const,
+  requestedAtUtc: '2026-10-01T00:00:00Z',
+  settledAtUtc: null,
+  rejectionReason: null,
+  cancellable: true,
 };
 
 describe('CancelPayoutDialog accessibility', () => {
@@ -31,7 +27,7 @@ describe('CancelPayoutDialog accessibility', () => {
         isOpen={true}
         request={request}
         onClose={onClose}
-        onConfirmCancel={vi.fn().mockResolvedValue(true)}
+        onConfirmCancel={vi.fn().mockResolvedValue({ success: true })}
       />
     );
 

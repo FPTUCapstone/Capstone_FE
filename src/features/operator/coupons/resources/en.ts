@@ -19,6 +19,8 @@ export const couponEn = {
       activeSubtext: 'Available for immediate booking',
       redemptions: 'Total Redemptions',
       redemptionsSubtext: 'Customer bookings completed',
+      occupied: 'Occupied coupon slots',
+      occupiedSubtext: 'Bookings awaiting payment and paid bookings',
     },
     filterTabs: {
       all: 'All',
@@ -37,6 +39,8 @@ export const couponEn = {
       actions: 'Actions',
       usagesCount: '{count} used',
       usagesLimit: '{limit} max',
+      occupiedCount: '{count} occupied',
+      unlimited: 'Unlimited',
       allTours: 'All Tour Packages',
       toursCount: '{count} tour packages',
       editAction: 'Edit',
@@ -51,13 +55,13 @@ export const couponEn = {
       title: 'No coupons found',
       description: 'No coupons match the selected filter criteria.',
     },
+    authorizationRequired: 'Only approved tour operators can manage coupons.',
+    loadError: 'Unable to load coupons.',
+    retry: 'Retry',
     banners: {
       productionTitle: 'Production Mode — PENDING_BE_INTEGRATION',
       productionBody:
         'Backend coupon management endpoints are currently under development. The workspace operates in truthful read-only mode without mocking or state loss.',
-      demoTitle: 'Demo Mode Active (?demo=1)',
-      demoBody:
-        'You are working with an in-memory demo dataset. Changes to coupons will persist within this session.',
     },
   },
   statuses: {
@@ -133,16 +137,48 @@ export const couponEn = {
       expiredBlocked: 'Coupon has expired — Cannot be reactivated',
     },
     actions: {
+      sectionTitle: 'Actions',
       cancel: 'Cancel',
       save: 'Save Changes',
       saving: 'Saving Changes...',
+      reloadLatest: 'Reload latest coupon and discard this draft',
+    },
+    formAriaLabel: 'Update coupon',
+    readOnly: 'read-only',
+    discountTypeLabel: 'Discount type',
+    timezone: 'Asia/Ho_Chi_Minh',
+    metrics: {
+      occupied: 'Occupied coupon slots',
+      limitMaximum: 'of {limit} maximum',
+      remaining: 'Remaining usages',
+      available: 'available redemptions',
+      from: 'from {date}',
+      unlimited: 'Unlimited',
+    },
+    usage: {
+      unlimited: 'Unlimited',
+      unlimitedPerTraveler: 'Unlimited per traveler',
+      occupiedMinimum:
+        'Minimum {count} occupied slots. Pending unpaid bookings can later release a slot.',
+      redeemedMinimum: 'Minimum {count} already redeemed bookings.',
+      currentlyFull:
+        'This coupon currently has no available slots. A pending unpaid booking may release a slot if it expires or is cancelled.',
+    },
+    scopeSelection:
+      '{count} currently eligible tour(s) selected. New tours are added only when you update this coupon again.',
+    bookingPreservation: {
+      title: 'Existing booking discounts are preserved',
+      occupied:
+        'Pending-payment and paid bookings occupy these slots. An unpaid booking that expires or is cancelled releases its slot. Changes to coupon terms affect only future bookings; existing booking discounts stay fixed.',
+      redeemed:
+        '{count} customer bookings have already used this coupon. Changes to coupon terms affect only future bookings; existing booking discounts stay fixed.',
     },
     notices: {
-      productionPending:
-        'Backend coupon update is currently under development (PENDING_BE_INTEGRATION). Changes cannot be saved to the live production database.',
       success: 'Coupon updated successfully.',
       statusSuccess: 'Coupon status updated successfully.',
       genericError: 'Failed to update coupon. Please review the form inputs.',
+      expiredExtension:
+        'Coupon updated. Activate it separately before travelers can use it.',
     },
   },
   dialog: {
@@ -181,6 +217,7 @@ export const couponEn = {
     systemError: 'A system error occurred. Please try again later.',
     notFound: 'The requested coupon was not found.',
     pendingBe: 'This feature is pending backend integration.',
+    invalidVietnamDateTime: 'Enter a valid date and time in Vietnam time.',
   },
   page: {
     loadingList: 'Loading promotional coupons...',
@@ -189,9 +226,8 @@ export const couponEn = {
     loadingDefault: 'Loading...',
     unauthorizedTitle: 'Access Denied',
     notFoundTitle: 'Coupon Not Found',
-    pendingIntegrationTitle: 'Coupon editing is pending Backend integration',
+    unableToLoadTitle: 'Unable to Load Coupon',
     backToList: 'Back to Coupons List',
-    demoModeLink: 'View Demo Mode (?demo=1)',
     requestedId: 'Requested identifier: {id}',
   },
 } as const;

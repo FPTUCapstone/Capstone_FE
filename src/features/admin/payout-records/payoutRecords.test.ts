@@ -18,14 +18,14 @@ const response = {
     {
       payoutId: '12', payoutCode: 'PO-12',
       operator: { userId: '2', companyName: 'Da Nang Tours' },
-      periodStart: '2026-08-01', periodEnd: '2026-08-31',
+      periodStart: '2026-08-01', periodEnd: '2026-08-31', periodCount: 1,
       grossRevenue: 10000000, commissionAmount: 1000000, netAmount: 9000000,
       requestedAtUtc: '2026-09-01T02:30:00Z', status: 'PendingReview',
     },
     {
       payoutId: '11', payoutCode: 'PO-11',
       operator: { userId: '3', companyName: 'Hoi An Walks' },
-      periodStart: '2026-07-01', periodEnd: '2026-07-31',
+      periodStart: '2026-07-01', periodEnd: '2026-09-30', periodCount: 3,
       grossRevenue: 500000, commissionAmount: 62500, netAmount: 437500,
       requestedAtUtc: null, status: 'ApprovedForSettlement',
     },
@@ -33,17 +33,22 @@ const response = {
 };
 
 describe('payout response contract', () => {
-  it('parses a full payload preserving string IDs and derived codes', () => {
+  it('parses a full payload preserving string IDs and the persisted payout codes', () => {
     const parsed = parsePayoutsResponse(response);
     expect(parsed.items[0].payoutId).toBe('12');
     expect(parsed.items[0].payoutCode).toBe('PO-12');
+    expect(parsed.items[1].periodCount).toBe(3);
     expect(parsed.items[0].requestedAtUtc).toContain('Z');
     expect(parsed.items[1].requestedAtUtc).toBeNull();
     expect(parsed.totalAmount).toBe(9437500);
   });
 
   it.each([
-    { payoutCode: 'XO-12' },
+    { payoutCode: '' },
+    { payoutCode: undefined },
+    { periodCount: 0 },
+    { periodCount: 1.5 },
+    { periodCount: undefined },
     { payoutId: 12 },
     { grossRevenue: -1 },
     { status: 'Pending' },

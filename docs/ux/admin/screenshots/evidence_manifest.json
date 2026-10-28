@@ -1,0 +1,222 @@
+[
+  {
+    "file": "staff-dashboard-1440x900.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\staff-dashboard-1440x900.png",
+    "screen": "Staff Operations Dashboard",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/staff",
+    "pageTitle": "Staff Operations Dashboard | TripMate Administration | TripMate",
+    "viewport": "1440x900",
+    "device": "Desktop",
+    "overflow": false
+  },
+  {
+    "file": "staff-dashboard-1024x768.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\staff-dashboard-1024x768.png",
+    "screen": "Staff Operations Dashboard",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/staff",
+    "pageTitle": "Staff Operations Dashboard | TripMate Administration | TripMate",
+    "viewport": "1024x768",
+    "device": "Laptop",
+    "overflow": false
+  },
+  {
+    "file": "staff-dashboard-768x1024.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\staff-dashboard-768x1024.png",
+    "screen": "Staff Operations Dashboard",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/staff",
+    "pageTitle": "Staff Operations Dashboard | TripMate Administration | TripMate",
+    "viewport": "768x1024",
+    "device": "Tablet",
+    "overflow": false
+  },
+  {
+    "file": "staff-dashboard-375x812.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\staff-dashboard-375x812.png",
+    "screen": "Staff Operations Dashboard",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/staff",
+    "pageTitle": "Staff Operations Dashboard | TripMate Administration | TripMate",
+    "viewport": "375x812",
+    "device": "Mobile",
+    "overflow": false
+  },
+  {
+    "file": "tour-operator-applications-1440x900.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\tour-operator-applications-1440x900.png",
+    "screen": "Tour Operator Applications Queue",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/tour-operator-applications",
+    "pageTitle": "Tour Operator Applications Queue | TripMate Admin | TripMate",
+    "viewport": "1440x900",
+    "device": "Desktop",
+    "overflow": false
+  },
+  {
+    "file": "tour-operator-applications-1024x768.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\tour-operator-applications-1024x768.png",
+    "screen": "Tour Operator Applications Queue",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/tour-operator-applications",
+    "pageTitle": "Tour Operator Applications Queue | TripMate Admin | TripMate",
+    "viewport": "1024x768",
+    "device": "Laptop",
+    "overflow": false
+  },
+  {
+    "file": "tour-operator-applications-768x1024.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\tour-operator-applications-768x1024.png",
+    "screen": "Tour Operator Applications Queue",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/tour-operator-applications",
+    "pageTitle": "Tour Operator Applications Queue | TripMate Admin | TripMate",
+    "viewport": "768x1024",
+    "device": "Tablet",
+    "overflow": false
+  },
+  {
+    "file": "tour-operator-applications-375x812.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\tour-operator-applications-375x812.png",
+    "screen": "Tour Operator Applications Queue",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/tour-operator-applications",
+    "pageTitle": "Tour Operator Applications Queue | TripMate Admin | TripMate",
+    "viewport": "375x812",
+    "device": "Mobile",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-staff-1440x900.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-staff-1440x900.png",
+    "screen": "POI Catalog (Staff View)",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "1440x900",
+    "device": "Desktop",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-staff-1024x768.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-staff-1024x768.png",
+    "screen": "POI Catalog (Staff View)",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "1024x768",
+    "device": "Laptop",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-staff-768x1024.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-staff-768x1024.png",
+    "screen": "POI Catalog (Staff View)",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "768x1024",
+    "device": "Tablet",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-staff-375x812.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-staff-375x812.png",
+    "screen": "POI Catalog (Staff View)",
+    "role": "Staff",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "375x812",
+    "device": "Mobile",
+    "overflow": false
+  },
+  {
+    "file": "admin-dashboard-1440x900.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\admin-dashboard-1440x900.png",
+    "screen": "Administrator Dashboard",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin",
+    "pageTitle": "Administration Overview | TripMate",
+    "viewport": "1440x900",
+    "device": "Desktop",
+    "overflow": false
+  },
+  {
+    "file": "admin-dashboard-1024x768.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\admin-dashboard-1024x768.png",
+    "screen": "Administrator Dashboard",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin",
+    "pageTitle": "Administration Overview | TripMate",
+    "viewport": "1024x768",
+    "device": "Laptop",
+    "overflow": false
+  },
+  {
+    "file": "admin-dashboard-768x1024.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\admin-dashboard-768x1024.png",
+    "screen": "Administrator Dashboard",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin",
+    "pageTitle": "Administration Overview | TripMate",
+    "viewport": "768x1024",
+    "device": "Tablet",
+    "overflow": false
+  },
+  {
+    "file": "admin-dashboard-375x812.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\admin-dashboard-375x812.png",
+    "screen": "Administrator Dashboard",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin",
+    "pageTitle": "Administration Overview | TripMate",
+    "viewport": "375x812",
+    "device": "Mobile",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-admin-1440x900.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-admin-1440x900.png",
+    "screen": "POI Catalog (Administrator View)",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "1440x900",
+    "device": "Desktop",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-admin-1024x768.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-admin-1024x768.png",
+    "screen": "POI Catalog (Administrator View)",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "1024x768",
+    "device": "Laptop",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-admin-768x1024.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-admin-768x1024.png",
+    "screen": "POI Catalog (Administrator View)",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "768x1024",
+    "device": "Tablet",
+    "overflow": false
+  },
+  {
+    "file": "poi-catalog-admin-375x812.png",
+    "path": "D:\\FPT_University_các kì\\CapStone_TripMate_DoAn\\Capstone_FE-batch-e-uiux\\docs\\ux\\admin\\screenshots\\poi-catalog-admin-375x812.png",
+    "screen": "POI Catalog (Administrator View)",
+    "role": "Administrator",
+    "url": "http://localhost:3008/admin/catalogue/points-of-interest",
+    "pageTitle": "Points of Interest Catalog | TripMate Admin | TripMate",
+    "viewport": "375x812",
+    "device": "Mobile",
+    "overflow": false
+  }
+]

@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { PublicNavigation } from '@/components/navigation/PublicNavigation';
-
 import { devTourSearchCopy as copy } from '../resources/en';
 import { getDevTourCategories, searchDevTours } from '../services/devTourApi';
 import type { DevPagedToursResponseDto, DevTourCategory } from '../types/devTour';
@@ -71,7 +69,6 @@ export function DevExploreToursPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <PublicNavigation />
       <main lang="en" className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <header className="mb-6">
           <h1 className="text-3xl font-black text-slate-900">{copy.title}</h1>

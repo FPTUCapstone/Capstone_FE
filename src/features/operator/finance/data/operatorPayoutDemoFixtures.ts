@@ -1,148 +1,80 @@
 /**
- * Deterministic Demo fixtures for Settlement & Payouts (UC-46).
- * Explicitly models settlement periods, beneficiary bank details, and payout requests
- * for Operator 101 and foreign Operator 202 (BR-105 isolation).
+ * Deterministic Demo fixtures for Request Payout Settlement (UC-46).
+ * "Available balance" model (2026-10-23): a single request aggregates every closed, eligible,
+ * not-yet-paid settlement month into one payout. Models two months of unclaimed revenue for
+ * Operator 101 (so the demo shows the aggregation in action) and one already-settled payout for
+ * foreign Operator 202 (BR-105 isolation).
  */
 
 import type {
-  BeneficiaryBankDto,
-  PayoutRequestDto,
-  SettlementPeriodDto,
+  BeneficiaryBankAccountDto,
+  PayoutHistoryItemDto,
+  SettlementMonthDto,
 } from '../types/payoutLifecycle';
 
-export const INITIAL_DEMO_BENEFICIARY_BANKS: Record<string | number, BeneficiaryBankDto> = {
-  101: {
-    operatorUserId: 101,
-    accountHolder: 'NGUYEN VAN AN',
+export const INITIAL_DEMO_BENEFICIARY_BANKS: Record<string, BeneficiaryBankAccountDto> = {
+  '101': {
     bankName: 'Vietcombank (VCB)',
-    accountNumber: '1029384756',
+    accountHolderName: 'NGUYEN VAN AN',
+    maskedAccountNumber: '******4756',
+    updatedAtUtc: '2026-07-01T03:00:00.000Z',
   },
-  202: {
-    operatorUserId: 202,
-    accountHolder: 'LE THI MAI',
+  '202': {
     bankName: 'Techcombank (TCB)',
-    accountNumber: '9876543210',
+    accountHolderName: 'LE THI MAI',
+    maskedAccountNumber: '******3210',
+    updatedAtUtc: '2026-07-01T03:00:00.000Z',
   },
 };
 
-export const INITIAL_DEMO_SETTLEMENT_PERIODS: SettlementPeriodDto[] = [
-  // Operator 101 - Eligible closed period (August 2026)
-  {
-    id: 'per-101-08-2026',
-    operatorUserId: 101,
-    periodCode: 'PER-2026-08',
-    periodLabel: '01/08/2026 - 31/08/2026',
-    startDate: '2026-08-01',
-    endDate: '2026-08-31',
-    completedToursCount: 2,
-    grossRevenue: 19600000,
-    commission: 1960000,
-    payableNetAmount: 17640000,
-    status: 'Closed',
-    hasPendingPayout: false,
-  },
-  // Operator 101 - Past closed period (July 2026) already settled
-  {
-    id: 'per-101-07-2026',
-    operatorUserId: 101,
-    periodCode: 'PER-2026-07',
-    periodLabel: '01/07/2026 - 31/07/2026',
-    startDate: '2026-07-01',
-    endDate: '2026-07-31',
-    completedToursCount: 3,
-    grossRevenue: 25000000,
-    commission: 2500000,
-    payableNetAmount: 22500000,
-    status: 'Closed',
-    hasPendingPayout: false,
-  },
-  // Operator 101 - Open / ongoing period (September 2026) -> Ineligible (BR-111)
-  {
-    id: 'per-101-09-2026',
-    operatorUserId: 101,
-    periodCode: 'PER-2026-09',
-    periodLabel: '01/09/2026 - 30/09/2026',
-    startDate: '2026-09-01',
-    endDate: '2026-09-30',
-    completedToursCount: 2,
-    grossRevenue: 14000000,
-    commission: 1400000,
-    payableNetAmount: 12600000,
-    status: 'Open',
-    hasPendingPayout: false,
-  },
-  // Operator 101 - Closed period with 0 completed tours -> Ineligible (BR-111)
-  {
-    id: 'per-101-06-2026',
-    operatorUserId: 101,
-    periodCode: 'PER-2026-06',
-    periodLabel: '01/06/2026 - 30/06/2026',
-    startDate: '2026-06-01',
-    endDate: '2026-06-30',
-    completedToursCount: 0,
-    grossRevenue: 0,
-    commission: 0,
-    payableNetAmount: 0,
-    status: 'Closed',
-    hasPendingPayout: false,
-  },
-  // Operator 101 - Closed period below 5,000,000 minimum threshold -> Ineligible (MSG120)
-  {
-    id: 'per-101-05-2026',
-    operatorUserId: 101,
-    periodCode: 'PER-2026-05',
-    periodLabel: '01/05/2026 - 31/05/2026',
-    startDate: '2026-05-01',
-    endDate: '2026-05-31',
-    completedToursCount: 1,
-    grossRevenue: 4000000,
-    commission: 400000,
-    payableNetAmount: 3600000,
-    status: 'Closed',
-    hasPendingPayout: false,
-  },
+export const INITIAL_DEMO_SETTLEMENT_MONTHS: Record<string, SettlementMonthDto[]> = {
+  '101': [
+    // Two closed, unclaimed months — together they form the available balance.
+    {
+      year: 2026, month: 7, monthStatus: 'Closed', eligibleBookingCount: 1,
+      paymentsReceived: 4_000_000, discountsGiven: 0, refundedAmount: 0, netSales: 4_000_000,
+      commissionAmount: 400_000, payableNetAmount: 3_600_000,
+      coverage: 'AvailableBalance', payoutCode: null,
+    },
+    {
+      year: 2026, month: 8, monthStatus: 'Closed', eligibleBookingCount: 2,
+      paymentsReceived: 19_600_000, discountsGiven: 0, refundedAmount: 0, netSales: 19_600_000,
+      commissionAmount: 1_960_000, payableNetAmount: 17_640_000,
+      coverage: 'AvailableBalance', payoutCode: null,
+    },
+    // Open / ongoing month -> not closed yet, excluded from the balance.
+    {
+      year: 2026, month: 9, monthStatus: 'Open', eligibleBookingCount: 2,
+      paymentsReceived: 14_000_000, discountsGiven: 0, refundedAmount: 0, netSales: 14_000_000,
+      commissionAmount: 1_400_000, payableNetAmount: 12_600_000,
+      coverage: 'Open', payoutCode: null,
+    },
+  ],
+  '202': [
+    // Already claimed by a settled payout from a prior request.
+    {
+      year: 2026, month: 6, monthStatus: 'Closed', eligibleBookingCount: 2,
+      paymentsReceived: 15_000_000, discountsGiven: 0, refundedAmount: 0, netSales: 15_000_000,
+      commissionAmount: 1_500_000, payableNetAmount: 13_500_000,
+      coverage: 'IncludedInPayout', payoutCode: 'PO-202606-000202',
+    },
+    {
+      year: 2026, month: 8, monthStatus: 'Closed', eligibleBookingCount: 4,
+      paymentsReceived: 48_000_000, discountsGiven: 0, refundedAmount: 0, netSales: 48_000_000,
+      commissionAmount: 4_800_000, payableNetAmount: 43_200_000,
+      coverage: 'AvailableBalance', payoutCode: null,
+    },
+  ],
+};
 
-  // Foreign Operator 202 settlement periods (BR-105 isolation)
-  {
-    id: 'per-202-08-2026',
-    operatorUserId: 202,
-    periodCode: 'PER-2026-08',
-    periodLabel: '01/08/2026 - 31/08/2026',
-    startDate: '2026-08-01',
-    endDate: '2026-08-31',
-    completedToursCount: 4,
-    grossRevenue: 48000000,
-    commission: 4800000,
-    payableNetAmount: 43200000,
-    status: 'Closed',
-    hasPendingPayout: false,
-  },
-];
-
-export const INITIAL_DEMO_PAYOUT_REQUESTS: PayoutRequestDto[] = [
-  // Operator 101 settled request
-  {
-    id: 'po-req-0101',
-    requestCode: 'PO-20260805-0101',
-    operatorUserId: 101,
-    periodId: 'per-101-07-2026',
-    periodLabel: '01/07/2026 - 31/07/2026',
-    requestedAmount: 22500000,
-    status: 'Settled',
-    requestedAt: '2026-08-05T09:15:00.000Z',
-    settledAt: '2026-08-08T14:30:00.000Z',
-    bankSnapshot: INITIAL_DEMO_BENEFICIARY_BANKS[101],
-  },
-  // Foreign Operator 202 request (BR-105 isolation)
-  {
-    id: 'po-req-0202',
-    requestCode: 'PO-20260901-0202',
-    operatorUserId: 202,
-    periodId: 'per-202-08-2026',
-    periodLabel: '01/08/2026 - 31/08/2026',
-    requestedAmount: 43200000,
-    status: 'Pending Confirmation',
-    requestedAt: '2026-09-01T10:00:00.000Z',
-    bankSnapshot: INITIAL_DEMO_BENEFICIARY_BANKS[202],
-  },
-];
+export const INITIAL_DEMO_PAYOUT_HISTORY: Record<string, PayoutHistoryItemDto[]> = {
+  '101': [],
+  '202': [
+    {
+      payoutCode: 'PO-202606-000202', periodCount: 1, periodStart: '2026-06-01', periodEnd: '2026-06-30',
+      payableNetAmount: 13_500_000, status: 'Settled',
+      requestedAtUtc: '2026-07-01T10:00:00.000Z', settledAtUtc: '2026-07-04T14:30:00.000Z',
+      rejectionReason: null, cancellable: false,
+    },
+  ],
+};

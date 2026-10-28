@@ -1,21 +1,16 @@
 # TripMate Web Scope Matrix
 
-Finance traceability for PR #54 is recorded in [PR54-FINANCE-SCREEN-SPEC-AUDIT.md](./PR54-FINANCE-SCREEN-SPEC-AUDIT.md). The revenue and payout Web Screen Specification approval remains pending, so financial mutation triggers remain disabled.
+Governance reconciliation: 2026-10-23. The original, non-V2 `Report3_Software-Requirement-Specification.docx` is the requirements authority, after explicitly approved newer requirements with traceable approval. The local original inspected during migration has SHA-256 `22371e92506b098a9a546069038b58b75003371b3b7f85d5cfd6dd913f0d295a`. Historical V2 is not a fallback authority.
 
-Audit date: 2026-09-06
+The tables and coverage below are the historical 2026-09-06 matrix snapshot, not a reconciled classification of the current original SRS. Their 72-UC catalog, totals, actor assignments, financial status, and references to “Current R3” remain historical claims pending reconciliation. The original contains newer Staff/Administrator and payout material, including UC-73/UC-74. This notice does not renumber UCs, change permissions or platform classifications, or approve screens or financial contracts. Conflicting implementation tasks remain `BLOCKED_REQUIREMENT_APPROVAL`.
 
-This document is the repository-facing Web scope authority derived from the official TripMate project documents. It does not replace the approved SRS. A use case being listed here does not by itself authorize implementation: a new visual Web screen still requires an approved Web Screen Specification, reviewed UI, and an approved implementation task.
+Finance traceability for PR #54 is retained in [PR54-FINANCE-SCREEN-SPEC-AUDIT.md](./PR54-FINANCE-SCREEN-SPEC-AUDIT.md) as a historical review. Its V2 authority and disabled-mutation statements do not establish current implementation or approval status; verify current source and traceable approvals separately.
 
-## A. Scope Verification
+This document does not replace the approved SRS. A listed use case does not authorize implementation: a new visual Web screen still requires an approved Web Screen Specification, reviewed UI, and an approved implementation task.
 
-The authoritative source for the current review is Report 3 SRS V2,
-`Report3_Software-Requirement-Specification.docx` (workspace SHA-256
-`EF675A01A1F459C1A0994AB0F40B0C99BBAF55CCD68A0F882787D37A12C681B3`).
-The previously recorded path under `D:/FPT_University_các kì/...` and SHA-256
-`c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`
-refer to an older Report 3 copy and are retained here only as a stale provenance
-record; they do not override V2. This narrow correction does not independently
-reapprove the broader matrix or any Web Screen Specification.
+## A. Historical Scope Verification
+
+Earlier provenance recorded hashes `EF675A01A1F459C1A0994AB0F40B0C99BBAF55CCD68A0F882787D37A12C681B3` and `c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`. They are historical records, not fingerprints of the current original. The latter matches the local V2 copy inspected on 2026-10-23. The original SRS and traceable newer approvals take precedence over all historical V2-based statements below, including the former precedence and actor-resolution rules.
 
 | Verification | Confirmed result | Current R3 evidence |
 |---|---|---|
@@ -137,7 +132,7 @@ Interaction Type describes the interaction shape supported by Current R3. It is 
 | UC-43 | Check In Traveler by QR Code | Tour Operator | MOBILE_ONLY | No | Mobile camera/scanner screen | `SRS_CONFLICT` and `BLOCKED_BY_SRS_CONFLICT`: R3 §§1, 2.1, and Table 3 explicitly say Mobile-only, while §3.8.4.4 mentions Next.js. The explicit UC platform statement controls; no Web screen is authorized. |
 | UC-44 | View Revenue Report | Tour Operator | SHARED_WEB_MOBILE | Yes | Report/dashboard view | R3 §§1 and 2.1 say both platforms; §3.8.5.1 documents the Next.js management screen. `SRS_FINANCIAL_FORMULA_DECISION_PENDING`: UC-44 BR-112 states net amount is gross revenue minus commission, while its processing/post-conditions also mention completed refunds and UC-46 BR-112 explicitly deducts completed refunds. Demo figures are non-authoritative until Product/BA resolves the formula. |
 | UC-45 | Export Revenue Report | Tour Operator | SHARED_WEB_MOBILE | Yes | Export action/dialog | R3 §§1 and 2.1 say both platforms; §3.8.5.2 places the dialog on the Revenue Report screen. No dedicated route is implied. |
-| UC-46 | Request Payout Settlement | Tour Operator | SHARED_WEB_MOBILE | Yes | Payout detail/request form | R3 §§1 and 2.1 say both platforms; §3.8.5.3 documents the Next.js management screen. `SRS_FINANCIAL_FORMULA_DECISION_PENDING`: UC-46 BR-112 explicitly deducts completed refunds, unlike UC-44 BR-112. The Tour Operator does not determine the backend formula; Product/BA approval and an authoritative backend contract are still required. |
+| UC-46 | Request Payout Settlement | Tour Operator | SHARED_WEB_MOBILE | Yes | Payout detail/request form | R3 §§1 and 2.1 say both platforms; §3.8.5.3 documents the Next.js management screen. `SRS_FINANCIAL_FORMULA_DECISION_PENDING`: UC-46 BR-112 explicitly deducts completed refunds, unlike UC-44 BR-112. The Tour Operator does not determine the backend formula; Product/BA approval and an authoritative backend contract are still required. Release scope is Web-first (as UC-44/UC-45): Mobile is DEFERRED pending an SRS platform scope amendment, not omitted. |
 | UC-47 | View User Accounts | Administrator | ADMIN_WEB_ONLY | Yes | Account list/detail | Register §3.3 OBJ6; R3 §§2.1 and 3.9.1.1; Table 4.1. |
 | UC-48 | Lock User Account | Administrator | ADMIN_WEB_ONLY | Yes | Action plus confirmation dialog | R3 §§2.1 and 3.9.1.2; Table 4.1. No dedicated route is implied. |
 | UC-49 | Unlock User Account | Administrator | ADMIN_WEB_ONLY | Yes | Action plus confirmation dialog | R3 §§2.1 and 3.9.1.3; Table 4.1. No dedicated route is implied. |

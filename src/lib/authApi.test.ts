@@ -2,16 +2,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   confirmPasswordReset,
-  getApiBase,
   googleAuth,
   isApiError,
   registerTraveler,
   requestPasswordReset,
   webResendVerification,
 } from './authApi';
+import { getApiBase } from './apiBase';
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('isApiError', () => {

@@ -6,6 +6,8 @@ TripMate is a smart travel planning and travel services platform. This repositor
 
 The canonical team guideline is [Frontend Engineering Convention](docs/FRONTEND_ENGINEERING_CONVENTION.md). It defines architecture, routing, UI, state/API boundaries, security, testing, review, and incremental migration. Its dated audit distinguishes existing implementation from proposed standards and branch-specific work; older implementation inventories below may lag source changes. Product scope remains governed by the approved SRS and [Web scope matrix](docs/WEB_SCOPE_MATRIX.md).
 
+Current migration evidence, verification limits and unresolved requirements are recorded in the [migration final report](docs/FRONTEND_MIGRATION_FINAL_REPORT.md). Older inventories below are historical implementation snapshots; consult the report and current source before treating them as current integration status.
+
 ## Project Scope
 
 The approved Web product model contains four areas:

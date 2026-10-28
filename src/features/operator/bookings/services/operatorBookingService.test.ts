@@ -2,12 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cancelCustomerBooking,
   getOperatorBookingById,
+  getOperatorBookingTourOptions,
   getOperatorBookings,
   initiateBookingRefund,
   resetDemoBookingsState,
 } from './operatorBookingService';
+import { detailExample, listExample } from '../utils/bookingApiFixtures';
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
-import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
+import { INITIAL_DEMO_BOOKINGS, toDemoDetailView } from '../data/operatorBookingDemoFixtures';
 import {
   BOOKING_ERROR_CODES,
   CancellationReasonValue,
@@ -33,25 +35,7 @@ describe('operatorBookingService', () => {
   });
 
   describe('UC-40 View Customer Bookings', () => {
-    describe('Production NO_BACKEND truthfulness', () => {
-      it('returns empty list, default pageSize=20, and PENDING_BE_INTEGRATION notice when isDemo is false', async () => {
-        const result = await getOperatorBookings({}, { isDemo: false });
-        expect(result.items).toEqual([]);
-        expect(result.totalCount).toBe(0);
-        expect(result.pageSize).toBe(OPERATOR_BOOKING_DEFAULT_PAGE_SIZE);
-        expect(result.pageSize).toBe(20);
-        expect(result.summary.totalBookings).toBe(0);
-        expect(result.summary.totalConfirmedAmount).toBe(0);
-        expect(result.pendingBackendNotice).toBe(OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION);
-      });
-
-      it('returns pending notice for detail view when isDemo is false', async () => {
-        const result = await getOperatorBookingById('booking-0141', { isDemo: false });
-        expect(result.booking).toBeUndefined();
-        expect(result.error).toBe(OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION);
-        expect(result.messageCode).toBe('PENDING_BE_INTEGRATION');
-      });
-
+    describe('Cancel and refund outside demo mode (UC-41/UC-42 are not integrated yet)', () => {
       it('disallows cancellation in production mode without backend', async () => {
         const result = await cancelCustomerBooking(
           'booking-0141',
@@ -77,9 +61,11 @@ describe('operatorBookingService', () => {
         expect(result.items.length).toBe(6);
         expect(result.totalCount).toBe(6); // 6 owned out of 7 total in fixtures
         expect(result.summary.totalBookings).toBe(6);
-        expect(result.summary.totalParticipants).toBe(19);
-        // Confirmed (3) + Completed (1) = 5600000 + 3500000 + 1100000 + 2100000 = 12300000
-        expect(result.summary.totalConfirmedAmount).toBe(12300000);
+        // BE semantics: participants and amount count Confirmed + Completed only.
+        // Confirmed 0141 (5) + Confirmed 0148 (3) + Completed 0095 (3) = 11 participants
+        expect(result.summary.totalParticipants).toBe(11);
+        // 5600000 + 3500000 + 2100000 = 11200000
+        expect(result.summary.totalConfirmedAmount).toBe(11200000);
       });
 
       it('fails closed with MSG126 when demoActorUserId is missing in Demo mode (BR-105)', async () => {
@@ -92,15 +78,15 @@ describe('operatorBookingService', () => {
 
       it('enforces BR-105: excludes bookings owned by other operators for actor 101', async () => {
         const result = await getOperatorBookings({}, { isDemo: true, demoActorUserId: 101 });
-        const hasOtherOperator = result.items.some((b) => b.operatorUserId !== 101);
-        expect(hasOtherOperator).toBe(false);
+        expect(result.items.map((b) => b.bookingId)).not.toContain('booking-9999');
+        expect(result.items.some((b) => 'operatorUserId' in b)).toBe(false);
       });
 
       it('enforces BR-105: actor 999 cannot see operator 101 bookings', async () => {
         const result = await getOperatorBookings({}, { isDemo: true, demoActorUserId: 999 });
         expect(result.items.length).toBe(1);
-        expect(result.items[0].id).toBe('booking-9999');
-        expect(result.items.some((b) => b.operatorUserId === 101)).toBe(false);
+        expect(result.items[0].bookingId).toBe('booking-9999');
+        expect(result.items.map((b) => b.bookingId)).not.toContain('booking-0141');
       });
 
       it('filters bookings by tourId', async () => {
@@ -109,7 +95,7 @@ describe('operatorBookingService', () => {
           { isDemo: true, demoActorUserId: 101 }
         );
         expect(result.items.length).toBe(3); // BK-0141, BK-0148, BK-0110
-        expect(result.items.every((b) => b.tourId === 'tour-142')).toBe(true);
+        expect(result.items.every((b) => b.tour.tourId === 'tour-142')).toBe(true);
       });
 
       it('filters bookings by status', async () => {
@@ -129,12 +115,12 @@ describe('operatorBookingService', () => {
         expect(result.items.length).toBe(3); // 12th, 13th, 14th
       });
 
-      it('returns MSG29 when startDate is after endDate', async () => {
+      it('returns MSG31 when startDate is after endDate', async () => {
         const result = await getOperatorBookings(
           { startDate: '2026-09-20', endDate: '2026-09-10' },
           { isDemo: true, demoActorUserId: 101 }
         );
-        expect(result.errorMessage).toBe(OPERATOR_BOOKING_MESSAGES.MSG29);
+        expect(result.errorMessage).toBe(OPERATOR_BOOKING_MESSAGES.MSG31);
         expect(result.items).toEqual([]);
       });
 
@@ -147,13 +133,22 @@ describe('operatorBookingService', () => {
         expect(result.items[0].bookingCode).toBe('BK-20260919-0141');
       });
 
+      it('searches by booker e-mail case-insensitively (BE also matches e-mail)', async () => {
+        const result = await getOperatorBookings(
+          { searchKeyword: 'NAM.LE@' },
+          { isDemo: true, demoActorUserId: 101 }
+        );
+        expect(result.items.length).toBe(1);
+        expect(result.items[0].bookingCode).toBe('BK-20260912-0148');
+      });
+
       it('searches by contact name case-insensitively', async () => {
         const result = await getOperatorBookings(
           { searchKeyword: 'văn an' },
           { isDemo: true, demoActorUserId: 101 }
         );
         expect(result.items.length).toBe(1);
-        expect(result.items[0].contactName).toBe('Nguyễn Văn An');
+        expect(result.items[0].booker.fullName).toBe('Nguyễn Văn An');
       });
 
       it('returns MSG128 when no bookings match filters', async () => {
@@ -179,7 +174,7 @@ describe('operatorBookingService', () => {
           { isDemo: true, demoActorUserId: 101 }
         );
         expect(resultPage2.items.length).toBe(2);
-        expect(resultPage2.items[0].id).not.toBe(resultPage1.items[0].id);
+        expect(resultPage2.items[0].bookingId).not.toBe(resultPage1.items[0].bookingId);
       });
     });
 
@@ -191,8 +186,48 @@ describe('operatorBookingService', () => {
         });
         expect(res.booking).toBeDefined();
         expect(res.booking?.bookingCode).toBe('BK-20260919-0141');
-        expect(res.booking?.paymentTransaction?.status).toBe('Success');
-        expect(res.booking?.paymentTransaction?.amount).toBe(5600000);
+        expect(res.booking?.payment?.status).toBe('Success');
+        expect(res.booking?.payment?.amount).toBe(5600000);
+        expect(res.booking?.paidAmount).toBe(5600000);
+        expect(res.booking?.payment?.gateway).toBe('VNPAY');
+      });
+
+      it('returns the BE-shaped list item and detail (no age/notes, no operator id, Expired status)', async () => {
+        const list = await getOperatorBookings({ status: 'Expired' }, { isDemo: true, demoActorUserId: 101 });
+        expect(list.items.length).toBe(1);
+        const item = list.items[0];
+        expect(item.status).toBe('Expired');
+        expect(item.paymentStatus).toBe('Unpaid');
+        expect(item.quantity).toBe(2);
+        expect(item.schedule.startAtUtc).toBeDefined();
+        expect(item.booker.email).toBe('bao.dang@example.com');
+        expect(item.checkedInAtUtc).toBeNull();
+
+        const detail = await getOperatorBookingById('booking-0141', { isDemo: true, demoActorUserId: 101 });
+        const pax = detail.booking?.participants[0];
+        expect(pax).toEqual({ fullName: 'Nguyễn Văn An', participantType: 'Adult' });
+        expect(detail.booking?.booker.phoneNumber).toBe('0901234567');
+        expect(detail.booking?.coupon?.code).toBe('HE2026');
+        expect(detail.booking?.subtotalAmount).toBe(
+          (detail.booking?.totalAmount ?? 0) + (detail.booking?.discountAmount ?? 0)
+        );
+        expect(detail.booking && 'operatorUserId' in detail.booking).toBe(false);
+      });
+
+      it('derives canCancel and cancelBlockedReason like the BE (UC-41 operator rule)', async () => {
+        const ids = ['booking-0141', 'booking-0146', 'booking-0148', 'booking-0110', 'booking-0095', 'booking-0144'];
+        const views = await Promise.all(
+          ids.map((id) => getOperatorBookingById(id, { isDemo: true, demoActorUserId: 101 }))
+        );
+        const decisions = views.map((v) => [v.booking?.canCancel, v.booking?.cancelBlockedReason]);
+        expect(decisions).toEqual([
+          [true, null], // 0141 Confirmed, not checked in
+          [true, null], // 0146 PendingPayment
+          [false, 'CheckedIn'], // 0148 Confirmed but checked in
+          [false, 'InvalidStatus'], // 0110 Cancelled
+          [false, 'InvalidStatus'], // 0095 Completed (terminal wins over checked in)
+          [false, 'InvalidStatus'], // 0144 Expired
+        ]);
       });
 
       it('fails closed with MSG126 when demoActorUserId is missing', async () => {
@@ -306,24 +341,21 @@ describe('operatorBookingService', () => {
       expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG95);
     });
 
-    it('blocks normal cancellation when cancellation window has passed -> MSG82 and leaves booking/slots/refund unchanged', async () => {
+    it('rejects cancellation of an Expired booking -> MSG133 and leaves it unchanged (no operator time window exists in UC-41)', async () => {
       const res = await cancelCustomerBooking(
-        'booking-0144', // cancellationWindowExpired: true (<24h)
+        'booking-0144', // Expired
         { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Valid cancellation reason' },
         { isDemo: true, demoActorUserId: 101 }
       );
       expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG82');
-      expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG82);
+      expect(res.messageCode).toBe('MSG133');
 
-      // Verify booking state is untouched, slots remain held, QR remains valid, and no refund is created
       const afterCheck = await getOperatorBookingById('booking-0144', {
         isDemo: true,
         demoActorUserId: 101,
       });
-      expect(afterCheck.booking?.status).toBe('Confirmed');
-      expect(afterCheck.booking?.participantsCount).toBe(2);
-      expect(afterCheck.booking?.qrTicketValid).toBe(true);
+      expect(afterCheck.booking?.status).toBe('Expired');
+      expect(afterCheck.booking?.quantity).toBe(2);
       expect(afterCheck.booking?.refund).toBeUndefined();
     });
 
@@ -337,7 +369,9 @@ describe('operatorBookingService', () => {
       expect(res.messageCode).toBe('MSG81');
       expect(res.refundTriggered).toBe(false);
       expect(res.booking?.status).toBe('Cancelled');
-      expect(res.booking?.qrTicketValid).toBe(false); // BR-86
+      expect(res.booking?.ticket).toBeNull(); // never issued while unpaid
+      expect(res.booking?.canCancel).toBe(false);
+      expect(res.booking?.cancelBlockedReason).toBe('InvalidStatus');
     });
 
     it('cancels paid booking successfully and marks refund follow-up required (BR-86, BR-106, BR-77, SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER)', async () => {
@@ -351,15 +385,15 @@ describe('operatorBookingService', () => {
       expect(res.refundTriggered).toBe(false);
       expect(res.refundFollowUpRequired).toBe(true);
       expect(res.booking?.status).toBe('Cancelled');
-      expect(res.booking?.qrTicketValid).toBe(false); // BR-86 invalidated
-      expect(res.booking?.cancellationReason).toBe('Customer requested early cancellation');
+      expect(res.booking?.ticket?.status).toBe('Cancelled'); // BR-86 invalidated
+      expect(res.booking?.cancelReason).toBe('Customer requested early cancellation');
       expect(res.booking?.cancellationReasonType).toBe('CUSTOMER_REQUEST');
       // Under safe implementation for SRS_INTERNAL_CONFLICT_UC41_REFUND_TRIGGER,
       // cancellation does NOT auto-create a refund record
       expect(res.booking?.refund).toBeUndefined();
       // Original transaction remains immutable (BR-77)
-      expect(res.booking?.paymentTransaction?.status).toBe('Success');
-      expect(res.booking?.paymentTransaction?.amount).toBe(5600000);
+      expect(res.booking?.payment?.status).toBe('Success');
+      expect(res.booking?.payment?.amount).toBe(5600000);
     });
 
     it('cancels booking with FORCE_MAJEURE reason type and preserves both category and detail', async () => {
@@ -372,7 +406,7 @@ describe('operatorBookingService', () => {
       expect(res.messageCode).toBe('MSG81');
       expect(res.booking?.status).toBe('Cancelled');
       expect(res.booking?.cancellationReasonType).toBe('FORCE_MAJEURE');
-      expect(res.booking?.cancellationReason).toBe('Severe weather alert in Mekong delta');
+      expect(res.booking?.cancelReason).toBe('Severe weather alert in Mekong delta');
     });
 
     it('persists cancellationReasonType in demo store across subsequent getOperatorBookingById retrieval', async () => {
@@ -390,7 +424,8 @@ describe('operatorBookingService', () => {
       });
       expect(detailRes.booking?.status).toBe('Cancelled');
       expect(detailRes.booking?.cancellationReasonType).toBe('TOUR_ITINERARY_CHANGE');
-      expect(detailRes.booking?.cancellationReason).toBe('Schedule conflict due to maintenance');
+      expect(detailRes.booking?.cancelReason).toBe('Schedule conflict due to maintenance');
+      expect(detailRes.booking?.cancelledAtUtc).toBeTruthy();
     });
 
     it('rejects cancellation when reason type is missing or unsupported', async () => {
@@ -449,7 +484,7 @@ describe('operatorBookingService', () => {
       expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG84);
     });
 
-    it('rejects refund if policy ineligible / cancellation window expired -> MSG84', async () => {
+    it('rejects refund for an Expired unpaid booking -> MSG84', async () => {
       const res = await initiateBookingRefund(
         'booking-0144',
         {},
@@ -480,7 +515,7 @@ describe('operatorBookingService', () => {
       expect(res.success).toBe(true);
       expect(res.messageCode).toBe('MSG83');
       expect(res.refund?.refundableAmount).toBe(5600000);
-      expect(res.refund?.paymentChannel).toBe('VNPay'); // BR-76 original payment channel
+      expect(res.refund?.paymentChannel).toBe('VNPAY'); // BR-76 original payment gateway
       expect(res.refund?.status).toBe('Success');
 
       // Subsequent call must be idempotent -> MSG133 without creating another record
@@ -610,30 +645,300 @@ describe('operatorBookingService', () => {
         isDemo: true,
         demoActorUserId: 101,
       });
-      expect(detail.booking?.paymentTransaction?.id).toBe('tx-0141');
-      expect(detail.booking?.paymentTransaction?.amount).toBe(5600000);
-      expect(detail.booking?.paymentTransaction?.status).toBe('Success');
+      expect(detail.booking?.payment?.gatewayTransactionRef).toBe('VNPAY-20260910-884920');
+      expect(detail.booking?.payment?.amount).toBe(5600000);
+      expect(detail.booking?.payment?.status).toBe('Success');
     });
   });
 
   describe('operatorBookingDemoPolicy (Demo-only refund preview)', () => {
     it('calculates Demo-only refund preview without claiming production authority', () => {
-      const paidEligible = INITIAL_DEMO_BOOKINGS[0];
+      const paidEligible = toDemoDetailView(INITIAL_DEMO_BOOKINGS[0]);
       const previewEligible = calculateDemoBookingRefundPreview(paidEligible);
       expect(previewEligible.eligible).toBe(true);
       expect(previewEligible.refundableAmount).toBe(5600000);
       expect(previewEligible.policyApplied).toContain('Demo');
 
-      const unpaid = INITIAL_DEMO_BOOKINGS[2];
+      const unpaid = toDemoDetailView(INITIAL_DEMO_BOOKINGS[2]);
       const previewUnpaid = calculateDemoBookingRefundPreview(unpaid);
       expect(previewUnpaid.eligible).toBe(false);
       expect(previewUnpaid.refundableAmount).toBe(0);
 
-      const expired = INITIAL_DEMO_BOOKINGS[3];
+      const expired = toDemoDetailView(INITIAL_DEMO_BOOKINGS[3]); // Expired, never paid
       const previewExpired = calculateDemoBookingRefundPreview(expired);
       expect(previewExpired.eligible).toBe(false);
       expect(previewExpired.refundableAmount).toBe(0);
-      expect(previewExpired.deductionAmount).toBe(1100000);
+    });
+  });
+});
+
+describe('operatorBookingService live mode (UC-40 BFF)', () => {
+  const originalEnv = process.env;
+  const fetchMock = vi.fn();
+
+  const json = (body: unknown, status = 200) =>
+    Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }));
+
+  beforeEach(() => {
+    process.env = { ...originalEnv, NODE_ENV: 'test', NEXT_PUBLIC_ENABLE_DEMO_FIXTURES: 'true' };
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+    resetDemoBookingsState();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    process.env = originalEnv;
+  });
+
+  describe('getOperatorBookings', () => {
+    it('calls the BFF list route with the exact mapped query and never uses a fixture', async () => {
+      fetchMock.mockReturnValueOnce(json(listExample()));
+
+      const result = await getOperatorBookings(
+        {
+          tourId: '7',
+          status: 'Confirmed',
+          startDate: '2026-11-01',
+          endDate: '2026-11-30',
+          searchKeyword: '  alice  ',
+          page: 2,
+          pageSize: 20,
+        },
+        { isDemo: false }
+      );
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe(
+        '/api/operator/bookings?tourId=7&status=Confirmed&departureFrom=2026-11-01&departureTo=2026-11-30&keyword=alice&pageNumber=2&pageSize=20'
+      );
+      expect(init).toEqual(expect.objectContaining({ cache: 'no-store' }));
+      expect(init.method ?? 'GET').toBe('GET');
+      expect(result.items.map((i) => i.bookingCode)).toEqual(['BK-20261020-0007']);
+      expect('pendingBackendNotice' in result).toBe(false);
+      expect(result.errorMessage).toBeUndefined();
+    });
+
+    it('omits ALL and empty filters and defaults to page 1 with the CR-01 page size', async () => {
+      fetchMock.mockReturnValueOnce(json(listExample()));
+
+      await getOperatorBookings(
+        { tourId: 'ALL', status: 'ALL', startDate: '', endDate: '', searchKeyword: '   ' },
+        { isDemo: false }
+      );
+
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/operator/bookings?pageNumber=1&pageSize=20');
+    });
+
+    it('returns the BE items, summary and paging unchanged (the browser never recomputes them)', async () => {
+      fetchMock.mockReturnValueOnce(json(listExample()));
+
+      const result = await getOperatorBookings({}, { isDemo: false });
+
+      expect(result.summary).toEqual({ totalBookings: 37, totalParticipants: 112, totalConfirmedAmount: 98400000 });
+      expect(result.totalCount).toBe(37);
+      expect(result.totalPages).toBe(2);
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(20);
+    });
+
+    it('uses the live path when demo is requested but the environment forbids demo (production)', async () => {
+      process.env = { ...originalEnv, NODE_ENV: 'production', NEXT_PUBLIC_ENABLE_DEMO_FIXTURES: 'true' };
+      fetchMock.mockReturnValueOnce(json(listExample()));
+
+      const result = await getOperatorBookings({}, { isDemo: true, demoActorUserId: 101 });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(result.items.map((i) => i.bookingId)).toEqual(['1201']);
+    });
+
+    it('reports MSG128 for a successful empty page and keeps the zero summary', async () => {
+      fetchMock.mockReturnValueOnce(
+        json({
+          pageNumber: 1,
+          pageSize: 20,
+          totalCount: 0,
+          totalPages: 0,
+          summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0 },
+          items: [],
+        })
+      );
+
+      const result = await getOperatorBookings({ searchKeyword: 'nobody' }, { isDemo: false });
+
+      expect(result.items).toEqual([]);
+      expect(result.errorMessage).toBe(OPERATOR_BOOKING_MESSAGES.MSG128);
+      expect(result.errorCode).toBe('MSG128');
+      expect(result.summary.totalBookings).toBe(0);
+    });
+
+    it('blocks an inverted date range before calling the BFF (MSG31)', async () => {
+      const result = await getOperatorBookings(
+        { startDate: '2026-11-30', endDate: '2026-11-01' },
+        { isDemo: false }
+      );
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(result.errorMessage).toBe(OPERATOR_BOOKING_MESSAGES.MSG31);
+      expect(result.errorCode).toBe('MSG31');
+      expect(result.items).toEqual([]);
+    });
+
+    it.each([
+      ['BFF 401 UNAUTHENTICATED', 401, { errorCode: 'UNAUTHENTICATED' }, 'MSG126'],
+      ['BE 403 operator_tour.access_required', 403, { errorCode: 'operator_tour.access_required' }, 'MSG126'],
+      ['BE 403 operator_booking.forbidden', 403, { errorCode: 'operator_booking.forbidden' }, 'MSG126'],
+      ['BE 400 operator_booking.invalid_date_range', 400, { errorCode: 'operator_booking.invalid_date_range' }, 'MSG31'],
+      ['BE 400 operator_booking.invalid_filter', 400, { errorCode: 'operator_booking.invalid_filter' }, 'MSG127'],
+      ['BFF 503 MSG127', 503, { errorCode: 'MSG127' }, 'MSG127'],
+      ['BFF 502 MSG127', 502, { errorCode: 'MSG127' }, 'MSG127'],
+      ['BE 500 without a known code', 500, { title: 'boom' }, 'MSG127'],
+    ])('maps %s to %s', async (_label, status, body, expectedCode) => {
+      fetchMock.mockReturnValueOnce(json(body, status));
+
+      const result = await getOperatorBookings({}, { isDemo: false });
+
+      expect(result.items).toEqual([]);
+      expect(result.errorCode).toBe(expectedCode);
+      expect(result.errorMessage).toBe(
+        OPERATOR_BOOKING_MESSAGES[expectedCode as 'MSG126' | 'MSG31' | 'MSG127']
+      );
+    });
+
+    it('reports MSG127 on a network error', async () => {
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      const result = await getOperatorBookings({}, { isDemo: false });
+
+      expect(result.errorCode).toBe('MSG127');
+    });
+
+    it('reports MSG127 when the 200 body is not JSON', async () => {
+      fetchMock.mockReturnValueOnce(Promise.resolve(new Response('<html>', { status: 200 })));
+
+      expect((await getOperatorBookings({}, { isDemo: false })).errorCode).toBe('MSG127');
+    });
+
+    it('reports MSG127 when the body does not match the contract', async () => {
+      const broken = listExample();
+      (broken.items[0] as Record<string, unknown>).status = 'Teleporting';
+      fetchMock.mockReturnValueOnce(json(broken));
+
+      const result = await getOperatorBookings({}, { isDemo: false });
+
+      expect(result.errorCode).toBe('MSG127');
+      expect(result.items).toEqual([]);
+    });
+  });
+
+  describe('getOperatorBookingById', () => {
+    it('calls the BFF detail route and returns the parsed booking', async () => {
+      fetchMock.mockReturnValueOnce(json(detailExample()));
+
+      const result = await getOperatorBookingById('1201', { isDemo: false });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/operator/bookings/1201');
+      expect(fetchMock.mock.calls[0][1]).toEqual(expect.objectContaining({ cache: 'no-store' }));
+      expect(result.booking?.bookingCode).toBe('BK-20261020-0007');
+      expect(result.booking?.canCancel).toBe(true);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('does not call the BFF for an id that is not numeric and reports MSG126', async () => {
+      const result = await getOperatorBookingById('booking-0141', { isDemo: false });
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(result.booking).toBeUndefined();
+      expect(result.messageCode).toBe('MSG126');
+    });
+
+    it.each([
+      [401, { errorCode: 'UNAUTHENTICATED' }, 'MSG126'],
+      [403, { errorCode: 'operator_booking.forbidden' }, 'MSG126'],
+      [404, { errorCode: 'operator_booking.not_found' }, 'MSG126'],
+      [503, { errorCode: 'MSG127' }, 'MSG127'],
+      [500, { title: 'boom' }, 'MSG127'],
+    ])('maps BFF %i %j to %s', async (status, body, expectedCode) => {
+      fetchMock.mockReturnValueOnce(json(body, status));
+
+      const result = await getOperatorBookingById('1201', { isDemo: false });
+
+      expect(result.booking).toBeUndefined();
+      expect(result.messageCode).toBe(expectedCode);
+      expect(result.error).toBe(OPERATOR_BOOKING_MESSAGES[expectedCode as 'MSG126' | 'MSG127']);
+    });
+
+    it('reports MSG127 on a network error or a body that breaks the contract', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('offline'));
+      expect((await getOperatorBookingById('1201', { isDemo: false })).messageCode).toBe('MSG127');
+
+      const broken = detailExample();
+      (broken as Record<string, unknown>).participants = 'none';
+      fetchMock.mockReturnValueOnce(json(broken));
+      expect((await getOperatorBookingById('1201', { isDemo: false })).messageCode).toBe('MSG127');
+    });
+  });
+
+  describe('getOperatorBookingTourOptions', () => {
+    it('reads the owned tours from the existing revenue BFF route', async () => {
+      fetchMock.mockReturnValueOnce(
+        json([
+          { id: 101, code: 'TOUR-00101', title: 'Ba Na Hills full-day tour', isActive: true },
+          { id: 55, code: 'TOUR-00055', title: 'Food trail', isActive: false },
+        ])
+      );
+
+      const result = await getOperatorBookingTourOptions({ isDemo: false });
+
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/operator/revenue/tours');
+      expect(fetchMock.mock.calls[0][1]).toEqual(expect.objectContaining({ cache: 'no-store' }));
+      expect(result).toEqual({
+        failed: false,
+        options: [
+          { id: '101', title: 'Ba Na Hills full-day tour' },
+          { id: '55', title: 'Food trail' },
+        ],
+      });
+    });
+
+    it.each([
+      ['an error status', () => json({ errorCode: 'UNAUTHENTICATED' }, 401)],
+      ['a server error', () => json({ errorCode: 'MSG127' }, 503)],
+      ['a body that is not a tour list', () => json({ tours: [] })],
+      ['a malformed entry', () => json([{ id: 'x', title: 't' }])],
+      ['a non-JSON body', () => Promise.resolve(new Response('<html>', { status: 200 }))],
+      ['a network failure', () => Promise.reject(new Error('offline'))],
+    ])('degrades to no options (never throws) on %s', async (_label, respond) => {
+      fetchMock.mockReturnValueOnce(respond());
+
+      const result = await getOperatorBookingTourOptions({ isDemo: false });
+
+      expect(result).toEqual({ options: [], failed: true });
+    });
+
+    it('serves the demo tours only in demo mode and does not call the BFF', async () => {
+      const result = await getOperatorBookingTourOptions({ isDemo: true, demoActorUserId: 101 });
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(result.failed).toBe(false);
+      expect(result.options.map((o) => o.id)).toEqual(['tour-142', 'tour-148', 'tour-55']);
+    });
+  });
+
+  describe('cancel and refund stay locked outside demo mode (UC-41/UC-42 are not integrated by UC-40)', () => {
+    it('never calls the BFF and keeps the pending-integration answer', async () => {
+      const cancel = await cancelCustomerBooking(
+        '1201',
+        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'x' },
+        { isDemo: false }
+      );
+      const refund = await initiateBookingRefund('1201', {}, { isDemo: false });
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(cancel.messageCode).toBe('PENDING_BE_INTEGRATION');
+      expect(refund.messageCode).toBe('PENDING_BE_INTEGRATION');
     });
   });
 });

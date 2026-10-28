@@ -1,6 +1,6 @@
 /**
  * Shared English resource strings for PublicNavigation.
- * Follows Report 3 SRS V2 CR-09 (English UI & resource file requirement).
+ * Follows Report 3 SRS CR-09 / Resource file convention.
  */
 export const publicNavigationEn = {
   brandAria: 'TripMate Landing Page',
@@ -20,19 +20,25 @@ export const publicNavigationEn = {
     restoringSrText: 'Restoring session…',
     register: 'Register',
     signIn: 'Sign in',
-    quickPlan: 'Plan Trip',
-    mobilePlan: 'Plan',
+    partnerWorkspace: 'Partner Workspace',
+    partnerProfile: 'Business Profile',
+    partnerApplication: 'Partner Application',
+    partnerMenuAria: 'Partner account menu',
+    logOut: 'Log out',
+    operatorRoleBadge: 'Partner',
   },
   drawer: {
     openAria: 'Open navigation menu',
     closeAria: 'Close menu',
     title: 'Menu',
     navAria: 'Mobile navigation menu',
-    poisDesc: 'Points of Interest',
-    planDesc: 'Smart Itinerary',
-    toursDesc: 'Curated Local Tours',
-    myItinerariesDesc: 'Saved Itineraries',
-    partnerDesc: 'Partner Portal',
+    poisDesc: 'Curated heritage & cultural points of interest',
+    planDesc: 'Optimize circadian rhythms & schedules',
+    toursDesc: 'Verified local experiences & security escrow',
+    weatherDesc: 'Dynamic weather rerouting system',
+    destinationsDesc: 'Explore Da Nang, Hoi An, Hue',
+    myItinerariesDesc: 'Your saved travel plans',
+    partnerDesc: 'Registration & Tour Operator Workspace',
   },
 } as const;
 

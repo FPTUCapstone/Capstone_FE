@@ -138,7 +138,12 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
             <tbody>{data.items.map((payout) => <tr key={payout.payoutId} className="border-t border-[#e6edf5]">
               <td className="px-4 py-3 font-mono font-bold text-[#00152a]">{payout.payoutCode}</td>
               <td className="px-4 py-3 font-medium">{payout.operator.companyName}</td>
-              <td className="px-4 py-3 whitespace-nowrap">{formatPeriodRange(payout.periodStart, payout.periodEnd)}</td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                {formatPeriodRange(payout.periodStart, payout.periodEnd)}
+                {payout.periodCount > 1 && (
+                  <span className="ml-1.5 text-[11px] font-semibold text-slate-500">· {payout.periodCount} months</span>
+                )}
+              </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">{formatVnd(payout.grossRevenue)}</td>
               <td className="px-4 py-3 text-right whitespace-nowrap">{formatVnd(payout.commissionAmount)}</td>
               <td className="px-4 py-3 text-right whitespace-nowrap font-bold text-[#00152a]">{formatVnd(payout.netAmount)}</td>

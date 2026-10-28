@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState } from 'react';
 
-import { tripReviewEn } from '@/features/trips/resources/en';
-import type { TripCardDto } from '@/features/trips/types/tripHistory';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
+import type { TripCardDto } from '@/features/trips/legacyReviewContext';
 import { ROUTES } from '@/lib/routes';
 import { submitTripReview } from '../services/reviewApi';
 import type {

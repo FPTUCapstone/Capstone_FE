@@ -46,7 +46,7 @@ export function OperatorProfilePage() {
   }, [isDemoRequested, context?.email]);
 
   return (
-    <div className="flex min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A] lg:flex" lang="vi">
       {/* Workspace Sidebar / Mobile Drawer Navigation */}
       <PartnerWorkspaceNav
         activeTab="profile"

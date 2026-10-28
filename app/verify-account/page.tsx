@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { VerifyAccountPage } from '@/features/traveler/registration/VerifyAccountPage';
+import { VerifyAccountPage } from '@/features/auth/verification/VerifyAccountPage';
 
 export const metadata: Metadata = { title: 'Verify Account' };
 

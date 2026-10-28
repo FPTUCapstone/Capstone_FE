@@ -25,14 +25,14 @@ const response: PayoutsResponse = {
     {
       payoutId: '12', payoutCode: 'PO-12',
       operator: { userId: '2', companyName: 'Da Nang Tours' },
-      periodStart: '2026-08-01', periodEnd: '2026-08-31',
+      periodStart: '2026-08-01', periodEnd: '2026-08-31', periodCount: 1,
       grossRevenue: 10000000, commissionAmount: 1000000, netAmount: 9000000,
       requestedAtUtc: '2026-09-01T02:30:00Z', status: 'PendingReview',
     },
     {
       payoutId: '11', payoutCode: 'PO-11',
       operator: { userId: '3', companyName: 'Hoi An Walks' },
-      periodStart: '2026-07-01', periodEnd: '2026-07-31',
+      periodStart: '2026-07-01', periodEnd: '2026-09-30', periodCount: 3,
       grossRevenue: 500000, commissionAmount: 62500, netAmount: 437500,
       requestedAtUtc: null, status: 'ApprovedForSettlement',
     },
@@ -54,6 +54,7 @@ describe('PayoutRecordsScreen', () => {
     expect(screen.getByText('Total Net Payout')).toBeTruthy();
     expect(screen.getByText('PO-12')).toBeTruthy();
     expect(screen.getByText('01/08/2026 – 31/08/2026')).toBeTruthy();
+    expect(screen.getByText('· 3 months')).toBeTruthy();
     expect(screen.getByText('Not available')).toBeTruthy();
     expect(screen.getAllByText('Pending review').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Approved for settlement').length).toBeGreaterThan(0);

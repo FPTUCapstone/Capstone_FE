@@ -46,7 +46,6 @@ export type SignInEngine = {
 };
 
 export type SignInEngineOptions = {
-  admin?: boolean;
   /** Overrides the default email placeholders / labels if needed. */
   invalidEmailMessage?: string;
   emailRequiredMessage?: string;
@@ -58,7 +57,6 @@ const defaultPasswordRequiredMessage = 'Please enter your password.';
 const defaultInvalidEmailMessage = 'Invalid email format. Please enter a valid email address.';
 
 export function useSignInEngine({
-  admin = false,
   emailRequiredMessage = defaultEmailRequiredMessage,
   passwordRequiredMessage = defaultPasswordRequiredMessage,
   invalidEmailMessage = defaultInvalidEmailMessage,
@@ -113,7 +111,7 @@ export function useSignInEngine({
     setLoading(true);
 
     try {
-      const res = await loginWithWebRecovery({ email: email.trim().toLowerCase(), password, keepMeSignedIn: remember }, admin);
+      const res = await loginWithWebRecovery({ email: email.trim().toLowerCase(), password, keepMeSignedIn: remember }, false);
 
       setFeedback({
         tone: 'success',
@@ -145,7 +143,7 @@ export function useSignInEngine({
   }
 
   async function handleGoogle() {
-    if (admin || loading || !googleConsent) return;
+    if (loading || !googleConsent) return;
     setGoogleConsent(false);
     setUnverifiedEmail(null);
     setGooglePasswordHint(false);

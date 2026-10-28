@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
 import type { ReviewPhotoItem } from '../types/review';
 
 interface PhotoUploadPreviewProps {

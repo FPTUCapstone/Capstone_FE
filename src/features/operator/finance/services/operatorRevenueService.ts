@@ -50,6 +50,29 @@ const ZERO_SUMMARY: RevenueSummaryDto = {
   commissionRatePercent: DEMO_PLATFORM_COMMISSION_RATE,
 };
 
+export class RevenueToursLoadError extends Error {
+  constructor(
+    public readonly code: string,
+    public readonly status?: number
+  ) {
+    super('Unable to load tour filters.');
+    this.name = 'RevenueToursLoadError';
+  }
+}
+
+interface RevenueTourDto {
+  id: number;
+  code: string;
+  title: string;
+}
+
+function isRevenueTourDto(tour: unknown): tour is RevenueTourDto {
+  return !!tour && typeof tour === 'object' &&
+    'id' in tour && typeof tour.id === 'number' &&
+    'code' in tour && typeof tour.code === 'string' &&
+    'title' in tour && typeof tour.title === 'string';
+}
+
 /**
  * Returns tour packages owned by the authenticated operator for filter dropdowns.
  */
@@ -60,18 +83,27 @@ export async function getOperatorRevenueTours(
   if (!isDemoActive) {
     try {
       const response = await fetch('/api/operator/revenue/tours', { cache: 'no-store' });
-      if (!response.ok) return [];
-      const body = await response.json();
-      // Backend returns a plain JSON array: [{id, code, title, isActive}]
-      const items: Array<{ id: number; code: string; title: string; isActive: boolean }> =
-        Array.isArray(body) ? body : [];
-      return items.map((tour) => ({
+      const body: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new RevenueToursLoadError(
+          errorCodeFrom(body) ?? REVENUE_ERROR_CODES.SYSTEM_FAILURE,
+          response.status
+        );
+      }
+      // Backend returns a plain JSON array: [{id, code, title, isActive}].
+      if (!Array.isArray(body) || !body.every(isRevenueTourDto)) {
+        throw new RevenueToursLoadError('INVALID_RESPONSE', response.status);
+      }
+      return body.map((tour) => ({
         id: String(tour.id),
         tourCode: tour.code,
         title: tour.title,
         operatorUserId: 0,
       }));
-    } catch { return []; }
+    } catch (error) {
+      if (error instanceof RevenueToursLoadError) throw error;
+      throw new RevenueToursLoadError(REVENUE_ERROR_CODES.SYSTEM_FAILURE);
+    }
   }
   if (!isValidActor(options.demoActorUserId)) return [];
   return DEMO_OPERATOR_TOURS.filter(

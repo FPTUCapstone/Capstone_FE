@@ -15,6 +15,7 @@ interface RevenueFilterControlsProps {
   onResetFilters: () => void;
   onOpenExport: () => void;
   isLoading?: boolean;
+  isToursLoading?: boolean;
 }
 
 export function RevenueFilterControls({
@@ -24,6 +25,7 @@ export function RevenueFilterControls({
   onResetFilters,
   onOpenExport,
   isLoading = false,
+  isToursLoading = false,
 }: RevenueFilterControlsProps) {
   // Local draft state (CR-02)
   const [draftFilters, setDraftFilters] =
@@ -145,6 +147,9 @@ export function RevenueFilterControls({
               </label>
               <select
                 id="revenue-tour-scope"
+                disabled={isToursLoading}
+                aria-busy={isToursLoading}
+                aria-describedby={isToursLoading ? 'revenue-tour-loading' : undefined}
                 value={draftFilters.tourId || 'all'}
                 onChange={(e) =>
                   setDraftFilters((prev) => ({
@@ -163,6 +168,11 @@ export function RevenueFilterControls({
                   </option>
                 ))}
               </select>
+              {isToursLoading && (
+                <p id="revenue-tour-loading" role="status" aria-live="polite" className="mt-1.5 text-xs text-slate-500">
+                  {financeEn.revenue.tourFiltersLoading}
+                </p>
+              )}
             </div>
           </div>
 

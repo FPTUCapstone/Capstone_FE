@@ -16,6 +16,7 @@
     "lossless-json": "^4.3.1",
     "mapbox-gl": "3.31.0",
     "next": "^16.3.2",
+    "qrcode.react": "4.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -35,6 +36,6 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "3.2.4"
+    "vitest": "3.2.7"
   }
 }

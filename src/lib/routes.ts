@@ -1,5 +1,6 @@
 export const ROUTES = {
   home: '/',
+  about: '/about',
   signIn: '/sign-in',
   register: '/register',
   verifyAccount: '/verify-account',
@@ -13,7 +14,8 @@ export const ROUTES = {
   tour: (id: string | number) => `/tours/${id}`,
   tourBooking: (id: string | number) => `/tours/${id}/book`,
   checkoutResult: '/checkout/result',
-  bookingTicket: (ticketId: string | number) => `/bookings/${encodeURIComponent(ticketId)}/ticket`,
+  /** UC-29 e-ticket of a booking (payment result); Trip History links use `account.ticket`. */
+  bookingTicket: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/ticket`,
   partner: {
     dashboard: '/partner',
     profile: '/partner/profile',
@@ -31,6 +33,7 @@ export const ROUTES = {
     preferences: '/account/preferences',
     security: '/account/security',
     trips: '/account/trips',
+    ticket: (ticketId: string | number) => `/account/tickets/${encodeURIComponent(ticketId)}`,
     tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
     bookingReview: (kind: 'commerceBooking' | 'serviceBooking', id: string | number) =>
       `/account/reviews/${kind}/${encodeURIComponent(id)}`,
@@ -47,9 +50,20 @@ export const ROUTES = {
     tourReview: (id: string) => `/admin/tours/reviews/${id}`,
     createPoi: '/admin/catalogue/points-of-interest/new',
     activeTrips: '/admin/trips/active',
+    bookings: '/admin/bookings',
     payouts: '/admin/payouts',
     payoutDetails: (id: string) => `/admin/payouts/${encodeURIComponent(id)}`,
     algorithmParameters: '/admin/settings/algorithm-parameters',
     activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
+    users: '/admin/users',
+    userDetail: (id: string | number) => `/admin/users/${encodeURIComponent(id)}`,
+    tourOperatorApplications: '/admin/tour-operator-applications',
+    tourOperatorApplicationDetail: (userId: string | number) =>
+      `/admin/tour-operator-applications/${encodeURIComponent(userId)}`,
+    routesList: '/admin/routes',
+    routeCreate: '/admin/routes/create',
+    pois: '/admin/catalogue/points-of-interest',
+    landingContent: '/admin/landing-content',
+    payoutSettlement: '/admin/payouts/settlement',
   },
 } as const;

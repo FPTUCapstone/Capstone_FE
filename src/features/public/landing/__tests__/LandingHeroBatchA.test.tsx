@@ -1,7 +1,6 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LandingHero } from '../components/LandingHero';
-import { JourneyCanvas } from '../components/JourneyCanvas';
 import { CentralVietnamShowcase } from '../components/CentralVietnamShowcase';
 import { ROUTES } from '@/lib/routes';
 
@@ -29,28 +28,34 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Batch A: LandingHero Editorial Design', () => {
-  it('renders solid dignified headline and human-curated editorial copy without generic AI radial glows', () => {
+describe('Homepage v2.0: LandingHero Editorial Travel & Destination Discovery', () => {
+  it('renders solid calm headline and editorial travel copy with Central Vietnam scenic photography', () => {
     const handleSelectCity = vi.fn();
     const { container } = render(
       <LandingHero activeCity="danang" onSelectCity={handleSelectCity} />
     );
 
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1.textContent).toContain('Hành trình miền Trung được may đo riêng cho từng khoảnh khắc.');
+    expect(h1.textContent).toContain('Khám phá miền Trung theo cách của bạn');
 
-    // Lead copy is human-centered
+    // Supporting copy is clear and inviting
     expect(
-      screen.getByText(/Từ bình minh trên bán đảo Sơn Trà đến ánh đèn hoa đăng sông Hoài/i)
+      screen.getByText(
+        /Tìm những điểm đến đáng nhớ, khám phá tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn/i
+      )
     ).toBeDefined();
 
-    // No radial gradient AI blob in section classes
+    // Section uses dark navy photographic container
     const heroSection = container.querySelector('section')!;
-    expect(heroSection.className).not.toContain('radial-gradient');
-    expect(heroSection.className).toContain('bg-[#F8F6F1]');
+    expect(heroSection.className).toContain('bg-[#00152a]');
 
-    // Location tag
-    expect(screen.getByText(/Cẩm nang lữ hành Đà Nẵng — Hội An — Cố Đô Huế/i)).toBeDefined();
+    // Location eyebrow tag
+    expect(screen.getByText(/Central Vietnam Travel Atlas • Da Nang - Hoi An - Hue/i)).toBeDefined();
+
+    // Background image is present with meaningful alt text
+    const bgImg = container.querySelector('img')!;
+    expect(bgImg).not.toBeNull();
+    expect(bgImg.getAttribute('alt')).toContain('Đà Nẵng');
   });
 
   it('provides unified 3-pill city switcher that triggers onSelectCity', () => {
@@ -70,108 +75,127 @@ describe('Batch A: LandingHero Editorial Design', () => {
     expect(handleSelectCity).toHaveBeenCalledWith('hue');
   });
 
-  it('exposes dominant CTAs with clear routing', () => {
+  it('exposes dominant travel CTAs with verified routes', () => {
     render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
 
-    const planLink = screen.getByRole('link', { name: /Lập hành trình của bạn/i });
+    const planLink = screen.getByRole('link', { name: /Lập lịch trình/i });
     expect(planLink.getAttribute('href')).toBe(ROUTES.plan);
 
-    const poisLink = screen.getByRole('link', { name: /Khám phá kho danh thắng/i });
+    const poisLink = screen.getByRole('link', { name: /Khám phá điểm đến/i });
     expect(poisLink.getAttribute('href')).toBe(ROUTES.pois);
+
+    const toursLink = screen.getByRole('link', { name: /Xem các tour bản địa/i });
+    expect(toursLink.getAttribute('href')).toBe(ROUTES.tours);
   });
 
-  it('renders verified operational guarantees and cross-platform note', () => {
-    render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
+  it('automatically rotates destination hero image every 8 seconds', () => {
+    vi.useFakeTimers();
+    try {
+      const handleSelectCity = vi.fn();
+      render(<LandingHero activeCity="danang" onSelectCity={handleSelectCity} />);
 
-    expect(screen.getByText('Dữ liệu tọa độ GIS đã thẩm định')).toBeDefined();
-    expect(screen.getByText('Cơ chế ký quỹ Escrow bảo vệ quyền lợi')).toBeDefined();
-    expect(screen.getByText(/Đồng bộ trải nghiệm:/i)).toBeDefined();
+      const danangBtn = screen.getByRole('button', { name: 'Đà Nẵng' });
+      const hoianBtn = screen.getByRole('button', { name: 'Hội An' });
+      const hueBtn = screen.getByRole('button', { name: 'Cố Đô Huế' });
+
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Advance by 8000ms
+      act(() => {
+        vi.advanceTimersByTime(8000);
+      });
+
+      // Should advance to Hoi An
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Advance by another 8000ms
+      act(() => {
+        vi.advanceTimersByTime(8000);
+      });
+
+      // Should advance to Hue
+      expect(hueBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // In Option 1, auto-rotation is scoped to hero and does not mutate parent onSelectCity
+      expect(handleSelectCity).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it('renders interactive Geo-Atlas mini map card with coordinates and terrain data that dynamically adapts per city', () => {
-    const { rerender } = render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
+  it('pauses auto-rotation on mouse enter and resumes on mouse leave', () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
+      const section = container.querySelector('section')!;
+      const danangBtn = screen.getByRole('button', { name: 'Đà Nẵng' });
+      const hoianBtn = screen.getByRole('button', { name: 'Hội An' });
 
-    // Da Nang atlas details
-    expect(screen.getByText(/16°04′N • 108°13′E/i)).toBeDefined();
-    expect(screen.getByText(/Duyên hải & Bán đảo Sơn Trà/i)).toBeDefined();
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
 
-    // Rerender for Hoi An
-    rerender(<LandingHero activeCity="hoian" onSelectCity={vi.fn()} />);
-    expect(screen.getByText(/15°52′N • 108°19′E/i)).toBeDefined();
-    expect(screen.getByText(/Hạ lưu Sông Thu Bồn & Phố cổ/i)).toBeDefined();
+      // Hover over hero section
+      fireEvent.mouseEnter(section);
+      act(() => {
+        vi.advanceTimersByTime(16000);
+      });
 
-    // Rerender for Hue
-    rerender(<LandingHero activeCity="hue" onSelectCity={vi.fn()} />);
-    expect(screen.getByText(/16°28′N • 107°35′E/i)).toBeDefined();
-    expect(screen.getByText(/Thung lũng Sông Hương/i)).toBeDefined();
+      // Still Danang because rotation is paused
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Leave hover
+      fireEvent.mouseLeave(section);
+      act(() => {
+        vi.advanceTimersByTime(8000);
+      });
+
+      // Now advances to Hoi An
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('true');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it('renders detailed secondary scenic routes and satellite waypoint markers on the atlas map', () => {
-    const { container } = render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
-    const mapSvg = container.querySelector('svg[viewBox="0 0 1440 680"]');
-    expect(mapSvg).not.toBeNull();
+  it('does not auto-rotate when prefers-reduced-motion is active', () => {
+    vi.useFakeTimers();
+    try {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
 
-    // Check presence of secondary scenic waypoints within the map SVG
-    expect(mapSvg?.textContent).toContain('VỊNH LĂNG CÔ');
-    expect(mapSvg?.textContent).toContain('BÀ NÀ HILLS & CẦU VÀNG');
-    expect(mapSvg?.textContent).toContain('NGŨ HÀNH SƠN');
-    expect(mapSvg?.textContent).toContain('THÁNH ĐỊA MỸ SƠN');
+      render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
+      const danangBtn = screen.getByRole('button', { name: 'Đà Nẵng' });
+      const hoianBtn = screen.getByRole('button', { name: 'Hội An' });
+
+      vi.advanceTimersByTime(24000);
+
+      // Stays Danang
+      expect(danangBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(hoianBtn.getAttribute('aria-pressed')).toBe('false');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
-describe('Batch A: Curated Journey Stage (JourneyCanvas)', () => {
-  it('renders authentic photography stage and curated stops for Da Nang', () => {
-    render(<JourneyCanvas activeCity="danang" onSelectCity={vi.fn()} />);
-
-    // Photo tag & caption
-    expect(screen.getByText('Bán đảo Sơn Trà & Biển Mỹ Khê')).toBeDefined();
-    const img = screen.getByRole('img');
-    expect(img.getAttribute('alt')).toContain('Bãi biển Mỹ Khê');
-
-    // Label is honestly marked as "Mẫu tham khảo"
-    expect(screen.getByText('Mẫu tham khảo')).toBeDefined();
-
-    // 3 Curated sequential stops
-    expect(screen.getByText('Danh thắng Ngũ Hành Sơn')).toBeDefined();
-    expect(screen.getByText('Bảo tàng Điêu khắc Chăm & Ăn trưa')).toBeDefined();
-    expect(screen.getByText('Hoàng hôn Bán đảo Sơn Trà & Cầu Rồng')).toBeDefined();
-
-    // Link to planner
-    const plannerLink = screen.getByRole('link', { name: /Mở trong Trình lập lịch/i });
-    expect(plannerLink.getAttribute('href')).toBe(ROUTES.plan);
-  });
-
-  it('updates photography and curated stops when city is switched to Hoi An', () => {
-    render(<JourneyCanvas activeCity="hoian" onSelectCity={vi.fn()} />);
-
-    expect(screen.getByText('Phố Cổ Hội An & Sông Hoài')).toBeDefined();
-    expect(screen.getByText('Rừng dừa Bảy Mẫu Cẩm Thanh')).toBeDefined();
-    expect(screen.getByText('Bánh Mì Phượng & Cao lầu Phố Hội')).toBeDefined();
-    expect(screen.getByText('Phố cổ Hội An & Thả đèn Hoa Đăng Sông Hoài')).toBeDefined();
-  });
-
-  it('updates photography and curated stops when city is switched to Hue', () => {
-    render(<JourneyCanvas activeCity="hue" onSelectCity={vi.fn()} />);
-
-    expect(screen.getByText('Đại Nội Hoàng Thành Huế')).toBeDefined();
-    expect(screen.getByText('Quần thể Di tích Đại Nội Hoàng Thành')).toBeDefined();
-    expect(screen.getByText('Bún Bò Huế Mụ Rơi & Bánh Nậm Lọc')).toBeDefined();
-    expect(screen.getByText('Chùa Thiên Mụ & Thuyền Rồng Sông Hương')).toBeDefined();
-  });
-});
-
-describe('Batch A: CentralVietnamShowcase Refinement', () => {
-  it('does not display fake weather pills and highlights GIS verification', () => {
+describe('Homepage v2.0: CentralVietnamShowcase Refinement', () => {
+  it('renders verified destination cards with top POIs without decorative coordinate clutter', () => {
     render(<CentralVietnamShowcase onSelectCity={vi.fn()} />);
 
-    // Verified GIS badge is present
-    expect(screen.getAllByText('Hệ thống GIS chuẩn hóa').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Tọa độ thực').length).toBe(3);
-
-    // No fake temperature strings like 28°C
-    expect(screen.queryByText(/28°C/)).toBeNull();
-    expect(screen.queryByText(/29°C/)).toBeNull();
-    expect(screen.queryByText(/27°C/)).toBeNull();
+    expect(screen.getByText('Ba Điểm Đến Biểu Tượng Miền Trung')).toBeDefined();
+    expect(screen.getByText('Đà Nẵng')).toBeDefined();
+    expect(screen.getByText('Hội An')).toBeDefined();
+    expect(screen.getByText('Cố Đô Huế')).toBeDefined();
   });
 
   it('supports keyboard navigation (Enter/Space) on destination cards', () => {

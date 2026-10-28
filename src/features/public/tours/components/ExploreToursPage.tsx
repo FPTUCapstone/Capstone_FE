@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -15,14 +15,17 @@ import type {
 } from '../types/tour';
 import {
   buildBackendTourQuery,
+  formatVndPrice,
   parseTourSearchState,
   toPublicUrlParams,
   validateTourFilters,
 } from '../utils/tourQuery';
 import { TourCard } from './TourCard';
-import { TourFilterBar } from './TourFilterBar';
+import { TourEditorialHero } from './TourEditorialHero';
+import { TourFilterSidebar } from './TourFilterSidebar';
 import { TourPagination } from './TourPagination';
 import { TourRecommendationsSection } from './TourRecommendationsSection';
+import { TourSearchBar } from './TourSearchBar';
 import { TourEmptyState, TourErrorState, TourListSkeleton } from './TourStates';
 import { DevExploreToursPage } from './DevExploreToursPage';
 
@@ -41,6 +44,30 @@ function LegacyExploreToursPage() {
     () => parseTourSearchState(new URLSearchParams(queryKey)),
     [queryKey],
   );
+
+  // Local draft state for inputs
+  const [keyword, setKeyword] = useState('');
+  const [destination, setDestination] = useState(filters.destination);
+  const [departureDate, setDepartureDate] = useState(filters.departureDate);
+  const [minPrice, setMinPrice] = useState(filters.minPrice);
+  const [maxPrice, setMaxPrice] = useState(filters.maxPrice);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Synchronize draft state when filters change externally (React official pattern: state during render)
+  const [prevFilters, setPrevFilters] = useState(filters);
+  if (
+    prevFilters.destination !== filters.destination ||
+    prevFilters.departureDate !== filters.departureDate ||
+    prevFilters.minPrice !== filters.minPrice ||
+    prevFilters.maxPrice !== filters.maxPrice
+  ) {
+    setPrevFilters(filters);
+    setDestination(filters.destination);
+    setDepartureDate(filters.departureDate);
+    setMinPrice(filters.minPrice);
+    setMaxPrice(filters.maxPrice);
+    setValidationError(null);
+  }
 
   const [toursData, setToursData] = useState<PagedToursResponseDto | null>(null);
   const [recommendations, setRecommendations] = useState<TourRecommendationDto[]>([]);
@@ -117,7 +144,7 @@ function LegacyExploreToursPage() {
         const msg =
           caught instanceof Error
             ? caught.message
-            : 'Không thể kết nối máy chủ tour. Vui lòng thử lại sau.';
+            : 'Không thể kết nối máy chủ tour. Vui lòng thử lại sau (MSG127).';
         setError(msg);
       })
       .finally(() => {
@@ -143,22 +170,77 @@ function LegacyExploreToursPage() {
     router.push(queryString ? `/tours?${queryString}` : '/tours');
   }
 
-  function handleApplyFilters(patch: Partial<TourSearchState>) {
-    navigate({
+  function handleSearchSubmit(e?: FormEvent) {
+    if (e) e.preventDefault();
+
+    const candidateState: TourSearchState = {
       ...filters,
-      ...patch,
-      page: patch.page ?? 1,
-    });
+      destination: destination.trim(),
+      departureDate: departureDate.trim(),
+      minPrice: minPrice.trim(),
+      maxPrice: maxPrice.trim(),
+      page: 1,
+    };
+
+    const val = validateTourFilters(candidateState);
+    if (!val.isValid) {
+      setValidationError(val.errorMessage ?? 'Khoảng lọc không hợp lệ (MSG29).');
+      return;
+    }
+
+    setValidationError(null);
+    navigate(candidateState);
   }
 
   function handleResetFilters() {
+    setDestination('');
+    setDepartureDate('');
+    setMinPrice('');
+    setMaxPrice('');
+    setValidationError(null);
     setLoading(true);
     setError(null);
     router.push(isDemo ? '/tours?demo=1' : '/tours');
   }
 
+  function handleSelectQuickDestination(city: string) {
+    const val = city === 'Tất cả' ? '' : city;
+    setDestination(val);
+
+    const candidateState: TourSearchState = {
+      ...filters,
+      destination: val,
+      minPrice: minPrice.trim(),
+      maxPrice: maxPrice.trim(),
+      page: 1,
+    };
+
+    const valRes = validateTourFilters(candidateState);
+    if (!valRes.isValid) {
+      setValidationError(valRes.errorMessage ?? 'Bộ lọc không hợp lệ.');
+      return;
+    }
+
+    setValidationError(null);
+    navigate(candidateState);
+  }
+
+  function handleRemoveFilter(key: 'destination' | 'departureDate' | 'price') {
+    if (key === 'destination') {
+      setDestination('');
+      navigate({ ...filters, destination: '', page: 1 });
+    } else if (key === 'departureDate') {
+      setDepartureDate('');
+      navigate({ ...filters, departureDate: '', page: 1 });
+    } else if (key === 'price') {
+      setMinPrice('');
+      setMaxPrice('');
+      navigate({ ...filters, minPrice: '', maxPrice: '', page: 1 });
+    }
+  }
+
   function handlePageChange(nextPage: number) {
-    handleApplyFilters({ page: nextPage });
+    navigate({ ...filters, page: nextPage });
   }
 
   function handleRetry() {
@@ -171,93 +253,219 @@ function LegacyExploreToursPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900">
-
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Page Banner / Hero Header */}
-        <header className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-bold text-[#007d6e] mb-3">
-            <span className="material-symbols-outlined text-sm">explore</span>
-            <span>Khám Phá Tour Bản Địa Miền Trung</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#00152a] tracking-tight">
-            Tour Trải Nghiệm <span className="text-[#007d6e]">Đã Kiểm Duyệt</span>
-          </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">
-            Tìm kiếm các tour du lịch bản địa chất lượng cao, có lịch khởi hành xác thực, giá niêm yết minh bạch và hỗ trợ hoàn hủy linh hoạt.
-          </p>
-        </header>
+        {/* Editorial Travel Hero (Height ~280px desktop) */}
+        <TourEditorialHero />
 
-        {/* UC-25: Tour Recommendations Section */}
-        <TourRecommendationsSection
-          recommendations={recommendations}
-          isPendingBe={isPendingBeRecs}
-          isDemo={isDemoRecs}
-          onRefresh={() => setRequestVersion((v) => v + 1)}
-        />
-
-        {/* UC-24: Tour Filter Bar */}
-        <TourFilterBar
-          filters={filters}
-          onApplyFilters={handleApplyFilters}
-          onResetFilters={handleResetFilters}
+        {/* Primary Search Bar & Quick Destination Navigation */}
+        <TourSearchBar
+          keyword={keyword}
+          onKeywordChange={setKeyword}
+          destination={destination}
+          onDestinationChange={setDestination}
+          departureDate={departureDate}
+          onDepartureDateChange={setDepartureDate}
+          onSearchSubmit={handleSearchSubmit}
+          onSelectQuickDestination={handleSelectQuickDestination}
           isLoading={loading}
         />
 
-        {/* Search Results Area */}
-        <section aria-labelledby="tour-results-heading">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div>
-              <h2
-                id="tour-results-heading"
-                ref={resultsHeadingRef}
-                tabIndex={-1}
-                className="text-xl sm:text-2xl font-black text-[#00152a] tracking-tight outline-hidden"
-              >
-                Kết Quả Tìm Kiếm
-              </h2>
-              {toursData && !loading && (
-                <p className="text-xs text-slate-500 mt-0.5" role="status">
-                  {toursData.totalCount > 0
-                    ? `Hiển thị ${toursData.items.length} trong tổng số ${toursData.totalCount} tour phù hợp`
-                    : 'Không có kết quả nào'}
-                </p>
-              )}
-            </div>
+        {/* Main Discovery Workspace (23% Filter Sidebar + 77% Results Grid) */}
+        <div id="tours-discovery-workspace" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Filter Sidebar (23-25%) */}
+          <div className="lg:col-span-3">
+            <TourFilterSidebar
+              destination={destination}
+              onDestinationChange={setDestination}
+              departureDate={departureDate}
+              onDepartureDateChange={setDepartureDate}
+              minPrice={minPrice}
+              onMinPriceChange={setMinPrice}
+              maxPrice={maxPrice}
+              onMaxPriceChange={setMaxPrice}
+              onApplyFilters={handleSearchSubmit}
+              onResetFilters={handleResetFilters}
+              validationError={validationError}
+              isLoading={loading}
+              hasActiveFilters={hasActiveFilters}
+            />
           </div>
 
-          {/* Conditional States */}
-          {loading ? (
-            <TourListSkeleton />
-          ) : error ? (
-            <TourErrorState onRetry={handleRetry} message={error} />
-          ) : !toursData || toursData.items.length === 0 ? (
-            <TourEmptyState
-              onResetFilters={handleResetFilters}
-              hasFilters={hasActiveFilters}
-            />
-          ) : (
-            <>
-              <div
-                data-testid="tours-grid"
-                className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              >
-                {toursData.items.map((tour) => (
-                  <TourCard
-                    key={tour.tourId}
-                    tour={tour}
-                    searchContextQuery={queryKey}
-                  />
-                ))}
+          {/* Right Column: Tour Results (75-77%) */}
+          <section aria-labelledby="tour-results-heading" className="lg:col-span-9">
+            {/* Results Header: Count, Sorting & Active Filter Chips */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2
+                    id="tour-results-heading"
+                    ref={resultsHeadingRef}
+                    tabIndex={-1}
+                    className="text-xl sm:text-2xl font-black text-[#00152a] tracking-tight outline-hidden"
+                  >
+                    Kết Quả Tìm Kiếm
+                  </h2>
+                  {toursData && !loading && (
+                    <p className="text-xs text-slate-500 mt-0.5" role="status">
+                      {toursData.totalCount > 0
+                        ? `Hiển thị ${toursData.items.length} trong tổng số ${toursData.totalCount} tour phù hợp`
+                        : 'Không có kết quả nào'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Sort Selector (UC-24 - Relevance default, other modes require BE contract) */}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="tours-sort-select" className="text-xs font-bold text-slate-600">
+                    Sắp xếp:
+                  </label>
+                  <select
+                    id="tours-sort-select"
+                    defaultValue="relevance"
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition focus:border-teal-500 focus:outline-hidden"
+                  >
+                    <option value="relevance">Phù hợp nhất</option>
+                    <option value="price-asc" disabled>
+                      Giá tăng dần (Chờ BE)
+                    </option>
+                    <option value="price-desc" disabled>
+                      Giá giảm dần (Chờ BE)
+                    </option>
+                    <option value="rating" disabled>
+                      Đánh giá cao (Chờ BE)
+                    </option>
+                    <option value="departure" disabled>
+                      Ngày khởi hành (Chờ BE)
+                    </option>
+                  </select>
+                </div>
               </div>
 
-              <TourPagination
-                page={toursData.page}
-                totalPages={toursData.totalPages}
-                onPageChange={handlePageChange}
+              {/* Active Filter Summary Chips */}
+              {hasActiveFilters && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                  <span className="text-[11px] font-bold text-slate-500">Đang lọc:</span>
+
+                  {filters.destination && (
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
+                      <span>Điểm đến: {filters.destination}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFilter('destination')}
+                        className="cursor-pointer hover:text-red-600"
+                        aria-label="Bỏ chọn điểm đến"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+
+                  {filters.departureDate && (
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
+                      <span>Khởi hành: {filters.departureDate}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFilter('departureDate')}
+                        className="cursor-pointer hover:text-red-600"
+                        aria-label="Bỏ chọn ngày khởi hành"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+
+                  {(filters.minPrice || filters.maxPrice) && (
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
+                      <span>
+                        Giá: {filters.minPrice ? formatVndPrice(Number(filters.minPrice)) : '0₫'} -{' '}
+                        {filters.maxPrice ? formatVndPrice(Number(filters.maxPrice)) : '∞'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFilter('price')}
+                        className="cursor-pointer hover:text-red-600"
+                        aria-label="Bỏ chọn mức giá"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-[11px] font-bold text-slate-500 hover:text-red-600 underline cursor-pointer ml-1"
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Network Error Preservation Banner (UC-24 7.a1: preserve previous results) */}
+            {error && toursData && toursData.items.length > 0 && (
+              <div
+                role="alert"
+                className="mb-6 flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 shadow-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-red-600">error</span>
+                  <span>{error}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="cursor-pointer font-bold text-red-700 underline hover:text-red-900"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
+
+            {/* Conditional States */}
+            {loading ? (
+              <TourListSkeleton />
+            ) : error && (!toursData || toursData.items.length === 0) ? (
+              <TourErrorState onRetry={handleRetry} message={error} />
+            ) : !toursData || toursData.items.length === 0 ? (
+              <TourEmptyState
+                onResetFilters={handleResetFilters}
+                hasFilters={hasActiveFilters}
               />
-            </>
-          )}
-        </section>
+            ) : (
+              <>
+                <div
+                  data-testid="tours-grid"
+                  className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3"
+                >
+                  {toursData.items.map((tour) => (
+                    <TourCard
+                      key={tour.tourId}
+                      tour={tour}
+                      searchContextQuery={queryKey}
+                    />
+                  ))}
+                </div>
+
+                <TourPagination
+                  page={toursData.page}
+                  totalPages={toursData.totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </>
+            )}
+
+            {/* UC-25: Tour Recommendations Section (Positioned comfortably below results) */}
+            <div className="mt-12">
+              <TourRecommendationsSection
+                recommendations={recommendations}
+                isPendingBe={isPendingBeRecs}
+                isDemo={isDemoRecs}
+                onRefresh={() => setRequestVersion((v) => v + 1)}
+              />
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );

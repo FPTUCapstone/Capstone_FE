@@ -6,9 +6,10 @@ import type { DevPagedToursResponseDto } from '../types/devTour';
 import { DevExploreToursPage } from './DevExploreToursPage';
 
 const push = vi.fn();
+const { publicNavigation } = vi.hoisted(() => ({ publicNavigation: vi.fn(() => null) }));
 let query = '';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }), useSearchParams: () => new URLSearchParams(query) }));
-vi.mock('@/components/navigation/PublicNavigation', () => ({ PublicNavigation: () => <nav aria-label="Public navigation" /> }));
+vi.mock('@/components/navigation/PublicNavigation', () => ({ PublicNavigation: publicNavigation }));
 vi.mock('../services/devTourApi', () => ({ getDevTourCategories: vi.fn(), searchDevTours: vi.fn() }));
 
 const response: DevPagedToursResponseDto = {
@@ -22,6 +23,12 @@ describe('development tour discovery', () => {
     vi.resetAllMocks();
     vi.mocked(searchDevTours).mockResolvedValue(response);
     vi.mocked(getDevTourCategories).mockResolvedValue([{ categoryId: 2, code: 'SEA', name: 'Sea experiences' }]);
+  });
+
+  it('does not mount a second public navigation inside the persistent root layout', async () => {
+    render(<DevExploreToursPage />);
+    await screen.findByText('Quiet beach');
+    expect(publicNavigation).not.toHaveBeenCalled();
   });
 
   it('renders real category codes and complete V2 controls; applying filters resets page', async () => {

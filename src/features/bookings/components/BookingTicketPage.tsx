@@ -7,19 +7,22 @@ import { useEffect } from 'react';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { isBookingDemoAllowedInCurrentEnv } from '@/features/bookings/services/bookingApi';
 import { ROUTES } from '@/lib/routes';
+
+import type { TicketKey } from '../services/ticketClient';
 import { BookingTicketView } from './BookingTicketView';
 
 interface BookingTicketPageProps {
-  id?: string;
-  ticketId?: string;
+  /** `ticketId` from Trip History, `bookingId` from the payment result (UC-29 W3). */
+  ticketKey: TicketKey;
 }
 
-export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTicketPageProps) {
+export function BookingTicketPage({ ticketKey }: BookingTicketPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, context } = useWebSession();
 
-  const ticketId = (explicitTicketId || id || '').trim();
+  const pagePath =
+    'ticketId' in ticketKey ? ROUTES.account.ticket(ticketKey.ticketId) : ROUTES.bookingTicket(ticketKey.bookingId);
 
   const isDemo =
     searchParams.get('demo') === '1' && isBookingDemoAllowedInCurrentEnv();
@@ -29,12 +32,10 @@ export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTic
     if (status === 'restoring') return;
 
     if (status === 'unauthenticated' && !isDemo) {
-      const returnUrl = `/bookings/${ticketId}/ticket${
-        searchParams.toString() ? `?${searchParams.toString()}` : ''
-      }`;
+      const returnUrl = `${pagePath}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
       router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(returnUrl)}`);
     }
-  }, [status, isDemo, ticketId, searchParams, router]);
+  }, [status, isDemo, pagePath, searchParams, router]);
 
   if (status === 'restoring') {
     return (
@@ -97,7 +98,7 @@ export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTic
   return (
     <div className="min-h-screen bg-[#f8fafc]">
             <main className="pb-16 pt-4">
-        <BookingTicketView ticketId={ticketId} />
+        <BookingTicketView ticketKey={ticketKey} returnPath={pagePath} />
       </main>
     </div>
   );

@@ -4,8 +4,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
-import { TripadvisorAttribution } from '@/features/public/pois/components/TripadvisorAttribution';
-import { TripadvisorReviews } from '@/features/public/pois/components/TripadvisorReviews';
+import { TripadvisorAttribution, TripadvisorReviews } from '@/features/public/pois/externalReviews';
 import { formatPriceLabel } from '@/lib/priceLabel';
 import { ROUTES } from '@/lib/routes';
 import { safeHttpsUrl } from '@/lib/safeUrl';
