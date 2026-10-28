@@ -2,21 +2,21 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { BookingDto, InitiateRefundPayload } from '../types/bookingLifecycle';
+import type { BookingDetailView, InitiateRefundPayload } from '../types/bookingLifecycle';
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
 import { bookingEn } from '../resources/en';
 
 interface InitiateRefundDialogProps {
   open: boolean;
-  booking: BookingDto | null;
+  booking: BookingDetailView | null;
   loading?: boolean;
   onClose: () => void;
   onConfirm: (payload: InitiateRefundPayload) => Promise<void> | void;
 }
 
 interface InitiateRefundModalContentProps {
-  booking: BookingDto;
+  booking: BookingDetailView;
   loading: boolean;
   onClose: () => void;
   onConfirm: (payload: InitiateRefundPayload) => Promise<void> | void;
@@ -90,7 +90,7 @@ function InitiateRefundModalContent({
   }, [handleClose]);
 
   const refundPreview = calculateDemoBookingRefundPreview(booking);
-  const channel = booking.paymentTransaction?.paymentChannel || 'VNPay';
+  const channel = booking.payment?.gateway ?? '-';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,11 +144,11 @@ function InitiateRefundModalContent({
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.refundDialog.tourLabel}</span>
-            <span className="font-semibold text-slate-800 text-right">{booking.tourName}</span>
+            <span className="font-semibold text-slate-800 text-right">{booking.tour.title}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.refundDialog.departureLabel}</span>
-            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.departureDate)}</span>
+            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.schedule.startAtUtc)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.refundDialog.paidLabel}</span>
