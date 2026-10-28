@@ -19,6 +19,7 @@ import {
   type GetBookingRefundStatusResult,
   type InitiateRefundPayload,
   type InitiateRefundResult,
+  REFUND_STATUS_VALUES,
 } from '../types/bookingLifecycle';
 
 // In-memory state for Demo mode UI review
@@ -561,6 +562,52 @@ export async function initiateBookingRefund(
   };
 }
 
+function isIsoDateString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && !Number.isNaN(Date.parse(value));
+}
+
+function isNullableIsoDateString(value: unknown): value is string | null {
+  return value === null || value === undefined || isIsoDateString(value);
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || value === undefined || typeof value === 'string';
+}
+
+/**
+ * Validates a 200 OK body before trusting it as a real refund status. A malformed
+ * or unexpected payload (wrong status enum, non-numeric amount, missing field) is
+ * never cast through — it is reported as an error instead of rendered as data.
+ */
+function parseBookingRefundStatusDto(raw: unknown): BookingRefundStatusDto | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+
+  if (r.bookingId === undefined || r.bookingId === null) return null;
+  if (typeof r.bookingCode !== 'string' || r.bookingCode.length === 0) return null;
+  if (typeof r.refundAmount !== 'number' || !Number.isFinite(r.refundAmount)) return null;
+  if (typeof r.status !== 'string' || !(REFUND_STATUS_VALUES as readonly string[]).includes(r.status)) return null;
+  if (typeof r.attemptCount !== 'number' || !Number.isFinite(r.attemptCount)) return null;
+  if (!isIsoDateString(r.requestedAtUtc)) return null;
+  if (!isNullableIsoDateString(r.processedAtUtc)) return null;
+  if (!isNullableIsoDateString(r.nextAttemptAtUtc)) return null;
+  if (!isNullableString(r.gatewayReference)) return null;
+  if (!isNullableString(r.lastErrorCode)) return null;
+
+  return {
+    bookingId: String(r.bookingId),
+    bookingCode: r.bookingCode,
+    refundAmount: r.refundAmount,
+    status: r.status as BookingRefundStatusDto['status'],
+    gatewayReference: (r.gatewayReference as string | null) ?? null,
+    attemptCount: r.attemptCount,
+    requestedAtUtc: r.requestedAtUtc,
+    processedAtUtc: (r.processedAtUtc as string | null) ?? null,
+    nextAttemptAtUtc: (r.nextAttemptAtUtc as string | null) ?? null,
+    lastErrorCode: (r.lastErrorCode as string | null) ?? null,
+  };
+}
+
 /**
  * Fetches the real, automatically-processed refund status for a booking (UC-42 /
  * UC-71 "Process Automatic Refund"). Always calls the real Backend via the
@@ -594,24 +641,10 @@ export async function getBookingRefundStatus(bookingId: string): Promise<GetBook
     return { outcome: 'error', messageCode: code };
   }
 
-  if (!body || typeof body !== 'object') {
+  const data = parseBookingRefundStatusDto(body);
+  if (!data) {
     return { outcome: 'error', messageCode: 'MSG127' };
   }
 
-  const raw = body as Record<string, unknown>;
-  return {
-    outcome: 'found',
-    data: {
-      bookingId: String(raw.bookingId),
-      bookingCode: String(raw.bookingCode),
-      refundAmount: Number(raw.refundAmount),
-      status: raw.status as BookingRefundStatusDto['status'],
-      gatewayReference: (raw.gatewayReference as string | null) ?? null,
-      attemptCount: Number(raw.attemptCount),
-      requestedAtUtc: String(raw.requestedAtUtc),
-      processedAtUtc: (raw.processedAtUtc as string | null) ?? null,
-      nextAttemptAtUtc: (raw.nextAttemptAtUtc as string | null) ?? null,
-      lastErrorCode: (raw.lastErrorCode as string | null) ?? null,
-    },
-  };
+  return { outcome: 'found', data };
 }

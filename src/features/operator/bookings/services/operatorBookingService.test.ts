@@ -724,3 +724,49 @@ describe('operatorBookingService', () => {
     });
   });
 });
+
+describe('getBookingRefundStatus payload validation (plan UC-42 Task 4)', () => {
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const validBody = {
+    bookingId: 60110,
+    bookingCode: 'BK-20261026-00001',
+    refundAmount: 10000,
+    status: 'Processed',
+    gatewayReference: 'MOCK-REFUND-9-1',
+    attemptCount: 1,
+    requestedAtUtc: '2026-10-26T01:14:16Z',
+    processedAtUtc: '2026-10-26T01:14:20Z',
+    nextAttemptAtUtc: null,
+    lastErrorCode: null,
+  };
+
+  const respondWith = (body: unknown) => {
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+  };
+
+  it('rejects a 200 payload with an unknown status instead of rendering it', async () => {
+    respondWith({ ...validBody, status: 'Hacked' });
+    expect(await getBookingRefundStatus('60110')).toEqual({ outcome: 'error', messageCode: 'MSG127' });
+  });
+
+  it('rejects a 200 payload whose refundAmount is not a finite number', async () => {
+    respondWith({ ...validBody, refundAmount: 'abc' });
+    expect(await getBookingRefundStatus('60110')).toEqual({ outcome: 'error', messageCode: 'MSG127' });
+  });
+
+  it('rejects a 200 payload missing bookingCode', async () => {
+    const withoutCode: Record<string, unknown> = { ...validBody };
+    delete withoutCode.bookingCode;
+    respondWith(withoutCode);
+    expect(await getBookingRefundStatus('60110')).toEqual({ outcome: 'error', messageCode: 'MSG127' });
+  });
+
+  it('rejects a 200 payload with a non-ISO requestedAtUtc', async () => {
+    respondWith({ ...validBody, requestedAtUtc: 'yesterday' });
+    expect(await getBookingRefundStatus('60110')).toEqual({ outcome: 'error', messageCode: 'MSG127' });
+  });
+});
