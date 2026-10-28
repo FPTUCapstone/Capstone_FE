@@ -205,7 +205,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             onChange={(event) => setEmail(event.target.value)}
             leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">mail</span> : undefined}
           />
-          <ActionButton type="submit" variant={admin ? 'primary' : 'teal'} loading={loading} className="group w-full">
+          <ActionButton type="submit" variant={admin ? 'forest' : 'teal'} loading={loading} className="group w-full">
             <span>Send Reset Code</span>
             {!admin ? <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span> : null}
           </ActionButton>
@@ -262,7 +262,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
           />
           {feedback ? <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert> : null}
           <div className="grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            <ActionButton className="min-w-0 w-full" type="submit" variant={admin ? 'primary' : 'teal'} loading={loading}>Reset Password</ActionButton>
+            <ActionButton className="min-w-0 w-full" type="submit" variant={admin ? 'forest' : 'teal'} loading={loading}>Reset Password</ActionButton>
             <ActionButton
               className="min-w-0 w-full"
               type="button"

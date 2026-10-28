@@ -39,15 +39,15 @@ export function AuthShell({
   const returnLabel = backLabel ?? (admin ? 'Back to Admin Login' : 'Back to Sign In');
 
   return (
-    <main className={`min-h-screen ${admin ? 'bg-[#0F1B2D]' : 'bg-brand-surface font-sans'}`}>
-      <header className={`border-b px-4 py-3 sm:px-8 sm:py-4 ${admin ? 'border-[#33425A] bg-[#0F1B2D] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
+    <main className={`min-h-screen ${admin ? 'bg-[#F7F6F2]' : 'bg-brand-surface font-sans'}`}>
+      <header className={`border-b px-4 py-3 sm:px-8 sm:py-4 ${admin ? 'border-[#2A3B33] bg-[#1C2923] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 sm:gap-4">
           <Link href={ROUTES.home} aria-label="TripMate home">
-            <BrandLogo inverse={admin} size={24} />
+            <BrandLogo context={admin ? 'admin' : 'main'} inverse={admin} size={24} />
           </Link>
           <Link
             href={returnHref}
-            className={`rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold transition-colors ${admin ? 'text-[#BFD7F5] hover:bg-white/10' : 'text-brand-teal hover:bg-brand-lightTeal'}`}
+            className={`rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold transition-colors ${admin ? 'text-[#A3B3AB] hover:text-white hover:bg-white/10' : 'text-brand-teal hover:bg-brand-lightTeal'}`}
           >
             {returnLabel}
           </Link>
@@ -173,12 +173,12 @@ export function AuthShell({
 
         <div className={`box-border min-w-0 w-full max-w-full ${singlePanel ? 'max-w-md' : `flex items-center justify-center p-4 sm:p-8 md:p-10 lg:p-12 xl:p-16 ${admin ? 'lg:max-w-lg' : ''}`}`}>
           <section className="w-full max-w-[480px]">
-            <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100">
+            <div className={`rounded-3xl p-6 sm:p-8 md:p-10 ${admin ? 'bg-white border border-[#E6E4DD] shadow-sm' : 'bg-brand-card shadow-card-lg border border-slate-100'}`}>
               {admin ? (
                 <div className="mb-6 sm:mb-8 text-center">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-teal">{eyebrow}</p>
-                  <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy">{title}</h1>
-                  <p className="mt-3 text-sm leading-relaxed text-brand-textSecondary">{description}</p>
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${admin ? 'text-[#245747]' : 'text-brand-teal'}`}>{eyebrow}</p>
+                  <h1 className={`mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight ${admin ? 'text-[#1C2923]' : 'text-brand-navy'}`}>{title}</h1>
+                  <p className={`mt-3 text-sm leading-relaxed ${admin ? 'text-[#59616B]' : 'text-brand-textSecondary'}`}>{description}</p>
                 </div>
               ) : null}
               {children}

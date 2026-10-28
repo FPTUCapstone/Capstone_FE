@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripMate — Batch I Admin/Staff Screen Visual Catalog (Authoritative)</title>
+  <style>
+    :root {
+      --forest-charcoal: #1C2923;
+      --forest-border: #2A3B33;
+      --deep-forest: #245747;
+      --deep-forest-hover: #1B4337;
+      --sage-green: #758B74;
+      --muted-sage: #A3B3AB;
+      --warm-ivory: #F7F6F2;
+      --pure-white: #FFFFFF;
+      --card-border: #E6E4DD;
+      --muted-copper: #B87558;
+      --status-green-bg: #E8F5E9;
+      --status-green-text: #2E7D32;
+      --status-amber-bg: #FFF4E5;
+      --status-amber-text: #ED6C02;
+      --status-red-bg: #FFEBEE;
+      --status-red-text: #D32F2F;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--warm-ivory);
+      color: #2D3748;
+      line-height: 1.5;
+      padding-bottom: 80px;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--forest-charcoal);
+      color: #fff;
+      padding: 24px 32px;
+      border-bottom: 3px solid var(--deep-forest);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .header-content {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-badge {
+      background: var(--muted-copper);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .header-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+    }
+    .stat-pill {
+      background: rgba(255,255,255,0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .stat-pill strong { color: #fff; }
+
+    /* Control Bar */
+    .controls-wrapper {
+      background: #fff;
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 83px;
+      z-index: 90;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .controls {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 12px 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .filter-btn {
+      background: #F1F3F2;
+      border: 1px solid #D1D5DB;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #374151;
+      transition: all 0.15s ease;
+    }
+    .filter-btn:hover {
+      background: #E5E7EB;
+    }
+    .filter-btn.active {
+      background: var(--deep-forest);
+      color: #fff;
+      border-color: var(--deep-forest);
+    }
+    .search-input {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid #D1D5DB;
+      font-size: 13px;
+      width: 260px;
+    }
+
+    /* Container */
+    .main-container {
+      max-width: 1440px;
+      margin: 28px auto;
+      padding: 0 32px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--forest-charcoal);
+      margin: 36px 0 16px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--sage-green);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    /* Screen Card Grid */
+    .screen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+      gap: 24px;
+    }
+
+    /* Screen Card */
+    .screen-card {
+      background: var(--pure-white);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .screen-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      background: #FAFAF8;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .screen-tag {
+      font-weight: 800;
+      font-size: 15px;
+      color: var(--deep-forest);
+      display: inline-block;
+    }
+    .screen-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--forest-charcoal);
+      margin-top: 2px;
+    }
+    .screen-route {
+      font-family: monospace;
+      font-size: 12px;
+      color: #6B7280;
+      background: #F3F4F6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .status-complete { background: var(--status-green-bg); color: var(--status-green-text); }
+    .status-partial { background: var(--status-amber-bg); color: var(--status-amber-text); }
+    .status-missing { background: var(--status-red-bg); color: var(--status-red-text); }
+
+    .card-body {
+      padding: 18px 20px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .meta-row {
+      display: flex;
+      font-size: 12px;
+      justify-content: space-between;
+      color: #4B5563;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--card-border);
+    }
+    .meta-item strong { color: var(--forest-charcoal); }
+
+    .preview-container {
+      background: #F8F9FA;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      object-position: top;
+      cursor: zoom-in;
+      transition: opacity 0.2s;
+    }
+
+    .wireframe-box {
+      width: 100%;
+      height: 240px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+      border: 1px solid #E5E7EB;
+      overflow: hidden;
+    }
+    .wireframe-topbar {
+      background: var(--forest-charcoal);
+      color: #fff;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .legacy-banner {
+      background: #FFF8E1;
+      border-left: 3px solid #FFA000;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #795548;
+      border-radius: 0 4px 4px 0;
+    }
+    .guard-banner {
+      background: var(--status-red-bg);
+      border-left: 3px solid var(--status-red-text);
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--status-red-text);
+      font-weight: 500;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .card-footer {
+      padding: 12px 20px;
+      background: #FAFAF8;
+      border-top: 1px solid var(--card-border);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .viewport-switch {
+      display: flex;
+      gap: 4px;
+    }
+    .vp-btn {
+      background: #E5E7EB;
+      border: none;
+      padding: 3px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .vp-btn.active {
+      background: var(--deep-forest);
+      color: #fff;
+    }
+
+    /* Lightbox Modal */
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .lightbox.active { display: flex; }
+    .lightbox img {
+      max-width: 95vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 20px; right: 30px;
+      color: #fff;
+      font-size: 32px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .lightbox-title {
+      position: absolute;
+      bottom: 20px;
+      color: #fff;
+      background: rgba(0,0,0,0.7);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Lightbox Modal -->
+  <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close">&times;</span>
+    <img id="lightbox-img" src="" alt="Enlarged view">
+    <div id="lightbox-title" class="lightbox-title"></div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-content">
+      <div class="brand-title">
+        <span>TripMate Administration</span>
+        <span class="brand-badge">Authoritative Screen Catalog</span>
+      </div>
+      <div class="header-stats">
+        <div class="stat-pill">Admin/Staff: <strong>40 Screens</strong></div>
+        <div class="stat-pill">Complete: <strong style="color:#A7F3D0;">8</strong></div>
+        <div class="stat-pill">Partial: <strong style="color:#FDE68A;">20</strong></div>
+        <div class="stat-pill">Missing: <strong style="color:#FECACA;">12</strong></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Controls -->
+  <div class="controls-wrapper">
+    <div class="controls">
+      <div class="filter-group">
+        <span style="font-size: 13px; font-weight: 600; color: #4B5563;">Batch:</span>
+        <button class="filter-btn active" onclick="filterBatch('all')">All</button>
+        <button class="filter-btn" onclick="filterBatch('i1')">Batch I1 (Core & Users)</button>
+        <button class="filter-btn" onclick="filterBatch('i2')">Batch I2 (Catalogue & Tour Moderation)</button>
+        <button class="filter-btn" onclick="filterBatch('i3')">Batch I3 (Finance & Content)</button>
+      </div>
+
+      <div class="filter-group">
+        <span style="font-size: 13px; font-weight: 600; color: #4B5563;">Status:</span>
+        <button class="filter-btn active" onclick="filterStatus('all')">All</button>
+        <button class="filter-btn" onclick="filterStatus('complete')">Complete (8)</button>
+        <button class="filter-btn" onclick="filterStatus('partial')">Partial (20)</button>
+        <button class="filter-btn" onclick="filterStatus('missing')">Missing (12)</button>
+      </div>
+
+      <input type="text" id="searchInput" class="search-input" placeholder="Search screen #, name, route..." onkeyup="searchScreens()">
+    </div>
+  </div>
+
+  <div class="main-container">
+
+    <!-- BATCH I1 -->
+    <div class="section-group" data-batch="i1">
+      <div class="section-title">
+        <span>Batch I1: Admin Core & User Management</span>
+        <span style="font-size: 12px; color: var(--deep-forest); font-weight: 600;">Screens #2–#9, #23, #35, #36</span>
+      </div>
+      <div class="screen-grid">
+
+        <!-- Screen #2 -->
+        <div class="screen-card" id="screen-2" data-batch="i1" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #2</span>
+              <div class="screen-name">Administration Login</div>
+              <div class="screen-route">/admin/login</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-04 (Sign In)</strong></span>
+              <span class="meta-item">Roles: <strong>Admin, Staff</strong></span>
+            </div>
+            <div class="legacy-banner">
+              🎨 Lệch Theme Cần Đồng Bộ: Nền hiện tại đang là Xanh Đen (#0F1B2D) và nút bấm Xanh Dương (#1D4ED8). Cần đồng bộ sang <strong>Xanh Lá Forest Green (#245747)</strong> và nền <strong>Warm Ivory (#F7F6F2)</strong>.
+            </div>
+            <div class="preview-container" style="flex-direction: column; padding: 10px; gap: 8px;">
+              <div style="font-size: 11px; font-weight: 700; color: #1C2923;">So sánh Hiện tại vs Mục tiêu đồng bộ:</div>
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <div style="flex: 1; border: 1px solid #D1D5DB; border-radius: 4px; overflow: hidden;">
+                  <div style="background: #0F1B2D; color: #fff; padding: 4px 6px; font-size: 9px; text-align: center;">Hiện tại: Nền Navy + Nút Xanh Dương</div>
+                  <img src="docs/ux/analytics-tabs/admin-analytics-revenue-desktop-1440.png" style="width: 100%; height: 140px; object-fit: cover;" alt="Current Login">
+                </div>
+                <div style="flex: 1; border: 1px solid #245747; border-radius: 4px; overflow: hidden; background: #F7F6F2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; text-align: center;">
+                  <div style="background: #245747; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 9px; margin-bottom: 8px;">Mục tiêu: Forest Green & Warm Ivory</div>
+                  <div style="background: #FFFFFF; border: 1px solid #E6E4DD; padding: 12px; border-radius: 6px; width: 85%;">
+                    <div style="font-weight: 700; font-size: 11px; color: #1C2923;">TripMate Administration</div>
+                    <div style="font-size: 9px; color: #758B74; margin-bottom: 8px;">Administration Sign In</div>
+                    <div style="background: #F9FAFB; height: 16px; border-radius: 3px; margin-bottom: 4px; border: 1px solid #E5E7EB;"></div>
+                    <div style="background: #F9FAFB; height: 16px; border-radius: 3px; margin-bottom: 8px; border: 1px solid #E5E7EB;"></div>
+                    <div style="background: #245747; color: #fff; padding: 4px; border-radius: 4px; font-weight: 700; font-size: 10px;">Sign In (Forest Green)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Trang đăng nhập duy nhất cho cả Admin & Staff. Sẽ được đổi màu nút từ xanh dương <code>#1D4ED8</code> sang xanh lá Deep Forest <code>#245747</code> và nền Warm Ivory trong Batch I1.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>AdminSignInForm.tsx</code>, <code>AuthShell.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #3 -->
+        <div class="screen-card" id="screen-3" data-batch="i1" data-status="complete">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #3</span>
+              <div class="screen-name">Administration Reset Password</div>
+              <div class="screen-route">/admin/forgot-password</div>
+            </div>
+            <span class="status-badge status-complete">UI_COMPLETE</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-06 (Reset Password)</strong></span>
+              <span class="meta-item">Roles: <strong>Admin, Staff</strong></span>
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="justify-content: center; align-items: center; background: #F7F6F2;">
+                <div style="background: #FFFFFF; border: 1px solid #E6E4DD; padding: 20px; border-radius: 8px; width: 280px; text-align: center;">
+                  <div style="font-weight: 700; color: #1C2923; margin-bottom: 6px;">Reset Password</div>
+                  <div style="font-size: 10px; color: #6B7280; margin-bottom: 12px;">Enter your administrative email</div>
+                  <div style="background: #F9FAFB; height: 24px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #D1D5DB;"></div>
+                  <div style="background: #245747; color: #fff; padding: 6px; border-radius: 4px; font-weight: 600; font-size: 11px;">Send Reset Link</div>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Provides password recovery flow for Admin and Staff with email validation and rate-limiting notice.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Route: <code>app/admin/forgot-password/page.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #4 -->
+        <div class="screen-card" id="screen-4" data-batch="i1" data-status="complete">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #4</span>
+              <div class="screen-name">Administration Change Password</div>
+              <div class="screen-route">/admin/account/security</div>
+            </div>
+            <span class="status-badge status-complete">UI_COMPLETE</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-07 (Change Password)</strong></span>
+              <span class="meta-item">Roles: <strong>Admin, Staff</strong></span>
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 16px; background: #fff;">
+                <div style="font-weight: 700; color: #1C2923; margin-bottom: 8px;">Security Settings</div>
+                <div style="font-size: 10px; color: #6B7280; margin-bottom: 12px;">Change account password</div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <div style="height: 20px; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 3px;"></div>
+                  <div style="height: 20px; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 3px;"></div>
+                  <div style="height: 20px; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 3px;"></div>
+                </div>
+                <button style="margin-top: 12px; background: #245747; color: #fff; border: none; padding: 4px 8px; border-radius: 3px; font-size: 10px; align-self: flex-start;">Update Password</button>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Change Password form with client-side credential strength validation and current credential check.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>ChangePasswordForm.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #5 -->
+        <div class="screen-card" id="screen-5" data-batch="i1" data-status="complete">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #5</span>
+              <div class="screen-name">Admin Dashboard</div>
+              <div class="screen-route">/admin</div>
+            </div>
+            <span class="status-badge status-complete">UI_COMPLETE</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>Governance Overview</strong></span>
+              <span class="meta-item">Roles: <strong>Admin</strong></span>
+            </div>
+            <div class="preview-container">
+              <img class="preview-img" src="docs/ux/admin/screenshots/admin-dashboard-1440x900.png" alt="Admin Dashboard" onclick="openLightbox(this.src, 'Screen #5: Admin Dashboard')">
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Approved Batch E executive dashboard with revenue metrics, active users, system health, and analytics tabs.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Evidence: <code>admin-dashboard-1440x900.png</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #35 -->
+        <div class="screen-card" id="screen-35" data-batch="i1" data-status="complete">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #35</span>
+              <div class="screen-name">Staff Dashboard</div>
+              <div class="screen-route">/admin/staff</div>
+            </div>
+            <span class="status-badge status-complete">UI_COMPLETE</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>Operations Overview</strong></span>
+              <span class="meta-item">Roles: <strong>Staff</strong></span>
+            </div>
+            <div class="preview-container">
+              <img class="preview-img" src="docs/ux/admin/screenshots/staff-dashboard-1440x900.png" alt="Staff Dashboard" onclick="openLightbox(this.src, 'Screen #35: Staff Dashboard')">
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Approved Batch E operations dashboard with review queues summary, live workload indicators, and quick action shortcuts.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Evidence: <code>staff-dashboard-1440x900.png</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #6, #7, #8, #9 -->
+        <div class="screen-card" id="screen-6" data-batch="i1" data-status="missing">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #6–#9</span>
+              <div class="screen-name">User Accounts List & Lock/Unlock</div>
+              <div class="screen-route">/admin/users & /[userId]</div>
+            </div>
+            <span class="status-badge status-missing">UI_MISSING</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-47, UC-48, UC-49</strong></span>
+              <span class="meta-item">Roles: <strong>Admin, Staff</strong></span>
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="justify-content: center; align-items: center; background: #FFF5F5; text-align: center; padding: 20px;">
+                <div style="font-size: 24px; margin-bottom: 6px;">🚧</div>
+                <div style="font-weight: 700; color: #C53030;">Placeholder UnavailableView</div>
+                <div style="color: #742A2A; font-size: 11px; margin-top: 4px;">User directory and details currently render unavailable stubs.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Batch I1 Priority: Replace stubs with full directory presentation, user profile cards, and accessible lock/unlock confirmation dialogs.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Current Files: <code>UserAccountDirectoryUnavailableView.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #36 -->
+        <div class="screen-card" id="screen-36" data-batch="i1" data-status="missing">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #36</span>
+              <div class="screen-name">Create Staff Account</div>
+              <div class="screen-route">/admin/staff-accounts/new</div>
+            </div>
+            <span class="status-badge status-missing">UI_MISSING</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-47 (Staff Creation)</strong></span>
+              <span class="meta-item">Roles: <strong>Admin Only</strong></span>
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div class="wireframe-topbar">
+                  <span>Create Staff Account Form (Wireframe)</span>
+                </div>
+                <div style="padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+                  <div style="height: 18px; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 3px;"></div>
+                  <div style="height: 18px; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 3px;"></div>
+                  <div style="height: 18px; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 3px;"></div>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Form allowing Administrator to create internal Staff members with role permissions.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Status: Missing Screen / Dialog</span>
+          </div>
+        </div>
+
+        <!-- Screen #23 -->
+        <div class="screen-card" id="screen-23" data-batch="i1" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #23</span>
+              <div class="screen-name">Algorithm Parameters Configuration</div>
+              <div class="screen-route">/admin/settings/algorithm-parameters</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-57</strong></span>
+              <span class="meta-item">Roles: <strong>Admin Only</strong></span>
+            </div>
+            <div class="legacy-banner">
+              🎨 Token Inconsistency: Uses generic Tailwind blue (bg-blue-600) instead of Deep Forest Green (#245747).
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div style="font-weight: 700; color: #1C2923; margin-bottom: 6px;">Clustering Radius & Speed Parameters</div>
+                <div style="font-size: 10px; color: #6B7280;">Sliders currently styled in blue; needs Forest Green refactoring.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Functional parameters form with live validation; needs alignment to Forest Green and Warm Ivory tokens.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>AlgorithmConfigScreen.tsx</code></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BATCH I2 -->
+    <div class="section-group" data-batch="i2">
+      <div class="section-title">
+        <span>Batch I2: Catalogue, Route & Tour Moderation</span>
+        <span style="font-size: 12px; color: var(--forest-charcoal); font-weight: 600;">Screens #10–#22, #24–#27</span>
+      </div>
+      <div class="screen-grid">
+
+        <!-- Screen #10 -->
+        <div class="screen-card" id="screen-10" data-batch="i2" data-status="complete">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #10</span>
+              <div class="screen-name">Pending Operator Applications List</div>
+              <div class="screen-route">/admin/tour-operator-applications</div>
+            </div>
+            <span class="status-badge status-complete">UI_COMPLETE</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-50, UC-51</strong></span>
+              <span class="meta-item">Roles: <strong>Staff Only</strong></span>
+            </div>
+            <div class="preview-container">
+              <img class="preview-img" src="docs/ux/admin/screenshots/tour-operator-applications-1440x900.png" alt="Screen 10 Desktop" onclick="openLightbox(this.src, 'Screen #10: Tour Operator Applications Queue')">
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Complete operational queue with search, status filtering, sortable columns, and review triggers.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Evidence: <code>tour-operator-applications-1440x900.png</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #11 & #12 -->
+        <div class="screen-card" id="screen-11" data-batch="i2" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #11 & #12</span>
+              <div class="screen-name">Operator Application Details & Rejection</div>
+              <div class="screen-route">/admin/tour-operator-applications/[userId]</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-50, UC-51</strong></span>
+              <span class="meta-item">Roles: <strong>Staff Only (AMB-01)</strong></span>
+            </div>
+            <div class="guard-banner">
+              ⚠️ Ambiguity AMB-01: Table 5 designates Staff, but code permits Administrator and blocks Staff.
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div class="wireframe-topbar">
+                  <span>Application Verification Dossier</span>
+                </div>
+                <div style="padding: 8px; font-size: 10px;">
+                  <div>Business License PDF Preview • Tax Code Validation</div>
+                  <div style="margin-top: 6px; display: flex; gap: 6px;">
+                    <button style="background: #245747; color: #fff; border: none; padding: 2px 6px; border-radius: 2px;">Approve</button>
+                    <button style="background: #D32F2F; color: #fff; border: none; padding: 2px 6px; border-radius: 2px;">Reject</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Dossier inspection and rejection modal. Needs history display and resolution of AMB-01.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>OperatorApplicationDetailView.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #13, #14, #15 -->
+        <div class="screen-card" id="screen-13" data-batch="i2" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #13–#15</span>
+              <div class="screen-name">Pending Tour Posts & Review Details</div>
+              <div class="screen-route">/admin/tours/reviews & /[id]</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-60, UC-61</strong></span>
+              <span class="meta-item">Roles: <strong>Staff Only (AMB-02)</strong></span>
+            </div>
+            <div class="guard-banner">
+              ⚠️ Ambiguity AMB-02: Table 5 designates Staff, but code blocks Staff with Access Denied.
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div class="wireframe-topbar">
+                  <span>Tour Content & Pricing Verification</span>
+                </div>
+                <div style="padding: 8px; font-size: 10px;">
+                  <div>Itinerary accordions, safety criteria checklist, approval / rejection modals.</div>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Functional review queue; needs card retheming to Forest & Warm Ivory and resolution of AMB-02.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>TourApprovalQueueScreen.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #16 -->
+        <div class="screen-card" id="screen-16" data-batch="i2" data-status="complete">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #16</span>
+              <div class="screen-name">POIs & Master Data List</div>
+              <div class="screen-route">/admin/catalogue/points-of-interest</div>
+            </div>
+            <span class="status-badge status-complete">UI_COMPLETE</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-52, UC-53, UC-54</strong></span>
+              <span class="meta-item">Roles: <strong>Admin, Staff</strong></span>
+            </div>
+            <div class="preview-container">
+              <img class="preview-img" src="docs/ux/admin/screenshots/poi-catalog-admin-1440x900.png" alt="POI Catalog" onclick="openLightbox(this.src, 'Screen #16: POI Catalogue')">
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Complete POI directory with category filters, coordinate displays, search, and action triggers.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Evidence: <code>poi-catalog-admin-1440x900.png</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #17, #18, #19 -->
+        <div class="screen-card" id="screen-17" data-batch="i2" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #17–#19</span>
+              <div class="screen-name">Create / Update / Remove POI</div>
+              <div class="screen-route">/admin/catalogue/points-of-interest/new</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-52, UC-53, UC-54</strong></span>
+              <span class="meta-item">Roles: <strong>Admin, Staff (AMB-03)</strong></span>
+            </div>
+            <div class="guard-banner">
+              ⚠️ Ambiguity AMB-03: Table 5 allows Admin & Staff, but code /new blocks Administrator.
+            </div>
+            <div class="preview-container">
+              <img class="preview-img" src="docs/ux/admin/screenshots/final/create-poi-desktop-1440.png" alt="Create POI" onclick="openLightbox(this.src, 'Screen #17: Create POI')">
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Create POI form is verified. Missing edit route (`.../[id]/edit`) and deactivation confirmation modal.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Evidence: <code>create-poi-desktop-1440.png</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #20, #21, #22 -->
+        <div class="screen-card" id="screen-20" data-batch="i2" data-status="missing">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #20–#22</span>
+              <div class="screen-name">Routes List & Create/Update Route</div>
+              <div class="screen-route">/admin/routes & /routes/create</div>
+            </div>
+            <span class="status-badge status-missing">UI_MISSING</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-55, UC-56</strong></span>
+              <span class="meta-item">Roles: <strong>Staff Only (AMB-04)</strong></span>
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="justify-content: center; align-items: center; background: #FFF5F5; text-align: center; padding: 20px;">
+                <div style="font-size: 24px; margin-bottom: 6px;">🚧</div>
+                <div style="font-weight: 700; color: #C53030;">Placeholder UnavailableView</div>
+                <div style="color: #742A2A; font-size: 11px; margin-top: 4px;">Routes directory and create screens render placeholder stubs.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Requires route network table, origin-destination pickers, and edit route view.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Current Files: <code>RouteDirectoryUnavailableView.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #24 & #25 -->
+        <div class="screen-card" id="screen-24" data-batch="i2" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #24 & #25</span>
+              <div class="screen-name">Active Trips Monitor & Details</div>
+              <div class="screen-route">/admin/trips/active & /[id]</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-58, UC-59</strong></span>
+              <span class="meta-item">Roles: <strong>Staff Only</strong></span>
+            </div>
+            <div class="legacy-banner">
+              🎨 Legacy Styling: Table headers and detail view cards utilize Dark Navy (#00152a).
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div style="background: #00152a; color: #71f8e4; padding: 6px 10px; font-weight: 700;">
+                  Active Trips Monitor (Legacy Theme)
+                </div>
+                <div style="padding: 8px; font-size: 10px;">Ongoing trips, simulated GPS trail, incident log.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Functional tracking view with GPS breadcrumbs; needs retheming to Forest & Warm Ivory tokens.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>ActiveTripsScreen.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #26 & #27 -->
+        <div class="screen-card" id="screen-26" data-batch="i2" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #26 & #27</span>
+              <div class="screen-name">Platform Bookings List & Details</div>
+              <div class="screen-route">/admin/bookings</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-62</strong></span>
+              <span class="meta-item">Roles: <strong>Staff Only (AMB-07)</strong></span>
+            </div>
+            <div class="guard-banner">
+              ⚠️ Omission AMB-07: Route exists but is completely missing from AdminSidebar.tsx navigation.
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div style="background: #00152a; color: #fff; padding: 6px 10px; font-weight: 700;">
+                  Platform Bookings (Omitted from Sidebar)
+                </div>
+                <div style="padding: 8px; font-size: 10px;">Transactions list exists; missing details drawer (Screen #27).</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Needs sidebar link under Operations, drawer for Screen #27, and retheming to Forest & Warm Ivory.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>PlatformBookingsScreen.tsx</code></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BATCH I3 -->
+    <div class="section-group" data-batch="i3">
+      <div class="section-title">
+        <span>Batch I3: Finance, Reports, Audit & Content</span>
+        <span style="font-size: 12px; color: var(--muted-copper); font-weight: 600;">Screens #28–#34, #37–#41</span>
+      </div>
+      <div class="screen-grid">
+
+        <!-- Screen #28, #29, #39, #40, #41 -->
+        <div class="screen-card" id="screen-28" data-batch="i3" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #28, #29, #39–#41</span>
+              <div class="screen-name">Payout Records, Review & Verification</div>
+              <div class="screen-route">/admin/payouts & /[payoutId]</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-63, UC-64, UC-73, UC-74</strong></span>
+              <span class="meta-item">Roles: <strong>Admin, Staff (AMB-05)</strong></span>
+            </div>
+            <div class="guard-banner">
+              ⚠️ Ambiguity AMB-05: Table 5 allows Admin & Staff, but code blocks Administrator completely.
+            </div>
+            <div class="legacy-banner">
+              🎨 Legacy Styling: Table headers use #00152a and action buttons use #006b5f.
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div style="background: #00152a; color: #71f8e4; padding: 6px 10px; font-weight: 700;">
+                  Payout Records (Legacy Navy Theme)
+                </div>
+                <div style="padding: 8px; font-size: 10px;">Banking details verification, commission calculations.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Functional verification view; needs retheming to Forest & Warm Ivory tokens.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>PayoutRecordsScreen.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #30 -->
+        <div class="screen-card" id="screen-30" data-batch="i3" data-status="missing">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #30</span>
+              <div class="screen-name">Confirm Payout Settlement</div>
+              <div class="screen-route">/admin/payouts/settlement</div>
+            </div>
+            <span class="status-badge status-missing">UI_MISSING</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-65</strong></span>
+              <span class="meta-item">Roles: <strong>Admin Only</strong></span>
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="justify-content: center; align-items: center; background: #FFF5F5; text-align: center; padding: 20px;">
+                <div style="font-size: 24px; margin-bottom: 6px;">🚧</div>
+                <div style="font-weight: 700; color: #C53030;">Placeholder UnavailableView</div>
+                <div style="color: #742A2A; font-size: 11px; margin-top: 4px;">Payout settlement batch processing is currently unavailable.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Batch I3 Priority: Replace stub with monthly settlement batch execution preview without fake banking execution.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Current File: <code>PayoutSettlementUnavailableView.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #37 & #38 -->
+        <div class="screen-card" id="screen-37" data-batch="i3" data-status="complete">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #37 & #38</span>
+              <div class="screen-name">Platform Revenue Report & Export</div>
+              <div class="screen-route">/admin (Revenue Tab)</div>
+            </div>
+            <span class="status-badge status-complete">UI_COMPLETE</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>Financial Governance</strong></span>
+              <span class="meta-item">Roles: <strong>Admin Only</strong></span>
+            </div>
+            <div class="preview-container">
+              <img class="preview-img" src="docs/ux/admin/screenshots/final/admin-dashboard-with-charts-desktop-1440.png" alt="Revenue Analytics" onclick="openLightbox(this.src, 'Screen #37: Platform Revenue Report & Charts')">
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Merged Batch E platform-wide financial analytics, booking GMV, refunds, platform commissions, and payout releases.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Evidence: <code>admin-dashboard-with-charts-desktop-1440.png</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #31 -->
+        <div class="screen-card" id="screen-31" data-batch="i3" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #31</span>
+              <div class="screen-name">Landing Page Content Management</div>
+              <div class="screen-route">/admin/landing-content</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-66</strong></span>
+              <span class="meta-item">Roles: <strong>Staff Only (AMB-06)</strong></span>
+            </div>
+            <div class="legacy-banner">
+              🎨 Complete Theme Inversion: Styled entirely with Dark Navy (#0a192f) and Teal (#006b5f).
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="background: #0a192f; color: #fff; padding: 12px;">
+                <div style="color: #71f8e4; font-weight: 700;">CMS Editor (Legacy Dark Navy)</div>
+                <div style="font-size: 10px; margin-top: 6px;">Hero banners, destination showcase, testimonials.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Functional CMS editor; needs full migration to Warm Ivory canvas and Forest Green action buttons.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>LandingContentScreen.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #32 -->
+        <div class="screen-card" id="screen-32" data-batch="i3" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screen #32</span>
+              <div class="screen-name">Statistical Reports</div>
+              <div class="screen-route">/admin/reports</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-67</strong></span>
+              <span class="meta-item">Roles: <strong>Admin Only</strong></span>
+            </div>
+            <div class="legacy-banner">
+              🎨 Theme Inversion: Built with Dark Navy (#00152a) and Cyan (#71f8e4).
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="background: #00152a; color: #fff; padding: 12px;">
+                <div style="color: #71f8e4; font-weight: 700;">BI Reports & Charts (Dark Theme)</div>
+                <div style="font-size: 10px; margin-top: 6px;">Platform statistics and export triggers.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Functional charts; needs migration to Warm Ivory cards and Forest Green chart palettes.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>StatisticalReportsView.tsx</code></span>
+          </div>
+        </div>
+
+        <!-- Screen #33 & #34 -->
+        <div class="screen-card" id="screen-33" data-batch="i3" data-status="partial">
+          <div class="card-header">
+            <div>
+              <span class="screen-tag">Screens #33 & #34</span>
+              <div class="screen-name">System Audit Logs & Inspector</div>
+              <div class="screen-route">/admin/audit-logs</div>
+            </div>
+            <span class="status-badge status-partial">UI_PARTIAL</span>
+          </div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-item">Use Case: <strong>UC-68, UC-69</strong></span>
+              <span class="meta-item">Roles: <strong>Admin Only</strong></span>
+            </div>
+            <div class="legacy-banner">
+              🎨 Legacy Styling: Table headers and modal container use dark navy (#102a43).
+            </div>
+            <div class="preview-container">
+              <div class="wireframe-box" style="padding: 12px;">
+                <div style="background: #102a43; color: #71f8e4; padding: 6px 10px; font-weight: 700;">
+                  Security Audit Trail Table
+                </div>
+                <div style="padding: 6px; font-size: 10px;">Security logs and JSON payload inspector.</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #4B5563;">
+              Functional immutable audit trail; needs token alignment to Forest Charcoal and Warm Ivory.
+            </div>
+          </div>
+          <div class="card-footer">
+            <span>Implementation: <code>AuditLogManagementView.tsx</code></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function filterBatch(batch) {
+      document.querySelectorAll('.filter-group:nth-child(1) .filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.querySelectorAll('.section-group').forEach(group => {
+        if (batch === 'all' || group.getAttribute('data-batch') === batch) {
+          group.style.display = 'block';
+        } else {
+          group.style.display = 'none';
+        }
+      });
+    }
+
+    function filterStatus(status) {
+      document.querySelectorAll('.filter-group:nth-child(2) .filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.querySelectorAll('.screen-card').forEach(card => {
+        if (status === 'all' || card.getAttribute('data-status') === status) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function searchScreens() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      document.querySelectorAll('.screen-card').forEach(card => {
+        const text = card.innerText.toLowerCase();
+        if (text.includes(q)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function openLightbox(src, title) {
+      const lb = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      const t = document.getElementById('lightbox-title');
+      img.src = src;
+      t.innerText = title;
+      lb.classList.add('active');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+    }
+  </script>
+</body>
+</html>

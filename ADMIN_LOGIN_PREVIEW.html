@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripMate Administration — Sign In (Forest & Warm Ivory Preview)</title>
+  <style>
+    :root {
+      --forest-charcoal: #1C2923;
+      --forest-border: #2A3B33;
+      --deep-forest: #245747;
+      --deep-forest-hover: #1B4337;
+      --deep-forest-active: #15342B;
+      --sage-green: #758B74;
+      --muted-sage: #A3B3AB;
+      --warm-ivory: #F7F6F2;
+      --pure-white: #FFFFFF;
+      --card-border: #E6E4DD;
+      --muted-copper: #B87558;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--warm-ivory);
+      color: #1C2923;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Topbar */
+    header {
+      background-color: var(--forest-charcoal);
+      border-bottom: 1px solid var(--forest-border);
+      padding: 14px 28px;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+    }
+    .brand svg {
+      color: #fff;
+      display: block;
+    }
+    .brand-text {
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .brand-context {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted-sage);
+      letter-spacing: normal;
+      background: rgba(255,255,255,0.08);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .back-link {
+      color: var(--muted-sage);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .back-link:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .login-card {
+      background: var(--pure-white);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      padding: 36px 32px;
+      box-shadow: 0 4px 20px rgba(28, 41, 35, 0.06);
+    }
+
+    .eyebrow {
+      color: var(--deep-forest);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--forest-charcoal);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #59616B;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    /* Form */
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #2D3748;
+      margin-bottom: 6px;
+    }
+    .input-wrapper {
+      position: relative;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      background: #FAFAFA;
+      color: #1C2923;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--deep-forest);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(36, 87, 71, 0.15);
+    }
+
+    .forgot-link {
+      display: block;
+      text-align: right;
+      color: var(--deep-forest);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: -6px;
+      margin-bottom: 22px;
+    }
+    .forgot-link:hover {
+      text-decoration: underline;
+      color: var(--deep-forest-hover);
+    }
+
+    /* Primary CTA */
+    .btn-submit {
+      width: 100%;
+      background: var(--deep-forest);
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(36, 87, 71, 0.25);
+      transition: all 0.15s ease;
+    }
+    .btn-submit:hover {
+      background: var(--deep-forest-hover);
+      box-shadow: 0 4px 10px rgba(36, 87, 71, 0.35);
+      transform: translateY(-1px);
+    }
+    .btn-submit:active {
+      background: var(--deep-forest-active);
+      transform: translateY(0);
+    }
+
+    /* Footer Note */
+    .footer-note {
+      margin-top: 24px;
+      background: #F1F4F2;
+      border: 1px solid #E1E8E4;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 11px;
+      color: #374740;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    /* Live Preview Toggle Pill */
+    .toggle-badge {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--forest-charcoal);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-size: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      border: 1px solid var(--sage-green);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #4ADE80;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="header-inner">
+      <a href="#" class="brand" aria-label="TripMate Admin">
+        <svg width="44" height="24" viewBox="0 0 334 182" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" aria-hidden="true">
+          <path d="M 157.0 5.0 L 158.0 6.0 L 160.0 6.0 L 163.0 9.0 L 164.0 9.0 L 168.0 15.0 L 168.0 17.0 L 169.0 18.0 L 169.0 28.0 L 168.0 29.0 L 167.0 33.0 L 162.0 38.0 L 158.0 40.0 L 156.0 40.0 L 155.0 41.0 L 128.0 41.0 L 127.0 42.0 L 124.0 42.0 L 120.0 44.0 L 114.0 50.0 L 112.0 54.0 L 112.0 59.0 L 111.0 60.0 L 111.0 147.0 L 112.0 148.0 L 113.0 152.0 L 116.0 155.0 L 118.0 156.0 L 124.0 156.0 L 129.0 152.0 L 131.0 148.0 L 131.0 76.0 L 132.0 75.0 L 132.0 73.0 L 134.0 69.0 L 140.0 62.0 L 141.0 62.0 L 145.0 59.0 L 150.0 58.0 L 151.0 57.0 L 159.0 57.0 L 160.0 58.0 L 163.0 58.0 L 169.0 61.0 L 176.0 68.0 L 178.0 72.0 L 179.0 79.0 L 180.0 80.0 L 180.0 132.0 L 181.0 133.0 L 181.0 135.0 L 185.0 140.0 L 193.0 144.0 L 198.0 144.0 L 204.0 141.0 L 208.0 137.0 L 210.0 133.0 L 210.0 127.0 L 211.0 126.0 L 210.0 124.0 L 210.0 96.0 L 211.0 95.0 L 211.0 92.0 L 210.0 91.0 L 211.0 90.0 L 211.0 76.0 L 212.0 75.0 L 212.0 73.0 L 215.0 67.0 L 223.0 60.0 L 227.0 59.0 L 228.0 58.0 L 230.0 58.0 L 231.0 57.0 L 239.0 57.0 L 240.0 58.0 L 243.0 58.0 L 250.0 62.0 L 257.0 70.0 L 258.0 75.0 L 259.0 76.0 L 259.0 80.0 L 260.0 81.0 L 260.0 134.0 L 264.0 142.0 L 269.0 147.0 L 270.0 147.0 L 274.0 150.0 L 276.0 150.0 L 277.0 151.0 L 283.0 151.0 L 285.0 152.0 L 288.0 149.0 L 288.0 147.0 L 292.0 142.0 L 292.0 141.0 L 296.0 138.0 L 302.0 135.0 L 313.0 135.0 L 314.0 136.0 L 316.0 136.0 L 320.0 139.0 L 321.0 139.0 L 325.0 143.0 L 325.0 144.0 L 327.0 146.0 L 328.0 151.0 L 329.0 152.0 L 329.0 161.0 L 328.0 162.0 L 328.0 164.0 L 326.0 168.0 L 320.0 174.0 L 316.0 176.0 L 314.0 176.0 L 313.0 177.0 L 302.0 177.0 L 294.0 173.0 L 290.0 168.0 L 288.0 163.0 L 286.0 161.0 L 276.0 160.0 L 275.0 159.0 L 269.0 158.0 L 259.0 151.0 L 259.0 150.0 L 256.0 147.0 L 256.0 146.0 L 253.0 142.0 L 252.0 137.0 L 252.0 136.0 L 251.0 132.0 L 250.0 131.0 L 250.0 78.0 L 249.0 77.0 L 248.0 73.0 L 244.0 69.0 L 240.0 67.0 L 238.0 67.0 L 237.0 66.0 L 232.0 66.0 L 231.0 67.0 L 227.0 68.0 L 222.0 73.0 L 221.0 77.0 L 220.0 78.0 L 220.0 131.0 L 219.0 132.0 L 218.0 138.0 L 216.0 142.0 L 213.0 145.0 L 213.0 146.0 L 212.0 146.0 L 209.0 149.0 L 205.0 151.0 L 203.0 151.0 L 202.0 152.0 L 199.0 152.0 L 198.0 153.0 L 188.0 152.0 L 187.0 151.0 L 183.0 150.0 L 175.0 143.0 L 171.0 135.0 L 171.0 128.0 L 170.0 127.0 L 170.0 77.0 L 169.0 75.0 L 164.0 69.0 L 160.0 67.0 L 158.0 67.0 L 157.0 66.0 L 152.0 66.0 L 146.0 69.0 L 141.0 75.0 L 141.0 78.0 L 140.0 79.0 L 140.0 150.0 L 139.0 151.0 L 138.0 156.0 L 135.0 159.0 L 135.0 160.0 L 134.0 160.0 L 131.0 163.0 L 127.0 164.0 L 126.0 165.0 L 116.0 165.0 L 115.0 164.0 L 111.0 163.0 L 105.0 157.0 L 103.0 153.0 L 103.0 151.0 L 102.0 150.0 L 102.0 56.0 L 103.0 55.0 L 104.0 49.0 L 108.0 42.0 L 112.0 38.0 L 121.0 33.0 L 125.0 33.0 L 126.0 32.0 L 153.0 32.0 L 155.0 31.0 L 159.0 27.0 L 160.0 25.0 L 160.0 20.0 L 159.0 18.0 L 156.0 15.0 L 152.0 13.0 L 124.0 13.0 L 123.0 14.0 L 118.0 14.0 L 117.0 15.0 L 112.0 16.0 L 104.0 20.0 L 99.0 25.0 L 98.0 25.0 L 97.0 27.0 L 91.0 33.0 L 86.0 42.0 L 85.0 47.0 L 83.0 51.0 L 83.0 130.0 L 82.0 131.0 L 82.0 136.0 L 81.0 137.0 L 80.0 142.0 L 77.0 146.0 L 77.0 147.0 L 72.0 153.0 L 71.0 153.0 L 68.0 156.0 L 62.0 159.0 L 54.0 160.0 L 53.0 161.0 L 46.0 161.0 L 41.0 171.0 L 37.0 174.0 L 31.0 177.0 L 20.0 177.0 L 19.0 176.0 L 17.0 176.0 L 13.0 174.0 L 6.0 166.0 L 5.0 161.0 L 4.0 160.0 L 4.0 151.0 L 8.0 143.0 L 15.0 137.0 L 19.0 136.0 L 20.0 135.0 L 31.0 135.0 L 32.0 136.0 L 34.0 136.0 L 41.0 141.0 L 47.0 152.0 L 50.0 152.0 L 51.0 151.0 L 56.0 151.0 L 57.0 150.0 L 59.0 150.0 L 63.0 148.0 L 70.0 141.0 L 71.0 139.0 L 72.0 134.0 L 73.0 133.0 L 73.0 56.0 L 74.0 55.0 L 74.0 50.0 L 75.0 49.0 L 75.0 46.0 L 76.0 45.0 L 76.0 42.0 L 78.0 39.0 L 78.0 37.0 L 80.0 33.0 L 82.0 31.0 L 83.0 28.0 L 86.0 25.0 L 86.0 24.0 L 98.0 13.0 L 101.0 12.0 L 103.0 10.0 L 107.0 8.0 L 112.0 7.0 L 116.0 5.0 L 120.0 5.0 L 121.0 4.0 L 154.0 4.0 L 155.0 5.0 L 157.0 5.0 Z M 40.0 13.0 L 34.0 15.0 L 31.0 18.0 L 31.0 20.0 L 30.0 21.0 L 30.0 25.0 L 31.0 27.0 L 35.0 31.0 L 37.0 32.0 L 69.0 32.0 L 66.0 41.0 L 34.0 41.0 L 28.0 38.0 L 24.0 34.0 L 21.0 28.0 L 21.0 18.0 L 24.0 12.0 L 29.0 7.0 L 33.0 5.0 L 36.0 5.0 L 37.0 4.0 L 94.0 4.0 L 90.0 7.0 L 89.0 7.0 L 83.0 13.0 L 40.0 13.0 Z M 303.0 140.0 L 298.0 142.0 L 294.0 146.0 L 291.0 152.0 L 291.0 154.0 L 292.0 155.0 L 295.0 155.0 L 295.0 157.0 L 292.0 157.0 L 291.0 158.0 L 292.0 162.0 L 295.0 166.0 L 295.0 167.0 L 302.0 172.0 L 306.0 173.0 L 308.0 171.0 L 307.0 169.0 L 308.0 169.0 L 308.0 172.0 L 309.0 173.0 L 311.0 172.0 L 314.0 172.0 L 316.0 171.0 L 322.0 165.0 L 324.0 161.0 L 324.0 157.0 L 323.0 156.0 L 321.0 157.0 L 320.0 156.0 L 320.0 155.0 L 323.0 155.0 L 324.0 154.0 L 324.0 151.0 L 322.0 147.0 L 316.0 141.0 L 314.0 140.0 L 311.0 140.0 L 310.0 139.0 L 308.0 141.0 L 308.0 143.0 L 307.0 143.0 L 307.0 140.0 L 306.0 139.0 L 303.0 140.0 Z M 316.0 147.0 L 316.0 149.0 L 311.0 159.0 L 299.0 165.0 L 302.0 160.0 L 302.0 158.0 L 304.0 155.0 L 304.0 153.0 L 316.0 147.0 Z M 308.0 154.0 L 307.0 153.0 L 305.0 155.0 L 305.0 156.0 L 308.0 159.0 L 310.0 157.0 L 310.0 155.0 L 308.0 154.0 Z" />
+        </svg>
+        <span class="brand-text">TripMate <span class="brand-context">Admin</span></span>
+      </a>
+      <a href="#" class="back-link">Return to TripMate</a>
+    </div>
+  </header>
+
+  <!-- Login Main -->
+  <main>
+    <div class="login-card">
+      <div class="eyebrow">TripMate Administration</div>
+      <h1 class="card-title">Administration Sign In</h1>
+      <p class="card-desc">
+        Authenticate with an authorized Administrator or Staff account to access the administration workspace.
+      </p>
+
+      <form onsubmit="event.preventDefault(); alert('Demo Sign In — Redirecting based on role:\nAdministrator -> /admin\nStaff -> /admin/staff');">
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <div class="input-wrapper">
+            <input type="email" id="email" class="form-input" placeholder="admin@tripmate.com" value="admin@tripmate.com" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="password" class="form-input" placeholder="••••••••••••" value="Password123!" required>
+          </div>
+        </div>
+
+        <a href="#" class="forgot-link">Forgot Password?</a>
+
+        <button type="submit" class="btn-submit">Sign In</button>
+      </form>
+
+      <div class="footer-note">
+        Sign in with an active Administrator or Staff account. You will be redirected to your assigned administration workspace.
+      </div>
+    </div>
+  </main>
+
+  <div class="toggle-badge">
+    <div class="status-dot"></div>
+    <span>Target Design: <strong>Forest Green & Warm Ivory</strong></span>
+  </div>
+
+</body>
+</html>
