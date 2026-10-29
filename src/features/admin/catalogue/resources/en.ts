@@ -1,0 +1,16 @@
+export const poiManagementEn = {
+  loading: 'Loading points of interest…',
+  loaded: (count: number) => `${count} ${count === 1 ? 'point of interest' : 'points of interest'} loaded.`,
+  addressMissing: 'Address not provided',
+  hoursMissing: 'Hours not provided',
+  catalogueEmptyTitle: 'No points of interest available',
+  catalogueEmptyDetail: 'Create the first POI to begin building the management catalogue.',
+  noResultsTitle: 'No points of interest match these filters',
+  noResultsDetail: 'Change or reset the submitted filters to see other records.',
+  beyondPageTitle: 'This page has no results',
+  beyondPageDetail: 'The catalogue changed or this page is now beyond the available results.',
+  invalidQuery: 'Some filters need attention. Review the highlighted fields.',
+  signedOut: 'Your session has expired. Sign in again to continue.',
+  accessRequired: 'An active Administrator or Staff account is required.',
+  unavailable: 'The POI list could not be loaded. Please try again.',
+} as const;
