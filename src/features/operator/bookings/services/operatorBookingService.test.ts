@@ -5,7 +5,6 @@ import {
   getOperatorBookingById,
   getOperatorBookingTourOptions,
   getOperatorBookings,
-  initiateBookingRefund,
   resetDemoBookingsState,
 } from './operatorBookingService';
 import { detailExample, listExample } from '../utils/bookingApiFixtures';
@@ -43,12 +42,6 @@ describe('operatorBookingService', () => {
           { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Customer requested' },
           { isDemo: false }
         );
-        expect(result.success).toBe(false);
-        expect(result.messageCode).toBe('PENDING_BE_INTEGRATION');
-      });
-
-      it('disallows initiating refund in production mode without backend', async () => {
-        const result = await initiateBookingRefund('booking-0141', {}, { isDemo: false });
         expect(result.success).toBe(false);
         expect(result.messageCode).toBe('PENDING_BE_INTEGRATION');
       });
@@ -448,210 +441,6 @@ describe('operatorBookingService', () => {
     });
   });
 
-  describe('UC-42 Initiate Booking Refund', () => {
-    it('fails closed with MSG126 when demoActorUserId is missing (BR-105)', async () => {
-      const res = await initiateBookingRefund('booking-0141', {}, { isDemo: true });
-      expect(res.success).toBe(false);
-      expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
-      expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG126);
-    });
-
-    it('rejects refund for booking owned by another operator -> MSG126 (BR-105)', async () => {
-      const res = await initiateBookingRefund(
-        'booking-9999',
-        {},
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(res.success).toBe(false);
-      expect(res.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
-
-      const foreignActorAttempt = await initiateBookingRefund(
-        'booking-0141',
-        {},
-        { isDemo: true, demoActorUserId: 999 }
-      );
-      expect(foreignActorAttempt.success).toBe(false);
-      expect(foreignActorAttempt.messageCode).toBe(BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED);
-    });
-
-    it('rejects refund if booking has no verified paid transaction -> MSG84', async () => {
-      const res = await initiateBookingRefund(
-        'booking-0146',
-        {},
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG84');
-      expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG84);
-    });
-
-    it('rejects refund for an Expired unpaid booking -> MSG84', async () => {
-      const res = await initiateBookingRefund(
-        'booking-0144',
-        {},
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG84');
-    });
-
-    it('rejects duplicate refund when Success refund already exists -> MSG133 (BR-74 Idempotency)', async () => {
-      const res = await initiateBookingRefund(
-        'booking-0110',
-        {},
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG133');
-      expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG133);
-      expect(res.refund?.id).toBe('rf-0110');
-    });
-
-    it('initiates refund successfully for eligible booking and blocks duplicate initiation (BR-83, BR-74, BR-77, BR-107)', async () => {
-      const res = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Refund to customer according to policy' },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(res.success).toBe(true);
-      expect(res.messageCode).toBe('MSG83');
-      expect(res.refund?.refundableAmount).toBe(5600000);
-      expect(res.refund?.paymentChannel).toBe('VNPAY'); // BR-76 original payment gateway
-      expect(res.refund?.status).toBe('Success');
-
-      // Subsequent call must be idempotent -> MSG133 without creating another record
-      const duplicateRes = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Second attempt' },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(duplicateRes.success).toBe(false);
-      expect(duplicateRes.messageCode).toBe('MSG133');
-      expect(duplicateRes.refund?.id).toBe(res.refund?.id);
-    });
-
-    it('does NOT trigger hidden failure branches when user notes contain "timeout", "retry", or "system"', async () => {
-      const timeoutNoteRes = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Customer reported timeout during rebooking so refund requested' },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(timeoutNoteRes.success).toBe(true);
-      expect(timeoutNoteRes.messageCode).toBe('MSG83');
-      expect(timeoutNoteRes.refund?.notes).toBe('Customer reported timeout during rebooking so refund requested');
-
-      resetDemoBookingsState();
-      const retryNoteRes = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Customer asked to retry booking on another date' },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(retryNoteRes.success).toBe(true);
-      expect(retryNoteRes.messageCode).toBe('MSG83');
-      expect(retryNoteRes.refund?.notes).toBe('Customer asked to retry booking on another date');
-
-      resetDemoBookingsState();
-      const systemNoteRes = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Verified in internal system ledger' },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(systemNoteRes.success).toBe(true);
-      expect(systemNoteRes.messageCode).toBe('MSG83');
-      expect(systemNoteRes.refund?.notes).toBe('Verified in internal system ledger');
-    });
-
-    it('handles simulated gateway timeout only via explicit service option -> MSG89', async () => {
-      const res = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Ghi chú bình thường' },
-        { isDemo: true, demoActorUserId: 101, simulateFailureMode: 'timeout' }
-      );
-      expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG89');
-      expect(res.message).toBe(OPERATOR_BOOKING_MESSAGES.MSG89);
-    });
-
-    it('handles simulated system failure only via explicit service option -> MSG127', async () => {
-      const res = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Ghi chú bình thường' },
-        { isDemo: true, demoActorUserId: 101, simulateFailureMode: 'system' }
-      );
-      expect(res.success).toBe(false);
-      expect(res.messageCode).toBe('MSG127');
-    });
-
-    it('enforces BR-74 & BR-134 on Failed refund: blocks duplicate creation with MSG133 and retries on the SAME refund record', async () => {
-      // 1. Initial attempt fails and is queued for retry (MSG153)
-      const initialFailed = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Lần thử đầu tiên' },
-        { isDemo: true, demoActorUserId: 101, simulateFailureMode: 'retry' }
-      );
-      expect(initialFailed.success).toBe(false);
-      expect(initialFailed.messageCode).toBe('MSG153');
-      expect(initialFailed.refund?.status).toBe('Failed');
-      expect(initialFailed.refund?.attemptCount).toBe(1);
-      const originalRefundId = initialFailed.refund?.id;
-      expect(originalRefundId).toBeDefined();
-
-      // 2. Normal manual initiation when Failed refund already exists MUST be blocked with MSG133
-      // and MUST NOT create a second refund record
-      const manualDuplicateAttempt = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Attempt to create new refund record' },
-        { isDemo: true, demoActorUserId: 101 }
-      );
-      expect(manualDuplicateAttempt.success).toBe(false);
-      expect(manualDuplicateAttempt.messageCode).toBe('MSG133');
-      expect(manualDuplicateAttempt.refund?.id).toBe(originalRefundId);
-      expect(manualDuplicateAttempt.refund?.attemptCount).toBe(1);
-
-      // 3. Explicit retry on the Failed refund updates the SAME refund record and increments attemptCount
-      const retryAttemptStillFailed = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Retry 2 still network error' },
-        {
-          isDemo: true,
-          demoActorUserId: 101,
-          retryFailedRefund: true,
-          simulateFailureMode: 'retry',
-        }
-      );
-      expect(retryAttemptStillFailed.success).toBe(false);
-      expect(retryAttemptStillFailed.messageCode).toBe('MSG153');
-      expect(retryAttemptStillFailed.refund?.id).toBe(originalRefundId);
-      expect(retryAttemptStillFailed.refund?.attemptCount).toBe(2);
-      expect(retryAttemptStillFailed.refund?.status).toBe('Failed');
-
-      // 4. Subsequent retry succeeds on the SAME refund record (attemptCount = 3)
-      const retrySuccess = await initiateBookingRefund(
-        'booking-0141',
-        { notes: 'Retry 3 success' },
-        {
-          isDemo: true,
-          demoActorUserId: 101,
-          retryFailedRefund: true,
-        }
-      );
-      expect(retrySuccess.success).toBe(true);
-      expect(retrySuccess.messageCode).toBe('MSG83');
-      expect(retrySuccess.refund?.id).toBe(originalRefundId);
-      expect(retrySuccess.refund?.attemptCount).toBe(3);
-      expect(retrySuccess.refund?.status).toBe('Success');
-
-      // Original payment transaction remains immutable (BR-77)
-      const detail = await getOperatorBookingById('booking-0141', {
-        isDemo: true,
-        demoActorUserId: 101,
-      });
-      expect(detail.booking?.payment?.gatewayTransactionRef).toBe('VNPAY-20260910-884920');
-      expect(detail.booking?.payment?.amount).toBe(5600000);
-      expect(detail.booking?.payment?.status).toBe('Success');
-    });
-  });
-
   describe('operatorBookingDemoPolicy (Demo-only refund preview)', () => {
     it('calculates Demo-only refund preview without claiming production authority', () => {
       const paidEligible = toDemoDetailView(INITIAL_DEMO_BOOKINGS[0]);
@@ -928,18 +717,16 @@ describe('operatorBookingService live mode (UC-40 BFF)', () => {
     });
   });
 
-  describe('cancel and refund stay locked outside demo mode (UC-41/UC-42 are not integrated by UC-40)', () => {
+  describe('cancel stays locked outside demo mode (UC-41 is not integrated by UC-40)', () => {
     it('never calls the BFF and keeps the pending-integration answer', async () => {
       const cancel = await cancelCustomerBooking(
         '1201',
         { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'x' },
         { isDemo: false }
       );
-      const refund = await initiateBookingRefund('1201', {}, { isDemo: false });
 
       expect(fetchMock).not.toHaveBeenCalled();
       expect(cancel.messageCode).toBe('PENDING_BE_INTEGRATION');
-      expect(refund.messageCode).toBe('PENDING_BE_INTEGRATION');
     });
   });
 

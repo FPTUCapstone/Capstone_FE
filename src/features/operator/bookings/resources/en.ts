@@ -189,10 +189,6 @@ export const bookingEn = {
     MSG133: 'Booking is already cancelled/completed or a refund request already exists.',
     MSG95: 'Customer has already checked in for the tour. This booking cannot be cancelled.',
     MSG81: 'Customer booking cancelled successfully.',
-    MSG83: 'Booking refund request has been initiated successfully.',
-    MSG84: 'Booking does not have a valid payment transaction or is not eligible for refund.',
-    MSG89: 'Payment gateway timed out. Please try again or check refund queue status.',
-    MSG153: 'Refund initiation could not be completed immediately; queued for retry.',
     PENDING_BE_INTEGRATION:
       'Customer booking management is awaiting Backend API integration. No live server data available.',
   },
