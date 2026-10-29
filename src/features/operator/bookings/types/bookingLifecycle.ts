@@ -1,17 +1,19 @@
 /**
  * Types and message contracts for Tour Operator Customer Bookings (UC-40, UC-41, UC-42).
  * Follows Report 3 SRS §3.8.4.1, §3.8.4.2, §3.8.4.3.
+ *
+ * The UC-40 shapes mirror the Backend contract `Capstone_BE/docs/UC-40-api-contract.md`; the BE enums are
+ * the source of truth. Anything that exists only for the demo fixtures (UC-41/UC-42 previews) is marked.
  */
 
 export const OPERATOR_BOOKING_MESSAGES = {
   MSG126: 'Access denied. You can only view and manage bookings for your own tours.',
-  MSG29: 'Invalid date range. Departure start date must be before or equal to end date.',
+  MSG31: 'End date must be on or after the start date.',
   MSG128: 'No customer bookings found matching the current filter criteria.',
   MSG127: 'System encountered an error. Please try again later.',
   MSG123: 'Cancellation reason details cannot be empty.',
   MSG133: 'Booking is already cancelled/completed or a refund request already exists.',
   MSG95: 'Customer has already checked in for the tour. This booking cannot be cancelled.',
-  MSG82: 'The cancellation deadline for this tour package has passed.',
   MSG81: 'Customer booking cancelled successfully.',
   MSG83: 'Booking refund request has been initiated successfully.',
   MSG84: 'Booking does not have a valid payment transaction or is not eligible for refund.',
@@ -35,38 +37,135 @@ export const BOOKING_ERROR_CODES = {
  */
 export const OPERATOR_BOOKING_DEFAULT_PAGE_SIZE = 20;
 
-export type BookingPaymentChannel = 'VNPay' | 'PayOS';
+/** BE `BookingStatus`. */
+export type BookingStatus = 'PendingPayment' | 'Confirmed' | 'Cancelled' | 'Completed' | 'Expired';
 
-export type BookingStatus = 'Confirmed' | 'PendingPayment' | 'Cancelled' | 'Completed';
+/** BE `PaymentStatus`. */
+export type PaymentStatus = 'Unpaid' | 'Paid' | 'Refunded' | 'PartiallyRefunded';
 
+/** Derived by the BE from the booking's tickets (UC-43 records the check-in). */
 export type CheckInStatus = 'NotCheckedIn' | 'CheckedIn';
 
-export type PaxType = 'Adult' | 'Child';
+/** BE `ParticipantType`. */
+export type ParticipantType = 'Adult' | 'Child' | 'Infant';
 
-export interface ParticipantDto {
-  id: string;
+/** BE `PaymentGateway`. */
+export type PaymentGateway = 'Mock' | 'PayOS' | 'VNPAY' | 'MoMo' | 'Stripe';
+
+/** BE `TicketStatus`. */
+export type TicketStatus = 'Valid' | 'Used' | 'Cancelled' | 'Expired';
+
+/** BE `PaymentTransactionStatus`. */
+export type PaymentTransactionStatus = 'Pending' | 'Success' | 'Cancelled' | 'Expired' | 'Failed';
+
+/** Why the BE says a booking cannot be cancelled by the operator (mirrors the UC-41 rule). */
+export type CancelBlockedReason = 'InvalidStatus' | 'CheckedIn';
+
+export interface BookingTourDto {
+  tourId: string;
+  title: string;
+}
+
+export interface BookingScheduleDto {
+  scheduleId: string;
+  startAtUtc: string;
+  endAtUtc: string;
+}
+
+export interface BookingScheduleDetailDto extends BookingScheduleDto {
+  meetingPoint: string | null;
+}
+
+export interface BookingBookerDto {
+  userId: string;
   fullName: string;
-  paxType: PaxType;
-  age?: number;
-  specialNotes?: string;
+  email: string | null;
+}
+
+export interface BookingBookerDetailDto extends BookingBookerDto {
+  phoneNumber: string | null;
+}
+
+/** Light row returned by `GET /api/v1/operator/bookings`. */
+export interface BookingListItemDto {
+  bookingId: string;
+  bookingCode: string;
+  tour: BookingTourDto;
+  schedule: BookingScheduleDto;
+  booker: BookingBookerDto;
+  quantity: number;
+  totalAmount: number;
+  discountAmount: number;
+  status: BookingStatus;
+  paymentStatus: PaymentStatus;
+  checkInStatus: CheckInStatus;
+  checkedInAtUtc: string | null;
+  bookedAtUtc: string;
+}
+
+/** Participant whitelist: the BE never returns ID documents, phone, e-mail or nationality. */
+export interface BookingParticipantDto {
+  fullName: string;
+  participantType: ParticipantType;
+}
+
+export interface BookingTicketDto {
+  ticketCode: string;
+  status: TicketStatus;
+  issuedAtUtc: string;
+  expiresAtUtc: string | null;
 }
 
 /**
- * BR-77: Verified transaction information is READ ONLY and immutable.
+ * BR-77: Verified transaction information is READ ONLY and immutable. Gateway payloads,
+ * checkout links and order codes are never returned.
  */
-export interface PaymentTransactionDto {
-  id: string;
+export interface BookingPaymentDto {
+  gateway: PaymentGateway;
+  gatewayTransactionRef: string | null;
+  status: PaymentTransactionStatus;
   amount: number;
-  paymentChannel: BookingPaymentChannel;
-  transactionReference: string;
-  status: 'Success' | 'Pending' | 'Failed';
-  paidAt?: string;
+  succeededAtUtc: string | null;
+}
+
+export interface BookingCouponDto {
+  code: string;
+  name: string;
+  discountAmount: number;
+}
+
+/** Full booking returned by `GET /api/v1/operator/bookings/{bookingId}`. */
+export interface BookingDetailDto {
+  bookingId: string;
+  bookingCode: string;
+  status: BookingStatus;
+  paymentStatus: PaymentStatus;
+  bookedAtUtc: string;
+  cancelledAtUtc: string | null;
+  cancelReason: string | null;
+  tour: BookingTourDto;
+  schedule: BookingScheduleDetailDto;
+  booker: BookingBookerDetailDto;
+  quantity: number;
+  participants: BookingParticipantDto[];
+  ticket: BookingTicketDto | null;
+  checkInStatus: CheckInStatus;
+  checkedInAtUtc: string | null;
+  payment: BookingPaymentDto | null;
+  paidAmount: number;
+  subtotalAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  coupon: BookingCouponDto | null;
+  canCancel: boolean;
+  cancelBlockedReason: CancelBlockedReason | null;
 }
 
 /**
  * BR-77 & BR-107: Refund is a separate record from the original transaction.
  * BR-74: Idempotent - repeated notifications/clicks must not duplicate records.
  * BR-134: Retry tracking.
+ * DEMO ONLY until the UC-42 FE integration: the UC-40 detail endpoint does not return refunds.
  */
 export interface BookingRefundDto {
   id: string;
@@ -74,7 +173,7 @@ export interface BookingRefundDto {
   refundableAmount: number;
   deductionAmount: number;
   policyApplied: string;
-  paymentChannel: BookingPaymentChannel;
+  paymentChannel: PaymentGateway;
   status: 'Pending' | 'Success' | 'Failed';
   gatewayReference?: string;
   attemptCount: number;
@@ -102,34 +201,13 @@ export const CANCELLATION_REASONS = [
   { value: 'OTHER', label: 'Other reason' },
 ] as const;
 
-export interface BookingDto {
-  id: string;
-  bookingCode: string;
-  tourId: string;
-  tourName: string;
-  operatorUserId: number; // For BR-105 ownership check
-  departureDate: string; // ISO format
-  contactName: string;
-  contactEmail: string;
-  contactPhone: string;
-  participantsCount: number;
-  participants: ParticipantDto[];
-  totalAmount: number;
-  paidAmount: number;
-  status: BookingStatus;
-  checkInStatus: CheckInStatus;
-  qrTicketValid: boolean; // BR-86
-  cancellationWindowExpired?: boolean; // For MSG82 test cases
-  coupon?: {
-    code: string;
-    discountAmount: number;
-  };
-  paymentTransaction?: PaymentTransactionDto;
+/**
+ * What the drawer and the UC-41/UC-42 dialogs consume: the BE detail plus the demo-only
+ * UC-41/UC-42 additions. Live responses never carry the extras.
+ */
+export interface BookingDetailView extends BookingDetailDto {
   refund?: BookingRefundDto;
   cancellationReasonType?: CancellationReasonValue;
-  cancellationReason?: string;
-  cancelledAt?: string;
-  createdAt: string;
 }
 
 export interface BookingFilterParams {
@@ -149,14 +227,23 @@ export interface BookingSummaryMetrics {
 }
 
 export interface BookingListResult {
-  items: BookingDto[];
+  items: BookingListItemDto[];
   summary: BookingSummaryMetrics;
   totalCount: number;
   page: number;
   pageSize: number;
   totalPages: number;
-  pendingBackendNotice?: string;
+  /** Set when the list could not be shown as data: access (MSG126), date range (MSG31), system (MSG127) or empty (MSG128). */
+  errorCode?: BookingListErrorCode;
   errorMessage?: string;
+}
+
+export type BookingListErrorCode = 'MSG126' | 'MSG127' | 'MSG31' | 'MSG128';
+
+/** Result of loading the owned-tour filter options; a failure only disables the filter. */
+export interface BookingTourOptionsResult {
+  options: { id: string; title: string }[];
+  failed: boolean;
 }
 
 export interface CancelBookingPayload {
@@ -168,7 +255,7 @@ export interface CancelBookingResult {
   success: boolean;
   messageCode: string;
   message: string;
-  booking?: BookingDto;
+  booking?: BookingDetailView;
   refundTriggered?: boolean;
   refundFollowUpRequired?: boolean;
 }

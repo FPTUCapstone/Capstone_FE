@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage, type WebAuthContext } from '@/features/auth/session/authSession';
 import { OperatorBookingListView } from './OperatorBookingListView';
@@ -9,6 +9,7 @@ import {
   OPERATOR_BOOKING_MESSAGES,
 } from '../types/bookingLifecycle';
 import { bookingEn } from '../resources/en';
+import { detailExample, listExample } from '../utils/bookingApiFixtures';
 
 const mocks = vi.hoisted(() => ({
   webRefresh: vi.fn(),
@@ -67,27 +68,461 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
     process.env = originalEnv;
   });
 
-  describe('Production NO_BACKEND truthfulness', () => {
-    it('renders PENDING_BE_INTEGRATION status banner and empty state when isDemo is false', async () => {
+  describe('Live mode (UC-40 BFF, no demo)', () => {
+    const fetchMock = vi.fn();
+    const toursBody = [
+      { id: 101, code: 'TOUR-00101', title: 'Ba Na Hills full-day tour', isActive: true },
+      { id: 55, code: 'TOUR-00055', title: 'Food trail', isActive: false },
+    ];
+    const json = (body: unknown, status = 200) =>
+      Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }));
+
+    /** Routes the BFF calls: list, tours (and anything else is a test error). */
+    function routeFetch(handlers: { list?: () => Promise<Response>; tours?: () => Promise<Response> } = {}) {
+      fetchMock.mockImplementation((url: string) => {
+        if (url.startsWith('/api/operator/revenue/tours')) return (handlers.tours ?? (() => json(toursBody)))();
+        if (url.startsWith('/api/operator/bookings')) return (handlers.list ?? (() => json(listExample())))();
+        return Promise.reject(new Error(`unexpected fetch ${url}`));
+      });
+    }
+    const listCalls = () =>
+      fetchMock.mock.calls.map((call) => String(call[0])).filter((url) => url.startsWith('/api/operator/bookings'));
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, NODE_ENV: 'test', NEXT_PUBLIC_ENABLE_DEMO_FIXTURES: 'false' };
+      fetchMock.mockReset();
+      vi.stubGlobal('fetch', fetchMock);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('renders the live items and the BE summary without any pending-integration banner or demo banner', async () => {
+      routeFetch();
       render(<OperatorBookingListView isDemo={false} />);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION)
-        ).toBeDefined();
+        expect(screen.getAllByText('BK-20261020-0007').length).toBeGreaterThan(0);
       });
 
-      // Filter controls disabled
-      expect(
-        screen.getByLabelText(/Tour Package/i).getAttribute('disabled')
-      ).toBeDefined();
-      expect(
-        screen.getByLabelText(/Booking Status/i).getAttribute('disabled')
-      ).toBeDefined();
+      expect(screen.queryByText(OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION)).toBeNull();
+      expect(screen.queryByText(/Demo Active/i)).toBeNull();
+      expect(screen.getAllByText('Nguyen Van A').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('a@example.com').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Ba Na Hills full-day tour').length).toBeGreaterThan(0);
+      // BE summary shown as returned (37 bookings, 112 participants)
+      expect(screen.getAllByText('37').length).toBeGreaterThan(0); // KPI card (and the pagination total)
+      expect(screen.getByText('112')).toBeDefined();
+      expect(screen.getByText(/98\.400\.000/)).toBeDefined();
+    });
 
-      // Zero summaries
-      expect(screen.getAllByText('0').length).toBeGreaterThan(0);
+    it('enables the filters and fills the tour select from the owned-tour list', async () => {
+      routeFetch();
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'Food trail' })).toBeDefined();
+      });
+
+      const tour = screen.getByLabelText(/Tour Package/i) as HTMLSelectElement;
+      expect(tour.disabled).toBe(false);
+      expect((screen.getByLabelText(/Booking Status/i) as HTMLSelectElement).disabled).toBe(false);
+      expect((screen.getByLabelText(/Departure from date/i) as HTMLInputElement).disabled).toBe(false);
+      expect((screen.getByLabelText(/To date/i) as HTMLInputElement).disabled).toBe(false);
+      expect((screen.getByPlaceholderText(/Search booking code/i) as HTMLInputElement).disabled).toBe(false);
+      expect((screen.getByRole('button', { name: /Apply Filter/i }) as HTMLButtonElement).disabled).toBe(false);
+      expect(Array.from(tour.options).map((o) => o.value)).toEqual(['ALL', '101', '55']);
+      const status = screen.getByLabelText(/Booking Status/i) as HTMLSelectElement;
+      expect(Array.from(status.options).map((o) => o.value)).toContain('Expired');
+    });
+
+    it('shows the loading state while the list is being fetched', async () => {
+      let release: (response: Response) => void = () => undefined;
+      routeFetch({ list: () => new Promise<Response>((resolve) => { release = resolve; }) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      expect(screen.getByText(bookingEn.list.loading)).toBeDefined();
+
+      release(new Response(JSON.stringify(listExample()), { status: 200 }));
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20261020-0007').length).toBeGreaterThan(0);
+      });
+      expect(screen.queryByText(bookingEn.list.loading)).toBeNull();
+    });
+
+    it('shows MSG128 for an empty live list', async () => {
+      routeFetch({
+        list: () =>
+          json({
+            pageNumber: 1,
+            pageSize: 20,
+            totalCount: 0,
+            totalPages: 0,
+            summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0 },
+            items: [],
+          }),
+      });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(OPERATOR_BOOKING_MESSAGES.MSG128)).toBeDefined();
+      });
+      expect(screen.queryByRole('button', { name: /Retry/i })).toBeNull();
+    });
+
+    it('shows MSG127 with a Retry button that refetches and then renders the data', async () => {
+      let attempt = 0;
+      routeFetch({
+        list: () => (attempt++ === 0 ? json({ errorCode: 'MSG127' }, 503) : json(listExample())),
+      });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(OPERATOR_BOOKING_MESSAGES.MSG127)).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Retry/i }));
+
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20261020-0007').length).toBeGreaterThan(0);
+      });
+      expect(listCalls()).toHaveLength(2);
+      expect(screen.queryByText(OPERATOR_BOOKING_MESSAGES.MSG127)).toBeNull();
+    });
+
+    it('shows MSG126 when the BE denies access', async () => {
+      routeFetch({ list: () => json({ errorCode: 'operator_tour.access_required' }, 403) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(OPERATOR_BOOKING_MESSAGES.MSG126)).toBeDefined();
+      });
+      expect(screen.queryByRole('button', { name: /Retry/i })).toBeNull();
+    });
+
+    it('keeps the list working with only "All Tour Packages" (select disabled) when the tour list fails', async () => {
+      routeFetch({ tours: () => json({ errorCode: 'MSG127' }, 503) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20261020-0007').length).toBeGreaterThan(0);
+      });
+
+      const tour = screen.getByLabelText(/Tour Package/i) as HTMLSelectElement;
+      expect(tour.disabled).toBe(true);
+      expect(Array.from(tour.options).map((o) => o.value)).toEqual(['ALL']);
+      expect(screen.getByText(bookingEn.filters.tourOptionsUnavailable)).toBeDefined();
+      // the other filters still work
+      expect((screen.getByLabelText(/Booking Status/i) as HTMLSelectElement).disabled).toBe(false);
+    });
+
+    it('sends the applied filters mapped for the BE and resets to page 1 on Apply', async () => {
+      routeFetch();
+      render(<OperatorBookingListView isDemo={false} />);
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'Food trail' })).toBeDefined();
+      });
+      expect(listCalls()).toEqual(['/api/operator/bookings?pageNumber=1&pageSize=20']);
+
+      fireEvent.change(screen.getByLabelText(/Tour Package/i), { target: { value: '55' } });
+      fireEvent.change(screen.getByLabelText(/Booking Status/i), { target: { value: 'Expired' } });
+      fireEvent.change(screen.getByLabelText(/Departure from date/i), { target: { value: '2026-11-01' } });
+      fireEvent.change(screen.getByLabelText(/To date/i), { target: { value: '2026-11-30' } });
+      fireEvent.change(screen.getByPlaceholderText(/Search booking code/i), { target: { value: ' alice ' } });
+      // drafts are not sent until Apply (CR-02)
+      expect(listCalls()).toHaveLength(1);
+
+      fireEvent.click(screen.getByRole('button', { name: /Apply Filter/i }));
+
+      await waitFor(() => {
+        expect(listCalls()).toHaveLength(2);
+      });
+      expect(listCalls()[1]).toBe(
+        '/api/operator/bookings?tourId=55&status=Expired&departureFrom=2026-11-01&departureTo=2026-11-30&keyword=alice&pageNumber=1&pageSize=20'
+      );
+    });
+
+    it('blocks an inverted date range with MSG31 and does not call the BFF again', async () => {
+      routeFetch();
+      render(<OperatorBookingListView isDemo={false} />);
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20261020-0007').length).toBeGreaterThan(0);
+      });
+
+      fireEvent.change(screen.getByLabelText(/Departure from date/i), { target: { value: '2026-11-30' } });
+      fireEvent.change(screen.getByLabelText(/To date/i), { target: { value: '2026-11-01' } });
+      fireEvent.click(screen.getByRole('button', { name: /Apply Filter/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(OPERATOR_BOOKING_MESSAGES.MSG31)).toBeDefined();
+      });
+      expect(listCalls()).toHaveLength(1);
+    });
+
+    it('paginates with the BE totalPages and requests the next page keeping the applied filters', async () => {
+      routeFetch();
+      render(<OperatorBookingListView isDemo={false} />);
+      await waitFor(() => {
+        expect(screen.getByText(/Showing/i)).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+      await waitFor(() => {
+        expect(listCalls()).toHaveLength(2);
+      });
+      expect(listCalls()[1]).toBe('/api/operator/bookings?pageNumber=2&pageSize=20');
+    });
+
+    it('never calls the cancel or refund endpoints and offers no demo data', async () => {
+      routeFetch();
+      render(<OperatorBookingListView isDemo={false} />);
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20261020-0007').length).toBeGreaterThan(0);
+      });
+
       expect(screen.queryByText('BK-20260919-0141')).toBeNull();
+      expect(fetchMock.mock.calls.every((call) => !String(call[0]).includes('cancel'))).toBe(true);
+    });
+  });
+
+  describe('Live detail drawer (UC-40 detail endpoint)', () => {
+    const fetchMock = vi.fn();
+    const json = (body: unknown, status = 200) =>
+      Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }));
+
+    function listOfTwo() {
+      const body = listExample();
+      const second = JSON.parse(JSON.stringify(body.items[0]));
+      second.bookingId = '1202';
+      second.bookingCode = 'BK-20261021-0008';
+      second.booker.fullName = 'Tran Thi B';
+      second.tour.title = 'Food trail';
+      body.items.push(second);
+      return body;
+    }
+
+    function detailFor(id: string, code: string, extra: Record<string, unknown> = {}) {
+      return { ...detailExample(), bookingId: id, bookingCode: code, ...extra };
+    }
+
+    /** `details` maps a booking id to its response factory. */
+    function routeFetch(details: Record<string, () => Promise<Response>>) {
+      fetchMock.mockImplementation((url: string) => {
+        if (url.startsWith('/api/operator/revenue/tours')) return json([]);
+        const detail = /^\/api\/operator\/bookings\/(\d+)$/.exec(url);
+        if (detail) return (details[detail[1]] ?? (() => json({ errorCode: 'operator_booking.not_found' }, 404)))();
+        if (url.startsWith('/api/operator/bookings')) return json(listOfTwo());
+        return Promise.reject(new Error(`unexpected fetch ${url}`));
+      });
+    }
+    const detailCalls = () =>
+      fetchMock.mock.calls.map((c) => String(c[0])).filter((url) => /^\/api\/operator\/bookings\/\d+$/.test(url));
+
+    async function openFirstRow() {
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20261020-0007').length).toBeGreaterThan(0);
+      });
+      fireEvent.click(screen.getAllByRole('button', { name: /Details/i })[0]);
+    }
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, NODE_ENV: 'test', NEXT_PUBLIC_ENABLE_DEMO_FIXTURES: 'false' };
+      fetchMock.mockReset();
+      vi.stubGlobal('fetch', fetchMock);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('opens at once with the row basics and a skeleton, then shows the full detail from the detail endpoint', async () => {
+      let release: (response: Response) => void = () => undefined;
+      routeFetch({ '1201': () => new Promise<Response>((resolve) => { release = resolve; }) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await openFirstRow();
+
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog.getAttribute('aria-busy')).toBe('true');
+      expect(within(dialog).getByText(/BK-20261020-0007/)).toBeDefined();
+      expect(within(dialog).getByRole('status', { name: bookingEn.detail.loading })).toBeDefined();
+      expect(within(dialog).queryByText(/Participant List/i)).toBeNull();
+
+      release(new Response(JSON.stringify(detailFor('1201', 'BK-20261020-0007')), { status: 200 }));
+
+      await waitFor(() => {
+        expect(within(screen.getByRole('dialog')).getByText('Nguyen Thi B')).toBeDefined();
+      });
+      const loaded = screen.getByRole('dialog');
+      expect(loaded.getAttribute('aria-busy')).toBeNull();
+      expect(detailCalls()).toEqual(['/api/operator/bookings/1201']);
+      // participants (name + type), booker phone, meeting point, ticket, payment gateway and reference, coupon
+      expect(within(loaded).getByText('+84901234567')).toBeDefined();
+      expect(within(loaded).getByText('Da Nang Cruise Port')).toBeDefined();
+      expect(within(loaded).getByText(/TK-0000001201 \(Valid\)/)).toBeDefined();
+      expect(within(loaded).getByText('PayOS')).toBeDefined();
+      expect(within(loaded).getByText('FT26102012345')).toBeDefined();
+      expect(within(loaded).getByText(/Applied Coupon \(SUMMER10\)/)).toBeDefined();
+      expect(within(loaded).getAllByText('Adult').length).toBeGreaterThan(0);
+      expect(within(loaded).getAllByText('Child').length).toBeGreaterThan(0);
+    });
+
+    it('hides the payment, coupon and ticket blocks when the BE returns null for them', async () => {
+      routeFetch({
+        '1201': () =>
+          json(
+            detailFor('1201', 'BK-20261020-0007', {
+              ticket: null,
+              payment: null,
+              coupon: null,
+              paidAmount: 0,
+              status: 'PendingPayment',
+              paymentStatus: 'Unpaid',
+            })
+          ),
+      });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await openFirstRow();
+
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() => {
+        expect(within(dialog).getByText('Nguyen Thi B')).toBeDefined();
+      });
+      expect(within(dialog).queryByText(bookingEn.detail.transactionRef + ':')).toBeNull();
+      expect(within(dialog).queryByText(/Applied Coupon/)).toBeNull();
+      expect(within(dialog).queryByText(bookingEn.detail.ticketCode + ':')).toBeNull();
+    });
+
+    it('never renders fields the contract says are not returned, even when a response carries them', async () => {
+      const body = detailFor('1201', 'BK-20261020-0007');
+      (body.participants[0] as Record<string, unknown>).idDocumentNumber = 'P1234567';
+      (body.participants[0] as Record<string, unknown>).age = 41;
+      (body.payment as Record<string, unknown>).rawResponse = 'gateway-secret';
+      (body.payment as Record<string, unknown>).checkoutUrl = 'https://pay.example/secret';
+      routeFetch({ '1201': () => json(body) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await openFirstRow();
+
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() => {
+        expect(within(dialog).getByText('Nguyen Thi B')).toBeDefined();
+      });
+      const html = document.body.innerHTML;
+      expect(html).not.toContain('P1234567');
+      expect(html).not.toContain('gateway-secret');
+      expect(html).not.toContain('pay.example');
+      expect(html).not.toMatch(/years old/i);
+    });
+
+    it('keeps cancel disabled with the locked tooltip in live mode', async () => {
+      routeFetch({ '1201': () => json(detailFor('1201', 'BK-20261020-0007')) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await openFirstRow();
+
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() => {
+        expect(within(dialog).getByText('Nguyen Thi B')).toBeDefined();
+      });
+      const cancel = within(dialog).getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement;
+      expect(cancel.disabled).toBe(true);
+      expect(cancel.getAttribute('title')).toBe(bookingEn.detail.productionLockedTooltip);
+    });
+
+    it.each([
+      ['MSG126 when the booking is not accessible (403)', 403, { errorCode: 'operator_booking.forbidden' }, OPERATOR_BOOKING_MESSAGES.MSG126, false],
+      ['MSG126 when the booking no longer exists (404)', 404, { errorCode: 'operator_booking.not_found' }, OPERATOR_BOOKING_MESSAGES.MSG126, false],
+      ['MSG127 on a server failure', 503, { errorCode: 'MSG127' }, OPERATOR_BOOKING_MESSAGES.MSG127, true],
+    ])('shows %s inside the drawer', async (_label, status, body, message, hasRetry) => {
+      routeFetch({ '1201': () => json(body, status) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await openFirstRow();
+
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() => {
+        expect(within(dialog).getByRole('alert').textContent).toContain(message);
+      });
+      expect(within(dialog).getByText(/BK-20261020-0007/)).toBeDefined();
+      expect(within(dialog).queryByText(/Participant List/i)).toBeNull();
+      expect(!!within(dialog).queryByRole('button', { name: bookingEn.list.retryBtn })).toBe(hasRetry);
+    });
+
+    it('Retry in the drawer refetches the same booking and then shows the detail', async () => {
+      let attempt = 0;
+      routeFetch({
+        '1201': () =>
+          attempt++ === 0 ? json({ errorCode: 'MSG127' }, 503) : json(detailFor('1201', 'BK-20261020-0007')),
+      });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await openFirstRow();
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() => {
+        expect(within(dialog).getByRole('button', { name: bookingEn.list.retryBtn })).toBeDefined();
+      });
+
+      fireEvent.click(within(dialog).getByRole('button', { name: bookingEn.list.retryBtn }));
+
+      await waitFor(() => {
+        expect(within(screen.getByRole('dialog')).getByText('Nguyen Thi B')).toBeDefined();
+      });
+      expect(detailCalls()).toEqual(['/api/operator/bookings/1201', '/api/operator/bookings/1201']);
+    });
+
+    it('ignores a slow response for a previous row after the user closes and opens another row (stale guard)', async () => {
+      let releaseFirst: (response: Response) => void = () => undefined;
+      routeFetch({
+        '1201': () => new Promise<Response>((resolve) => { releaseFirst = resolve; }),
+        '1202': () => json(detailFor('1202', 'BK-20261021-0008', { tour: { tourId: '102', title: 'Food trail' } })),
+      });
+      render(<OperatorBookingListView isDemo={false} />);
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20261021-0008').length).toBeGreaterThan(0);
+      });
+
+      // open row A (slow), close the drawer, open row B (fast)
+      fireEvent.click(screen.getAllByRole('button', { name: /Details/i })[0]);
+      await screen.findByRole('dialog');
+      fireEvent.click(screen.getByRole('button', { name: bookingEn.detail.closeBtn }));
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).toBeNull();
+      });
+      fireEvent.click(screen.getAllByRole('button', { name: /Details/i })[1]);
+      await waitFor(() => {
+        expect(within(screen.getByRole('dialog')).getByText(/BK-20261021-0008/)).toBeDefined();
+        expect(screen.getByRole('dialog').getAttribute('aria-busy')).toBeNull();
+      });
+
+      // the slow response for A arrives late and must not replace B
+      releaseFirst(new Response(JSON.stringify(detailFor('1201', 'BK-20261020-0007')), { status: 200 }));
+      await new Promise((resolve) => setTimeout(resolve, 30));
+
+      const dialog = screen.getByRole('dialog');
+      expect(within(dialog).getByText(/BK-20261021-0008/)).toBeDefined();
+      expect(within(dialog).queryByText(/BK-20261020-0007/)).toBeNull();
+    });
+
+    it('does not reopen a closed drawer when its response arrives afterwards', async () => {
+      let release: (response: Response) => void = () => undefined;
+      routeFetch({ '1201': () => new Promise<Response>((resolve) => { release = resolve; }) });
+      render(<OperatorBookingListView isDemo={false} />);
+
+      await openFirstRow();
+      await screen.findByRole('dialog');
+      fireEvent.click(screen.getByRole('button', { name: bookingEn.detail.closeBtn }));
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).toBeNull();
+      });
+
+      release(new Response(JSON.stringify(detailFor('1201', 'BK-20261020-0007')), { status: 200 }));
+      await new Promise((resolve) => setTimeout(resolve, 30));
+
+      expect(screen.queryByRole('dialog')).toBeNull();
     });
   });
 
@@ -285,6 +720,21 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       expect(screen.queryByText('BK-20260925-9999')).toBeNull();
     });
 
+    it('shows the booker name and e-mail, the status filter lists Expired, and no phone column', async () => {
+      render(<OperatorBookingListView isDemo={true} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
+      });
+
+      expect(screen.getAllByText('an.nguyen@example.com').length).toBeGreaterThan(0);
+      expect(screen.queryByText('0901234567')).toBeNull();
+      const statusSelect = screen.getByLabelText(/Booking Status/i) as HTMLSelectElement;
+      expect(Array.from(statusSelect.options).map((o) => o.value)).toContain('Expired');
+      // 0144 is the Expired demo booking
+      expect(screen.getAllByText(bookingEn.statuses.Expired).length).toBeGreaterThan(0);
+    });
+
     it('filters bookings by tour package on Apply', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
@@ -342,7 +792,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('shows MSG29 when date range is invalid on Apply', async () => {
+    it('shows MSG31 when date range is invalid on Apply', async () => {
       render(<OperatorBookingListView isDemo={true} />);
 
       await waitFor(() => {
@@ -359,7 +809,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       fireEvent.click(applyBtn);
 
       await waitFor(() => {
-        expect(screen.getByText(OPERATOR_BOOKING_MESSAGES.MSG29)).toBeDefined();
+        expect(screen.getByText(OPERATOR_BOOKING_MESSAGES.MSG31)).toBeDefined();
       });
     });
 

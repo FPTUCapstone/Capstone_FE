@@ -276,9 +276,9 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <span
-            className="text-xs text-slate-400"
+            className="text-xs text-slate-400 w-full sm:w-auto"
             aria-live="polite"
             data-testid="revenue-last-updated"
           >
@@ -289,7 +289,7 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
             type="button"
             onClick={handleManualRefresh}
             disabled={isLoading}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
+            className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
           >
             <span
               aria-hidden="true"
@@ -303,7 +303,7 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
           <button
             type="button"
             onClick={() => setIsExportDialogOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
+            className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
             <span>{financeEn.revenue.filters.exportBtn}</span>

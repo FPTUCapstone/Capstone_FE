@@ -64,7 +64,7 @@ export function CancelPayoutDialog({ isOpen, request, onClose, onConfirmCancel }
       aria-labelledby="cancel-payout-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs"
     >
-      <div ref={dialogRef} tabIndex={-1} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl transition-all">
+      <div ref={dialogRef} tabIndex={-1} className="w-full max-w-md rounded-2xl bg-white p-4 sm:p-6 shadow-xl transition-all max-h-[90vh] overflow-y-auto">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
             <span className="material-symbols-outlined text-xl">warning</span>
@@ -88,12 +88,12 @@ export function CancelPayoutDialog({ isOpen, request, onClose, onConfirmCancel }
           </div>
         )}
 
-        <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+        <div className="mt-5 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-slate-100 pt-4">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+            className="w-full sm:w-auto rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50 text-center"
           >
             {financeEn.cancelDialog.keepBtn}
           </button>
@@ -101,7 +101,7 @@ export function CancelPayoutDialog({ isOpen, request, onClose, onConfirmCancel }
             type="button"
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-rose-700 disabled:opacity-50"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-rose-700 disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

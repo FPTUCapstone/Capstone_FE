@@ -261,18 +261,18 @@ export function OperatorPayoutView() {
       )}
 
       {/* "Available to withdraw" summary — aggregates every outstanding closed month at once. */}
-      <div className="rounded-2xl border border-[#006B5F]/20 bg-[#006B5F]/5 p-5">
-        <div className="flex items-center justify-between">
-          <div>
+      <div className="rounded-2xl border border-[#006B5F]/20 bg-[#006B5F]/5 p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-500">{financeEn.payouts.availableToWithdraw}</p>
-            <p className="mt-1 text-2xl font-extrabold text-[#006B5F]">{formatVndCurrency(balance.payableNetAmount)}</p>
+            <p className="mt-1 text-xl sm:text-2xl font-extrabold text-[#006B5F] break-words">{formatVndCurrency(balance.payableNetAmount)}</p>
           </div>
           <button
             type="button"
             onClick={() => setIsRequestDialogOpen(true)}
             disabled={!balance.requestable || isLoadingBalance}
             title={balance.activePayoutCode ?? undefined}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:cursor-not-allowed disabled:opacity-40 shrink-0"
           >
             <span className="material-symbols-outlined text-[16px]">send</span>
             <span>{financeEn.payouts.months.btnRequestPayout}</span>

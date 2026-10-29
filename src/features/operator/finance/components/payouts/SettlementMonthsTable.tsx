@@ -32,7 +32,7 @@ export function SettlementMonthsTable({
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs">
       <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-bold text-[#00152A]">

@@ -232,28 +232,28 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl break-words">
               {initialTour.title}
             </h1>
-            <span className="rounded-md bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-bold text-slate-700">
+            <span className="rounded-md bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-bold text-slate-700 shrink-0">
               {initialTour.tourCode}
             </span>
             <OperatorTourStatusBadge status={initialTour.status} />
             {isApproved && (
-              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 shrink-0">
                 Phiên bản {initialTour.version}
               </span>
             )}
           </div>
-          <p className="mt-1 text-xs text-slate-500">Chỉnh sửa thông tin gói tour.</p>
+          <p className="mt-1 text-xs text-slate-500 break-words">Chỉnh sửa thông tin gói tour.</p>
         </div>
 
         <Link
           href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shrink-0"
         >
           Quay lại danh sách
         </Link>
@@ -696,10 +696,10 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <Link
           href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại
         </Link>
@@ -709,7 +709,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
               type="button"
               onClick={() => handleSave(false)}
               disabled={submitting}
-              className="rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
+              className="w-full sm:w-auto text-center rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
             >
               {submitting ? 'Đang lưu…' : isApproved ? 'Lưu thành bản nháp mới' : 'Lưu thay đổi'}
             </button>
@@ -718,7 +718,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 type="button"
                 onClick={() => router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(initialTour.id), isDemo))}
                 disabled={submitting}
-                className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+                className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
               >
                 Gửi xét duyệt
               </button>
