@@ -1,3 +1,5 @@
+import { devTourSearchCopy as copy } from '../resources/en';
+
 export const DEV_TOUR_TEXT_FILTERS = [
   'keyword', 'destination', 'startDate', 'endDate', 'minPrice', 'maxPrice',
   'durationDays', 'category', 'minimumRating', 'sort',
@@ -23,7 +25,6 @@ export function parseDevTourSearchState(params: URLSearchParams): DevTourSearchS
     pageSize: DEV_TOUR_PAGE_SIZE,
   } as DevTourSearchState;
 }
-
 export function buildDevTourQuery(state: DevTourSearchState): URLSearchParams {
   const query = new URLSearchParams();
   for (const key of DEV_TOUR_TEXT_FILTERS) {
@@ -61,17 +62,18 @@ function validDate(value: string): boolean {
 }
 
 export function validateDevTourFilters(state: DevTourSearchState): string | null {
-  if (state.keyword.length > 300 || state.destination.length > 300 || state.category.length > 100) return 'Text filters exceed the supported length.';
-  if (!DEV_TOUR_MODES.some((mode) => mode === state.mode)) return 'Select a supported search mode.';
-  if (state.sort && !DEV_TOUR_SORTS.some((sort) => sort === state.sort)) return 'Select a supported sort order.';
-  if (!Number.isSafeInteger(state.page) || state.page < 1 || state.pageSize !== DEV_TOUR_PAGE_SIZE) return 'Page must be positive and page size must be 20.';
+  if (state.keyword.length > 300 || state.destination.length > 300 || state.category.length > 100) return copy.validation.textLength;
+  if (!DEV_TOUR_MODES.some((mode) => mode === state.mode)) return copy.validation.mode;
+  if (state.sort && !DEV_TOUR_SORTS.some((sort) => sort === state.sort)) return copy.validation.sort;
+  if (!Number.isSafeInteger(state.page) || state.page < 1 || state.pageSize !== DEV_TOUR_PAGE_SIZE) return copy.validation.page;
   for (const key of ['minPrice', 'maxPrice', 'durationDays'] as const) {
-    if (state[key] && (!/^\d+$/.test(state[key]) || !Number.isSafeInteger(Number(state[key])) || Number(state[key]) < (key === 'durationDays' ? 1 : 0))) return 'Prices must be non-negative whole numbers and duration must be positive.';
-    if (state[key] && key !== 'durationDays' && Number(state[key]) > 9_999_999_999) return 'Price exceeds the supported VND range.';
+    if (state[key] && (!/^\d+$/.test(state[key]) || !Number.isSafeInteger(Number(state[key])) || Number(state[key]) < (key === 'durationDays' ? 1 : 0))) return copy.validation.numeric;
+    if (state[key] && key !== 'durationDays' && Number(state[key]) > 9_999_999_999) return copy.validation.priceRange;
   }
-  if (state.minPrice && state.maxPrice && Number(state.minPrice) > Number(state.maxPrice)) return 'Minimum price cannot exceed maximum price.';
-  if (state.minimumRating && (!Number.isFinite(Number(state.minimumRating)) || Number(state.minimumRating) < 1 || Number(state.minimumRating) > 5)) return 'Minimum rating must be between 1 and 5.';
-  if ((state.startDate && !validDate(state.startDate)) || (state.endDate && !validDate(state.endDate))) return 'Enter valid calendar dates.';
-  if (state.startDate && state.endDate && state.startDate > state.endDate) return 'Start date cannot be after end date.';
+  if (state.minPrice && state.maxPrice && Number(state.minPrice) > Number(state.maxPrice)) return copy.validation.minMax;
+  if (state.minimumRating && (!Number.isFinite(Number(state.minimumRating)) || Number(state.minimumRating) < 1 || Number(state.minimumRating) > 5)) return copy.validation.rating;
+  if ((state.startDate && !validDate(state.startDate)) || (state.endDate && !validDate(state.endDate))) return copy.validation.dates;
+  if (state.startDate && state.endDate && state.startDate > state.endDate) return copy.validation.dateOrder;
   return null;
 }
+

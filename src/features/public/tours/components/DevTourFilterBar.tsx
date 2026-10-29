@@ -47,13 +47,13 @@ export function DevTourFilterBar({ filters, categories, onApply, onReset }: Prop
         </label>
         <label className="text-sm font-semibold text-slate-700">{copy.mode}
           <select value={draft.mode} className={CONTROL_CLASS} onChange={(event) => setDraft({ ...draft, mode: event.target.value })}>
-            {DEV_TOUR_MODES.map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+            {DEV_TOUR_MODES.map((mode) => <option key={mode} value={mode}>{copy.modes[mode]}</option>)}
           </select>
         </label>
         <label className="text-sm font-semibold text-slate-700">{copy.sort}
           <select value={draft.sort} className={CONTROL_CLASS} onChange={(event) => setDraft({ ...draft, sort: event.target.value })}>
             <option value="">{copy.defaultSort}</option>
-            {DEV_TOUR_SORTS.map((sort) => <option key={sort} value={sort}>{sort}</option>)}
+            {DEV_TOUR_SORTS.map((sort) => <option key={sort} value={sort}>{copy.sorts[sort]}</option>)}
           </select>
         </label>
       </div>

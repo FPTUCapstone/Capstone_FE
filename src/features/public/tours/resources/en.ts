@@ -26,6 +26,19 @@ export const devTourSearchCopy = {
     navigation: 'Tour results pagination', previous: 'Previous page', previousShort: 'Previous',
     next: 'Next page', nextShort: 'Next', goToPage: (page: number) => `Go to page ${page}`, page: (page: number) => `Page ${page}`,
   },
+  modes: { lexical: 'Lexical', semantic: 'Semantic', hybrid: 'Hybrid' },
+  sorts: {
+    relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low',
+    rating: 'Rating', departureDate: 'Departure date',
+  },
+  validation: {
+    textLength: 'Text filters exceed the supported length.', mode: 'Select a supported search mode.',
+    sort: 'Select a supported sort order.', page: 'Page must be positive and page size must be 20.',
+    numeric: 'Prices must be non-negative whole numbers and duration must be positive.',
+    priceRange: 'Price exceeds the supported VND range.', minMax: 'Minimum price cannot exceed maximum price.',
+    rating: 'Minimum rating must be between 1 and 5.', dates: 'Enter valid calendar dates.',
+    dateOrder: 'Start date cannot be after end date.',
+  },
 } as const;
 
 export const DEV_SEARCH_ERRORS: Readonly<Record<string, string>> = {
