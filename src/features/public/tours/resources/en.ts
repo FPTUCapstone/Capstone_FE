@@ -4,7 +4,7 @@ export const devTourSearchCopy = {
   keyword: 'What experience are you looking for?', destination: 'Destination', startDate: 'Start date', endDate: 'End date',
   minPrice: 'Minimum price (VND)', maxPrice: 'Maximum price (VND)', durationDays: 'Duration (days)',
   category: 'Category', minimumRating: 'Minimum rating', sort: 'Sort order', mode: 'Search mode', pageSize: 'Results per page',
-  allCategories: 'All active categories', defaultSort: 'Backend default', search: 'Search tours', reset: 'Reset filters',
+  allCategories: 'All active categories', defaultSort: 'Backend default', search: 'Search tours', clearFilters: 'Clear filters',
   results: 'Search results', loading: 'Searching tours…', empty: 'No matching tours.', retry: 'Retry search',
   searchFailure: 'Search failed. Please retry. (MSG127)',
   formCriteria: 'Use this form for your next search. The displayed criteria below describe the results currently shown.',
@@ -16,6 +16,16 @@ export const devTourSearchCopy = {
   invalidFilters: 'The search filters are invalid.',
   requestFailed: 'Development search could not return complete results. Please retry after the corpus and vectors are verified.',
   ratingUnknown: 'Not yet rated', rating: 'Rating',
+  showing: (count: number, total: number) => `Showing ${count} of ${total} tours`,
+  card: {
+    soldOut: 'Sold out', availableSlots: (count: number) => `${count} places left`, available: 'Available',
+    noSchedule: 'No upcoming schedule', unknown: 'Unknown', days: (count: number) => `${count} days`,
+    departure: 'Departure:', priceFrom: 'From', details: 'Details', detailsAria: (title: string) => `View details for ${title}`,
+  },
+  pagination: {
+    navigation: 'Tour results pagination', previous: 'Previous page', previousShort: 'Previous',
+    next: 'Next page', nextShort: 'Next', goToPage: (page: number) => `Go to page ${page}`, page: (page: number) => `Page ${page}`,
+  },
 } as const;
 
 export const DEV_SEARCH_ERRORS: Readonly<Record<string, string>> = {

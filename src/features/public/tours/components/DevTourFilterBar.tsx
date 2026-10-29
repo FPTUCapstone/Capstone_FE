@@ -56,14 +56,11 @@ export function DevTourFilterBar({ filters, categories, onApply, onReset }: Prop
             {DEV_TOUR_SORTS.map((sort) => <option key={sort} value={sort}>{sort}</option>)}
           </select>
         </label>
-        <label className="text-sm font-semibold text-slate-700">{copy.pageSize}
-          <input type="number" min={1} max={100} step={1} className={CONTROL_CLASS} value={Number.isNaN(draft.pageSize) ? '' : draft.pageSize} onChange={(event) => setDraft({ ...draft, pageSize: Number(event.target.value) })} />
-        </label>
       </div>
       {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
       <div className="mt-5 flex flex-wrap gap-3">
         <button type="submit" className="rounded-xl bg-teal-700 px-5 py-2 text-sm font-bold text-white hover:bg-teal-800 focus:outline-2 focus:outline-offset-2 focus:outline-teal-700">{copy.search}</button>
-        <button type="button" onClick={onReset} className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-bold focus:outline-2 focus:outline-teal-700">{copy.reset}</button>
+        <button type="button" onClick={onReset} className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-bold focus:outline-2 focus:outline-teal-700">{copy.clearFilters}</button>
       </div>
     </form>
   );

@@ -44,6 +44,15 @@ describe('development tour discovery', () => {
     expect(screen.getByLabelText('End date')).toBeTruthy();
     expect(screen.getByLabelText('Duration (days)')).toBeTruthy();
     expect(screen.getByLabelText('Minimum rating')).toBeTruthy();
+    expect(screen.queryByLabelText('Results per page')).toBeNull();
+  });
+
+  it('clear filters preserves keyword and mode while restoring the approved defaults', async () => {
+    query = 'keyword=quiet+sea&destination=Hoi+An&startDate=2027-01-02&endDate=2027-01-05&minPrice=100&maxPrice=500&durationDays=3&category=SEA&minimumRating=4&sort=priceDesc&mode=semantic&page=3&pageSize=99';
+    render(<DevExploreToursPage />);
+    await screen.findByText('Quiet beach');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(push).toHaveBeenLastCalledWith('/tours?keyword=quiet+sea&sort=relevance&page=1&pageSize=20&mode=semantic');
   });
 
   it('validates copied invalid URL and never requests search data', async () => {
@@ -69,9 +78,9 @@ describe('development tour discovery', () => {
     expect(within(criteria).getByText('lexical')).toBeTruthy();
     expect(within(criteria).queryByText('mountain')).toBeNull();
     expect(screen.getByText('Showing 1 of 3 tours')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Xem chi tiết/ }).getAttribute('href')).toContain('keyword=beach');
-    fireEvent.click(screen.getByRole('button', { name: /^Trang 3$/ }));
-    expect(push).toHaveBeenLastCalledWith('/tours?keyword=beach&page=3&pageSize=1&mode=lexical');
+    expect(screen.getByRole('link', { name: /View details/ }).getAttribute('href')).toContain('keyword=beach');
+    fireEvent.click(screen.getByRole('button', { name: /^Page 3$/ }));
+    expect(push).toHaveBeenLastCalledWith('/tours?keyword=beach&page=3&pageSize=20&mode=lexical');
     vi.mocked(searchDevTours).mockResolvedValueOnce({ ...response, items: [], totalCount: 0, totalPages: 0 });
     fireEvent.click(screen.getByRole('button', { name: 'Retry search' }));
     await screen.findByText('No matching tours.');
@@ -125,8 +134,8 @@ describe('development tour discovery', () => {
     query = 'keyword=beach&mode=hybrid';
     rerender(<DevExploreToursPage />);
     await waitFor(() => expect(vi.mocked(searchDevTours).mock.calls.length).toBe(calls + 1));
-    fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
-    expect(push).toHaveBeenLastCalledWith('/tours');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(push).toHaveBeenLastCalledWith('/tours?keyword=beach&sort=relevance&page=1&pageSize=20&mode=hybrid');
     query = '';
     rerender(<DevExploreToursPage />);
     await waitFor(() => expect(within(screen.getByRole('region', { name: 'Displayed search criteria' })).getByText('lexical')).toBeTruthy());

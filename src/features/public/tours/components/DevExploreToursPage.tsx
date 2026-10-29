@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { devTourSearchCopy as copy } from '../resources/en';
 import { getDevTourCategories, searchDevTours } from '../services/devTourApi';
 import type { DevPagedToursResponseDto, DevTourCategory } from '../types/devTour';
-import { buildDevTourQuery, parseDevTourSearchState, validateDevTourFilters, type DevTourSearchState } from '../utils/devTourQuery';
+import { buildDevTourQuery, clearDevTourFilters, parseDevTourSearchState, validateDevTourFilters, type DevTourSearchState } from '../utils/devTourQuery';
 import { DevTourFilterBar } from './DevTourFilterBar';
 import { TourCard } from './TourCard';
 import { TourPagination } from './TourPagination';
@@ -76,7 +76,7 @@ export function DevExploreToursPage() {
         </header>
         {categories?.status === 'error' && <div role="alert" className="mb-4 text-sm text-red-700"><p>{copy.categoryFailure}</p><button type="button" className="mt-2 underline" onClick={() => setCategoryVersion((value) => value + 1)}>{copy.retryCategories}</button></div>}
         <p className="mb-3 text-sm text-slate-600">{copy.formCriteria}</p>
-        <DevTourFilterBar key={queryKey} filters={filters} categories={categories?.status === 'success' ? categories.items : []} onApply={navigate} onReset={() => router.push('/tours')} />
+        <DevTourFilterBar key={queryKey} filters={filters} categories={categories?.status === 'success' ? categories.items : []} onApply={navigate} onReset={() => navigate(clearDevTourFilters(filters))} />
         <section aria-labelledby="dev-tour-results" aria-busy={!validation && !current}>
           <h2 id="dev-tour-results" tabIndex={-1} className="mb-4 text-xl font-bold">{copy.results}</h2>
           {validation ? <p role="alert" className="text-red-700">{validation}</p> : !current ? <><p role="status">{copy.loading}</p>{!displayed && <TourListSkeleton />}</> : current.status === 'error' ? <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-5"><p>{copy.searchFailure}</p><p>{current.message}</p><button type="button" className="mt-3 underline" onClick={() => setVersion((value) => value + 1)}>{copy.retry}</button></div> : null}
@@ -88,9 +88,9 @@ export function DevExploreToursPage() {
                 {(Object.keys(CRITERIA_LABELS) as (keyof DevTourSearchState)[]).map((key) => <div key={key}><dt className="font-semibold">{CRITERIA_LABELS[key]}</dt><dd className="wrap-break-word">{String(displayed.filters[key] || (key === 'sort' ? copy.defaultSort : copy.anyCriteria))}</dd></div>)}
               </dl>
             </section>
-            <p role="status" className="mb-4 text-sm text-slate-600">Showing {displayed.data.items.length} of {displayed.data.totalCount} tours</p>
-            {displayed.data.items.length === 0 ? <p>{copy.empty}</p> : <div data-testid="tours-grid" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{displayed.data.items.map((tour) => <TourCard key={tour.tourId} tour={tour} aggregateRating={tour.aggregateRating} searchContextQuery={displayed.query} />)}</div>}
-            <TourPagination page={displayed.data.page} totalPages={displayed.data.totalPages} onPageChange={(page) => navigate({ ...displayed.filters, page })} />
+            <p role="status" className="mb-4 text-sm text-slate-600">{copy.showing(displayed.data.items.length, displayed.data.totalCount)}</p>
+            {displayed.data.items.length === 0 ? <p>{copy.empty}</p> : <div data-testid="tours-grid" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{displayed.data.items.map((tour) => <TourCard key={tour.tourId} tour={tour} aggregateRating={tour.aggregateRating} searchContextQuery={displayed.query} copy={copy.card} />)}</div>}
+            <TourPagination page={displayed.data.page} totalPages={displayed.data.totalPages} onPageChange={(page) => navigate({ ...displayed.filters, page })} copy={copy.pagination} />
           </>}
         </section>
       </main>
