@@ -148,8 +148,8 @@ const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin
 
 ```css
 /* app/globals.css font fallbacks */
---font-sans: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
---font-mono: Consolas, "Courier New", monospace;
+--font-sans: var(--font-jakarta), var(--font-geist-sans), "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+--font-mono: var(--font-geist-mono), Consolas, "Courier New", monospace;
 ```
 
 - **Primary UI Type**: Plus Jakarta Sans and Geist Sans provide optimal legibility, clean geometry, and full Vietnamese diacritics support.
