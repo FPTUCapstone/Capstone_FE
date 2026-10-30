@@ -180,7 +180,7 @@ export function CreateCouponForm() {
     return <section className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-[#c3c6ce] bg-white shadow-[0_24px_72px_rgba(0,21,42,0.14)]" aria-live="polite">
       <div className="bg-[#00152a] px-6 py-7 text-white sm:px-8">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9ff2e2]">Coupon activated</p>
-        <h2 className="mt-2 font-[family-name:var(--font-jakarta)] text-3xl font-bold tracking-tight">{createdCode} is ready to use</h2>
+        <h2 className="mt-2 text-3xl font-bold tracking-tight">{createdCode} is ready to use</h2>
         <p className="mt-3 max-w-lg text-sm leading-6 text-[#d1e4ff]">It is active for the selected tours during the validity window you chose.</p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 bg-[#f2f4f7] px-6 py-5 sm:px-8">
@@ -200,7 +200,7 @@ export function CreateCouponForm() {
         <span className="material-symbols-outlined flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#006b5f]/35 text-[24px] text-[#9ff2e2]" aria-hidden="true">confirmation_number</span>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9ff2e2]">Partner promotion</p>
-          <h2 className="mt-1 font-[family-name:var(--font-jakarta)] text-2xl font-bold tracking-tight sm:text-3xl">Create a new promotional coupon</h2>
+          <h2 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Create a new promotional coupon</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-[#d1e4ff]">Set a clear discount rule for your approved tours. Customers can only use it during the period you publish.</p>
         </div>
       </div>
