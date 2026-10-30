@@ -21,6 +21,7 @@ const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
   ROUTES.admin.accountSecurity,
   ROUTES.admin.payouts,
   ROUTES.admin.createPoi,
+  ROUTES.admin.pois,
 ]);
 
 export function isAdministratorOnlyPathname(pathname: string): boolean {

@@ -1,7 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AdminSignInForm, getSafeAdminReturnUrl } from './AdminSignInForm';
+import {
+  AdminSignInForm,
+  getSafeAdminReturnUrl,
+  isAdministratorOnlyPathname,
+} from './AdminSignInForm';
 
 const { router } = vi.hoisted(() => ({
   router: { replace: vi.fn(), refresh: vi.fn() },
@@ -25,6 +29,9 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('/admin/audit-logs?pageNumber=2', 'Administrator')).toBe('/admin/audit-logs?pageNumber=2');
     expect(getSafeAdminReturnUrl('/admin/reports', 'Administrator')).toBe('/admin/reports');
     expect(getSafeAdminReturnUrl('/admin/reports?demo=true', 'Administrator')).toBe('/admin/reports?demo=true');
+    expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest', 'Administrator')).toBe(
+      '/admin/catalogue/points-of-interest',
+    );
     expect(getSafeAdminReturnUrl('https://attacker.example/admin', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('//attacker.example/admin', 'Administrator')).toBe('/admin');
     expect(getSafeAdminReturnUrl('/admin/login', 'Administrator')).toBe('/admin');
@@ -38,6 +45,15 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('/admin/staff', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/account/security', 'Staff')).toBe('/admin/account/security');
     expect(getSafeAdminReturnUrl('/admin/payouts', 'Staff')).toBe('/admin/payouts');
+    expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest', 'Staff')).toBe(
+      '/admin/catalogue/points-of-interest',
+    );
+    expect(
+      getSafeAdminReturnUrl(
+        '/admin/catalogue/points-of-interest?status=Inactive&page=2',
+        'Staff',
+      ),
+    ).toBe('/admin/catalogue/points-of-interest?status=Inactive&page=2');
     expect(getSafeAdminReturnUrl('/admin/tours/reviews', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/catalogue/points-of-interest/new', 'Staff')).toBe('/admin/catalogue/points-of-interest/new');
     expect(getSafeAdminReturnUrl('/admin/tour-operator-applications/1', 'Staff')).toBe('/admin/staff');
@@ -47,6 +63,34 @@ describe('Administration return URL and role-aware routing', () => {
     expect(getSafeAdminReturnUrl('/admin/audit-logs', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('/admin/settings/algorithm-parameters', 'Staff')).toBe('/admin/staff');
     expect(getSafeAdminReturnUrl('https://attacker.example/admin/staff', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('//attacker.example/admin/staff', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin\\audit-logs', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('not-an-admin-route', 'Staff')).toBe('/admin/staff');
+    expect(getSafeAdminReturnUrl('/admin/login', 'Staff')).toBe('/admin/staff');
+
+    expect(isAdministratorOnlyPathname('/admin/catalogue/points-of-interest')).toBe(false);
+    expect(isAdministratorOnlyPathname('/admin/audit-logs')).toBe(true);
+  });
+
+  it('returns Staff to the permitted POI list after successful sign-in', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(Response.json({ authenticated: true, role: 'Staff' })),
+    );
+
+    render(<AdminSignInForm returnUrl="/admin/catalogue/points-of-interest" />);
+    fireEvent.change(screen.getByLabelText('Email Address'), {
+      target: { value: 'staff@tripmate.local' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'ValidPassword!123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith('/admin/catalogue/points-of-interest'),
+    );
+    expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
   it('returns Administrator to the protected Admin page after successful sign-in', async () => {
