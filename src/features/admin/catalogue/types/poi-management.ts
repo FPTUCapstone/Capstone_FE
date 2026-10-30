@@ -34,4 +34,3 @@ export interface PoiManagementResponse {
   metadata: { categories: PoiManagementCategory[] };
   items: PoiManagementItem[];
 }
-

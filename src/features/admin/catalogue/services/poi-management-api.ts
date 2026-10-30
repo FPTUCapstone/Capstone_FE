@@ -201,4 +201,3 @@ export async function loadPoiManagement(query: PoiManagementQuery = {}, signal?:
       (query.status !== undefined && item.status !== query.status))) return unavailable();
   return parsed;
 }
-

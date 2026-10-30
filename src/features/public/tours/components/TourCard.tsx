@@ -3,11 +3,33 @@ import Link from 'next/link';
 
 import type { TourSearchItemDto } from '../types/tour';
 import { formatDateDisplay, formatVndPrice } from '../utils/tourQuery';
+import { devTourSearchCopy } from '../resources/en';
 
 interface TourCardProps {
   tour: TourSearchItemDto;
   searchContextQuery?: string;
+  aggregateRating?: number | null;
+  copy?: TourCardCopy;
 }
+
+export interface TourCardCopy {
+  soldOut: string;
+  availableSlots: (count: number) => string;
+  available: string;
+  noSchedule: string;
+  unknown: string;
+  days: (count: number) => string;
+  departure: string;
+  priceFrom: string;
+  details: string;
+  detailsAria: (title: string) => string;
+}
+
+const legacyCopy: TourCardCopy = {
+  soldOut: 'Hết chỗ', availableSlots: (count) => `Còn ${count} chỗ`, available: 'Còn chỗ',
+  noSchedule: 'Chưa có lịch khởi hành', unknown: 'Chưa xác định', days: (count) => `${count} ngày`,
+  departure: 'Khởi hành:', priceFrom: 'Giá từ', details: 'Chi tiết', detailsAria: (title) => `Xem chi tiết tour ${title}`,
+};
 
 export interface TourAvailabilityPresentation {
   label: string;
@@ -18,26 +40,27 @@ export interface TourAvailabilityPresentation {
 export function getTourAvailabilityPresentation(
   status: string,
   remainingSlots: number | null,
+  copy: TourCardCopy = legacyCopy,
 ): TourAvailabilityPresentation {
   const normalized = (status || '').trim().toLowerCase();
 
   if (normalized === 'available') {
     if (remainingSlots === 0) {
       return {
-        label: 'Hết chỗ',
+        label: copy.soldOut,
         badgeClass: 'bg-red-600/90 text-white',
         icon: 'block',
       };
     }
     if (remainingSlots !== null && remainingSlots > 0) {
       return {
-        label: `Còn ${remainingSlots} chỗ`,
+        label: copy.availableSlots(remainingSlots),
         badgeClass: 'bg-teal-700/90 text-white',
         icon: 'check_circle',
       };
     }
     return {
-      label: 'Còn chỗ',
+      label: copy.available,
       badgeClass: 'bg-teal-700/90 text-white',
       icon: 'check_circle',
     };
@@ -45,7 +68,7 @@ export function getTourAvailabilityPresentation(
 
   if (normalized === 'soldout') {
     return {
-      label: 'Hết chỗ',
+      label: copy.soldOut,
       badgeClass: 'bg-red-600/90 text-white',
       icon: 'block',
     };
@@ -53,20 +76,20 @@ export function getTourAvailabilityPresentation(
 
   if (normalized === 'noupcomingschedule') {
     return {
-      label: 'Chưa có lịch khởi hành',
+      label: copy.noSchedule,
       badgeClass: 'bg-amber-600/90 text-white',
       icon: 'event_busy',
     };
   }
 
   return {
-    label: 'Chưa xác định',
+    label: copy.unknown,
     badgeClass: 'bg-slate-600/90 text-white',
     icon: 'help',
   };
 }
 
-export function TourCard({ tour, searchContextQuery }: TourCardProps) {
+export function TourCard({ tour, searchContextQuery, aggregateRating, copy = legacyCopy }: TourCardProps) {
   const detailHref = `/tours/${encodeURIComponent(tour.tourId)}${
     searchContextQuery ? `?${searchContextQuery}` : ''
   }`;
@@ -74,6 +97,7 @@ export function TourCard({ tour, searchContextQuery }: TourCardProps) {
   const availability = getTourAvailabilityPresentation(
     tour.availabilityStatus,
     tour.remainingSlots,
+    copy,
   );
 
   return (
@@ -137,7 +161,7 @@ export function TourCard({ tour, searchContextQuery }: TourCardProps) {
           </span>
           <span className="flex shrink-0 items-center gap-0.5 font-semibold text-slate-700">
             <span className="material-symbols-outlined text-sm text-slate-400">schedule</span>
-            <span>{tour.durationDays} ngày</span>
+            <span>{copy.days(tour.durationDays)}</span>
           </span>
         </div>
 
@@ -151,16 +175,18 @@ export function TourCard({ tour, searchContextQuery }: TourCardProps) {
         {/* Departure info */}
         <div className="mb-4 flex items-center gap-1.5 text-xs text-slate-600">
           <span className="material-symbols-outlined text-sm text-teal-600">calendar_month</span>
-          <span>Khởi hành: </span>
+          <span>{copy.departure} </span>
           <span className="font-semibold text-slate-800">
             {formatDateDisplay(tour.departureAtUtc)}
           </span>
         </div>
 
+        {aggregateRating !== undefined && <p className="mb-3 text-sm text-slate-600">{aggregateRating === null ? devTourSearchCopy.ratingUnknown : `${devTourSearchCopy.rating}: ${aggregateRating.toFixed(1)} / 5`}</p>}
+
         {/* Price & CTA */}
         <div className="mt-auto flex items-end justify-between border-t border-slate-100 pt-3">
           <div>
-            <span className="block text-[11px] text-slate-500">Giá từ</span>
+            <span className="block text-[11px] text-slate-500">{copy.priceFrom}</span>
             <span className="text-lg font-black text-[#007d6e]">
               {formatVndPrice(tour.basePrice)}
             </span>
@@ -169,9 +195,9 @@ export function TourCard({ tour, searchContextQuery }: TourCardProps) {
           <Link
             href={detailHref}
             className="inline-flex items-center gap-1 rounded-xl bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e] transition hover:bg-[#007d6e] hover:text-white"
-            aria-label={`Xem chi tiết tour ${tour.title}`}
+            aria-label={copy.detailsAria(tour.title)}
           >
-            <span>Chi tiết</span>
+            <span>{copy.details}</span>
             <span className="material-symbols-outlined text-sm">arrow_forward</span>
           </Link>
         </div>

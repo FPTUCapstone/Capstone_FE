@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'coral' | 'outline' | 'teal' | 'admin';
+  variant?: 'primary' | 'secondary' | 'coral' | 'outline' | 'teal' | 'admin' | 'forest';
 };
 
 const variants = {
@@ -12,7 +12,8 @@ const variants = {
   coral: 'bg-[#FF6A3D] text-white hover:bg-[#E8582C]',
   teal: 'bg-brand-teal text-white hover:bg-brand-brightTeal active:scale-[0.98] shadow-btn',
   outline: 'border border-[#E1E8F3] bg-[#F4F7FC] text-[#33425A] hover:bg-[#E8EEF8] hover:border-[#6B7C97]',
-  admin: 'bg-[#245747] text-[#F7F6F2] hover:bg-[#2A6B55] active:scale-[0.98] shadow-xs',
+  admin: 'bg-[#245747] text-white hover:bg-[#1B4337] active:bg-[#15342B] active:scale-[0.99] shadow-xs focus-visible:outline-[#245747]',
+  forest: 'bg-[#245747] text-white hover:bg-[#1B4337] active:bg-[#15342B] active:scale-[0.99] shadow-xs focus-visible:outline-[#245747]',
 };
 
 export function ActionButton({ children, className = '', disabled, loading, variant = 'primary', ...props }: ActionButtonProps) {

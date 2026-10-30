@@ -2,9 +2,25 @@ interface TourPaginationProps {
   page: number;
   totalPages: number;
   onPageChange: (nextPage: number) => void;
+  copy?: TourPaginationCopy;
 }
 
-export function TourPagination({ page, totalPages, onPageChange }: TourPaginationProps) {
+interface TourPaginationCopy {
+  navigation: string;
+  previous: string;
+  previousShort: string;
+  next: string;
+  nextShort: string;
+  goToPage: (page: number) => string;
+  page: (page: number) => string;
+}
+
+const legacyCopy: TourPaginationCopy = {
+  navigation: 'Phân trang danh sách tour', previous: 'Trang trước', previousShort: 'Trước',
+  next: 'Trang tiếp theo', nextShort: 'Sau', goToPage: (page) => `Đến trang ${page}`, page: (page) => `Trang ${page}`,
+};
+
+export function TourPagination({ page, totalPages, onPageChange, copy = legacyCopy }: TourPaginationProps) {
   if (totalPages <= 1) return null;
 
   // Window of max 5 pages
@@ -17,18 +33,18 @@ export function TourPagination({ page, totalPages, onPageChange }: TourPaginatio
 
   return (
     <nav
-      aria-label="Phân trang danh sách tour"
+      aria-label={copy.navigation}
       className="mt-8 flex items-center justify-center gap-1 sm:gap-2"
     >
       <button
         type="button"
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
-        aria-label="Trang trước"
+        aria-label={copy.previous}
         className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <span className="material-symbols-outlined text-sm">chevron_left</span>
-        <span className="hidden sm:inline sm:ml-1">Trước</span>
+        <span className="hidden sm:inline sm:ml-1">{copy.previousShort}</span>
       </button>
 
       {start > 1 && (
@@ -36,7 +52,7 @@ export function TourPagination({ page, totalPages, onPageChange }: TourPaginatio
           <button
             type="button"
             onClick={() => onPageChange(1)}
-            aria-label="Đến trang 1"
+            aria-label={copy.goToPage(1)}
             className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50"
           >
             1
@@ -52,7 +68,7 @@ export function TourPagination({ page, totalPages, onPageChange }: TourPaginatio
             key={p}
             type="button"
             onClick={() => onPageChange(p)}
-            aria-label={`Trang ${p}`}
+            aria-label={copy.page(p)}
             aria-current={isActive ? 'page' : undefined}
             className={`h-9 w-9 rounded-xl text-xs font-bold transition shadow-xs ${
               isActive
@@ -71,7 +87,7 @@ export function TourPagination({ page, totalPages, onPageChange }: TourPaginatio
           <button
             type="button"
             onClick={() => onPageChange(totalPages)}
-            aria-label={`Đến trang ${totalPages}`}
+            aria-label={copy.goToPage(totalPages)}
             className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50"
           >
             {totalPages}
@@ -83,10 +99,10 @@ export function TourPagination({ page, totalPages, onPageChange }: TourPaginatio
         type="button"
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
-        aria-label="Trang tiếp theo"
+        aria-label={copy.next}
         className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <span className="hidden sm:inline sm:mr-1">Sau</span>
+        <span className="hidden sm:inline sm:mr-1">{copy.nextShort}</span>
         <span className="material-symbols-outlined text-sm">chevron_right</span>
       </button>
     </nav>
