@@ -235,7 +235,10 @@ const GATEWAY_STATE_TEXT: Record<string, string> = {
   ManualReconciliation: 'Needs manual reconciliation',
 };
 
-export function gatewayStateText(state: string): string {
+/** `Completed` means the worker is finished with the payout, not that the money moved: for a failed payout it
+ *  must not read as a completed transfer. */
+export function gatewayStateText(state: string, status?: SettlementStatus): string {
+  if (state === 'Completed' && status === 'SettlementFailed') return 'Transfer not completed';
   return Object.hasOwn(GATEWAY_STATE_TEXT, state) ? GATEWAY_STATE_TEXT[state] : 'Status unavailable';
 }
 

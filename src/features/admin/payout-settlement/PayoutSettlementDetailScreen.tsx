@@ -35,6 +35,7 @@ export function PayoutSettlementDetailScreen({ payoutId }: { payoutId: string })
   const [dialogOpen, setDialogOpen] = useState(false);
   const latestRequest = useRef(0);
   const controllerRef = useRef<AbortController | null>(null);
+  const shownStatus = useRef<SettlementDetail['status'] | null>(null);
 
   // Every load supersedes the previous one: the older request is aborted and, if its promise still settles
   // (for example a transport that ignores the signal), its result is dropped by the request counter.
@@ -48,6 +49,9 @@ export function PayoutSettlementDetailScreen({ payoutId }: { payoutId: string })
     return fetchSettlementDetail(payoutId, controller.signal)
       .then((response) => {
         if (!isCurrent()) return;
+        // The "authorized, being processed" message is only true until polling sees the payout reach another status.
+        if (mode === 'poll' && shownStatus.current !== null && shownStatus.current !== response.status) setToast(null);
+        shownStatus.current = response.status;
         setDetail(response);
         setState('ready');
       })
@@ -271,7 +275,7 @@ function OutcomePanel({ detail, outcome }: { detail: SettlementDetail; outcome: 
       <SectionTitle>Settlement outcome</SectionTitle>
       <dl className="mt-3 grid gap-3 sm:grid-cols-3">
         <Fact label="Status" value={formatSettlementStatus(detail.status)} />
-        <Fact label="Transfer" value={gatewayStateText(outcome.gatewayState)} />
+        <Fact label="Transfer" value={gatewayStateText(outcome.gatewayState, detail.status)} />
         <Fact label="Sent to the bank" value={formatRequestedAt(outcome.submittedAtUtc)} />
       </dl>
 

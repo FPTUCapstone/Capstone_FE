@@ -87,7 +87,7 @@ Sections:
 | `Pending` | Waiting to be sent to the bank |
 | `Submitting` | Being sent to the bank |
 | `Submitted` | Sent. Waiting for the bank's confirmation |
-| `Completed` | Transfer completed |
+| `Completed` | Transfer completed (for a `SettlementFailed` payout: Transfer not completed, because `Completed` only means the worker is finished) |
 | `ManualReconciliation` | Needs manual reconciliation |
 | anything else | Status unavailable |
 

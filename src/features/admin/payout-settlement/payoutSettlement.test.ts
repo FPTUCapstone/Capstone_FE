@@ -195,6 +195,12 @@ describe('failure and gateway text', () => {
     expect(failureMessage(null)).toBe('The transfer could not be completed.');
   });
 
+  it('does not call the transfer of a failed payout completed', () => {
+    expect(gatewayStateText('Completed', 'SettlementFailed')).toBe('Transfer not completed');
+    expect(gatewayStateText('Completed', 'Settled')).toBe('Transfer completed');
+    expect(gatewayStateText('Completed')).toBe('Transfer completed');
+  });
+
   it.each([
     ['NotQueued', 'Not queued for transfer'],
     ['Pending', 'Waiting to be sent to the bank'],

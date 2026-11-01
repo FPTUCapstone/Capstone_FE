@@ -1,8 +1,8 @@
-import { act, renderHook, render, screen } from '@testing-library/react';
+import { act, fireEvent, renderHook, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PayoutSettlementDetailScreen } from './PayoutSettlementDetailScreen';
-import { PayoutSettlementError, fetchSettlementDetail } from './payoutSettlementService';
+import { PayoutSettlementError, authorizeSettlement, fetchSettlementDetail } from './payoutSettlementService';
 import { approved, processing, withOutcome } from './settlementFixtures';
 import { useSettlementPolling } from './useSettlementPolling';
 
@@ -19,6 +19,7 @@ vi.mock('./payoutSettlementService', () => ({
 }));
 
 const fetchMock = vi.mocked(fetchSettlementDetail);
+const authorizeMock = vi.mocked(authorizeSettlement);
 
 function setHidden(hidden: boolean) {
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
@@ -163,5 +164,26 @@ describe('detail screen auto-refresh', () => {
     expect(live.getAttribute('aria-live')).toBe('polite');
     await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
     expect(screen.getByText(/Payout PO-000123 status: Settled/)).toBeTruthy();
+  });
+
+  it('drops the stale "being processed" message once the polled status changes', async () => {
+    const failed = withOutcome('SettlementFailed', {
+      gatewayState: 'Completed', failureCode: 'gateway_failed', submittedAtUtc: null, reconciliationRequired: false,
+    });
+    fetchMock.mockResolvedValueOnce(approved).mockResolvedValueOnce(processing).mockResolvedValue(failed);
+    authorizeMock.mockResolvedValue({
+      payoutId: '123', payoutCode: 'PO-000123', status: 'SettlementProcessing', authorizedAtUtc: '2026-11-01T09:00:00+00:00',
+    });
+
+    render(<PayoutSettlementDetailScreen payoutId="123" />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    fireEvent.click(screen.getByRole('button', { name: 'Authorize settlement' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm settlement' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByText('Settlement authorized. The transfer is being processed.')).toBeTruthy();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+    expect(screen.getByLabelText('Payout status: Settlement failed')).toBeTruthy();
+    expect(screen.queryByText('Settlement authorized. The transfer is being processed.')).toBeNull();
   });
 });

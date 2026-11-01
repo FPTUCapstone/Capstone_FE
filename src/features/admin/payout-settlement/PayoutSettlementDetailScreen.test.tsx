@@ -83,6 +83,8 @@ describe('PayoutSettlementDetailScreen', () => {
     render(<PayoutSettlementDetailScreen payoutId="123" />);
     const outcome = await screen.findByRole('region', { name: 'Settlement outcome' });
     expect(within(outcome).getByText('The transfer was returned by the bank.')).toBeTruthy();
+    expect(within(outcome).getByText('Transfer not completed')).toBeTruthy();
+    expect(within(outcome).queryByText('Transfer completed')).toBeNull();
     expect(within(outcome).getByText('gateway_reversed')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /retry|authorize/i })).toBeNull();
   });
