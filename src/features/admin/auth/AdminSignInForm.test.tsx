@@ -72,6 +72,14 @@ describe('Administration return URL and role-aware routing', () => {
     expect(isAdministratorOnlyPathname('/admin/audit-logs')).toBe(true);
   });
 
+  it('keeps the UC-65 settlement routes Administrator-only for the post-sign-in redirect', () => {
+    for (const path of ['/admin/payouts/settlement', '/admin/payouts/settlement/123']) {
+      expect(isAdministratorOnlyPathname(path)).toBe(true);
+      expect(getSafeAdminReturnUrl(path, 'Staff')).toBe('/admin/staff');
+      expect(getSafeAdminReturnUrl(path, 'Administrator')).toBe(path);
+    }
+  });
+
   it('returns Staff to the permitted POI list after successful sign-in', async () => {
     vi.stubGlobal(
       'fetch',

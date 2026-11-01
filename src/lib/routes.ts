@@ -65,5 +65,6 @@ export const ROUTES = {
     pois: '/admin/catalogue/points-of-interest',
     landingContent: '/admin/landing-content',
     payoutSettlement: '/admin/payouts/settlement',
+    payoutSettlementDetails: (id: string) => `/admin/payouts/settlement/${encodeURIComponent(id)}`,
   },
 } as const;

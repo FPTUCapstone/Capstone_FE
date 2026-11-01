@@ -2,14 +2,14 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { PayoutSettlementUnavailableView } from '@/features/admin/payout-records/components/PayoutSettlementUnavailableView';
+import { PayoutSettlementQueueScreen } from '@/features/admin/payout-settlement/PayoutSettlementQueueScreen';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 import { ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = {
   title: 'Payout Settlement | TripMate Admin Console',
-  description: 'Manage Tour Operator payout settlements and banking disbursements.',
+  description: 'Authorize approved Tour Operator payouts for bank settlement.',
 };
 
 export default async function PayoutSettlementPage() {
@@ -29,5 +29,5 @@ export default async function PayoutSettlementPage() {
     return <AdminAccessDeniedView />;
   }
 
-  return <PayoutSettlementUnavailableView />;
+  return <PayoutSettlementQueueScreen />;
 }

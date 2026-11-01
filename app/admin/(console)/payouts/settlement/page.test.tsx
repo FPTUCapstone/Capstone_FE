@@ -12,6 +12,9 @@ vi.mock('next/headers', () => ({
   cookies: async () => ({ get: mocks.getCookie }),
 }));
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
+vi.mock('@/features/admin/payout-settlement/PayoutSettlementQueueScreen', () => ({
+  PayoutSettlementQueueScreen: () => <div>PayoutSettlementQueueScreenMock</div>,
+}));
 
 import {
   ADMIN_ACCESS_TOKEN_COOKIE,
@@ -62,14 +65,14 @@ describe('UC-65 Payout Settlement Route', () => {
     render(await PayoutSettlementPage());
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
-    expect(screen.queryByText('Payout Settlement Processing')).toBeNull();
+    expect(screen.queryByText('PayoutSettlementQueueScreenMock')).toBeNull();
   });
 
-  it('renders PayoutSettlementUnavailableView when accessed by Administrator role', async () => {
+  it('renders the settlement queue when accessed by Administrator role', async () => {
     mockSealedSession('Administrator');
     render(await PayoutSettlementPage());
     expect(mocks.redirect).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { name: 'Payout Settlement Processing' })).toBeTruthy();
-    expect(screen.getByText('Pending Backend Settlement Service')).toBeTruthy();
+    expect(screen.getByText('PayoutSettlementQueueScreenMock')).toBeTruthy();
+    expect(screen.queryByText('Pending Backend Settlement Service')).toBeNull();
   });
 });

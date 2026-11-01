@@ -66,7 +66,10 @@ const isUtcTimestamp = (value: unknown): value is string | null =>
   value === null || (typeof value === 'string' &&
     /(?:Z|\+00:00)$/.test(value) && Number.isFinite(Date.parse(value)));
 
-function parseItem(value: unknown): PayoutItem {
+type PayoutItemOf<S extends string> = Omit<PayoutItem, 'status'> & { status: S };
+export type PayoutsPageOf<S extends string> = Omit<PayoutsResponse, 'items'> & { items: PayoutItemOf<S>[] };
+
+function parseItem<S extends string>(value: unknown, allowedStatuses: readonly S[]): PayoutItemOf<S> {
   // payoutCode is the persisted code UC-46 issued to the Tour Operator. It is displayed and searched
   // as-is; it is never derived from payoutId, so only its presence is validated here.
   if (!isRecord(value) || typeof value.payoutId !== 'string' || !/^\d+$/.test(value.payoutId) ||
@@ -77,20 +80,29 @@ function parseItem(value: unknown): PayoutItem {
       typeof value.periodCount !== 'number' || !Number.isSafeInteger(value.periodCount) || value.periodCount < 1 ||
       !isNonNegativeMoney(value.grossRevenue) || !isNonNegativeMoney(value.commissionAmount) ||
       !isNonNegativeMoney(value.netAmount) || !isUtcTimestamp(value.requestedAtUtc) ||
-      !PAYOUT_STATUSES.includes(value.status as PayoutStatus)) {
+      !allowedStatuses.includes(value.status as S)) {
     throw new Error('The payout response is invalid.');
   }
-  return value as PayoutItem;
+  return value as PayoutItemOf<S>;
 }
 
-export function parsePayoutsResponse(value: unknown): PayoutsResponse {
+/** Parses the list envelope shared by the Staff review list and the Administrator settlement queue; each
+ *  caller passes the statuses its own endpoint can return. */
+export function parsePayoutsPage<S extends string>(value: unknown, allowedStatuses: readonly S[]): PayoutsPageOf<S> {
   if (!isRecord(value) || !isNonNegativeInteger(value.pageNumber) ||
       !isNonNegativeInteger(value.pageSize) || !isNonNegativeInteger(value.totalCount) ||
       !isNonNegativeInteger(value.totalPages) || !isNonNegativeMoney(value.totalAmount) ||
       !Array.isArray(value.items)) {
     throw new Error('The payout response is invalid.');
   }
-  return { ...(value as Omit<PayoutsResponse, 'items'>), items: value.items.map(parseItem) };
+  return {
+    ...(value as Omit<PayoutsResponse, 'items'>),
+    items: value.items.map((item) => parseItem(item, allowedStatuses)),
+  };
+}
+
+export function parsePayoutsResponse(value: unknown): PayoutsResponse {
+  return parsePayoutsPage(value, PAYOUT_STATUSES);
 }
 
 export function formatVnd(value: number): string {
@@ -123,7 +135,7 @@ export function formatRequestedAt(value: string | null): string {
   return `${get('day')}/${get('month')}/${get('year')} ${get('hour')}:${get('minute')}`;
 }
 
-const isIsoDate = (value: string) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+export const isIsoDate = (value: string) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 export function validatePeriodRange(from: string, to: string): boolean {
   return isIsoDate(from) && isIsoDate(to) && (!from || !to || from <= to);
