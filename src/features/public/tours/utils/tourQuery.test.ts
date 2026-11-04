@@ -18,10 +18,17 @@ describe('tourQuery utils', () => {
     it('uses defaults when query is empty', () => {
       const state = parseTourSearchState(new URLSearchParams());
       expect(state).toEqual({
+        keyword: '',
         destination: '',
         departureDate: '',
+        startDate: '',
+        endDate: '',
         minPrice: '',
         maxPrice: '',
+        durationDays: '',
+        category: '',
+        minimumRating: '',
+        sort: '',
         page: DEFAULT_PAGE,
         pageSize: DEFAULT_PAGE_SIZE,
       });
@@ -38,10 +45,17 @@ describe('tourQuery utils', () => {
       });
       const state = parseTourSearchState(params);
       expect(state).toEqual({
+        keyword: '',
         destination: 'Hội An',
         departureDate: '2026-10-15',
+        startDate: '',
+        endDate: '',
         minPrice: '500000',
         maxPrice: '1500000',
+        durationDays: '',
+        category: '',
+        minimumRating: '',
+        sort: '',
         page: 2,
         pageSize: 10,
       });
@@ -135,7 +149,7 @@ describe('tourQuery utils', () => {
       expect(sanitized.get('destination')).toBe('Hội An');
       expect(sanitized.get('page')).toBe('1');
       expect(sanitized.has('unsupported')).toBe(false);
-      expect(sanitized.has('sort')).toBe(false);
+      expect(sanitized.get('sort')).toBe('price');
     });
   });
 
@@ -178,6 +192,22 @@ describe('tourQuery utils', () => {
       expect(result.isValid).toBe(false);
       expect(result.errorMessage).toContain('Giá tối thiểu không được lớn hơn giá tối đa');
     });
+
+    it.each(['1.5', '-1', '+1', '10000000000'])(
+      'rejects non-canonical or out-of-contract whole-VND price %s',
+      (minPrice) => {
+        const result = validateTourFilters({
+          destination: '',
+          departureDate: '',
+          minPrice,
+          maxPrice: '',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(result.isValid).toBe(false);
+        expect(result.errorMessage).toContain('9.999.999.999');
+      },
+    );
 
     it('rejects invalid departure date format', () => {
       const result = validateTourFilters({
