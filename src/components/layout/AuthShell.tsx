@@ -39,7 +39,7 @@ export function AuthShell({
   const returnLabel = backLabel ?? (admin ? 'Back to Admin Login' : 'Back to Sign In');
 
   return (
-    <main className={`min-h-screen ${admin ? 'bg-[#F7F6F2]' : 'bg-brand-surface font-sans'}`}>
+    <main className={`min-h-screen font-sans ${admin ? 'bg-[#F7F6F2]' : 'bg-brand-surface'}`}>
 
       <header className={`border-b px-4 py-3 sm:px-8 sm:py-4 ${admin ? 'border-[#2A3B33] bg-[#1C2923] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 sm:gap-4">
