@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 describe('Global Typography Architecture & Standardization', () => {
   const globalsCssPath = path.resolve(__dirname, 'globals.css');
   const layoutPath = path.resolve(__dirname, 'layout.tsx');
+  const adrDocPath = path.resolve(__dirname, '../docs/TYPOGRAPHY_STANDARDIZATION.md');
   const globalsCss = fs.readFileSync(globalsCssPath, 'utf-8');
   const layoutSource = fs.readFileSync(layoutPath, 'utf-8');
 
@@ -52,6 +53,38 @@ describe('Global Typography Architecture & Standardization', () => {
     expect(layoutSource).toMatch(
       /<body[^>]*\$\{jakarta\.variable\}[^>]*font-sans/,
     );
+  });
+
+  it('validates display: swap is configured on Next.js font loaders for FOIT prevention', () => {
+    expect(layoutSource).toMatch(/const\s+geistSans\s*=\s*Geist\(\{[^}]*display:\s*['"]swap['"]/);
+    expect(layoutSource).toMatch(/const\s+geistMono\s*=\s*Geist_Mono\(\{[^}]*display:\s*['"]swap['"]/);
+    expect(layoutSource).toMatch(/const\s+jakarta\s*=\s*Plus_Jakarta_Sans\(\{[^}]*display:\s*['"]swap['"]/);
+  });
+
+  it('verifies comprehensive multi-platform system fallback chain in --font-sans', () => {
+    // Must contain standard fallbacks for Windows (Segoe UI), macOS (-apple-system, BlinkMacSystemFont), Linux/Cross-platform (Inter, system-ui, Arial, sans-serif)
+    const expectedFallbacks = [
+      'Segoe UI',
+      'Inter',
+      'system-ui',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      'Helvetica Neue',
+      'Arial',
+      'sans-serif',
+    ];
+    for (const fallback of expectedFallbacks) {
+      expect(globalsCss).toContain(fallback);
+    }
+  });
+
+  it('verifies typography standardization documentation exists and details architecture decision', () => {
+    expect(fs.existsSync(adrDocPath)).toBe(true);
+    const adrContent = fs.readFileSync(adrDocPath, 'utf-8');
+    expect(adrContent).toContain('Plus Jakarta Sans');
+    expect(adrContent).toContain('Geist Sans');
+    expect(adrContent).toContain('Material Symbols Outlined');
+    expect(adrContent).toContain('Unicode NFC normalization');
   });
 
   it('validates Vietnamese diacritics integrity across standard phrase inventory', () => {
