@@ -53,6 +53,9 @@ function handleFailure(status: number, body: unknown): never {
   if (status === 404) {
     throw new OperatorEmergencyApiError('Không tìm thấy lịch khởi hành hoặc tour yêu cầu.', 404, code ?? 'NOT_FOUND');
   }
+  if (status === 429) {
+    throw new OperatorEmergencyApiError('Bạn đã thử quá nhiều lần. Vui lòng đợi vài phút rồi thử lại.', 429, 'TOO_MANY_REQUESTS');
+  }
   if (status === 409) {
     throw new OperatorEmergencyApiError(title, 409, code ?? 'CONFLICT', record.errors);
   }

@@ -93,6 +93,31 @@ describe('Operator Emergency API', () => {
     );
   });
 
+  it('emergencyStopActive explains a throttled attempt without mentioning the credential', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ title: 'Too many requests.', status: 429 }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await expect(
+      emergencyStopActive(
+        10,
+        20,
+        {
+          impactVersion: 'version-abc',
+          currentPassword: 'OperatorPassword123!',
+          reason: 'SafetyIncident' as const,
+          reasonDetails: 'Road blockage',
+          immediateInstructions: 'Return to meeting point',
+          emergencyContact: '+84901234567',
+        },
+        '00000000-0000-0000-0000-000000000001'
+      )
+    ).rejects.toMatchObject({ status: 429, message: expect.stringMatching(/quá nhiều lần/i) });
+  });
+
   it('emergencyStopActive sends POST with Idempotency-Key, currentPassword, and emergency contact', async () => {
     const rawActionResponse = {
       operationId: 56,
