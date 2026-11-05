@@ -33,15 +33,14 @@ describe('useWeatherSafetyRealtime', () => {
       state: signalR.HubConnectionState.Connected,
     };
 
-    vi.spyOn(signalR, 'HubConnectionBuilder').mockImplementation(
-      () =>
-        ({
-          withUrl: vi.fn().mockReturnThis(),
-          configureLogging: vi.fn().mockReturnThis(),
-          withAutomaticReconnect: vi.fn().mockReturnThis(),
-          build: vi.fn().mockReturnValue(mockConnection),
-        }) as unknown as signalR.HubConnectionBuilder
-    );
+    vi.spyOn(signalR, 'HubConnectionBuilder').mockImplementation(function () {
+      return {
+        withUrl: vi.fn().mockReturnThis(),
+        configureLogging: vi.fn().mockReturnThis(),
+        withAutomaticReconnect: vi.fn().mockReturnThis(),
+        build: vi.fn().mockReturnValue(mockConnection),
+      } as unknown as signalR.HubConnectionBuilder;
+    });
   });
 
   afterEach(() => {
