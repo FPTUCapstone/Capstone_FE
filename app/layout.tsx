@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
+import { Geist, Geist_Mono, Plus_Jakarta_Sans, Bricolage_Grotesque, Manrope } from 'next/font/google';
 import type { ReactNode } from 'react';
 
 import { WebSessionProvider } from '@/features/auth/session/WebSessionProvider';
@@ -28,6 +28,20 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
+const bricolage = Bricolage_Grotesque({
+  variable: '--font-bricolage',
+  subsets: ['latin', 'vietnamese'],
+  weight: ['700', '800'],
+  display: 'swap',
+});
+
+const manrope = Manrope({
+  variable: '--font-manrope',
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -43,7 +57,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="vi" className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable}`}>
+    <html
+      lang="vi"
+      className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} ${bricolage.variable} ${manrope.variable}`}
+    >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -53,7 +70,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} antialiased bg-brand-surface font-sans text-brand-textPrimary selection:bg-brand-lightTeal selection:text-brand-teal`}
+        className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} ${bricolage.variable} ${manrope.variable} antialiased bg-brand-surface font-sans text-brand-textPrimary selection:bg-brand-lightTeal selection:text-brand-teal`}
         suppressHydrationWarning
       >
         <WebSessionProvider>

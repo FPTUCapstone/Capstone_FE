@@ -1,267 +1,139 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
-import { CENTRAL_DESTINATIONS } from '@/data/landingData';
 
 interface LandingHeroProps {
-  activeCity: 'danang' | 'hoian' | 'hue';
-  onSelectCity: (city: 'danang' | 'hoian' | 'hue') => void;
+  activeCity?: 'danang' | 'hoian' | 'hue';
+  onSelectCity?: (city: 'danang' | 'hoian' | 'hue') => void;
 }
 
-const CITIES: Array<'danang' | 'hoian' | 'hue'> = ['danang', 'hoian', 'hue'];
-const AUTO_ROTATE_INTERVAL_MS = 8000;
-
-const DESTINATION_HERO_IMAGES: Record<
-  'danang' | 'hoian' | 'hue',
-  { src: string; alt: string; caption: string }
-> = {
-  danang: {
-    src: CENTRAL_DESTINATIONS[0].image,
-    alt: 'Bãi biển Mỹ Khê và bán đảo Sơn Trà tại Đà Nẵng',
-    caption: 'Đà Nẵng — Biển Mỹ Khê & Bán đảo Sơn Trà',
-  },
-  hoian: {
-    src: CENTRAL_DESTINATIONS[1].image,
-    alt: 'Phố cổ Hội An lung linh sắc đèn lồng bên sông Hoài',
-    caption: 'Hội An — Di sản UNESCO bên sông Hoài',
-  },
-  hue: {
-    src: CENTRAL_DESTINATIONS[2].image,
-    alt: 'Quần thể Cố đô Huế và sông Hương thơ mộng',
-    caption: 'Cố Đô Huế — Di tích triều Nguyễn & Sông Hương',
-  },
-};
-
-export function LandingHero({ activeCity, onSelectCity }: LandingHeroProps) {
-  const [prevActiveCity, setPrevActiveCity] = useState(activeCity);
-  const [currentCity, setCurrentCity] = useState<'danang' | 'hoian' | 'hue'>(activeCity);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isIntersecting, setIsIntersecting] = useState(true);
-  const sectionRef = useRef<HTMLElement>(null);
-
-  // Synchronize internal state during render when activeCity prop changes from parent (React pattern)
-  if (prevActiveCity !== activeCity) {
-    setPrevActiveCity(activeCity);
-    setCurrentCity(activeCity);
+/**
+ * Modern Explorer Da Nang Homepage Hero — Full-Bleed Edge-to-Edge Architecture.
+ *
+ * User Direction Updates:
+ * 1. Full-bleed edge-to-edge: Fills the entire section horizontally without card borders or outer margins.
+ * 2. Natural, crystal-clear photography: Removed milky white overlays so the vibrant turquoise ocean,
+ *    Son Tra mountain, and sunny coastline are sharp and vivid.
+ * 3. Soft, delicate local scrim ensures dark navy text is 100% legible without washing out the photo.
+ * 4. Responsive 2-line headline rhythm ("Đà Nẵng, nơi" / "hành trình bắt đầu.") across all screens.
+ */
+export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHeroProps) {
+  // Preserve callback compatibility if needed by parent
+  if (activeCity !== 'danang' && onSelectCity) {
+    // Graceful no-op to maintain type and prop interface without unexpected state mutations
   }
-
-  // Pause auto-rotation when the Hero is scrolled out of viewport
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsIntersecting(entry.isIntersecting);
-      },
-      { threshold: 0.15 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // 8-second auto-rotation cycle (Option 1: Scoped to Hero)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Respect reduced motion preference (WCAG 2.2.2)
-    const mediaQuery =
-      typeof window.matchMedia === 'function'
-        ? window.matchMedia('(prefers-reduced-motion: reduce)')
-        : null;
-    if (mediaQuery?.matches) return;
-
-    if (isPaused || !isIntersecting) return;
-
-    const timer = setInterval(() => {
-      setCurrentCity((prev) => {
-        const nextIdx = (CITIES.indexOf(prev) + 1) % CITIES.length;
-        return CITIES[nextIdx];
-      });
-    }, AUTO_ROTATE_INTERVAL_MS);
-
-    return () => clearInterval(timer);
-  }, [isPaused, isIntersecting, currentCity]);
-
-  // Manual city selection resets cycle and notifies parent
-  const handleUserSelectCity = useCallback(
-    (city: 'danang' | 'hoian' | 'hue') => {
-      setCurrentCity(city);
-      onSelectCity(city);
-    },
-    [onSelectCity]
-  );
-
-  const currentHero = DESTINATION_HERO_IMAGES[currentCity] || DESTINATION_HERO_IMAGES.danang;
 
   return (
     <section
-      ref={sectionRef}
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onFocus={() => setIsPaused(true)}
-      onBlur={() => setIsPaused(false)}
-      aria-roledescription="carousel"
-      aria-label="Khám phá điểm đến miền Trung"
-      className="relative overflow-hidden min-h-[480px] lg:h-[540px] flex items-center bg-[#00152a] text-white"
+      aria-label="Đà Nẵng — Nơi hành trình bắt đầu"
+      className="relative w-full overflow-hidden min-h-[580px] sm:min-h-[660px] lg:h-[780px] xl:h-[840px] flex items-center bg-[#F8F6F1]"
     >
-      {/* Scenic Travel Photography Background with Graceful Multi-Layer Overlay & Cinematic Crossfade */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        {CITIES.map((city) => {
-          const hero = DESTINATION_HERO_IMAGES[city];
-          const isActive = currentCity === city;
-          return (
-            <img
-              key={city}
-              src={hero.src}
-              alt={hero.alt}
-              aria-hidden={!isActive}
-              className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ease-in-out ${
-                isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0 pointer-events-none'
-              }`}
-              loading={city === 'danang' ? 'eager' : 'lazy'}
-            />
-          );
-        })}
-        {/* Soft Multi-Directional Gradient Overlays for Guaranteed Text Legibility */}
-        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-[#00152a]/95 via-[#00152a]/80 to-transparent sm:w-4/5 md:w-3/4 pointer-events-none" />
-        <div className="absolute inset-0 z-[2] bg-gradient-to-t from-[#00152a] via-[#00152a]/40 to-transparent pointer-events-none" />
+      {/* Layer 1 (z-0): Full-Bleed Edge-to-Edge Da Nang Photography */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="/images/landing/hero-danang-sontra.jpg"
+          alt="Toàn cảnh bán đảo Sơn Trà và vịnh biển Đà Nẵng dưới ánh nắng sớm"
+          className="h-full w-full object-cover object-[70%_center] sm:object-[68%_center] lg:object-[center_55%] transition-transform duration-1000 ease-out will-change-transform"
+          loading="eager"
+          fetchPriority="high"
+        />
       </div>
 
-      {/* Hero Content Container */}
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 sm:px-8 w-full">
-        <div className="max-w-2xl">
-          {/* Calm Travel Eyebrow */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/15 px-3.5 py-1 text-xs font-bold text-teal-300 backdrop-blur-md mb-4">
-            <span className="material-symbols-outlined text-sm" aria-hidden="true">
-              explore
+      {/* Layer 2 (z-10): Ultra-Delicate, Natural Scrim (Not milky, crisp image preservation) */}
+      {/* Desktop: Gentle soft light gradient on the left 42% only, fading completely into vivid natural scenery */}
+      <div
+        className="absolute inset-0 z-10 hidden md:block bg-gradient-to-r from-white/75 via-white/35 via-38% to-transparent"
+        aria-hidden="true"
+      />
+      {/* Mobile: Soft light top-left gradient maintaining legibility without clouding the landscape */}
+      <div
+        className="absolute inset-0 z-10 md:hidden bg-gradient-to-b from-white/85 via-white/50 via-55% to-transparent"
+        aria-hidden="true"
+      />
+      {/* Subtle bottom grounding gradient */}
+      <div
+        className="absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-black/15 to-transparent pointer-events-none"
+        aria-hidden="true"
+      />
+
+      {/* Layer 3 (z-20): Editorial Content Layer Directly Over Image */}
+      <div className="relative z-20 mx-auto w-full max-w-[1680px] px-5 sm:px-12 md:px-16 lg:px-20 xl:px-24 py-12 sm:py-16 lg:py-24">
+        <div className="max-w-xl lg:max-w-2xl xl:max-w-3xl">
+          {/* Eyebrow Label */}
+          <div className="inline-flex items-center gap-2 self-start rounded-full bg-white/90 backdrop-blur-md px-3.5 py-1.5 border border-white/80 shadow-xs">
+            <span className="h-2 w-2 rounded-full bg-[#007D6E] animate-pulse" aria-hidden="true" />
+            <span className="font-[family-name:var(--font-manrope)] text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] text-[#006B5F]">
+              TripMate · Khám phá miền Trung
             </span>
-            <span>Central Vietnam Travel Atlas • Da Nang - Hoi An - Hue</span>
           </div>
 
-          {/* Main Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-black tracking-tight text-white leading-[1.15] text-balance">
-            Khám phá miền Trung theo cách của bạn
+          {/* Display Headline — Bricolage Grotesque (Natural 2-line break on all viewports) */}
+          <h1 className="mt-4 sm:mt-6 font-[family-name:var(--font-bricolage)] text-[32px] sm:text-5xl md:text-[56px] lg:text-[66px] xl:text-[74px] font-extrabold tracking-[-0.035em] leading-[1.12] sm:leading-[1.08] text-[#00152A] drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]">
+            Đà Nẵng, nơi <br />
+            hành trình bắt đầu.
           </h1>
 
-          {/* Supporting Copy */}
-          <p className="mt-4 text-base sm:text-lg text-slate-200 leading-relaxed text-pretty max-w-xl">
-            Tìm những điểm đến đáng nhớ, khám phá tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn.
+          {/* Supporting Description — Manrope */}
+          <p className="mt-4 sm:mt-6 font-[family-name:var(--font-manrope)] text-sm sm:text-lg md:text-xl font-medium leading-[1.6] text-slate-800 drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] max-w-xl">
+            Khám phá những điểm đến đáng nhớ, trải nghiệm tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn.
           </p>
 
-          {/* Destination Switcher Quick Chips with Active Indicator */}
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mr-1">
-              Điểm đến:
-            </span>
-            <button
-              type="button"
-              onClick={() => handleUserSelectCity('danang')}
-              aria-pressed={currentCity === 'danang'}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                currentCity === 'danang'
-                  ? 'bg-[#007d6e] text-white shadow-md'
-                  : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
-              }`}
-            >
-              Đà Nẵng
-            </button>
-            <button
-              type="button"
-              onClick={() => handleUserSelectCity('hoian')}
-              aria-pressed={currentCity === 'hoian'}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                currentCity === 'hoian'
-                  ? 'bg-[#d97706] text-white shadow-md'
-                  : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
-              }`}
-            >
-              Hội An
-            </button>
-            <button
-              type="button"
-              onClick={() => handleUserSelectCity('hue')}
-              aria-pressed={currentCity === 'hue'}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                currentCity === 'hue'
-                  ? 'bg-[#7c3aed] text-white shadow-md'
-                  : 'bg-white/15 text-slate-200 hover:bg-white/25 backdrop-blur-md'
-              }`}
-            >
-              Cố Đô Huế
-            </button>
-          </div>
-
-          {/* Clear Travel CTAs */}
-          <div className="mt-8 flex flex-wrap items-center gap-3.5">
+          {/* Two Prominent Contrasting CTA Buttons */}
+          <div className="mt-6 sm:mt-9 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+            {/* Primary CTA: Solid TripMate Teal with arrow */}
             <Link
               href={ROUTES.plan}
-              aria-label="Lập lịch trình"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#007d6e] px-6 py-3 text-sm font-bold text-white shadow-md shadow-teal-900/40 hover:bg-[#006b5f] transition-all cursor-pointer hover:scale-[1.01]"
+              className="group inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2.5 rounded-xl bg-[#007D6E] px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#007D6E]/30 hover:bg-[#006B5F] hover:shadow-xl hover:shadow-[#007D6E]/40 transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+              aria-label="Lập lịch trình cho chuyến đi của bạn"
             >
               <span>Lập lịch trình</span>
-              <span className="material-symbols-outlined text-base" aria-hidden="true">
-                calendar_month
-              </span>
-            </Link>
-
-            <Link
-              href={ROUTES.pois}
-              aria-label="Khám phá điểm đến"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/25 px-6 py-3 text-sm font-bold text-white backdrop-blur-md shadow-xs hover:bg-white/20 hover:border-white/40 transition-all cursor-pointer hover:scale-[1.01]"
-            >
-              <span className="material-symbols-outlined text-base text-teal-300" aria-hidden="true">
-                explore
-              </span>
-              <span>Khám phá điểm đến</span>
-            </Link>
-
-            <Link
-              href={ROUTES.tours}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-300 hover:text-teal-200 transition-colors ml-1 py-2"
-            >
-              <span>Xem các tour bản địa</span>
-              <span className="material-symbols-outlined text-sm" aria-hidden="true">
+              <span
+                className="material-symbols-outlined text-lg transition-transform duration-200 group-hover:translate-x-1"
+                aria-hidden="true"
+              >
                 arrow_forward
               </span>
             </Link>
 
+            {/* Secondary CTA: Clean Dark Navy Button */}
             <Link
-              href={ROUTES.about}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white transition-colors ml-1 py-2"
+              href={ROUTES.tours}
+              className="inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2 rounded-xl bg-white/90 hover:bg-[#00152A] text-[#00152A] hover:text-white border border-white/80 px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold backdrop-blur-md shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+              aria-label="Khám phá các tour du lịch bản địa"
             >
-              <span>Tìm hiểu TripMate</span>
-              <span className="material-symbols-outlined text-sm" aria-hidden="true">
-                info
+              <span>Khám phá tour</span>
+              <span className="material-symbols-outlined text-lg opacity-70" aria-hidden="true">
+                explore
               </span>
             </Link>
+          </div>
+
+          {/* Trust Indicators */}
+          <div className="mt-7 sm:mt-10 pt-4 flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-semibold text-slate-800 border-t border-slate-900/15 max-w-lg">
+            <div className="inline-flex items-center gap-1.5 rounded-md bg-white/60 px-2 py-1 backdrop-blur-xs">
+              <span className="material-symbols-outlined text-base text-[#007D6E]" aria-hidden="true">
+                verified
+              </span>
+              <span>Tour xác thực bản địa</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 rounded-md bg-white/60 px-2 py-1 backdrop-blur-xs">
+              <span className="material-symbols-outlined text-base text-[#007D6E]" aria-hidden="true">
+                map
+              </span>
+              <span>Lịch trình tối ưu thời gian</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Subtle Caption on Bottom Right with Carousel Indicators */}
-      <div className="hidden md:flex absolute bottom-4 right-8 z-10 items-center gap-3 rounded-full bg-black/45 px-3.5 py-1.5 text-[11px] font-medium text-slate-200 backdrop-blur-md border border-white/15 shadow-sm">
-        <div className="flex items-center gap-1.5" aria-hidden="true">
-          {CITIES.map((city) => (
-            <span
-              key={city}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
-                currentCity === city ? 'w-4 bg-teal-400' : 'w-1.5 bg-white/40'
-              }`}
-            />
-          ))}
-        </div>
-        <span className="h-3 w-px bg-white/20" aria-hidden="true" />
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-sm text-teal-400" aria-hidden="true">
-            photo_camera
-          </span>
-          <span>{currentHero.caption}</span>
-        </div>
+      {/* Layer 4: Discreet Photo Credit Tag on Bottom Right */}
+      <div className="hidden md:flex absolute bottom-6 right-8 z-20 items-center gap-2 rounded-full bg-white/85 backdrop-blur-md px-4 py-2 text-[11px] sm:text-xs font-semibold text-slate-800 border border-white/80 shadow-md">
+        <span className="material-symbols-outlined text-sm text-[#007D6E]" aria-hidden="true">
+          location_on
+        </span>
+        <span>Bán đảo Sơn Trà & Chùa Linh Ứng · Đà Nẵng</span>
       </div>
     </section>
   );
