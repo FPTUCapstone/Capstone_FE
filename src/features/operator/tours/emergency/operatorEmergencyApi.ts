@@ -17,6 +17,7 @@ import type {
   EmergencyTourEvidenceResponse,
   AddEmergencyTourEvidenceResponse,
 } from './types';
+import { firstValidationMessage } from './firstValidationMessage';
 
 export class OperatorEmergencyApiError extends Error {
   constructor(
@@ -33,7 +34,7 @@ export class OperatorEmergencyApiError extends Error {
 function getAuthToken(): string {
   const token = AuthStorage.getAccessToken();
   if (!token) {
-    throw new OperatorEmergencyApiError('Authentication required.', 401, 'AUTH_REQUIRED');
+    throw new OperatorEmergencyApiError('Vui lòng đăng nhập để tiếp tục.', 401, 'AUTH_REQUIRED');
   }
   return token;
 }
@@ -41,7 +42,7 @@ function getAuthToken(): string {
 function handleFailure(status: number, body: unknown): never {
   const record = bodyRecord(body);
   const code = typeof record.code === 'string' ? record.code : (typeof record.detail === 'string' ? record.detail : undefined);
-  const title = typeof record.title === 'string' ? record.title : 'An error occurred during emergency tour operation.';
+  const title = typeof record.title === 'string' ? record.title : 'Không thể thực hiện thao tác khẩn cấp. Vui lòng thử lại.';
 
   if (status === 401) {
     AuthStorage.clear();
@@ -60,7 +61,7 @@ function handleFailure(status: number, body: unknown): never {
     throw new OperatorEmergencyApiError(title, 409, code ?? 'CONFLICT', record.errors);
   }
   if (status === 400) {
-    throw new OperatorEmergencyApiError(title, 400, code ?? 'BAD_REQUEST', record.errors);
+    throw new OperatorEmergencyApiError(firstValidationMessage(record.errors) ?? title, 400, code ?? 'BAD_REQUEST', record.errors);
   }
 
   throw new OperatorEmergencyApiError(title, status, code);

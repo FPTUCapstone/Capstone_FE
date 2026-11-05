@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { EmergencyTourImpactResponse } from '../types';
 import { getEmergencyImpact } from '../operatorEmergencyApi';
 import { PAYMENT_HANDLING_NOTICE } from './EmergencyConfirmationDialog';
+import { departureStatusLabel } from '../departureStatusLabel';
 
 interface EmergencyImpactPanelProps {
   tourId: number;
@@ -102,11 +103,11 @@ export function EmergencyImpactPanel({
             <span className="material-symbols-outlined text-teal-700" aria-hidden="true">
               analytics
             </span>
-            Xem trước tác động vận hành (Impact Preview)
+            Xem trước tác động vận hành
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
             Dữ liệu do máy chủ tính toán thời gian thực theo lịch khởi hành #{scheduleId} &bull; Trạng thái:{' '}
-            <span className="font-semibold text-slate-700">{impact.scheduleStatus}</span>
+            <span className="font-semibold text-slate-700">{departureStatusLabel(impact.scheduleStatus)}</span>
           </p>
         </div>
         <button
@@ -130,7 +131,7 @@ export function EmergencyImpactPanel({
           </span>
           <div className="text-xs">
             <p className="font-bold text-sm">
-              Không thể thực hiện hủy hoặc dừng tour (Fail-Closed)
+              Không thể thực hiện hủy hoặc dừng tour
             </p>
             <p className="mt-1 text-rose-800 leading-relaxed">
               Có phiên đi tour chưa đồng bộ trạng thái hoặc kết nối ngoại tuyến. Hệ thống khóa các thao tác khẩn cấp để đảm bảo an toàn hành khách.
@@ -172,8 +173,8 @@ export function EmergencyImpactPanel({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4">
         <div className="text-xs text-slate-600">
           <span className="font-semibold">Thao tác khả dụng: </span>
-          {isCancel && <span className="text-amber-800 font-bold">Hủy trước khởi hành (Pre-Departure)</span>}
-          {isStop && <span className="text-rose-800 font-bold">Dừng khẩn cấp tour đang chạy (Emergency Stop)</span>}
+          {isCancel && <span className="text-amber-800 font-bold">Hủy trước khởi hành</span>}
+          {isStop && <span className="text-rose-800 font-bold">Dừng khẩn cấp tour đang chạy</span>}
           {hasNoAction && <span className="text-slate-500 font-medium">Không có hành động phù hợp</span>}
         </div>
 

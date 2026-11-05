@@ -7,6 +7,7 @@ import {
   WeatherSafetyReviewParseError,
 } from './parsers';
 import type { WeatherSafetyReview, AcknowledgeReviewRequest } from './types';
+import { firstValidationMessage } from '@/features/operator/tours/emergency/firstValidationMessage';
 
 export class WeatherSafetyApiError extends Error {
   constructor(
@@ -23,7 +24,7 @@ export class WeatherSafetyApiError extends Error {
 function getAuthToken(): string {
   const token = AuthStorage.getAccessToken();
   if (!token) {
-    throw new WeatherSafetyApiError('Authentication required to access weather safety reviews.', 401, 'AUTH_REQUIRED');
+    throw new WeatherSafetyApiError('Vui lòng đăng nhập để xem cảnh báo an toàn.', 401, 'AUTH_REQUIRED');
   }
   return token;
 }
@@ -31,7 +32,7 @@ function getAuthToken(): string {
 function handleFailure(status: number, body: unknown): never {
   const record = bodyRecord(body);
   const code = typeof record.code === 'string' ? record.code : (typeof record.detail === 'string' ? record.detail : undefined);
-  const title = typeof record.title === 'string' ? record.title : 'An error occurred while communicating with the weather safety service.';
+  const title = typeof record.title === 'string' ? record.title : 'Không thể kết nối dịch vụ cảnh báo an toàn. Vui lòng thử lại.';
 
   if (status === 401) {
     AuthStorage.clear();
@@ -44,7 +45,7 @@ function handleFailure(status: number, body: unknown): never {
     throw new WeatherSafetyApiError('Không tìm thấy bản ghi cảnh báo an toàn thời tiết.', 404, code ?? 'NOT_FOUND');
   }
   if (status === 400) {
-    throw new WeatherSafetyApiError(title, 400, code ?? 'BAD_REQUEST', record.errors);
+    throw new WeatherSafetyApiError(firstValidationMessage(record.errors) ?? title, 400, code ?? 'BAD_REQUEST', record.errors);
   }
 
   throw new WeatherSafetyApiError(title, status, code);

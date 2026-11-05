@@ -141,4 +141,15 @@ describe('Weather Safety Review API', () => {
 
     await expect(getWeatherSafetyReview(101)).rejects.toThrow();
   });
+
+  it('shows the validation message instead of the generic English title', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ title: 'One or more validation errors occurred.', status: 400, errors: { field: ['Thông báo tiếng Việt từ máy chủ.'] } }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/problem+json' },
+      })
+    );
+
+    await expect(getWeatherSafetyReview(1)).rejects.toThrow('Thông báo tiếng Việt từ máy chủ.');
+  });
 });

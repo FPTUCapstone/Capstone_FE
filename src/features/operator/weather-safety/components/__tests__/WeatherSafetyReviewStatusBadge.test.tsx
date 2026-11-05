@@ -11,8 +11,8 @@ describe('WeatherSafetyReviewStatusBadge', () => {
 
   it('renders Escalated with urgent text and icon', () => {
     render(<WeatherSafetyReviewStatusBadge status="Escalated" />);
-    expect(screen.getByText('Quá hạn SLA')).toBeDefined();
-    expect(screen.getByLabelText('Trạng thái: Quá hạn SLA')).toBeDefined();
+    expect(screen.getByText('Quá hạn xác nhận')).toBeDefined();
+    expect(screen.getByLabelText('Trạng thái: Quá hạn xác nhận')).toBeDefined();
   });
 
   it('renders Acknowledged status', () => {

@@ -74,4 +74,12 @@ describe('EmergencyImpactPanel', () => {
 
     expect(onProceed).toHaveBeenCalledWith(safeImpact);
   });
+
+  it('names the departure status in Vietnamese', async () => {
+    vi.spyOn(api, 'getEmergencyImpact').mockResolvedValueOnce(safeImpact);
+    render(<EmergencyImpactPanel tourId={200} scheduleId={50} onProceed={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Đã lên lịch')).toBeDefined());
+    expect(screen.queryByText('Scheduled')).toBeNull();
+  });
 });

@@ -219,4 +219,15 @@ describe('Operator Emergency API', () => {
       })
     );
   });
+
+  it('shows the validation message instead of the generic English title', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ title: 'One or more validation errors occurred.', status: 400, errors: { field: ['Thông báo tiếng Việt từ máy chủ.'] } }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/problem+json' },
+      })
+    );
+
+    await expect(getEmergencyImpact(1, 2)).rejects.toThrow('Thông báo tiếng Việt từ máy chủ.');
+  });
 });

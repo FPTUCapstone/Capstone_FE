@@ -13,7 +13,7 @@ interface WeatherSafetyReviewListProps {
 const FILTER_OPTIONS: Array<{ key: 'ALL' | WeatherSafetyReviewStatus; label: string }> = [
   { key: 'ALL', label: 'Tất cả' },
   { key: 'PendingAcknowledgement', label: 'Chờ xác nhận' },
-  { key: 'Escalated', label: 'Quá hạn SLA' },
+  { key: 'Escalated', label: 'Quá hạn xác nhận' },
   { key: 'Acknowledged', label: 'Đã xem' },
   { key: 'Closed', label: 'Đã đóng' },
 ];

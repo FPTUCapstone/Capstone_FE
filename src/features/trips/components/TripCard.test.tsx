@@ -51,7 +51,7 @@ describe('TripCard — stopped tour', () => {
   it('labels a tour stopped by the Operator and offers no ticket, refund or review', () => {
     renderCard(booking({ tab: 'Cancelled', status: 'Interrupted' }));
 
-    expect(screen.getByText('Stopped for safety')).toBeDefined();
+    expect(screen.getByText('Đã dừng vì an toàn')).toBeDefined();
     expect(screen.queryByText('Interrupted')).toBeNull();
     expect(link('ticket')).toBeNull();
     expect(link('refund')).toBeNull();

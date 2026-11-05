@@ -8,6 +8,7 @@ import type {
   EmergencyTourActionResponse,
 } from '../types';
 import { emergencyStopActive, getEmergencyImpact } from '../operatorEmergencyApi';
+import { EMERGENCY_CONTACT_MAX_LENGTH } from '../evidenceFields';
 import { EmergencyConfirmationDialog } from './EmergencyConfirmationDialog';
 
 interface EmergencyStopFormProps {
@@ -18,12 +19,12 @@ interface EmergencyStopFormProps {
 }
 
 const REASON_OPTIONS: Array<{ value: EmergencyTourReason; label: string }> = [
-  { value: 'WeatherEmergency', label: 'Thời tiết nguy hiểm / Bão lũ (WeatherEmergency)' },
-  { value: 'AuthorityDirective', label: 'Chỉ thị cơ quan chức năng / Cấm đường (AuthorityDirective)' },
-  { value: 'DestinationUnavailable', label: 'Điểm đến bị cô lập / Sự cố tại chỗ (DestinationUnavailable)' },
-  { value: 'TransportFailure', label: 'Sự cố phương tiện vận chuyển chính (TransportFailure)' },
-  { value: 'SafetyIncident', label: 'Sự cố mất an toàn nghiêm trọng (SafetyIncident)' },
-  { value: 'Other', label: 'Trường hợp bất khả kháng khác (Other)' },
+  { value: 'WeatherEmergency', label: 'Thời tiết nguy hiểm / Bão lũ' },
+  { value: 'AuthorityDirective', label: 'Chỉ thị cơ quan chức năng / Cấm đường' },
+  { value: 'DestinationUnavailable', label: 'Điểm đến bị cô lập / Sự cố tại chỗ' },
+  { value: 'TransportFailure', label: 'Sự cố phương tiện vận chuyển chính' },
+  { value: 'SafetyIncident', label: 'Sự cố mất an toàn nghiêm trọng' },
+  { value: 'Other', label: 'Trường hợp bất khả kháng khác' },
 ];
 
 function generateUuid(): string {
@@ -162,11 +163,11 @@ export function EmergencyStopForm({
             <span className="material-symbols-outlined text-rose-700" aria-hidden="true">
               dangerous
             </span>
-            Dừng khẩn cấp tour đang chạy (Active Tour Emergency Stop)
+            Dừng khẩn cấp tour đang chạy
           </h3>
           <p className="mt-1 text-xs text-rose-900 leading-relaxed">
             Tour đang trong quá trình thực hiện. Thao tác này sẽ chuyển phiên tour và các đơn đặt chỗ
-            sang trạng thái <strong>Gián đoạn (Interrupted)</strong>, đồng thời gửi thông báo chỉ dẫn
+            sang trạng thái <strong>Gián đoạn</strong>, đồng thời gửi thông báo chỉ dẫn
             khẩn cấp tới du khách.
           </p>
         </div>
@@ -223,10 +224,10 @@ export function EmergencyStopForm({
 
           <div>
             <label htmlFor="stop-details" className="block font-semibold text-slate-800 mb-1">
-              Reason shown to Travelers <span className="text-rose-600">*</span>
+              Lý do hiển thị cho du khách <span className="text-rose-600">*</span>
             </label>
             <p id="stop-details-help" className="mb-1 text-[11px] text-slate-600">
-              Affected Travelers will see this text. Do not include internal notes or private information.
+              Du khách bị ảnh hưởng sẽ đọc nội dung này. Không ghi chú nội bộ hoặc thông tin riêng tư.
             </p>
             <textarea
               id="stop-details"
@@ -272,6 +273,7 @@ export function EmergencyStopForm({
               </label>
               <input
                 id="emergency-contact"
+                maxLength={EMERGENCY_CONTACT_MAX_LENGTH}
                 type="text"
                 required
                 value={emergencyContact}
@@ -283,6 +285,9 @@ export function EmergencyStopForm({
                 placeholder="Họ tên &amp; SĐT người phụ trách hiện trường..."
                 className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 focus:border-rose-600 focus:outline-hidden"
               />
+              <div className="mt-0.5 text-right text-[11px] text-slate-500">
+                {emergencyContact.length} / {EMERGENCY_CONTACT_MAX_LENGTH}
+              </div>
             </div>
           </div>
         </div>

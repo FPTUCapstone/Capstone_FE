@@ -101,7 +101,7 @@ export const tripReviewEn = {
       PendingPayment: 'Awaiting payment',
       Cancelled: 'Cancelled',
       Expired: 'Expired',
-      Interrupted: 'Stopped for safety',
+      Interrupted: 'Đã dừng vì an toàn',
       Active: 'Planned',
     } as Record<string, string>,
     refundStatusLabels: {

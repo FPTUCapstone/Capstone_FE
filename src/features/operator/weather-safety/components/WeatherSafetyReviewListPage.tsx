@@ -93,7 +93,7 @@ export function WeatherSafetyReviewListPage({
           <span className="material-symbols-outlined text-teal-700 text-3xl" aria-hidden="true">
             warning
           </span>
-          Cảnh báo an toàn thời tiết (UC-70)
+          Cảnh báo an toàn thời tiết
         </h1>
         <p className="mt-1 text-sm text-slate-600">
           Theo dõi các cảnh báo thiên tai, đối chiếu lịch khởi hành và thực hiện các quyết định thủ công
@@ -126,7 +126,7 @@ export function WeatherSafetyReviewListPage({
             Thử lại
           </button>
         </div>
-      ) : reviews.length === 0 ? (
+      ) : reviews.length === 0 && filter === 'ALL' ? (
         <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center text-slate-500 space-y-2">
           <span className="material-symbols-outlined text-4xl text-slate-400" aria-hidden="true">
             verified

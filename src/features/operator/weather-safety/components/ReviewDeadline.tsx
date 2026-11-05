@@ -9,7 +9,7 @@ interface ReviewDeadlineProps {
 
 export function ReviewDeadline({ deadlineUtc, status, className = '' }: ReviewDeadlineProps) {
   if (!deadlineUtc) {
-    return <span className={`text-slate-400 text-xs ${className}`}>Không có hạn SLA</span>;
+    return <span className={`text-slate-400 text-xs ${className}`}>Không có hạn xác nhận</span>;
   }
 
   const isEscalated = status === 'Escalated';
@@ -29,7 +29,7 @@ export function ReviewDeadline({ deadlineUtc, status, className = '' }: ReviewDe
       </span>
       <span>Hạn xử lý:</span>
       <time role="time" dateTime={deadlineUtc} className="font-medium">
-        {formattedDate} (ICT)
+        {formattedDate} (giờ Việt Nam)
       </time>
       {isEscalated && (
         <span className="ml-1 inline-flex items-center text-rose-700 font-bold bg-rose-100 px-1.5 py-0.5 rounded text-[11px]">

@@ -46,8 +46,8 @@ export function EmergencyConfirmationDialog({
         <div className="space-y-3 text-xs text-slate-700">
           <p className="font-semibold text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-3">
             {isStop
-              ? 'Lưu ý khẩn cấp: Thao tác này sẽ dừng ngay lập tức tour đang diễn ra. Mọi phiên đi tour và đơn đặt chỗ sẽ chuyển sang trạng thái Gián đoạn (Interrupted). Thao tác không thể hoàn tác.'
-              : 'Lưu ý khẩn cấp: Thao tác này sẽ hủy lịch khởi hành và chuyển các đơn đặt chỗ sang trạng thái Đã hủy (Cancelled). Thao tác không thể hoàn tác.'}
+              ? 'Lưu ý khẩn cấp: Thao tác này sẽ dừng ngay lập tức tour đang diễn ra. Mọi phiên đi tour và đơn đặt chỗ sẽ chuyển sang trạng thái Gián đoạn. Thao tác không thể hoàn tác.'
+              : 'Lưu ý khẩn cấp: Thao tác này sẽ hủy lịch khởi hành và chuyển các đơn đặt chỗ sang trạng thái Đã hủy. Thao tác không thể hoàn tác.'}
           </p>
 
           <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 space-y-2">

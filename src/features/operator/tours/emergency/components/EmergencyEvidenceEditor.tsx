@@ -168,14 +168,14 @@ export function EmergencyEvidenceEditor({
             <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
               badge
             </span>
-            Operator cung cấp
+            Đơn vị điều hành cung cấp
           </span>
         )}
       </div>
 
       {current?.evidenceAddedLater && (
         <p className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-medium text-amber-900">
-          Evidence for this decision was marked to be added later. Add or confirm it below.
+          Quyết định này được đánh dấu bổ sung bằng chứng sau. Hãy thêm hoặc xác nhận bên dưới.
         </p>
       )}
 

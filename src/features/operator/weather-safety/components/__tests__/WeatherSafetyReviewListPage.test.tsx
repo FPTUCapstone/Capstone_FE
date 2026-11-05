@@ -96,6 +96,29 @@ describe('WeatherSafetyReviewListPage', () => {
     });
   });
 
+  it('keeps the filter tabs when the selected tab has no reviews', async () => {
+    const listSpy = vi
+      .spyOn(api, 'listWeatherSafetyReviews')
+      .mockResolvedValueOnce(mockReviews)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(mockReviews);
+
+    render(<WeatherSafetyReviewListPage />);
+    await waitFor(() => expect(screen.getByText('Bà Nà Hills Tour')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đã đóng' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Không có cảnh báo thời tiết nào trong mục này/i)).toBeDefined();
+    });
+    expect(screen.queryByText(/Hiện không có cảnh báo thời tiết nào/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tất cả' }));
+
+    await waitFor(() => expect(screen.getByText('Bà Nà Hills Tour')).toBeDefined());
+    expect(listSpy).toHaveBeenCalledTimes(3);
+  });
+
   it('renders error state and provides retry button on fetch failure', async () => {
     vi.spyOn(api, 'listWeatherSafetyReviews').mockRejectedValueOnce(
       new api.WeatherSafetyApiError('Network failure', 0, 'NETWORK_ERROR')

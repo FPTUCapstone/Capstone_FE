@@ -1,10 +1,19 @@
 import React from 'react';
 import type { WeatherSafetyReview } from '../types';
+import { departureStatusLabel } from '@/features/operator/tours/emergency/departureStatusLabel';
 
 interface WeatherEventSummaryProps {
   review: WeatherSafetyReview;
   className?: string;
 }
+
+const SEVERITY_LABELS: Record<string, string> = {
+  Extreme: 'Cực kỳ nghiêm trọng',
+  Severe: 'Nghiêm trọng',
+  Moderate: 'Trung bình',
+  Minor: 'Nhẹ',
+  Unknown: 'Không xác định',
+};
 
 function formatDateIct(isoString: string | null): string {
   if (!isoString) return 'Chưa xác định';
@@ -30,7 +39,7 @@ export function WeatherEventSummary({ review, className = '' }: WeatherEventSumm
           <div className="text-sm">
             <p className="font-bold">Cảnh báo đã được nhà cung cấp rút lại</p>
             <p className="mt-0.5 text-xs text-amber-800">
-              Nhà cung cấp đã hạ cấp hoặc hủy bỏ cảnh báo này. Tuy nhiên, review vẫn được lưu lại
+              Nhà cung cấp đã hạ cấp hoặc hủy bỏ cảnh báo này. Tuy nhiên, hồ sơ vẫn được lưu lại
               để bạn đánh giá tình hình an toàn thực tế trước khi ra quyết định.
             </p>
           </div>
@@ -43,10 +52,10 @@ export function WeatherEventSummary({ review, className = '' }: WeatherEventSumm
         <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
           <span>Lịch khởi hành:</span>
           <span className="font-medium text-slate-700">
-            {formatDateIct(review.scheduleStartAtUtc)} &mdash; {formatDateIct(review.scheduleEndAtUtc)} (ICT)
+            {formatDateIct(review.scheduleStartAtUtc)} &mdash; {formatDateIct(review.scheduleEndAtUtc)} (giờ Việt Nam)
           </span>
           <span className="rounded bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
-            {review.scheduleStatus || 'Scheduled'}
+            {departureStatusLabel(review.scheduleStatus)}
           </span>
         </div>
       </div>
@@ -89,7 +98,7 @@ export function WeatherEventSummary({ review, className = '' }: WeatherEventSumm
           <div>
             <span className="text-slate-500 block font-medium">Hiện tượng / Mức độ:</span>
             <span className="text-slate-800 font-semibold">
-              {review.eventType} &bull; Mức độ: {review.severity}
+              {review.eventType} &bull; Mức độ: {(review.severity && SEVERITY_LABELS[review.severity]) ?? review.severity}
             </span>
           </div>
           <div>
@@ -104,7 +113,7 @@ export function WeatherEventSummary({ review, className = '' }: WeatherEventSumm
           <div>
             <span className="text-slate-500 block font-medium">Thời gian hiệu lực:</span>
             <span className="text-slate-800">
-              {formatDateIct(review.validFromUtc)} &mdash; {formatDateIct(review.validToUtc)} (ICT)
+              {formatDateIct(review.validFromUtc)} &mdash; {formatDateIct(review.validToUtc)} (giờ Việt Nam)
             </span>
           </div>
           <div>

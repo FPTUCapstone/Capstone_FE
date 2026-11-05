@@ -10,6 +10,7 @@ import type {
 import { cancelBeforeDeparture, getEmergencyImpact } from '../operatorEmergencyApi';
 import {
   AUTHORITY_REFERENCE_MAX_LENGTH,
+  EMERGENCY_CONTACT_MAX_LENGTH,
   EVIDENCE_REFERENCE_MAX_LENGTH,
   EVIDENCE_URL_MAX_LENGTH,
   isValidHttpsUrl,
@@ -24,12 +25,12 @@ interface CancelBeforeDepartureFormProps {
 }
 
 const REASON_OPTIONS: Array<{ value: EmergencyTourReason; label: string }> = [
-  { value: 'WeatherEmergency', label: 'Thời tiết nguy hiểm / Bão lũ (WeatherEmergency)' },
-  { value: 'AuthorityDirective', label: 'Chỉ thị cơ quan chức năng / Cấm biển (AuthorityDirective)' },
-  { value: 'DestinationUnavailable', label: 'Điểm đến bị cô lập / Không khả dụng (DestinationUnavailable)' },
-  { value: 'TransportFailure', label: 'Sự cố phương tiện vận chuyển chính (TransportFailure)' },
-  { value: 'SafetyIncident', label: 'Sự cố mất an toàn khẩn cấp (SafetyIncident)' },
-  { value: 'Other', label: 'Trường hợp bất khả kháng khác (Other)' },
+  { value: 'WeatherEmergency', label: 'Thời tiết nguy hiểm / Bão lũ' },
+  { value: 'AuthorityDirective', label: 'Chỉ thị cơ quan chức năng / Cấm biển' },
+  { value: 'DestinationUnavailable', label: 'Điểm đến bị cô lập / Không khả dụng' },
+  { value: 'TransportFailure', label: 'Sự cố phương tiện vận chuyển chính' },
+  { value: 'SafetyIncident', label: 'Sự cố mất an toàn khẩn cấp' },
+  { value: 'Other', label: 'Trường hợp bất khả kháng khác' },
 ];
 
 function generateUuid(): string {
@@ -72,7 +73,7 @@ export function CancelBeforeDepartureForm({
     setError(null);
     const trimmedUrl = evidenceUrl.trim();
     if (trimmedUrl && !isValidHttpsUrl(trimmedUrl)) {
-      setEvidenceUrlError('Enter a full HTTPS link without a username or password, for example https://example.gov.vn/directive.pdf.');
+      setEvidenceUrlError('Nhập đầy đủ liên kết HTTPS, không kèm tên đăng nhập hoặc mật khẩu, ví dụ https://example.gov.vn/chi-thi.pdf.');
       setEvidenceOpen(true);
       return;
     }
@@ -144,10 +145,10 @@ export function CancelBeforeDepartureForm({
             <span className="material-symbols-outlined text-amber-700" aria-hidden="true">
               cancel
             </span>
-            Xác nhận Hủy trước khởi hành (Pre-Departure Cancellation)
+            Xác nhận hủy trước khởi hành
           </h3>
           <p className="mt-1 text-xs text-amber-900">
-            Lịch khởi hành chưa diễn ra. Việc hủy sẽ cập nhật trạng thái lịch thành Cancelled,
+            Lịch khởi hành chưa diễn ra. Việc hủy sẽ chuyển trạng thái lịch thành Đã hủy,
             và hủy các đơn đặt chỗ liên quan.
           </p>
         </div>
@@ -184,10 +185,10 @@ export function CancelBeforeDepartureForm({
 
           <div>
             <label htmlFor="cancel-details" className="block font-semibold text-slate-800 mb-1">
-              Reason shown to Travelers <span className="text-rose-600">*</span>
+              Lý do hiển thị cho du khách <span className="text-rose-600">*</span>
             </label>
             <p id="cancel-details-help" className="mb-1 text-[11px] text-slate-600">
-              Affected Travelers will see this text. Do not include internal notes or private information.
+              Du khách bị ảnh hưởng sẽ đọc nội dung này. Không ghi chú nội bộ hoặc thông tin riêng tư.
             </p>
             <textarea
               id="cancel-details"
@@ -216,6 +217,7 @@ export function CancelBeforeDepartureForm({
             <input
               id="cancel-contact"
               type="text"
+              maxLength={EMERGENCY_CONTACT_MAX_LENGTH}
               value={emergencyContact}
               onChange={(e) => {
                 setEmergencyContact(e.target.value);
@@ -225,6 +227,9 @@ export function CancelBeforeDepartureForm({
               placeholder="Số điện thoại hotline điều hành..."
               className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-600"
             />
+            <div className="mt-0.5 text-right text-[11px] text-slate-500">
+              {emergencyContact.length} / {EMERGENCY_CONTACT_MAX_LENGTH}
+            </div>
           </div>
 
           <div
@@ -239,7 +244,7 @@ export function CancelBeforeDepartureForm({
               onClick={() => setEvidenceOpen((open) => !open)}
               className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-600"
             >
-              <span>Add supporting evidence (optional)</span>
+              <span>Thêm bằng chứng (không bắt buộc)</span>
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                 {evidenceOpen ? 'expand_less' : 'expand_more'}
               </span>
@@ -248,13 +253,13 @@ export function CancelBeforeDepartureForm({
             <div id="cancel-evidence-section" hidden={!evidenceOpen} className="space-y-3 border-t border-slate-200 p-3">
               {reason === 'AuthorityDirective' && (
                 <p className="text-[11px] font-medium text-amber-900">
-                  A directive needs the issuing authority or document number. If you do not have them yet, continue now
-                  and add them after the decision.
+                  Chỉ thị cần có cơ quan ban hành hoặc số văn bản. Nếu chưa có, bạn vẫn có thể tiếp tục và bổ sung sau khi
+                  quyết định.
                 </p>
               )}
               <div>
                 <label htmlFor="cancel-evidence-url" className="block font-semibold text-slate-800 mb-1">
-                  Evidence HTTPS URL
+                  Liên kết bằng chứng HTTPS
                 </label>
                 {/* type="url" would show the browser bubble instead of the inline error. */}
                 <input
@@ -283,7 +288,7 @@ export function CancelBeforeDepartureForm({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="cancel-authority" className="block font-semibold text-slate-800 mb-1">
-                    Issuing authority
+                    Cơ quan ban hành
                   </label>
                   <input
                     id="cancel-authority"
@@ -303,7 +308,7 @@ export function CancelBeforeDepartureForm({
                 </div>
                 <div>
                   <label htmlFor="cancel-document" className="block font-semibold text-slate-800 mb-1">
-                    Document/reference number
+                    Số văn bản
                   </label>
                   <input
                     id="cancel-document"

@@ -159,7 +159,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
           <p className="text-base font-black font-mono text-slate-900 mb-3">#{booking.bookingId}</p>
           {stopped && (
             <span className="inline-block rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800 mb-3">
-              Stopped for safety
+              Đã dừng vì an toàn
             </span>
           )}
           <p className="text-xs text-slate-600 leading-relaxed mb-6">

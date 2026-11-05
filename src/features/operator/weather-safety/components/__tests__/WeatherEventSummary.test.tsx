@@ -60,4 +60,14 @@ describe('WeatherEventSummary', () => {
     expect(container.textContent).not.toContain('{"type":"Feature"');
     expect(container.textContent).not.toContain('coordinates');
   });
+
+  it('names the departure status and severity in Vietnamese', () => {
+    const { container } = render(
+      <WeatherEventSummary review={{ ...baseReview, scheduleStatus: 'Scheduled', severity: 'Severe' }} />
+    );
+
+    expect(container.textContent).toContain('Đã lên lịch');
+    expect(container.textContent).toContain('Nghiêm trọng');
+    expect(container.textContent).not.toMatch(/Scheduled|Severe/);
+  });
 });

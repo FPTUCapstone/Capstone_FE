@@ -17,7 +17,7 @@ const STATUS_CONFIG: Record<
     icon: 'hourglass_empty',
   },
   Escalated: {
-    label: 'Quá hạn SLA',
+    label: 'Quá hạn xác nhận',
     bg: 'bg-rose-50 border border-rose-300',
     text: 'text-rose-800 font-bold',
     icon: 'warning',

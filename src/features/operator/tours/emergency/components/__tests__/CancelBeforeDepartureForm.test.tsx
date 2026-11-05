@@ -27,7 +27,7 @@ describe('CancelBeforeDepartureForm', () => {
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
     expect(screen.getByLabelText(/Lý do hủy khẩn cấp/i)).toBeDefined();
-    expect(screen.getByLabelText(/Reason shown to Travelers/i)).toBeDefined();
+    expect(screen.getByLabelText(/Lý do hiển thị cho du khách/i)).toBeDefined();
     expect(screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i })).toBeDefined();
   });
 
@@ -46,7 +46,7 @@ describe('CancelBeforeDepartureForm', () => {
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={onSuccess} onCancel={vi.fn()} />);
 
     // Fill details
-    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
+    const detailsInput = screen.getByLabelText(/Lý do hiển thị cho du khách/i);
     fireEvent.change(detailsInput, { target: { value: 'Bão số 9 cấm biển theo chỉ thị UBND' } });
 
     const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i });
@@ -88,7 +88,7 @@ describe('CancelBeforeDepartureForm', () => {
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Lý do hủy khẩn cấp/i), { target: { value: 'AuthorityDirective' } });
-    fireEvent.change(screen.getByLabelText(/Reason shown to Travelers/i), { target: { value: 'Lệnh cấm đường' } });
+    fireEvent.change(screen.getByLabelText(/Lý do hiển thị cho du khách/i), { target: { value: 'Lệnh cấm đường' } });
     fireEvent.click(screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i }));
     fireEvent.click(await screen.findByRole('button', { name: /Đồng ý hủy/i }));
 
@@ -107,7 +107,7 @@ describe('CancelBeforeDepartureForm', () => {
     vi.spyOn(api, 'getEmergencyImpact').mockResolvedValueOnce(changed).mockResolvedValueOnce(changed);
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText(/Reason shown to Travelers/i), { target: { value: 'Bão số 9' } });
+    fireEvent.change(screen.getByLabelText(/Lý do hiển thị cho du khách/i), { target: { value: 'Bão số 9' } });
     const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i });
     fireEvent.click(submitBtn);
     await screen.findByText(/Dữ liệu tác động vừa được cập nhật trên hệ thống/i);
@@ -126,7 +126,7 @@ describe('CancelBeforeDepartureForm', () => {
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
-    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
+    const detailsInput = screen.getByLabelText(/Lý do hiển thị cho du khách/i);
     fireEvent.change(detailsInput, { target: { value: 'Bão số 9' } });
 
     const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i });
@@ -155,7 +155,7 @@ describe('CancelBeforeDepartureForm', () => {
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
-    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
+    const detailsInput = screen.getByLabelText(/Lý do hiển thị cho du khách/i);
     fireEvent.change(detailsInput, { target: { value: 'Bão số 9' } });
 
     // 1st submit attempt
@@ -195,7 +195,7 @@ describe('CancelBeforeDepartureForm', () => {
     const typeLink = (value: string) =>
       fireEvent.change(screen.getByPlaceholderText('https://...'), { target: { value } });
     const typeDetails = () =>
-      fireEvent.change(screen.getByRole('textbox', { name: /Reason shown to Travelers/i }), {
+      fireEvent.change(screen.getByRole('textbox', { name: /Lý do hiển thị cho du khách/i }), {
         target: { value: 'Storm warning' },
       });
     const submit = () =>
@@ -332,8 +332,8 @@ describe('CancelBeforeDepartureForm', () => {
       renderForm();
       typeDetails();
       typeLink(' https://danang.gov.vn/directive.pdf ');
-      typeField(/Issuing authority/i, ' Da Nang People Committee ');
-      typeField(/Document\/reference number/i, ' 08/CD-PCTT ');
+      typeField(/Cơ quan ban hành/i, ' Da Nang People Committee ');
+      typeField(/Số văn bản/i, ' 08/CD-PCTT ');
 
       expect(await sendAndReadPayload()).toMatchObject({
         evidenceUrl: 'https://danang.gov.vn/directive.pdf',
@@ -345,8 +345,8 @@ describe('CancelBeforeDepartureForm', () => {
     it('sends empty evidence values as null', async () => {
       renderForm();
       typeDetails();
-      typeField(/Issuing authority/i, '   ');
-      typeField(/Document\/reference number/i, '   ');
+      typeField(/Cơ quan ban hành/i, '   ');
+      typeField(/Số văn bản/i, '   ');
 
       expect(await sendAndReadPayload()).toMatchObject({
         evidenceUrl: null,
@@ -359,7 +359,7 @@ describe('CancelBeforeDepartureForm', () => {
       renderForm();
       expect(screen.getByText('0 / 200')).toBeDefined();
       typeDetails();
-      typeField(/Issuing authority/i, 'a'.repeat(200));
+      typeField(/Cơ quan ban hành/i, 'a'.repeat(200));
       expect(screen.getByText('200 / 200')).toBeDefined();
 
       expect((await sendAndReadPayload()).authorityReference).toBe('a'.repeat(200));
@@ -367,8 +367,8 @@ describe('CancelBeforeDepartureForm', () => {
 
     it('stops the authority at 200 characters and the document number at 500', () => {
       renderForm();
-      expect((screen.getByLabelText(/Issuing authority/i) as HTMLInputElement).maxLength).toBe(200);
-      expect((screen.getByLabelText(/Document\/reference number/i) as HTMLInputElement).maxLength).toBe(500);
+      expect((screen.getByLabelText(/Cơ quan ban hành/i) as HTMLInputElement).maxLength).toBe(200);
+      expect((screen.getByLabelText(/Số văn bản/i) as HTMLInputElement).maxLength).toBe(500);
     });
 
     it('uses a new idempotency key after the authority or document number changes', async () => {
@@ -384,12 +384,12 @@ describe('CancelBeforeDepartureForm', () => {
       submit();
       await confirm();
       await screen.findByText(/Server error/i);
-      typeField(/Issuing authority/i, 'Da Nang People Committee');
+      typeField(/Cơ quan ban hành/i, 'Da Nang People Committee');
       submit();
       await confirm();
       await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(2));
       await screen.findByText(/Server error/i);
-      typeField(/Document\/reference number/i, '08/CD-PCTT');
+      typeField(/Số văn bản/i, '08/CD-PCTT');
       submit();
       await confirm();
 
@@ -399,8 +399,8 @@ describe('CancelBeforeDepartureForm', () => {
     });
 
     it.each([
-      ['the issuing authority', /Issuing authority/i],
-      ['the document number', /Document\/reference number/i],
+      ['the issuing authority', /Cơ quan ban hành/i],
+      ['the document number', /Số văn bản/i],
     ])('does not defer an authority directive that has %s', async (_name, label) => {
       renderForm();
       chooseReason('AuthorityDirective');
@@ -432,9 +432,9 @@ describe('CancelBeforeDepartureForm', () => {
     it('tells the Operator that Travelers will read the reason', () => {
       renderForm();
 
-      const reason = screen.getByLabelText(/Reason shown to Travelers/i);
+      const reason = screen.getByLabelText(/Lý do hiển thị cho du khách/i);
       expect(document.getElementById(reason.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
-        'Affected Travelers will see this text. Do not include internal notes or private information.'
+        'Du khách bị ảnh hưởng sẽ đọc nội dung này. Không ghi chú nội bộ hoặc thông tin riêng tư.'
       );
     });
 
@@ -442,30 +442,30 @@ describe('CancelBeforeDepartureForm', () => {
       renderForm();
 
       expect(screen.getByRole('combobox', { name: /Lý do hủy khẩn cấp/i })).toBeDefined();
-      expect(screen.getByRole('textbox', { name: /Reason shown to Travelers/i })).toBeDefined();
+      expect(screen.getByRole('textbox', { name: /Lý do hiển thị cho du khách/i })).toBeDefined();
       expect(screen.getByRole('textbox', { name: /Đầu mối liên hệ/i })).toBeDefined();
 
-      const toggle = screen.getByRole('button', { name: 'Add supporting evidence (optional)' });
+      const toggle = screen.getByRole('button', { name: 'Thêm bằng chứng (không bắt buộc)' });
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
-      expect(screen.queryByRole('textbox', { name: /Evidence HTTPS URL/i })).toBeNull();
-      expect(screen.queryByRole('textbox', { name: /Issuing authority/i })).toBeNull();
-      expect(screen.queryByRole('textbox', { name: /Document\/reference number/i })).toBeNull();
+      expect(screen.queryByRole('textbox', { name: /Liên kết bằng chứng HTTPS/i })).toBeNull();
+      expect(screen.queryByRole('textbox', { name: /Cơ quan ban hành/i })).toBeNull();
+      expect(screen.queryByRole('textbox', { name: /Số văn bản/i })).toBeNull();
     });
 
     it('opens and closes the evidence section without losing what was entered', () => {
       renderForm();
-      const toggle = screen.getByRole('button', { name: 'Add supporting evidence (optional)' });
+      const toggle = screen.getByRole('button', { name: 'Thêm bằng chứng (không bắt buộc)' });
 
       fireEvent.click(toggle);
       expect(toggle.getAttribute('aria-expanded')).toBe('true');
       expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).not.toBeNull();
-      fireEvent.change(screen.getByRole('textbox', { name: /Issuing authority/i }), {
+      fireEvent.change(screen.getByRole('textbox', { name: /Cơ quan ban hành/i }), {
         target: { value: 'Da Nang People Committee' },
       });
 
       fireEvent.click(toggle);
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
-      expect(screen.queryByRole('textbox', { name: /Issuing authority/i })).toBeNull();
+      expect(screen.queryByRole('textbox', { name: /Cơ quan ban hành/i })).toBeNull();
 
       fireEvent.click(toggle);
       expect(screen.getByDisplayValue('Da Nang People Committee')).toBeDefined();
@@ -473,20 +473,20 @@ describe('CancelBeforeDepartureForm', () => {
 
     it('opens evidence for an authority directive and explains it can be added later', () => {
       renderForm();
-      expect(screen.queryByText(/add them after the decision/i)).toBeNull();
+      expect(screen.queryByText(/bổ sung sau khi/i)).toBeNull();
 
       chooseReason('AuthorityDirective');
 
       expect(
-        screen.getByRole('button', { name: 'Add supporting evidence (optional)' }).getAttribute('aria-expanded')
+        screen.getByRole('button', { name: 'Thêm bằng chứng (không bắt buộc)' }).getAttribute('aria-expanded')
       ).toBe('true');
-      expect(screen.getByRole('textbox', { name: /Issuing authority/i })).toBeDefined();
-      expect(screen.getByText(/add them after the decision/i)).toBeDefined();
+      expect(screen.getByRole('textbox', { name: /Cơ quan ban hành/i })).toBeDefined();
+      expect(screen.getByText(/bổ sung sau khi/i)).toBeDefined();
     });
 
     it('shows a link error even when the evidence section was collapsed', async () => {
       renderForm();
-      const toggle = screen.getByRole('button', { name: 'Add supporting evidence (optional)' });
+      const toggle = screen.getByRole('button', { name: 'Thêm bằng chứng (không bắt buộc)' });
       typeDetails();
       fireEvent.click(toggle);
       typeLink('http://danang.gov.vn/directive.pdf');
@@ -515,4 +515,13 @@ describe('CancelBeforeDepartureForm', () => {
       expect(cancelSpy).toHaveBeenCalledTimes(1);
     });
   });
+  it('limits the emergency contact to what the Backend stores', () => {
+    render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    const contact = screen.getByLabelText(/Đầu mối liên hệ/i) as HTMLInputElement;
+    expect(contact.maxLength).toBe(100);
+    fireEvent.change(contact, { target: { value: '0905123456' } });
+    expect(screen.getByText('10 / 100')).toBeDefined();
+  });
+
 });

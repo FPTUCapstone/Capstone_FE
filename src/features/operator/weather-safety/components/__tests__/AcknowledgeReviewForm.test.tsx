@@ -47,7 +47,7 @@ describe('AcknowledgeReviewForm', () => {
     const onAcknowledge = vi.fn().mockResolvedValue(undefined);
     render(<AcknowledgeReviewForm review={pendingReview} onAcknowledge={onAcknowledge} />);
 
-    const textarea = screen.getByLabelText('Internal acknowledgement note');
+    const textarea = screen.getByLabelText('Ghi chú xác nhận nội bộ');
     fireEvent.change(textarea, { target: { value: 'Đã nắm thông tin và theo dõi tình hình' } });
 
     const submitBtn = screen.getByRole('button', { name: /Đã xem cảnh báo/i });
@@ -70,9 +70,9 @@ describe('AcknowledgeReviewForm', () => {
     const onAcknowledge = vi.fn().mockResolvedValue(undefined);
     render(<AcknowledgeReviewForm review={pendingReview} onAcknowledge={onAcknowledge} />);
 
-    const note = screen.getByLabelText('Internal acknowledgement note');
+    const note = screen.getByLabelText('Ghi chú xác nhận nội bộ');
     expect(document.getElementById(note.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
-      'This note is recorded for the Operator workflow and is not sent to Travelers. Add Traveler safety instructions when cancelling or stopping the tour.'
+      'Ghi chú này chỉ lưu cho đơn vị điều hành, không gửi cho du khách. Chỉ dẫn an toàn cho du khách được nhập khi hủy hoặc dừng tour.'
     );
     expect(screen.queryByText(/Chỉ dẫn tức thời/i)).toBeNull();
 
@@ -84,7 +84,7 @@ describe('AcknowledgeReviewForm', () => {
   it('calls a saved note internal once acknowledged', () => {
     render(<AcknowledgeReviewForm review={acknowledgedReview} onAcknowledge={vi.fn()} />);
 
-    expect(screen.getByText('Internal acknowledgement note')).toBeDefined();
+    expect(screen.getByText('Ghi chú xác nhận nội bộ')).toBeDefined();
     expect(screen.queryByText(/Chỉ dẫn tức thời/i)).toBeNull();
   });
 
@@ -105,7 +105,7 @@ describe('AcknowledgeReviewForm', () => {
 
   it('enforces 1000 character limit on instructions', () => {
     render(<AcknowledgeReviewForm review={pendingReview} onAcknowledge={vi.fn()} />);
-    const textarea = screen.getByLabelText('Internal acknowledgement note') as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Ghi chú xác nhận nội bộ') as HTMLTextAreaElement;
     expect(textarea.maxLength).toBe(1000);
   });
 });

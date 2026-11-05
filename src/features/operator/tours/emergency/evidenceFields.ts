@@ -2,6 +2,7 @@
 export const EVIDENCE_URL_MAX_LENGTH = 1000;
 export const AUTHORITY_REFERENCE_MAX_LENGTH = 200;
 export const EVIDENCE_REFERENCE_MAX_LENGTH = 500;
+export const EMERGENCY_CONTACT_MAX_LENGTH = 100;
 
 export function isValidHttpsUrl(urlString: string): boolean {
   try {

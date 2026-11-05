@@ -194,7 +194,7 @@ export function WeatherSafetyReviewDetailPage({
           )}
           <span className="text-slate-300">|</span>
           <span className="text-xs font-bold text-slate-500">
-            Review #{review.id} (Lịch #{review.tourScheduleId})
+            Hồ sơ #{review.id} (Lịch #{review.tourScheduleId})
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export function WeatherSafetyReviewDetailPage({
         <ReviewDeadline deadlineUtc={review.acknowledgementDeadlineUtc} status={review.status} />
         {review.escalatedAtUtc && (
           <span className="text-xs text-rose-700 font-semibold">
-            Đã chuyển SLA lúc:{' '}
+            Đã chuyển cấp xử lý lúc:{' '}
             {new Date(review.escalatedAtUtc).toLocaleString('vi-VN', {
               timeZone: 'Asia/Ho_Chi_Minh',
             })}
@@ -227,7 +227,7 @@ export function WeatherSafetyReviewDetailPage({
             </span>
           </div>
           <p className="text-xs text-teal-800">
-            Mã giao dịch: <strong>{actionSuccessResult.operationId}</strong> &bull; Đơn hủy/gián đoạn:{' '}
+            Mã thao tác: <strong>{actionSuccessResult.operationId}</strong> &bull; Đơn hủy/gián đoạn:{' '}
             {actionSuccessResult.affectedBookingCount}
           </p>
         </div>
@@ -247,7 +247,7 @@ export function WeatherSafetyReviewDetailPage({
               <span className="material-symbols-outlined text-rose-600" aria-hidden="true">
                 health_and_safety
               </span>
-              Quyết định vận hành khẩn cấp (Operator Emergency Decision)
+              Quyết định vận hành khẩn cấp
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Thời tiết không tự động thay đổi trạng thái tour. Chỉ bạn mới có quyền quyết định hủy

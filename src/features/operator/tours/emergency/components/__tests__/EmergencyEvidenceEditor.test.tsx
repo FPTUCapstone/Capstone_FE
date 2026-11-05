@@ -142,7 +142,7 @@ describe('EmergencyEvidenceEditor', () => {
 
     render(<EmergencyEvidenceEditor tourId={200} scheduleId={50} onSuccess={vi.fn()} />);
 
-    expect(await screen.findByText(/marked to be added later/i)).toBeDefined();
+    expect(await screen.findByText(/đánh dấu bổ sung bằng chứng sau/i)).toBeDefined();
   });
 
   it('shows no reminder when evidence is not owed', async () => {
@@ -151,7 +151,7 @@ describe('EmergencyEvidenceEditor', () => {
     render(<EmergencyEvidenceEditor tourId={200} scheduleId={50} onSuccess={vi.fn()} />);
 
     await screen.findByDisplayValue('Ban Chỉ huy PCTT');
-    expect(screen.queryByText(/marked to be added later/i)).toBeNull();
+    expect(screen.queryByText(/đánh dấu bổ sung bằng chứng sau/i)).toBeNull();
   });
 
   it('limits the authority to the 200 characters the Backend accepts and counts them', async () => {
@@ -177,7 +177,7 @@ describe('EmergencyEvidenceEditor', () => {
 
     render(<EmergencyEvidenceEditor tourId={200} scheduleId={50} onSuccess={onSuccess} />);
 
-    expect(await screen.findByText(/Operator cung cấp/i)).toBeDefined();
+    expect(await screen.findByText(/Đơn vị điều hành cung cấp/i)).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /Rút lại bằng chứng/i }));
 
     await waitFor(() => {

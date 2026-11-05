@@ -19,7 +19,7 @@ export function AcknowledgeReviewForm({
   const isClosed = review.status === 'Closed';
   const isAcknowledged = review.status === 'Acknowledged';
   const acknowledgedAt = review.acknowledgedAtUtc
-    ? `${new Date(review.acknowledgedAtUtc).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} (ICT)`
+    ? `${new Date(review.acknowledgedAtUtc).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} (giờ Việt Nam)`
     : null;
 
   if (isAcknowledged || isClosed) {
@@ -40,7 +40,7 @@ export function AcknowledgeReviewForm({
         {acknowledgedAt && review.immediateInstructions && (
           <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3 text-xs text-slate-700">
             <span className="block font-semibold text-slate-500 mb-1">
-              Internal acknowledgement note
+              Ghi chú xác nhận nội bộ
             </span>
             <p className="whitespace-pre-wrap">{review.immediateInstructions}</p>
           </div>
@@ -83,10 +83,10 @@ export function AcknowledgeReviewForm({
           <span className="material-symbols-outlined text-teal-700" aria-hidden="true">
             assignment_turned_in
           </span>
-          Xác nhận tiếp nhận cảnh báo (Acknowledge)
+          Xác nhận tiếp nhận cảnh báo
         </h3>
         <p className="mt-1 text-xs text-slate-600">
-          Xác nhận đã đọc để hoàn thành nghĩa vụ SLA kiểm tra an toàn. Hệ thống tuyệt đối{' '}
+          Xác nhận đã đọc để hoàn thành nghĩa vụ kiểm tra an toàn đúng hạn. Hệ thống tuyệt đối{' '}
           <strong>không tự động hủy hay dừng tour</strong>; bạn hoàn toàn chủ động quyết định.
         </p>
       </div>
@@ -102,10 +102,10 @@ export function AcknowledgeReviewForm({
           htmlFor="immediate-instructions"
           className="block text-xs font-semibold text-slate-700 mb-1.5"
         >
-          Internal acknowledgement note
+          Ghi chú xác nhận nội bộ
         </label>
         <p id="immediate-instructions-help" className="mb-1.5 text-[11px] text-slate-600">
-          This note is recorded for the Operator workflow and is not sent to Travelers. Add Traveler safety instructions when cancelling or stopping the tour.
+          Ghi chú này chỉ lưu cho đơn vị điều hành, không gửi cho du khách. Chỉ dẫn an toàn cho du khách được nhập khi hủy hoặc dừng tour.
         </p>
         <textarea
           id="immediate-instructions"
@@ -115,7 +115,7 @@ export function AcknowledgeReviewForm({
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           disabled={submitting}
-          placeholder="Optional note for your team"
+          placeholder="Ghi chú cho đội của bạn (không bắt buộc)"
           className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-600 focus:outline-hidden focus:ring-1 focus:ring-teal-600 disabled:bg-slate-100 disabled:cursor-not-allowed"
         />
         <div className="mt-1 flex justify-end text-[11px] text-slate-500">
@@ -125,7 +125,7 @@ export function AcknowledgeReviewForm({
 
       <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100">
         <span className="text-xs text-slate-500">
-          Sau khi xác nhận, bạn vẫn có thể mở Impact Preview để quyết định hủy hoặc dừng tour nếu cần.
+          Sau khi xác nhận, bạn vẫn có thể mở phần xem trước tác động để quyết định hủy hoặc dừng tour nếu cần.
         </span>
         <button
           type="submit"
