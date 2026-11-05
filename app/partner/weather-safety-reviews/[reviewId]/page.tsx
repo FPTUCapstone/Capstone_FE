@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { PartnerWorkspaceNav } from '@/features/operator/common/PartnerWorkspaceNav';
+import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
 import { WeatherSafetyReviewDetailPage } from '@/features/operator/weather-safety/components/WeatherSafetyReviewDetailPage';
 
 export const metadata: Metadata = {
@@ -19,15 +19,10 @@ export default async function PartnerWeatherSafetyReviewPage({
   const parsedId = parseInt(reviewId, 10);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="flex min-h-screen">
-        <PartnerWorkspaceNav activeTab="weatherSafety" />
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
-          <Suspense fallback={<div className="p-8 text-center text-slate-500">Đang tải...</div>}>
-            <WeatherSafetyReviewDetailPage reviewId={parsedId} />
-          </Suspense>
-        </main>
-      </div>
-    </div>
+    <PartnerWorkspaceLayout activeTab="weatherSafety">
+      <Suspense fallback={<div className="p-8 text-center text-slate-500">Đang tải...</div>}>
+        <WeatherSafetyReviewDetailPage reviewId={parsedId} />
+      </Suspense>
+    </PartnerWorkspaceLayout>
   );
 }

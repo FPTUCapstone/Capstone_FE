@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { getWeatherSafetyReviewBadgeCount } from '@/features/operator/weather-safety/weatherSafetyApi';
 import { PartnerSidebar, type PartnerWorkspaceTabKey } from './PartnerSidebar';
 import { PartnerHeader, type BreadcrumbItem } from './PartnerHeader';
 import { MobileNavigationDrawer } from './MobileNavigationDrawer';
@@ -23,6 +24,19 @@ export function PartnerWorkspaceLayout({
   className = '',
 }: PartnerWorkspaceLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [weatherAlertBadgeCount, setWeatherAlertBadgeCount] = useState(0);
+
+  useEffect(() => {
+    if (isDemo) return;
+    let active = true;
+    // The badge is only a hint, so a failed read leaves it hidden.
+    getWeatherSafetyReviewBadgeCount().then((count) => {
+      if (active) setWeatherAlertBadgeCount(count);
+    });
+    return () => {
+      active = false;
+    };
+  }, [isDemo]);
 
   return (
     <div className={`min-h-screen bg-[#F4F7FC] text-[#00152A] lg:flex ${className}`}>
@@ -32,6 +46,7 @@ export function PartnerWorkspaceLayout({
         isDemo={isDemo}
         operatorName={operatorName}
         className="hidden lg:flex lg:sticky lg:top-0 lg:h-screen lg:shrink-0"
+        weatherAlertBadgeCount={weatherAlertBadgeCount}
       />
 
       {/* Mobile Slide-Over Drawer */}
@@ -42,6 +57,7 @@ export function PartnerWorkspaceLayout({
           operatorName={operatorName}
           onCloseMobile={() => setMobileOpen(false)}
           className="h-full"
+          weatherAlertBadgeCount={weatherAlertBadgeCount}
         />
       </MobileNavigationDrawer>
 
