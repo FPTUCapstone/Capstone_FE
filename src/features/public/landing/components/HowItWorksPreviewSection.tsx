@@ -41,8 +41,8 @@ const STEPS: StepItem[] = [
 
 export function HowItWorksPreviewSection() {
   return (
-    <section className="scroll-mt-20 py-16 sm:py-20 bg-white px-4 sm:px-8 border-b border-slate-200">
-      <div className="mx-auto max-w-7xl">
+    <section className="scroll-mt-20 py-16 sm:py-20 bg-white px-3 sm:px-6 lg:px-8 border-b border-slate-200">
+      <div className="mx-auto max-w-7xl xl:max-w-[1440px]">
         {/* Section Header: Calm Editorial Hierarchy */}
         <ScrollReveal animation="fade-up">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-12 border-b border-slate-100">

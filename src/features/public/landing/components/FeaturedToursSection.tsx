@@ -25,7 +25,7 @@ export function FeaturedToursSection() {
   }
 
   return (
-    <section id="tours" className="scroll-mt-20 py-16 sm:py-24 bg-[#f8fafc] px-4 sm:px-8 border-b border-slate-200">
+    <section id="tours" className="scroll-mt-20 py-16 sm:py-24 bg-[#f8fafc] px-3 sm:px-6 lg:px-8 border-b border-slate-200">
       <div className="mx-auto max-w-7xl">
         {/* Section Header */}
         <ScrollReveal animation="fade-up">
