@@ -27,7 +27,7 @@ describe('CancelBeforeDepartureForm', () => {
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
     expect(screen.getByLabelText(/Lý do hủy khẩn cấp/i)).toBeDefined();
-    expect(screen.getByLabelText(/Chi tiết lý do/i)).toBeDefined();
+    expect(screen.getByLabelText(/Reason shown to Travelers/i)).toBeDefined();
     expect(screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i })).toBeDefined();
   });
 
@@ -46,7 +46,7 @@ describe('CancelBeforeDepartureForm', () => {
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={onSuccess} onCancel={vi.fn()} />);
 
     // Fill details
-    const detailsInput = screen.getByLabelText(/Chi tiết lý do/i);
+    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
     fireEvent.change(detailsInput, { target: { value: 'Bão số 9 cấm biển theo chỉ thị UBND' } });
 
     const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i });
@@ -88,7 +88,7 @@ describe('CancelBeforeDepartureForm', () => {
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Lý do hủy khẩn cấp/i), { target: { value: 'AuthorityDirective' } });
-    fireEvent.change(screen.getByLabelText(/Chi tiết lý do/i), { target: { value: 'Lệnh cấm đường' } });
+    fireEvent.change(screen.getByLabelText(/Reason shown to Travelers/i), { target: { value: 'Lệnh cấm đường' } });
     fireEvent.click(screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i }));
     fireEvent.click(await screen.findByRole('button', { name: /Đồng ý hủy/i }));
 
@@ -107,7 +107,7 @@ describe('CancelBeforeDepartureForm', () => {
     vi.spyOn(api, 'getEmergencyImpact').mockResolvedValueOnce(changed).mockResolvedValueOnce(changed);
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText(/Chi tiết lý do/i), { target: { value: 'Bão số 9' } });
+    fireEvent.change(screen.getByLabelText(/Reason shown to Travelers/i), { target: { value: 'Bão số 9' } });
     const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i });
     fireEvent.click(submitBtn);
     await screen.findByText(/Dữ liệu tác động vừa được cập nhật trên hệ thống/i);
@@ -126,7 +126,7 @@ describe('CancelBeforeDepartureForm', () => {
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
-    const detailsInput = screen.getByLabelText(/Chi tiết lý do/i);
+    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
     fireEvent.change(detailsInput, { target: { value: 'Bão số 9' } });
 
     const submitBtn = screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i });
@@ -155,7 +155,7 @@ describe('CancelBeforeDepartureForm', () => {
 
     render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
-    const detailsInput = screen.getByLabelText(/Chi tiết lý do/i);
+    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
     fireEvent.change(detailsInput, { target: { value: 'Bão số 9' } });
 
     // 1st submit attempt
@@ -181,5 +181,338 @@ describe('CancelBeforeDepartureForm', () => {
     });
     const secondKey = cancelSpy.mock.calls[1][3];
     expect(secondKey).not.toBe(firstKey);
+  });
+
+  describe('evidence link', () => {
+    const cancelled = {
+      operationId: 125,
+      tourScheduleId: 50,
+      action: 'CancelBeforeDeparture',
+      scheduleStatus: 'Cancelled',
+      affectedBookingCount: 10,
+      committedAtUtc: '2026-11-03T10:07:00Z',
+    };
+    const typeLink = (value: string) =>
+      fireEvent.change(screen.getByPlaceholderText('https://...'), { target: { value } });
+    const typeDetails = () =>
+      fireEvent.change(screen.getByRole('textbox', { name: /Reason shown to Travelers/i }), {
+        target: { value: 'Storm warning' },
+      });
+    const submit = () =>
+      fireEvent.click(screen.getByRole('button', { name: /Xác nhận hủy trước khởi hành/i }));
+    const confirm = async () =>
+      fireEvent.click(await screen.findByRole('button', { name: /Đồng ý hủy/i }));
+    const renderForm = () =>
+      render(<CancelBeforeDepartureForm impact={mockImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    it('sends an HTTPS link as evidenceUrl, not as evidenceReference', async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi.spyOn(api, 'cancelBeforeDeparture').mockResolvedValueOnce(cancelled);
+      renderForm();
+
+      typeDetails();
+      typeLink('https://danang.gov.vn/directive.pdf');
+      submit();
+      await confirm();
+
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(1));
+      expect(cancelSpy.mock.calls[0][2]).toMatchObject({
+        evidenceUrl: 'https://danang.gov.vn/directive.pdf',
+        evidenceReference: null,
+      });
+    });
+
+    it('trims the link before sending it', async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi.spyOn(api, 'cancelBeforeDeparture').mockResolvedValueOnce(cancelled);
+      renderForm();
+
+      typeDetails();
+      typeLink('  https://danang.gov.vn/directive.pdf  ');
+      submit();
+      await confirm();
+
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(1));
+      expect(cancelSpy.mock.calls[0][2].evidenceUrl).toBe('https://danang.gov.vn/directive.pdf');
+    });
+
+    it('accepts an empty link', async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi.spyOn(api, 'cancelBeforeDeparture').mockResolvedValueOnce(cancelled);
+      renderForm();
+
+      typeDetails();
+      submit();
+      await confirm();
+
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(1));
+      expect(cancelSpy.mock.calls[0][2].evidenceUrl).toBeNull();
+    });
+
+    it.each([
+      ['plain HTTP', 'http://danang.gov.vn/directive.pdf'],
+      ['malformed text', 'not a link'],
+      ['relative path', '/files/directive.pdf'],
+      ['script protocol', 'javascript:alert(1)'],
+      ['data protocol', 'data:text/plain,hello'],
+      ['other protocol', 'ftp://danang.gov.vn/directive.pdf'],
+      ['embedded credentials', 'https://user:secret@danang.gov.vn/directive.pdf'],
+    ])('blocks %s next to the field without calling the API', async (_name, link) => {
+      const impactSpy = vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi.spyOn(api, 'cancelBeforeDeparture').mockResolvedValue(cancelled);
+      renderForm();
+
+      typeDetails();
+      typeLink(link);
+      submit();
+
+      const input = screen.getByPlaceholderText('https://...');
+      await waitFor(() => expect(input.getAttribute('aria-invalid')).toBe('true'));
+      const describedBy = input.getAttribute('aria-describedby') ?? '';
+      expect(document.getElementById(describedBy.split(' ')[0])?.textContent).toMatch(/HTTPS/);
+      expect(impactSpy).not.toHaveBeenCalled();
+      expect(cancelSpy).not.toHaveBeenCalled();
+    });
+
+    it('keeps the same idempotency key when an unchanged request is retried', async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi
+        .spyOn(api, 'cancelBeforeDeparture')
+        .mockRejectedValueOnce(new api.OperatorEmergencyApiError('Server error', 500))
+        .mockResolvedValueOnce(cancelled);
+      renderForm();
+
+      typeDetails();
+      typeLink('https://danang.gov.vn/directive.pdf');
+      submit();
+      await confirm();
+      await screen.findByText(/Server error/i);
+      submit();
+      await confirm();
+
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(2));
+      expect(cancelSpy.mock.calls[1][3]).toBe(cancelSpy.mock.calls[0][3]);
+    });
+
+    it('uses a new idempotency key after the link changes', async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi
+        .spyOn(api, 'cancelBeforeDeparture')
+        .mockRejectedValueOnce(new api.OperatorEmergencyApiError('Server error', 500))
+        .mockResolvedValueOnce(cancelled);
+      renderForm();
+
+      typeDetails();
+      typeLink('https://danang.gov.vn/directive.pdf');
+      submit();
+      await confirm();
+      await screen.findByText(/Server error/i);
+      typeLink('https://danang.gov.vn/directive-2.pdf');
+      submit();
+      await confirm();
+
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(2));
+      expect(cancelSpy.mock.calls[1][3]).not.toBe(cancelSpy.mock.calls[0][3]);
+    });
+
+    const typeField = (label: RegExp, value: string) =>
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    const chooseReason = (value: string) =>
+      fireEvent.change(screen.getByLabelText(/Lý do hủy khẩn cấp/i), { target: { value } });
+    const sendAndReadPayload = async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi.spyOn(api, 'cancelBeforeDeparture').mockResolvedValueOnce(cancelled);
+      submit();
+      await confirm();
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(1));
+      return cancelSpy.mock.calls[0][2];
+    };
+
+    it('sends each evidence value in its own field, trimmed', async () => {
+      renderForm();
+      typeDetails();
+      typeLink(' https://danang.gov.vn/directive.pdf ');
+      typeField(/Issuing authority/i, ' Da Nang People Committee ');
+      typeField(/Document\/reference number/i, ' 08/CD-PCTT ');
+
+      expect(await sendAndReadPayload()).toMatchObject({
+        evidenceUrl: 'https://danang.gov.vn/directive.pdf',
+        authorityReference: 'Da Nang People Committee',
+        evidenceReference: '08/CD-PCTT',
+      });
+    });
+
+    it('sends empty evidence values as null', async () => {
+      renderForm();
+      typeDetails();
+      typeField(/Issuing authority/i, '   ');
+      typeField(/Document\/reference number/i, '   ');
+
+      expect(await sendAndReadPayload()).toMatchObject({
+        evidenceUrl: null,
+        authorityReference: null,
+        evidenceReference: null,
+      });
+    });
+
+    it('accepts a 200-character authority and counts it', async () => {
+      renderForm();
+      expect(screen.getByText('0 / 200')).toBeDefined();
+      typeDetails();
+      typeField(/Issuing authority/i, 'a'.repeat(200));
+      expect(screen.getByText('200 / 200')).toBeDefined();
+
+      expect((await sendAndReadPayload()).authorityReference).toBe('a'.repeat(200));
+    });
+
+    it('stops the authority at 200 characters and the document number at 500', () => {
+      renderForm();
+      expect((screen.getByLabelText(/Issuing authority/i) as HTMLInputElement).maxLength).toBe(200);
+      expect((screen.getByLabelText(/Document\/reference number/i) as HTMLInputElement).maxLength).toBe(500);
+    });
+
+    it('uses a new idempotency key after the authority or document number changes', async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi
+        .spyOn(api, 'cancelBeforeDeparture')
+        .mockRejectedValueOnce(new api.OperatorEmergencyApiError('Server error', 500))
+        .mockRejectedValueOnce(new api.OperatorEmergencyApiError('Server error', 500))
+        .mockResolvedValueOnce(cancelled);
+      renderForm();
+      typeDetails();
+
+      submit();
+      await confirm();
+      await screen.findByText(/Server error/i);
+      typeField(/Issuing authority/i, 'Da Nang People Committee');
+      submit();
+      await confirm();
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(2));
+      await screen.findByText(/Server error/i);
+      typeField(/Document\/reference number/i, '08/CD-PCTT');
+      submit();
+      await confirm();
+
+      await waitFor(() => expect(cancelSpy).toHaveBeenCalledTimes(3));
+      const keys = cancelSpy.mock.calls.map((call) => call[3]);
+      expect(new Set(keys).size).toBe(3);
+    });
+
+    it.each([
+      ['the issuing authority', /Issuing authority/i],
+      ['the document number', /Document\/reference number/i],
+    ])('does not defer an authority directive that has %s', async (_name, label) => {
+      renderForm();
+      chooseReason('AuthorityDirective');
+      typeDetails();
+      typeField(label, 'Directive 08');
+
+      expect((await sendAndReadPayload()).addEvidenceLater).toBe(false);
+    });
+
+    it('still defers an authority directive that only has a link', async () => {
+      renderForm();
+      chooseReason('AuthorityDirective');
+      typeDetails();
+      typeLink('https://danang.gov.vn/directive.pdf');
+
+      expect(await sendAndReadPayload()).toMatchObject({
+        evidenceUrl: 'https://danang.gov.vn/directive.pdf',
+        addEvidenceLater: true,
+      });
+    });
+
+    it('does not defer evidence for other reasons', async () => {
+      renderForm();
+      typeDetails();
+
+      expect((await sendAndReadPayload()).addEvidenceLater).toBe(false);
+    });
+
+    it('tells the Operator that Travelers will read the reason', () => {
+      renderForm();
+
+      const reason = screen.getByLabelText(/Reason shown to Travelers/i);
+      expect(document.getElementById(reason.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+        'Affected Travelers will see this text. Do not include internal notes or private information.'
+      );
+    });
+
+    it('shows the decision fields first and keeps evidence collapsed', () => {
+      renderForm();
+
+      expect(screen.getByRole('combobox', { name: /Lý do hủy khẩn cấp/i })).toBeDefined();
+      expect(screen.getByRole('textbox', { name: /Reason shown to Travelers/i })).toBeDefined();
+      expect(screen.getByRole('textbox', { name: /Đầu mối liên hệ/i })).toBeDefined();
+
+      const toggle = screen.getByRole('button', { name: 'Add supporting evidence (optional)' });
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(screen.queryByRole('textbox', { name: /Evidence HTTPS URL/i })).toBeNull();
+      expect(screen.queryByRole('textbox', { name: /Issuing authority/i })).toBeNull();
+      expect(screen.queryByRole('textbox', { name: /Document\/reference number/i })).toBeNull();
+    });
+
+    it('opens and closes the evidence section without losing what was entered', () => {
+      renderForm();
+      const toggle = screen.getByRole('button', { name: 'Add supporting evidence (optional)' });
+
+      fireEvent.click(toggle);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).not.toBeNull();
+      fireEvent.change(screen.getByRole('textbox', { name: /Issuing authority/i }), {
+        target: { value: 'Da Nang People Committee' },
+      });
+
+      fireEvent.click(toggle);
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(screen.queryByRole('textbox', { name: /Issuing authority/i })).toBeNull();
+
+      fireEvent.click(toggle);
+      expect(screen.getByDisplayValue('Da Nang People Committee')).toBeDefined();
+    });
+
+    it('opens evidence for an authority directive and explains it can be added later', () => {
+      renderForm();
+      expect(screen.queryByText(/add them after the decision/i)).toBeNull();
+
+      chooseReason('AuthorityDirective');
+
+      expect(
+        screen.getByRole('button', { name: 'Add supporting evidence (optional)' }).getAttribute('aria-expanded')
+      ).toBe('true');
+      expect(screen.getByRole('textbox', { name: /Issuing authority/i })).toBeDefined();
+      expect(screen.getByText(/add them after the decision/i)).toBeDefined();
+    });
+
+    it('shows a link error even when the evidence section was collapsed', async () => {
+      renderForm();
+      const toggle = screen.getByRole('button', { name: 'Add supporting evidence (optional)' });
+      typeDetails();
+      fireEvent.click(toggle);
+      typeLink('http://danang.gov.vn/directive.pdf');
+      fireEvent.click(toggle);
+
+      submit();
+
+      await waitFor(() => expect(toggle.getAttribute('aria-expanded')).toBe('true'));
+      expect(screen.getByRole('alert').textContent).toMatch(/HTTPS/);
+    });
+
+    it('does not send twice while a decision is being sent', async () => {
+      vi.spyOn(api, 'getEmergencyImpact').mockResolvedValue(mockImpact);
+      const cancelSpy = vi
+        .spyOn(api, 'cancelBeforeDeparture')
+        .mockReturnValue(new Promise(() => undefined));
+      renderForm();
+
+      typeDetails();
+      submit();
+      await confirm();
+
+      const sending = await screen.findByRole('button', { name: /Đang xử lý/i });
+      expect((sending as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.click(sending);
+      expect(cancelSpy).toHaveBeenCalledTimes(1);
+    });
   });
 });

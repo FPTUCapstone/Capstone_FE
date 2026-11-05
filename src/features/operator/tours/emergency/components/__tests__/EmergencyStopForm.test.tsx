@@ -55,7 +55,7 @@ describe('EmergencyStopForm', () => {
     const contactInput = screen.getByLabelText(/Đầu mối liên hệ khẩn cấp/i);
     fireEvent.change(contactInput, { target: { value: '0901234567 - Trưởng đoàn Minh' } });
 
-    const detailsInput = screen.getByLabelText(/Chi tiết lý do/i);
+    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
     fireEvent.change(detailsInput, { target: { value: 'Sạt lở tuyến đèo Hải Vân' } });
     const submitBtn = screen.getByRole('button', { name: /Xác nhận dừng khẩn cấp tour/i });
     fireEvent.click(submitBtn);
@@ -85,6 +85,15 @@ describe('EmergencyStopForm', () => {
     });
   });
 
+  it('tells the Operator that Travelers will read the reason', () => {
+    render(<EmergencyStopForm impact={mockStopImpact} onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    const reason = screen.getByLabelText(/Reason shown to Travelers/i);
+    expect(document.getElementById(reason.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+      'Affected Travelers will see this text. Do not include internal notes or private information.'
+    );
+  });
+
   it('defers authority evidence so an AuthorityDirective stop is not refused', async () => {
     vi.spyOn(api, 'getEmergencyImpact').mockResolvedValueOnce(mockStopImpact);
     const stopSpy = vi.spyOn(api, 'emergencyStopActive').mockResolvedValueOnce({
@@ -101,7 +110,7 @@ describe('EmergencyStopForm', () => {
     fireEvent.change(screen.getByLabelText(/Chỉ dẫn ứng phó khẩn cấp tức thời/i), { target: { value: 'Về điểm tập trung' } });
     fireEvent.change(screen.getByLabelText(/Đầu mối liên hệ khẩn cấp/i), { target: { value: '0901234567' } });
     fireEvent.change(document.getElementById('stop-reason') as HTMLSelectElement, { target: { value: 'AuthorityDirective' } });
-    fireEvent.change(screen.getByLabelText(/Chi tiết lý do/i), { target: { value: 'Lệnh cấm đường' } });
+    fireEvent.change(screen.getByLabelText(/Reason shown to Travelers/i), { target: { value: 'Lệnh cấm đường' } });
     fireEvent.click(screen.getByRole('button', { name: /Xác nhận dừng khẩn cấp tour/i }));
     fireEvent.click(await screen.findByRole('button', { name: /Đồng ý dừng tour/i }));
 
@@ -132,7 +141,7 @@ describe('EmergencyStopForm', () => {
     const contactInput = screen.getByLabelText(/Đầu mối liên hệ khẩn cấp/i);
     fireEvent.change(contactInput, { target: { value: '0901234567' } });
 
-    const detailsInput = screen.getByLabelText(/Chi tiết lý do/i);
+    const detailsInput = screen.getByLabelText(/Reason shown to Travelers/i);
     fireEvent.change(detailsInput, { target: { value: 'Sạt lở' } });
     const submitBtn = screen.getByRole('button', { name: /Xác nhận dừng khẩn cấp tour/i });
     fireEvent.click(submitBtn);
@@ -156,7 +165,7 @@ describe('EmergencyStopForm', () => {
 
     fireEvent.change(screen.getByLabelText(/Chỉ dẫn ứng phó khẩn cấp tức thời/i), { target: { value: 'Trú bão' } });
     fireEvent.change(screen.getByLabelText(/Đầu mối liên hệ khẩn cấp/i), { target: { value: '0901234567' } });
-    fireEvent.change(screen.getByLabelText(/Chi tiết lý do/i), { target: { value: 'Sạt lở' } });
+    fireEvent.change(screen.getByLabelText(/Reason shown to Travelers/i), { target: { value: 'Sạt lở' } });
 
     fireEvent.click(screen.getByRole('button', { name: /Xác nhận dừng khẩn cấp tour/i }));
 

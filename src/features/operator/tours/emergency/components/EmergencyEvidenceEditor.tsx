@@ -11,23 +11,13 @@ import {
   getEmergencyEvidence,
   OperatorEmergencyApiError,
 } from '../operatorEmergencyApi';
+import { AUTHORITY_REFERENCE_MAX_LENGTH, isValidHttpsUrl } from '../evidenceFields';
 
 interface EmergencyEvidenceEditorProps {
   tourId: number;
   scheduleId: number;
   onSuccess: (res: AddEmergencyTourEvidenceResponse) => void;
   className?: string;
-}
-
-function isValidHttpsUrl(urlString: string): boolean {
-  try {
-    const url = new URL(urlString);
-    if (url.protocol !== 'https:') return false;
-    if (url.username || url.password) return false;
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export function EmergencyEvidenceEditor({
@@ -183,6 +173,12 @@ export function EmergencyEvidenceEditor({
         )}
       </div>
 
+      {current?.evidenceAddedLater && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-medium text-amber-900">
+          Evidence for this decision was marked to be added later. Add or confirm it below.
+        </p>
+      )}
+
       {hasExistingEvidence && (
         <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs space-y-1.5">
           <div className="flex items-center justify-between">
@@ -252,9 +248,12 @@ export function EmergencyEvidenceEditor({
               onChange={(e) => setAuthorityReference(e.target.value)}
               disabled={submitting}
               placeholder="Ví dụ: UBND TP Đà Nẵng, Cảng vụ Hàng hải..."
-              maxLength={500}
+              maxLength={AUTHORITY_REFERENCE_MAX_LENGTH}
               className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800 focus:border-teal-600 focus:outline-hidden"
             />
+            <div className="mt-0.5 text-right text-[11px] text-slate-500">
+              {authorityReference.length} / {AUTHORITY_REFERENCE_MAX_LENGTH}
+            </div>
           </div>
 
           <div>

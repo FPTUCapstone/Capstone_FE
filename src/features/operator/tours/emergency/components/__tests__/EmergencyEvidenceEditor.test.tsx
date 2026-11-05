@@ -137,6 +137,36 @@ describe('EmergencyEvidenceEditor', () => {
     });
   });
 
+  it('shows when evidence was marked to be added later', async () => {
+    vi.spyOn(api, 'getEmergencyEvidence').mockResolvedValue({ ...emptyEvidence, evidenceAddedLater: true });
+
+    render(<EmergencyEvidenceEditor tourId={200} scheduleId={50} onSuccess={vi.fn()} />);
+
+    expect(await screen.findByText(/marked to be added later/i)).toBeDefined();
+  });
+
+  it('shows no reminder when evidence is not owed', async () => {
+    vi.spyOn(api, 'getEmergencyEvidence').mockResolvedValue(existingEvidence);
+
+    render(<EmergencyEvidenceEditor tourId={200} scheduleId={50} onSuccess={vi.fn()} />);
+
+    await screen.findByDisplayValue('Ban Chỉ huy PCTT');
+    expect(screen.queryByText(/marked to be added later/i)).toBeNull();
+  });
+
+  it('limits the authority to the 200 characters the Backend accepts and counts them', async () => {
+    vi.spyOn(api, 'getEmergencyEvidence').mockResolvedValue(emptyEvidence);
+
+    render(<EmergencyEvidenceEditor tourId={200} scheduleId={50} onSuccess={vi.fn()} />);
+
+    const authority = (await screen.findByLabelText(/Cơ quan ban hành /i)) as HTMLInputElement;
+    expect(authority.maxLength).toBe(200);
+    expect(screen.getByText('0 / 200')).toBeDefined();
+
+    fireEvent.change(authority, { target: { value: 'a'.repeat(148) } });
+    expect(screen.getByText('148 / 200')).toBeDefined();
+  });
+
   it('withdraws with the version it read', async () => {
     vi.spyOn(api, 'getEmergencyEvidence').mockResolvedValue(existingEvidence);
     const evidenceSpy = vi.spyOn(api, 'addEmergencyEvidence').mockResolvedValueOnce({

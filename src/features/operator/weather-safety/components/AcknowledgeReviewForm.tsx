@@ -39,7 +39,7 @@ export function AcknowledgeReviewForm({
         {review.immediateInstructions && (
           <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3 text-xs text-slate-700">
             <span className="block font-semibold text-slate-500 mb-1">
-              Chỉ dẫn tức thời đã ghi nhận:
+              Internal acknowledgement note
             </span>
             <p className="whitespace-pre-wrap">{review.immediateInstructions}</p>
           </div>
@@ -99,16 +99,20 @@ export function AcknowledgeReviewForm({
           htmlFor="immediate-instructions"
           className="block text-xs font-semibold text-slate-700 mb-1.5"
         >
-          Chỉ dẫn tức thời / Ghi chú nội bộ (Tùy chọn, tối đa 1000 ký tự)
+          Internal acknowledgement note
         </label>
+        <p id="immediate-instructions-help" className="mb-1.5 text-[11px] text-slate-600">
+          This note is recorded for the Operator workflow and is not sent to Travelers. Add Traveler safety instructions when cancelling or stopping the tour.
+        </p>
         <textarea
           id="immediate-instructions"
           rows={3}
           maxLength={1000}
+          aria-describedby="immediate-instructions-help"
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           disabled={submitting}
-          placeholder="Nhập ghi chú hoặc chỉ dẫn tức thời cho điều hành viên và hướng dẫn viên..."
+          placeholder="Optional note for your team"
           className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-600 focus:outline-hidden focus:ring-1 focus:ring-teal-600 disabled:bg-slate-100 disabled:cursor-not-allowed"
         />
         <div className="mt-1 flex justify-end text-[11px] text-slate-500">

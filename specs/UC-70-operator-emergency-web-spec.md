@@ -149,7 +149,7 @@ Response hiện không có delivery status hoặc contact roster; FE không đư
 | Trường | UI type | Bắt buộc | Validation/ghi chú |
 | --- | --- | --- | --- |
 | Reason | Select/radio | Có | `WeatherEmergency`, `AuthorityDirective`, `DestinationUnavailable`, `TransportFailure`, `SafetyIncident`, `Other` |
-| Reason details | Textarea | Có | Trim; 1–1000 ký tự |
+| Reason details | Textarea | Có | Trim; 1–1000 ký tự; UI nói rõ Traveler sẽ đọc nội dung này |
 | Immediate instructions | Textarea | Active stop | Trim; 1–1000 ký tự |
 | Emergency contact | Text | Active stop; optional pre-start | Tối đa 100 ký tự |
 | Current password | Password | Active stop | 1–200 ký tự; không persist; clear sau response |
@@ -158,6 +158,8 @@ Response hiện không có delivery status hoặc contact roster; FE không đư
 | Authority reference | Text | Có điều kiện | Tối đa 200 ký tự |
 | Add evidence later | Checkbox | Không | Thỏa điều kiện `AuthorityDirective` khi chưa có reference |
 | Withdraw evidence | Checkbox/action | Evidence update | Khi true, toàn bộ evidence fields phải rỗng |
+
+Form Cancel thu gọn ba evidence field theo mặc định và tự mở khi chọn `AuthorityDirective`. `addEvidenceLater` được gửi tự động khi `AuthorityDirective` chưa có authority reference hoặc evidence reference; chỉ có Evidence URL vẫn tính là chưa có reference theo validator Backend.
 
 Client validation nhằm phản hồi sớm; Backend validation vẫn là nguồn sự thật.
 

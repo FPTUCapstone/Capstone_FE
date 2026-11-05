@@ -89,7 +89,7 @@ Tomorrow.io webhook
 ### US-70-FE-04 — Xác nhận đã đọc
 
 1. Nút **Đã xem cảnh báo** gọi `POST .../{reviewId}/acknowledge`.
-2. Operator có thể thêm ghi chú/hướng dẫn tức thời tối đa 1000 ký tự.
+2. Operator có thể thêm ghi chú nội bộ tối đa 1000 ký tự; UI nói rõ ghi chú này không được gửi cho Traveler (field API vẫn là `immediateInstructions`).
 3. Replay acknowledge idempotent và không tạo commercial mutation.
 4. Review `Closed` không thể acknowledge; FE refresh và hiển thị trạng thái hiện tại.
 5. Sau acknowledge, tour giữ nguyên; không dùng copy “đã cho phép tiếp tục tour”.

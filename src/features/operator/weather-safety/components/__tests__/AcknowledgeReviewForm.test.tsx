@@ -47,7 +47,7 @@ describe('AcknowledgeReviewForm', () => {
     const onAcknowledge = vi.fn().mockResolvedValue(undefined);
     render(<AcknowledgeReviewForm review={pendingReview} onAcknowledge={onAcknowledge} />);
 
-    const textarea = screen.getByPlaceholderText(/Nhập ghi chú hoặc chỉ dẫn tức thời/i);
+    const textarea = screen.getByLabelText('Internal acknowledgement note');
     fireEvent.change(textarea, { target: { value: 'Đã nắm thông tin và theo dõi tình hình' } });
 
     const submitBtn = screen.getByRole('button', { name: /Đã xem cảnh báo/i });
@@ -66,9 +66,31 @@ describe('AcknowledgeReviewForm', () => {
     expect(screen.getByText(/Đã xác nhận lúc/i)).toBeDefined();
   });
 
+  it('presents the note as internal and not sent to Travelers', async () => {
+    const onAcknowledge = vi.fn().mockResolvedValue(undefined);
+    render(<AcknowledgeReviewForm review={pendingReview} onAcknowledge={onAcknowledge} />);
+
+    const note = screen.getByLabelText('Internal acknowledgement note');
+    expect(document.getElementById(note.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+      'This note is recorded for the Operator workflow and is not sent to Travelers. Add Traveler safety instructions when cancelling or stopping the tour.'
+    );
+    expect(screen.queryByText(/Chỉ dẫn tức thời/i)).toBeNull();
+
+    fireEvent.change(note, { target: { value: '  Watching the storm  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /Đã xem cảnh báo/i }));
+    await waitFor(() => expect(onAcknowledge).toHaveBeenCalledWith('Watching the storm'));
+  });
+
+  it('calls a saved note internal once acknowledged', () => {
+    render(<AcknowledgeReviewForm review={acknowledgedReview} onAcknowledge={vi.fn()} />);
+
+    expect(screen.getByText('Internal acknowledgement note')).toBeDefined();
+    expect(screen.queryByText(/Chỉ dẫn tức thời/i)).toBeNull();
+  });
+
   it('enforces 1000 character limit on instructions', () => {
     render(<AcknowledgeReviewForm review={pendingReview} onAcknowledge={vi.fn()} />);
-    const textarea = screen.getByPlaceholderText(/Nhập ghi chú hoặc chỉ dẫn tức thời/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Internal acknowledgement note') as HTMLTextAreaElement;
     expect(textarea.maxLength).toBe(1000);
   });
 });

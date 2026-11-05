@@ -223,13 +223,17 @@ export function EmergencyStopForm({
 
           <div>
             <label htmlFor="stop-details" className="block font-semibold text-slate-800 mb-1">
-              Chi tiết lý do <span className="text-rose-600">*</span>
+              Reason shown to Travelers <span className="text-rose-600">*</span>
             </label>
+            <p id="stop-details-help" className="mb-1 text-[11px] text-slate-600">
+              Affected Travelers will see this text. Do not include internal notes or private information.
+            </p>
             <textarea
               id="stop-details"
               rows={2}
               maxLength={1000}
               required
+              aria-describedby="stop-details-help"
               value={reasonDetails}
               onChange={(e) => {
                 setReasonDetails(e.target.value);

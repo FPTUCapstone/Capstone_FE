@@ -8,6 +8,12 @@ import type {
   EmergencyTourActionResponse,
 } from '../types';
 import { cancelBeforeDeparture, getEmergencyImpact } from '../operatorEmergencyApi';
+import {
+  AUTHORITY_REFERENCE_MAX_LENGTH,
+  EVIDENCE_REFERENCE_MAX_LENGTH,
+  EVIDENCE_URL_MAX_LENGTH,
+  isValidHttpsUrl,
+} from '../evidenceFields';
 import { EmergencyConfirmationDialog } from './EmergencyConfirmationDialog';
 
 interface CancelBeforeDepartureFormProps {
@@ -46,6 +52,10 @@ export function CancelBeforeDepartureForm({
   const [currentImpact, setCurrentImpact] = useState<EmergencyTourImpactResponse>(impact);
   const [reason, setReason] = useState<EmergencyTourReason>('WeatherEmergency');
   const [reasonDetails, setReasonDetails] = useState('');
+  const [evidenceUrl, setEvidenceUrl] = useState('');
+  const [evidenceUrlError, setEvidenceUrlError] = useState<string | null>(null);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [authorityReference, setAuthorityReference] = useState('');
   const [evidenceReference, setEvidenceReference] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
@@ -60,6 +70,13 @@ export function CancelBeforeDepartureForm({
       return;
     }
     setError(null);
+    const trimmedUrl = evidenceUrl.trim();
+    if (trimmedUrl && !isValidHttpsUrl(trimmedUrl)) {
+      setEvidenceUrlError('Enter a full HTTPS link without a username or password, for example https://example.gov.vn/directive.pdf.');
+      setEvidenceOpen(true);
+      return;
+    }
+    setEvidenceUrlError(null);
     setSubmitting(true);
 
     try {
@@ -91,9 +108,13 @@ export function CancelBeforeDepartureForm({
       impactVersion: currentImpact.impactVersion,
       reason,
       reasonDetails: reasonDetails.trim(),
+      evidenceUrl: evidenceUrl.trim() || null,
+      authorityReference: authorityReference.trim() || null,
       evidenceReference: evidenceReference.trim() || null,
       emergencyContact: emergencyContact.trim() || null,
-      addEvidenceLater: reason === 'AuthorityDirective' && !evidenceReference.trim(),
+      // The Backend accepts a directive only with an authority, a document number or this flag; a link alone is not enough.
+      addEvidenceLater:
+        reason === 'AuthorityDirective' && !authorityReference.trim() && !evidenceReference.trim(),
     };
 
     try {
@@ -147,6 +168,7 @@ export function CancelBeforeDepartureForm({
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value as EmergencyTourReason);
+                if (e.target.value === 'AuthorityDirective') setEvidenceOpen(true);
                 setIdempotencyKey(generateUuid());
               }}
               disabled={submitting}
@@ -162,13 +184,17 @@ export function CancelBeforeDepartureForm({
 
           <div>
             <label htmlFor="cancel-details" className="block font-semibold text-slate-800 mb-1">
-              Chi tiết lý do <span className="text-rose-600">*</span>
+              Reason shown to Travelers <span className="text-rose-600">*</span>
             </label>
+            <p id="cancel-details-help" className="mb-1 text-[11px] text-slate-600">
+              Affected Travelers will see this text. Do not include internal notes or private information.
+            </p>
             <textarea
               id="cancel-details"
               rows={3}
               maxLength={1000}
               required
+              aria-describedby="cancel-details-help"
               value={reasonDetails}
               onChange={(e) => {
                 setReasonDetails(e.target.value);
@@ -183,40 +209,116 @@ export function CancelBeforeDepartureForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="cancel-evidence" className="block font-semibold text-slate-800 mb-1">
-                Liên kết văn bản / bằng chứng (Tùy chọn)
-              </label>
-              <input
-                id="cancel-evidence"
-                type="url"
-                value={evidenceReference}
-                onChange={(e) => {
-                  setEvidenceReference(e.target.value);
-                  setIdempotencyKey(generateUuid());
-                }}
-                disabled={submitting}
-                placeholder="https://..."
-                className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-600"
-              />
-            </div>
-            <div>
-              <label htmlFor="cancel-contact" className="block font-semibold text-slate-800 mb-1">
-                Đầu mối liên hệ hỗ trợ du khách (Tùy chọn)
-              </label>
-              <input
-                id="cancel-contact"
-                type="text"
-                value={emergencyContact}
-                onChange={(e) => {
-                  setEmergencyContact(e.target.value);
-                  setIdempotencyKey(generateUuid());
-                }}
-                disabled={submitting}
-                placeholder="Số điện thoại hotline điều hành..."
-                className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-600"
-              />
+          <div>
+            <label htmlFor="cancel-contact" className="block font-semibold text-slate-800 mb-1">
+              Đầu mối liên hệ hỗ trợ du khách (Tùy chọn)
+            </label>
+            <input
+              id="cancel-contact"
+              type="text"
+              value={emergencyContact}
+              onChange={(e) => {
+                setEmergencyContact(e.target.value);
+                setIdempotencyKey(generateUuid());
+              }}
+              disabled={submitting}
+              placeholder="Số điện thoại hotline điều hành..."
+              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-600"
+            />
+          </div>
+
+          <div
+            className={`rounded-lg border ${
+              reason === 'AuthorityDirective' ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white'
+            }`}
+          >
+            <button
+              type="button"
+              aria-expanded={evidenceOpen}
+              aria-controls="cancel-evidence-section"
+              onClick={() => setEvidenceOpen((open) => !open)}
+              className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-600"
+            >
+              <span>Add supporting evidence (optional)</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                {evidenceOpen ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
+
+            <div id="cancel-evidence-section" hidden={!evidenceOpen} className="space-y-3 border-t border-slate-200 p-3">
+              {reason === 'AuthorityDirective' && (
+                <p className="text-[11px] font-medium text-amber-900">
+                  A directive needs the issuing authority or document number. If you do not have them yet, continue now
+                  and add them after the decision.
+                </p>
+              )}
+              <div>
+                <label htmlFor="cancel-evidence-url" className="block font-semibold text-slate-800 mb-1">
+                  Evidence HTTPS URL
+                </label>
+                {/* type="url" would show the browser bubble instead of the inline error. */}
+                <input
+                  id="cancel-evidence-url"
+                  type="text"
+                  inputMode="url"
+                  maxLength={EVIDENCE_URL_MAX_LENGTH}
+                  value={evidenceUrl}
+                  onChange={(e) => {
+                    setEvidenceUrl(e.target.value);
+                    setEvidenceUrlError(null);
+                    setIdempotencyKey(generateUuid());
+                  }}
+                  disabled={submitting}
+                  placeholder="https://..."
+                  aria-invalid={evidenceUrlError ? true : undefined}
+                  aria-describedby={evidenceUrlError ? 'cancel-evidence-url-error' : undefined}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-600"
+                />
+                {evidenceUrlError && (
+                  <p id="cancel-evidence-url-error" role="alert" className="mt-1 text-[11px] font-semibold text-rose-700">
+                    {evidenceUrlError}
+                  </p>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="cancel-authority" className="block font-semibold text-slate-800 mb-1">
+                    Issuing authority
+                  </label>
+                  <input
+                    id="cancel-authority"
+                    type="text"
+                    maxLength={AUTHORITY_REFERENCE_MAX_LENGTH}
+                    value={authorityReference}
+                    onChange={(e) => {
+                      setAuthorityReference(e.target.value);
+                      setIdempotencyKey(generateUuid());
+                    }}
+                    disabled={submitting}
+                    className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-600"
+                  />
+                  <div className="mt-0.5 text-right text-[11px] text-slate-500">
+                    {authorityReference.length} / {AUTHORITY_REFERENCE_MAX_LENGTH}
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="cancel-document" className="block font-semibold text-slate-800 mb-1">
+                    Document/reference number
+                  </label>
+                  <input
+                    id="cancel-document"
+                    type="text"
+                    maxLength={EVIDENCE_REFERENCE_MAX_LENGTH}
+                    value={evidenceReference}
+                    onChange={(e) => {
+                      setEvidenceReference(e.target.value);
+                      setIdempotencyKey(generateUuid());
+                    }}
+                    disabled={submitting}
+                    className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-600"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
