@@ -5,6 +5,8 @@ vi.mock('next/font/google', () => ({
   Geist: () => ({ variable: '' }),
   Geist_Mono: () => ({ variable: '' }),
   Plus_Jakarta_Sans: () => ({ variable: '' }),
+  Bricolage_Grotesque: () => ({ variable: '' }),
+  Manrope: () => ({ variable: '' }),
 }));
 
 vi.mock('next/navigation', () => ({

@@ -46,9 +46,21 @@ describe('LandingPage integration & simplified architecture', () => {
   it('renders simplified calm editorial landing page with hero, destinations, how it works, tours, and CTA', () => {
     render(<LandingPage />);
 
-    expect(screen.getByRole('heading', { level: 1 })).toBeDefined();
-    expect(screen.getByText(/Central Vietnam Travel Atlas/i)).toBeDefined();
+    // 1. Hero remains visible with Da Nang headline
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1).toBeDefined();
+    expect(h1.textContent).toContain('Đà Nẵng, nơi');
+    expect(screen.getByText(/TripMate · Khám phá miền Trung/i)).toBeDefined();
+
+    // 2. Destination Showcase remains visible
+    expect(screen.getByText('Ba Điểm Đến Biểu Tượng Miền Trung')).toBeDefined();
+
+    // 3. How It Works section remains visible
     expect(screen.getByRole('heading', { level: 2, name: /Ba Bước Khởi Hành Trọn Vẹn/i })).toBeDefined();
+
+    // 4. Featured Tours and footer remain intact
+    expect(screen.getByText(/Tour Trải Nghiệm Bản Địa/i)).toBeDefined();
+    expect(screen.getByRole('heading', { level: 2, name: /Bắt đầu hành trình Miền Trung/i })).toBeDefined();
     expect(screen.getByRole('contentinfo')).toBeDefined();
 
     // Verify relocated sections are no longer present on Homepage (moved to /about)
@@ -58,41 +70,27 @@ describe('LandingPage integration & simplified architecture', () => {
   });
 
   describe('City state synchronization', () => {
-    it('synchronizes active destination across LandingHero and CentralVietnamShowcase', () => {
-      render(<LandingPage />);
-
-      // Initial active city is 'danang'
-      const heroSection = screen.getByRole('heading', { level: 1 }).closest<HTMLElement>('section')!;
-      const danangHeroBtn = within(heroSection).getByRole('button', { name: 'Đà Nẵng' });
-      expect(danangHeroBtn.className).toContain('bg-[#007d6e]');
-
-      // Switch to Hoi An from Hero
-      const hoianHeroBtn = within(heroSection).getByRole('button', { name: 'Hội An' });
-      fireEvent.click(hoianHeroBtn);
-
-      // Hero button state updates
-      expect(hoianHeroBtn.className).toContain('bg-[#d97706]');
-      expect(danangHeroBtn.className).not.toContain('bg-[#007d6e]');
-
-      // Switch to Hue from Hero
-      const hueHeroBtn = within(heroSection).getByRole('button', { name: 'Cố Đô Huế' });
-      fireEvent.click(hueHeroBtn);
-
-      expect(hueHeroBtn.className).toContain('bg-[#7c3aed]');
-    });
-
-    it('synchronizes active destination when clicked from CentralVietnamShowcase destination cards', () => {
-      render(<LandingPage />);
+    it('supports destination selection in CentralVietnamShowcase while keeping Hero as Da Nang', () => {
+      const { container } = render(<LandingPage />);
 
       const destinationsSection = document.getElementById('destinations') as HTMLElement;
-      const hoianHeading = within(destinationsSection).getByRole('heading', { level: 3, name: 'Hội An' });
-      const hoianCard = hoianHeading.closest('.group')!;
+      expect(destinationsSection).not.toBeNull();
+
+      // Find Hoi An card and click it
+      const hoianCard = within(destinationsSection).getByRole('button', { name: 'Chọn điểm đến Hội An' });
       fireEvent.click(hoianCard);
 
-      // Hero button reflects Hội An
-      const heroSection = screen.getByRole('heading', { level: 1 }).closest<HTMLElement>('section')!;
-      const hoianHeroBtn = within(heroSection).getByRole('button', { name: 'Hội An' });
-      expect(hoianHeroBtn.className).toContain('bg-[#d97706]');
+      // Verify that Hero image remains Da Nang
+      const heroImg = container.querySelector('img')!;
+      expect(heroImg.getAttribute('src')).toBe('/images/landing/hero-danang-sontra.jpg');
+      expect(heroImg.getAttribute('alt')).toContain('Đà Nẵng');
+
+      // Click Hue card
+      const hueCard = within(destinationsSection).getByRole('button', { name: 'Chọn điểm đến Cố Đô Huế' });
+      fireEvent.click(hueCard);
+
+      // Hero image still stays Da Nang
+      expect(heroImg.getAttribute('src')).toBe('/images/landing/hero-danang-sontra.jpg');
     });
   });
 
@@ -102,8 +100,12 @@ describe('LandingPage integration & simplified architecture', () => {
 
       // Hero CTA "Lập lịch trình"
       const heroSection = screen.getByRole('heading', { level: 1 }).closest<HTMLElement>('section')!;
-      const heroPlanLink = within(heroSection).getByRole('link', { name: 'Lập lịch trình' });
+      const heroPlanLink = within(heroSection).getByRole('link', { name: /lập lịch trình/i });
       expect(heroPlanLink.getAttribute('href')).toBe(ROUTES.plan);
+
+      // Hero secondary CTA "Khám phá tour"
+      const heroToursLink = within(heroSection).getByRole('link', { name: /khám phá tour/i });
+      expect(heroToursLink.getAttribute('href')).toBe(ROUTES.tours);
 
       // Final CTA "Lập hành trình ngay"
       const finalPlanLink = screen.getByRole('link', { name: /Lập hành trình ngay/i });
