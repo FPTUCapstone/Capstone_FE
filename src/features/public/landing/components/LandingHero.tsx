@@ -86,7 +86,6 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             <Link
               href={ROUTES.plan}
               className="group inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2.5 rounded-xl bg-[#007D6E] px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#007D6E]/30 hover:bg-[#006B5F] hover:shadow-xl hover:shadow-[#007D6E]/40 transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
-              aria-label="Lập lịch trình cho chuyến đi của bạn"
             >
               <span>Lập lịch trình</span>
               <span
@@ -101,7 +100,6 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             <Link
               href={ROUTES.tours}
               className="inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2 rounded-xl bg-white/90 hover:bg-[#00152A] text-[#00152A] hover:text-white border border-white/80 px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold backdrop-blur-md shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
-              aria-label="Khám phá các tour du lịch bản địa"
             >
               <span>Khám phá tour</span>
               <span className="material-symbols-outlined text-lg opacity-70" aria-hidden="true">
