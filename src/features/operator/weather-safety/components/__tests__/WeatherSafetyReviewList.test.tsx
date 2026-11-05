@@ -83,6 +83,29 @@ describe('WeatherSafetyReviewList', () => {
     expect(screen.getByText(/Cảnh báo đã được nhà cung cấp rút lại/i)).toBeDefined();
   });
 
+  it('lists a closed review under the closed tab only', () => {
+    const closed = { ...sampleReviews[0], id: 999, tourTitle: 'Closed departure', status: 'Closed' as const };
+    const { rerender } = render(
+      <WeatherSafetyReviewList
+        reviews={[closed]}
+        selectedFilter="Closed"
+        onFilterChange={vi.fn()}
+        onSelectReview={vi.fn()}
+      />
+    );
+    expect(screen.getByText('Closed departure')).toBeDefined();
+
+    rerender(
+      <WeatherSafetyReviewList
+        reviews={[closed]}
+        selectedFilter="PendingAcknowledgement"
+        onFilterChange={vi.fn()}
+        onSelectReview={vi.fn()}
+      />
+    );
+    expect(screen.queryByText('Closed departure')).toBeNull();
+  });
+
   it('filters reviews when filter is changed', () => {
     const onFilterChange = vi.fn();
     render(

@@ -94,6 +94,53 @@ describe('WeatherSafetyReviewDetailPage', () => {
     });
   });
 
+  describe('a closed review', () => {
+    const closed: WeatherSafetyReview = {
+      ...sampleReview,
+      status: 'Closed',
+      scheduleStatus: 'Cancelled',
+    };
+    const evidence = {
+      operationId: 7,
+      evidenceUrl: null,
+      authorityReference: null,
+      evidenceReference: 'OLD-REF',
+      evidenceProvenance: 'OperatorProvided',
+      evidenceAddedLater: false,
+      evidenceVersion: 'version-1',
+    };
+
+    it('offers no acknowledgement or decision, and keeps evidence reachable', async () => {
+      vi.spyOn(api, 'getWeatherSafetyReview').mockResolvedValueOnce(closed);
+      vi.spyOn(emergencyApi, 'getEmergencyEvidence').mockResolvedValueOnce(evidence);
+
+      render(<WeatherSafetyReviewDetailPage reviewId={42} />);
+
+      expect(await screen.findByText('OLD-REF')).toBeDefined();
+      expect(screen.queryByRole('button', { name: /Đã xem cảnh báo/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Mở tính toán tác động/i })).toBeNull();
+    });
+
+    it('becomes read-only when a refresh reports the closure', async () => {
+      vi.spyOn(api, 'getWeatherSafetyReview')
+        .mockResolvedValueOnce(sampleReview)
+        .mockResolvedValueOnce(closed);
+      vi.spyOn(emergencyApi, 'getEmergencyEvidence').mockResolvedValue(evidence);
+
+      render(<WeatherSafetyReviewDetailPage reviewId={42} />);
+      expect(await screen.findByRole('button', { name: /Mở tính toán tác động/i })).toBeDefined();
+
+      await act(async () => {
+        realtime.onRefreshHint?.();
+      });
+
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: /Mở tính toán tác động/i })).toBeNull()
+      );
+      expect(screen.queryByRole('button', { name: /Đã xem cảnh báo/i })).toBeNull();
+    });
+  });
+
   it('keeps evidence reachable after a reload of a decided departure', async () => {
     vi.spyOn(api, 'getWeatherSafetyReview').mockResolvedValueOnce({
       ...sampleReview,

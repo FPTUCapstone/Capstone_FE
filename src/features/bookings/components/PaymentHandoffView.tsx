@@ -150,6 +150,34 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
     );
   }
 
+  if (booking.bookingStatus !== 'PendingPayment' && booking.bookingStatus !== 'Expired') {
+    const stopped = booking.bookingStatus === 'Interrupted';
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center font-sans" lang="vi">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-xs text-slate-400 font-semibold uppercase">Mã đơn đặt tour</p>
+          <p className="text-base font-black font-mono text-slate-900 mb-3">#{booking.bookingId}</p>
+          {stopped && (
+            <span className="inline-block rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800 mb-3">
+              Stopped for safety
+            </span>
+          )}
+          <p className="text-xs text-slate-600 leading-relaxed mb-6">
+            {stopped
+              ? 'Tour này đã dừng vì lý do an toàn nên đơn không cần thanh toán thêm. Việc thanh toán và hoàn tiền được xử lý riêng theo chính sách hủy booking áp dụng.'
+              : 'Đơn đặt tour này không còn chờ thanh toán.'}
+          </p>
+          <Link
+            href={ROUTES.account.trips}
+            className="inline-flex rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+          >
+            Về chuyến đi của tôi
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 space-y-6 font-sans" lang="vi">
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -11,6 +11,17 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+const realtime = vi.hoisted(() => ({
+  options: undefined as undefined | { onRefreshHint?: () => void; enabled?: boolean },
+}));
+
+vi.mock('@/features/operator/weather-safety/realtime/useWeatherSafetyRealtime', () => ({
+  useWeatherSafetyRealtime: (options: { onRefreshHint?: () => void; enabled?: boolean }) => {
+    realtime.options = options;
+    return { isConnected: false, connectionState: 'Disconnected' };
+  },
+}));
+
 vi.mock('@/features/operator/weather-safety/weatherSafetyApi', () => ({
   getWeatherSafetyReviewBadgeCount: vi.fn().mockResolvedValue(0),
 }));
@@ -29,6 +40,32 @@ describe('PartnerWorkspaceLayout', () => {
       expect(screen.getByRole('link', { name: /Cảnh báo an toàn/i }).textContent).toMatch(/4/)
     );
     expect(getWeatherSafetyReviewBadgeCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates the safety alert count without a page reload', async () => {
+    vi.mocked(getWeatherSafetyReviewBadgeCount).mockResolvedValueOnce(4).mockResolvedValueOnce(3);
+
+    render(
+      <PartnerWorkspaceLayout activeTab="tours">
+        <div>Content</div>
+      </PartnerWorkspaceLayout>
+    );
+    const link = () => screen.getByRole('link', { name: /Cảnh báo an toàn/i });
+    await waitFor(() => expect(link().textContent).toMatch(/4/));
+
+    realtime.options?.onRefreshHint?.();
+
+    await waitFor(() => expect(link().textContent).toMatch(/3/));
+  });
+
+  it('keeps demo pages off the realtime connection', () => {
+    render(
+      <PartnerWorkspaceLayout activeTab="tours" isDemo={true}>
+        <div>Content</div>
+      </PartnerWorkspaceLayout>
+    );
+
+    expect(realtime.options?.enabled).toBe(false);
   });
 
   it('does not read safety alerts for demo data', () => {

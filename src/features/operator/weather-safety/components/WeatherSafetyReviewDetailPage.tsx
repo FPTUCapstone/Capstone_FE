@@ -169,6 +169,8 @@ export function WeatherSafetyReviewDetailPage({
     );
   }
 
+  const canDecide = review.status !== 'Closed';
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       {/* Navigation & Header */}
@@ -252,7 +254,7 @@ export function WeatherSafetyReviewDetailPage({
               hoặc dừng tour sau khi xem xét báo cáo tác động.
             </p>
           </div>
-          {!showEmergencyFlow && !selectedImpact && (
+          {canDecide && !showEmergencyFlow && !selectedImpact && (
             <button
               type="button"
               onClick={() => setShowEmergencyFlow(true)}
@@ -266,7 +268,7 @@ export function WeatherSafetyReviewDetailPage({
           )}
         </div>
 
-        {showEmergencyFlow && !selectedImpact && (
+        {canDecide && showEmergencyFlow && !selectedImpact && (
           <div className="pt-2">
             <EmergencyImpactPanel
               tourId={review.tourId}
@@ -276,7 +278,7 @@ export function WeatherSafetyReviewDetailPage({
           </div>
         )}
 
-        {selectedImpact && selectedImpact.action === 'CancelBeforeDeparture' && (
+        {canDecide && selectedImpact && selectedImpact.action === 'CancelBeforeDeparture' && (
           <div className="pt-2">
             <CancelBeforeDepartureForm
               impact={selectedImpact}
@@ -286,7 +288,7 @@ export function WeatherSafetyReviewDetailPage({
           </div>
         )}
 
-        {selectedImpact && selectedImpact.action === 'EmergencyStopActive' && (
+        {canDecide && selectedImpact && selectedImpact.action === 'EmergencyStopActive' && (
           <div className="pt-2">
             <EmergencyStopForm
               impact={selectedImpact}

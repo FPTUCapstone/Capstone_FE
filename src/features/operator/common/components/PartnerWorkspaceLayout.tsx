@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useWeatherSafetyRealtime } from '@/features/operator/weather-safety/realtime/useWeatherSafetyRealtime';
 import { getWeatherSafetyReviewBadgeCount } from '@/features/operator/weather-safety/weatherSafetyApi';
 import { PartnerSidebar, type PartnerWorkspaceTabKey } from './PartnerSidebar';
 import { PartnerHeader, type BreadcrumbItem } from './PartnerHeader';
@@ -37,6 +38,13 @@ export function PartnerWorkspaceLayout({
       active = false;
     };
   }, [isDemo]);
+
+  useWeatherSafetyRealtime({
+    enabled: !isDemo,
+    onRefreshHint: () => {
+      void getWeatherSafetyReviewBadgeCount().then(setWeatherAlertBadgeCount);
+    },
+  });
 
   return (
     <div className={`min-h-screen bg-[#F4F7FC] text-[#00152A] lg:flex ${className}`}>

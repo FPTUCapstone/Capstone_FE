@@ -47,6 +47,18 @@ function renderCard(item: TripListItem, onOpenDetail = vi.fn(), isDemo = false) 
 const link = (name: string) => screen.queryByRole('link', { name: new RegExp(name, 'i') });
 const button = (name: string) => screen.queryByRole('button', { name: new RegExp(name, 'i') });
 
+describe('TripCard — stopped tour', () => {
+  it('labels a tour stopped by the Operator and offers no ticket, refund or review', () => {
+    renderCard(booking({ tab: 'Cancelled', status: 'Interrupted' }));
+
+    expect(screen.getByText('Stopped for safety')).toBeDefined();
+    expect(screen.queryByText('Interrupted')).toBeNull();
+    expect(link('ticket')).toBeNull();
+    expect(link('refund')).toBeNull();
+    expect(link('review')).toBeNull();
+  });
+});
+
 describe('TripCard — content', () => {
   it('shows only what the booking contract provides', () => {
     renderCard(booking());

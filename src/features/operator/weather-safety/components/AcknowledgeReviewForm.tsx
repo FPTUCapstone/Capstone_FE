@@ -18,6 +18,9 @@ export function AcknowledgeReviewForm({
 
   const isClosed = review.status === 'Closed';
   const isAcknowledged = review.status === 'Acknowledged';
+  const acknowledgedAt = review.acknowledgedAtUtc
+    ? `${new Date(review.acknowledgedAtUtc).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} (ICT)`
+    : null;
 
   if (isAcknowledged || isClosed) {
     return (
@@ -26,17 +29,15 @@ export function AcknowledgeReviewForm({
           <span className="material-symbols-outlined text-[20px] text-blue-600" aria-hidden="true">
             check_circle
           </span>
-          <span>
-            {isAcknowledged ? 'Đã xác nhận lúc: ' : 'Hồ sơ đã đóng: '}
-            {review.acknowledgedAtUtc
-              ? new Date(review.acknowledgedAtUtc).toLocaleString('vi-VN', {
-                  timeZone: 'Asia/Ho_Chi_Minh',
-                }) + ' (ICT)'
-              : 'N/A'}
-          </span>
+          <span>{isClosed ? 'Hồ sơ đã đóng' : `Đã xác nhận lúc: ${acknowledgedAt ?? 'N/A'}`}</span>
         </div>
 
-        {review.immediateInstructions && (
+        {isClosed && acknowledgedAt && (
+          <p className="mt-2 text-xs text-slate-600">Đã xác nhận lúc: {acknowledgedAt}</p>
+        )}
+
+        {/* Before an acknowledgement this field only holds the system's evaluation text. */}
+        {acknowledgedAt && review.immediateInstructions && (
           <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3 text-xs text-slate-700">
             <span className="block font-semibold text-slate-500 mb-1">
               Internal acknowledgement note
@@ -45,10 +46,12 @@ export function AcknowledgeReviewForm({
           </div>
         )}
 
-        <p className="mt-3 text-xs text-slate-600">
-          Xác nhận này chỉ ghi nhận bạn đã tiếp nhận thông tin cảnh báo. Trạng thái tour và các
-          đơn đặt chỗ giữ nguyên trừ khi bạn chủ động thao tác hủy/dừng.
-        </p>
+        {!isClosed && (
+          <p className="mt-3 text-xs text-slate-600">
+            Xác nhận này chỉ ghi nhận bạn đã tiếp nhận thông tin cảnh báo. Trạng thái tour và các
+            đơn đặt chỗ giữ nguyên trừ khi bạn chủ động thao tác hủy/dừng.
+          </p>
+        )}
       </div>
     );
   }

@@ -88,6 +88,21 @@ describe('AcknowledgeReviewForm', () => {
     expect(screen.queryByText(/Chỉ dẫn tức thời/i)).toBeNull();
   });
 
+  it('shows a review closed before anyone acknowledged it without inventing a time', () => {
+    render(
+      <AcknowledgeReviewForm
+        review={{ ...pendingReview, status: 'Closed', immediateInstructions: 'weather.system_reason' }}
+        onAcknowledge={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Hồ sơ đã đóng')).toBeDefined();
+    expect(screen.queryByText('weather.system_reason')).toBeNull();
+    expect(screen.queryByText(/N\/A/)).toBeNull();
+    expect(screen.queryByText(/giữ nguyên/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Đã xem cảnh báo/i })).toBeNull();
+  });
+
   it('enforces 1000 character limit on instructions', () => {
     render(<AcknowledgeReviewForm review={pendingReview} onAcknowledge={vi.fn()} />);
     const textarea = screen.getByLabelText('Internal acknowledgement note') as HTMLTextAreaElement;
