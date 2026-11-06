@@ -32,7 +32,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
       value: formatVndCurrency(summary.netAmount),
       help: financeEn.revenue.summary.netAmountHelp,
       icon: 'account_balance_wallet',
-      color: 'text-[#006B5F] bg-[#006B5F]/5 border-[#006B5F]/20',
+      color: 'text-[#174B4A] bg-[#174B4A]/5 border-[#174B4A]/20',
       highlight: true,
     },
     {
@@ -65,7 +65,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
           key={idx}
           className={`flex min-w-0 flex-col justify-between rounded-2xl border p-4 shadow-xs transition-shadow hover:shadow-sm ${
             card.highlight
-              ? 'border-[#006B5F]/30 bg-white ring-1 ring-[#006B5F]/20'
+              ? 'border-[#174B4A]/30 bg-white ring-1 ring-[#174B4A]/20'
               : 'border-slate-200 bg-white'
           }`}
         >
@@ -82,7 +82,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
             </div>
           </div>
           <div className="mt-3 min-w-0">
-            <p className="text-base sm:text-lg font-bold text-[#00152A] tracking-tight break-words min-w-0">
+            <p className="text-base sm:text-lg font-bold text-[#1C2928] tracking-tight break-words min-w-0">
               {card.value}
             </p>
             <p className="mt-1 text-[10px] text-slate-400 leading-tight break-words">

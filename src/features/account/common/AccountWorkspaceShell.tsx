@@ -130,7 +130,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
   // Dedicated review route passthrough
   if (isReview) {
     return (
-      <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+      <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
         {children}
       </div>
     );
@@ -140,7 +140,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
   if (status === 'restoring') {
     return (
       <div
-        className="min-h-screen bg-[#F3F6F7] px-4 py-8 sm:px-6 lg:px-8"
+        className="min-h-screen bg-[#F7F5EF] px-4 py-8 sm:px-6 lg:px-8"
         role="status"
         aria-label="Đang tải không gian tài khoản"
       >
@@ -185,30 +185,30 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
 
   return (
     <AccountWorkspaceContext.Provider value={{ isInsideShell: true, activeTab }}>
-      <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+      <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {/* Top Workspace Breadcrumb & Header */}
           <header className="mb-6">
             <nav
               aria-label="Breadcrumb"
-              className="flex items-center gap-2 text-xs font-semibold text-[#59616B]"
+              className="flex items-center gap-2 text-xs font-semibold text-[#5B6E69]"
             >
-              <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+              <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
                 Trang chủ
               </Link>
               <span aria-hidden="true">/</span>
-              <Link href={ROUTES.account.profile} className="hover:text-[#006B5F] hover:underline">
+              <Link href={ROUTES.account.profile} className="hover:text-[#174B4A] hover:underline">
                 Tài khoản cá nhân
               </Link>
               <span aria-hidden="true">/</span>
-              <span className="text-[#00152A]">{currentTabMeta.viTitle}</span>
+              <span className="text-[#1C2928]">{currentTabMeta.viTitle}</span>
             </nav>
           </header>
 
           {/* Mobile Traveler Compact Header & Horizontal Capsule Navigation (< lg) */}
           <div className="mb-6 space-y-3 lg:hidden">
             {/* Mobile Identity Bar */}
-            <div className="flex items-center gap-3.5 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-xs">
+            <div className="flex items-center gap-3.5 rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-xs">
               <div className="relative shrink-0">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -218,7 +218,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
                     className="h-12 w-12 rounded-full border-2 border-white object-cover shadow-xs"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#006B5F] to-[#004D40] text-sm font-bold text-white shadow-xs">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#174B4A] to-[#174B4A] text-sm font-bold text-white shadow-xs">
                     {initials}
                   </div>
                 )}
@@ -229,8 +229,8 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h2 className="truncate text-base font-bold text-[#00152A]">{displayName}</h2>
-                  <span className="rounded-full bg-[#E8F7F4] px-2 py-0.5 text-[10px] font-bold text-[#006B5F]">
+                  <h2 className="truncate text-base font-bold text-[#1C2928]">{displayName}</h2>
+                  <span className="rounded-full bg-[#E8F0EA] px-2 py-0.5 text-[10px] font-bold text-[#174B4A]">
                     Du khách
                   </span>
                 </div>
@@ -254,7 +254,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
               aria-label="Bảng điều hướng tài khoản du khách"
             >
               {/* Traveler Identity Profile Card */}
-              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-xs transition hover:shadow-sm">
+              <div className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs transition hover:shadow-sm">
                 <div className="flex flex-col items-center text-center">
                   <div className="relative mb-3">
                     {avatarUrl ? (
@@ -265,13 +265,13 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
                         className="h-20 w-20 rounded-full border-2 border-slate-100 object-cover shadow-sm"
                       />
                     ) : (
-                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#006B5F] to-[#004D40] text-xl font-bold tracking-wider text-white shadow-sm">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#174B4A] to-[#174B4A] text-xl font-bold tracking-wider text-white shadow-sm">
                         {initials}
                       </div>
                     )}
                     <Link
                       href={ROUTES.account.profile}
-                      className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#006B5F] text-white shadow-xs transition hover:bg-[#005249]"
+                      className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#174B4A] text-white shadow-xs transition hover:bg-[#103B39]"
                       title="Chỉnh sửa ảnh đại diện"
                       aria-label="Chỉnh sửa ảnh đại diện trong Hồ sơ"
                     >
@@ -279,11 +279,11 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
                     </Link>
                   </div>
 
-                  <h2 className="text-base font-bold text-[#00152A] line-clamp-1">{displayName}</h2>
+                  <h2 className="text-base font-bold text-[#1C2928] line-clamp-1">{displayName}</h2>
                   <p className="mt-0.5 text-xs text-slate-500 truncate max-w-full">{displayEmail}</p>
 
                   <div className="mt-3 flex items-center justify-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F7F4] px-2.5 py-0.5 text-xs font-semibold text-[#006B5F]">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F0EA] px-2.5 py-0.5 text-xs font-semibold text-[#174B4A]">
                       <span className="material-symbols-outlined text-[13px]" aria-hidden="true">
                         verified
                       </span>
@@ -304,7 +304,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
               </div>
 
               {/* Vertical Side-Rail Navigation Card */}
-              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-3 shadow-xs">
+              <div className="rounded-2xl border border-[#DCE2DD] bg-white p-3 shadow-xs">
                 <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   Không gian làm việc
                 </p>
@@ -312,19 +312,19 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
               </div>
 
               {/* TripMate Smart AI Atlas Assistant Pro-Tip Card */}
-              <div className="rounded-2xl border border-[#C6ECE3] bg-gradient-to-br from-[#F0FDF9] to-[#E8F7F4] p-4 text-xs shadow-xs">
+              <div className="rounded-2xl border border-[#C6ECE3] bg-gradient-to-br from-[#F0FDF9] to-[#E8F0EA] p-4 text-xs shadow-xs">
                 <div className="flex items-start gap-2.5">
-                  <span className="material-symbols-outlined text-[20px] text-[#006B5F]" aria-hidden="true">
+                  <span className="material-symbols-outlined text-[20px] text-[#174B4A]" aria-hidden="true">
                     auto_awesome
                   </span>
                   <div>
-                    <h3 className="font-bold text-[#00152A]">TripMate AI Atlas</h3>
-                    <p className="mt-1 leading-relaxed text-[#33425A]">
+                    <h3 className="font-bold text-[#1C2928]">TripMate AI Atlas</h3>
+                    <p className="mt-1 leading-relaxed text-[#5B6E69]">
                       Cập nhật đầy đủ sở thích và lịch sử du lịch giúp TripMate gợi ý tour và lịch trình phù hợp nhất cho chuyến đi của bạn.
                     </p>
                     <Link
                       href={ROUTES.account.preferences}
-                      className="mt-2.5 inline-flex items-center gap-1 font-bold text-[#006B5F] hover:underline"
+                      className="mt-2.5 inline-flex items-center gap-1 font-bold text-[#174B4A] hover:underline"
                     >
                       <span>Cập nhật sở thích ngay</span>
                       <span className="material-symbols-outlined text-[14px]" aria-hidden="true">

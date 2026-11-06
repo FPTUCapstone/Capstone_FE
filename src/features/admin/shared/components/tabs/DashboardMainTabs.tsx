@@ -61,7 +61,7 @@ export function DashboardMainTabs({
   );
 
   return (
-    <div className="mb-6 flex items-center justify-between border-b border-[#E6E4DD] pb-3">
+    <div className="mb-6 flex items-center justify-between border-b border-[#DCE2DD] pb-3">
       <div
         role="tablist"
         aria-label="Dashboard views"
@@ -77,8 +77,8 @@ export function DashboardMainTabs({
           onClick={() => handleSelectTab('overview')}
           className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'overview'
-              ? 'bg-[#FFFFFF] text-[#1C2923] shadow-xs'
-              : 'text-[#4A5851] hover:text-[#1C2923] hover:bg-[#FFFFFF]/50'
+              ? 'bg-[#FFFFFF] text-[#1C2928] shadow-xs'
+              : 'text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#FFFFFF]/50'
           }`}
         >
           <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
@@ -97,8 +97,8 @@ export function DashboardMainTabs({
           onClick={() => handleSelectTab('analytics')}
           className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'analytics'
-              ? 'bg-[#245747] text-white shadow-xs'
-              : 'text-[#4A5851] hover:text-[#1C2923] hover:bg-[#FFFFFF]/50'
+              ? 'bg-[#174B4A] text-white shadow-xs'
+              : 'text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#FFFFFF]/50'
           }`}
         >
           <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
@@ -108,8 +108,8 @@ export function DashboardMainTabs({
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
               activeTab === 'analytics'
-                ? 'bg-[#1C2923] text-[#A3D2BA]'
-                : 'bg-[#DFDBD1] text-[#245747]'
+                ? 'bg-[#1C2928] text-[#A3D2BA]'
+                : 'bg-[#DFDBD1] text-[#174B4A]'
             }`}
           >
             {badgeLabel}

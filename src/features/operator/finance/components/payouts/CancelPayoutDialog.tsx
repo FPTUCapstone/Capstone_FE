@@ -70,7 +70,7 @@ export function CancelPayoutDialog({ isOpen, request, onClose, onConfirmCancel }
             <span className="material-symbols-outlined text-xl">warning</span>
           </div>
           <div>
-            <h2 id="cancel-payout-title" className="text-base font-bold text-[#00152A]">
+            <h2 id="cancel-payout-title" className="text-base font-bold text-[#1C2928]">
               {financeEn.cancelDialog.title}
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>

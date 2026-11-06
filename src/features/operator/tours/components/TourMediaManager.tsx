@@ -69,7 +69,7 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6" aria-labelledby="tour-media-title">
-      <h3 id="tour-media-title" className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#00152A]">
+      <h3 id="tour-media-title" className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#1C2928]">
         Hình ảnh giới thiệu
       </h3>
       <p className="mt-1 text-[11px] text-slate-500">
@@ -116,7 +116,7 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
                     type="button"
                     disabled={disabled || busy}
                     onClick={() => void run(() => setPrimaryTourImage(tourId, item.id))}
-                    className="font-bold text-[#006B5F] hover:underline disabled:opacity-50"
+                    className="font-bold text-[#174B4A] hover:underline disabled:opacity-50"
                   >
                     Đặt làm ảnh đại diện
                   </button>

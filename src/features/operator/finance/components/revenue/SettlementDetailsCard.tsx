@@ -31,7 +31,7 @@ export function SettlementDetailsCard({ summary }: SettlementDetailsCardProps) {
       aria-label={t.title}
       className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-xs"
     >
-      <h3 className="text-sm font-bold text-[#00152A]">{t.title}</h3>
+      <h3 className="text-sm font-bold text-[#1C2928]">{t.title}</h3>
       <p className="mt-1 text-xs text-slate-500">{t.subtitle}</p>
 
       <dl className="mt-4 flex-1 space-y-2">
@@ -40,9 +40,9 @@ export function SettlementDetailsCard({ summary }: SettlementDetailsCardProps) {
             key={row.label}
             className={`flex items-center justify-between text-xs ${
               row.variant === 'total'
-                ? 'mt-2 border-t border-slate-200 pt-3 text-sm font-bold text-[#006B5F]'
+                ? 'mt-2 border-t border-slate-200 pt-3 text-sm font-bold text-[#174B4A]'
                 : row.variant === 'subtotal'
-                  ? 'border-t border-slate-100 pt-2 font-semibold text-[#00152A]'
+                  ? 'border-t border-slate-100 pt-2 font-semibold text-[#1C2928]'
                   : 'text-slate-500'
             }`}
           >

@@ -37,20 +37,20 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
   }, [initialApplications, searchTerm, statusFilter]);
 
   return (
-    <div className="pb-16 text-[#1C2923]">
+    <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <header className="mb-6 rounded-2xl border border-[#2A3B33] bg-[#1C2923] p-6 text-[#F7F6F2] shadow-sm md:p-8">
+        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#758B74] bg-[#273830] px-3 py-1 text-xs font-bold tracking-wider text-[#E8EFE9] uppercase">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
                 <span className="material-symbols-outlined text-[14px]">{'assignment_ind'}</span>
                 <span>{copy.list.eyebrow}</span>
               </div>
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                 {copy.list.title}
               </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#A3B3AB]">
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
                 {copy.list.subtitle}
               </p>
             </div>
@@ -58,7 +58,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
         </header>
 
         {/* Filters and Controls */}
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#E6E4DD] bg-[#FFFFFF] p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
           {/* Status Tabs */}
           <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label={copy.list.searchAriaLabel}>
             {(['All', 'Pending', 'Approved', 'Rejected'] as const).map((status) => {
@@ -80,8 +80,8 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
                   onClick={() => setStatusFilter(status)}
                   className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
                     statusFilter === status
-                      ? 'bg-[#245747] text-white shadow-xs'
-                      : 'bg-[#F7F6F2] text-[#4A5851] hover:bg-[#E8EFE9]'
+                      ? 'bg-[#174B4A] text-white shadow-xs'
+                      : 'bg-[#F7F5EF] text-[#5B6E69] hover:bg-[#E8F0EA]'
                   }`}
                 >
                   {tabLabel}
@@ -92,7 +92,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
 
           {/* Search Box */}
           <div className="relative w-full sm:w-72">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#74827B]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#5B6E69]">
               {'search'}
             </span>
             <input
@@ -101,16 +101,16 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={copy.list.searchPlaceholder}
               aria-label={copy.list.searchAriaLabel}
-              className="w-full rounded-xl border border-[#D8D5CC] bg-[#F7F6F2] py-2 pl-9 pr-3 text-xs text-[#1C2923] placeholder-[#74827B] transition focus:border-[#245747] focus:bg-white focus:outline-hidden"
+              className="w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] py-2 pl-9 pr-3 text-xs text-[#1C2928] placeholder-[#5B6E69] transition focus:border-[#174B4A] focus:bg-white focus:outline-hidden"
             />
           </div>
         </div>
 
         {/* Applications Queue Table */}
-        <div className="overflow-hidden rounded-2xl border border-[#E6E4DD] bg-[#FFFFFF] shadow-xs">
+        <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs" aria-label={copy.list.tableAriaLabel}>
-              <thead className="border-b border-[#E6E4DD] bg-[#F0EFEA] text-[11px] font-bold uppercase tracking-wider text-[#4A5851]">
+              <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[11px] font-bold uppercase tracking-wider text-[#5B6E69]">
                 <tr>
                   <th scope="col" className="px-5 py-3.5">{copy.list.colId}</th>
                   <th scope="col" className="px-5 py-3.5">{copy.list.colCompany}</th>
@@ -122,27 +122,27 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
                   <th scope="col" className="px-5 py-3.5 text-right">{copy.list.colActions}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E6E4DD]">
+              <tbody className="divide-y divide-[#DCE2DD]">
                 {filteredApplications.length > 0 ? (
                   filteredApplications.map((app) => (
-                    <tr key={app.userId} className="hover:bg-[#F7F6F2]/70 transition-colors">
-                      <td className="px-5 py-4 font-mono font-bold text-[#1C2923]">
+                    <tr key={app.userId} className="hover:bg-[#F7F5EF]/70 transition-colors">
+                      <td className="px-5 py-4 font-mono font-bold text-[#1C2928]">
                         {`#${app.userId}`}
                       </td>
-                      <td className="px-5 py-4 font-bold text-[#1C2923]">
+                      <td className="px-5 py-4 font-bold text-[#1C2928]">
                         {app.companyName}
                       </td>
-                      <td className="px-5 py-4 font-mono text-[#4A5851]">
+                      <td className="px-5 py-4 font-mono text-[#5B6E69]">
                         {app.taxCode}
                       </td>
-                      <td className="px-5 py-4 font-mono text-[#4A5851]">
+                      <td className="px-5 py-4 font-mono text-[#5B6E69]">
                         {app.contactPhone}
                       </td>
-                      <td className="px-5 py-4 text-[#4A5851]">
+                      <td className="px-5 py-4 text-[#5B6E69]">
                         {app.submittedAt}
                       </td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#4A5851]">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5B6E69]">
                           <span className="material-symbols-outlined text-[14px]">{'description'}</span>
                           <span>{copy.list.docsCountLabel(app.documentsCount)}</span>
                         </span>
@@ -168,7 +168,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
                       <td className="px-5 py-4 text-right">
                         <Link
                           href={ROUTES.admin.tourOperatorApplicationDetail(app.userId)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-[#D8D5CC] bg-white px-2.5 py-1 text-xs font-semibold text-[#1C2923] hover:bg-[#F0EFEA] transition"
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-2.5 py-1 text-xs font-semibold text-[#1C2928] hover:bg-[#F7F5EF] transition"
                         >
                           <span>{copy.list.reviewAction}</span>
                           <span className="material-symbols-outlined text-[14px]">{'arrow_forward'}</span>
@@ -178,11 +178,11 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center text-[#74827B]">
+                    <td colSpan={8} className="px-5 py-16 text-center text-[#5B6E69]">
                       <div className="mx-auto flex max-w-sm flex-col items-center">
-                        <span className="material-symbols-outlined text-4xl text-[#758B74]">{'inventory_2'}</span>
-                        <p className="mt-3 text-sm font-bold text-[#1C2923]">{copy.list.emptyQueueTitle}</p>
-                        <p className="mt-1 text-xs text-[#74827B]">
+                        <span className="material-symbols-outlined text-4xl text-[#5B6E69]">{'inventory_2'}</span>
+                        <p className="mt-3 text-sm font-bold text-[#1C2928]">{copy.list.emptyQueueTitle}</p>
+                        <p className="mt-1 text-xs text-[#5B6E69]">
                           {copy.list.emptyQueueBody}
                         </p>
                       </div>

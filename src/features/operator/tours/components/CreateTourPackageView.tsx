@@ -310,7 +310,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl break-words">
+            <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl break-words">
               Tạo gói tour mới
             </h1>
             <OperatorTourStatusBadge status="Draft" />
@@ -383,13 +383,13 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
         <div className="space-y-6 lg:col-span-2">
           {/* Card 1: Basic Information */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               Thông tin cơ bản gói tour
             </h3>
 
             <div className="mt-4 space-y-4">
               <div>
-                <label htmlFor="field-title" className="block text-xs font-bold text-[#00152A]">
+                <label htmlFor="field-title" className="block text-xs font-bold text-[#1C2928]">
                   Tên gói tour <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -398,8 +398,8 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ví dụ: Tour trọn ngày Bà Nà Hills - Cầu Vàng"
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
-                    errors.title ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#006B5F]'
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 ${
+                    errors.title ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#174B4A]'
                   }`}
                 />
                 {errors.title && (
@@ -411,7 +411,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
+                  <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#1C2928]">
                     Điểm đến chính <span className="text-rose-500">*</span>
                   </label>
                   {isDemo ? (
@@ -421,8 +421,8 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
                       placeholder="Đà Nẵng"
-                      className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
-                        errors.destination ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#006B5F]'
+                      className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 ${
+                        errors.destination ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#174B4A]'
                       }`}
                     />
                   ) : (
@@ -442,7 +442,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                 </div>
 
                 <div>
-                  <label htmlFor="field-category" className="block text-xs font-bold text-[#00152A]">
+                  <label htmlFor="field-category" className="block text-xs font-bold text-[#1C2928]">
                     Danh mục tour
                   </label>
                   {isDemo ? (
@@ -450,7 +450,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                       id="field-category"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
                     >
                       <option value="Di sản & Thiên nhiên">Di sản & Thiên nhiên</option>
                       <option value="Văn hóa & Ẩm thực">Văn hóa & Ẩm thực</option>
@@ -464,7 +464,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
               </div>
 
               <div>
-                <label htmlFor="field-description" className="block text-xs font-bold text-[#00152A]">
+                <label htmlFor="field-description" className="block text-xs font-bold text-[#1C2928]">
                   Mô tả chi tiết gói tour <span className="text-rose-500">*</span>
                 </label>
                 <textarea
@@ -473,8 +473,8 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Giới thiệu điểm nổi bật, trải nghiệm du khách nhận được trong chuyến đi..."
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 ${
-                    errors.description ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#006B5F]'
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 ${
+                    errors.description ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-[#174B4A]'
                   }`}
                 />
                 {errors.description && (
@@ -490,7 +490,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-[#00152A]">
+                <h3 className="text-base font-extrabold text-[#1C2928]">
                   Lịch trình chi tiết theo ngày <span className="text-rose-500" aria-hidden="true">*</span>
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -517,13 +517,13 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
               {itinerary.map((day, dIdx) => (
                 <div key={day.dayNo} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
-                    <span className="text-xs font-extrabold text-[#00152A]">
+                    <span className="text-xs font-extrabold text-[#1C2928]">
                       {dayHeading(day)}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleAddActivity(dIdx)}
-                      className="text-xs font-bold text-[#006B5F] hover:underline flex items-center gap-1"
+                      className="text-xs font-bold text-[#174B4A] hover:underline flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-[16px]">add_circle</span>
                       Thêm điểm dừng
@@ -555,14 +555,14 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
           {/* Card 3: Inclusions, Exclusions & Policies */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               Dịch vụ bao gồm & Chính sách hủy
             </h3>
 
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="field-inclusions" className="block text-xs font-bold text-[#00152A]">
+                  <label htmlFor="field-inclusions" className="block text-xs font-bold text-[#1C2928]">
                     Bao gồm trong giá tour
                   </label>
                   <textarea
@@ -571,12 +571,12 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                     value={inclusions}
                     onChange={(e) => setInclusions(e.target.value)}
                     placeholder="Xe đưa đón, hướng dẫn viên, vé tham quan..."
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="field-exclusions" className="block text-xs font-bold text-[#00152A]">
+                  <label htmlFor="field-exclusions" className="block text-xs font-bold text-[#1C2928]">
                     Không bao gồm
                   </label>
                   <textarea
@@ -585,13 +585,13 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                     value={exclusions}
                     onChange={(e) => setExclusions(e.target.value)}
                     placeholder="Chi phí cá nhân, tiền tip..."
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="field-cancellation" className="block text-xs font-bold text-[#00152A]">
+                <label htmlFor="field-cancellation" className="block text-xs font-bold text-[#1C2928]">
                   Chính sách hủy tour <span className="text-rose-500">*</span>
                 </label>
                 {isDemo ? (
@@ -626,11 +626,11 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           {/* Card: Departure Schedules */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-extrabold text-[#00152A]">Lịch khởi hành <span className="text-rose-500" aria-hidden="true">*</span></h3>
+              <h3 className="text-base font-extrabold text-[#1C2928]">Lịch khởi hành <span className="text-rose-500" aria-hidden="true">*</span></h3>
               <button
                 type="button"
                 onClick={handleAddSchedule}
-                className="text-xs font-bold text-[#006B5F] hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-[#174B4A] hover:underline flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
                 Thêm lịch
@@ -724,7 +724,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
           {!isDemo && (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-              <h3 className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#00152A]">Thông tin bổ sung</h3>
+              <h3 className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#1C2928]">Thông tin bổ sung</h3>
               <div className="mt-3">
                 <TourTermsFields
                   highlights={highlights}
@@ -738,7 +738,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
           {/* Card: Cover Photos / Media */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               Hình ảnh giới thiệu
             </h3>
             <p className="mt-1 text-[11px] text-slate-500">
@@ -821,7 +821,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           type="button"
           onClick={() => handleSave(false)}
           disabled={submitting}
-          className="w-full sm:w-auto text-center rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
+          className="w-full sm:w-auto text-center rounded-xl border border-[#174B4A] bg-white px-5 py-2.5 text-xs font-bold text-[#174B4A] hover:bg-[#174B4A]/5 transition disabled:opacity-50"
         >
           {submitting ? 'Đang lưu bản nháp…' : 'Lưu bản nháp'}
         </button>
@@ -829,7 +829,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           type="button"
           onClick={() => handleSave(true)}
           disabled={submitting}
-          className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+          className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
         >
           {submitting ? 'Đang lưu…' : 'Lưu và gửi xét duyệt'}
         </button>

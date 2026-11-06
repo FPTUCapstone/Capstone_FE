@@ -23,9 +23,9 @@ export function PoiEmptyState({ onReset }: EmptyStateProps) {
   return (
     <div className="rounded-[28px] border border-dashed border-[#bfcdd2] bg-white px-5 py-14 text-center">
       <span className="text-4xl" aria-hidden="true">⌕</span>
-      <h2 className="mt-4 text-2xl font-black text-[#00152a]">Không tìm thấy địa điểm phù hợp</h2>
+      <h2 className="mt-4 text-2xl font-black text-[#1C2928]">Không tìm thấy địa điểm phù hợp</h2>
       <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[#5c6970]">Không có điểm tham quan nào khớp với từ khóa hoặc bộ lọc hiện tại.</p>
-      <button type="button" onClick={onReset} className="mt-6 min-h-11 rounded-xl bg-[#007d6e] px-5 text-sm font-bold text-white hover:bg-[#006b5f]">
+      <button type="button" onClick={onReset} className="mt-6 min-h-11 rounded-xl bg-[#103B39] px-5 text-sm font-bold text-white hover:bg-[#174B4A]">
         Đặt lại tìm kiếm và bộ lọc
       </button>
     </div>

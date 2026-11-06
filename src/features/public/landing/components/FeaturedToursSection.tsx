@@ -34,8 +34,8 @@ export function FeaturedToursSection() {
               <LandingEyebrow icon="verified" className="mb-3">
                 Tour bản địa được bảo chứng
               </LandingEyebrow>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#00152a] tracking-tight">
-                Tour Trải Nghiệm Bản Địa <span className="text-[#007d6e]">Đã Kiểm Duyệt</span>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#1C2928] tracking-tight">
+                Tour Trải Nghiệm Bản Địa <span className="text-[#103B39]">Đã Kiểm Duyệt</span>
               </h2>
               <p className="mt-3 text-slate-500 text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
                 Khám phá các tour du lịch tiêu biểu từ những đối tác lữ hành uy tín tại Miền Trung.
@@ -51,7 +51,7 @@ export function FeaturedToursSection() {
                   onClick={() => setFilterCity('all')}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                     filterCity === 'all'
-                      ? 'bg-[#00152a] text-white shadow-xs'
+                      ? 'bg-[#103B39] text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -62,7 +62,7 @@ export function FeaturedToursSection() {
                   onClick={() => setFilterCity('Đà Nẵng')}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                     filterCity === 'Đà Nẵng'
-                      ? 'bg-[#007d6e] text-white shadow-xs'
+                      ? 'bg-[#103B39] text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -94,7 +94,7 @@ export function FeaturedToursSection() {
 
               <Link
                 href={ROUTES.tours}
-                className="inline-flex items-center gap-1 px-4 py-2 text-xs font-bold text-[#007d6e] hover:text-teal-800 transition"
+                className="inline-flex items-center gap-1 px-4 py-2 text-xs font-bold text-[#103B39] hover:text-teal-800 transition"
               >
                 <span>Xem tất cả tour</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -126,7 +126,7 @@ export function FeaturedToursSection() {
                     <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/95 text-slate-900 backdrop-blur-md shadow-xs">
                       {tour.tag}
                     </span>
-                    <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#00152a]/80 text-teal-300 backdrop-blur-md shadow-xs flex items-center gap-1">
+                    <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#103B39]/80 text-teal-300 backdrop-blur-md shadow-xs flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs text-teal-300">verified</span>
                       <span>Đã kiểm duyệt</span>
                     </span>
@@ -137,7 +137,7 @@ export function FeaturedToursSection() {
                     <div>
                       <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
                         <span className="font-semibold text-slate-600 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm text-[#007d6e]">storefront</span>
+                          <span className="material-symbols-outlined text-sm text-[#103B39]">storefront</span>
                           {tour.operator}
                         </span>
                         <span className="text-amber-500 font-bold flex items-center gap-0.5">
@@ -145,7 +145,7 @@ export function FeaturedToursSection() {
                         </span>
                       </div>
 
-                      <h3 className="text-sm font-bold text-[#00152a] line-clamp-2 group-hover:text-[#007d6e] transition-colors leading-snug">
+                      <h3 className="text-sm font-bold text-[#1C2928] line-clamp-2 group-hover:text-[#103B39] transition-colors leading-snug">
                         {tour.title}
                       </h3>
 
@@ -174,12 +174,12 @@ export function FeaturedToursSection() {
                     <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                       <div>
                         <span className="text-[10px] text-slate-400 block font-medium">Giá từ:</span>
-                        <span className="text-base font-black text-[#007d6e]">{tour.price}</span>
+                        <span className="text-base font-black text-[#103B39]">{tour.price}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleOpenTour(tour)}
-                        className="px-3.5 py-2 rounded-xl bg-[#00152a] hover:bg-[#007d6e] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98"
+                        className="px-3.5 py-2 rounded-xl bg-[#103B39] hover:bg-[#103B39] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98"
                       >
                         Xem chi tiết
                       </button>
@@ -252,7 +252,7 @@ export function FeaturedToursSection() {
                       key={h}
                       className="flex items-center gap-1.5 p-2 rounded-xl bg-teal-50/60 border border-teal-100 font-medium"
                     >
-                      <span className="material-symbols-outlined text-sm text-[#007d6e]">check_circle</span>
+                      <span className="material-symbols-outlined text-sm text-[#103B39]">check_circle</span>
                       <span>{h}</span>
                     </div>
                   ))}
@@ -260,7 +260,7 @@ export function FeaturedToursSection() {
               </div>
 
               {/* Escrow Capability Note */}
-              <div className="p-4 rounded-2xl bg-[#00152a] text-white flex items-center justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-[#103B39] text-white flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-3xl text-teal-300">verified_user</span>
                   <div>
@@ -279,7 +279,7 @@ export function FeaturedToursSection() {
               <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="text-xs text-slate-400 block">Giá từ:</span>
-                  <span className="text-2xl font-black text-[#007d6e]">{selectedTour.price}</span>
+                  <span className="text-2xl font-black text-[#103B39]">{selectedTour.price}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -292,7 +292,7 @@ export function FeaturedToursSection() {
                   </button>
                   <Link
                     href={ROUTES.tours}
-                    className="px-6 py-2.5 rounded-xl bg-[#007d6e] hover:bg-[#006b5f] text-white text-xs font-bold transition shadow-md shadow-teal-700/25 cursor-pointer flex items-center gap-2"
+                    className="px-6 py-2.5 rounded-xl bg-[#103B39] hover:bg-[#174B4A] text-white text-xs font-bold transition shadow-md shadow-teal-700/25 cursor-pointer flex items-center gap-2"
                   >
                     <span>Khám phá tour &amp; Lịch khởi hành</span>
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>

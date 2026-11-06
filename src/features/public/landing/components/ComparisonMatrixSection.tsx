@@ -12,8 +12,8 @@ export function ComparisonMatrixSection() {
             <LandingEyebrow icon="balance" className="mb-4">
               So sánh năng lực toàn diện
             </LandingEyebrow>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#00152a] tracking-tight">
-              Tại sao chọn <span className="text-[#007d6e]">TripMate</span> thay vì các ứng dụng rời rạc?
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#1C2928] tracking-tight">
+              Tại sao chọn <span className="text-[#103B39]">TripMate</span> thay vì các ứng dụng rời rạc?
             </h2>
             <p className="mt-4 text-slate-600 text-sm sm:text-base leading-relaxed text-pretty">
               Hiện nay, du khách phải mất 4–8 giờ kết hợp giữa Google Maps, TripAdvisor, các ứng dụng thời tiết và trang đặt tour nhưng vẫn đối mặt rủi ro bể kế hoạch khi thời tiết thay đổi hay điểm đến đóng cửa.
@@ -32,7 +32,7 @@ export function ComparisonMatrixSection() {
                   <th className="p-4 sm:p-5 font-black text-sm uppercase tracking-wider w-1/3">
                     Tiêu chí so sánh
                   </th>
-                  <th className="p-4 sm:p-5 font-black text-sm text-[#007d6e] bg-teal-50/70 border-x border-teal-100">
+                  <th className="p-4 sm:p-5 font-black text-sm text-[#103B39] bg-teal-50/70 border-x border-teal-100">
                     <div className="flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-lg">star</span>
                       <span>TripMate Platform</span>
@@ -50,7 +50,7 @@ export function ComparisonMatrixSection() {
                       <strong className="block text-slate-900 font-bold">{row.feature}</strong>
                       <span className="text-xs text-slate-500 mt-1 block leading-relaxed">{row.description}</span>
                     </td>
-                    <td className="p-4 sm:p-5 font-bold text-[#007d6e] bg-teal-50/40 border-x border-teal-100">
+                    <td className="p-4 sm:p-5 font-bold text-[#103B39] bg-teal-50/40 border-x border-teal-100">
                       <div className="flex items-start gap-1.5">
                         <span className="material-symbols-outlined text-base text-emerald-600 mt-0.5">check_circle</span>
                         <span>{row.tripmate}</span>

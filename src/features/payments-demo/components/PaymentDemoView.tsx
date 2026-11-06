@@ -94,7 +94,7 @@ export function PaymentDemoView({ bookingId }: PaymentDemoViewProps) {
           <button
             type="button"
             onClick={beginPayment}
-            className="mt-7 w-full rounded-xl bg-[#007d6e] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#006b5f] focus:outline-none focus:ring-2 focus:ring-[#007d6e] focus:ring-offset-2"
+            className="mt-7 w-full rounded-xl bg-[#103B39] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#174B4A] focus:outline-none focus:ring-2 focus:ring-[#103B39] focus:ring-offset-2"
           >
             Bắt đầu thanh toán Mock
           </button>
@@ -106,7 +106,7 @@ export function PaymentDemoView({ bookingId }: PaymentDemoViewProps) {
             </div>
             {payment.status === 'Pending' && (
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <button type="button" onClick={() => setOutcome('Success')} className="rounded-xl bg-[#007d6e] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#006b5f]">
+                <button type="button" onClick={() => setOutcome('Success')} className="rounded-xl bg-[#103B39] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#174B4A]">
                   Thanh toán thành công
                 </button>
                 <button type="button" onClick={() => setOutcome('Cancelled')} className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-900 hover:bg-amber-100">

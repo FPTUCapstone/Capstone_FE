@@ -20,7 +20,7 @@ describe('Batch E1 — Administration Shell Components', () => {
       render(<AdminRoleBadge role="Staff" />);
       const badge = screen.getByTestId('admin-role-badge');
       expect(badge.textContent).toContain('STAFF OPERATOR');
-      expect(badge.className).toContain('bg-[#E8EFE9]');
+      expect(badge.className).toContain('bg-[#E8F0EA]');
     });
 
     it('renders Administrator role badge with Copper styling and ADMINISTRATOR label', () => {
@@ -111,8 +111,8 @@ describe('Batch E1 — Administration Shell Components', () => {
       const createPoiLink = screen.getByRole('link', { name: /Create POI/i });
       const poiCatalogLink = screen.getByRole('link', { name: /POI Catalog/i });
 
-      expect(createPoiLink.className).toContain('bg-[#245747]');
-      expect(poiCatalogLink.className).not.toContain('bg-[#245747]');
+      expect(createPoiLink.className).toContain('bg-[#174B4A]');
+      expect(poiCatalogLink.className).not.toContain('bg-[#174B4A]');
       mockPathname = '/admin/tours/reviews';
     });
   });

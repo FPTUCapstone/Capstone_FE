@@ -146,7 +146,7 @@ export function PublicSignInForm() {
         type="button"
         disabled={loading}
         onClick={() => { if (!loading) setGoogleConsent(true); }}
-        className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#CBD5E1] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-3 transition-all duration-200 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+        className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#DCE2DD] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-3 transition-all duration-200 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -168,10 +168,10 @@ export function PublicSignInForm() {
       {/* Admin/Staff entry point — separate session and security level; routes to /admin/login, not this form */}
       <div className="relative my-5">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-[#2A3B33]/40" />
+          <div className="w-full border-t border-[#103B39]/40" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="px-3 bg-brand-card text-[#758B74] font-medium flex items-center gap-1">
+          <span className="px-3 bg-brand-card text-[#5B6E69] font-medium flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]" aria-hidden="true">shield</span>
             Dành cho nhân viên hệ thống?
           </span>
@@ -179,9 +179,9 @@ export function PublicSignInForm() {
       </div>
       <Link
         href={ROUTES.admin.login}
-        className="w-full h-12 rounded-xl bg-[#1C2923] text-[#F7F6F2] font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#245747] active:scale-[0.98] transition-all duration-200"
+        className="w-full h-12 rounded-xl bg-[#1C2928] text-[#F7F5EF] font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#174B4A] active:scale-[0.98] transition-all duration-200"
       >
-        <span className="material-symbols-outlined text-[18px] text-[#758B74]" aria-hidden="true">verified_user</span>
+        <span className="material-symbols-outlined text-[18px] text-[#5B6E69]" aria-hidden="true">verified_user</span>
         Đăng nhập quản trị
       </Link>
 

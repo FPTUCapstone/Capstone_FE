@@ -97,7 +97,7 @@ export function TourDetailPage({ id }: TourDetailPageProps) {
     <button
       type="button"
       onClick={handleBackToResults}
-      className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#007d6e] px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+      className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#103B39] px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
     >
       <span className="material-symbols-outlined text-base">arrow_back</span>
       <span>Quay lại danh sách tour</span>
@@ -131,7 +131,7 @@ export function TourDetailPage({ id }: TourDetailPageProps) {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
               <span className="material-symbols-outlined text-4xl">search_off</span>
             </div>
-            <h1 className="mb-3 text-2xl font-black text-[#00152a]">Không tìm thấy gói tour</h1>
+            <h1 className="mb-3 text-2xl font-black text-[#1C2928]">Không tìm thấy gói tour</h1>
             <p className="mx-auto mb-6 max-w-xl text-sm leading-relaxed text-slate-600">{failure.message}</p>
             <div className="flex flex-wrap items-center justify-center gap-3">{backButton}</div>
           </div>
@@ -140,7 +140,7 @@ export function TourDetailPage({ id }: TourDetailPageProps) {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-700">
               <span className="material-symbols-outlined text-4xl">cloud_off</span>
             </div>
-            <h1 className="mb-3 text-2xl font-black text-[#00152a]">Chưa thể tải chi tiết tour</h1>
+            <h1 className="mb-3 text-2xl font-black text-[#1C2928]">Chưa thể tải chi tiết tour</h1>
             <p role="alert" className="mx-auto mb-6 max-w-xl text-sm leading-relaxed text-slate-600">
               {failure.message}
             </p>
@@ -149,7 +149,7 @@ export function TourDetailPage({ id }: TourDetailPageProps) {
               <button
                 type="button"
                 onClick={() => setAttempt((value) => value + 1)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#007d6e] bg-white px-5 py-2.5 text-sm font-bold text-[#007d6e] transition hover:bg-teal-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#103B39] bg-white px-5 py-2.5 text-sm font-bold text-[#103B39] transition hover:bg-teal-50"
               >
                 <span className="material-symbols-outlined text-base">refresh</span>
                 <span>Thử lại</span>

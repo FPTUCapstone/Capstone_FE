@@ -15,7 +15,7 @@ export function AdminConsoleShell({ role, children }: AdminConsoleShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#F7F6F2] text-[#1C2923]">
+    <div className="flex min-h-screen bg-[#F7F5EF] text-[#1C2928]">
       {/* Role-Aware Collapsible Sidebar */}
       <AdminSidebar
         role={role}

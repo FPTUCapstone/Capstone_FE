@@ -112,7 +112,7 @@ export function DeactivateCouponDialog({
               {isDeactivating ? 'block' : 'check_circle'}
             </span>
           </div>
-          <h3 id="coupon-dialog-title" className="text-base font-extrabold text-[#00152A]">
+          <h3 id="coupon-dialog-title" className="text-base font-extrabold text-[#1C2928]">
             {isDeactivating
               ? couponEn.dialog.deactivateTitle.replace('{code}', couponCode)
               : couponEn.dialog.activateTitle.replace('{code}', couponCode)}
@@ -149,7 +149,7 @@ export function DeactivateCouponDialog({
             className={`rounded-xl px-4 py-2 text-xs font-bold text-white shadow-xs transition disabled:opacity-50 ${
               isDeactivating
                 ? 'bg-rose-600 hover:bg-rose-700'
-                : 'bg-[#006B5F] hover:bg-[#005249]'
+                : 'bg-[#174B4A] hover:bg-[#103B39]'
             }`}
           >
             {loading

@@ -34,14 +34,14 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
   return (
     <section
       id="destinations"
-      className="scroll-mt-20 py-12 sm:py-16 bg-[#fafbfc] px-3 sm:px-6 lg:px-8 border-b border-slate-200"
+      className="scroll-mt-20 py-12 sm:py-16 bg-[#F7F5EF] px-3 sm:px-6 lg:px-8 border-b border-[#DCE2DD]"
     >
       <div className="mx-auto max-w-7xl xl:max-w-[1440px]">
         {/* Section Header: Clean Editorial Travel Hierarchy */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 pb-8 border-b border-slate-200">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 pb-8 border-b border-[#DCE2DD]">
           <div>
             <EditorialTextReveal delay={40} duration={400}>
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#007d6e] mb-2.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#103B39] mb-2.5">
                 <span className="material-symbols-outlined text-sm" aria-hidden="true">
                   location_on
                 </span>
@@ -50,13 +50,13 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
             </EditorialTextReveal>
 
             <EditorialTextReveal delay={120} duration={480}>
-              <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#00152a] tracking-tight text-balance">
+              <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#1C2928] tracking-tight text-balance">
                 Ba Điểm Đến Biểu Tượng Miền Trung
               </h2>
             </EditorialTextReveal>
 
             <EditorialTextReveal delay={200} duration={480}>
-              <p className="mt-2.5 text-slate-600 text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
+              <p className="mt-2.5 text-[#5B6E69] text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
                 Hệ sinh thái điểm đến tại Đà Nẵng, Hội An và Cố Đô Huế với địa danh đặc sắc,
                 giờ hoạt động chuẩn xác và trải nghiệm bản địa phong phú.
               </p>
@@ -65,8 +65,8 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
 
           <EditorialTextReveal delay={260} duration={450}>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
-                <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+              <span className="text-xs font-semibold text-[#5B6E69] bg-white border border-[#DCE2DD] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
                   verified
                 </span>
                 <span>Điểm đến chọn lọc</span>
@@ -96,10 +96,10 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                   className="relative w-full rounded-2xl group cursor-pointer focus-visible:outline-hidden"
                 >
                   <div
-                    className={`relative z-10 w-full rounded-2xl border bg-white overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row focus-visible:ring-2 focus-visible:ring-[#007d6e] ${
+                    className={`relative z-10 w-full rounded-2xl border bg-white overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row focus-visible:ring-2 focus-visible:ring-[#103B39] ${
                       isCurrentActive
-                        ? 'border-[#007d6e] ring-2 ring-[#007d6e]/20 shadow-md'
-                        : 'border-slate-200 hover:border-teal-300'
+                        ? 'border-[#174B4A] ring-2 ring-[#174B4A]/20 shadow-md'
+                        : 'border-[#DCE2DD] hover:border-[#103B39]'
                     }`}
                   >
                     {/* Left: Scenic Destination Image (~35–38%) */}
@@ -114,7 +114,7 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
 
                       {/* Top Left Badge */}
                       <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-white/95 text-slate-900 backdrop-blur-md shadow-xs">
+                        <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-white/95 text-[#1C2928] backdrop-blur-md shadow-xs">
                           {dest.badge}
                         </span>
                       </div>
@@ -135,26 +135,26 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="text-xl sm:text-2xl font-black text-[#00152a] tracking-tight group-hover:text-[#007d6e] transition-colors">
+                              <h3 className="text-xl sm:text-2xl font-black text-[#1C2928] tracking-tight group-hover:text-[#103B39] transition-colors">
                                 {dest.name}
                               </h3>
                               {isCurrentActive && (
-                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-[#007d6e] border border-teal-200/60">
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#E8F0EA] text-[#174B4A] border border-[#174B4A]/20">
                                   Active Destination
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs font-semibold text-slate-500 mt-0.5">{dest.tagline}</p>
+                            <p className="text-xs font-semibold text-[#5B6E69] mt-0.5">{dest.tagline}</p>
                           </div>
 
                           {/* Stats Badges */}
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50/90 border border-teal-200/70 text-[#006B5F] text-xs font-semibold">
-                              <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#E8F0EA] border border-[#174B4A]/30 text-[#174B4A] text-xs font-semibold">
+                              <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
                                 pin_drop
                               </span>
-                              <strong className="font-bold text-[#004D40]">{dest.poisCount}</strong>
-                              <span className="text-[11px] text-teal-700/80">POIs</span>
+                              <strong className="font-bold text-[#174B4A]">{dest.poisCount}</strong>
+                              <span className="text-[11px] text-[#5B6E69]">POIs</span>
                             </span>
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50/90 border border-amber-200/70 text-amber-800 text-xs font-semibold">
                               <span className="material-symbols-outlined text-sm text-amber-600" aria-hidden="true">
@@ -167,20 +167,20 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                         </div>
 
                         {/* Editorial Narrative */}
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed text-pretty">
+                        <p className="text-xs sm:text-sm text-[#5B6E69] leading-relaxed text-pretty">
                           {dest.description}
                         </p>
 
                         {/* Top POIs Chips */}
                         <div className="pt-2">
-                          <span className="text-[11px] font-semibold text-slate-500 block mb-2">
+                          <span className="text-[11px] font-semibold text-[#5B6E69] block mb-2">
                             Điểm đến tiêu biểu:
                           </span>
                           <div className="flex flex-wrap gap-1.5 sm:gap-2">
                             {dest.topPois.map((poi) => (
                               <span
                                 key={poi}
-                                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium hover:bg-teal-50 hover:text-[#007d6e] transition-colors border border-slate-200/50"
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 text-[#1C2928] text-xs font-medium hover:bg-[#E8F0EA] hover:text-[#103B39] transition-colors border border-[#DCE2DD]"
                               >
                                 {poi}
                               </span>
@@ -190,9 +190,9 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                       </div>
 
                       {/* Footer Row: Data verification on left, CTA on right */}
-                      <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+                      <div className="pt-4 border-t border-[#DCE2DD] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-xs text-[#5B6E69]">
+                          <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
                             travel_explore
                           </span>
                           <span>Khám phá điểm đến miền Trung</span>
@@ -207,7 +207,7 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                           onKeyDown={(e) => {
                             e.stopPropagation();
                           }}
-                          className="px-5 py-2.5 rounded-xl bg-slate-50 hover:bg-[#007d6e] hover:text-white text-[#007d6e] text-xs font-bold border border-slate-200/80 hover:border-[#007d6e] flex items-center justify-center gap-2 transition-all cursor-pointer group/btn shadow-2xs"
+                          className="px-5 py-2.5 rounded-xl bg-slate-50 hover:bg-[#103B39] hover:text-white text-[#103B39] text-xs font-bold border border-[#DCE2DD] hover:border-[#103B39] flex items-center justify-center gap-2 transition-all cursor-pointer group/btn shadow-2xs"
                         >
                           <span>Khám phá địa điểm {dest.name}</span>
                           <span

@@ -93,7 +93,7 @@ export function PoiDetailMapboxView({
 
       const pinBody = document.createElement('div');
       pinBody.className =
-        'flex items-center justify-center rounded-full border-3 border-white bg-[#007d6e] shadow-xl w-10 h-10 ring-4 ring-[#007d6e]/20 transition-transform duration-200 hover:scale-110 hover:bg-[#006b5f]';
+        'flex items-center justify-center rounded-full border-3 border-white bg-[#103B39] shadow-xl w-10 h-10 ring-4 ring-[#103B39]/20 transition-transform duration-200 hover:scale-110 hover:bg-[#174B4A]';
 
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 24 24');
@@ -159,11 +159,11 @@ export function PoiDetailMapboxView({
       title={address ?? undefined}
     >
       {mapError ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#f3f6f7]">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#F7F5EF]">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fde8e8] text-xl text-[#c81e1e]" aria-hidden="true">
             ⌖
           </span>
-          <p className="mt-2 text-xs font-bold text-[#00152a]">Bản đồ vị trí chưa khả dụng</p>
+          <p className="mt-2 text-xs font-bold text-[#1C2928]">Bản đồ vị trí chưa khả dụng</p>
           <p className="mt-1 text-[11px] text-[#5d6a71]">{mapError}</p>
         </div>
       ) : null}

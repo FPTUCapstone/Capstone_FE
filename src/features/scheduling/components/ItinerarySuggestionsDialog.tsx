@@ -135,7 +135,7 @@ export function ItinerarySuggestionsDialog({
                   setState({ status: 'loading' });
                   setAttempt((value) => value + 1);
                 }}
-                className="mt-3 rounded-xl bg-[#007d6e] px-4 py-2 text-xs font-bold text-white"
+                className="mt-3 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white"
               >
                 Thử lại
               </button>
@@ -145,7 +145,7 @@ export function ItinerarySuggestionsDialog({
           {state.status === 'ready' && state.data.items.length === 0 && (
             <p className="py-6 text-center text-sm text-slate-600">
               Không có điểm phù hợp trong {kmFormat.format(state.data.searchRadiusKm)} km ·{' '}
-              <Link href={ROUTES.plan} className="font-bold text-[#007d6e] hover:underline">
+              <Link href={ROUTES.plan} className="font-bold text-[#103B39] hover:underline">
                 Mở rộng bán kính
               </Link>
             </p>
@@ -230,7 +230,7 @@ export function ItinerarySuggestionsDialog({
                                   setOpenReviewsFor((current) =>
                                     current === suggestion.poiId ? null : suggestion.poiId)
                                 }
-                                className="font-bold text-[#007d6e] hover:underline"
+                                className="font-bold text-[#103B39] hover:underline"
                               >
                                 {openReviewsFor === suggestion.poiId ? 'Ẩn đánh giá' : 'Xem đánh giá'}
                               </button>
@@ -243,7 +243,7 @@ export function ItinerarySuggestionsDialog({
                         aria-label={`Chọn ${suggestion.name}`}
                         disabled={!selectable}
                         onClick={() => onChoose(suggestion)}
-                        className="shrink-0 rounded-lg bg-[#007d6e] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#006b5f] disabled:cursor-not-allowed disabled:bg-slate-300"
+                        className="shrink-0 rounded-lg bg-[#103B39] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#174B4A] disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
                         Chọn
                       </button>

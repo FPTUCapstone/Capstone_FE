@@ -54,7 +54,7 @@ export function DonutChart({
             cy="80"
             r={radius}
             fill="transparent"
-            stroke="#F0EFEA"
+            stroke="#F7F5EF"
             strokeWidth={strokeWidth}
           />
 
@@ -88,10 +88,10 @@ export function DonutChart({
 
         {/* Center Label Overlay */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-xl font-extrabold tracking-tight text-[#1C2923]">
+          <span className="text-xl font-extrabold tracking-tight text-[#1C2928]">
             {activeSegment ? `${activeSegment.percentage}%` : centerValue ?? `${totalValue}`}
           </span>
-          <span className="max-w-[90px] text-[10px] font-semibold text-[#758B74] uppercase tracking-wider leading-tight">
+          <span className="max-w-[90px] text-[10px] font-semibold text-[#5B6E69] uppercase tracking-wider leading-tight">
             {activeSegment ? activeSegment.label : centerLabel}
           </span>
         </div>
@@ -107,7 +107,7 @@ export function DonutChart({
               onMouseEnter={() => setActiveId(seg.id)}
               onMouseLeave={() => setActiveId(null)}
               className={`flex items-center justify-between rounded-xl p-2 transition cursor-pointer ${
-                isSelected ? 'bg-[#F7F6F2] font-semibold' : 'hover:bg-[#F7F6F2]/60'
+                isSelected ? 'bg-[#F7F5EF] font-semibold' : 'hover:bg-[#F7F5EF]/60'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -116,11 +116,11 @@ export function DonutChart({
                   style={{ backgroundColor: seg.color }}
                   aria-hidden="true"
                 />
-                <span className="text-xs text-[#1C2923] font-medium">{seg.label}</span>
+                <span className="text-xs text-[#1C2928] font-medium">{seg.label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-[#758B74]">{seg.value}</span>
-                <span className="rounded-md bg-[#E6E4DD]/60 px-1.5 py-0.5 font-mono text-[11px] font-bold text-[#1C2923]">
+                <span className="font-mono text-xs text-[#5B6E69]">{seg.value}</span>
+                <span className="rounded-md bg-[#DCE2DD]/60 px-1.5 py-0.5 font-mono text-[11px] font-bold text-[#1C2928]">
                   {seg.percentage}%
                 </span>
               </div>

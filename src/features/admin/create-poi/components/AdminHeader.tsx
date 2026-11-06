@@ -21,7 +21,7 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
   return (
     <>
       {/* Mobile Top Bar (Figma Node 122:741) */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#102a43] text-white px-4 h-16 flex items-center justify-between shadow-md border-b border-white/10">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#103B39] text-white px-4 h-16 flex items-center justify-between shadow-md border-b border-white/10">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -54,7 +54,7 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
       {/* Mobile Drawer (Navigation Overlay) */}
       {drawerOpen ? (
         <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex">
-          <div className="w-72 h-full bg-[#102a43] text-white p-5 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-200">
+          <div className="w-72 h-full bg-[#103B39] text-white p-5 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-slate-700/60 pb-4">
                 <BrandLogo context="admin" inverse size={20} />
@@ -86,7 +86,7 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
                   <Link
                     href={ROUTES.admin.createPoi}
                     onClick={() => setDrawerOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 mt-1 rounded-xl bg-[#006b5f] text-white font-semibold shadow-xs"
+                    className="flex items-center gap-3 px-3 py-2.5 mt-1 rounded-xl bg-[#174B4A] text-white font-semibold shadow-xs"
                   >
                     <span className="material-symbols-outlined text-white text-[20px]">location_on</span>
                     Points of Interest
@@ -105,7 +105,7 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
 
             <div className="pt-4 border-t border-slate-700/60 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#00152a] text-white flex items-center justify-center text-xs font-bold">
+                <div className="w-8 h-8 rounded-full bg-[#103B39] text-white flex items-center justify-center text-xs font-bold">
                   AD
                 </div>
                 <div>
@@ -150,13 +150,13 @@ export function AdminHeader({ onSave, onCancel, submitting, saveDisabled }: Admi
             type="button"
             onClick={onSave}
             disabled={saveDisabled || submitting}
-            className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#006b5f] text-white hover:bg-[#006b5f]/90 transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#174B4A] text-white hover:bg-[#174B4A]/90 transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[18px]">save</span>
             <span>{submitting ? 'Saving...' : 'Save POI'}</span>
           </button>
           <div className="w-px h-6 bg-slate-200 mx-1"></div>
-          <div className="w-8 h-8 rounded-full bg-[#00152a] flex items-center justify-center text-white">
+          <div className="w-8 h-8 rounded-full bg-[#103B39] flex items-center justify-center text-white">
             <span className="material-symbols-outlined text-[18px]">person</span>
           </div>
         </div>

@@ -29,7 +29,7 @@ export function ModerationDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#00152a]/60 p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#103B39]/60 p-4 sm:items-center">
       <div
         ref={dialogRef}
         role="dialog"
@@ -38,10 +38,10 @@ export function ModerationDialog({
         aria-describedby={descriptionId}
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
       >
-        <h2 id={titleId} className="text-lg font-extrabold text-[#00152a]">
+        <h2 id={titleId} className="text-lg font-extrabold text-[#1C2928]">
           {title}
         </h2>
-        <p id={descriptionId} className="mt-2 text-sm text-[#43474d]">
+        <p id={descriptionId} className="mt-2 text-sm text-[#5B6E69]">
           {description}
         </p>
         <div className="mt-5">{children}</div>

@@ -91,7 +91,7 @@ export function PartnerWorkspaceNav({
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
             aria-label={mobileOpen ? 'Đóng menu quản lý' : 'Mở menu quản lý'}
             aria-expanded={mobileOpen}
           >
@@ -125,7 +125,7 @@ export function PartnerWorkspaceNav({
 
       {/* Sidebar Navigation (Desktop Fixed / Mobile Drawer) */}
       <aside
-        className={`fixed bottom-0 top-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-[#00152A] text-white transition-transform duration-200 ease-in-out lg:static lg:z-auto lg:translate-x-0 ${
+        className={`fixed bottom-0 top-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-[#103B39] text-white transition-transform duration-200 ease-in-out lg:static lg:z-auto lg:translate-x-0 ${
           mobileOpen ? 'left-0 translate-x-0' : '-translate-x-full'
         } ${className}`}
         aria-label="Điều hướng không gian làm việc đối tác"
@@ -188,7 +188,7 @@ export function PartnerWorkspaceNav({
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
                         isActive
-                          ? 'bg-[#006B5F] font-bold text-white shadow-2xs'
+                          ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
                           : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
@@ -242,7 +242,7 @@ export function PartnerWorkspaceNav({
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
                         isActive
-                          ? 'bg-[#006B5F] font-bold text-white shadow-2xs'
+                          ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
                           : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
@@ -262,7 +262,7 @@ export function PartnerWorkspaceNav({
         <div className="border-t border-slate-800 p-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#006B5F] text-xs font-black text-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#174B4A] text-xs font-black text-white">
                 {operatorName ? operatorName.slice(0, 2).toUpperCase() : 'TO'}
               </div>
               <div className="min-w-0 flex-1">

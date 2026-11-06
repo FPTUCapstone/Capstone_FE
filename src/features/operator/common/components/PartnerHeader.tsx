@@ -48,7 +48,7 @@ export function PartnerHeader({
           <button
             type="button"
             onClick={onToggleMobileMenu}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] lg:hidden overflow-hidden"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] lg:hidden overflow-hidden"
             aria-label={mobileOpen ? 'Đóng menu quản lý' : 'Mở menu quản lý'}
             aria-expanded={mobileOpen}
           >
@@ -75,7 +75,7 @@ export function PartnerHeader({
               const isLast = idx === breadcrumbs.length - 1;
               if (isLast || !crumb.href) {
                 return (
-                  <span key={crumb.label} className="font-bold text-[#00152A] truncate">
+                  <span key={crumb.label} className="font-bold text-[#1C2928] truncate">
                     {crumb.label}
                   </span>
                 );
@@ -90,7 +90,7 @@ export function PartnerHeader({
               );
             })
           ) : (
-            <span className="font-bold text-[#00152A] truncate">{currentTabLabel}</span>
+            <span className="font-bold text-[#1C2928] truncate">{currentTabLabel}</span>
           )}
         </nav>
       </div>
@@ -106,7 +106,7 @@ export function PartnerHeader({
 
         {operatorName && (
           <div className="hidden md:flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs">
-            <span className="font-bold text-[#00152A] max-w-[160px] truncate">{operatorName}</span>
+            <span className="font-bold text-[#1C2928] max-w-[160px] truncate">{operatorName}</span>
             <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
               Đã xác minh
             </span>

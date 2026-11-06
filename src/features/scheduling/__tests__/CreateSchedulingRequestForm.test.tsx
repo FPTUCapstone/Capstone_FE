@@ -625,7 +625,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(
         await screen.findByText(/TripMate đã tự động điền phương tiện từ sở thích du lịch đã lưu của bạn/i),
       ).toBeDefined();
-      expect(screen.getByRole('button', { name: /Ô tô/i }).className).toContain('border-[#007d6e]');
+      expect(screen.getByRole('button', { name: /Ô tô/i }).className).toContain('border-[#103B39]');
       expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('8');
       expect(screen.queryByText(/sở thích trải nghiệm/i)).toBeNull();
     });

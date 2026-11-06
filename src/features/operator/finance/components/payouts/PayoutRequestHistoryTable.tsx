@@ -39,7 +39,7 @@ export function PayoutRequestHistoryTable({ requests, onCancelRequest }: PayoutR
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
       <div className="border-b border-slate-100 pb-4">
-        <h2 className="text-base font-bold text-[#00152A]">{financeEn.payouts.history.title}</h2>
+        <h2 className="text-base font-bold text-[#1C2928]">{financeEn.payouts.history.title}</h2>
         <p className="mt-0.5 text-xs text-slate-500">{financeEn.payouts.history.subtitle}</p>
       </div>
 
@@ -67,7 +67,7 @@ export function PayoutRequestHistoryTable({ requests, onCancelRequest }: PayoutR
                 const style = STATUS_STYLE[req.status];
                 return (
                   <tr key={req.payoutCode} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3.5 font-bold font-mono text-[#00152A]">{req.payoutCode}</td>
+                    <td className="px-4 py-3.5 font-bold font-mono text-[#1C2928]">{req.payoutCode}</td>
                     <td className="px-4 py-3.5 text-slate-700">
                       {formatPeriodLabel(req.periodStart, req.periodEnd)}
                       {req.periodCount > 1 && (
@@ -76,7 +76,7 @@ export function PayoutRequestHistoryTable({ requests, onCancelRequest }: PayoutR
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3.5 text-right font-bold text-[#006B5F]">
+                    <td className="px-4 py-3.5 text-right font-bold text-[#174B4A]">
                       {formatVndCurrency(req.payableNetAmount)}
                     </td>
                     <td className="px-4 py-3.5 text-center">

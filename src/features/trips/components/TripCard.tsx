@@ -59,7 +59,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
             <div
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
                 isItinerary
-                  ? 'bg-[#E6F4F1] text-[#006B5F]'
+                  ? 'bg-[#E6F4F1] text-[#174B4A]'
                   : isCancelled
                     ? 'bg-slate-100 text-slate-500'
                     : 'bg-blue-50 text-blue-600'
@@ -85,7 +85,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
                 </span>
               </div>
 
-              <h3 id={titleId} className="text-sm font-bold leading-snug text-[#00152A] sm:text-base">
+              <h3 id={titleId} className="text-sm font-bold leading-snug text-[#1C2928] sm:text-base">
                 {item.title}
               </h3>
               <p className="mt-0.5 text-xs font-medium text-slate-500">
@@ -104,7 +104,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
         {item.kind === 'itinerary' ? (
           <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-800">
-              <span className="material-symbols-outlined text-[15px] text-[#006B5F]" aria-hidden="true">
+              <span className="material-symbols-outlined text-[15px] text-[#174B4A]" aria-hidden="true">
                 navigation
               </span>
               <span>{tripReviewEn.tripHistory.card.stopsCount(item.stopCount)}</span>
@@ -120,7 +120,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
               <span className="font-semibold">{tripReviewEn.tripHistory.card.bookingCode(item.bookingCode)}</span>
               <span className="font-semibold">{tripReviewEn.tripHistory.card.participantCount(item.participantCount)}</span>
-              <span className="font-extrabold text-[#00152A]">{formatVnd(item.totalAmount)}</span>
+              <span className="font-extrabold text-[#1C2928]">{formatVnd(item.totalAmount)}</span>
             </div>
           </div>
         )}
@@ -138,7 +138,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
 
         {ticketId !== null && (
           <Link href={ROUTES.account.ticket(ticketId)} className={LINK_ACTION}>
-            <span className="material-symbols-outlined text-[16px] text-[#006B5F]" aria-hidden="true">
+            <span className="material-symbols-outlined text-[16px] text-[#174B4A]" aria-hidden="true">
               qr_code_2
             </span>
             <span>{tripReviewEn.actions.viewETicket}</span>
@@ -148,7 +148,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
         {canWriteReview && (
           <Link
             href={reviewHref}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#006B5F] py-2 px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D] active:scale-98"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#174B4A] py-2 px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D] active:scale-98"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
               rate_review
@@ -160,7 +160,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
         {reviewed && (
           <Link
             href={reviewHref}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2 px-3 text-xs font-bold text-[#006B5F] transition hover:bg-slate-200"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2 px-3 text-xs font-bold text-[#174B4A] transition hover:bg-slate-200"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
               visibility

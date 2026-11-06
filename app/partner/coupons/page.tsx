@@ -71,7 +71,7 @@ function OperatorCouponsContent() {
           </div>
         ) : isLoading ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-xs">
-            <span className="material-symbols-outlined animate-spin text-[32px] text-[#006B5F]">
+            <span className="material-symbols-outlined animate-spin text-[32px] text-[#174B4A]">
               progress_activity
             </span>
             <p className="mt-2 text-xs font-bold">{couponEn.page.loadingList}</p>

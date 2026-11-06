@@ -19,7 +19,7 @@ export default async function BookingTicketRoute({ params }: BookingTicketRouteP
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
-          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent" />
         </div>
       }
     >
