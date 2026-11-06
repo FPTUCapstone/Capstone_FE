@@ -11,6 +11,7 @@ export interface TourSearchItemDto {
   availabilityStatus: string;
   remainingSlots: number | null;
   thumbnailUrl: string | null;
+  aggregateRating?: number | null;
 }
 
 export interface PagedToursResponseDto {
@@ -23,12 +24,25 @@ export interface PagedToursResponseDto {
 }
 
 export interface TourSearchState {
+  keyword?: string;
   destination: string;
   departureDate: string;
+  startDate?: string;
+  endDate?: string;
   minPrice: string;
   maxPrice: string;
+  durationDays?: string;
+  category?: string;
+  minimumRating?: string;
+  sort?: string;
   page: number;
   pageSize: number;
+}
+
+export interface TourCategoryDto {
+  categoryId: number;
+  code: string;
+  name: string;
 }
 
 export interface TourScheduleDto {

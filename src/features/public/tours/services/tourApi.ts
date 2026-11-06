@@ -8,6 +8,7 @@ import type {
   PagedToursResponseDto,
   TourDetailDto,
   TourRecommendationDto,
+  TourCategoryDto,
   TourSearchItemDto,
 } from '../types/tour';
 import { TourApiError } from '../types/tour';
@@ -43,6 +44,7 @@ export function parseTourSearchItem(value: unknown): TourSearchItemDto {
     typeof value.availabilityStatus !== 'string' ||
     !isNullableNumber(value.remainingSlots) ||
     !isOptionalNullableString(value.thumbnailUrl)
+    || (value.aggregateRating !== undefined && !isNullableNumber(value.aggregateRating))
   ) {
     throw new Error('Dữ liệu gói tour không hợp lệ.');
   }
@@ -65,6 +67,7 @@ export function parseTourSearchItem(value: unknown): TourSearchItemDto {
     availabilityStatus: value.availabilityStatus,
     remainingSlots: value.remainingSlots,
     thumbnailUrl: normalizedThumbnailUrl,
+    aggregateRating: typeof value.aggregateRating === 'number' ? value.aggregateRating : null,
   };
 }
 
@@ -135,6 +138,17 @@ export async function searchTours(
   const endpoint = queryString ? `/api/tours?${queryString}` : '/api/tours';
   const raw = await requestJson(endpoint, signal);
   return parsePagedTours(raw);
+}
+
+export async function getTourCategories(signal?: AbortSignal): Promise<TourCategoryDto[]> {
+  const raw = await requestJson('/api/tour-categories', signal);
+  if (!Array.isArray(raw) || raw.some((item) => !isRecord(item)
+    || typeof item.categoryId !== 'number'
+    || typeof item.code !== 'string'
+    || typeof item.name !== 'string')) {
+    throw new TourApiError('Dữ liệu danh mục tour không hợp lệ.', 0);
+  }
+  return raw as TourCategoryDto[];
 }
 
 /**

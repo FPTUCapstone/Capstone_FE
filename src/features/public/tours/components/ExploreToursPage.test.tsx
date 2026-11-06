@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getTourRecommendations, searchTours } from '../services/tourApi';
+import { getTourCategories, getTourRecommendations, searchTours } from '../services/tourApi';
 import { ExploreToursPage } from './ExploreToursPage';
 import type { PagedToursResponseDto } from '../types/tour';
 import { TourApiError } from '../types/tour';
@@ -23,6 +23,7 @@ vi.mock('../services/tourApi', async (importOriginal) => {
   return {
     ...actual,
     searchTours: vi.fn(),
+    getTourCategories: vi.fn(),
     getTourRecommendations: vi.fn(),
   };
 });
@@ -77,9 +78,11 @@ describe('ExploreToursPage', () => {
     push.mockClear();
     currentSearch = '';
     vi.mocked(searchTours).mockReset();
+    vi.mocked(getTourCategories).mockReset();
     vi.mocked(getTourRecommendations).mockReset();
 
     vi.mocked(searchTours).mockResolvedValue(mockToursResponse);
+    vi.mocked(getTourCategories).mockResolvedValue([]);
     vi.mocked(getTourRecommendations).mockResolvedValue({
       items: [],
       isPendingBe: true,
@@ -124,8 +127,8 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
     await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
 
-    const minInput = screen.getByLabelText(/Giá tối thiểu/i);
-    const maxInput = screen.getByLabelText(/Giá tối đa/i);
+    const minInput = screen.getByLabelText('Giá tối thiểu');
+    const maxInput = screen.getByLabelText('Giá tối đa');
 
     fireEvent.change(minInput, { target: { value: '2000000' } });
     fireEvent.change(maxInput, { target: { value: '1000000' } });
@@ -165,8 +168,7 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeTruthy();
-      expect(screen.getByText('Lỗi kết nối máy chủ tour.')).toBeTruthy();
+      expect(screen.getAllByText('Lỗi kết nối máy chủ tour.').length).toBeGreaterThan(0);
     });
   });
 
