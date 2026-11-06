@@ -21,6 +21,10 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
   }
 
   function handleCardKeyDown(e: KeyboardEvent<HTMLDivElement>, cityId: string) {
+    if (e.target !== e.currentTarget) {
+      return;
+    }
+
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleSelectCity(cityId);
@@ -183,6 +187,9 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                           href={ROUTES.pois}
                           aria-label={`Khám phá địa điểm tại ${dest.name}`}
                           onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onKeyDown={(e) => {
                             e.stopPropagation();
                           }}
                           className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-[#007d6e] hover:text-white text-[#007d6e] text-xs font-bold border border-slate-200/80 hover:border-[#007d6e] flex items-center justify-center gap-1.5 transition-all cursor-pointer group/btn shadow-2xs"

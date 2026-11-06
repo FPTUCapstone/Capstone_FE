@@ -31,18 +31,35 @@ function LandingContent() {
       setShowScrollTop(window.scrollY > 400);
 
       const sectionIds = ['destinations', 'how-it-works', 'tours', 'final-cta'];
-      const scrollPos = window.scrollY + 320;
+      const ACTIVATION_THRESHOLD = 200; // px from top of viewport
 
+      // If scrolled near bottom of page, activate final CTA
+      const scrollHeight = document.documentElement.scrollHeight;
+      const isAtBottom =
+        window.scrollY > 200 &&
+        scrollHeight > window.innerHeight &&
+        window.innerHeight + window.scrollY >= scrollHeight - 50;
+      if (isAtBottom) {
+        setActiveSection('final-cta');
+        return;
+      }
+
+      let matched = false;
       for (let i = sectionIds.length - 1; i >= 0; i--) {
         const id = sectionIds[i];
         const el = document.getElementById(id);
         if (el) {
-          const top = el.offsetTop;
-          if (scrollPos >= top) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= ACTIVATION_THRESHOLD) {
             setActiveSection(id);
+            matched = true;
             break;
           }
         }
+      }
+
+      if (!matched) {
+        setActiveSection('destinations');
       }
     }
 
