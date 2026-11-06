@@ -75,8 +75,8 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
           </EditorialTextReveal>
         </div>
 
-        {/* Destination Cards Grid */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+        {/* Destination Cards: Full-Width Stacked Landscape Architecture */}
+        <div className="mt-8 space-y-5 lg:space-y-6">
           {CENTRAL_DESTINATIONS.map((dest, index) => {
             const isCurrentActive = activeCity === dest.id;
 
@@ -85,7 +85,7 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                 key={dest.id}
                 delay={index * 120}
                 duration={500}
-                className="h-full"
+                className="w-full"
               >
                 <div
                   role="button"
@@ -93,26 +93,24 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                   aria-label={`Chọn điểm đến ${dest.name}`}
                   onKeyDown={(e) => handleCardKeyDown(e, dest.id)}
                   onClick={() => handleSelectCity(dest.id)}
-                  className="relative h-full group cursor-pointer focus-visible:outline-hidden"
+                  className="relative w-full group cursor-pointer focus-visible:outline-hidden"
                 >
                   <div
-                    className={`relative z-10 h-full rounded-2xl border bg-white overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col focus-visible:ring-2 focus-visible:ring-[#007d6e] ${
+                    className={`relative z-10 w-full rounded-2xl border bg-white overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row focus-visible:ring-2 focus-visible:ring-[#007d6e] ${
                       isCurrentActive
                         ? 'border-[#007d6e] ring-2 ring-[#007d6e]/20 shadow-md'
                         : 'border-slate-200 hover:border-teal-300'
                     }`}
                   >
-                    
-
-                    {/* Image Header with Aspect Ratio & Overlays */}
-                    <div className="relative aspect-16/10 sm:aspect-16/9 w-full overflow-hidden bg-slate-900">
+                    {/* Left: Scenic Destination Image (~35–38%) */}
+                    <div className="relative w-full md:w-[36%] lg:w-[35%] shrink-0 aspect-16/10 md:aspect-auto min-h-[220px] md:min-h-[260px] overflow-hidden bg-slate-900">
                       <img
                         src={dest.image}
                         alt={`Thắng cảnh tại ${dest.name}`}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/80 via-black/30 to-transparent pointer-events-none" />
 
                       {/* Top Left Badge */}
                       <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
@@ -128,31 +126,61 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                         </span>
                         <span>{dest.temp}</span>
                       </div>
-
-                      {/* City Name on Bottom of Image */}
-                      <div className="absolute bottom-3.5 left-4 right-4">
-                        <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{dest.name}</h3>
-                        <p className="text-xs text-slate-200 font-medium mt-0.5">{dest.tagline}</p>
-                      </div>
                     </div>
 
-                    {/* Card Body */}
-                    <div className="p-5 flex-1 flex flex-col justify-between gap-5">
-                      <div>
-                        <p className="text-xs text-slate-600 leading-relaxed">
+                    {/* Right: Information & Storytelling (~64–65%) */}
+                    <div className="flex-1 p-5 sm:p-6 lg:p-7 flex flex-col justify-between gap-5">
+                      <div className="space-y-3">
+                        {/* Header Tier: Title, Active Badge & Stats Row */}
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-xl sm:text-2xl font-black text-[#00152a] tracking-tight group-hover:text-[#007d6e] transition-colors">
+                                {dest.name}
+                              </h3>
+                              {isCurrentActive && (
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-[#007d6e] border border-teal-200/60">
+                                  Active Destination
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs font-semibold text-slate-500 mt-0.5">{dest.tagline}</p>
+                          </div>
+
+                          {/* Stats Badges */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50/90 border border-teal-200/70 text-[#006B5F] text-xs font-semibold">
+                              <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+                                pin_drop
+                              </span>
+                              <strong className="font-bold text-[#004D40]">{dest.poisCount}</strong>
+                              <span className="text-[11px] text-teal-700/80">POIs</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50/90 border border-amber-200/70 text-amber-800 text-xs font-semibold">
+                              <span className="material-symbols-outlined text-sm text-amber-600" aria-hidden="true">
+                                confirmation_number
+                              </span>
+                              <strong className="font-bold text-amber-900">{dest.toursCount}</strong>
+                              <span className="text-[11px] text-amber-700/80">Tours</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Editorial Narrative */}
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed text-pretty">
                           {dest.description}
                         </p>
 
-                        {/* Top POIs List */}
-                        <div className="mt-4 pt-3.5 border-t border-slate-100">
-                          <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
+                        {/* Top POIs Chips */}
+                        <div className="pt-2">
+                          <span className="text-[11px] font-semibold text-slate-500 block mb-2">
                             Điểm đến tiêu biểu:
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
                             {dest.topPois.map((poi) => (
                               <span
                                 key={poi}
-                                className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium hover:bg-teal-50 hover:text-[#007d6e] transition-colors"
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium hover:bg-teal-50 hover:text-[#007d6e] transition-colors border border-slate-200/50"
                               >
                                 {poi}
                               </span>
@@ -161,26 +189,13 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                         </div>
                       </div>
 
-                      {/* Card Footer: 2-tier structured layout */}
-                      <div className="pt-3 border-t border-slate-100 space-y-2.5">
-                        <div className="flex items-center justify-between text-xs font-semibold">
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-50/80 border border-teal-200/60 text-[#006B5F] text-[11px]">
-                              <span className="material-symbols-outlined text-xs text-[#007d6e]" aria-hidden="true">
-                                pin_drop
-                              </span>
-                              <strong className="font-bold text-[#004D40]">{dest.poisCount}</strong>
-                              <span className="text-[10px] text-teal-700/80">POIs</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50/80 border border-amber-200/60 text-amber-800 text-[11px]">
-                              <span className="material-symbols-outlined text-xs text-amber-600" aria-hidden="true">
-                                confirmation_number
-                              </span>
-                              <strong className="font-bold text-amber-900">{dest.toursCount}</strong>
-                              <span className="text-[10px] text-amber-700/80">Tours</span>
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 font-medium">Miền Trung</span>
+                      {/* Footer Row: Data verification on left, CTA on right */}
+                      <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+                            verified_user
+                          </span>
+                          <span>100% dữ liệu tọa độ & giờ mở cửa xác thực</span>
                         </div>
 
                         <Link
@@ -192,10 +207,13 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                           onKeyDown={(e) => {
                             e.stopPropagation();
                           }}
-                          className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-[#007d6e] hover:text-white text-[#007d6e] text-xs font-bold border border-slate-200/80 hover:border-[#007d6e] flex items-center justify-center gap-1.5 transition-all cursor-pointer group/btn shadow-2xs"
+                          className="px-5 py-2.5 rounded-xl bg-slate-50 hover:bg-[#007d6e] hover:text-white text-[#007d6e] text-xs font-bold border border-slate-200/80 hover:border-[#007d6e] flex items-center justify-center gap-2 transition-all cursor-pointer group/btn shadow-2xs"
                         >
-                          <span>Khám phá địa điểm</span>
-                          <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1" aria-hidden="true">
+                          <span>Khám phá địa điểm {dest.name}</span>
+                          <span
+                            className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1"
+                            aria-hidden="true"
+                          >
                             arrow_forward
                           </span>
                         </Link>
