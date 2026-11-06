@@ -93,7 +93,7 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                   aria-label={`Chọn điểm đến ${dest.name}`}
                   onKeyDown={(e) => handleCardKeyDown(e, dest.id)}
                   onClick={() => handleSelectCity(dest.id)}
-                  className="relative w-full group cursor-pointer focus-visible:outline-hidden"
+                  className="relative w-full rounded-2xl group cursor-pointer focus-visible:outline-hidden"
                 >
                   <div
                     className={`relative z-10 w-full rounded-2xl border bg-white overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row focus-visible:ring-2 focus-visible:ring-[#007d6e] ${
@@ -193,9 +193,9 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                       <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2 text-xs text-slate-500">
                           <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
-                            verified_user
+                            travel_explore
                           </span>
-                          <span>100% dữ liệu tọa độ & giờ mở cửa xác thực</span>
+                          <span>Khám phá điểm đến miền Trung</span>
                         </div>
 
                         <Link
