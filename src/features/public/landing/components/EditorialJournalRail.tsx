@@ -40,7 +40,7 @@ export function EditorialJournalRail({ activeCity, onSelectCity }: EditorialJour
           type="button"
           onClick={() => handleSelect('hoian')}
           aria-label="Xem sổ tay Hội An Hoài Cổ"
-          className={`group block w-full text-left rounded-xl overflow-hidden border transition-all cursor-pointer bg-white shadow-xs hover:shadow-md hover:-translate-y-0.5 duration-300 focus:outline-hidden ${
+          className={`group block w-full text-left rounded-xl overflow-hidden border transition-all cursor-pointer bg-white shadow-xs hover:shadow-md hover:-translate-y-0.5 duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007d6e] focus-visible:ring-2 focus-visible:ring-[#007d6e] focus-visible:ring-offset-2 ${
             activeCity === 'hoian'
               ? 'border-[#007d6e] ring-2 ring-[#007d6e]/20'
               : 'border-slate-200/80 hover:border-teal-300'
@@ -77,7 +77,7 @@ export function EditorialJournalRail({ activeCity, onSelectCity }: EditorialJour
           type="button"
           onClick={() => handleSelect('hue')}
           aria-label="Xem sổ tay Cố Đô Huế"
-          className={`group block w-full text-left rounded-xl overflow-hidden border transition-all cursor-pointer bg-white shadow-xs hover:shadow-md hover:-translate-y-0.5 duration-300 focus:outline-hidden ${
+          className={`group block w-full text-left rounded-xl overflow-hidden border transition-all cursor-pointer bg-white shadow-xs hover:shadow-md hover:-translate-y-0.5 duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007d6e] focus-visible:ring-2 focus-visible:ring-[#007d6e] focus-visible:ring-offset-2 ${
             activeCity === 'hue'
               ? 'border-[#007d6e] ring-2 ring-[#007d6e]/20'
               : 'border-slate-200/80 hover:border-teal-300'

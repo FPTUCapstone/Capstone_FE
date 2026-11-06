@@ -43,7 +43,7 @@ export function EditorialSectionNav({ activeSection, onNavigate }: EditorialSect
                 key={sec.id}
                 type="button"
                 onClick={() => onNavigate(sec.id)}
-                className="group relative flex items-start gap-2.5 w-full text-left transition-all cursor-pointer focus:outline-hidden"
+                className="group relative flex items-start gap-2.5 w-full text-left transition-all cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007d6e] focus-visible:ring-2 focus-visible:ring-[#007d6e] focus-visible:ring-offset-2"
                 aria-current={isActive ? 'true' : undefined}
               >
                 {/* Dot indicator */}
