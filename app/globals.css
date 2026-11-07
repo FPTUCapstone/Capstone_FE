@@ -548,7 +548,7 @@ textarea {
 }
 
 /* Standards Fallback for Firefox and browsers without WebKit scrollbar pseudo-elements */
-@supports not selector(::-webkit-scrollbar) {
+@supports not selector(::-webkit-scrollbar-thumb) {
   html {
     scrollbar-width: thin;
     scrollbar-color: #007D6E transparent;
@@ -557,6 +557,20 @@ textarea {
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #007D6E transparent;
+  }
+}
+
+/* Accessibility safeguards: motion reduction & high-contrast mode */
+@media (prefers-reduced-motion: reduce) {
+  ::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  ::-webkit-scrollbar-thumb {
+    background-color: ButtonFace;
+    border: 1.5px solid ButtonText;
   }
 }
 
