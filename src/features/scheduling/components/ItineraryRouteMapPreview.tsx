@@ -17,12 +17,12 @@ export function ItineraryRouteMapPreview({ itinerary, showDiagram = true }: Itin
         <div className="border-b border-slate-100 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-lg text-[#007d6e]">
+              <span className="material-symbols-outlined text-lg text-[#103B39]">
                 route
               </span>
               <h3 className="text-sm font-bold text-slate-900">Sơ đồ thứ tự điểm dừng</h3>
             </div>
-            <span className="rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-[#007d6e]">
+            <span className="rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-[#103B39]">
               {itinerary.items.length} điểm dừng
             </span>
           </div>
@@ -47,7 +47,7 @@ export function ItineraryRouteMapPreview({ itinerary, showDiagram = true }: Itin
                       className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold shadow-xs ${
                         isRest
                           ? 'border-2 border-white bg-amber-500 text-white'
-                          : 'border-2 border-white bg-[#007d6e] text-white'
+                          : 'border-2 border-white bg-[#103B39] text-white'
                       }`}
                     >
                       {item.sequenceNo}

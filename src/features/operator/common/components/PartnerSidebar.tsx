@@ -106,7 +106,7 @@ export function PartnerSidebar({
 
   return (
     <aside
-      className={`flex w-64 flex-col border-r border-slate-800 bg-[#00152A] text-white shadow-xl ${className}`}
+      className={`flex w-64 flex-col border-r border-slate-800 bg-[#103B39] text-white shadow-xl ${className}`}
       aria-label="Thanh bên không gian làm việc đối tác"
     >
       {/* Brand Header */}
@@ -177,7 +177,7 @@ export function PartnerSidebar({
                     onClick={onCloseMobile}
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
                       isActive
-                        ? 'bg-[#006B5F] font-bold text-white shadow-2xs'
+                        ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
@@ -231,7 +231,7 @@ export function PartnerSidebar({
                     onClick={onCloseMobile}
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
                       isActive
-                        ? 'bg-[#006B5F] font-bold text-white shadow-2xs'
+                        ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
@@ -251,7 +251,7 @@ export function PartnerSidebar({
       <div className="border-t border-slate-800 p-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#006B5F] text-xs font-black text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#174B4A] text-xs font-black text-white">
               {getInitials(operatorName)}
             </div>
             <div className="min-w-0 flex-1">

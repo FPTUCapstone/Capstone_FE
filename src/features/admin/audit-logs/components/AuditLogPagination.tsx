@@ -29,7 +29,7 @@ export function AuditLogPagination({
   const endItem = Math.min(pageNumber * pageSize, totalCount);
 
   return (
-    <div className="flex flex-col items-center justify-between gap-4 rounded-xl border border-[#314863] bg-[#102a43] px-4 py-3 text-xs text-[#d1e4ff] sm:flex-row">
+    <div className="flex flex-col items-center justify-between gap-4 rounded-xl border border-[#5B6E69] bg-[#103B39] px-4 py-3 text-xs text-[#d1e4ff] sm:flex-row">
       {/* Items count summary */}
       <div className="flex items-center gap-3">
         <span>
@@ -39,7 +39,7 @@ export function AuditLogPagination({
         </span>
 
         {/* Page size select */}
-        <div className="flex items-center gap-1.5 border-l border-[#314863] pl-3">
+        <div className="flex items-center gap-1.5 border-l border-[#5B6E69] pl-3">
           <label htmlFor="audit-page-size" className="text-slate-400">
             Per page:
           </label>
@@ -47,7 +47,7 @@ export function AuditLogPagination({
             id="audit-page-size"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="rounded border border-[#314863] bg-[#00152a] px-2 py-1 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
+            className="rounded border border-[#5B6E69] bg-[#103B39] px-2 py-1 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -63,7 +63,7 @@ export function AuditLogPagination({
           type="button"
           onClick={() => onPageChange(pageNumber - 1)}
           disabled={!hasPreviousPage}
-          className="inline-flex items-center gap-1 rounded-lg border border-[#314863] bg-[#00152a] px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-[#314863] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-[#5B6E69] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
           <span className="material-symbols-outlined text-sm">chevron_left</span>
           Previous
@@ -77,7 +77,7 @@ export function AuditLogPagination({
           type="button"
           onClick={() => onPageChange(pageNumber + 1)}
           disabled={!hasNextPage}
-          className="inline-flex items-center gap-1 rounded-lg border border-[#314863] bg-[#00152a] px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-[#314863] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-[#5B6E69] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
           Next
           <span className="material-symbols-outlined text-sm">chevron_right</span>

@@ -30,7 +30,7 @@ export default async function NewPoiPage() {
 
   if (session.role !== 'Staff') {
     return (
-      <div className="admin-theme min-h-screen bg-[#F7F6F2] text-[#1C2923]">
+      <div className="admin-theme min-h-screen bg-[#F7F5EF] text-[#1C2928]">
         <AdminConsoleShell role={session.role}>
           <AdminAccessDeniedView
             requiredRole="Staff"
@@ -42,7 +42,7 @@ export default async function NewPoiPage() {
   }
 
   return (
-    <div className="admin-theme min-h-screen bg-[#F7F6F2] text-[#1C2923]">
+    <div className="admin-theme min-h-screen bg-[#F7F5EF] text-[#1C2928]">
       <AdminConsoleShell role="Staff">
         <CreatePoiPage />
       </AdminConsoleShell>

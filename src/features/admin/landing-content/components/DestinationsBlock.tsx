@@ -19,7 +19,7 @@ function swap(list: DestinationEntry[], from: number, to: number): DestinationEn
 }
 
 const BUTTON_CLASS =
-  'rounded-lg border border-[#d0d7de] px-2.5 py-1 text-xs font-bold text-[#00152a] hover:bg-[#f2f4f7] disabled:cursor-not-allowed disabled:opacity-50';
+  'rounded-lg border border-[#DCE2DD] px-2.5 py-1 text-xs font-bold text-[#1C2928] hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-50';
 
 export function DestinationsBlock({ value, errors, onChange, disabled }: DestinationsBlockProps) {
   const copy = landingContentEn.editor.destinations;
@@ -29,8 +29,8 @@ export function DestinationsBlock({ value, errors, onChange, disabled }: Destina
   }
 
   return (
-    <section aria-label={copy.title} className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-extrabold text-[#00152a]">{copy.title}</h2>
+    <section aria-label={copy.title} className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="text-lg font-extrabold text-[#1C2928]">{copy.title}</h2>
       <ol className="mt-4 space-y-4">
         {value.map((entry, index) => {
           const position = index + 1;

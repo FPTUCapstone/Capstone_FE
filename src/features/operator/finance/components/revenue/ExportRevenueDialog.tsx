@@ -89,7 +89,7 @@ export function ExportRevenueDialog({
       >
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <h2 id="export-dialog-title" className="text-base font-bold text-[#00152A]">
+            <h2 id="export-dialog-title" className="text-base font-bold text-[#1C2928]">
               {financeEn.exportDialog.title}
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -110,7 +110,7 @@ export function ExportRevenueDialog({
         <form onSubmit={handleExportSubmit} className="mt-5 space-y-5">
           {/* Applied Filter Summary Card — frozen snapshot, never re-read while the dialog is open */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-xs">
-            <h3 className="font-bold text-[#00152A] mb-2">
+            <h3 className="font-bold text-[#1C2928] mb-2">
               {financeEn.exportDialog.appliedSummaryTitle}
             </h3>
             <div className="grid grid-cols-2 gap-2 text-slate-600">
@@ -118,7 +118,7 @@ export function ExportRevenueDialog({
                 <span className="font-semibold text-slate-500">
                   {financeEn.exportDialog.filterPeriod}:{' '}
                 </span>
-                <span className="text-[#00152A]">
+                <span className="text-[#1C2928]">
                   {formatFinanceDate(appliedFilters.startDate)} –{' '}
                   {formatFinanceDate(appliedFilters.endDate)}
                 </span>
@@ -127,7 +127,7 @@ export function ExportRevenueDialog({
                 <span className="font-semibold text-slate-500">
                   {financeEn.exportDialog.filterGranularity}:{' '}
                 </span>
-                <span className="text-[#00152A] capitalize">
+                <span className="text-[#1C2928] capitalize">
                   {appliedFilters.granularity}
                 </span>
               </div>
@@ -135,7 +135,7 @@ export function ExportRevenueDialog({
                 <span className="font-semibold text-slate-500">
                   {financeEn.exportDialog.filterTour}:{' '}
                 </span>
-                <span className="text-[#00152A]">{appliedTourLabel}</span>
+                <span className="text-[#1C2928]">{appliedTourLabel}</span>
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ export function ExportRevenueDialog({
             <label className="block text-xs font-semibold text-slate-700 mb-2">
               {financeEn.exportDialog.formatLabel}
             </label>
-            <div className="flex items-center gap-2 rounded-xl border border-[#006B5F] bg-[#006B5F]/5 p-3 text-xs text-[#006B5F]">
+            <div className="flex items-center gap-2 rounded-xl border border-[#174B4A] bg-[#174B4A]/5 p-3 text-xs text-[#174B4A]">
               <span className="material-symbols-outlined text-[18px]">table_view</span>
               <span className="font-semibold">{financeEn.exportDialog.formatXlsxOnly}</span>
             </div>
@@ -164,10 +164,10 @@ export function ExportRevenueDialog({
                   value="summary_and_details"
                   checked={selectedScope === 'summary_and_details'}
                   onChange={() => setSelectedScope('summary_and_details')}
-                  className="h-4 w-4 text-[#006B5F] focus:ring-[#006B5F]"
+                  className="h-4 w-4 text-[#174B4A] focus:ring-[#174B4A]"
                 />
                 <div>
-                  <div className="font-semibold text-[#00152A]">
+                  <div className="font-semibold text-[#1C2928]">
                     {financeEn.exportDialog.scopeDetailed}
                   </div>
                   <div className="text-[10px] text-slate-400">
@@ -183,10 +183,10 @@ export function ExportRevenueDialog({
                   value="summary"
                   checked={selectedScope === 'summary'}
                   onChange={() => setSelectedScope('summary')}
-                  className="h-4 w-4 text-[#006B5F] focus:ring-[#006B5F]"
+                  className="h-4 w-4 text-[#174B4A] focus:ring-[#174B4A]"
                 />
                 <div>
-                  <div className="font-semibold text-[#00152A]">
+                  <div className="font-semibold text-[#1C2928]">
                     {financeEn.exportDialog.scopeSummary}
                   </div>
                   <div className="text-[10px] text-slate-400">
@@ -241,7 +241,7 @@ export function ExportRevenueDialog({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#103B39] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>

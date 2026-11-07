@@ -13,7 +13,7 @@ export const SosModal: React.FC<SosModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#00152a]/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-[#103B39]/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-[#330000] border border-[#e96755] rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative animate-scale-in">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-2">
@@ -59,7 +59,7 @@ export const SosModal: React.FC<SosModalProps> = ({ isOpen, onClose }) => {
 
           <a
             href="tel:113"
-            className="flex items-center justify-between p-3.5 bg-[#102a43] hover:bg-[#314863] text-white rounded-xl font-bold text-sm transition-colors border border-[#314863]"
+            className="flex items-center justify-between p-3.5 bg-[#103B39] hover:bg-[#5B6E69] text-white rounded-xl font-bold text-sm transition-colors border border-[#5B6E69]"
           >
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-2xl">local_police</span>
@@ -74,8 +74,8 @@ export const SosModal: React.FC<SosModalProps> = ({ isOpen, onClose }) => {
           onClick={() => setBroadcasted(true)}
           className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
             broadcasted
-              ? 'bg-[#006b5f] text-white'
-              : 'bg-[#ff7043] hover:bg-[#f4511e] text-white shadow-md'
+              ? 'bg-[#174B4A] text-white'
+              : 'bg-[#B96D4C] hover:bg-[#f4511e] text-white shadow-md'
           }`}
         >
           <span className="material-symbols-outlined text-base">

@@ -47,7 +47,7 @@ export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps)
       {/* Stat 1: Total duration */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
         <div className="flex items-center gap-2 text-slate-500">
-          <span className="material-symbols-outlined text-lg text-[#007d6e]">
+          <span className="material-symbols-outlined text-lg text-[#103B39]">
             timelapse
           </span>
           <span className="text-xs font-bold">Tổng thời lượng</span>
@@ -114,12 +114,12 @@ export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps)
       {/* Stat 4: Optimization Engine */}
       <div className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4 shadow-2xs">
         <div className="flex items-center gap-2 text-teal-800">
-          <span className="material-symbols-outlined text-lg text-[#007d6e]">
+          <span className="material-symbols-outlined text-lg text-[#103B39]">
             auto_awesome
           </span>
           <span className="text-xs font-bold">Thuật toán CSP</span>
         </div>
-        <p className="mt-2 text-lg font-black text-[#007d6e] sm:text-xl">
+        <p className="mt-2 text-lg font-black text-[#103B39] sm:text-xl">
           Tối ưu hoàn tất
         </p>
         <span className="text-[11px] text-teal-700">Đã tạo lịch trình</span>

@@ -99,27 +99,27 @@ export function PoiCatalogListView() {
   };
 
   return (
-    <div className="pb-16 text-[#1C2923]">
+    <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <header className="mb-6 rounded-2xl border border-[#2A3B33] bg-[#1C2923] p-6 text-[#F7F6F2] shadow-sm md:p-8">
+        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#758B74] bg-[#273830] px-3 py-1 text-xs font-bold tracking-wider text-[#E8EFE9] uppercase">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
                 <span aria-hidden="true" className="material-symbols-outlined text-[14px]">location_on</span>
                 <span>Master Data Management</span>
               </div>
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                 Points of Interest Catalog
               </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#A3B3AB]">
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
                 Screen #16: Manage tourist attractions, geo-coordinates, and operating schedules powering the TripMate routing engine.
               </p>
             </div>
 
             <Link
               href={ROUTES.admin.createPoi}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#245747] border border-[#758B74] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#1B4337] shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#174B4A] border border-[#5B6E69] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#103B39] shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <span aria-hidden="true" className="material-symbols-outlined text-[16px]">add_location_alt</span>
               <span>Create New POI</span>
@@ -128,10 +128,10 @@ export function PoiCatalogListView() {
         </header>
 
         {/* Filters and Search Bar */}
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#E6E4DD] bg-[#FFFFFF] p-4 shadow-xs lg:flex-row lg:items-end lg:justify-between">
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] p-4 shadow-xs lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             <div>
-              <label htmlFor="poi-category-filter" className="mb-1 block text-xs font-bold text-[#4A5851]">
+              <label htmlFor="poi-category-filter" className="mb-1 block text-xs font-bold text-[#5B6E69]">
                 Category
               </label>
               <select
@@ -143,7 +143,7 @@ export function PoiCatalogListView() {
                   page: 1,
                   categoryId: event.target.value ? Number(event.target.value) : undefined,
                 }))}
-                className="min-h-11 rounded-xl border border-[#D8D5CC] bg-[#F7F6F2] px-3 py-2 text-xs font-semibold text-[#1C2923] focus:border-[#245747] focus:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30"
+                className="min-h-11 rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-3 py-2 text-xs font-semibold text-[#1C2928] focus:border-[#174B4A] focus:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
               >
                 <option value="">All</option>
                 {categories.map((category) => (
@@ -155,7 +155,7 @@ export function PoiCatalogListView() {
             </div>
 
             <div>
-              <label htmlFor="poi-status-filter" className="mb-1 block text-xs font-bold text-[#4A5851]">
+              <label htmlFor="poi-status-filter" className="mb-1 block text-xs font-bold text-[#5B6E69]">
                 Status
               </label>
               <select
@@ -167,7 +167,7 @@ export function PoiCatalogListView() {
                   page: 1,
                   status: (event.target.value || undefined) as PoiManagementStatus | undefined,
                 }))}
-                className="min-h-11 rounded-xl border border-[#D8D5CC] bg-[#F7F6F2] px-3 py-2 text-xs font-semibold text-[#1C2923] focus:border-[#245747] focus:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30"
+                className="min-h-11 rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-3 py-2 text-xs font-semibold text-[#1C2928] focus:border-[#174B4A] focus:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
               >
                 <option value="">All</option>
                 <option value="Active">Active</option>
@@ -178,7 +178,7 @@ export function PoiCatalogListView() {
             <button
               type="button"
               onClick={resetFilters}
-              className="min-h-11 rounded-xl border border-[#D8D5CC] bg-white px-4 py-2 text-xs font-bold text-[#1C2923] transition hover:bg-[#F0EFEA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30"
+              className="min-h-11 rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-bold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
             >
               Reset filters
             </button>
@@ -191,12 +191,12 @@ export function PoiCatalogListView() {
               submitSearch();
             }}
           >
-            <label htmlFor="poi-search" className="mb-1 block text-xs font-bold text-[#4A5851]">
+            <label htmlFor="poi-search" className="mb-1 block text-xs font-bold text-[#5B6E69]">
               Search points of interest
             </label>
             <div className="flex gap-2">
               <div className="relative min-w-0 flex-1">
-                <span aria-hidden="true" className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#74827B]">
+                <span aria-hidden="true" className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#5B6E69]">
                   search
                 </span>
                 <input
@@ -206,13 +206,13 @@ export function PoiCatalogListView() {
                   onChange={(event) => setDraftSearch(event.target.value)}
                   placeholder="Search by name or address…"
                   aria-invalid={Boolean(validationErrors.search)}
-                  className="min-h-11 w-full rounded-xl border border-[#D8D5CC] bg-[#F7F6F2] py-2 pl-9 pr-3 text-xs text-[#1C2923] placeholder-[#74827B] transition focus:border-[#245747] focus:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30"
+                  className="min-h-11 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] py-2 pl-9 pr-3 text-xs text-[#1C2928] placeholder-[#5B6E69] transition focus:border-[#174B4A] focus:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
                 />
               </div>
               <button
                 type="submit"
                 aria-busy={state.kind === 'loading'}
-                className="min-h-11 rounded-xl bg-[#245747] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#1B4337] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/40 focus-visible:ring-offset-2"
+                className="min-h-11 rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/40 focus-visible:ring-offset-2"
               >
                 Search
               </button>
@@ -229,10 +229,10 @@ export function PoiCatalogListView() {
         </p>
 
         {/* POI Data Table */}
-        <div className="overflow-hidden rounded-2xl border border-[#E6E4DD] bg-[#FFFFFF] shadow-xs">
+        <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
           <div className="overflow-x-auto">
             <table className="min-w-[980px] w-full text-left text-xs" aria-label="Points of Interest Data Table" aria-busy={state.kind === 'loading'}>
-              <thead className="border-b border-[#E6E4DD] bg-[#F0EFEA] text-[11px] font-bold uppercase tracking-wider text-[#4A5851]">
+              <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[11px] font-bold uppercase tracking-wider text-[#5B6E69]">
                 <tr>
                   <th scope="col" className="px-5 py-3.5">ID</th>
                   <th scope="col" className="px-5 py-3.5">Point of Interest</th>
@@ -243,22 +243,22 @@ export function PoiCatalogListView() {
                   <th scope="col" className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E6E4DD]">
+              <tbody className="divide-y divide-[#DCE2DD]">
                 {state.kind === 'loading' ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-16 text-center text-[#74827B]">
+                    <td colSpan={7} className="px-5 py-16 text-center text-[#5B6E69]">
                       <span aria-hidden="true" className="material-symbols-outlined animate-spin text-3xl">progress_activity</span>
-                      <p className="mt-3 text-sm font-bold text-[#1C2923]">{poiManagementEn.loading}</p>
+                      <p className="mt-3 text-sm font-bold text-[#1C2928]">{poiManagementEn.loading}</p>
                     </td>
                   </tr>
                 ) : state.kind === 'error' ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-16 text-center text-[#74827B]">
+                    <td colSpan={7} className="px-5 py-16 text-center text-[#5B6E69]">
                       <div role="alert" className="mx-auto flex max-w-md flex-col items-center">
                         <span aria-hidden="true" className="material-symbols-outlined text-4xl text-error">error</span>
-                        <p className="mt-3 text-sm font-bold text-[#1C2923]">{errorMessage(state.error)}</p>
+                        <p className="mt-3 text-sm font-bold text-[#1C2928]">{errorMessage(state.error)}</p>
                         {state.error.status === 400 && Object.keys(state.error.errors).length > 0 ? (
-                          <p className="mt-1 text-xs text-[#74827B]">
+                          <p className="mt-1 text-xs text-[#5B6E69]">
                             {Object.values(state.error.errors).flat().join(' ')}
                           </p>
                         ) : null}
@@ -269,7 +269,7 @@ export function PoiCatalogListView() {
                               setState({ kind: 'loading' });
                               setRetryVersion((version) => version + 1);
                             }}
-                            className="mt-4 min-h-11 rounded-xl bg-[#245747] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#1B4337] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/40 focus-visible:ring-offset-2"
+                            className="mt-4 min-h-11 rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/40 focus-visible:ring-offset-2"
                           >
                             Retry
                           </button>
@@ -279,25 +279,25 @@ export function PoiCatalogListView() {
                   </tr>
                 ) : state.response.items.length > 0 ? (
                   state.response.items.map((poi: PoiManagementItem) => (
-                    <tr key={poi.id} className="transition-colors hover:bg-[#F7F6F2]/70">
-                      <td className="px-5 py-4 font-mono font-bold text-[#1C2923]">
+                    <tr key={poi.id} className="transition-colors hover:bg-[#F7F5EF]/70">
+                      <td className="px-5 py-4 font-mono font-bold text-[#1C2928]">
                         #{poi.id}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="font-bold text-[#1C2923]">{poi.name}</div>
-                        <div className="max-w-xs truncate text-[11px] text-[#74827B]">
+                        <div className="font-bold text-[#1C2928]">{poi.name}</div>
+                        <div className="max-w-xs truncate text-[11px] text-[#5B6E69]">
                           {poi.address ?? poiManagementEn.addressMissing}
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex rounded-full bg-[#E8EFE9] px-2.5 py-0.5 text-[11px] font-semibold text-[#1C2923]">
+                        <span className="inline-flex rounded-full bg-[#E8F0EA] px-2.5 py-0.5 text-[11px] font-semibold text-[#1C2928]">
                           {poi.categoryName}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-mono text-[11px] text-[#4A5851]">
+                      <td className="px-5 py-4 font-mono text-[11px] text-[#5B6E69]">
                         {poi.latitude.toFixed(4)}, {poi.longitude.toFixed(4)}
                       </td>
-                      <td className="px-5 py-4 text-[#4A5851]">
+                      <td className="px-5 py-4 text-[#5B6E69]">
                         {openingHoursSummary(poi.openingHours)}
                       </td>
                       <td className="px-5 py-4">
@@ -307,7 +307,7 @@ export function PoiCatalogListView() {
                             <span>Active</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#D8D5CC] bg-[#EDECE8] px-2.5 py-0.5 text-[11px] font-semibold text-[#74827B]">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#DCE2DD] bg-[#F7F5EF] px-2.5 py-0.5 text-[11px] font-semibold text-[#5B6E69]">
                             <span aria-hidden="true" className="material-symbols-outlined text-[12px]">block</span>
                             <span>Inactive</span>
                           </span>
@@ -318,7 +318,7 @@ export function PoiCatalogListView() {
                           href={`/pois/${poi.id}`}
                           target="_blank"
                           aria-label={`Preview ${poi.name}`}
-                          className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-[#D8D5CC] bg-white px-3 py-2 text-xs font-semibold text-[#1C2923] transition hover:bg-[#F0EFEA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30"
+                          className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-3 py-2 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
                         >
                           <span>Preview</span>
                           <span aria-hidden="true" className="material-symbols-outlined text-[14px]">open_in_new</span>
@@ -328,17 +328,17 @@ export function PoiCatalogListView() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-5 py-16 text-center text-[#74827B]">
+                    <td colSpan={7} className="px-5 py-16 text-center text-[#5B6E69]">
                       <div className="mx-auto flex max-w-sm flex-col items-center">
-                        <span aria-hidden="true" className="material-symbols-outlined text-4xl text-[#758B74]">inventory_2</span>
-                        <p className="mt-3 text-sm font-bold text-[#1C2923]">
+                        <span aria-hidden="true" className="material-symbols-outlined text-4xl text-[#5B6E69]">inventory_2</span>
+                        <p className="mt-3 text-sm font-bold text-[#1C2928]">
                           {isBeyondPage(state.response)
                             ? poiManagementEn.beyondPageTitle
                             : hasFilters
                               ? poiManagementEn.noResultsTitle
                               : poiManagementEn.catalogueEmptyTitle}
                         </p>
-                        <p className="mt-1 text-xs text-[#74827B]">
+                        <p className="mt-1 text-xs text-[#5B6E69]">
                           {isBeyondPage(state.response)
                             ? poiManagementEn.beyondPageDetail
                             : hasFilters
@@ -351,14 +351,14 @@ export function PoiCatalogListView() {
                               type="button"
                               aria-label="Previous page"
                               onClick={() => submitQuery((current) => ({ ...current, page: Math.max(1, (current.page ?? 1) - 1) }))}
-                              className="min-h-11 rounded-xl border border-[#D8D5CC] bg-white px-4 py-2 text-xs font-bold text-[#1C2923] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30"
+                              className="min-h-11 rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-bold text-[#1C2928] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
                             >
                               Previous
                             </button>
                             <button
                               type="button"
                               onClick={() => submitQuery((current) => ({ ...current, page: 1 }))}
-                              className="min-h-11 rounded-xl bg-[#245747] px-4 py-2 text-xs font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/40 focus-visible:ring-offset-2"
+                              className="min-h-11 rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/40 focus-visible:ring-offset-2"
                             >
                               Back to first page
                             </button>
@@ -367,14 +367,14 @@ export function PoiCatalogListView() {
                           <button
                             type="button"
                             onClick={resetFilters}
-                            className="mt-4 min-h-11 rounded-xl border border-[#D8D5CC] bg-white px-4 py-2 text-xs font-bold text-[#1C2923] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30"
+                            className="mt-4 min-h-11 rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-bold text-[#1C2928] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
                           >
                             Reset filters
                           </button>
                         ) : (
                           <Link
                             href={ROUTES.admin.createPoi}
-                            className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#245747] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#1B4337] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/40 focus-visible:ring-offset-2"
+                            className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/40 focus-visible:ring-offset-2"
                           >
                             <span aria-hidden="true" className="material-symbols-outlined text-[16px]">add_location_alt</span>
                             <span>Create New POI</span>
@@ -390,8 +390,8 @@ export function PoiCatalogListView() {
         </div>
 
         {response && response.items.length > 0 ? (
-          <nav aria-label="POI catalogue pagination" className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#E6E4DD] bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs font-semibold text-[#4A5851]">
+          <nav aria-label="POI catalogue pagination" className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-semibold text-[#5B6E69]">
               Page {response.page} of {Math.max(1, response.totalPages)} · {response.totalCount} total
             </p>
             <div className="flex gap-2">
@@ -400,7 +400,7 @@ export function PoiCatalogListView() {
                 aria-label="Previous page"
                 disabled={response.page <= 1}
                 onClick={() => submitQuery((current) => ({ ...current, page: Math.max(1, (current.page ?? 1) - 1) }))}
-                className="min-h-11 rounded-xl border border-[#D8D5CC] bg-white px-4 py-2 text-xs font-bold text-[#1C2923] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-bold text-[#1C2928] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Previous
               </button>
@@ -409,7 +409,7 @@ export function PoiCatalogListView() {
                 aria-label="Next page"
                 disabled={response.totalPages === 0 || response.page >= response.totalPages}
                 onClick={() => submitQuery((current) => ({ ...current, page: (current.page ?? 1) + 1 }))}
-                className="min-h-11 rounded-xl bg-[#245747] px-4 py-2 text-xs font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#245747]/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
               </button>

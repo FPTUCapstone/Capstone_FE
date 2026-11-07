@@ -124,7 +124,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
       {/* Workspace Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+          <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl">
             {couponEn.list.title}
           </h1>
           <p className="mt-1 text-xs text-slate-500">{couponEn.list.description}</p>
@@ -132,7 +132,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
 
         <Link
           href={createHref}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
           <span>{couponEn.list.createButton}</span>
@@ -145,7 +145,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {couponEn.list.kpi.total}
           </p>
-          <p className="mt-1 text-2xl font-black text-[#00152A]">{stats.total}</p>
+          <p className="mt-1 text-2xl font-black text-[#1C2928]">{stats.total}</p>
           <p className="mt-1 text-[11px] text-slate-500">{couponEn.list.kpi.totalSubtext}</p>
         </div>
 
@@ -190,7 +190,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                 onClick={() => handleTabChange(tab.key)}
                 className={`whitespace-nowrap border-b-2 px-3 py-2 text-xs font-bold transition ${
                   isActive
-                    ? 'border-[#006B5F] text-[#006B5F]'
+                    ? 'border-[#174B4A] text-[#174B4A]'
                     : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
                 }`}
               >
@@ -255,7 +255,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                     <tr key={coupon.id} className="hover:bg-slate-50/60 transition">
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-xs font-black tracking-wider text-[#00152A]">
+                          <span className="font-mono text-xs font-black tracking-wider text-[#1C2928]">
                             {coupon.couponCode}
                           </span>
                           <span className="text-slate-600 font-medium line-clamp-1">
@@ -264,7 +264,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 font-bold text-[#006B5F]">
+                      <td className="px-5 py-4 font-bold text-[#174B4A]">
                         {formatDiscountSummary(coupon)}
                       </td>
 
@@ -282,7 +282,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                           </div>
                           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
-                              className="h-full rounded-full bg-[#006B5F]"
+                              className="h-full rounded-full bg-[#174B4A]"
                               style={{ width: `${usagePercentage}%` }}
                             />
                           </div>
@@ -320,7 +320,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                       <td className="px-5 py-4 text-right">
                         <Link
                           href={editHref}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#006B5F] transition"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#174B4A] transition"
                         >
                           <span className="material-symbols-outlined text-[16px]">edit</span>
                           <span>{couponEn.list.table.editAction}</span>
@@ -345,7 +345,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                 <div key={coupon.id} className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <span className="font-mono text-sm font-black tracking-wider text-[#00152A]">
+                      <span className="font-mono text-sm font-black tracking-wider text-[#1C2928]">
                         {coupon.couponCode}
                       </span>
                       <p className="mt-0.5 text-xs font-bold text-slate-700">{coupon.name}</p>
@@ -358,7 +358,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                       <span className="text-[10px] text-slate-400 uppercase font-bold">
                         {couponEn.list.table.discount}:
                       </span>
-                      <p className="font-bold text-[#006B5F]">{formatDiscountSummary(coupon)}</p>
+                      <p className="font-bold text-[#174B4A]">{formatDiscountSummary(coupon)}</p>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase font-bold">
@@ -379,7 +379,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-[#006B5F]"
+                        className="h-full rounded-full bg-[#174B4A]"
                         style={{ width: `${usagePercentage}%` }}
                       />
                     </div>

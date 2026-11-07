@@ -37,13 +37,13 @@ export function AnalyticsCategoryTabs({
             onClick={() => onSelectCategory(cat.id)}
             className={`group inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
               isActive
-                ? 'bg-[#245747] text-white shadow-xs'
-                : 'border border-[#E6E4DD] bg-[#FFFFFF] text-[#4A5851] hover:border-[#758B74] hover:text-[#1C2923]'
+                ? 'bg-[#174B4A] text-white shadow-xs'
+                : 'border border-[#DCE2DD] bg-[#FFFFFF] text-[#5B6E69] hover:border-[#5B6E69] hover:text-[#1C2928]'
             }`}
           >
             <span
               className={`material-symbols-outlined text-[18px] transition-colors ${
-                isActive ? 'text-white' : 'text-[#758B74] group-hover:text-[#245747]'
+                isActive ? 'text-white' : 'text-[#5B6E69] group-hover:text-[#174B4A]'
               }`}
               aria-hidden="true"
             >
@@ -53,7 +53,7 @@ export function AnalyticsCategoryTabs({
             {cat.countLabel && (
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  isActive ? 'bg-[#1C2923] text-[#A3D2BA]' : 'bg-[#F2F1ED] text-[#4A5851]'
+                  isActive ? 'bg-[#1C2928] text-[#A3D2BA]' : 'bg-[#F2F1ED] text-[#5B6E69]'
                 }`}
               >
                 {cat.countLabel}

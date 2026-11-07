@@ -18,7 +18,7 @@ export function OperatorDashboard() {
   return (
     <PartnerWorkspaceLayout activeTab="dashboard" operatorName={name}>
       <PageContentContainer>
-        <header className="rounded-3xl bg-[#00152A] px-6 py-8 text-white shadow-sm sm:px-8">
+        <header className="rounded-3xl bg-[#103B39] px-6 py-8 text-white shadow-sm sm:px-8">
           <p className="text-sm font-medium text-emerald-300">TripMate Partner Workspace</p>
           <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Chào {name}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
@@ -40,7 +40,7 @@ export function OperatorDashboard() {
                 </span>
                 <h3 className="mt-4 font-bold text-slate-900">{action.title}</h3>
                 <p className="mt-1 text-sm leading-5 text-slate-500">{action.description}</p>
-                <span className="mt-4 inline-flex text-sm font-semibold text-[#006B5F]">
+                <span className="mt-4 inline-flex text-sm font-semibold text-[#174B4A]">
                   Mở <span className="material-symbols-outlined ml-1 text-base">arrow_forward</span>
                 </span>
               </Link>
@@ -57,9 +57,9 @@ export function OperatorDashboard() {
             <Link
               key={href}
               href={href}
-              className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:border-[#006B5F]/40 shadow-xs"
+              className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:border-[#174B4A]/40 shadow-xs"
             >
-              <span className="material-symbols-outlined text-[#006B5F]">{icon}</span>
+              <span className="material-symbols-outlined text-[#174B4A]">{icon}</span>
               <span>
                 <span className="block font-bold text-slate-900">{title}</span>
                 <span className="mt-1 block text-sm leading-5 text-slate-500">{desc}</span>

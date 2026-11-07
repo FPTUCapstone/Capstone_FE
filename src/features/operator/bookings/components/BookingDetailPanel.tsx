@@ -163,7 +163,7 @@ export function BookingDetailPanel({
         <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-6 py-4 gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 id={titleId} className="text-base font-bold text-[#00152A] break-words">
+              <h2 id={titleId} className="text-base font-bold text-[#1C2928] break-words">
                 {bookingEn.detail.title} {basics.bookingCode}
               </h2>
               <BookingStatusBadge status={basics.status} />
@@ -192,7 +192,7 @@ export function BookingDetailPanel({
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   {bookingEn.detail.tourInfo}
                 </span>
-                <h3 className="mt-1 text-sm font-bold text-[#00152A]">{basics.tourTitle}</h3>
+                <h3 className="mt-1 text-sm font-bold text-[#1C2928]">{basics.tourTitle}</h3>
                 <div className="mt-3 grid grid-cols-2 gap-3 text-slate-600">
                   <div>
                     <span className="text-slate-400 block">{bookingEn.detail.departureDate}:</span>
@@ -243,7 +243,7 @@ export function BookingDetailPanel({
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               {bookingEn.detail.tourInfo}
             </span>
-            <h3 className="mt-1 text-sm font-bold text-[#00152A]">{booking.tour.title}</h3>
+            <h3 className="mt-1 text-sm font-bold text-[#1C2928]">{booking.tour.title}</h3>
             <div className="mt-3 grid grid-cols-2 gap-3 text-slate-600">
               <div>
                 <span className="text-slate-400 block">{bookingEn.detail.departureDate}:</span>
@@ -393,7 +393,7 @@ export function BookingDetailPanel({
               <div className="space-y-1.5 text-xs text-slate-700">
                 <div className="flex justify-between">
                   <span className="text-slate-500">{bookingEn.detail.refundAmount}:</span>
-                  <span className="font-bold text-[#006B5F]">{formatCurrencyVND(booking.refund.refundableAmount)}</span>
+                  <span className="font-bold text-[#174B4A]">{formatCurrencyVND(booking.refund.refundableAmount)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">{bookingEn.detail.refundChannel}:</span>
@@ -496,7 +496,7 @@ export function BookingDetailPanel({
                   ? bookingEn.detail.notRefundableTooltip
                   : bookingEn.detail.refundBtn
               }
-              className="w-full sm:w-auto justify-center rounded-xl bg-[#006B5F] px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="w-full sm:w-auto justify-center rounded-xl bg-[#174B4A] px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">currency_exchange</span>
               <span>{bookingEn.detail.refundBtn}</span>

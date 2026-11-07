@@ -29,13 +29,13 @@ export function TripHistoryPage() {
 
   if (status === 'restoring') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F6F7]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F5EF]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-[#59616B]">
+          <p className="text-xs font-semibold text-[#5B6E69]">
             {tripReviewEn.tripHistory.loadingAccount}
           </p>
         </div>
@@ -55,17 +55,17 @@ export function TripHistoryPage() {
           {/* Breadcrumb Navigation */}
           <nav
             aria-label={tripReviewEn.accessibility.breadcrumbAria}
-            className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]"
+            className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]"
           >
-            <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+            <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
               {tripReviewEn.tripHistory.breadcrumbHome}
             </Link>
             <span aria-hidden="true">/</span>
-            <Link href={ROUTES.account.profile} className="hover:text-[#006B5F] hover:underline">
+            <Link href={ROUTES.account.profile} className="hover:text-[#174B4A] hover:underline">
               {tripReviewEn.tripHistory.breadcrumbAccount}
             </Link>
             <span aria-hidden="true">/</span>
-            <span className="text-[#00152A]">
+            <span className="text-[#1C2928]">
               {tripReviewEn.tripHistory.breadcrumbTrips}
             </span>
           </nav>
@@ -78,14 +78,14 @@ export function TripHistoryPage() {
       {/* Header Title Section */}
       <div className="mb-6">
         <div className="flex items-center gap-2">
-          <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#006B5F]">
+          <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#174B4A]">
             {tripReviewEn.tripHistory.badgeCode}
           </span>
           <span className="text-xs font-semibold text-slate-500">
             {tripReviewEn.tripHistory.badgeLabel}
           </span>
         </div>
-        <h1 className="mt-1 text-2xl font-black text-[#00152A] sm:text-3xl">
+        <h1 className="mt-1 text-2xl font-black text-[#1C2928] sm:text-3xl">
           {tripReviewEn.tripHistory.pageTitle}
         </h1>
         <p className="mt-1 text-xs text-slate-500 sm:text-sm">
@@ -103,7 +103,7 @@ export function TripHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="en">
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         {content}
       </main>

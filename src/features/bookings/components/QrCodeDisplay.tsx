@@ -25,7 +25,7 @@ export function QrCodeDisplay({
       role="img"
       aria-label={ariaLabel}
     >
-      <QRCodeSVG value={value} size={size} level="M" marginSize={4} bgColor="#ffffff" fgColor="#00152a" />
+      <QRCodeSVG value={value} size={size} level="M" marginSize={4} bgColor="#ffffff" fgColor="#1C2928" />
     </div>
   );
 }

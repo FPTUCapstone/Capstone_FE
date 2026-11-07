@@ -174,16 +174,16 @@ export function OperatorRegistrationForm() {
 
   return (
     <PartnerShell title="Tour Operator Registration" description="Submit your business information and documents for Administrator review.">
-      <form className="rounded-3xl border border-[#d8dadd] bg-white p-5 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8" noValidate onSubmit={handleSubmit}>
+      <form className="rounded-3xl border border-[#DCE2DD] bg-white p-5 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8" noValidate onSubmit={handleSubmit}>
         <FeedbackAlert>Approval is required before Tour Operator workspace functions become available.</FeedbackAlert>
-        <div className="mt-5 rounded-xl border border-[#9edbd2] bg-[#f0faf8] p-4 text-sm text-[#00152a]">
+        <div className="mt-5 rounded-xl border border-[#9edbd2] bg-[#f0faf8] p-4 text-sm text-[#1C2928]">
           <p>Already submitted your application but have not verified your email?</p>
-          <Link href={`${ROUTES.verifyAccount}?flow=operator`} className="mt-2 inline-flex min-h-11 items-center font-bold text-[#007d6e] underline underline-offset-2 hover:text-[#005f54]">
+          <Link href={`${ROUTES.verifyAccount}?flow=operator`} className="mt-2 inline-flex min-h-11 items-center font-bold text-[#103B39] underline underline-offset-2 hover:text-[#005f54]">
             Continue email verification
           </Link>
         </div>
         <fieldset className="mt-8 border-0 p-0">
-          <legend className="text-xl font-extrabold text-[#00152a]">1. Account Information</legend>
+          <legend className="text-xl font-extrabold text-[#1C2928]">1. Account Information</legend>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <TextField label="Email Address" name="email" type="email" autoComplete="email" value={values.email} disabled={loading || retryLocked} error={errors.email} onChange={(event) => update('email', event.target.value)} />
             <div className="hidden sm:block" />
@@ -191,8 +191,8 @@ export function OperatorRegistrationForm() {
             <PasswordField label="Confirm Password" name="confirmPassword" autoComplete="new-password" value={values.confirmPassword} disabled={loading || retryLocked} error={errors.confirmPassword} onChange={(event) => update('confirmPassword', event.target.value)} />
           </div>
         </fieldset>
-        <fieldset className="mt-8 border-0 border-t border-[#d8dadd] p-0 pt-8">
-          <legend className="text-xl font-extrabold text-[#00152a]">2. Company Information</legend>
+        <fieldset className="mt-8 border-0 border-t border-[#DCE2DD] p-0 pt-8">
+          <legend className="text-xl font-extrabold text-[#1C2928]">2. Company Information</legend>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <TextField label="Company Name" name="companyName" value={values.companyName} disabled={loading || retryLocked} error={errors.companyName} onChange={(event) => update('companyName', event.target.value)} />
             <TextField label="Business Licence Number" name="licenceNumber" value={values.licenceNumber} disabled={loading || retryLocked} error={errors.licenceNumber} help="For example: 79-0123/2026/TCDL-GPLHQT or 01-0456/2025/SDL-GPLHND." onChange={(event) => update('licenceNumber', event.target.value)} />
@@ -200,30 +200,30 @@ export function OperatorRegistrationForm() {
             <TextField label="Business Address" name="businessAddress" optional autoComplete="street-address" value={values.businessAddress} disabled={loading || retryLocked} error={errors.businessAddress} onChange={(event) => update('businessAddress', event.target.value)} />
           </div>
         </fieldset>
-        <fieldset className="mt-8 border-0 border-t border-[#d8dadd] p-0 pt-8">
-          <legend className="text-xl font-extrabold text-[#00152a]">3. Contact Information</legend>
+        <fieldset className="mt-8 border-0 border-t border-[#DCE2DD] p-0 pt-8">
+          <legend className="text-xl font-extrabold text-[#1C2928]">3. Contact Information</legend>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <TextField label="Contact Person" name="contactPerson" autoComplete="name" value={values.contactPerson} disabled={loading || retryLocked} error={errors.contactPerson} onChange={(event) => update('contactPerson', event.target.value)} />
             <TextField label="Contact Phone Number" name="contactPhone" optional type="tel" autoComplete="tel" value={values.contactPhone} disabled={loading || retryLocked} error={errors.contactPhone} onChange={(event) => update('contactPhone', event.target.value)} />
           </div>
         </fieldset>
-        <fieldset className="mt-8 border-0 border-t border-[#d8dadd] p-0 pt-8">
-          <legend className="text-xl font-extrabold text-[#00152a]">4. Business Documents</legend>
-          <label htmlFor="businessLicenseDocument" className="mt-5 block text-sm font-bold text-[#005048]">Business Licence (required; PDF, JPG, PNG; max 5 MB)</label>
+        <fieldset className="mt-8 border-0 border-t border-[#DCE2DD] p-0 pt-8">
+          <legend className="text-xl font-extrabold text-[#1C2928]">4. Business Documents</legend>
+          <label htmlFor="businessLicenseDocument" className="mt-5 block text-sm font-bold text-[#103B39]">Business Licence (required; PDF, JPG, PNG; max 5 MB)</label>
           <input id="businessLicenseDocument" type="file" name="businessLicenseDocument" accept=".pdf,.jpg,.jpeg,.png" disabled={loading || retryLocked} aria-invalid={Boolean(errors.businessLicenseDocument)} className={fieldClassName} onChange={(event) => setLicence(event.target.files?.[0] ?? null)} />
           {errors.businessLicenseDocument && <p role="alert" className="mt-2 text-xs font-semibold text-red-600">{errors.businessLicenseDocument}</p>}
-          <label htmlFor="supportingDocuments" className="mt-5 block text-sm font-bold text-[#005048]">Supporting documents (optional; up to 5)</label>
+          <label htmlFor="supportingDocuments" className="mt-5 block text-sm font-bold text-[#103B39]">Supporting documents (optional; up to 5)</label>
           <input id="supportingDocuments" type="file" name="supportingDocuments" multiple accept=".pdf,.jpg,.jpeg,.png" disabled={loading || retryLocked} aria-invalid={Boolean(errors.supportingDocuments)} className={fieldClassName} onChange={(event) => setSupporting(Array.from(event.target.files ?? []))} />
           {errors.supportingDocuments && <p role="alert" className="mt-2 text-xs font-semibold text-red-600">{errors.supportingDocuments}</p>}
         </fieldset>
-        <div className="mt-8 border-t border-[#d8dadd] pt-8">
+        <div className="mt-8 border-t border-[#DCE2DD] pt-8">
           <CheckboxField name="agreements" checked={agreements} disabled={loading || retryLocked} error={errors.agreements} onChange={(event) => setAgreements(event.target.checked)}>
             I accept the Terms of Service, Privacy Policy, and Partner Agreement.
           </CheckboxField>
           {feedback && <div className="mt-5"><FeedbackAlert tone="error">{feedback}</FeedbackAlert></div>}
-          {retryLocked && <p className="mt-3 text-sm text-[#59616b]">Your previous request may have been saved. Retry with the same details; the fields are locked to prevent a second account with different data.</p>}
+          {retryLocked && <p className="mt-3 text-sm text-[#5B6E69]">Your previous request may have been saved. Retry with the same details; the fields are locked to prevent a second account with different data.</p>}
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Link href={ROUTES.signIn} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7]">Back to Sign In</Link>
+            <Link href={ROUTES.signIn} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#1C2928] hover:bg-[#F7F5EF]">Back to Sign In</Link>
             <ActionButton type="submit" loading={loading}>Submit Application</ActionButton>
           </div>
         </div>

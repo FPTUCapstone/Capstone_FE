@@ -163,7 +163,7 @@ export function CreateCouponView({
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         </Link>
         <div>
-          <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+          <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl">
             {couponEn.create.title}
           </h1>
           <p className="text-xs text-slate-500">{couponEn.create.subtitle}</p>
@@ -212,7 +212,7 @@ export function CreateCouponView({
         <div className="lg:col-span-2 space-y-6">
           {/* Card 1: General Info */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               1. {couponEn.create.sections.general}
             </h2>
 
@@ -233,7 +233,7 @@ export function CreateCouponView({
                   placeholder={couponEn.create.fields.couponCodePlaceholder}
                   aria-invalid={Boolean(errors.couponCode)}
                   aria-describedby={errors.couponCode ? 'couponCode-error' : 'couponCode-desc'}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.couponCode ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -260,7 +260,7 @@ export function CreateCouponView({
                   placeholder={couponEn.create.fields.namePlaceholder}
                   aria-invalid={Boolean(errors.name)}
                   aria-describedby={errors.name ? 'couponName-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.name ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -283,7 +283,7 @@ export function CreateCouponView({
                   onClick={() => setDiscountType('Percentage')}
                   className={`rounded-lg py-2 text-xs font-bold transition ${
                     discountType === 'Percentage'
-                      ? 'bg-white text-[#006B5F] shadow-xs'
+                      ? 'bg-white text-[#174B4A] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -294,7 +294,7 @@ export function CreateCouponView({
                   onClick={() => setDiscountType('Flat')}
                   className={`rounded-lg py-2 text-xs font-bold transition ${
                     discountType === 'Flat'
-                      ? 'bg-white text-[#006B5F] shadow-xs'
+                      ? 'bg-white text-[#174B4A] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -318,7 +318,7 @@ export function CreateCouponView({
                   onChange={(e) => setDiscountValue(e.target.value)}
                   aria-invalid={Boolean(errors.discountValue)}
                   aria-describedby={errors.discountValue ? 'discountValue-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.discountValue ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -344,7 +344,7 @@ export function CreateCouponView({
                     placeholder={couponEn.create.fields.maxDiscountAmountPlaceholder}
                     aria-invalid={Boolean(errors.maxDiscountAmount)}
                     aria-describedby={errors.maxDiscountAmount ? 'maxDiscountAmount-error' : undefined}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
                   />
                   {errors.maxDiscountAmount && (
                     <p id="maxDiscountAmount-error" role="alert" className="mt-1 text-xs font-bold text-rose-600">
@@ -368,7 +368,7 @@ export function CreateCouponView({
                   placeholder={couponEn.create.fields.minSpendPlaceholder}
                   aria-invalid={Boolean(errors.minSpend)}
                   aria-describedby={errors.minSpend ? 'minSpend-error' : undefined}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
                 />
                 {errors.minSpend && (
                   <p id="minSpend-error" role="alert" className="mt-1 text-xs font-bold text-rose-600">
@@ -381,7 +381,7 @@ export function CreateCouponView({
 
           {/* Card 2: Validity & Usage Limits */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               2. {couponEn.create.sections.validity}
             </h2>
 
@@ -400,7 +400,7 @@ export function CreateCouponView({
                   placeholder="100"
                   aria-invalid={Boolean(errors.usageLimit)}
                   aria-describedby={errors.usageLimit ? 'usageLimit-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.usageLimit ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -430,7 +430,7 @@ export function CreateCouponView({
                   aria-describedby={
                     errors.usageLimitPerTraveler ? 'usageLimitPerTraveler-error' : undefined
                   }
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.usageLimitPerTraveler
                       ? 'border-rose-400 bg-rose-50/30'
                       : 'border-slate-200 bg-white'
@@ -460,7 +460,7 @@ export function CreateCouponView({
                   onChange={(e) => setValidFrom(e.target.value)}
                   aria-invalid={Boolean(errors.validFrom)}
                   aria-describedby={errors.validFrom ? 'validFrom-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.validFrom ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -482,7 +482,7 @@ export function CreateCouponView({
                   onChange={(e) => setValidTo(e.target.value)}
                   aria-invalid={Boolean(errors.validTo)}
                   aria-describedby={errors.validTo ? 'validTo-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.validTo ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -498,7 +498,7 @@ export function CreateCouponView({
           {/* Card 3: Eligible Tour Scope */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-extrabold text-[#00152A]">
+              <h2 className="text-sm font-extrabold text-[#1C2928]">
                 3. {couponEn.create.sections.scope}
               </h2>
             </div>
@@ -527,7 +527,7 @@ export function CreateCouponView({
                 checked={appliesToAllTours}
                 disabled={eligibleTours.length === 0}
                 onChange={(e) => setAppliesToAllTours(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-[#006B5F] focus:ring-[#006B5F] disabled:opacity-50"
+                className="h-4 w-4 rounded border-slate-300 text-[#174B4A] focus:ring-[#174B4A] disabled:opacity-50"
               />
               <span>{couponEn.create.fields.appliesToAllTours}</span>
             </label>
@@ -555,7 +555,7 @@ export function CreateCouponView({
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleTourSelection(tour.id)}
-                              className="h-4 w-4 rounded border-slate-300 text-[#006B5F] focus:ring-[#006B5F]"
+                              className="h-4 w-4 rounded border-slate-300 text-[#174B4A] focus:ring-[#174B4A]"
                             />
                             <div className="truncate">
                               <span className="font-bold text-slate-800">{tour.title}</span>
@@ -592,7 +592,7 @@ export function CreateCouponView({
             </h2>
 
             {/* Gradient Voucher Card */}
-            <div className="rounded-2xl bg-gradient-to-br from-[#006B5F] to-[#004D40] p-5 text-white shadow-md space-y-3">
+            <div className="rounded-2xl bg-gradient-to-br from-[#174B4A] to-[#174B4A] p-5 text-white shadow-md space-y-3">
               <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-widest text-emerald-200">
                 <span>{operatorName}</span>
                 <span>Voucher</span>
@@ -623,7 +623,7 @@ export function CreateCouponView({
               <p className="font-bold text-slate-700">Example: 2,000,000 ₫ booking</p>
               <div className="flex justify-between text-slate-500">
                 <span>Estimated discount:</span>
-                <span className="font-bold text-[#006B5F]">
+                <span className="font-bold text-[#174B4A]">
                   {discountType === 'Percentage'
                     ? `-${formatCurrency(
                         Math.min(
@@ -659,7 +659,7 @@ export function CreateCouponView({
             <button
               type="submit"
               disabled={submitting || eligibleTours.length === 0}
-              className="w-full rounded-xl bg-[#006B5F] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-xl bg-[#174B4A] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting
                 ? couponEn.create.actions.submitting

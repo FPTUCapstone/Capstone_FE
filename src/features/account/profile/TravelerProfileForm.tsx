@@ -87,10 +87,10 @@ export function TravelerProfileForm({
       <div className="flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-[#59616B]">Đang tải thông tin hồ sơ…</p>
+          <p className="text-xs font-semibold text-[#5B6E69]">Đang tải thông tin hồ sơ…</p>
         </div>
       </div>
     );
@@ -108,20 +108,20 @@ export function TravelerProfileForm({
   return (
     <section
       aria-labelledby="traveler-profile-heading"
-      className={`rounded-2xl border border-[#D8E1E4] bg-white p-6 shadow-xs sm:p-8 ${className}`}
+      className={`rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:p-8 ${className}`}
     >
       {/* Header Eyebrow & Title */}
       <div className="mb-6">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006B5F]">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#174B4A]">
           Hồ sơ cá nhân
         </p>
         <h1
           id="traveler-profile-heading"
-          className="mt-1 text-2xl font-black tracking-tight text-[#00152A] sm:text-3xl"
+          className="mt-1 text-2xl font-black tracking-tight text-[#1C2928] sm:text-3xl"
         >
           Thông tin cá nhân
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-[#59616B]">
+        <p className="mt-2 text-sm leading-relaxed text-[#5B6E69]">
           Cập nhật thông tin định danh và liên hệ của bạn để có trải nghiệm du lịch cá nhân hóa tốt nhất.
         </p>
       </div>
@@ -145,12 +145,12 @@ export function TravelerProfileForm({
       ) : null}
 
       {/* Avatar Management Section (BR-16) */}
-      <div className="mb-8 rounded-xl border border-[#E1E8F3] bg-[#F8FAFB] p-5">
+      <div className="mb-8 rounded-xl border border-[#DCE2DD] bg-[#F8FAFB] p-5">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
           Ảnh đại diện (Avatar)
         </h2>
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#00152A] shadow-md">
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#103B39] shadow-md">
             {fields.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -178,7 +178,7 @@ export function TravelerProfileForm({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#006B5F]"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#174B4A]"
               >
                 <span className="material-symbols-outlined text-sm" aria-hidden="true">
                   photo_camera
@@ -200,7 +200,7 @@ export function TravelerProfileForm({
               ) : null}
             </div>
 
-            <p className="text-[11px] text-[#59616B]">
+            <p className="text-[11px] text-[#5B6E69]">
               Định dạng cho phép: JPG, PNG, WEBP. Dung lượng tối đa: 5MB (BR-16).
             </p>
 
@@ -312,10 +312,10 @@ export function TravelerProfileForm({
                 onChange={(e) => setField('dateOfBirth', e.target.value)}
                 disabled={submitting}
                 aria-invalid={Boolean(errors.dateOfBirth)}
-                className={`w-full rounded-xl border bg-white px-3.5 py-3 text-sm text-slate-800 shadow-[0_1px_2px_rgba(15,27,45,0.06)] transition focus:border-[#006B5F] focus:outline-none focus:ring-2 focus:ring-[#006B5F]/30 ${
+                className={`w-full rounded-xl border bg-white px-3.5 py-3 text-sm text-slate-800 shadow-[0_1px_2px_rgba(15,27,45,0.06)] transition focus:border-[#174B4A] focus:outline-none focus:ring-2 focus:ring-[#174B4A]/30 ${
                   errors.dateOfBirth
                     ? 'border-red-500 bg-red-50'
-                    : 'border-[#D8E1E4] hover:border-slate-400'
+                    : 'border-[#DCE2DD] hover:border-slate-400'
                 }`}
               />
             </div>
@@ -327,8 +327,8 @@ export function TravelerProfileForm({
                 <span aria-hidden="true">⚠</span> {errors.dateOfBirth}
               </span>
             ) : (
-              <span className="mt-1 flex items-center gap-1 text-[11px] text-[#59616B]">
-                <span className="material-symbols-outlined text-[14px] text-[#006B5F]" aria-hidden="true">
+              <span className="mt-1 flex items-center gap-1 text-[11px] text-[#5B6E69]">
+                <span className="material-symbols-outlined text-[14px] text-[#174B4A]" aria-hidden="true">
                   info
                 </span>
                 Người dùng phải từ 16 tuổi trở lên tính đến thời điểm hiện tại.

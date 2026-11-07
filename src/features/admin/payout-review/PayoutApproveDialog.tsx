@@ -75,7 +75,7 @@ export function PayoutApproveDialog({
           type="button"
           disabled={loading}
           onClick={close}
-          className="min-h-11 rounded-xl border border-[#c3c6ce] px-4 text-sm font-bold text-[#00152a] hover:bg-[#eceef1] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00152a]"
+          className="min-h-11 rounded-xl border border-[#DCE2DD] px-4 text-sm font-bold text-[#1C2928] hover:bg-[#DCE2DD] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1C2928]"
         >
           Cancel
         </button>
@@ -83,7 +83,7 @@ export function PayoutApproveDialog({
           type="button"
           disabled={loading}
           onClick={confirm}
-          className="min-h-11 rounded-xl bg-[#006b5f] px-4 text-sm font-bold text-white hover:bg-[#005048] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"
+          className="min-h-11 rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white hover:bg-[#103B39] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
         >
           {loading ? 'Approving…' : 'Confirm approval'}
         </button>

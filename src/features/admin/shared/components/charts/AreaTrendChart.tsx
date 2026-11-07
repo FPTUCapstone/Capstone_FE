@@ -22,7 +22,7 @@ export function AreaTrendChart({
   valuePrefix = '$',
   valueSuffix = '',
   height = 200,
-  primaryColor = '#245747',
+  primaryColor = '#174B4A',
   gradientId: customGradientId,
   valueFormatter,
 }: AreaTrendChartProps) {
@@ -36,7 +36,7 @@ export function AreaTrendChart({
   };
 
   if (!data || data.length === 0) {
-    return <div className="flex h-48 items-center justify-center text-xs text-[#758B74]">No data available.</div>;
+    return <div className="flex h-48 items-center justify-center text-xs text-[#5B6E69]">No data available.</div>;
   }
 
   const values = data.map((d) => d.primaryValue);
@@ -88,13 +88,13 @@ export function AreaTrendChart({
       {/* Legend */}
       <div className="mb-2 flex items-center justify-end gap-4 text-xs font-semibold">
         <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#245747]" />
-          <span className="text-[#1C2923]">{primaryLabel}</span>
+          <span className="h-2.5 w-2.5 rounded-full bg-[#174B4A]" />
+          <span className="text-[#1C2928]">{primaryLabel}</span>
         </div>
         {secondaryLabel && points.some((p) => p.y2 !== undefined) ? (
           <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#B87558]" />
-            <span className="text-[#758B74]">{secondaryLabel}</span>
+            <span className="h-2.5 w-2.5 rounded-full bg-[#B96D4C]" />
+            <span className="text-[#5B6E69]">{secondaryLabel}</span>
           </div>
         ) : null}
       </div>
@@ -122,7 +122,7 @@ export function AreaTrendChart({
                 y1={gl.y}
                 x2={paddingX + innerWidth}
                 y2={gl.y}
-                stroke="#E6E4DD"
+                stroke="#DCE2DD"
                 strokeDasharray="3 3"
                 strokeWidth="1"
               />
@@ -130,7 +130,7 @@ export function AreaTrendChart({
                 x={paddingX - 8}
                 y={gl.y + 3}
                 textAnchor="end"
-                className="fill-[#758B74] text-[10px] font-mono font-medium"
+                className="fill-[#5B6E69] text-[10px] font-mono font-medium"
               >
                 {gl.value >= 1000 ? `${(gl.value / 1000).toFixed(0)}k` : gl.value}
               </text>
@@ -148,7 +148,7 @@ export function AreaTrendChart({
             <path
               d={secondaryPathD}
               fill="none"
-              stroke="#B87558"
+              stroke="#B96D4C"
               strokeWidth="2"
               strokeDasharray="4 3"
               strokeLinecap="round"
@@ -185,7 +185,7 @@ export function AreaTrendChart({
                     y1={paddingY}
                     x2={pt.x}
                     y2={paddingY + innerHeight}
-                    stroke="#245747"
+                    stroke="#174B4A"
                     strokeWidth="1.5"
                     strokeDasharray="2 2"
                     opacity="0.6"
@@ -198,7 +198,7 @@ export function AreaTrendChart({
                   cy={pt.y}
                   r={isHovered ? 6 : 4}
                   fill="#FFFFFF"
-                  stroke="#245747"
+                  stroke="#174B4A"
                   strokeWidth={isHovered ? 3 : 2}
                   className="transition-all"
                 />
@@ -210,7 +210,7 @@ export function AreaTrendChart({
                     cy={pt.y2}
                     r={isHovered ? 5 : 3}
                     fill="#FFFFFF"
-                    stroke="#B87558"
+                    stroke="#B96D4C"
                     strokeWidth={isHovered ? 2.5 : 1.5}
                     className="transition-all"
                   />
@@ -222,7 +222,7 @@ export function AreaTrendChart({
                   y={paddingY + innerHeight + 16}
                   textAnchor="middle"
                   className={`text-[11px] font-medium transition-colors ${
-                    isHovered ? 'fill-[#1C2923] font-bold' : 'fill-[#758B74]'
+                    isHovered ? 'fill-[#1C2928] font-bold' : 'fill-[#5B6E69]'
                   }`}
                 >
                   {pt.label}
@@ -235,13 +235,13 @@ export function AreaTrendChart({
         {/* Floating Tooltip Box */}
         {activePoint ? (
           <div
-            className="pointer-events-none absolute z-20 -top-2 rounded-xl border border-[#245747]/20 bg-[#1C2923] px-3 py-2 text-xs text-white shadow-lg backdrop-blur-md transition-all -translate-x-1/2"
+            className="pointer-events-none absolute z-20 -top-2 rounded-xl border border-[#174B4A]/20 bg-[#1C2928] px-3 py-2 text-xs text-white shadow-lg backdrop-blur-md transition-all -translate-x-1/2"
             style={{
               left: `${(activePoint.x / svgWidth) * 100}%`,
               top: `${Math.max(10, (activePoint.y / svgHeight) * 100 - 35)}%`,
             }}
           >
-            <p className="font-semibold text-[#A3B3AB] text-[10px]">{activePoint.date}</p>
+            <p className="font-semibold text-[#5B6E69] text-[10px]">{activePoint.date}</p>
             <p className="mt-0.5 font-bold text-white text-xs">
               {primaryLabel}: {formatVal(activePoint.primaryValue)}
             </p>

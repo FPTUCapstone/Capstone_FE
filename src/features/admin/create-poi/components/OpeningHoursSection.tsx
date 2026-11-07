@@ -26,29 +26,29 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
   };
 
   return (
-    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-[#E6E4DD] relative">
-      <div className="flex items-center justify-between pb-3 border-b border-[#F0EFEA] mb-4">
+    <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-[#DCE2DD] relative">
+      <div className="flex items-center justify-between pb-3 border-b border-[#F7F5EF] mb-4">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#245747] text-xl">schedule</span>
-          <h2 className="text-sm sm:text-base text-[#1C2923] font-bold">5. Opening Hours</h2>
+          <span className="material-symbols-outlined text-[#174B4A] text-xl">schedule</span>
+          <h2 className="text-sm sm:text-base text-[#1C2928] font-bold">5. Opening Hours</h2>
         </div>
         <button
           type="button"
           disabled={disabled || formData.operating_schedule.length === 0}
           onClick={handleApplyMonToAll}
-          className="text-[11px] font-semibold text-[#245747] hover:underline disabled:opacity-50"
+          className="text-[11px] font-semibold text-[#174B4A] hover:underline disabled:opacity-50"
         >
           Apply to all
         </button>
       </div>
 
-      <label className="flex items-center gap-2 text-xs sm:text-sm mb-3 min-h-8 cursor-pointer text-[#1C2923]">
+      <label className="flex items-center gap-2 text-xs sm:text-sm mb-3 min-h-8 cursor-pointer text-[#1C2928]">
         <input
           type="checkbox"
           disabled={disabled}
           checked={formData.operating_schedule.length > 0}
           onChange={event => onChange('operating_schedule', event.target.checked ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((name, index) => ({ day_name: name, day_of_week: (index + 1) % 7, is_open: true, open_time: '07:00', close_time: '17:30' })) : [])}
-          className="rounded border-[#E6E4DD] text-[#245747] focus:ring-[#245747]"
+          className="rounded border-[#DCE2DD] text-[#174B4A] focus:ring-[#174B4A]"
         />
         <span>Include opening hours (optional)</span>
       </label>
@@ -60,10 +60,10 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
           <div
             key={day.day_name}
             className={`flex flex-wrap items-center justify-between p-2 sm:p-2.5 rounded-xl border transition-colors gap-2 ${
-              day.is_open ? 'bg-[#F7F6F2] border-[#E6E4DD]' : 'bg-[#E6E4DD]/40 border-[#E6E4DD] opacity-60'
+              day.is_open ? 'bg-[#F7F5EF] border-[#DCE2DD]' : 'bg-[#DCE2DD]/40 border-[#DCE2DD] opacity-60'
             }`}
           >
-            <span className="font-semibold text-[#1C2923] text-xs w-10 sm:w-12">
+            <span className="font-semibold text-[#1C2928] text-xs w-10 sm:w-12">
               {day.day_name.slice(0, 3)}
             </span>
 
@@ -77,9 +77,9 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
                 disabled={disabled || !day.is_open}
                 value={day.open_time}
                 onChange={(e) => handleDayChange(idx, { open_time: e.target.value })}
-                className="h-8 px-1.5 sm:px-2 rounded-lg bg-white text-[#1C2923] font-mono text-xs border border-[#E6E4DD] focus:border-[#245747] focus:ring-1 focus:ring-[#245747] outline-none text-center font-medium w-20 sm:w-24 disabled:opacity-50"
+                className="h-8 px-1.5 sm:px-2 rounded-lg bg-white text-[#1C2928] font-mono text-xs border border-[#DCE2DD] focus:border-[#174B4A] focus:ring-1 focus:ring-[#174B4A] outline-none text-center font-medium w-20 sm:w-24 disabled:opacity-50"
               />
-              <span className="text-[#758B74] text-xs">-</span>
+              <span className="text-[#5B6E69] text-xs">-</span>
               <input
                 type="time"
                 step="1"
@@ -89,7 +89,7 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
                 disabled={disabled || !day.is_open}
                 value={day.close_time}
                 onChange={(e) => handleDayChange(idx, { close_time: e.target.value })}
-                className="h-8 px-1.5 sm:px-2 rounded-lg bg-white text-[#1C2923] font-mono text-xs border border-[#E6E4DD] focus:border-[#245747] focus:ring-1 focus:ring-[#245747] outline-none text-center font-medium w-20 sm:w-24 disabled:opacity-50"
+                className="h-8 px-1.5 sm:px-2 rounded-lg bg-white text-[#1C2928] font-mono text-xs border border-[#DCE2DD] focus:border-[#174B4A] focus:ring-1 focus:ring-[#174B4A] outline-none text-center font-medium w-20 sm:w-24 disabled:opacity-50"
               />
             </div>
 
@@ -99,8 +99,8 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
               onClick={() => handleDayChange(idx, { is_open: !day.is_open })}
               className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all shrink-0 ${
                 day.is_open
-                  ? 'bg-[#E8EFEA] text-[#245747] hover:bg-[#D5E4D8]'
-                  : 'bg-[#E6E4DD] text-[#758B74] hover:bg-[#D8D5CC]'
+                  ? 'bg-[#E8F0EA] text-[#174B4A] hover:bg-[#D5E4D8]'
+                  : 'bg-[#DCE2DD] text-[#5B6E69] hover:bg-[#DCE2DD]'
               }`}
             >
               {day.is_open ? 'Open' : 'Closed'}
@@ -111,7 +111,7 @@ export function OpeningHoursSection({ formData, errors, onChange, disabled }: Op
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-[#758B74] mt-3">Overnight hours are not supported. Times must be within 00:00 - 23:59.</p>
+      <p className="text-[10px] text-[#5B6E69] mt-3">Overnight hours are not supported. Times must be within 00:00 - 23:59.</p>
     </section>
   );
 }

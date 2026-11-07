@@ -82,7 +82,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
           <button
             type="button"
             onClick={onBackToResults}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-[#007d6e]"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-[#103B39]"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             <span>Quay lại kết quả tìm kiếm</span>
@@ -90,7 +90,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
         ) : (
           <Link
             href="/tours"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-[#007d6e]"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-[#103B39]"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             <span>Quay lại kết quả tìm kiếm</span>
@@ -114,7 +114,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
           {tour.destinations.map((dest) => (
             <span
               key={dest}
-              className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]"
+              className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#103B39]"
             >
               <span className="material-symbols-outlined text-xs">location_on</span>
               <span>{dest}</span>
@@ -138,14 +138,14 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
 
         <h1
           id="tour-detail-title"
-          className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#00152a] tracking-tight mb-3"
+          className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#1C2928] tracking-tight mb-3"
         >
           {tour.title}
         </h1>
 
         <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-600">
           <span className="flex items-center gap-1.5 font-medium">
-            <span className="material-symbols-outlined text-base text-[#007d6e]">verified</span>
+            <span className="material-symbols-outlined text-base text-[#103B39]">verified</span>
             <span>Nhà tổ chức: <strong className="text-slate-900">{tour.operatorName}</strong></span>
           </span>
           {tour.operatorContact && (
@@ -235,7 +235,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                 aria-label={`Xem ảnh ${idx + 1}`}
                 className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition cursor-pointer ${
                   idx === activeImageIndex
-                    ? 'border-[#007d6e] ring-2 ring-teal-200'
+                    ? 'border-[#103B39] ring-2 ring-teal-200'
                     : 'border-transparent opacity-70 hover:opacity-100'
                 }`}
               >
@@ -250,7 +250,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
       <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-            <span className="material-symbols-outlined text-base text-[#007d6e]">schedule</span>
+            <span className="material-symbols-outlined text-base text-[#103B39]">schedule</span>
             <span>Thời lượng</span>
           </div>
           <p className="text-sm font-bold text-slate-900">{tour.durationDays} ngày</p>
@@ -258,7 +258,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
 
         <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-            <span className="material-symbols-outlined text-base text-[#007d6e]">route</span>
+            <span className="material-symbols-outlined text-base text-[#103B39]">route</span>
             <span>Chặng hành trình</span>
           </div>
           <p className="text-sm font-bold text-slate-900">
@@ -268,7 +268,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
 
         <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-            <span className="material-symbols-outlined text-base text-[#007d6e]">calendar_month</span>
+            <span className="material-symbols-outlined text-base text-[#103B39]">calendar_month</span>
             <span>Khởi hành gần nhất</span>
           </div>
           <p className="text-sm font-bold text-slate-900">
@@ -278,7 +278,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
 
         <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-            <span className="material-symbols-outlined text-base text-[#007d6e]">policy</span>
+            <span className="material-symbols-outlined text-base text-[#103B39]">policy</span>
             <span>Chính sách hoàn hủy</span>
           </div>
           <p className="text-sm font-bold text-slate-900">Hỗ trợ linh hoạt</p>
@@ -286,7 +286,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
 
         <div className="col-span-2 sm:col-span-4 lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-            <span className="material-symbols-outlined text-base text-[#007d6e]">verified</span>
+            <span className="material-symbols-outlined text-base text-[#103B39]">verified</span>
             <span>Tiêu chuẩn</span>
           </div>
           <p className="text-sm font-bold text-slate-900">Đã kiểm duyệt</p>
@@ -300,31 +300,31 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
       >
         <a
           href="#section-description"
-          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#103B39]"
         >
           Tổng quan
         </a>
         <a
           href="#section-itinerary"
-          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#103B39]"
         >
           Lịch trình
         </a>
         <a
           href="#section-inclusions"
-          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#103B39]"
         >
           Bao gồm
         </a>
         <a
           href="#section-policy"
-          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#103B39]"
         >
           Chính sách
         </a>
         <a
           href="#section-reviews"
-          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#007d6e]"
+          className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-teal-50 hover:text-[#103B39]"
         >
           Đánh giá
         </a>
@@ -340,7 +340,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             aria-labelledby="section-description"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
-            <h2 id="section-description" className="mb-4 text-lg sm:text-xl font-bold text-[#00152a]">
+            <h2 id="section-description" className="mb-4 text-lg sm:text-xl font-bold text-[#1C2928]">
               Giới Thiệu Chuyến Đi
             </h2>
             <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-line">
@@ -349,7 +349,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
 
             {meetingPoint && (
               <div className="mt-6 flex items-start gap-3 rounded-2xl bg-teal-50/60 p-4 border border-teal-100">
-                <span className="material-symbols-outlined text-xl text-[#007d6e] mt-0.5">
+                <span className="material-symbols-outlined text-xl text-[#103B39] mt-0.5">
                   pin_drop
                 </span>
                 <div>
@@ -366,7 +366,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             aria-labelledby="section-itinerary"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
-            <h2 id="section-itinerary" className="mb-6 text-lg sm:text-xl font-bold text-[#00152a]">
+            <h2 id="section-itinerary" className="mb-6 text-lg sm:text-xl font-bold text-[#1C2928]">
               Lịch Trình Chi Tiết
             </h2>
 
@@ -375,7 +375,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                 {tour.itinerary.map((day) => (
                   <div key={day.dayNumber} className="relative">
                     {/* Step Icon Milestone Badge */}
-                    <div className="absolute -left-6 sm:-left-8 top-0 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#007d6e] text-white text-xs font-black shadow-xs">
+                    <div className="absolute -left-6 sm:-left-8 top-0 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#103B39] text-white text-xs font-black shadow-xs">
                       {day.dayNumber}
                     </div>
 
@@ -400,13 +400,13 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                         <ol className="space-y-3 border-t border-slate-200/60 pt-3">
                           {day.stops.map((stop) => (
                             <li key={stop.sequenceNo} className="flex items-start gap-3 text-xs text-slate-700">
-                              <span className="material-symbols-outlined text-base text-[#007d6e]">
+                              <span className="material-symbols-outlined text-base text-[#103B39]">
                                 place
                               </span>
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                   {stop.plannedTime && (
-                                    <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-[#007d6e]">
+                                    <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-[#103B39]">
                                       {stop.plannedTime}
                                     </span>
                                   )}
@@ -427,7 +427,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                         <ul className="space-y-1.5 border-t border-slate-200/60 pt-3">
                           {day.activities.map((act, i) => (
                             <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                              <span className="material-symbols-outlined text-xs text-[#007d6e] mt-0.5">
+                              <span className="material-symbols-outlined text-xs text-[#103B39] mt-0.5">
                                 arrow_right
                               </span>
                               <span>{act}</span>
@@ -450,14 +450,14 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             aria-labelledby="section-inclusions"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
-            <h2 id="section-inclusions" className="mb-6 text-lg sm:text-xl font-bold text-[#00152a]">
+            <h2 id="section-inclusions" className="mb-6 text-lg sm:text-xl font-bold text-[#1C2928]">
               Dịch Vụ Bao Gồm & Không Bao Gồm
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Inclusions */}
               <div className="rounded-2xl border border-teal-100 bg-teal-50/30 p-5">
-                <h3 className="flex items-center gap-1.5 text-sm font-bold text-[#007d6e] mb-3">
+                <h3 className="flex items-center gap-1.5 text-sm font-bold text-[#103B39] mb-3">
                   <span className="material-symbols-outlined text-base">check_circle</span>
                   <span>Bao gồm trong tour</span>
                 </h3>
@@ -507,7 +507,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             aria-labelledby="section-policy"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
-            <h2 id="section-policy" className="mb-4 text-lg sm:text-xl font-bold text-[#00152a]">
+            <h2 id="section-policy" className="mb-4 text-lg sm:text-xl font-bold text-[#1C2928]">
               Chính Sách Hoàn Hủy Tour
             </h2>
             <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4 border border-slate-200">
@@ -537,7 +537,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 id="section-reviews" className="text-lg sm:text-xl font-bold text-[#00152a]">
+              <h2 id="section-reviews" className="text-lg sm:text-xl font-bold text-[#1C2928]">
                 Đánh Giá Từ Du Khách
               </h2>
               {tour.aggregateRating !== null && (
@@ -553,7 +553,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                   <div key={rev.reviewId} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-[#007d6e]">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-[#103B39]">
                           {rev.authorName.charAt(0)}
                         </div>
                         <span className="text-xs font-bold text-slate-900">{rev.authorName}</span>
@@ -599,7 +599,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             <div className="mb-4">
               <span className="block text-xs font-semibold text-slate-500">Giá tour trọn gói</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black text-[#007d6e]">
+                <span className="text-2xl sm:text-3xl font-black text-[#103B39]">
                   {formatVndPrice(selectedSchedule?.price ?? tour.basePrice)}
                 </span>
                 <span className="text-xs text-slate-500">/ khách</span>
@@ -642,7 +642,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                         aria-pressed={isSelected}
                         className={`w-full flex items-center justify-between rounded-xl p-3 text-left transition border ${
                           isSelected
-                            ? 'border-[#007d6e] bg-teal-50/70 ring-2 ring-teal-200 shadow-xs'
+                            ? 'border-[#103B39] bg-teal-50/70 ring-2 ring-teal-200 shadow-xs'
                             : !selectable
                             ? 'border-slate-200 bg-slate-100 opacity-50 cursor-not-allowed'
                             : 'border-slate-200 bg-white hover:bg-slate-50 cursor-pointer'
@@ -650,7 +650,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                       >
                         <div>
                           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                            <span className="material-symbols-outlined text-sm text-[#007d6e]">
+                            <span className="material-symbols-outlined text-sm text-[#103B39]">
                               event
                             </span>
                             <span>{formatDateTimeVietnam(schedule.startDatetime)}</span>
@@ -697,7 +697,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                     return (
                       <Link
                         href={bookingUrl}
-                        className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+                        className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#103B39] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#174B4A]"
                       >
                         <span>Đặt tour ngay</span>
                         <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -712,7 +712,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                           ? bookingUrl
                           : `${ROUTES.signIn}?returnUrl=${encodeURIComponent(bookingUrl)}`
                       }
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f]"
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#103B39] py-3 px-4 text-sm font-bold text-white shadow-md transition hover:bg-[#174B4A]"
                     >
                       <span>Đăng nhập để đặt tour</span>
                       <span className="material-symbols-outlined text-base">login</span>

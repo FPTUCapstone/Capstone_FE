@@ -8,26 +8,19 @@ source-attribution:
   methodology: "Curated design-system documentation schema synthesizing Linear, Airbnb, Vercel, and Apple standards adapted for TripMate"
 
 colors:
-  # Primary Brand Palette (Public Travel Discovery)
-  brand-teal: "#006B5F"
-  brand-brightTeal: "#007D6E"
-  brand-lightTeal: "#E8F7F4"
-  brand-navy: "#00152A"
-  brand-navyContainer: "#102A43"
-  brand-coral: "#FF7043"
+  # Coastal Heritage Palette (Approved Rebranding)
+  primary: "#174B4A"
+  primary-hover: "#103B39"
+  accent: "#B96D4C"
+  accent-text: "#995436"
+  background: "#F7F5EF"
+  surface: "#FFFFFF"
+  text-primary: "#1C2928"
+  text-secondary: "#5B6E69"
+  border: "#DCE2DD"
+  soft-accent: "#E8F0EA"
 
-  # Operational & Administrative Primary
-  primary: "#1D4ED8"
-  primary-container: "#2563EB"
-  primary-fixed: "#EAF1FE"
-  primary-fixed-dim: "#BFD7F5"
-
-  # Functional Accents & Semantic Status
-  secondary-coral: "#FF6A3D"
-  secondary-container: "#FFF0EA"
-  secondary-hover: "#E8582C"
-  tertiary-violet: "#7C3AED"
-  tertiary-container: "#F1EBFE"
+  # Semantic Status Colors (Preserved)
   error: "#E02D4D"
   error-container: "#FDECEF"
   success-green: "#0E9F6E"
@@ -35,24 +28,18 @@ colors:
   warning-amber: "#D97706"
   warning-container: "#FEF3E2"
 
-  # Surfaces & Canvas
-  surface: "#F4F7FC"
-  surface-card: "#FFFFFF"
-  surface-soft: "#F7F9FC"
-  surface-dim: "#E1E8F3"
-  surface-container-high: "#E3E9F5"
-
-  # Typography & Content Colors
-  ink-primary: "#0F172A"
-  ink-heading: "#0F1B2D"
-  ink-secondary: "#64748B"
-  ink-variant: "#33425A"
-  ink-muted: "#6B7C97"
-
-  # Borders & Outlines
-  border-default: "#E2E8F0"
-  border-line: "#E1E8F3"
-  outline: "#6B7C97"
+  # Design Token Compatibility Aliases
+  brand-teal: "#174B4A"
+  brand-brightTeal: "#103B39"
+  brand-lightTeal: "#E8F0EA"
+  brand-navy: "#103B39"
+  brand-navyContainer: "#0C2423"
+  brand-coral: "#B96D4C"
+  brand-surface: "#F7F5EF"
+  brand-card: "#FFFFFF"
+  brand-border: "#DCE2DD"
+  brand-textPrimary: "#1C2928"
+  brand-textSecondary: "#5B6E69"
 
 typography:
   font-jakarta: "var(--font-jakarta)"
@@ -102,25 +89,24 @@ TripMate uses a hybrid semantic token architecture defined in `app/globals.css` 
 
 | Tailwind Utility | CSS Token (`@theme` / `:root`) | Hex Value | Primary Role & Consumers |
 |---|---|---|---|
-| `bg-brand-teal` / `text-brand-teal` | `--color-brand-teal` / `--brand-teal` | `#006B5F` | Primary travel public actions, brand buttons, active destination chips, public search CTAs. |
-| `bg-brand-brightTeal` / `text-brand-brightTeal` | `--color-brand-brightTeal` / `--brand-brightTeal` | `#007D6E` | Hover/focus states on teal elements, icon badges, active highlight accents. |
-| `bg-brand-lightTeal` / `text-brand-lightTeal` | `--color-brand-lightTeal` / `--brand-lightTeal` | `#E8F7F4` | Tinted background for active navigation items, status pills, text selection highlight. |
-| `bg-brand-navy` / `text-brand-navy` | `--color-brand-navy` / `--brand-navy` | `#00152A` | Hero sections, dark public footer, high-contrast headings, card hover backdrops. |
-| `bg-brand-navyContainer` | `--color-brand-navyContainer` / `--brand-navyContainer` | `#102A43` | Dark elevation surfaces, secondary navigation containers on dark surfaces. |
-| `bg-primary` / `text-primary` | `--color-primary` / `--brand` | `#1D4ED8` | Operational primary actions (admin, partner, traveler profile, checkout), focus rings. |
-| `bg-primary-container` | `--color-primary-container` / `--brand6` | `#2563EB` | Active operational buttons, hover states on operational primary elements. |
-| `bg-primary-fixed` | `--color-primary-fixed` / `--brand1` | `#EAF1FE` | Operational badge backgrounds, selected list item highlights. |
-| `bg-brand-coral` / `bg-secondary` | `--color-brand-coral` / `--color-secondary` / `--acc` | `#FF7043` / `#FF6A3D` | Key waypoints, promotional badges, attention alerts, rating icons, secondary highlights. |
-| `hover:bg-coral-hover` | `--color-coral-hover` | `#E8582C` | Interactive hover state for coral buttons and links. |
+| `bg-primary` / `bg-brand-teal` | `--color-primary` / `--color-brand-teal` | `#174B4A` | Primary actions, brand buttons, active destination chips, public search CTAs, key focus rings. |
+| `hover:bg-primary-hover` / `hover:bg-brand-brightTeal` | `--color-primary-hover` / `--color-brand-brightTeal` | `#103B39` | Hover/focus states on primary elements, icon badges, active highlight accents. |
+| `bg-soft-accent` / `bg-brand-lightTeal` | `--color-soft-accent` / `--color-brand-lightTeal` | `#E8F0EA` | Soft accent background for active navigation items, status pills, text selection highlight. |
+| `bg-brand-navy` | `--color-brand-navy` / `--brand-navy` | `#103B39` | Hero sections, dark public footer, high-contrast headings, card hover backdrops. |
+| `bg-brand-navyContainer` | `--color-brand-navyContainer` / `--brand-navyContainer` | `#0C2423` | Dark elevation surfaces, secondary navigation containers on dark surfaces. |
+| `bg-accent` / `bg-brand-coral` | `--color-accent` / `--color-brand-coral` | `#B96D4C` | Key waypoints, promotional badges, attention alerts, rating highlights, secondary accents. |
+| `text-accent-text` / `hover:bg-coral-hover` | `--color-accent-text` / `--color-coral-hover` | `#995436` | Accessible accent text on light backgrounds (WCAG AA compliant >= 4.5:1), hover states. |
+| `bg-background` / `bg-surface` | `--color-background` / `--color-surface` / `--bg` | `#F7F5EF` | Global page canvas background (warm coastal heritage sand canvas; applied on `<body>`). |
+| `bg-brand-card` / `bg-surface` | `--color-brand-card` / `--color-surface-bright` | `#FFFFFF` | Standard card, modal, dialog, and panel surface background. |
+| `border-border` / `border-brand-border` | `--color-border` / `--color-brand-border` / `--line` | `#DCE2DD` | Card dividers, input borders, table borders, panel separators. |
+| `text-text-primary` / `text-brand-textPrimary` | `--color-text-primary` / `--color-on-surface` / `--ink` | `#1C2928` | Primary body copy, table text, form labels, card titles. |
+| `text-text-secondary` / `text-brand-textSecondary` | `--color-text-secondary` / `--color-on-surface-variant` / `--mut` | `#5B6E69` | Subtitles, helper text, timestamps, table column headers, metadata. |
 | `bg-tertiary` / `text-tertiary` | `--color-tertiary` / `--vio` | `#7C3AED` | AI itinerary generation badges, intelligent rerouting highlights, algorithmic tags. |
 | `bg-tertiary-container` | `--color-tertiary-container` / `--vio1` | `#F1EBFE` | Background for AI and algorithmic feature containers. |
 | `bg-error` / `text-error` | `--color-error` / `--red` | `#E02D4D` | Form validation errors, destructive modal actions, failed payment or cancellation badges. |
 | `bg-error-container` | `--color-error-container` / `--red1` | `#FDECEF` | Alert backgrounds for errors and rejections. |
-| `bg-surface` / `bg-brand-surface` | `--color-surface` / `--color-brand-surface` / `--bg` | `#F4F7FC` / `#F7F9FC` | Global page canvas background (light, clean, modern cool-slate; applied on `<body>`). |
-| `bg-brand-card` | `--color-brand-card` / `--color-surface-bright` | `#FFFFFF` | Standard card, modal, dialog, and panel background. |
-| `border-brand-border` | `--color-brand-border` / `--color-outline-variant` / `--line` | `#E2E8F0` / `#E1E8F3` | Card dividers, input borders, table borders, panel separators. |
-| `text-brand-textPrimary` | `--color-brand-textPrimary` / `--color-on-surface` / `--ink` | `#0F172A` / `#0F1B2D` | Primary body copy, table text, form labels, card titles. |
-| `text-brand-textSecondary` | `--color-brand-textSecondary` / `--color-on-surface-variant` / `--ink2` | `#64748B` / `#33425A` | Subtitles, helper text, timestamps, table column headers, metadata. |
+| `bg-success` / `text-success` | `--color-success` / `--grn` | `#0E9F6E` | Success badges, verification confirmations, completed status indicators. |
+| `bg-warning` / `text-warning` | `--color-warning` / `--amb` | `#D97706` | Warning alerts, pending approvals, star ratings. |
 
 ### 2.2 Semantic Color Rule: Dual-Primary Architecture
 

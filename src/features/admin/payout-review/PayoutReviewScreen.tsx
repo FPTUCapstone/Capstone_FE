@@ -83,13 +83,13 @@ export function PayoutReviewScreen({ payoutId }: { payoutId: string }) {
       <header className="mb-6">
         <Link
           href={ROUTES.admin.payouts}
-          className="inline-flex items-center gap-1 text-sm font-bold text-[#006b5f] hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-bold text-[#174B4A] hover:underline"
         >
           ← Back to Payout Records
         </Link>
-        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Staff finance</p>
+        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#174B4A]">Staff finance</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-extrabold text-[#00152a]">{detail?.payoutCode ?? `PO-${payoutId}`}</h1>
+          <h1 className="text-3xl font-extrabold text-[#1C2928]">{detail?.payoutCode ?? `PO-${payoutId}`}</h1>
           {detail ? <Badge alert={detail.status === 'Rejected'}>{detail.status}</Badge> : null}
           {state === 'ready' ? (
             <button
@@ -102,7 +102,7 @@ export function PayoutReviewScreen({ payoutId }: { payoutId: string }) {
           ) : null}
         </div>
         {detail ? (
-          <p className="mt-2 text-sm text-[#486581]">
+          <p className="mt-2 text-sm text-[#5B6E69]">
             {detail.tourOperator.companyName} · {formatPeriodRange(detail.settlementPeriod.startDate, detail.settlementPeriod.endDate)}
           </p>
         ) : null}
@@ -110,7 +110,7 @@ export function PayoutReviewScreen({ payoutId }: { payoutId: string }) {
 
       {toast ? <div className="mb-4"><FeedbackAlert tone={toast.tone}>{toast.message}</FeedbackAlert></div> : null}
 
-      {state === 'loading' ? <div role="status" className="rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]">Loading payout details…</div> : null}
+      {state === 'loading' ? <div role="status" className="rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#5B6E69]">Loading payout details…</div> : null}
       {state === 'not-found' ? <FeedbackAlert tone="error" title="Payout unavailable">{MESSAGES.notFound}</FeedbackAlert> : null}
       {state === 'forbidden' ? <FeedbackAlert tone="error" title="Access denied">{MESSAGES.forbidden}</FeedbackAlert> : null}
       {state === 'unavailable' ? (
@@ -163,7 +163,7 @@ function PayoutDetailSections({
 
       {reviewable ? (
         <section aria-label="Review actions" className="flex flex-wrap items-center gap-3 rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
-          <p className="text-sm text-[#486581]">This request is pending Staff review.</p>
+          <p className="text-sm text-[#5B6E69]">This request is pending Staff review.</p>
           <div className="ml-auto flex gap-3">
             <button
               type="button"
@@ -175,7 +175,7 @@ function PayoutDetailSections({
             <button
               type="button"
               onClick={onApprove}
-              className="min-h-11 rounded-xl bg-[#006b5f] px-4 text-sm font-bold text-white hover:bg-[#005048] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"
+              className="min-h-11 rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
             >
               Approve
             </button>
@@ -183,11 +183,11 @@ function PayoutDetailSections({
         </section>
       ) : (
         <section aria-label="Review actions" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
-          <p className="text-sm text-[#486581]">
-            This request is <strong className="text-[#00152a]">{detail.status}</strong> and can no longer be approved or rejected here.
+          <p className="text-sm text-[#5B6E69]">
+            This request is <strong className="text-[#1C2928]">{detail.status}</strong> and can no longer be approved or rejected here.
           </p>
           {detail.rejectionReason ? (
-            <p className="mt-2 min-w-0 whitespace-pre-wrap break-words text-sm text-[#486581]">
+            <p className="mt-2 min-w-0 whitespace-pre-wrap break-words text-sm text-[#5B6E69]">
               Reason: {detail.rejectionReason}
             </p>
           ) : null}
@@ -197,7 +197,7 @@ function PayoutDetailSections({
       <section aria-label="Contributing bookings" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Contributing Bookings</SectionTitle>
         {detail.contributingBookings.length === 0 ? (
-          <p className="mt-2 text-sm text-[#486581]">{MESSAGES.empty}</p>
+          <p className="mt-2 text-sm text-[#5B6E69]">{MESSAGES.empty}</p>
         ) : (
           <ScrollableTable label="Contributing bookings table" headings={['Booking Code', 'Tour Name', 'Completed', 'Paid', 'Refunded', 'Net']}>
             {detail.contributingBookings.map((booking) => (
@@ -217,20 +217,20 @@ function PayoutDetailSections({
       <section aria-label="Beneficiary bank information" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Beneficiary</SectionTitle>
         {detail.beneficiary.maskedAccountNumber === null ? (
-          <p className="mt-2 text-sm text-[#486581]">{MESSAGES.notAvailable}</p>
+          <p className="mt-2 text-sm text-[#5B6E69]">{MESSAGES.notAvailable}</p>
         ) : (
           <dl className="mt-3 grid gap-3 sm:grid-cols-3">
             <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-[#627d98]">Bank Name</dt>
-              <dd className="mt-1 text-sm text-[#102a43]">{detail.beneficiary.bankName}</dd>
+              <dt className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">Bank Name</dt>
+              <dd className="mt-1 text-sm text-[#103B39]">{detail.beneficiary.bankName}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-[#627d98]">Account Holder</dt>
-              <dd className="mt-1 text-sm text-[#102a43]">{detail.beneficiary.accountHolder}</dd>
+              <dt className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">Account Holder</dt>
+              <dd className="mt-1 text-sm text-[#103B39]">{detail.beneficiary.accountHolder}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-[#627d98]">Account Number</dt>
-              <dd className="mt-1 font-mono text-sm text-[#102a43]">{detail.beneficiary.maskedAccountNumber}</dd>
+              <dt className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">Account Number</dt>
+              <dd className="mt-1 font-mono text-sm text-[#103B39]">{detail.beneficiary.maskedAccountNumber}</dd>
             </div>
           </dl>
         )}
@@ -245,8 +245,8 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 
 const StatusCard = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
-    <p className="text-xs font-bold uppercase tracking-wide text-[#627d98]">{label}</p>
-    <p className="mt-2 text-lg font-extrabold text-[#00152a]">{value}</p>
+    <p className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">{label}</p>
+    <p className="mt-2 text-lg font-extrabold text-[#1C2928]">{value}</p>
   </div>
 );
 

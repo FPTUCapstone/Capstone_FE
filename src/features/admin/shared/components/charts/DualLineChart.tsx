@@ -16,14 +16,14 @@ export function DualLineChart({
   data,
   primaryLabel = 'Active Bookings',
   secondaryLabel = 'Platform Traffic',
-  primaryColor = '#245747',
-  secondaryColor = '#758B74',
+  primaryColor = '#174B4A',
+  secondaryColor = '#5B6E69',
   height = 190,
 }: DualLineChartProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (!data || data.length === 0) {
-    return <div className="flex h-44 items-center justify-center text-xs text-[#758B74]">No data available.</div>;
+    return <div className="flex h-44 items-center justify-center text-xs text-[#5B6E69]">No data available.</div>;
   }
 
   const primaryValues = data.map((d) => d.primaryValue);
@@ -62,11 +62,11 @@ export function DualLineChart({
       <div className="mb-2 flex items-center justify-end gap-4 text-xs font-semibold">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: primaryColor }} />
-          <span className="text-[#1C2923]">{primaryLabel}</span>
+          <span className="text-[#1C2928]">{primaryLabel}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: secondaryColor }} />
-          <span className="text-[#758B74]">{secondaryLabel}</span>
+          <span className="text-[#5B6E69]">{secondaryLabel}</span>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export function DualLineChart({
                 y1={y}
                 x2={paddingX + innerWidth}
                 y2={y}
-                stroke="#E6E4DD"
+                stroke="#DCE2DD"
                 strokeDasharray="3 3"
                 strokeWidth="1"
               />
@@ -144,7 +144,7 @@ export function DualLineChart({
                     y1={paddingY}
                     x2={pt.x}
                     y2={paddingY + innerHeight}
-                    stroke="#1C2923"
+                    stroke="#1C2928"
                     strokeWidth="1"
                     strokeDasharray="2 2"
                     opacity="0.4"
@@ -176,7 +176,7 @@ export function DualLineChart({
                   y={paddingY + innerHeight + 15}
                   textAnchor="middle"
                   className={`text-[11px] font-medium transition-colors ${
-                    isHovered ? 'fill-[#1C2923] font-bold' : 'fill-[#758B74]'
+                    isHovered ? 'fill-[#1C2928] font-bold' : 'fill-[#5B6E69]'
                   }`}
                 >
                   {pt.label}
@@ -189,18 +189,18 @@ export function DualLineChart({
         {/* Hover Tooltip */}
         {activePoint ? (
           <div
-            className="pointer-events-none absolute z-20 -top-2 rounded-xl border border-[#245747]/20 bg-[#1C2923] px-3 py-2 text-xs text-white shadow-lg backdrop-blur-md transition-all -translate-x-1/2"
+            className="pointer-events-none absolute z-20 -top-2 rounded-xl border border-[#174B4A]/20 bg-[#1C2928] px-3 py-2 text-xs text-white shadow-lg backdrop-blur-md transition-all -translate-x-1/2"
             style={{
               left: `${(activePoint.x / svgWidth) * 100}%`,
               top: `${Math.max(10, (activePoint.y1 / svgHeight) * 100 - 30)}%`,
             }}
           >
-            <p className="font-semibold text-[#A3B3AB] text-[10px]">{activePoint.date}</p>
+            <p className="font-semibold text-[#5B6E69] text-[10px]">{activePoint.date}</p>
             <p className="mt-0.5 font-bold text-white text-xs">
               {primaryLabel}: {activePoint.primaryValue}
             </p>
             {activePoint.secondaryValue !== undefined ? (
-              <p className="text-[11px] font-medium text-[#A3B3AB]">
+              <p className="text-[11px] font-medium text-[#5B6E69]">
                 {secondaryLabel}: {activePoint.secondaryValue}
               </p>
             ) : null}

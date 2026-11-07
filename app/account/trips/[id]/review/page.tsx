@@ -21,8 +21,8 @@ export default async function AccountTripReviewPageRoute({
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#F3F6F7]">
-          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent" />
+        <div className="flex min-h-screen items-center justify-center bg-[#F7F5EF]">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent" />
         </div>
       }
     >

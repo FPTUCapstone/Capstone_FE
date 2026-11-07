@@ -86,10 +86,10 @@ export function PayoutRejectDialog({
     >
       <div className="space-y-4">
         <div>
-          <label htmlFor="reject-payout-reason" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#43474d]">
+          <label htmlFor="reject-payout-reason" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
             Reason for rejection
           </label>
-          <p id={hintId} className="mb-1 text-xs text-[#43474d]">
+          <p id={hintId} className="mb-1 text-xs text-[#5B6E69]">
             {reason.length}/{PAYOUT_REASON_MAX_LENGTH}
           </p>
           <textarea
@@ -102,8 +102,8 @@ export function PayoutRejectDialog({
             aria-describedby={fieldError ? `${hintId} ${errorId}` : hintId}
             onChange={(event) => { setReason(event.target.value); setFieldError(null); }}
             className={`w-full rounded-xl border bg-white p-3 text-sm disabled:opacity-60 ${
-              fieldError ? 'border-[#ba1a1a]' : 'border-[#c3c6ce]'
-            } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]`}
+              fieldError ? 'border-[#ba1a1a]' : 'border-[#DCE2DD]'
+            } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]`}
           />
           {fieldError ? (
             <p id={errorId} role="alert" className="mt-1 text-xs font-semibold text-[#ba1a1a]">
@@ -119,7 +119,7 @@ export function PayoutRejectDialog({
             type="button"
             disabled={loading}
             onClick={close}
-            className="min-h-11 rounded-xl border border-[#c3c6ce] px-4 text-sm font-bold text-[#00152a] hover:bg-[#eceef1] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00152a]"
+            className="min-h-11 rounded-xl border border-[#DCE2DD] px-4 text-sm font-bold text-[#1C2928] hover:bg-[#DCE2DD] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1C2928]"
           >
             Cancel
           </button>

@@ -119,19 +119,19 @@ export function AdminSidebar({
   const allItemHrefs = sections.flatMap((s) => s.items.map((i) => i.href));
 
   const renderNav = (isMobile = false) => (
-    <div className="flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#1C2923] text-[#F7F6F2] scrollbar-thin">
+    <div className="flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#1C2928] text-[#F7F5EF] scrollbar-thin">
       <div>
         {/* Brand Header */}
-        <div className={`flex items-center border-b border-[#2A3B33] p-4 ${collapsed && !isMobile ? 'justify-center' : 'justify-start'}`}>
+        <div className={`flex items-center border-b border-[#103B39] p-4 ${collapsed && !isMobile ? 'justify-center' : 'justify-start'}`}>
           <Link
             href={isStaff ? ROUTES.admin.staffDashboard : ROUTES.admin.dashboard}
-            className="flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#758B74]"
+            className="flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B6E69]"
             aria-label="TripMate Administration Home"
             onClick={isMobile ? onCloseMobile : undefined}
           >
             <BrandLogo context="admin" inverse />
             {(!collapsed || isMobile) && (
-              <span className="rounded bg-[#245747] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[#E8EFEA] border border-[#758B74]/40">
+              <span className="rounded bg-[#174B4A] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[#E8F0EA] border border-[#5B6E69]/40">
                 Admin
               </span>
             )}
@@ -143,7 +143,7 @@ export function AdminSidebar({
           {sections.map((section) => (
             <div key={section.title} className="space-y-1">
               {(!collapsed || isMobile) && (
-                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#A3B3AB]">
+                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6E69]">
                   {section.title}
                 </p>
               )}
@@ -173,19 +173,19 @@ export function AdminSidebar({
                         title={collapsed && !isMobile ? item.label : undefined}
                         className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all ${
                           isActive
-                            ? 'bg-[#245747] text-[#FFFFFF] shadow-xs'
-                            : 'text-[#A3B3AB] hover:bg-[#273830] hover:text-[#F7F6F2]'
+                            ? 'bg-[#174B4A] text-[#FFFFFF] shadow-xs'
+                            : 'text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF]'
                         } ${collapsed && !isMobile ? 'justify-center' : ''}`}
                       >
                         {isActive && (
                           <span
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#758B74]"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#5B6E69]"
                             aria-hidden="true"
                           />
                         )}
                         <span
                           className={`material-symbols-outlined text-[18px] transition-colors ${
-                            isActive ? 'text-[#F7F6F2]' : 'text-[#758B74] group-hover:text-[#F7F6F2]'
+                            isActive ? 'text-[#F7F5EF]' : 'text-[#5B6E69] group-hover:text-[#F7F5EF]'
                           }`}
                           aria-hidden="true"
                         >
@@ -203,16 +203,16 @@ export function AdminSidebar({
       </div>
 
       {/* Footer controls: Collapse, Security, Logout */}
-      <div className="border-t border-[#2A3B33] p-3 space-y-2 bg-[#17221D]">
+      <div className="border-t border-[#103B39] p-3 space-y-2 bg-[#17221D]">
         <Link
           href={ROUTES.admin.accountSecurity}
           onClick={isMobile ? onCloseMobile : undefined}
           title={collapsed && !isMobile ? 'Security & Password' : undefined}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-[#A3B3AB] hover:bg-[#273830] hover:text-[#F7F6F2] transition ${
+          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition ${
             collapsed && !isMobile ? 'justify-center' : ''
           }`}
         >
-          <span className="material-symbols-outlined text-[18px] text-[#758B74]" aria-hidden="true">
+          <span className="material-symbols-outlined text-[18px] text-[#5B6E69]" aria-hidden="true">
             lock_reset
           </span>
           {(!collapsed || isMobile) && <span>Security & Password</span>}
@@ -228,7 +228,7 @@ export function AdminSidebar({
               type="button"
               onClick={onToggleCollapse}
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-[#2A3B33] bg-[#273830] text-[#A3B3AB] hover:bg-[#245747] hover:text-[#FFFFFF] transition"
+              className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-[#103B39] bg-[#103B39] text-[#5B6E69] hover:bg-[#174B4A] hover:text-[#FFFFFF] transition"
             >
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                 {collapsed ? 'chevron_right' : 'chevron_left'}
@@ -244,7 +244,7 @@ export function AdminSidebar({
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-[#2A3B33] transition-all duration-300 ease-in-out shrink-0 sticky top-0 h-screen z-30 overflow-x-hidden ${
+        className={`hidden md:flex flex-col border-r border-[#103B39] transition-all duration-300 ease-in-out shrink-0 sticky top-0 h-screen z-30 overflow-x-hidden ${
           collapsed ? 'w-[72px]' : 'w-[260px]'
         }`}
         aria-label="Administration Sidebar"
@@ -264,7 +264,7 @@ export function AdminSidebar({
       {/* Mobile Off-canvas Drawer */}
       {mobileOpen && (
         <div
-          className="fixed inset-y-0 left-0 z-50 w-[280px] bg-[#1C2923] shadow-2xl transition-transform duration-300 ease-in-out md:hidden translate-x-0"
+          className="fixed inset-y-0 left-0 z-50 w-[280px] bg-[#1C2928] shadow-2xl transition-transform duration-300 ease-in-out md:hidden translate-x-0"
           aria-label="Mobile Navigation Menu"
           role="dialog"
           aria-modal="true"
@@ -274,7 +274,7 @@ export function AdminSidebar({
               type="button"
               onClick={onCloseMobile}
               aria-label="Close navigation drawer"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#273830] text-[#F7F6F2] hover:bg-[#245747]"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#103B39] text-[#F7F5EF] hover:bg-[#174B4A]"
             >
               <span className="material-symbols-outlined text-[18px]">close</span>
             </button>
