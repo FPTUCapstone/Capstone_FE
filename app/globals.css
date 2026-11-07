@@ -489,11 +489,6 @@ textarea {
 }
 
 /* Global Custom Scrollbar — TripMate Brand Identity */
-html {
-  scrollbar-width: thin;
-  scrollbar-color: #007D6E transparent;
-}
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -550,6 +545,19 @@ html {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #006B5F;
+}
+
+/* Standards Fallback for Firefox and browsers without WebKit scrollbar pseudo-elements */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: #007D6E transparent;
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #007D6E transparent;
+  }
 }
 
 @keyframes shimmer {
