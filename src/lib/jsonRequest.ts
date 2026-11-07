@@ -18,6 +18,7 @@ export interface JsonRequestOptions {
   /** Serialized as JSON when present. */
   jsonBody?: unknown;
   headers?: Record<string, string>;
+  cache?: RequestCache;
   /** Error to throw when the server cannot be reached (an aborted request is rethrown as is). */
   networkError: () => Error;
 }
@@ -33,6 +34,7 @@ export async function requestJson(url: string, options: JsonRequestOptions): Pro
       method: options.method ?? 'GET',
       credentials: 'include',
       signal: options.signal,
+      cache: options.cache,
       headers,
       body: options.jsonBody === undefined ? undefined : JSON.stringify(options.jsonBody),
     });
