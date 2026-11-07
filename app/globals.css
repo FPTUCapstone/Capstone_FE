@@ -1052,12 +1052,8 @@ textarea {
   will-change: left, width, opacity;
 }
 
-/* Mapbox Container Full Coverage */
-.mapboxgl-map {
-  width: 100% !important;
-  height: 100% !important;
-}
-
+/* Mapbox canvas fills its container. The container (.mapboxgl-map) keeps the size set by the
+   component that renders it; forcing it to 100% collapses maps whose parent has no fixed height. */
 .mapboxgl-canvas-container {
   width: 100% !important;
   height: 100% !important;
