@@ -7,6 +7,7 @@ import { ROUTES } from '@/lib/routes';
 
 export type PartnerWorkspaceTabKey =
   | 'dashboard'
+  | 'weatherSafety'
   | 'profile'
   | 'tours'
   | 'coupons'
@@ -20,6 +21,7 @@ export interface PartnerSidebarProps {
   operatorName?: string;
   onCloseMobile?: () => void;
   className?: string;
+  weatherAlertBadgeCount?: number;
 }
 
 interface NavItem {
@@ -36,6 +38,12 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     label: 'Bảng điều khiển',
     icon: 'dashboard',
     baseHref: ROUTES.partner.dashboard,
+  },
+  {
+    key: 'weatherSafety',
+    label: 'Cảnh báo an toàn',
+    icon: 'warning',
+    baseHref: ROUTES.partner.weatherSafetyReviews,
   },
   {
     key: 'tours',
@@ -86,7 +94,12 @@ const ACCOUNT_NAV_ITEMS: NavItem[] = [
 
 function buildHref(baseHref: string | undefined, isDemo: boolean): string | undefined {
   if (!baseHref) return undefined;
-  if (!isDemo || baseHref === ROUTES.partner.dashboard || baseHref === ROUTES.partner.profile) {
+  if (
+    !isDemo ||
+    baseHref === ROUTES.partner.dashboard ||
+    baseHref === ROUTES.partner.profile ||
+    baseHref === ROUTES.partner.weatherSafetyReviews
+  ) {
     return baseHref;
   }
   return baseHref.includes('?') ? `${baseHref}&demo=1` : `${baseHref}?demo=1`;
@@ -98,6 +111,7 @@ export function PartnerSidebar({
   operatorName,
   onCloseMobile,
   className = '',
+  weatherAlertBadgeCount = 0,
 }: PartnerSidebarProps) {
   const getInitials = (name?: string) => {
     if (!name) return 'TO';
@@ -184,7 +198,12 @@ export function PartnerSidebar({
                     <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                       {item.icon}
                     </span>
-                    <span>{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {item.key === 'weatherSafety' && weatherAlertBadgeCount > 0 && (
+                      <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                        {weatherAlertBadgeCount}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );
