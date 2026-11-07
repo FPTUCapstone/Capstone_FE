@@ -488,6 +488,52 @@ textarea {
   animation: pulse-coral 2s infinite;
 }
 
+/* Global Custom Scrollbar — TripMate Brand Identity */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #007D6E transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #007D6E;
+  border-radius: 9999px;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #006B5F;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: #004D40;
+}
+
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:vertical:start:decrement,
+::-webkit-scrollbar-button:vertical:end:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Scoped Utility for internal containers */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -498,12 +544,12 @@ textarea {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #c3c6ce;
+  background-color: #007D6E;
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #7a92b0;
+  background-color: #006B5F;
 }
 
 @keyframes shimmer {
