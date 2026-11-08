@@ -3,7 +3,12 @@ import { fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MapboxItineraryMap } from '../components/maps/MapboxItineraryMap';
-import { ROUTE_LINE_COLOR, STRAIGHT_LINE_OPACITY } from '../components/maps/mapboxStyle';
+import {
+  CHEVRON_IMAGE,
+  legColor,
+  ROUTE_LINE_COLOR,
+  STRAIGHT_LINE_OPACITY,
+} from '../components/maps/mapboxStyle';
 import { MapboxRadiusMap } from '../components/maps/MapboxRadiusMap';
 import { clearRoadLegCache } from '../utils/mapboxDirections';
 import { buildItineraryMapModel } from '../utils/mapGeometry';
@@ -15,6 +20,7 @@ const mapbox = vi.hoisted(() => {
     markers: [] as Array<{ element: HTMLElement; lngLat: unknown }>,
     sources: new Map<string, { setData: ReturnType<typeof vi.fn> }>(),
     failNextMap: false,
+    failAddImage: false,
     deferLoad: false,
     handlers: [] as Array<Map<string, (event?: unknown) => void>>,
   };
@@ -22,6 +28,10 @@ const mapbox = vi.hoisted(() => {
     options: Record<string, unknown>;
     addSource = vi.fn((id: string) => state.sources.set(id, { setData: vi.fn() }));
     addLayer = vi.fn();
+    addImage = vi.fn(() => {
+      if (state.failAddImage) throw new Error('image rejected');
+    });
+    hasImage = vi.fn(() => false);
     fitBounds = vi.fn();
     remove = vi.fn();
     addControl = vi.fn();
@@ -108,6 +118,18 @@ function roadFor(url: string) {
   return { ok: true, status: 200, json: async () => ({ routes: [{ geometry: { coordinates } }] }) };
 }
 
+/** The road legs last drawn: one GeoJSON feature per routed leg, each with its colour. */
+function roadFeatures() {
+  const calls = mapbox.state.sources.get('itinerary-road')!.setData.mock.calls;
+  const data = calls[calls.length - 1][0] as {
+    type: string;
+    features: Array<{ properties: { color: string }; geometry: { type: string; coordinates: number[][] } }>;
+  };
+  expect(data.type).toBe('FeatureCollection');
+  return data.features;
+}
+const roadLines = () => roadFeatures().map((feature) => feature.geometry.coordinates);
+
 function lastData(sourceId: string) {
   const calls = mapbox.state.sources.get(sourceId)!.setData.mock.calls;
   return calls[calls.length - 1][0] as { geometry: { type: string; coordinates: number[][][] } };
@@ -120,6 +142,7 @@ describe('Web maps (Review 2, D9)', () => {
     fetchMock.mockImplementation(async (url) => roadFor(url));
     vi.stubGlobal('fetch', fetchMock);
     mapbox.state.deferLoad = false;
+    mapbox.state.failAddImage = false;
     mapbox.state.handlers = [];
     mapbox.state.maps = [];
     mapbox.state.markers = [];
@@ -243,72 +266,154 @@ describe('Web maps (Review 2, D9)', () => {
     expect(mapbox.state.markers[1].element.style.getPropertyValue('scale')).toBe('1.35');
   });
 
+  const [legA, legB] = model.legs;
+
   describe('route line style', () => {
-    type Layer = { id: string; source: string; layout?: Record<string, unknown>; paint: Record<string, unknown> };
-    async function drawnLayers(): Promise<Layer[]> {
+    type Layer = {
+      id: string;
+      type: string;
+      source: string;
+      layout?: Record<string, unknown>;
+      paint?: Record<string, unknown>;
+    };
+    async function drawnLayers(): Promise<Record<string, Layer>> {
       render(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />);
       await waitFor(() => expect(mapbox.state.maps).toHaveLength(1));
-      return (mapbox.state.maps[0].addLayer as unknown as { mock: { calls: Layer[][] } }).mock.calls.map(
-        (call) => call[0],
-      );
+      const calls = (mapbox.state.maps[0].addLayer as unknown as { mock: { calls: Layer[][] } }).mock.calls;
+      return Object.fromEntries(calls.map((call) => [call[0].id, call[0]]));
     }
-    const zoomExpression = (value: unknown) => {
+    const zoomStops = (value: unknown) => {
       const expression = value as unknown[];
       expect(expression.slice(0, 3)).toEqual(['interpolate', ['linear'], ['zoom']]);
-      return expression;
+      const stops: Array<[number, number]> = [];
+      for (let index = 3; index < expression.length; index += 2) {
+        stops.push([expression[index] as number, expression[index + 1] as number]);
+      }
+      return stops;
     };
+    const widthAt = (value: unknown, zoom: number) => zoomStops(value).find(([stop]) => stop === zoom)![1];
 
-    it('stacks a white casing, the solid road line and the lighter straight estimate in that order', async () => {
+    it('stacks glow, white casing, road line, the straight estimate and the direction chevrons in that order', async () => {
       const layers = await drawnLayers();
 
-      expect(layers.map((layer) => layer.id)).toEqual([
+      expect(Object.keys(layers)).toEqual([
+        'itinerary-road-glow',
+        'itinerary-road-casing',
+        'itinerary-road-line',
+        'itinerary-route-line',
+        'itinerary-road-chevrons',
+      ]);
+      expect(Object.values(layers).map((layer) => layer.source)).toEqual([
+        'itinerary-road',
+        'itinerary-road',
+        'itinerary-road',
+        'itinerary-route',
+        'itinerary-road',
+      ]);
+    });
+
+    it('colours every road leg from its own colour property', async () => {
+      const layers = await drawnLayers();
+
+      expect(layers['itinerary-road-line'].paint!['line-color']).toEqual(['get', 'color']);
+      expect(layers['itinerary-road-glow'].paint!['line-color']).toEqual(['get', 'color']);
+      expect(layers['itinerary-road-casing'].paint!['line-color']).toBe('#FFFFFF');
+    });
+
+    it('draws a thick road with round ends, a wider casing and a soft blurred glow, all growing with zoom', async () => {
+      const layers = await drawnLayers();
+      const road = layers['itinerary-road-line'];
+      const casing = layers['itinerary-road-casing'];
+      const glow = layers['itinerary-road-glow'];
+
+      expect(widthAt(road.paint!['line-width'], 14)).toBeGreaterThanOrEqual(6);
+      for (const layer of [glow, casing, road]) {
+        expect(layer.layout).toMatchObject({ 'line-cap': 'round', 'line-join': 'round' });
+        expect(zoomStops(layer.paint!['line-width']).length).toBeGreaterThanOrEqual(3);
+      }
+      for (const [zoom] of zoomStops(road.paint!['line-width'])) {
+        expect(widthAt(casing.paint!['line-width'], zoom)).toBeGreaterThan(widthAt(road.paint!['line-width'], zoom));
+        expect(widthAt(glow.paint!['line-width'], zoom)).toBeGreaterThan(widthAt(casing.paint!['line-width'], zoom));
+      }
+      expect(glow.paint!['line-blur']).toBeGreaterThan(0);
+      expect(glow.paint!['line-opacity']).toBeLessThan(0.5);
+    });
+
+    it('registers the chevron image and draws it along the road line', async () => {
+      const layers = await drawnLayers();
+      const addImage = mapbox.state.maps[0].addImage as unknown as {
+        mock: { calls: Array<[string, { width: number }]> };
+      };
+      const chevrons = layers['itinerary-road-chevrons'];
+
+      expect(addImage.mock.calls[0][0]).toBe(CHEVRON_IMAGE);
+      expect(addImage.mock.calls[0][1].width).toBeGreaterThan(0);
+      expect(chevrons.type).toBe('symbol');
+      expect(chevrons.layout).toMatchObject({
+        'symbol-placement': 'line',
+        'icon-image': CHEVRON_IMAGE,
+        'icon-allow-overlap': true,
+      });
+      expect(chevrons.layout!['symbol-spacing']).toBeGreaterThan(30);
+    });
+
+    it('still draws the line, without chevrons, when the image cannot be registered', async () => {
+      mapbox.state.failAddImage = true;
+      const layers = await drawnLayers();
+
+      expect(Object.keys(layers)).toEqual([
+        'itinerary-road-glow',
         'itinerary-road-casing',
         'itinerary-road-line',
         'itinerary-route-line',
       ]);
-      expect(layers.map((layer) => layer.source)).toEqual(['itinerary-road', 'itinerary-road', 'itinerary-route']);
     });
 
-    it('draws the road with round ends, the brand colour and a width that grows with zoom', async () => {
-      const [casing, road] = await drawnLayers();
+    it('keeps the straight estimate dashed and visibly lighter and thinner than the road', async () => {
+      const layers = await drawnLayers();
+      const straight = layers['itinerary-route-line'];
+      const road = layers['itinerary-road-line'];
 
-      expect(casing.paint['line-color']).toBe('#FFFFFF');
-      expect(road.paint['line-color']).toBe(ROUTE_LINE_COLOR);
-      expect(road.layout).toMatchObject({ 'line-cap': 'round', 'line-join': 'round' });
-      expect(casing.layout).toMatchObject({ 'line-cap': 'round', 'line-join': 'round' });
-      const roadWidth = zoomExpression(road.paint['line-width']);
-      const casingWidth = zoomExpression(casing.paint['line-width']);
-      expect(roadWidth.length).toBeGreaterThanOrEqual(7);
-      // The casing is wider than the line at every zoom stop, so it shows as an outline.
-      for (let index = 4; index < roadWidth.length; index += 2) {
-        expect(casingWidth[index] as number).toBeGreaterThan(roadWidth[index] as number);
-      }
-    });
-
-    it('keeps the straight estimate dashed and visibly lighter than the road', async () => {
-      const [, road, straight] = await drawnLayers();
-
-      expect(straight.paint['line-dasharray']).toBeDefined();
-      expect(road.paint['line-dasharray']).toBeUndefined();
-      expect(straight.paint['line-color']).toBe(ROUTE_LINE_COLOR);
-      expect(straight.paint['line-opacity']).toBe(STRAIGHT_LINE_OPACITY);
+      expect(straight.paint!['line-dasharray']).toBeDefined();
+      expect(road.paint!['line-dasharray']).toBeUndefined();
+      expect(straight.paint!['line-color']).toBe(ROUTE_LINE_COLOR);
+      expect(straight.paint!['line-opacity']).toBe(STRAIGHT_LINE_OPACITY);
       expect(STRAIGHT_LINE_OPACITY).toBeLessThan(0.7);
-      zoomExpression(straight.paint['line-width']);
+      expect(widthAt(straight.paint!['line-width'], 14)).toBeLessThan(widthAt(road.paint!['line-width'], 14));
+    });
+
+    it('shades the routed legs from the start colour to the end colour in order', async () => {
+      render(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />);
+
+      await waitFor(() => expect(roadLines()).toHaveLength(2));
+
+      expect(roadFeatures().map((feature) => feature.properties.color)).toEqual([legColor(0, 2), legColor(1, 2)]);
+    });
+
+    it('keeps the colour of a leg when another leg could not be routed', async () => {
+      fetchMock.mockImplementation(async (url) =>
+        url.includes(`${legA.from[0]},${legA.from[1]};`)
+          ? { ok: false, status: 422, json: async () => ({}) }
+          : roadFor(url),
+      );
+      render(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />);
+
+      await waitFor(() => expect(roadLines()).toHaveLength(1));
+
+      expect(roadFeatures()[0].properties.color).toBe(legColor(1, 2));
     });
   });
 
   describe('road route per leg', () => {
-    const [legA, legB] = model.legs;
-
     it('draws each leg along the road Mapbox returns and leaves no dashed straight segment', async () => {
       render(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />);
 
-      await waitFor(() => expect(lastData('itinerary-road').geometry.coordinates).toHaveLength(2));
-      const road = lastData('itinerary-road').geometry;
-      expect(road.type).toBe('MultiLineString');
-      expect(road.coordinates[0]).toHaveLength(3);
-      expect(road.coordinates[0][0]).toEqual(legA.from);
-      expect(road.coordinates[1][2]).toEqual(legB.to);
+      await waitFor(() => expect(roadLines()).toHaveLength(2));
+      const lines = roadLines();
+      expect(roadFeatures().every((feature) => feature.geometry.type === 'LineString')).toBe(true);
+      expect(lines[0]).toHaveLength(3);
+      expect(lines[0][0]).toEqual(legA.from);
+      expect(lines[1][2]).toEqual(legB.to);
       expect(lastData('itinerary-route').geometry).toEqual({ type: 'MultiLineString', coordinates: [] });
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(fetchMock.mock.calls[0][0]).toContain('/directions/v5/mapbox/driving/');
@@ -323,8 +428,8 @@ describe('Web maps (Review 2, D9)', () => {
         <MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} onUnavailable={onUnavailable} />,
       );
 
-      await waitFor(() => expect(lastData('itinerary-road').geometry.coordinates).toHaveLength(1));
-      expect(lastData('itinerary-road').geometry.coordinates[0][0]).toEqual(legA.from);
+      await waitFor(() => expect(roadLines()).toHaveLength(1));
+      expect(roadLines()[0][0]).toEqual(legA.from);
       expect(lastData('itinerary-route').geometry.coordinates).toEqual([[legB.from, legB.to]]);
       expect(onUnavailable).not.toHaveBeenCalled();
     });
@@ -340,14 +445,14 @@ describe('Web maps (Review 2, D9)', () => {
       expect(mapbox.state.sources.get('itinerary-route')!.setData).toHaveBeenCalledWith(
         expect.objectContaining({ geometry: model.route }),
       );
-      expect(lastData('itinerary-road').geometry.coordinates).toEqual([]);
+      expect(roadLines()).toEqual([]);
     });
 
     it('does not ask Mapbox again for legs it already routed when the map is redrawn', async () => {
       const { rerender } = render(
         <MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />,
       );
-      await waitFor(() => expect(lastData('itinerary-road').geometry.coordinates).toHaveLength(2));
+      await waitFor(() => expect(roadLines()).toHaveLength(2));
       const drawn = mapbox.state.sources.get('itinerary-road')!.setData.mock.calls.length;
 
       rerender(
@@ -358,7 +463,7 @@ describe('Web maps (Review 2, D9)', () => {
       );
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(lastData('itinerary-road').geometry.coordinates).toHaveLength(2);
+      expect(roadLines()).toHaveLength(2);
     });
 
     it('draws nothing late when the map is removed before Mapbox answers', async () => {

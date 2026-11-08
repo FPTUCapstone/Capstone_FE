@@ -8,8 +8,11 @@ import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 import { fetchRoadLeg } from '../../utils/mapboxDirections';
 import { boundsOf, ItineraryMapModel, LngLat } from '../../utils/mapGeometry';
 import {
+  CHEVRON_IMAGE,
+  createChevronImage,
   isFatalMapError,
   MAPBOX_STYLE,
+  legColor,
   ROUTE_CASING_COLOR,
   ROUTE_LINE_COLOR,
   STRAIGHT_LINE_OPACITY,
@@ -35,6 +38,16 @@ interface DrawnMarker {
 const ROUTE_SOURCE = 'itinerary-route';
 /** Solid line along the real roads Mapbox Directions returned. */
 const ROAD_SOURCE = 'itinerary-road';
+
+/** Road legs as one coloured feature each: the layers read the colour from the feature. */
+const roadData = (legs: Array<{ color: string; coordinates: LngLat[] }>) => ({
+  type: 'FeatureCollection',
+  features: legs.map(({ color, coordinates }) => ({
+    type: 'Feature',
+    properties: { color },
+    geometry: { type: 'LineString', coordinates },
+  })),
+});
 
 const lineData = (coordinates: LngLat[][]) => ({
   type: 'Feature',
@@ -136,9 +149,22 @@ export function MapboxItineraryMap({
             type: 'geojson',
             data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
           });
-          map.addSource(ROAD_SOURCE, { type: 'geojson', data: lineData([]) as never });
+          map.addSource(ROAD_SOURCE, { type: 'geojson', data: roadData([]) as never });
           const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
-          // Drawn in this order: white casing, solid road line, then the faint dashed straight estimate.
+          // Drawn in this order: soft glow, white casing, road line (coloured per leg), the faint dashed
+          // straight estimate, then direction chevrons on top.
+          map.addLayer({
+            id: 'itinerary-road-glow',
+            type: 'line',
+            source: ROAD_SOURCE,
+            layout: round,
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': widthByZoom([[10, 12], [14, 18], [18, 26]]) as never,
+              'line-blur': 8,
+              'line-opacity': 0.3,
+            },
+          });
           map.addLayer({
             id: 'itinerary-road-casing',
             type: 'line',
@@ -146,7 +172,7 @@ export function MapboxItineraryMap({
             layout: round,
             paint: {
               'line-color': ROUTE_CASING_COLOR,
-              'line-width': widthByZoom([[10, 5], [14, 8], [18, 14]]) as never,
+              'line-width': widthByZoom([[10, 7], [14, 10.5], [18, 15]]) as never,
             },
           });
           map.addLayer({
@@ -155,8 +181,8 @@ export function MapboxItineraryMap({
             source: ROAD_SOURCE,
             layout: round,
             paint: {
-              'line-color': ROUTE_LINE_COLOR,
-              'line-width': widthByZoom([[10, 3], [14, 5], [18, 8]]) as never,
+              'line-color': ['get', 'color'],
+              'line-width': widthByZoom([[10, 4], [14, 6.5], [18, 10]]) as never,
             },
           });
           map.addLayer({
@@ -170,6 +196,24 @@ export function MapboxItineraryMap({
               'line-dasharray': [2, 1.5],
             },
           });
+          try {
+            if (!map.hasImage?.(CHEVRON_IMAGE)) map.addImage(CHEVRON_IMAGE, createChevronImage(), { pixelRatio: 2 });
+            map.addLayer({
+              id: 'itinerary-road-chevrons',
+              type: 'symbol',
+              source: ROAD_SOURCE,
+              layout: {
+                'symbol-placement': 'line',
+                'symbol-spacing': 80,
+                'icon-image': CHEVRON_IMAGE,
+                'icon-size': widthByZoom([[10, 0.3], [14, 0.5], [18, 0.75]]) as never,
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
+              },
+            });
+          } catch {
+            // The line is complete without its direction arrows.
+          }
           drawRef.current?.();
         });
       })
@@ -219,16 +263,16 @@ export function MapboxItineraryMap({
         void Promise.all(model.legs.map((leg) => fetchRoadLeg(leg, tokenRef.current))).then((roads) => {
           // A newer draw, an unmount or a token change replaced this map state while Mapbox was answering.
           if (mapRef.current !== map || drawCountRef.current !== drawId) return;
-          const routed: LngLat[][] = [];
+          const routed: Array<{ color: string; coordinates: LngLat[] }> = [];
           const straight: LngLat[][] = [];
           roads.forEach((road, index) => {
             const { from, to } = model.legs[index];
-            if (road) routed.push(road);
+            if (road) routed.push({ color: legColor(index, model.legs.length), coordinates: road });
             else straight.push([from, to]);
           });
           const road = map.getSource(ROAD_SOURCE) as { setData?: (data: unknown) => void } | undefined;
           const route = map.getSource(ROUTE_SOURCE) as { setData?: (data: unknown) => void } | undefined;
-          road?.setData?.(lineData(routed));
+          road?.setData?.(roadData(routed));
           route?.setData?.(lineData(straight));
         });
       });

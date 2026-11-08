@@ -45,7 +45,7 @@ import {
 import { buildItineraryMapModel, MARKER_COLORS, MapMarkerKind } from '../utils/mapGeometry';
 import { ItineraryReviewsDialog } from './ItineraryReviewsDialog';
 import { LazyItineraryMap } from './maps/LazyMaps';
-import { ROUTE_LINE_COLOR, STRAIGHT_LINE_OPACITY } from './maps/mapboxStyle';
+import { ROUTE_END_COLOR, ROUTE_LINE_COLOR, ROUTE_START_COLOR, STRAIGHT_LINE_OPACITY } from './maps/mapboxStyle';
 import { ItinerarySuggestionsDialog } from './ItinerarySuggestionsDialog';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
 import { ItineraryTimeline } from './ItineraryTimeline';
@@ -941,10 +941,16 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                         </ul>
                         <ul className="mt-2 space-y-1 text-[11px] text-slate-500" aria-label="Chú thích đường nối">
                           <li className="flex items-center gap-2">
-                            <svg width="24" height="4" aria-hidden="true">
-                              <line x1="0" y1="2" x2="24" y2="2" stroke={ROUTE_LINE_COLOR} strokeWidth="3" strokeLinecap="round" />
-                            </svg>
-                            <span>Nét liền: theo đường đi thực tế (Mapbox).</span>
+                            <span
+                              data-testid="road-swatch"
+                              aria-hidden="true"
+                              className="h-1 w-6 shrink-0 rounded-full"
+                              style={{ background: `linear-gradient(to right, ${ROUTE_START_COLOR}, ${ROUTE_END_COLOR})` }}
+                            />
+                            <span>
+                              Nét liền: theo đường đi thực tế (Mapbox), đổi màu từ lúc xuất phát đến lúc kết thúc;
+                              mũi tên chỉ hướng đi.
+                            </span>
                           </li>
                           <li className="flex items-center gap-2">
                             <svg width="24" height="4" aria-hidden="true">
