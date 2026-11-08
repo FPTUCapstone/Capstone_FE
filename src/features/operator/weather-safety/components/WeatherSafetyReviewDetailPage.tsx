@@ -118,7 +118,7 @@ export function WeatherSafetyReviewDetailPage({
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 flex flex-col items-center justify-center text-slate-500 gap-3">
-        <span className="material-symbols-outlined text-4xl animate-spin text-teal-600" aria-hidden="true">
+        <span className="material-symbols-outlined text-4xl animate-spin text-[#174B4A]" aria-hidden="true">
           progress_activity
         </span>
         <p className="text-sm font-medium">Đang tải chi tiết cảnh báo thời tiết...</p>
@@ -141,7 +141,7 @@ export function WeatherSafetyReviewDetailPage({
         <div>
           <Link
             href="/partner/weather-safety-reviews"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-800 transition"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#174B4A] px-4 py-2 text-xs font-semibold text-white hover:bg-[#103B39] transition"
           >
             &larr; Trở về danh sách cảnh báo
           </Link>
@@ -180,14 +180,14 @@ export function WeatherSafetyReviewDetailPage({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-teal-700"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-[#174B4A]"
             >
               &larr; Danh sách
             </button>
           ) : (
             <Link
               href="/partner/weather-safety-reviews"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-teal-700"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-[#174B4A]"
             >
               &larr; Danh sách
             </Link>
@@ -217,16 +217,16 @@ export function WeatherSafetyReviewDetailPage({
 
       {/* Action Success Banner */}
       {actionSuccessResult && (
-        <div className="rounded-xl border border-teal-300 bg-teal-50 p-4 text-teal-900 space-y-1">
+        <div className="rounded-xl border border-[#DCE2DD] bg-[#E8F0EA] p-4 text-[#1C2928] space-y-1">
           <div className="flex items-center gap-2 font-bold text-sm">
-            <span className="material-symbols-outlined text-teal-700" aria-hidden="true">
+            <span className="material-symbols-outlined text-[#174B4A]" aria-hidden="true">
               check_circle
             </span>
             <span>
               Thao tác thành công: {actionSuccessResult.action === 'CancelBeforeDeparture' ? 'Đã hủy trước khởi hành' : 'Đã dừng khẩn cấp tour'}
             </span>
           </div>
-          <p className="text-xs text-teal-800">
+          <p className="text-xs text-[#5B6E69]">
             Mã thao tác: <strong>{actionSuccessResult.operationId}</strong> &bull; Đơn hủy/gián đoạn:{' '}
             {actionSuccessResult.affectedBookingCount}
           </p>
@@ -260,7 +260,7 @@ export function WeatherSafetyReviewDetailPage({
               onClick={() => setShowEmergencyFlow(true)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100 transition"
             >
-              <span className="material-symbols-outlined text-[16px] text-teal-700" aria-hidden="true">
+              <span className="material-symbols-outlined text-[16px] text-[#174B4A]" aria-hidden="true">
                 preview
               </span>
               Mở tính toán tác động &amp; Quyết định
