@@ -52,12 +52,13 @@ function applyHighlight(markers: DrawnMarker[], highlightedItemId: number | null
     const active = itemId !== null && itemId === highlightedItemId;
     if (active) {
       element.setAttribute('aria-current', 'true');
-      element.style.setProperty('transform', 'scale(1.35)');
+      // `scale` is independent of `transform`, which Mapbox owns to position the marker.
+      element.style.setProperty('scale', '1.35');
       element.style.setProperty('z-index', '10');
       element.style.setProperty('box-shadow', '0 0 0 4px rgba(0, 125, 110, 0.45), 0 4px 12px rgba(0,0,0,0.25)');
     } else {
       element.removeAttribute('aria-current');
-      element.style.setProperty('transform', '');
+      element.style.setProperty('scale', '');
       element.style.setProperty('z-index', '');
       element.style.setProperty('box-shadow', '');
     }

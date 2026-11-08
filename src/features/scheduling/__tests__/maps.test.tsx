@@ -52,6 +52,8 @@ const mapbox = vi.hoisted(() => {
       return this;
     }
     addTo() {
+      // Mapbox positions a marker with an inline transform on its element.
+      this.element.style.setProperty('transform', `translate(${state.markers.indexOf(this) * 40}px, 12px)`);
       return this;
     }
     remove() {}
@@ -215,6 +217,29 @@ describe('Web maps (Review 2, D9)', () => {
     await waitFor(() => expect(mapbox.state.markers).toHaveLength(6));
 
     expect(mapbox.state.markers[5].element.getAttribute('aria-current')).toBe('true');
+  });
+
+  it('never touches the transform Mapbox positions a marker with, when highlighting or clearing it', async () => {
+    const { rerender } = render(
+      <MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />,
+    );
+    await waitFor(() => expect(mapbox.state.markers).toHaveLength(3));
+    const positions = mapbox.state.markers.map((marker) => marker.element.style.transform);
+    expect(new Set(positions).size).toBe(3);
+
+    rerender(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={12} onSelectItem={vi.fn()} />);
+    expect(mapbox.state.markers.map((marker) => marker.element.style.transform)).toEqual(positions);
+    const active = mapbox.state.markers[2].element;
+    expect(active.style.getPropertyValue('scale')).toBe('1.35');
+    expect(active.style.zIndex).toBe('10');
+    expect(active.style.boxShadow).not.toBe('');
+
+    rerender(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={11} onSelectItem={vi.fn()} />);
+    expect(mapbox.state.markers.map((marker) => marker.element.style.transform)).toEqual(positions);
+    expect(active.style.getPropertyValue('scale')).toBe('');
+    expect(active.style.zIndex).toBe('');
+    expect(active.style.boxShadow).toBe('');
+    expect(mapbox.state.markers[1].element.style.getPropertyValue('scale')).toBe('1.35');
   });
 
   describe('road route per leg', () => {
