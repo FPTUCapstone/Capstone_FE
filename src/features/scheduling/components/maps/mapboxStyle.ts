@@ -73,3 +73,11 @@ export function createChevronImage(): { width: number; height: number; data: Uin
   }
   return { width: size, height: size, data };
 }
+
+/** Leg picked in the timeline: brand accent (DESIGN.md `accent`), drawn above everything else. */
+export const ROUTE_SELECTED_COLOR = '#B96D4C';
+/** Opacity of the other legs while one leg is selected, and the normal values they return to. */
+export const DIMMED_OPACITY = 0.25;
+export const DIMMED_GLOW_OPACITY = 0.08;
+export const DIMMED_STRAIGHT_OPACITY = 0.2;
+export const GLOW_OPACITY = 0.3;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ItineraryDetailDto, ItineraryDetailItemDto } from '../types/schedulingTypes';
-import { buildItineraryMapModel, circlePolygon, MARKER_COLORS } from '../utils/mapGeometry';
+import { buildItineraryMapModel, circlePolygon, legIdBetweenItems, MARKER_COLORS } from '../utils/mapGeometry';
 
 function item(overrides: Partial<ItineraryDetailItemDto>): ItineraryDetailItemDto {
   return {
@@ -142,5 +142,38 @@ describe('buildItineraryMapModel (D9 itinerary map)', () => {
       expect(legs[0].key).toBe('walking:108.2,16.05;108.22,16.06');
       expect(buildItineraryMapModel({ items: [] }).legs).toEqual([]);
     });
+  });
+});
+
+describe('leg identity (select one leg)', () => {
+  const stops = [
+    item({ itemId: 11, sequenceNo: 1, latitude: 16.06, longitude: 108.22 }),
+    item({ itemId: 12, sequenceNo: 2, latitude: 16.065, longitude: 108.23 }),
+  ];
+
+  it('names a leg after the markers at its two ends, so the timeline can address it', () => {
+    const { legs } = buildItineraryMapModel({
+      startLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      endLocation: { latitude: 16.07, longitude: 108.25, address: null },
+      items: stops,
+    });
+
+    expect(legs.map((leg) => [leg.fromKey, leg.toKey])).toEqual([
+      ['start', 'item-11'],
+      ['item-11', 'item-12'],
+      ['item-12', 'end'],
+    ]);
+    expect(legs.map((leg) => leg.id)).toEqual(['start>item-11', 'item-11>item-12', 'item-12>end']);
+    expect(legIdBetweenItems(11, 12)).toBe('item-11>item-12');
+  });
+
+  it('ends a loop trip on the start marker, the only marker at that place', () => {
+    const { legs } = buildItineraryMapModel({
+      startLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      endLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      items: stops,
+    });
+
+    expect(legs[legs.length - 1].toKey).toBe('start');
   });
 });

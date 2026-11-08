@@ -17,6 +17,7 @@ import {
   stopDisplayName,
 } from '../utils/itineraryPresentation';
 import { formatPriceLabel } from '@/lib/priceLabel';
+import { legIdBetweenItems } from '../utils/mapGeometry';
 import { ItineraryLegRow } from './ItineraryLegRow';
 import { ItineraryStopMenu, StopMenuAction } from './ItineraryStopMenu';
 
@@ -45,6 +46,11 @@ interface ItineraryTimelineProps {
   /** Stop highlighted from the map (and reported back on hover). */
   highlightedItemId?: number | null;
   onHighlightItem?: (itemId: number | null) => void;
+  /** Legs (by `legIdBetweenItems`) the map can show: their pill becomes a button. */
+  selectableLegIds?: ReadonlySet<string>;
+  /** Leg currently shown on its own on the map. */
+  selectedLegId?: string | null;
+  onSelectLeg?: (legId: string) => void;
 }
 
 export function ItineraryTimeline({
@@ -62,6 +68,9 @@ export function ItineraryTimeline({
   onAddFood,
   highlightedItemId = null,
   onHighlightItem,
+  selectableLegIds,
+  selectedLegId = null,
+  onSelectLeg,
 }: ItineraryTimelineProps) {
   if (!items || items.length === 0) {
     return (
@@ -177,7 +186,14 @@ export function ItineraryTimeline({
                 item.travelDurationFromPreviousMinutes !== null &&
                 item.travelDurationFromPreviousMinutes !== undefined && (
                   <ItineraryLegRow
+                    fromName={previous ? stopDisplayName(previous) : undefined}
                     toName={stopDisplayName(item)}
+                    onSelect={
+                      onSelectLeg && previous && selectableLegIds?.has(legIdBetweenItems(previous.itemId, item.itemId))
+                        ? () => onSelectLeg(legIdBetweenItems(previous.itemId, item.itemId))
+                        : undefined
+                    }
+                    selected={previous !== null && selectedLegId === legIdBetweenItems(previous.itemId, item.itemId)}
                     minutes={item.travelDurationFromPreviousMinutes}
                     meters={item.travelDistanceFromPreviousMeters}
                     mode={legMode(item)}

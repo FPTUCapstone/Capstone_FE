@@ -72,6 +72,11 @@ export type RouteProfile = 'walking' | 'driving';
 export interface ItineraryRouteLeg {
   /** Profile + rounded ends: identifies the leg for caching. */
   key: string;
+  /** `${fromKey}>${toKey}`: identifies the leg for selection (timeline ↔ map). */
+  id: string;
+  /** Key of the marker at each end: `start`, `item-<itemId>` or `end`. */
+  fromKey: string;
+  toKey: string;
   from: LngLat;
   to: LngLat;
   profile: RouteProfile;
@@ -83,19 +88,36 @@ export interface ItineraryMapModel {
   legs: ItineraryRouteLeg[];
 }
 
+/** Id of the leg between two consecutive stops, as the timeline and the map both know it. */
+export const legIdBetweenItems = (fromItemId: number, toItemId: number) => `item-${fromItemId}>item-${toItemId}`;
+
 const profileOf = (mode: TransportMode | null | undefined): RouteProfile =>
   mode === 'Walking' ? 'walking' : 'driving';
 
 const roundedPoint = (point: LngLat) => `${Number(point[0].toFixed(5))},${Number(point[1].toFixed(5))}`;
 
-function buildLegs(points: Array<{ position: LngLat; mode: TransportMode | null | undefined }>): ItineraryRouteLeg[] {
+interface RoutePoint {
+  key: string;
+  position: LngLat;
+  mode: TransportMode | null | undefined;
+}
+
+function buildLegs(points: RoutePoint[]): ItineraryRouteLeg[] {
   const legs: ItineraryRouteLeg[] = [];
   for (let index = 1; index < points.length; index += 1) {
-    const from = points[index - 1].position;
-    const { position: to, mode } = points[index];
+    const { position: from, key: fromKey } = points[index - 1];
+    const { position: to, mode, key: toKey } = points[index];
     if (samePlace(from, to)) continue;
     const profile = profileOf(mode);
-    legs.push({ key: `${profile}:${roundedPoint(from)};${roundedPoint(to)}`, from, to, profile });
+    legs.push({
+      key: `${profile}:${roundedPoint(from)};${roundedPoint(to)}`,
+      id: `${fromKey}>${toKey}`,
+      fromKey,
+      toKey,
+      from,
+      to,
+      profile,
+    });
   }
   return legs;
 }
@@ -127,7 +149,7 @@ export function buildItineraryMapModel(
 
   const markers: ItineraryMapMarker[] = [];
   const route: LngLat[] = [];
-  const points: Array<{ position: LngLat; mode: TransportMode | null | undefined }> = [];
+  const points: RoutePoint[] = [];
   const start = itinerary.startLocation;
   const startPosition: LngLat | null = start ? [start.longitude, start.latitude] : null;
   if (start && startPosition) {
@@ -141,13 +163,13 @@ export function buildItineraryMapModel(
       itemId: null,
     });
     route.push(startPosition);
-    points.push({ position: startPosition, mode: null });
+    points.push({ key: 'start', position: startPosition, mode: null });
   }
   markers.push(...stops);
   route.push(...stops.map((stop) => stop.position));
   for (const stop of stops) {
     const mode = itemModes.get(stop.key) ?? itinerary.transportMode;
-    points.push({ position: stop.position, mode });
+    points.push({ key: stop.key, position: stop.position, mode });
   }
 
   const end = itinerary.endLocation;
@@ -166,7 +188,8 @@ export function buildItineraryMapModel(
       });
     }
     route.push(endPosition);
-    points.push({ position: endPosition, mode: itinerary.transportMode });
+    const endsAtStart = startPosition !== null && samePlace(startPosition, endPosition);
+    points.push({ key: endsAtStart ? 'start' : 'end', position: endPosition, mode: itinerary.transportMode });
   }
   return { markers, route: { type: 'LineString', coordinates: route }, legs: buildLegs(points) };
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { getMapboxPublicToken } from '@/lib/mapboxToken';
@@ -108,6 +108,9 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   // Map ↔ timeline synchronization and active marker selection
   const [highlightedItemId, setHighlightedItemId] = useState<number | null>(null);
   const [mapFailed, setMapFailed] = useState(false);
+  // Leg shown on its own on the map (id from the map model); null = the whole route.
+  const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
+  const mapSectionRef = useRef<HTMLElement>(null);
   const [activeDayKey, setActiveDayKey] = useState<string | null>(null);
   const mapboxToken = getMapboxPublicToken();
 
@@ -125,6 +128,33 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
       items: displayedItems,
     });
   }, [itinerary, displayedItems]);
+
+  const mapShown = Boolean(mapboxToken) && !mapFailed && mapModel !== null && mapModel.markers.length > 0;
+  // Legs the map can show right now (the day tab filters the map, so a leg may be out of view).
+  const selectableLegIds = useMemo(
+    () => new Set<string>(mapShown && mapModel ? mapModel.legs.map((leg) => leg.id) : []),
+    [mapShown, mapModel],
+  );
+  const activeLegId = selectedLegId !== null && selectableLegIds.has(selectedLegId) ? selectedLegId : null;
+
+  const selectLeg = (legId: string) => {
+    if (legId === activeLegId) {
+      setSelectedLegId(null);
+      return;
+    }
+    setSelectedLegId(legId);
+    // Narrow screens: the map may be out of sight; 'nearest' does nothing when it is already visible.
+    mapSectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  useEffect(() => {
+    if (activeLegId === null) return;
+    const clearOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedLegId(null);
+    };
+    document.addEventListener('keydown', clearOnEscape);
+    return () => document.removeEventListener('keydown', clearOnEscape);
+  }, [activeLegId]);
 
   const selectedItem =
     highlightedItemId !== null && itineraryItems
@@ -759,6 +789,9 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     onAddFood={openFoodSuggestions}
                     highlightedItemId={highlightedItemId}
                     onHighlightItem={setHighlightedItemId}
+                    selectableLegIds={selectableLegIds}
+                    selectedLegId={activeLegId}
+                    onSelectLeg={selectLeg}
                   />
                 </div>
 
@@ -766,6 +799,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                 <aside className="space-y-6 lg:col-span-2 lg:sticky lg:top-24">
                   {/* Real Interactive Mapbox Map: "Bản đồ lộ trình" */}
                   <section
+                    ref={mapSectionRef}
                     className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs"
                     aria-label="Bản đồ lộ trình"
                   >
@@ -846,13 +880,28 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     ) : (
                       /* State 4: Real Interactive Mapbox Map */
                       <>
-                        <LazyItineraryMap
-                          token={mapboxToken}
-                          model={mapModel}
-                          highlightedItemId={highlightedItemId}
-                          onSelectItem={selectFromMap}
-                          onUnavailable={() => setMapFailed(true)}
-                        />
+                        <div className="relative">
+                          <LazyItineraryMap
+                            token={mapboxToken}
+                            model={mapModel}
+                            highlightedItemId={highlightedItemId}
+                            onSelectItem={selectFromMap}
+                            selectedLegId={activeLegId}
+                            onUnavailable={() => setMapFailed(true)}
+                          />
+                          {activeLegId !== null && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLegId(null)}
+                              className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-[#103B39] shadow-md transition hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#103B39]"
+                            >
+                              <span className="material-symbols-outlined text-sm" aria-hidden="true">
+                                zoom_out_map
+                              </span>
+                              Xem toàn bộ lộ trình
+                            </button>
+                          )}
+                        </div>
 
                         {/* Selected Stop Floating/Docked Preview Card */}
                         {selectedItem && (
@@ -939,6 +988,11 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                             </li>
                           ))}
                         </ul>
+                        {activeLegId !== null && (
+                          <p className="mt-2 text-[11px] text-slate-500">
+                            Đoạn đang xem được tô màu cam đất; các đoạn khác mờ đi.
+                          </p>
+                        )}
                         <ul className="mt-2 space-y-1 text-[11px] text-slate-500" aria-label="Chú thích đường nối">
                           <li className="flex items-center gap-2">
                             <span

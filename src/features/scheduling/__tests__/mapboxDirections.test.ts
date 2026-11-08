@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearRoadLegCache, fetchRoadLeg } from '../utils/mapboxDirections';
 import type { ItineraryRouteLeg } from '../utils/mapGeometry';
 
-const leg: ItineraryRouteLeg = {
+type RoadLegInput = Pick<ItineraryRouteLeg, 'key' | 'from' | 'to' | 'profile'>;
+
+const leg: RoadLegInput = {
   key: 'driving:108.2,16.05;108.22,16.06',
   from: [108.2, 16.05],
   to: [108.22, 16.06],
@@ -69,7 +71,7 @@ describe('fetchRoadLeg (Mapbox Directions per leg)', () => {
   });
 
   describe('remembering failures (A)', () => {
-    const other: ItineraryRouteLeg = {
+    const other: RoadLegInput = {
       key: 'driving:108.3,16.1;108.31,16.11',
       from: [108.3, 16.1],
       to: [108.31, 16.11],
@@ -185,7 +187,7 @@ describe('fetchRoadLeg (Mapbox Directions per leg)', () => {
 
     it('keeps only the newest legs once there are too many to store', async () => {
       fetchMock.mockImplementation(async () => directions(roadLine));
-      const legAt = (n: number): ItineraryRouteLeg => ({
+      const legAt = (n: number): RoadLegInput => ({
         key: `driving:108,${n};108,${n + 1}`,
         from: [108, n],
         to: [108, n + 1],

@@ -10,6 +10,9 @@
 
 import type { ItineraryRouteLeg, LngLat } from './mapGeometry';
 
+/** What a Directions request needs of a leg. */
+type RoadLeg = Pick<ItineraryRouteLeg, 'key' | 'from' | 'to' | 'profile'>;
+
 const DIRECTIONS_BASE = 'https://api.mapbox.com/directions/v5/mapbox';
 /** Oldest entries go first so a long session cannot grow the caches without bound. */
 const MAX_CACHED_LEGS = 200;
@@ -105,7 +108,7 @@ export function clearRoadLegCache(): void {
   }
 }
 
-async function requestRoad(leg: ItineraryRouteLeg, token: string): Promise<LngLat[]> {
+async function requestRoad(leg: RoadLeg, token: string): Promise<LngLat[]> {
   const coordinates = `${leg.from[0]},${leg.from[1]};${leg.to[0]},${leg.to[1]}`;
   const search = new URLSearchParams({
     geometries: 'geojson',
@@ -121,7 +124,7 @@ async function requestRoad(leg: ItineraryRouteLeg, token: string): Promise<LngLa
   return line.map(([lng, lat]) => [lng, lat]);
 }
 
-export function fetchRoadLeg(leg: ItineraryRouteLeg, token: string): Promise<LngLat[] | null> {
+export function fetchRoadLeg(leg: RoadLeg, token: string): Promise<LngLat[] | null> {
   const known = cache.get(leg.key);
   if (known) return known.then((line) => line, () => null);
 

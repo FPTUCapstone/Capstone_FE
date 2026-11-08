@@ -10,11 +10,16 @@ import { boundsOf, ItineraryMapModel, LngLat } from '../../utils/mapGeometry';
 import {
   CHEVRON_IMAGE,
   createChevronImage,
+  DIMMED_GLOW_OPACITY,
+  DIMMED_OPACITY,
+  DIMMED_STRAIGHT_OPACITY,
+  GLOW_OPACITY,
   isFatalMapError,
   MAPBOX_STYLE,
   legColor,
   ROUTE_CASING_COLOR,
   ROUTE_LINE_COLOR,
+  ROUTE_SELECTED_COLOR,
   STRAIGHT_LINE_OPACITY,
   widthByZoom,
 } from './mapboxStyle';
@@ -24,12 +29,15 @@ interface MapboxItineraryMapProps {
   model: ItineraryMapModel;
   highlightedItemId: number | null;
   onSelectItem: (itemId: number) => void;
+  /** Leg (`ItineraryRouteLeg.id`) shown on its own: fitted, drawn on top and the others dimmed. */
+  selectedLegId?: string | null;
   /** WebGL, the library or the token is unusable: the page shows the order diagram/fallback card instead. */
   onUnavailable?: () => void;
 }
 
 interface DrawnMarker {
   marker: MapboxMarker;
+  key: string;
   itemId: number | null;
   element: HTMLElement;
 }
@@ -38,6 +46,29 @@ interface DrawnMarker {
 const ROUTE_SOURCE = 'itinerary-route';
 /** Solid line along the real roads Mapbox Directions returned. */
 const ROAD_SOURCE = 'itinerary-road';
+/** The selected leg, drawn on top of the gradient. */
+const SELECTED_SOURCE = 'itinerary-selected';
+
+type GeoSource = { setData?: (data: unknown) => void };
+
+const selectedData = (line: LngLat[] | null) => ({
+  type: 'FeatureCollection',
+  features: line
+    ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: line } }]
+    : [],
+});
+
+/** Fades the gradient, its glow, the arrows and the straight estimates while one leg is selected. */
+function dimRoute(map: MapboxMap, dimmed: boolean) {
+  const set = (layer: string, property: 'line-opacity' | 'icon-opacity', value: number) => {
+    if (map.getLayer?.(layer)) map.setPaintProperty(layer, property, value);
+  };
+  set('itinerary-road-glow', 'line-opacity', dimmed ? DIMMED_GLOW_OPACITY : GLOW_OPACITY);
+  set('itinerary-road-casing', 'line-opacity', dimmed ? DIMMED_OPACITY : 1);
+  set('itinerary-road-line', 'line-opacity', dimmed ? DIMMED_OPACITY : 1);
+  set('itinerary-road-chevrons', 'icon-opacity', dimmed ? DIMMED_OPACITY : 1);
+  set('itinerary-route-line', 'line-opacity', dimmed ? DIMMED_STRAIGHT_OPACITY : STRAIGHT_LINE_OPACITY);
+}
 
 /** Road legs as one coloured feature each: the layers read the colour from the feature. */
 const roadData = (legs: Array<{ color: string; coordinates: LngLat[] }>) => ({
@@ -67,8 +98,12 @@ function markerElement(label: string, title: string, color: string): HTMLButtonE
   return element;
 }
 
-function applyHighlight(markers: DrawnMarker[], highlightedItemId: number | null) {
-  for (const { itemId, element } of markers) {
+function applyHighlight(
+  markers: DrawnMarker[],
+  highlightedItemId: number | null,
+  legEndKeys: ReadonlySet<string>,
+) {
+  for (const { key, itemId, element } of markers) {
     const active = itemId !== null && itemId === highlightedItemId;
     if (active) {
       element.setAttribute('aria-current', 'true');
@@ -76,6 +111,12 @@ function applyHighlight(markers: DrawnMarker[], highlightedItemId: number | null
       element.style.setProperty('scale', '1.35');
       element.style.setProperty('z-index', '10');
       element.style.setProperty('box-shadow', '0 0 0 4px rgba(0, 125, 110, 0.45), 0 4px 12px rgba(0,0,0,0.25)');
+    } else if (legEndKeys.has(key)) {
+      // The two ends of the selected leg.
+      element.removeAttribute('aria-current');
+      element.style.setProperty('scale', '1.25');
+      element.style.setProperty('z-index', '9');
+      element.style.setProperty('box-shadow', `0 0 0 3px ${ROUTE_SELECTED_COLOR}, 0 4px 10px rgba(0,0,0,0.25)`);
     } else {
       element.removeAttribute('aria-current');
       element.style.setProperty('scale', '');
@@ -96,6 +137,7 @@ export function MapboxItineraryMap({
   model,
   highlightedItemId,
   onSelectItem,
+  selectedLegId = null,
   onUnavailable,
 }: MapboxItineraryMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,12 +149,50 @@ export function MapboxItineraryMap({
   const drawRef = useRef<(() => void) | null>(null);
   const tokenRef = useRef(token);
   const drawCountRef = useRef(0);
+  const modelRef = useRef(model);
+  const selectedLegRef = useRef(selectedLegId);
+  /** Roads of the legs of the current draw, by leg id (legs without a road are not in it). */
+  const roadsRef = useRef(new Map<string, LngLat[]>());
+  /** Leg currently applied to the map (null = whole route). */
+  const appliedLegRef = useRef<string | null>(null);
+  const legEndsRef = useRef<ReadonlySet<string>>(new Set());
+  const applySelectionRef = useRef<(force: boolean) => void>(() => {});
 
   useEffect(() => {
     selectRef.current = onSelectItem;
     unavailableRef.current = onUnavailable;
     tokenRef.current = token;
   }, [onSelectItem, onUnavailable, token]);
+
+  // Shows the selected leg (or the whole route): fit, selected line, dimmed rest, highlighted end markers.
+  useEffect(() => {
+    const fitAll = (map: MapboxMap, duration: number) => {
+      const bounds = boundsOf(modelRef.current.markers.map((entry) => entry.position));
+      if (!bounds) return;
+      if (bounds[0][0] === bounds[1][0] && bounds[0][1] === bounds[1][1] && typeof map.easeTo === 'function') {
+        map.easeTo({ center: bounds[0], zoom: 14, duration });
+      } else {
+        map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration });
+      }
+    };
+    applySelectionRef.current = (force) => {
+      const map = mapRef.current;
+      if (!map) return;
+      const wanted = selectedLegRef.current;
+      const leg = wanted ? modelRef.current.legs.find((entry) => entry.id === wanted) ?? null : null;
+      const line = leg ? roadsRef.current.get(leg.id) ?? [leg.from, leg.to] : null;
+      const changed = (leg?.id ?? null) !== appliedLegRef.current;
+      appliedLegRef.current = leg?.id ?? null;
+      dimRoute(map, leg !== null);
+      (map.getSource(SELECTED_SOURCE) as GeoSource | undefined)?.setData?.(selectedData(line));
+      legEndsRef.current = leg ? new Set([leg.fromKey, leg.toKey]) : new Set();
+      applyHighlight(markersRef.current, highlightRef.current, legEndsRef.current);
+      if (!force && !changed) return;
+      const bounds = line ? boundsOf(line) : null;
+      if (bounds) map.fitBounds(bounds, { padding: 64, maxZoom: 16, duration: force ? 0 : 600 });
+      else fitAll(map, force ? 0 : 600);
+    };
+  }, []);
 
   // Create the map once per token; the model is drawn by the effect below.
   useEffect(() => {
@@ -150,6 +230,7 @@ export function MapboxItineraryMap({
             data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
           });
           map.addSource(ROAD_SOURCE, { type: 'geojson', data: roadData([]) as never });
+          map.addSource(SELECTED_SOURCE, { type: 'geojson', data: selectedData(null) as never });
           const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
           // Drawn in this order: soft glow, white casing, road line (coloured per leg), the faint dashed
           // straight estimate, then direction chevrons on top.
@@ -162,7 +243,7 @@ export function MapboxItineraryMap({
               'line-color': ['get', 'color'],
               'line-width': widthByZoom([[10, 12], [14, 18], [18, 26]]) as never,
               'line-blur': 8,
-              'line-opacity': 0.3,
+              'line-opacity': GLOW_OPACITY,
             },
           });
           map.addLayer({
@@ -214,6 +295,26 @@ export function MapboxItineraryMap({
           } catch {
             // The line is complete without its direction arrows.
           }
+          map.addLayer({
+            id: 'itinerary-selected-casing',
+            type: 'line',
+            source: SELECTED_SOURCE,
+            layout: round,
+            paint: {
+              'line-color': ROUTE_CASING_COLOR,
+              'line-width': widthByZoom([[10, 9], [14, 14], [18, 20]]) as never,
+            },
+          });
+          map.addLayer({
+            id: 'itinerary-selected-line',
+            type: 'line',
+            source: SELECTED_SOURCE,
+            layout: round,
+            paint: {
+              'line-color': ROUTE_SELECTED_COLOR,
+              'line-width': widthByZoom([[10, 6], [14, 10], [18, 14]]) as never,
+            },
+          });
           drawRef.current?.();
         });
       })
@@ -229,11 +330,13 @@ export function MapboxItineraryMap({
   }, [token]);
 
   useEffect(() => {
+    modelRef.current = model;
     drawRef.current = () => {
       const map = mapRef.current;
       if (!map) return;
       drawCountRef.current += 1;
       const drawId = drawCountRef.current;
+      roadsRef.current = new Map();
       void import('mapbox-gl').then(({ default: mapboxgl }) => {
         // The map may have been removed (unmount, token change) while the module was loading.
         if (mapRef.current !== map) return;
@@ -245,19 +348,12 @@ export function MapboxItineraryMap({
             element.addEventListener('click', () => selectRef.current(itemId));
           }
           const marker = new mapboxgl.Marker({ element }).setLngLat(entry.position).addTo(map);
-          return { marker, itemId: entry.itemId, element };
+          return { marker, key: entry.key, itemId: entry.itemId, element };
         });
-        applyHighlight(markersRef.current, highlightRef.current);
-        const source = map.getSource(ROUTE_SOURCE) as { setData?: (data: unknown) => void } | undefined;
+        const source = map.getSource(ROUTE_SOURCE) as GeoSource | undefined;
         source?.setData?.({ type: 'Feature', properties: {}, geometry: model.route });
-        const bounds = boundsOf(model.markers.map((entry) => entry.position));
-        if (bounds) {
-          if (bounds[0][0] === bounds[1][0] && bounds[0][1] === bounds[1][1] && typeof map.easeTo === 'function') {
-            map.easeTo({ center: bounds[0], zoom: 14, duration: 0 });
-          } else {
-            map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 0 });
-          }
-        }
+        // Fits the whole route, or the selected leg, and highlights the markers.
+        applySelectionRef.current(true);
         // Straight line is on screen; swap in the road of every leg that Directions can route.
         if (model.legs.length === 0) return;
         void Promise.all(model.legs.map((leg) => fetchRoadLeg(leg, tokenRef.current))).then((roads) => {
@@ -267,13 +363,17 @@ export function MapboxItineraryMap({
           const straight: LngLat[][] = [];
           roads.forEach((road, index) => {
             const { from, to } = model.legs[index];
-            if (road) routed.push({ color: legColor(index, model.legs.length), coordinates: road });
-            else straight.push([from, to]);
+            if (road) {
+              routed.push({ color: legColor(index, model.legs.length), coordinates: road });
+              roadsRef.current.set(model.legs[index].id, road);
+            } else straight.push([from, to]);
           });
           const road = map.getSource(ROAD_SOURCE) as { setData?: (data: unknown) => void } | undefined;
           const route = map.getSource(ROUTE_SOURCE) as { setData?: (data: unknown) => void } | undefined;
           road?.setData?.(roadData(routed));
           route?.setData?.(lineData(straight));
+          // The selected leg now follows its road.
+          applySelectionRef.current(false);
         });
       });
     };
@@ -281,8 +381,13 @@ export function MapboxItineraryMap({
   }, [model]);
 
   useEffect(() => {
+    selectedLegRef.current = selectedLegId;
+    applySelectionRef.current(false);
+  }, [selectedLegId]);
+
+  useEffect(() => {
     highlightRef.current = highlightedItemId;
-    applyHighlight(markersRef.current, highlightedItemId);
+    applyHighlight(markersRef.current, highlightedItemId, legEndsRef.current);
   }, [highlightedItemId]);
 
   return (

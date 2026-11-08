@@ -344,13 +344,15 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
 
 vi.mock('../components/maps/LazyMaps', () => ({
   LazyItineraryMap: ({
+    selectedLegId,
     model,
     onSelectItem,
   }: {
     model: { markers: Array<{ label: string; itemId: number | null }> };
     onSelectItem: (itemId: number) => void;
+    selectedLegId?: string | null;
   }) => (
-    <div data-testid="itinerary-map">
+    <div data-testid="itinerary-map" data-selected-leg={selectedLegId ?? ''}>
       {model.markers.map((marker) => (
         <button
           key={marker.label}
@@ -426,6 +428,71 @@ describe('ViewSuggestedItineraryPage — Review 2 itinerary map (D9)', () => {
     expect(dashed.getAttribute('stroke')).toBe(ROUTE_LINE_COLOR);
     expect(dashed.getAttribute('stroke-opacity')).toBe(String(STRAIGHT_LINE_OPACITY));
     expect(dashed.getAttribute('stroke-dasharray')).not.toBeNull();
+  });
+
+  describe('viewing one leg on the map', () => {
+    const FIRST_LEG = 'item-11>item-12';
+    const SECOND_LEG = 'item-12>item-13';
+    const selectedLeg = () => screen.getByTestId('itinerary-map').getAttribute('data-selected-leg');
+    const legButton = (to: string) =>
+      screen.getByRole('button', { name: new RegExp(`Xem trên bản đồ đoạn từ .* đến ${to}`) });
+
+    beforeEach(() => {
+      vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
+      Element.prototype.scrollIntoView = vi.fn();
+    });
+
+    it('shows the pressed leg on the map, marks its button pressed and brings the map into view', async () => {
+      await renderLoaded(mapped);
+      expect(selectedLeg()).toBe('');
+
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+
+      expect(selectedLeg()).toBe(FIRST_LEG);
+      expect(legButton('Ngũ Hành Sơn').getAttribute('aria-pressed')).toBe('true');
+      expect(legButton('Bãi biển Non Nước').getAttribute('aria-pressed')).toBe('false');
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ block: 'nearest' }));
+
+      fireEvent.click(legButton('Bãi biển Non Nước'));
+      expect(selectedLeg()).toBe(SECOND_LEG);
+    });
+
+    it('goes back to the whole route when the same leg is pressed again', async () => {
+      await renderLoaded(mapped);
+
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+
+      expect(selectedLeg()).toBe('');
+    });
+
+    it('goes back to the whole route on Escape', async () => {
+      await renderLoaded(mapped);
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(selectedLeg()).toBe('');
+    });
+
+    it('offers a "Xem toàn bộ lộ trình" button on the map only while a leg is selected', async () => {
+      await renderLoaded(mapped);
+      expect(screen.queryByRole('button', { name: 'Xem toàn bộ lộ trình' })).toBeNull();
+
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+      expect(screen.getByText(/Đoạn đang xem được tô màu cam đất/)).toBeDefined();
+      fireEvent.click(screen.getByRole('button', { name: 'Xem toàn bộ lộ trình' }));
+
+      expect(selectedLeg()).toBe('');
+      expect(screen.queryByRole('button', { name: 'Xem toàn bộ lộ trình' })).toBeNull();
+    });
+
+    it('does not turn legs into buttons when the map is not shown', async () => {
+      vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', '');
+      await renderLoaded(mapped);
+
+      expect(screen.queryByRole('button', { name: /Xem trên bản đồ đoạn/ })).toBeNull();
+    });
   });
 
   it('displays informative empty coordinates card when the stops have no coordinates and never renders arrow diagram', async () => {

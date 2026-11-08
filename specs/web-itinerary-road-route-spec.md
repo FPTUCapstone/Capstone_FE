@@ -81,3 +81,34 @@ Thay câu cũ bằng: "Nét liền: theo đường đi thực tế (Mapbox). Né
 
 ## 8. Quy trình sau duyệt
 Worktree `Capstone_FE_ROADROUTE` từ origin/develop → baseline `npm test/lint/typecheck` → plan ngắn (`plans/web-itinerary-road-route-plan.md`, chờ duyệt) → TDD từng task → review → `npm run lint && typecheck && build && test` → 1 commit local + `## Summary`. Không push. Spec/plan sẽ commit cùng (`specs/`, `plans/`) trừ khi bạn muốn để ngoài.
+
+---
+
+## Phụ lục A (v1.2): xem riêng từng chặng trên bản đồ
+
+Yêu cầu: bấm vào một chặng "từ A đến B" trong timeline thì bản đồ chỉ rõ đúng chặng đó.
+
+**A1. Định danh chặng.** `ItineraryRouteLeg` thêm `id`, `fromKey`, `toKey`. Key là key marker: `start`, `item-<itemId>`, `end` (chuyến khép vòng: điểm cuối trùng điểm đầu → `start`). `id = "${fromKey}>${toKey}"`; helper `legIdBetweenItems(fromItemId, toItemId)` dùng chung cho timeline và bản đồ.
+
+**A2. Timeline.** Pill của chặng vào stop X (từ stop liền trước P) thành `<button type="button">` khi bản đồ có chặng `item-P>item-X` (không có: chặng nghỉ/không toạ độ, hoặc chặng nằm ngoài tab ngày đang xem) — nếu không thì giữ nguyên là `span` như cũ.
+- `aria-pressed` = đang chọn; tên truy cập tiếng Việt nêu cả hai điểm: "Xem trên bản đồ đoạn từ {P} đến {X} ({khoảng cách, thời gian, phương tiện})".
+- Focus ring nhìn thấy (`focus-visible:ring-2`). Nút "Đổi" là phần tử anh em (không lồng trong nút) nên không kích hoạt chọn.
+- Props mới của `ItineraryTimeline`: `selectableLegIds`, `selectedLegId`, `onSelectLeg(legId)`.
+
+**A3. Trang.** State `selectedLegId`; giá trị dùng thực tế `activeLegId = selectedLegId` nếu chặng còn trong model hiện tại (đổi tab ngày làm chặng biến mất → tự coi như bỏ chọn, không dùng effect).
+- Bấm chặng đang chọn → bỏ chọn. `Escape` (khi đang chọn) → bỏ chọn. Nút nhỏ "Xem toàn bộ lộ trình" đè góc trên-trái bản đồ (chỉ hiện khi đang chọn) → bỏ chọn.
+- Khi chọn một chặng: `scrollIntoView({ block: 'nearest' })` cho khung bản đồ (không đổi gì nếu đã nhìn thấy; kéo vào tầm nhìn trên màn hình hẹp).
+- Chọn thẻ stop/marker hoạt động như cũ, độc lập với chọn chặng.
+
+**A4. Bản đồ (`MapboxItineraryMap`, prop mới `selectedLegId: string | null`).**
+- Chọn: `fitBounds` đúng chặng (đường thật nếu đã có, không thì hai đầu), `padding: 64`, `maxZoom: 16` (chặng rất ngắn không bị phóng quá), `duration: 600`. Bỏ chọn: fit lại toàn lộ trình như lúc đầu.
+- Nguồn riêng `itinerary-selected` + hai layer trên cùng: `itinerary-selected-casing` (trắng) và `itinerary-selected-line` (màu nhấn thương hiệu `#B96D4C` — `accent` trong DESIGN.md — dày hơn đường chính). Chặng không có đường thật (nét đứt) vẫn được vẽ bằng hai đầu.
+- Làm mờ các chặng khác bằng `setPaintProperty` (`line-opacity` / `icon-opacity`, bỏ chọn thì trả về giá trị cũ); mã gradient và mũi tên không đổi.
+- Hai marker đầu/cuối của chặng được nhấn bằng thuộc tính CSS `scale` độc lập (không động vào `transform`), z-index cao hơn; stop đang highlight bình thường vẫn giữ kiểu cũ.
+- Vẽ lại (model đổi, đường thật về muộn) giữ nguyên lựa chọn; chặng mất khỏi model → bỏ chọn trên bản đồ.
+
+**A5. Chú thích.** Không đổi. Thêm một dòng ngắn chỉ khi chọn một chặng: "Đoạn đang xem được tô màu cam đất; các đoạn khác mờ đi."
+
+**A6. Test.** Timeline: pill là button, `aria-pressed`, tên truy cập, "Đổi" không chọn, pill không có chặng tương ứng vẫn là span. Trang: chọn → bản đồ nhận đúng `selectedLegId`; bấm lại, Escape, nút "Xem toàn bộ lộ trình" đều bỏ chọn; cuộn bản đồ khi chọn. Bản đồ: fit đúng chặng và fit toàn bộ khi bỏ chọn, layer chọn, làm mờ + khôi phục, marker đầu/cuối dùng `scale` và `transform` giữ nguyên. mapGeometry: id/key chặng.
+
+**A7. Ngoài phạm vi:** chọn nhiều chặng, chọn chặng từ bản đồ (bấm vào đường), chặng nghỉ/không toạ độ.

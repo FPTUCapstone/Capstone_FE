@@ -6,6 +6,7 @@ import { MapboxItineraryMap } from '../components/maps/MapboxItineraryMap';
 import {
   CHEVRON_IMAGE,
   legColor,
+  ROUTE_SELECTED_COLOR,
   ROUTE_LINE_COLOR,
   STRAIGHT_LINE_OPACITY,
 } from '../components/maps/mapboxStyle';
@@ -32,6 +33,8 @@ const mapbox = vi.hoisted(() => {
       if (state.failAddImage) throw new Error('image rejected');
     });
     hasImage = vi.fn(() => false);
+    setPaintProperty = vi.fn();
+    getLayer = vi.fn(() => ({}));
     fitBounds = vi.fn();
     remove = vi.fn();
     addControl = vi.fn();
@@ -302,6 +305,8 @@ describe('Web maps (Review 2, D9)', () => {
         'itinerary-road-line',
         'itinerary-route-line',
         'itinerary-road-chevrons',
+        'itinerary-selected-casing',
+        'itinerary-selected-line',
       ]);
       expect(Object.values(layers).map((layer) => layer.source)).toEqual([
         'itinerary-road',
@@ -309,6 +314,8 @@ describe('Web maps (Review 2, D9)', () => {
         'itinerary-road',
         'itinerary-route',
         'itinerary-road',
+        'itinerary-selected',
+        'itinerary-selected',
       ]);
     });
 
@@ -366,6 +373,8 @@ describe('Web maps (Review 2, D9)', () => {
         'itinerary-road-casing',
         'itinerary-road-line',
         'itinerary-route-line',
+        'itinerary-selected-casing',
+        'itinerary-selected-line',
       ]);
     });
 
@@ -401,6 +410,133 @@ describe('Web maps (Review 2, D9)', () => {
       await waitFor(() => expect(roadLines()).toHaveLength(1));
 
       expect(roadFeatures()[0].properties.color).toBe(legColor(1, 2));
+    });
+  });
+
+  describe('viewing one selected leg', () => {
+    const LEG = 'item-11>item-12';
+    const props = { token: 'pk.test', model, highlightedItemId: null, onSelectItem: vi.fn() };
+    const fitCalls = () =>
+      (mapbox.state.maps[0].fitBounds as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const paintCalls = () =>
+      (mapbox.state.maps[0].setPaintProperty as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const selectedData = () => {
+      const calls = mapbox.state.sources.get('itinerary-selected')!.setData.mock.calls;
+      return (calls[calls.length - 1][0] as { features: Array<{ geometry: { coordinates: number[][] } }> }).features;
+    };
+    const legPoints = [[108.22, 16.06], [108.23, 16.065]];
+
+    async function drawnWithRoads(selectedLegId: string | null = null) {
+      const view = render(<MapboxItineraryMap {...props} selectedLegId={selectedLegId} />);
+      await waitFor(() => expect(roadLines()).toHaveLength(2));
+      return view;
+    }
+
+    it('fits the map to exactly that leg, with padding and a zoom cap for very short legs', async () => {
+      const { rerender } = await drawnWithRoads();
+
+      rerender(<MapboxItineraryMap {...props} selectedLegId={LEG} />);
+
+      const [bounds, options] = fitCalls()[fitCalls().length - 1];
+      expect(bounds).toEqual([legPoints[0], legPoints[1]]);
+      expect(options).toMatchObject({ padding: 64, maxZoom: 16 });
+    });
+
+    it('draws that leg on top in the accent colour, thicker than the road, along the road when it was routed', async () => {
+      const { rerender } = await drawnWithRoads();
+
+      rerender(<MapboxItineraryMap {...props} selectedLegId={LEG} />);
+
+      const coordinates = selectedData()[0].geometry.coordinates;
+      expect(coordinates).toHaveLength(3);
+      expect(coordinates[0]).toEqual(legPoints[0]);
+      expect(coordinates[2]).toEqual(legPoints[1]);
+      const layers = (mapbox.state.maps[0].addLayer as unknown as { mock: { calls: Array<[{ id: string; paint: Record<string, unknown> }]> } }).mock.calls.map((call) => call[0]);
+      const line = layers.find((layer) => layer.id === 'itinerary-selected-line')!;
+      const road = layers.find((layer) => layer.id === 'itinerary-road-line')!;
+      expect(line.paint['line-color']).toBe(ROUTE_SELECTED_COLOR);
+      const width14 = (value: unknown) => (value as number[])[(value as number[]).indexOf(14) + 1];
+      expect(width14(line.paint['line-width'])).toBeGreaterThan(width14(road.paint['line-width']));
+    });
+
+    it('draws a leg that could not be routed with its two ends', async () => {
+      fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+      const { rerender } = render(<MapboxItineraryMap {...props} />);
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(lastData('itinerary-route').geometry.coordinates).toHaveLength(2));
+
+      rerender(<MapboxItineraryMap {...props} selectedLegId={LEG} />);
+
+      expect(selectedData()[0].geometry.coordinates).toEqual(legPoints);
+    });
+
+    it('dims every other leg while one is selected and restores them afterwards', async () => {
+      const { rerender } = await drawnWithRoads();
+      paintCalls().length = 0;
+
+      rerender(<MapboxItineraryMap {...props} selectedLegId={LEG} />);
+      expect(paintCalls()).toEqual(
+        expect.arrayContaining([
+          ['itinerary-road-line', 'line-opacity', 0.25],
+          ['itinerary-road-casing', 'line-opacity', 0.25],
+          ['itinerary-road-chevrons', 'icon-opacity', 0.25],
+          ['itinerary-route-line', 'line-opacity', expect.any(Number)],
+        ]),
+      );
+      const dimmedStraight = paintCalls().find((call) => call[0] === 'itinerary-route-line')![2] as number;
+      expect(dimmedStraight).toBeLessThan(STRAIGHT_LINE_OPACITY);
+
+      paintCalls().length = 0;
+      rerender(<MapboxItineraryMap {...props} selectedLegId={null} />);
+      expect(paintCalls()).toEqual(
+        expect.arrayContaining([
+          ['itinerary-road-line', 'line-opacity', 1],
+          ['itinerary-road-chevrons', 'icon-opacity', 1],
+          ['itinerary-route-line', 'line-opacity', STRAIGHT_LINE_OPACITY],
+        ]),
+      );
+    });
+
+    it('fits the whole route again and clears the selected line when the selection is removed', async () => {
+      const { rerender } = await drawnWithRoads(LEG);
+      rerender(<MapboxItineraryMap {...props} selectedLegId={null} />);
+
+      const [bounds, options] = fitCalls()[fitCalls().length - 1];
+      expect(bounds).toEqual([[108.2, 16.05], [108.23, 16.065]]);
+      expect(options).toMatchObject({ padding: 48, maxZoom: 15 });
+      expect(selectedData()).toEqual([]);
+    });
+
+    it('fits the selected leg when the map starts with one already chosen', async () => {
+      await drawnWithRoads(LEG);
+
+      const [bounds] = fitCalls()[fitCalls().length - 1];
+      expect(bounds).toEqual([legPoints[0], legPoints[1]]);
+    });
+
+    it('highlights the two end markers of the leg with the independent scale property, never the transform', async () => {
+      const { rerender } = await drawnWithRoads();
+      const positions = mapbox.state.markers.map((marker) => marker.element.style.transform);
+
+      rerender(<MapboxItineraryMap {...props} selectedLegId={LEG} />);
+
+      expect(mapbox.state.markers.map((marker) => marker.element.style.getPropertyValue('scale'))).toEqual(['', '1.25', '1.25']);
+      expect(mapbox.state.markers.map((marker) => marker.element.style.transform)).toEqual(positions);
+
+      rerender(<MapboxItineraryMap {...props} selectedLegId={null} />);
+      expect(mapbox.state.markers.map((marker) => marker.element.style.getPropertyValue('scale'))).toEqual(['', '', '']);
+    });
+
+    it('ignores a selection that is not a leg of this route', async () => {
+      const { rerender } = await drawnWithRoads();
+      const fits = fitCalls().length;
+      paintCalls().length = 0;
+
+      rerender(<MapboxItineraryMap {...props} selectedLegId="item-99>item-100" />);
+
+      expect(paintCalls().filter((call) => call[2] === 0.25)).toEqual([]);
+      expect(fitCalls()).toHaveLength(fits);
+      expect(selectedData()).toEqual([]);
     });
   });
 
