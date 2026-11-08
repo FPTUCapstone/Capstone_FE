@@ -1,13 +1,13 @@
 # TripMate — Web Scope / UI Coverage Matrix
 
-> **Status:** REBASELINED FOR REVIEW — requirements conflicts remain unresolved. This traceability matrix does not amend the SRS or authorize disputed implementation.
+> **Status:** LIVE SRS REBASELINED — BLOCKED BY SOURCE CONFLICTS. This traceability matrix does not amend the SRS or authorize disputed implementation.
 
 ## Source of Truth and Baseline
 
 - Canonical SRS: [`Report3_Software-Requirement-Specification.docx`](https://docs.google.com/document/d/1VwPkqRyC6ZlbXBQC0ztdektt0vAyE3qt/edit) — **original non-V2**.
-- Snapshot inspected: **2026-11-08**, SHA-256 `cd97de4bd74df3b5cdc159171ee964093d4bb7ba99ca65b52232f88b11de1c6b`, 9,571,142 bytes.
-- Live authority recheck on **2026-11-08** found Drive revision `0B5_dfpH4IC_wMlAwM25FL25jZ2FWdVZKTFhqRVdOdFRoeDdZPQ`, SHA-256 `d51b7dbbd09d20784284faa9c12ddcdeadb3c0b3bb2010801a0b2f03c4fd2f46`, 9,570,836 bytes. Its Table 3 still contains the same 75 IDs, names and catalogue actors, but other requirement text changed materially after the inspected snapshot. This matrix is therefore **not fully reconciled to the live revision**; payout, cancellation/refund, role and business-rule conflict entries require a separately scoped re-audit before approval.
-- Requirement IDs in this matrix follow **SRS Table 3 — Use Case Description**, covering **UC-01 through UC-75** (75 entries). Detailed §§3.2–3.10, screen descriptions §3.1.2 and authorization Table 5 were reviewed; conflicts are explicitly recorded below.
+- Live baseline independently downloaded on **2026-11-08**: Drive revision `0B5_dfpH4IC_wMlAwM25FL25jZ2FWdVZKTFhqRVdOdFRoeDdZPQ`, SHA-256 `d51b7dbbd09d20784284faa9c12ddcdeadb3c0b3bb2010801a0b2f03c4fd2f46`, 9,570,836 bytes. This is the baseline reconciled by this matrix.
+- Historical comparison snapshot: SHA-256 `cd97de4bd74df3b5cdc159171ee964093d4bb7ba99ca65b52232f88b11de1c6b`, 9,571,142 bytes. It is retained only to classify requirement drift and is not the current authority.
+- Requirement IDs follow live **SRS Table 3 — Use Case Description**, covering **UC-01 through UC-75** (75 entries). The live Product Overview/actors, Tables 3/4.1/4.2/5, non-screen functions, detailed §§3.2–3.10, business rules, validation, post-conditions, application messages and external-interface/quality sections were reconciled. Remaining contradictions are explicitly classified below.
 - `Capstone_Docs` history and existing UI specs are evidence only; neither V2 nor GitHub/Jira nor an implementation overrides the canonical SRS without explicit, traceable approval.
 - Existing Web Screen means a Web screen **specification** under `ux/web-screen-specifications/`, **not proof of implementation or production deployment**.
 
@@ -67,19 +67,19 @@
 | UC-38 | Create Coupon | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.3.1 Next.js create coupon form. | PARTIAL |
 | UC-39 | Update Coupon | Tour Operator | WEB_CONFIRMED | None | REUSE — later batch | §3.8.3.2 Next.js coupon update; reuse coupon form. | PARTIAL |
 | UC-40 | View Customer Bookings | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.4.1 Next.js Operator customer bookings; scope limited to owned tours. | PARTIAL |
-| UC-41 | Cancel Tour Booking | Tour Operator | WEB_CONFIRMED | None | REUSE/DIALOG — later batch | Table 3 actor is Tour Operator, detailed §3.8.4.2 and Table 5 also allow Traveler self-cancellation. ROLE_CONFLICT; distinct authorization scopes. | PLACEHOLDER_LOCKED |
-| UC-42 | Confirm Booking Refund | Tour Operator | WEB_CONFIRMED | None | YES/REUSE — later batch | Table 3 and §3.8.4.3 say CONFIRM Booking Refund, NOT Initiate Booking Refund; operator console. Do not conflate with system UC-67. | PLACEHOLDER_LOCKED |
+| UC-41 | Cancel Tour Booking | Tour Operator | WEB_CONFIRMED | None | REUSE/DIALOG — later batch | Live §3.8.4.2 adds Traveler self-cancellation, tiered BR135/BR157 refund preview and MSG170 confirmation below 72 hours, then routes pre-transfer refunds to UC-67 and post-transfer refunds to UC-42. Table 3 still lists only Tour Operator; residual text still says UC-42 executes the gateway refund. PARTIALLY_RESOLVED. | PLACEHOLDER_LOCKED |
+| UC-42 | Confirm Booking Refund | Tour Operator | WEB_CONFIRMED | None | YES/REUSE — later batch | Live §3.8.4.3 makes this Operator bank-return confirmation within three working days and TripMate receipt confirmation, not gateway execution. Its data-processing/abnormal text, BR76 and undefined message placeholders still retain the old gateway model. PARTIALLY_RESOLVED; do not conflate with UC-67. | PLACEHOLDER_LOCKED |
 | UC-43 | Check In Traveler by QR Code | Tour Operator | MOBILE_ONLY | None | NO Web screen | §3.8.4.4: camera-based QR check-in scanning is Flutter-only. | OUT_OF_SCOPE |
 | UC-44 | View Revenue Report | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.5.1 Next.js operator revenue report, only own tours. | PARTIAL |
 | UC-45 | Export Revenue Report | Tour Operator | WEB_CONFIRMED | None | REUSE/ACTION — later batch | §3.8.5.2 Next.js revenue export dialog/action. | PARTIAL |
 | UC-46 | View User Accounts | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — role approval hold | Table 3 and authorization Table 5 grant Staff + Administrator role-scoped account views, but §3.9.1.1 says Administrator only. ROLE_CONFLICT; do not implement disputed access. | PLACEHOLDER_UNAVAILABLE |
 | UC-47 | Lock User Account | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — hold permissions | Table 3 and Table 5 grant Staff + Administrator role-scoped locking, but §3.9.1.2 says Administrator only. ROLE_CONFLICT. | PLACEHOLDER_UNAVAILABLE |
 | UC-48 | Unlock User Account | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — hold permissions | Table 3 and Table 5 grant Staff + Administrator role-scoped unlocking, but §3.9.1.3 says Administrator only. ROLE_CONFLICT. | PLACEHOLDER_UNAVAILABLE |
-| UC-49 | Approve Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/ACTION — later batch | §3.9.2.1: STAFF approves Tour Operator applications via moderation workspace. | PARTIAL_CONTRACT_CONFLICT |
-| UC-50 | Reject Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — later batch | §3.9.2.2: STAFF rejects Tour Operator applications with reason. | PARTIAL_CONTRACT_CONFLICT |
+| UC-49 | Approve Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/ACTION — role hold | Table 3, trigger and actor text say Staff; the same §3.9.2.1 credentials, BR115/BR07/BR118, flow and post-conditions say Administrator. ROLE_CONFLICT. | PARTIAL_CONTRACT_CONFLICT |
+| UC-50 | Reject Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — role hold | Table 3, actor and processing text say Staff; §3.9.2.2 trigger, credentials, BR115/BR118, flow and post-conditions say Administrator. ROLE_CONFLICT. | PARTIAL_CONTRACT_CONFLICT |
 | UC-51 | Create POI | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | Table 3 and the §3.9.3.1 actor/purpose text name Staff and Administrator, while the same detailed section's credentials, BR-115, flow and validation remain Administrator-only. Current FE and BE creation authorization is Staff-only. `MISMATCH`; no SRS-compliance claim. | IMPLEMENTED_SOURCE_CONTRACT_CONFLICT |
 | UC-52 | Update POI | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE — later batch | §3.9.3.2: STAFF and Administrator may update POIs. | PARTIAL |
-| UC-53 | Remove POI | Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — lifecycle hold | §3.9.3.3: Administrator-only POI removal. Official SRS conditionally allows deletion/deactivation; any soft-delete-only change requires traceable approval. POLICY_HOLD. | MISSING |
+| UC-53 | Remove POI | Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — later batch | Live §3.9.3.3 and BR121 consistently require hard deletion only when unreferenced and deactivation when referenced; previous lifecycle ambiguity is resolved by the current SRS. | MISSING |
 | UC-54 | Create Route | Staff | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.4.1: STAFF creates routes; old matrix incorrectly had UC-54 as Remove POI. | PLACEHOLDER_UNAVAILABLE |
 | UC-55 | Update Route | Staff | INTERNAL_WEB_ONLY | None | REUSE — later batch | §3.9.4.2: STAFF updates routes. | PLACEHOLDER_UNAVAILABLE |
 | UC-56 | Configure Algorithm Parameters | Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.5: Administrator configures scheduling/matching algorithm parameters. | IMPLEMENTED_SOURCE |
@@ -92,15 +92,15 @@
 | UC-63 | Export Statistical Reports | Administrator | INTERNAL_WEB_ONLY | None | REUSE/ACTION — later batch | §3.9.11: Administrator exports platform statistical reports. | PLACEHOLDER_PENDING_BE |
 | UC-64 | View Audit Logs | Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.12.1: Administrator audit log list/search. | IMPLEMENTED_SOURCE |
 | UC-65 | View Audit Log Details | Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.12.2: Administrator audit log details. | IMPLEMENTED_SOURCE |
-| UC-66 | Handle Weather Warning and Operator Cancellation | Traveler / Tour Operator | WEB_WORKFLOW | None | YES/REUSE — placement hold | §3.10.1: System weather detection, Operator cancellation decision, Traveler notification. Emergency declaration screen on operator OR Web administration workspace; PLACEMENT_CONFLICT; no automatic cancellation. | PARTIAL |
-| UC-67 | Process Refund to Traveler | Traveler | NON_SCREEN | None | NO dedicated page — reuse status | §3.10.2: System + gateway perform refund; catalogue lists Traveler. Status on existing Booking Detail/notification Web UI; ACTOR_CONFLICT. | PARTIAL |
+| UC-66 | Handle Weather Warning and Operator Cancellation | Traveler / Tour Operator | WEB_WORKFLOW | None | YES/REUSE — placement hold | Live Table 3, §3.10.1 and non-screen #13 now agree TripMate warns only and never auto-cancels. §3.10.1 nevertheless authorizes Operator **or Administrator**, while Table 3 omits Admin; screen ownership/rescheduling and the stale “emergency cancellation” service reference remain unresolved. PARTIALLY_RESOLVED. | PARTIAL |
+| UC-67 | Process Refund to Traveler | Traveler | NON_SCREEN | None | NO dedicated page — reuse status | Live §3.10.2 makes System + gateway execute pre-transfer refunds directly or post-transfer refunds after UC-42 receipt; Table 3 still lists Traveler, and §3.8.4.2/BR76 retain stale UC-42 gateway wording. PARTIALLY_RESOLVED; status belongs on existing booking views. | PARTIAL |
 | UC-68 | Submit Post-Trip Complaint | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.8.6.1: Traveler complaint Web and Flutter form; 3-day deadline and evidence constraints. | MISSING |
 | UC-69 | Respond to Post-Trip Complaint | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.6.2: Tour Operator console complaint response; full/partial/reject and deadlines. | MISSING |
 | UC-70 | Synchronize Offline Trip Data | Traveler | MOBILE_ONLY | None | NO Web screen | §3.10.3 offline Mobile synchronization banner/result; no Web screen. | OUT_OF_SCOPE |
-| UC-71 | Schedule Payout Settlement | System | NON_SCREEN | None | NO dedicated page | Catalogue and §3.10.4: scheduled payout is automatic System function; do not add Operator Request Payout UI. | NOT_APPLICABLE_AS_SCREEN |
-| UC-72 | View Payout Records | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — role approval hold | Table 3 and Table 5 allow Staff/Administrator payout record view, but detailed §3.9.9.1 mentions Staff only. ROLE_CONFLICT. | IMPLEMENTED_SOURCE_CONFLICT |
+| UC-71 | Schedule Payout Settlement | System | NON_SCREEN | None | NO dedicated page | Live Table 3, BR141 and non-screen #5 specify one automatic per-booking settlement after the 24-hour window at the first daily 10:00 run. §3.10.4 Normal Flow is accidentally copied from UC-70 offline sync, and legacy manual payout material remains. PARTIALLY_RESOLVED; do not add Operator request UI. | NOT_APPLICABLE_AS_SCREEN |
+| UC-72 | View Payout Records | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — role/flow hold | Live Table 3 defines read-only per-booking records for Staff/Admin, but §3.9.9.1 remains a Staff-only manual payout-request queue. ROLE_AND_FLOW_CONFLICT. | IMPLEMENTED_SOURCE_CONFLICT |
 | UC-73 | Review Failed Payout Settlement | Administrator | INTERNAL_WEB_ONLY | None | REUSE — owner review | Table 3 lists Administrator failed-payout review but no corresponding named detailed function section. UI/actions NOT_VERIFIED. | PLACEHOLDER_UNAVAILABLE |
-| UC-74 | Process Payout Settlement | System | NON_SCREEN | None | NO dedicated page | Table 3 and §3.10.5 specify automatic payout, no operator/admin approval; §3.9.9.3 retains Administrator Confirm Payout Settlement. PAYOUT_CONFLICT; do not silently resolve. | CONFLICTING_MANUAL_MODEL |
+| UC-74 | Process Payout Settlement | System | NON_SCREEN | None | NO dedicated page | Live Table 3, §3.10.5 and non-screen #6 specify automatic daily 10:00 transfer with hourly retry up to `[N]`; §3.9.9.3 and screen/auth tables retain Administrator confirmation and manual requests. PARTIALLY_RESOLVED; do not implement approval UI as canonical. | CONFLICTING_MANUAL_MODEL |
 | UC-75 | Respond to Partial Refund Proposal | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.8.6.3: Traveler accepts/declines partial refund proposal on Web or Flutter within 3 days. | MISSING |
 
 ## Classification Totals
@@ -159,30 +159,45 @@ Verified highlights:
 4. **Batch 4 — Staff operations:** role-disputed UC-46–48, UC-49–52, UC-54–55, UC-57–62, UC-72 (read-only; role conflict).
 5. **Batch 5 — Administrator governance:** disputed UC-46–48, UC-53, UC-56, UC-63–65, UC-72–73. Payout manual-vs-auto conflict requires owner decision.
 
-## Explicit Source Conflicts (Not Resolved)
+## Live Screen, Message and Interface Reconciliation
 
-| Conflict | Affected UCs | Official evidence in conflict | Current treatment |
-|---|---|---|---|
-| C-01 | UC-04–07 | Table 3 + authorization Table 5 include Staff; detailed §§3.2.4–3.2.7 largely omit Staff. | STAFF_AUTH_CONFLICT — do not infer final authentication/security permissions. |
-| C-02 | UC-12 | Table 3 + Table 5 include Guest POI browsing; detailed §3.3.3 names Traveler. | ROLE_CONFLICT — preserve Guest as a catalogue role pending decision. |
-| C-03 | UC-31 | Product Overview identifies commercial-service booking as Mobile-specific; §3.6.2 Interface says Next.js + Flutter. | `CONFLICT_WEB_MOBILE`; Web design inclusion HOLD. |
-| C-04 | UC-34–45 | General Product Overview says Operator can use both; detailed §§3.8.1–3.8.5 explicitly name Next.js Web for most Operator screens. | `WEB_CONFIRMED`; no automatic mobile inclusion/exclusion. |
-| C-05 | UC-41 | Table 3 lists Tour Operator; §3.8.4.2 and Table 5 also grant Traveler self-cancellation. | ROLE_CONFLICT — differentiate owned vs customer booking permissions. |
-| C-06 | UC-46–48 | Table 3 + Table 5 assign Staff/Administrator role-scoped account operations; §§3.9.1.1–3.9.1.3 say Administrator-only. | ROLE_CONFLICT — **no access-policy change approved**. |
-| C-07 | UC-49–50 | Table 3 and processing text assign application review to Staff, while the §3.9.2.2 trigger and earlier onboarding narrative refer to Administrator review. | ROLE_CONFLICT — keep catalogue actors; do not change endpoint/UI authorization without approval. |
-| C-08 | UC-53 | §3.9.3.3 conditionally deletes or deactivates a POI. Separate soft-delete proposals do not replace this without traceable approval. | POLICY_HOLD — confirm approved lifecycle change before implementing deviations. |
-| C-09 | UC-66 | §3.10.1 places emergency cancellation in Tour Operator workspace **or** Web administration. Table 6 still describes automatic weather cancellation. | PLACEMENT_AND_FLOW_CONFLICT — Web interaction required, ownership unresolved, and no automatic-cancel assumption. |
-| C-10 | UC-67 | Table 3 actor is Traveler; §3.10.2 execution actors are System/Payment gateway. §3.8.4.2 still says UC-42 performs the gateway refund even though the updated catalogue makes UC-42 operator confirmation and UC-67 processing. | ACTOR_AND_HANDOFF_CONFLICT — reuse refund status UI; do not invent a page or duplicate gateway execution. |
-| C-11 | UC-72 | Table 3 + Table 5 allow Staff/Administrator payout-record viewing; §3.9.9.1 says Staff and also retains manual payout requests. | ROLE_AND_FLOW_CONFLICT; preserve read-only catalogue scope pending approval. |
-| C-12 | UC-71, UC-73, UC-74 | Table 3 and §§3.10.4–3.10.5 specify automatic schedule/process without Operator/Admin approval. Product Overview, actor descriptions, Tables 4.1/4.2/5/6, §3.9.9 and MSG110 retain Operator request, Staff review and Administrator final settlement. | PAYOUT_CONFLICT — no manual-vs-automatic resolution is inferred. |
-| C-13 | UC-71, UC-74 | Table 3 says settlement occurs seven days before departure; §3.10.4 BR141 says a daily 10:00 job after a 24-hour payment window. | TIMING_CONFLICT — no scheduling contract is approved by this matrix. |
-| C-14 | UC-73 | Table 3 includes Administrator review of failed settlements; no corresponding detailed named function section exists. | AMBIGUOUS_REQUIREMENT; UI/actions NOT_VERIFIED. |
-| C-15 | UC-42, UC-67, UC-70–74 | BR135/BR136 are reused for unrelated cancellation and offline-sync rules; BR139 is reused for refund-share and payout formula; BR140 and BR164 are referenced but not defined. | BUSINESS_RULE_COLLISION — identifiers/formulas require BA correction before implementation authority. |
-| C-16 | UC-66, UC-71–74 | Tables 4.2, 5 and 6 retain stale labels/flows such as Initiate Booking Refund, Payout Request, Payout Settlement History, automatic weather cancellation, and approved payout requests. | STALE_CROSS_REFERENCE — retain as conflict evidence, not scope authority. |
-| C-17 | UC-02/03 | Old matrix marked Web only; §§3.2.2–3.2.3 explicitly support Web and Mobile. | Corrected to SHARED_WEB_MOBILE. |
-| C-18 | UC-42 | Old matrix: Initiate Booking Refund; Table 3 and §3.8.4.3: Confirm Booking Refund. | Corrected scope/name; the UC-42/UC-67 handoff remains unresolved. |
-| C-19 | UC-46–75 | Previous matrix used historical UC numbering and stopped at UC-72. | Rebased all catalogue IDs and associated actors against current original Report 3 Table 3. |
-| C-20 | UC-51 | Table 3 plus the §3.9.3.1 actor/purpose text name Staff/Administrator; the same section's credentials, BR-115, flow and validation say Administrator-only. FE proxy and BE controller instead authorize Staff-only. | `MISMATCH` and `IMPLEMENTED_SOURCE_CONTRACT_CONFLICT`; preserve catalogue actor and do not change runtime permissions without approved requirements. |
+- **Web screen inventory (Table 4.1):** live rows still include #28 `Payout Records List`, #29 `Payout Details`, #30 `Confirm Payout Settlement`, #39 `Payout Request Review`, #40 `Approve Payout Request Confirmation` and #41 `Reject Payout Request Confirmation`. This contradicts the 2026-11-08 change-log claim that #30/#39–41 were removed and #28/#29 renamed.
+- **Mobile inventory (Table 4.2):** live rows still include #91 `Payout Settlement History` and #92 `Payout Request`; #92 was not removed as claimed.
+- **Authorization (Table 5):** the same legacy payout screens remain authorized, so the actual table does not yet express an automatic-only UC-71/74 model.
+- **Non-screen functions:** #5/#6 now point to automatic UC-71/74 and #13 is warning-only UC-66. However, #12 still routes weather monitoring toward an “emergency cancellation process,” and the service label for #13 remains stale.
+- **Application messages (Table 5.3):** the live table ends at MSG156 and contains no definition for MSG157–172. Detailed flows retain 16 placeholders: `[MSG-new-A]`–`[D]`, `[F]`–`[P]` and `[Y]`. MSG170–172 are referenced but undefined; their copy and acceptance behavior are `NOT_VERIFIED`.
+- **External interfaces and quality requirements:** §4.1 confirms payment-gateway and weather-service dependencies; §4.2 confirms Web browser compatibility and WCAG 2.2 AA for Web administration. These constraints do not resolve the disputed actors, refund handoff, cancellation ownership or payout approval model.
+
+## Live SRS Conflict Reconciliation
+
+`Resolution status` classifies every prior conflict against the verified live binary; it does not mean the implementation is approved.
+
+| Conflict | Affected UCs | Resolution status | Live evidence | Matrix treatment |
+|---|---|---|---|---|
+| C-01 | UC-04–07 | STILL_CONFLICTING | Table 3/Table 5 include Staff; §§3.2.4–3.2.7 list Traveler, Operator and Administrator but omit Staff. | STAFF_AUTH_CONFLICT; do not infer security permissions. |
+| C-02 | UC-12 | STILL_CONFLICTING | Table 3/Table 5 include Guest; detailed POI browsing names Traveler. | Preserve Guest catalogue scope pending owner decision. |
+| C-03 | UC-31 | STILL_CONFLICTING | Product Overview calls commercial-service booking Mobile-specific; §3.6.2 explicitly names Flutter and Next.js. | `CONFLICT_WEB_MOBILE`; Web design HOLD. |
+| C-04 | UC-34–45 | STILL_CONFLICTING | Product Overview permits Operator Web/Mobile; detailed Operator interfaces are predominantly Next.js Web. | Web is confirmed; Mobile inclusion/exclusion remains undecided. |
+| C-05 | UC-41 | STILL_CONFLICTING | Table 3 actor remains Tour Operator while §3.8.4.2/Table 5 also grant Traveler self-cancellation. | Keep distinct owned/customer permission scopes. |
+| C-06 | UC-46–48 | PARTIALLY_RESOLVED | Table 3/Table 5 and new BR168 define Staff/Admin role scopes, but triggers, credentials, validations and flows remain Administrator-only. | No access-policy change without approval. |
+| C-07 | UC-49–50 | STILL_CONFLICTING | Table 3/actor text say Staff; §3.9.2.1–2 credentials, BR115/BR118 and flows say Administrator (UC-50 trigger also says Administrator). | Keep catalogue actors; authorization HOLD. |
+| C-08 | UC-53 | RESOLVED_BY_CURRENT_SRS | §3.9.3.3 and BR121 consistently delete only unreferenced POIs and deactivate referenced POIs. | Use the conditional lifecycle; no policy hold remains. |
+| C-09 | UC-66 | PARTIALLY_RESOLVED | Table 3/§3.10.1/non-screen #13 now agree warning-only/no auto-cancel; §3.10.1 still permits Admin and Operator while Table 3 omits Admin, and non-screen #12/name remain stale. | Web workflow retained; ownership/rescheduling HOLD. |
+| C-10 | UC-67 | PARTIALLY_RESOLVED | §3.10.2 now defines pre/post-transfer gateway execution, but Table 3 actor and stale §3.8.4.2/BR76 handoff disagree. | Reuse status UI; no dedicated page or duplicate execution. |
+| C-11 | UC-72 | STILL_CONFLICTING | Table 3 defines Staff/Admin read-only per-booking records; §3.9.9.1 remains a Staff-only manual payout-request queue. | Preserve read-only catalogue scope. |
+| C-12 | UC-71/73/74 | PARTIALLY_RESOLVED | Table 3, BR141/145 and non-screen #5/#6 now define automatic per-booking daily settlement; actor descriptions, §§3.9.9.1–3 and screen/auth/message inventory retain manual requests/review/confirmation. | Automatic model is traceability baseline; legacy approval UI is non-compliant evidence. |
+| C-13 | UC-71/74 | RESOLVED_BY_CURRENT_SRS | Current Table 3/§§3.10.4–5 use daily 10:00 and hourly retry; the former seven-days-before-departure wording is absent. | Remove the obsolete timing claim. |
+| C-14 | UC-73 | STILL_CONFLICTING | Table 3 names Administrator failed-settlement review; no corresponding detailed named function defines UI/actions. | `NOT_VERIFIED`; do not invent controls. |
+| C-15 | UC-42/67/70–74 | PARTIALLY_RESOLVED | Some BR references changed, but BR139 still collides between refund-share and consolidated payout formula; §3.10.4 still reuses BR136 in copied sync text; `[N]` and missing consolidated rules remain. | BUSINESS_RULE_COLLISION; formulas/retries need BA correction. |
+| C-16 | UC-42/66/71–74 | STILL_CONFLICTING | Tables 4.1/4.2/5 still contain manual payout screens and stale labels; non-screen #12 and legacy messages remain, despite updated catalogue/non-screen rows. | Treat stale inventory only as conflict evidence. |
+| C-17 | UC-02/03 | RESOLVED_BY_CURRENT_SRS | Current detailed sections explicitly support Web and Mobile. | `SHARED_WEB_MOBILE`. |
+| C-18 | UC-42 | PARTIALLY_RESOLVED | Name is now Confirm Booking Refund and the main flow uses bank return, but stale gateway-processing text and undefined messages remain. | Correct name retained; handoff remains blocked. |
+| C-19 | UC-46–75 | RESOLVED_BY_CURRENT_SRS | Live Table 3 contains exactly 75 canonical IDs through UC-75. | Current numbering retained. |
+| C-20 | UC-51 | STILL_CONFLICTING | Table 3 and §3.9.3.1 actor/purpose say Staff/Admin; credentials, BR115, flow and validation say Admin-only; observed FE/BE source authorizes Staff-only. | `IMPLEMENTED_SOURCE_CONTRACT_CONFLICT`; no compliance claim. |
+| C-21 | UC-71 | NEW_CONFLICT | §3.10.4 Normal Flow is copied from UC-70 offline synchronization (local records, sync banner, MSG154–156, BR136). | Disregard copied flow for UI authority; require SRS correction. |
+| C-22 | UC-42/67–69/74 | NEW_CONFLICT | Change log claims all placeholders replaced and MSG157–172 added, but Table 5.3 ends at MSG156 and detailed flows retain `[MSG-new-A]`–`[D]`, `[F]`–`[P]` and `[Y]`. | Message copy/validation is `NOT_VERIFIED`; no invented text. |
+| C-23 | UC-71–74 | NEW_CONFLICT | Change log says payout screens 30, 39–41 and 92 were removed and 28/29 renamed; live Tables 4.1/4.2/5 still contain the old names and screens. | Inventory removal/renaming is not accepted as complete. |
+| C-24 | UC-46–48 | NEW_CONFLICT | §3.9.1.1 routes locking to UC-48 and unlocking to UC-49; canonical IDs are UC-47 and UC-48. | Treat these as stale cross-references. |
 
 ## Existing Web Design Evidence
 
@@ -194,6 +209,6 @@ Verified highlights:
 
 ## Governance and Approval Gate
 
-This is a **traceability update**, not a change to the official SRS, source code, Jira or deployed screens. Before design or implementation decisions affecting any disputed UC, obtain traceable Owner approval and record the chosen precedence. In particular: Staff account permissions, UC-31 Web availability, UC-53 POI deletion lifecycle, UC-66 cancellation UI ownership, and UC-71/73/74 payout authority.
+This is a **traceability update**, not a change to the official SRS, source code, Jira or deployed screens. Before design or implementation decisions affecting any disputed UC, obtain traceable Owner approval and record the chosen precedence. In particular: Staff account permissions, UC-31 Web availability, UC-66 cancellation UI ownership, the UC-41/42/67 refund handoff, and UC-71–74 payout authority.
 
-**Implementation verification:** FE source status was audited at clean `origin/develop` commit `feb3613d2373a5cea0231d65af3881da0566ecfb`; the bounded delta to `709e4b4a23d013c3d570e7bf7e0f10fcd14d6e45` was separately checked and did not affect matrix evidence. Deployment, live environment behavior and full FE/BE compatibility remain `NOT_VERIFIED`; source presence is not production proof. The live SRS revision drift above blocks final requirements approval until its material changes are fully reconciled.
+**Implementation verification:** FE source status was audited at clean `origin/develop` commit `feb3613d2373a5cea0231d65af3881da0566ecfb`; the bounded delta to `709e4b4a23d013c3d570e7bf7e0f10fcd14d6e45` was checked and did not change the recorded UI evidence. Targeted BE contract evidence was checked at `31948186983af582cd3742319199681c0d32a805`, including UC-51 Staff-only authorization. Deployment and live-environment behavior remain `NOT_VERIFIED`; source presence is not production proof. Final requirements approval is blocked by the live SRS conflicts C-01–C-24.
