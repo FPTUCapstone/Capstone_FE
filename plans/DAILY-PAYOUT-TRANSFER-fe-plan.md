@@ -76,7 +76,7 @@ service's `fetch` call along.
 Tests: each status code mapped; HTML-instead-of-JSON treated as failure; `AbortError` rethrown
 unchanged; manual-settlement body sends only `transferReference`.
 
-## Task 3 — BFF proxies and routes
+## Task 3 — BFF proxies and routes — done
 
 - `src/features/admin/payout-settlements/payoutSettlementsProxy.ts` +
   `app/api/admin/payout-settlements/route.ts`,
@@ -85,31 +85,43 @@ unchanged; manual-settlement body sends only `transferReference`.
   `app/api/admin/payout-settlements/[batchId]/carry-over/route.ts`,
   `app/api/admin/payout-settlements/[batchId]/manual-settlement/route.ts`.
   - List and detail: Staff-or-Administrator session check for list, Administrator-only for
-    detail and all three action routes (mirrors `payoutRecordsProxy.ts` / `payoutReviewProxy.ts`
-    session checks, extended to accept either role where the spec calls for it — see Task 3a).
-  - `batchId` validated as a positive integer string before forwarding, same as `payoutId` in
-    `payoutReviewProxy.ts`.
-  - Manual-settlement route strips unknown body fields; forwards only `transferReference`.
-  - Upstream 5xx mapped to 503 with a safe title; `errorCode` forwarded only if it matches the
-    existing safe pattern already used for payout errors.
+    detail and all three action routes (`payoutRecordsProxy.ts`/`payoutReviewProxy.ts`, the
+    originally-cited reference, were removed with UC-46 — followed `tourOperatorApplicationProxy.ts`
+    and `platformBookingsProxy.ts` instead, the two live admin proxies closest to this shape).
+  - `batchId` validated as a positive integer string (`parseBatchId`) before forwarding or
+    touching the session, same discipline as `parseApplicationId` in
+    `tour-operator-applications/utils/applicationId.ts`.
+  - The three action routes also require a same-origin request (`isSameOriginRequest`), same CSRF
+    guard as `tourOperatorApplicationProxy.ts`'s non-GET calls.
+  - Manual-settlement route strips unknown body fields; forwards only `transferReference`
+    (`null` if absent/non-string — the backend's own validator rejects blank/whitespace, 400).
+  - Upstream 5xx mapped to 503 with a safe title; 401 clears the admin session cookie; 403 is
+    re-worded; `errorCode`/`title` otherwise forwarded only through `safeProblem` (same pattern as
+    `platformBookingsProxy.ts`), never the raw upstream body.
 - `src/features/operator/payout-settlements/payoutSettlementsProxy.ts` +
-  `app/api/operator/payout-settlements/route.ts` — TourOperator-only session check, same pattern
-  as the (still-working) `bank-account` proxy under `app/api/operator/payouts/bank-account/`.
+  `app/api/operator/payout-settlements/route.ts` — TourOperator-only session check via the
+  refresh-cookie exchange, same pattern as `operatorPayoutProxy.ts`'s `bank-account` resource, but
+  its own small proxy (not another resource path on that function) since the backend path is the
+  distinct `/api/v1/operator/payout-settlements`, not `/api/v1/operator/payouts/...`.
 
-Tests: no token → 401 on every route; wrong role → 403; invalid `batchId` → 400; manual-
-settlement body with extra fields forwards only `transferReference`; upstream 404/409/500
-forwarded as mapped.
+Tests (23 new, admin + operator, TDD red-then-green): no token → 401 on every route; wrong role →
+403 (Staff on an Administrator-only route, TourOperator on either); invalid `batchId` → 400
+without calling the backend; cross-origin action request → 403 without calling the backend;
+manual-settlement body with extra/wrong-type fields forwards only `transferReference`; upstream
+404/409/500 forwarded as mapped; backend problem details sanitized (no `detail`/`traceId` leak).
+`npm run lint && npm run typecheck && npm test && npm run build` all green; the 6 new routes
+appear in the build's route list with no errors.
 
-### Task 3a — Dual-role guard helper (decided)
+### Task 3a — Dual-role guard helper — done
 
-- Add `requiredRoles?: RequiredAdministrationRole[]` to `AdminAccessDeniedView` (one component,
-  not a second variant). When set, denial copy says "Staff or Administrator required"; the
-  existing single-`requiredRole` behaviour is unchanged for every current caller.
-- Used only by the Task 4 list page guard (detail page keeps the existing single-role
+- Added `requiredRoles?: RequiredAdministrationRole[]` to `AdminAccessDeniedView` (one component,
+  not a second variant; `RequiredAdministrationRole` now exported for Task 4 to import). When
+  set, denial copy says "Staff or Administrator Access Required" (new `eitherAccessDenied` resource
+  entry) and only the sign-in link is shown — no "return to your own dashboard" link, since the
+  viewer has neither role at all. The existing single-`requiredRole` behaviour is unchanged for
+  every current caller (5/5 tests cover both paths).
+- For use by the Task 4 list page guard (detail page keeps the existing single-role
   `AdminAccessDeniedView` as-is, since UC-73 is Administrator-only).
-
-Tests: denied view renders for a third role (e.g. TourOperator, Traveler); allowed for either
-Staff or Administrator.
 
 ## Task 4 — Payout Settlements List (`PayoutSettlementsScreen.tsx`, `/admin/payout-settlements`)
 

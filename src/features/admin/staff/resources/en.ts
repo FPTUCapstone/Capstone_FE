@@ -52,6 +52,13 @@ export const adminStaffEn = {
     returnToAdminButton: 'Return to System Overview',
     returnToAdminSignInButton: 'Switch Administration Account',
   },
+  eitherAccessDenied: {
+    eyebrow: 'Restricted Administration Module',
+    title: 'Staff or Administrator Access Required',
+    description:
+      'This module is reserved for Staff and Administrator accounts. Please sign in with an administration account to continue.',
+    returnToAdminSignInButton: 'Go to Administration Sign In',
+  },
   staffDashboard: {
     eyebrow: 'Operational Administration Workspace',
     title: 'Staff Operations Dashboard',
