@@ -3,6 +3,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MapboxItineraryMap } from '../components/maps/MapboxItineraryMap';
+import { ROUTE_LINE_COLOR, STRAIGHT_LINE_OPACITY } from '../components/maps/mapboxStyle';
 import { MapboxRadiusMap } from '../components/maps/MapboxRadiusMap';
 import { clearRoadLegCache } from '../utils/mapboxDirections';
 import { buildItineraryMapModel } from '../utils/mapGeometry';
@@ -240,6 +241,60 @@ describe('Web maps (Review 2, D9)', () => {
     expect(active.style.zIndex).toBe('');
     expect(active.style.boxShadow).toBe('');
     expect(mapbox.state.markers[1].element.style.getPropertyValue('scale')).toBe('1.35');
+  });
+
+  describe('route line style', () => {
+    type Layer = { id: string; source: string; layout?: Record<string, unknown>; paint: Record<string, unknown> };
+    async function drawnLayers(): Promise<Layer[]> {
+      render(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />);
+      await waitFor(() => expect(mapbox.state.maps).toHaveLength(1));
+      return (mapbox.state.maps[0].addLayer as unknown as { mock: { calls: Layer[][] } }).mock.calls.map(
+        (call) => call[0],
+      );
+    }
+    const zoomExpression = (value: unknown) => {
+      const expression = value as unknown[];
+      expect(expression.slice(0, 3)).toEqual(['interpolate', ['linear'], ['zoom']]);
+      return expression;
+    };
+
+    it('stacks a white casing, the solid road line and the lighter straight estimate in that order', async () => {
+      const layers = await drawnLayers();
+
+      expect(layers.map((layer) => layer.id)).toEqual([
+        'itinerary-road-casing',
+        'itinerary-road-line',
+        'itinerary-route-line',
+      ]);
+      expect(layers.map((layer) => layer.source)).toEqual(['itinerary-road', 'itinerary-road', 'itinerary-route']);
+    });
+
+    it('draws the road with round ends, the brand colour and a width that grows with zoom', async () => {
+      const [casing, road] = await drawnLayers();
+
+      expect(casing.paint['line-color']).toBe('#FFFFFF');
+      expect(road.paint['line-color']).toBe(ROUTE_LINE_COLOR);
+      expect(road.layout).toMatchObject({ 'line-cap': 'round', 'line-join': 'round' });
+      expect(casing.layout).toMatchObject({ 'line-cap': 'round', 'line-join': 'round' });
+      const roadWidth = zoomExpression(road.paint['line-width']);
+      const casingWidth = zoomExpression(casing.paint['line-width']);
+      expect(roadWidth.length).toBeGreaterThanOrEqual(7);
+      // The casing is wider than the line at every zoom stop, so it shows as an outline.
+      for (let index = 4; index < roadWidth.length; index += 2) {
+        expect(casingWidth[index] as number).toBeGreaterThan(roadWidth[index] as number);
+      }
+    });
+
+    it('keeps the straight estimate dashed and visibly lighter than the road', async () => {
+      const [, road, straight] = await drawnLayers();
+
+      expect(straight.paint['line-dasharray']).toBeDefined();
+      expect(road.paint['line-dasharray']).toBeUndefined();
+      expect(straight.paint['line-color']).toBe(ROUTE_LINE_COLOR);
+      expect(straight.paint['line-opacity']).toBe(STRAIGHT_LINE_OPACITY);
+      expect(STRAIGHT_LINE_OPACITY).toBeLessThan(0.7);
+      zoomExpression(straight.paint['line-width']);
+    });
   });
 
   describe('road route per leg', () => {

@@ -7,7 +7,14 @@ import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 
 import { fetchRoadLeg } from '../../utils/mapboxDirections';
 import { boundsOf, ItineraryMapModel, LngLat } from '../../utils/mapGeometry';
-import { isFatalMapError, MAPBOX_STYLE } from './mapboxStyle';
+import {
+  isFatalMapError,
+  MAPBOX_STYLE,
+  ROUTE_CASING_COLOR,
+  ROUTE_LINE_COLOR,
+  STRAIGHT_LINE_OPACITY,
+  widthByZoom,
+} from './mapboxStyle';
 
 interface MapboxItineraryMapProps {
   token: string;
@@ -130,18 +137,38 @@ export function MapboxItineraryMap({
             data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
           });
           map.addSource(ROAD_SOURCE, { type: 'geojson', data: lineData([]) as never });
+          const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
+          // Drawn in this order: white casing, solid road line, then the faint dashed straight estimate.
+          map.addLayer({
+            id: 'itinerary-road-casing',
+            type: 'line',
+            source: ROAD_SOURCE,
+            layout: round,
+            paint: {
+              'line-color': ROUTE_CASING_COLOR,
+              'line-width': widthByZoom([[10, 5], [14, 8], [18, 14]]) as never,
+            },
+          });
           map.addLayer({
             id: 'itinerary-road-line',
             type: 'line',
             source: ROAD_SOURCE,
-            layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': '#103B39', 'line-width': 4 },
+            layout: round,
+            paint: {
+              'line-color': ROUTE_LINE_COLOR,
+              'line-width': widthByZoom([[10, 3], [14, 5], [18, 8]]) as never,
+            },
           });
           map.addLayer({
             id: 'itinerary-route-line',
             type: 'line',
             source: ROUTE_SOURCE,
-            paint: { 'line-color': '#103B39', 'line-width': 3, 'line-dasharray': [2, 1.5] },
+            paint: {
+              'line-color': ROUTE_LINE_COLOR,
+              'line-opacity': STRAIGHT_LINE_OPACITY,
+              'line-width': widthByZoom([[10, 2], [14, 3], [18, 5]]) as never,
+              'line-dasharray': [2, 1.5],
+            },
           });
           drawRef.current?.();
         });

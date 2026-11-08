@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ROUTE_LINE_COLOR, STRAIGHT_LINE_OPACITY } from '../components/maps/mapboxStyle';
 import { ViewSuggestedItineraryPage } from '../components/ViewSuggestedItineraryPage';
 import * as schedulingApi from '../services/schedulingApi';
 import { ItineraryDetailDto, ItineraryDetailItemDto } from '../types/schedulingTypes';
@@ -415,6 +416,12 @@ describe('ViewSuggestedItineraryPage — Review 2 itinerary map (D9)', () => {
     expect(screen.getByText(/Nét liền: theo đường đi thực tế/)).toBeDefined();
     expect(screen.getByText(/Nét đứt: chỉ nối thẳng theo thứ tự ghé/)).toBeDefined();
     expect(screen.queryByText(/không phải đường đi thực tế/)).toBeNull();
+    // The swatches use the same colours as the lines on the map.
+    const swatches = Array.from(document.querySelectorAll('ul[aria-label="Chú thích đường nối"] line'));
+    expect(swatches.map((line) => line.getAttribute('stroke'))).toEqual([ROUTE_LINE_COLOR, ROUTE_LINE_COLOR]);
+    expect(swatches[0].getAttribute('stroke-opacity')).toBeNull();
+    expect(swatches[1].getAttribute('stroke-opacity')).toBe(String(STRAIGHT_LINE_OPACITY));
+    expect(swatches[1].getAttribute('stroke-dasharray')).not.toBeNull();
   });
 
   it('displays informative empty coordinates card when the stops have no coordinates and never renders arrow diagram', async () => {
