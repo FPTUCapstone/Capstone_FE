@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultPayoutSettlementsSearch,
   formatRunDate,
+  formatVietnamDateTime,
   formatVnd,
   parseFailedPayoutBatchDetail,
   parsePayoutSettlementListItem,
@@ -163,6 +164,13 @@ describe('formatRunDate', () => {
 describe('formatVnd', () => {
   it('formats a VND amount', () => {
     expect(formatVnd(1_800_000)).toContain('1.800.000');
+  });
+});
+
+describe('formatVietnamDateTime', () => {
+  it('formats a UTC timestamp in Vietnam local time', () => {
+    // 2026-11-08T03:00:00Z = 10:00 Asia/Ho_Chi_Minh (UTC+7).
+    expect(formatVietnamDateTime('2026-11-08T03:00:00Z')).toBe('8 Nov 2026, 10:00');
   });
 });
 

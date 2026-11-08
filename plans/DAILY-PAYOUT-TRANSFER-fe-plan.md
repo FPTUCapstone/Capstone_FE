@@ -164,15 +164,32 @@ preview tooling's dev server not seeing files created in this session, not a def
 covered by the unit/integration tests above. Added `.claude/launch.json` for whoever can run the
 dev server in an environment that does see this session's files.
 
-## Task 5 — Failed Payout Settlement Detail (`FailedPayoutSettlementScreen.tsx`, `/admin/payout-settlements/[batchId]`)
+## Task 5 — Failed Payout Settlement Detail (`FailedPayoutSettlementScreen.tsx`, `/admin/payout-settlements/[batchId]`) — done
 
-- Server guard: Administrator-only, existing single-role `AdminAccessDeniedView` pattern exactly
-  as `app/admin/(console)/payouts/[payoutId]/page.tsx` does today.
-- Header, attempt-history table, per spec Screen 2.
-- No action buttons in this task — read-only detail only. Actions are Task 6.
+- Server guard in `app/admin/(console)/payout-settlements/[batchId]/page.tsx`: Administrator-only,
+  single-role `AdminAccessDeniedView` pattern (the plan's original reference,
+  `app/admin/(console)/payouts/[payoutId]/page.tsx`, was removed with UC-46 — followed
+  `tour-operator-applications/[userId]/page.tsx` instead, the closest live dynamic-segment,
+  single-role detail guard). `batchId` validated with Task 3's own `parseBatchId` (imported from
+  `payoutSettlementsProxy.ts`, which only needs `server-only` guaranteed by the page itself) rather
+  than duplicating the regex a third time; an invalid ID renders a plain message, not the screen.
+- Header (Batch ID, Tour Operator, Run Date, Total Amount, Status badge, Attempt Count) +
+  attempt-history table (Attempt Number, Sent At in Vietnam time via a new `formatVietnamDateTime`
+  in `payoutSettlements.ts`, Outcome, Failure Reason — `null` renders "Not available"). No action
+  buttons — Retry/Carry Over/Record Manual Transfer are Task 6.
+- States: loading, not found (`daily_payout.batch_not_found` → 404), forbidden (403), unavailable
+  (network/5xx + retry), 401 → sign-in with a `returnUrl` back to this same detail page.
 
-Tests: direct navigation guard (same three cases as Task 4, required role Administrator only);
-not-found renders the matching state; attempt history renders every row in order.
+Tests (TDD, 6 screen + 4 page-guard, all red-then-green): header fields and every attempt row in
+order; loading; not-found; 401 redirect with `returnUrl`; forbidden; unavailable with a working
+retry (re-fetches, call count increments). Page guard: no session → sign-in with `returnUrl`;
+Staff → `AdminAccessDeniedView`; non-numeric `batchId` → invalid-ID message, screen never
+rendered; Administrator with a valid ID → screen. `npm run lint && npm run typecheck && npm test`
+(3559/3559) and `npm run build` all green; the new dynamic route registers cleanly.
+
+**Not independently verified in a live browser** — same `preview_start` limitation recorded under
+Task 4 (the tool doesn't see this session's new files); not retried here since Task 4 already
+ruled out a code-side cause.
 
 ## Task 6 — Retry / Carry Over / Record Manual Transfer dialogs
 

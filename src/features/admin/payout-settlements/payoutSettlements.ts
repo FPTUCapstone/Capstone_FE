@@ -154,6 +154,10 @@ export function formatRunDate(value: string): string {
 export const formatVnd = (value: number): string =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
+/** UC-73 attempt history ("Sent At"): a real timestamp, shown in Vietnam local time. */
+export const formatVietnamDateTime = (value: string): string =>
+  new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+
 // Screen 1 filter state (admin list), kept in the URL so a reload or shared link preserves it.
 export type PayoutSettlementsSearch = {
   status: PayoutSettlementStatus | '';
