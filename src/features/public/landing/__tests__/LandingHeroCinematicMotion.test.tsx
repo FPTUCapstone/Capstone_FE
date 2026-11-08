@@ -287,12 +287,22 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
   });
 
   it('11. Cleans up GSAP timeline and observers on component unmount', () => {
-    const revertSpy = vi.spyOn(gsap, 'context');
+    const originalContext = gsap.context.bind(gsap);
+    const revertMock = vi.fn();
+    vi.spyOn(gsap, 'context').mockImplementation(((fn: gsap.ContextFunc, scope?: Element | string | object) => {
+      const ctx = originalContext(fn, scope);
+      const originalRevert = ctx.revert.bind(ctx);
+      ctx.revert = (vars?: object) => {
+        revertMock();
+        return originalRevert(vars);
+      };
+      return ctx;
+    }) as typeof gsap.context);
 
     const { unmount } = render(<LandingHero />);
-    expect(revertSpy).toHaveBeenCalled();
+    expect(gsap.context).toHaveBeenCalled();
 
     unmount();
-    // After unmount, ensure no memory leaks
+    expect(revertMock).toHaveBeenCalledTimes(1);
   });
 });
