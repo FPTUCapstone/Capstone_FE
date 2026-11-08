@@ -23,11 +23,17 @@ payment confirmation before it is eligible for any settlement run — a race-con
 cancellation inside BR-157's 24-hour full-refund window is (almost always) resolved before any
 money is transferred to the Tour Operator. SRS §3.9.9.1 lists it alongside `Scheduled`,
 `Processing`, `Settled`, `SettlementFailed`, `Carried Over` as a status Screen 1 must show and
-filter by. The BE's status enum and FE's `PayoutSettlementStatus` type (Task 1) now include it;
-**the BE read API does not synthesize this status for a not-yet-settled booking yet**
-(`DAILY-PAYOUT-TRANSFER-be-plan.md` Task 10A, not shipped) — treat it as a value Screen 1/3 must
-be able to render and filter by, not as something the current `GetPayoutSettlementsQuery`
-response will return today.
+filter by. The BE's status enum and FE's `PayoutSettlementStatus` type (Task 1) now include it.
+
+**Update:** the BE read API now does synthesize this status (`DAILY-PAYOUT-TRANSFER-be-plan.md`
+Task 10A, shipped). `GetPayoutSettlementsQuery` unions real settlement rows with a synthetic
+`Awaiting Window` row for every paid, not-fully-refunded booking with no settlement yet (whether
+still inside its window, or its operator is locked under BR-160). These rows have no
+`SettlementId`/`RunDate` (both nullable in the response DTO now) and a preview `PayoutAmount`
+(gross less commission, not yet net of any debt offset) — Task 1's `parsePayoutSettlementListItem`
+must accept a null `settlementId`/`runDate`, which it currently does not (its strict parser
+requires both as non-null integers/dates). A `RunDateFrom`/`RunDateTo` filter always excludes
+these rows server-side, since they have no date to compare against.
 
 BR-160 (Tour Operator account locked): a locked operator's settlements stay in their current
 status — `Awaiting Window` or `Scheduled` — and are not transferred until unlocked. No FE-visible
@@ -261,18 +267,25 @@ MSG codes, or from a project-approved interim catalogue entry if that is faster 
    exact file list and verification.
 3. **Dual-role access-denied: extend `AdminAccessDeniedView`.** One component, a
    `requiredRoles?: RequiredAdministrationRole[]` prop (plan Task 3a), not a second component.
+4. **Concurrent-admin race on Screen 2 actions: no distinct conflict code.** Confirmed against
+   the BE code directly (`DailyPayoutErrorCodes`, `ApiControllerBase.HandleFailure`): there is no
+   dedicated conflict code for a second admin acting on an already-resolved batch. It just gets
+   the same `daily_payout.not_failed` as any other wrong-state attempt, now mapped to 409 (see
+   item 5). The proxy's error-mapping table needs only one entry for this case, not two.
+5. **Exact HTTP status for `daily_payout.not_failed`: 409 Conflict.** Previously unmapped on the
+   BE (fell through to a generic 400 for every `DailyPayoutErrorCodes` value, including
+   `Forbidden`/`BatchNotFound`) — fixed on the BE branch, now `Forbidden` → 403,
+   `BatchNotFound` → 404, `NotFailed` → 409, `ManualReferenceRequired` → 400, matching this
+   codebase's convention for the same shape of error elsewhere (e.g.
+   `TourOperatorApplicationErrorCodes.NotPending` → 409). Locked in by a new BE endpoint test
+   suite (`DailyPayoutSettlementActionsEndpointTests`, 8 tests) that calls the real routes.
 
 ## Open questions
 
 These block specific details, not the overall screen structure; the plan sequences work so
-unaffected tasks are not stalled by them.
+unaffected tasks are not stalled by them. Open questions 4 and 5 are now decided — see "Decided
+(previously open)" below.
 
-4. **Concurrent-admin race on Screen 2 actions.** The BE spec does not document a 409 for two
-   admins acting on the same failed batch at once (unlike the old Approve/Reject's documented
-   409). Confirm with BE whether a second action on an already-resolved batch returns a specific
-   conflict code, or just `daily_payout.not_failed`.
-5. **Exact HTTP status for `daily_payout.not_failed`.** Confirm with BE (400 vs 409) so the proxy
-   error-mapping table is exact, not guessed.
 6. **Add filters to Screen 3?** SRS's one-line description does not ask for them; recommended for
    consistency with Screen 1 but needs explicit Lead/PO sign-off before adding UI beyond the SRS
    text (AGENTS.md "Clarify First").

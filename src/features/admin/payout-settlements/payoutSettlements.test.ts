@@ -54,6 +54,15 @@ describe('parsePayoutSettlementListItem', () => {
     expect(parsePayoutSettlementListItem({ ...listItem, kind: 'Retained' }).kind).toBe('Retained');
   });
 
+  // An "Awaiting Window" row (UC-72, BE Task 10A) is synthesized for a booking with no
+  // settlement yet — it has no settlementId or runDate, unlike a real settlement row.
+  it('accepts a null settlementId and runDate for an Awaiting Window row', () => {
+    const awaiting = { ...listItem, settlementId: null, runDate: null, status: 'Awaiting Window' };
+    const parsed = parsePayoutSettlementListItem(awaiting);
+    expect(parsed.settlementId).toBeNull();
+    expect(parsed.runDate).toBeNull();
+  });
+
   it.each([
     ['unrecognized status', { ...listItem, status: 'Mystery' }],
     ['unrecognized kind', { ...listItem, kind: 'Bonus' }],

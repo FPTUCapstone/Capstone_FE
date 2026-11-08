@@ -17,10 +17,12 @@ export type PayoutSettlementKind = (typeof PAYOUT_SETTLEMENT_KINDS)[number];
 export type PayoutSettlementAttemptOutcome = (typeof PAYOUT_SETTLEMENT_ATTEMPT_OUTCOMES)[number];
 
 export type PayoutSettlementListItem = {
-  settlementId: number;
+  // null for a synthesized "Awaiting Window" row (UC-72, BE Task 10A): no PayoutSettlement
+  // exists yet for it, so it has neither a settlement id nor an assigned run date.
+  settlementId: number | null;
   bookingId: number;
   tourOperatorUserId: number;
-  runDate: string;
+  runDate: string | null;
   kind: PayoutSettlementKind;
   payoutAmount: number;
   status: PayoutSettlementStatus;
@@ -59,14 +61,16 @@ const isMoney = (value: unknown): value is number => typeof value === 'number' &
 const isNullableString = (value: unknown): value is string | null => value === null || typeof value === 'string';
 const isTimestamp = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const isRunDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+const isNullableSafeInteger = (value: unknown): value is number | null => value === null || isSafeInteger(value);
+const isNullableRunDate = (value: unknown): value is string | null => value === null || isRunDate(value);
 
 export function parsePayoutSettlementListItem(value: unknown): PayoutSettlementListItem {
   if (
     !isRecord(value) ||
-    !isSafeInteger(value.settlementId) ||
+    !isNullableSafeInteger(value.settlementId) ||
     !isSafeInteger(value.bookingId) ||
     !isSafeInteger(value.tourOperatorUserId) ||
-    !isRunDate(value.runDate) ||
+    !isNullableRunDate(value.runDate) ||
     !PAYOUT_SETTLEMENT_KINDS.includes(value.kind as PayoutSettlementKind) ||
     !isMoney(value.payoutAmount) ||
     !PAYOUT_SETTLEMENT_STATUSES.includes(value.status as PayoutSettlementStatus) ||

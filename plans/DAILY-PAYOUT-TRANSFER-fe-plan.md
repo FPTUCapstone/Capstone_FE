@@ -1,6 +1,6 @@
 # DAILY-PAYOUT-TRANSFER — Web Implementation Plan
 
-Spec: `specs/DAILY-PAYOUT-TRANSFER-fe-spec.md` (draft; open questions 1–3 decided, 4–7 pending
+Spec: `specs/DAILY-PAYOUT-TRANSFER-fe-spec.md` (draft; open questions 1–5 decided, 6–7 pending
 Lead/PO approval; updated for SRS v12's Awaiting Window status). **Do not start Task 3 until the
 spec is approved**, per CLAUDE.md/AGENTS.md — Tasks 1/2 below predate the v12 update and are
 already done.
@@ -10,10 +10,12 @@ already done.
 SRS v12 adds `Awaiting Window` (BR-141) to the six statuses Screen 1 must show/filter by (spec
 "v12 change — Awaiting Window"). `PayoutSettlementStatus`'s six-value union (Task 1, both admin
 and operator `payoutSettlements.ts`) and the Screen 1 filter dropdown text (spec) now include it.
-The backend does not synthesize this status for a not-yet-settled booking yet
-(`DAILY-PAYOUT-TRANSFER-be-plan.md` Task 10A) — Task 4 (Screen 1) and Task 7 (Screen 3) must
-still render/filter by it (forward-compatible), but no test can yet observe the BE actually
-returning a row with it.
+The backend now does synthesize this status for a not-yet-settled booking
+(`DAILY-PAYOUT-TRANSFER-be-plan.md` Task 10A, shipped): its response has no `settlementId`/
+`runDate` for such a row, so `PayoutSettlementListItem` (Task 1, both admin and operator files)
+was updated to `settlementId: number | null` / `runDate: string | null`, and both parsers accept
+a null value for either field. Task 4 (Screen 1) and Task 7 (Screen 3) must render a row with
+either field null without crashing (e.g. no run-date column text, no settlement-id-based key).
 
 ## Task 0 — Remove the old UC-46 FE code (done)
 
@@ -23,8 +25,9 @@ removed" section for the exact file list. Verified: `npm run lint`, `npm run typ
 
 Backend: `Capstone_BE-daily-payout` branch `feature/linhnv-daily-payout-transfer` (implemented,
 local tests green, simulated gateway). Endpoints are stable; only message-catalogue codes (spec
-Open question 7), the exact status code for `daily_payout.not_failed` (Open question 5), and
-UC-72's Awaiting Window read-model (BE plan Task 10A) are unsettled on the BE side.
+Open question 7) and Screen 3's optional filters (Open question 6) are unsettled on the BE/spec
+side — the HTTP status mapping (Open question 5) and UC-72's Awaiting Window read-model (BE plan
+Task 10A) are both done.
 
 Branch: `feature/linhnv-daily-payout-transfer` (FE), from `origin/develop`.
 

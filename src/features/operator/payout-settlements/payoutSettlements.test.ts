@@ -29,4 +29,13 @@ describe('parsePayoutSettlementsResponse (operator)', () => {
   ])('rejects %s', (_label, value) => {
     expect(() => parsePayoutSettlementsResponse(value)).toThrow();
   });
+
+  // Shares the admin side's DTO shape (an Awaiting Window row has no settlementId/runDate),
+  // even though this endpoint does not synthesize one itself.
+  it('accepts a null settlementId and runDate', () => {
+    const page = { ...response, items: [{ ...listItem, settlementId: null, runDate: null, status: 'Awaiting Window' }] };
+    const parsed = parsePayoutSettlementsResponse(page).items[0];
+    expect(parsed.settlementId).toBeNull();
+    expect(parsed.runDate).toBeNull();
+  });
 });
