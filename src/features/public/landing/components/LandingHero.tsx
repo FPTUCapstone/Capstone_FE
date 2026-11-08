@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
 import { gsap } from 'gsap';
@@ -11,11 +11,19 @@ if (typeof window !== 'undefined') {
   gsap.registerPlugin(SplitText);
 }
 
+/**
+ * Hook to execute layout effects on client while avoiding SSR warnings.
+ */
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 interface LandingHeroProps {
   activeCity?: 'danang' | 'hoian' | 'hue';
   onSelectCity?: (city: 'danang' | 'hoian' | 'hue') => void;
 }
 
+/**
+ * Detects system reduced-motion preference via matchMedia.
+ */
 function getSystemReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -25,6 +33,9 @@ function getSystemReducedMotion(): boolean {
   }
 }
 
+/**
+ * Detects network Save-Data constraint via NetworkInformation API.
+ */
 function getSystemSaveData(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -36,6 +47,9 @@ function getSystemSaveData(): boolean {
   }
 }
 
+/**
+ * Subscribes to changes in prefers-reduced-motion media query.
+ */
 function subscribeReducedMotion(callback: () => void): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
   try {
@@ -53,14 +67,23 @@ function subscribeReducedMotion(callback: () => void): () => void {
   return () => {};
 }
 
+/**
+ * Returns client snapshot of prefers-reduced-motion state.
+ */
 function getReducedMotionSnapshot(): boolean {
   return getSystemReducedMotion();
 }
 
+/**
+ * Returns SSR snapshot of prefers-reduced-motion state.
+ */
 function getReducedMotionServerSnapshot(): boolean {
   return false;
 }
 
+/**
+ * Subscribes to resize and media query changes for video eligibility.
+ */
 function subscribeVideoEligibility(callback: () => void): () => void {
   if (typeof window === 'undefined') return () => {};
   const cleanups: (() => void)[] = [];
@@ -87,6 +110,9 @@ function subscribeVideoEligibility(callback: () => void): () => void {
   };
 }
 
+/**
+ * Returns client snapshot determining video eligibility.
+ */
 function getVideoEligibilitySnapshot(): boolean {
   if (typeof window === 'undefined') return false;
   const reduced = getSystemReducedMotion();
@@ -95,6 +121,9 @@ function getVideoEligibilitySnapshot(): boolean {
   return !reduced && !saveData && isDesktopOrTablet;
 }
 
+/**
+ * Returns SSR snapshot determining video eligibility.
+ */
 function getVideoEligibilityServerSnapshot(): boolean {
   return false;
 }
@@ -144,19 +173,10 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
     const sectionEl = sectionRef.current;
     if (!videoEl || !sectionEl) return;
 
-    const isJsdomEnv =
-      typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '');
-
-    // Safe playback helpers (guarded for jsdom and browser autoplay policies)
+    // Safe playback helpers
     const safePlay = () => {
       try {
         if (typeof videoEl.play === 'function') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const isMock = (videoEl.play as any)._isMockFunction || (videoEl.play as any).mock;
-          if (isJsdomEnv && !isMock) {
-            setIsVideoPlaying(true);
-            return;
-          }
           const promise = videoEl.play();
           if (promise && typeof promise.then === 'function') {
             promise
@@ -177,11 +197,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
     const safePause = () => {
       try {
         if (typeof videoEl.pause === 'function') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const isMock = (videoEl.pause as any)._isMockFunction || (videoEl.pause as any).mock;
-          if (!isJsdomEnv || isMock) {
-            videoEl.pause();
-          }
+          videoEl.pause();
         }
       } catch {}
       setIsVideoPlaying(false);
@@ -227,6 +243,8 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
         observer.disconnect();
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      setIsVideoPlaying(false);
+      setIsVideoReady(false);
     };
   }, [isVideoEligible]);
 
@@ -257,7 +275,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
   }, [isVideoPlaying]);
 
   // 3. Cinematic Editorial Masked Line Reveal & Entrance Choreography
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (isReducedMotion) return;
 
     const headlineEl = headlineRef.current;
@@ -274,20 +292,21 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
     // Use gsap.context for scoped, leak-free animation cleanup
     const ctx = gsap.context(() => {
       try {
-        const split = new SplitText(headlineEl, {
+        new SplitText(headlineEl, {
           type: 'lines',
           mask: 'lines',
           linesClass: 'editorial-split-line',
           autoSplit: true,
           onSplit: (instance) => {
             if (!hasEntranceFinished) {
-              // During initial entrance, return timeline animation
+              // During initial entrance, return timeline animation with 0.35s delay
               return gsap.from(instance.lines, {
                 y: 24,
                 opacity: 0,
                 duration: 0.75,
                 stagger: 0.13,
                 ease: 'power3.out',
+                delay: 0.35,
               });
             } else {
               // After initial entrance, keep lines rendered in their settled state upon reflow
@@ -309,22 +328,6 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             { y: 12, opacity: 0 },
             { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' },
             0.05
-          );
-        }
-
-        // Stage 2: Main headline masked line reveal (0.35 - 1.25s)
-        if (split.lines && split.lines.length > 0) {
-          tl.fromTo(
-            split.lines,
-            { y: 24, opacity: 0 },
-            {
-              y: 0,
-              opacity: 1,
-              duration: 0.75,
-              stagger: 0.13,
-              ease: 'power3.out',
-            },
-            0.35
           );
         }
 
@@ -520,7 +523,6 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             data-testid="hero-playback-toggle"
             onClick={togglePlayback}
             aria-label={isVideoPlaying ? 'Tạm dừng video nền' : 'Phát video nền'}
-            aria-pressed={isVideoPlaying}
             className="group inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-800 hover:text-[#007D6E] backdrop-blur-md border border-white/80 shadow-md transition-all duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#007D6E] focus-visible:ring-offset-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg" aria-hidden="true">

@@ -115,10 +115,10 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
 
     const video = container.querySelector('video[data-testid="hero-video"]');
     expect(video).not.toBeNull();
-    expect(video?.getAttribute('autoplay')).toBeDefined();
-    expect(video?.getAttribute('muted')).toBeDefined();
-    expect(video?.getAttribute('loop')).toBeDefined();
-    expect(video?.getAttribute('playsinline')).toBeDefined();
+    expect(video?.hasAttribute('autoplay')).toBe(true);
+    expect((video as HTMLVideoElement).muted).toBe(true);
+    expect(video?.hasAttribute('loop')).toBe(true);
+    expect(video?.hasAttribute('playsinline')).toBe(true);
 
     const sources = Array.from(video?.querySelectorAll('source') || []);
     expect(sources.length).toBe(2);
@@ -128,7 +128,7 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
     expect(sources[1].getAttribute('type')).toBe('video/mp4');
   });
 
-  it('5. Handles playback toggle with accessible Vietnamese labels and aria-pressed state', () => {
+  it('5. Handles playback toggle with accessible Vietnamese labels and state', () => {
     render(<LandingHero />);
 
     const toggleBtn = screen.getByTestId('hero-playback-toggle');
@@ -139,15 +139,14 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
     fireEvent.playing(video);
 
     expect(toggleBtn.getAttribute('aria-label')).toBe('Tạm dừng video nền');
-    expect(toggleBtn.getAttribute('aria-pressed')).toBe('true');
 
     // Click to pause
     fireEvent.click(toggleBtn);
     expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     expect(toggleBtn.getAttribute('aria-label')).toBe('Phát video nền');
-    expect(toggleBtn.getAttribute('aria-pressed')).toBe('false');
 
     // Click to resume
+    vi.mocked(window.HTMLMediaElement.prototype.play).mockClear();
     fireEvent.click(toggleBtn);
     expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
   });
@@ -164,6 +163,8 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
       dispatchEvent: vi.fn(),
     }));
 
+    const contextSpy = vi.spyOn(gsap, 'context');
+
     const { container } = render(<LandingHero />);
 
     // Video is NOT mounted on reduced motion
@@ -177,6 +178,8 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
     // Headline is immediately visible without split line mutations
     const h1 = screen.getByRole('heading', { level: 1 });
     expect(h1.textContent).toContain('Đà Nẵng, nơi');
+    expect(container.querySelector('.editorial-split-line')).toBeNull();
+    expect(contextSpy).not.toHaveBeenCalled();
   });
 
   it('7. Respects Save-Data preference by not downloading or mounting the background video', () => {
@@ -223,6 +226,7 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
     expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled();
 
     // Simulate scrolling back into view (intersectionRatio = 0.5)
+    vi.mocked(window.HTMLMediaElement.prototype.play).mockClear();
     act(() => {
       intersectionCallbacks.forEach((cb) => {
         cb(
@@ -254,6 +258,7 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
     expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled();
 
     // Simulate document becoming visible
+    vi.mocked(window.HTMLMediaElement.prototype.play).mockClear();
     Object.defineProperty(document, 'hidden', { value: false, configurable: true });
     fireEvent(document, new Event('visibilitychange'));
 
@@ -265,12 +270,20 @@ describe('Homepage Hero: Cinematic Da Nang Video & Editorial Masked Reveal', () 
 
     const { container } = render(<LandingHero />);
 
+    const video = container.querySelector('video[data-testid="hero-video"]');
+    expect(video).not.toBeNull();
+
+    await act(async () => {});
+
     // Video exists but poster remains fully visible and content is intact
     const poster = container.querySelector('img[data-testid="hero-poster"]');
     expect(poster).not.toBeNull();
 
     const h1 = screen.getByRole('heading', { level: 1 });
     expect(h1.textContent).toContain('Đà Nẵng, nơi');
+
+    const toggleBtn = screen.getByTestId('hero-playback-toggle');
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Phát video nền');
   });
 
   it('11. Cleans up GSAP timeline and observers on component unmount', () => {
