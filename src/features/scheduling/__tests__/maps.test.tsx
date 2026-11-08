@@ -121,6 +121,22 @@ function roadFor(url: string) {
   return { ok: true, status: 200, json: async () => ({ routes: [{ geometry: { coordinates } }] }) };
 }
 
+/** The visible circle of a marker: Mapbox positions the wrapper, so only this element may be styled. */
+const circle = (marker: { element: HTMLElement }) => marker.element.querySelector('button') as HTMLElement;
+
+/**
+ * Mapbox moves a marker with an inline `transform` on its element. The individual `scale`, `translate` and
+ * `rotate` properties apply outside that transform, so any of them on the wrapper displaces the marker.
+ */
+function expectWrappersUntouched(positions: string[]) {
+  mapbox.state.markers.forEach((marker, index) => {
+    for (const property of ['scale', 'translate', 'rotate']) {
+      expect(marker.element.style.getPropertyValue(property), `${property} on marker ${index}`).toBe('');
+    }
+    expect(marker.element.style.transform).toBe(positions[index]);
+  });
+}
+
 /** The road legs last drawn: one GeoJSON feature per routed leg, each with its colour. */
 function roadFeatures() {
   const calls = mapbox.state.sources.get('itinerary-road')!.setData.mock.calls;
@@ -164,7 +180,7 @@ describe('Web maps (Review 2, D9)', () => {
     await waitFor(() => expect(mapbox.state.markers).toHaveLength(3));
     expect(mapbox.state.accessToken).toBe('pk.test');
     expect(mapbox.state.markers.map((marker) => marker.element.textContent)).toEqual(['B', '1', '2']);
-    expect(mapbox.state.markers[2].element.style.backgroundColor).toBe('rgb(217, 119, 6)');
+    expect(circle(mapbox.state.markers[2]).style.backgroundColor).toBe('rgb(217, 119, 6)');
     expect(mapbox.state.sources.get('itinerary-route')!.setData).toHaveBeenCalledWith(
       expect.objectContaining({ geometry: model.route }),
     );
@@ -182,8 +198,8 @@ describe('Web maps (Review 2, D9)', () => {
     expect(onSelectItem).toHaveBeenCalledWith(11);
 
     rerender(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={12} onSelectItem={onSelectItem} />);
-    expect(mapbox.state.markers[2].element.getAttribute('aria-current')).toBe('true');
-    expect(mapbox.state.markers[1].element.getAttribute('aria-current')).toBeNull();
+    expect(circle(mapbox.state.markers[2]).getAttribute('aria-current')).toBe('true');
+    expect(circle(mapbox.state.markers[1]).getAttribute('aria-current')).toBeNull();
   });
 
   it('reports when the browser cannot show the map so the page can fall back', async () => {
@@ -243,30 +259,47 @@ describe('Web maps (Review 2, D9)', () => {
     );
     await waitFor(() => expect(mapbox.state.markers).toHaveLength(6));
 
-    expect(mapbox.state.markers[5].element.getAttribute('aria-current')).toBe('true');
+    expect(circle(mapbox.state.markers[5]).getAttribute('aria-current')).toBe('true');
   });
 
-  it('never touches the transform Mapbox positions a marker with, when highlighting or clearing it', async () => {
+  it('gives Mapbox a plain positioned wrapper and puts the whole look on the circle inside it', async () => {
+    render(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />);
+    await waitFor(() => expect(mapbox.state.markers).toHaveLength(3));
+
+    for (const marker of mapbox.state.markers) {
+      const wrapper = marker.element;
+      // Fixed size so Mapbox centres it on the stop; nothing that can move, scale or resize it.
+      expect(wrapper.className).toContain('h-7 w-7');
+      expect(wrapper.className).not.toMatch(/scale|transition|translate|rotate|hover:|border|p-|m-/);
+      expect(wrapper.children).toHaveLength(1);
+      expect(circle(marker).className).toContain('hover:scale-115');
+      expect(circle(marker).textContent).toBe(wrapper.textContent);
+    }
+  });
+
+  it('never moves, scales or rotates the element Mapbox positions when highlighting or clearing it', async () => {
     const { rerender } = render(
       <MapboxItineraryMap token="pk.test" model={model} highlightedItemId={null} onSelectItem={vi.fn()} />,
     );
     await waitFor(() => expect(mapbox.state.markers).toHaveLength(3));
     const positions = mapbox.state.markers.map((marker) => marker.element.style.transform);
     expect(new Set(positions).size).toBe(3);
+    expectWrappersUntouched(positions);
 
     rerender(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={12} onSelectItem={vi.fn()} />);
-    expect(mapbox.state.markers.map((marker) => marker.element.style.transform)).toEqual(positions);
-    const active = mapbox.state.markers[2].element;
+    expectWrappersUntouched(positions);
+    const active = circle(mapbox.state.markers[2]);
     expect(active.style.getPropertyValue('scale')).toBe('1.35');
-    expect(active.style.zIndex).toBe('10');
     expect(active.style.boxShadow).not.toBe('');
+    // Stacking order may change on the wrapper: it does not move the marker.
+    expect(mapbox.state.markers[2].element.style.zIndex).toBe('10');
 
     rerender(<MapboxItineraryMap token="pk.test" model={model} highlightedItemId={11} onSelectItem={vi.fn()} />);
-    expect(mapbox.state.markers.map((marker) => marker.element.style.transform)).toEqual(positions);
+    expectWrappersUntouched(positions);
     expect(active.style.getPropertyValue('scale')).toBe('');
-    expect(active.style.zIndex).toBe('');
     expect(active.style.boxShadow).toBe('');
-    expect(mapbox.state.markers[1].element.style.getPropertyValue('scale')).toBe('1.35');
+    expect(mapbox.state.markers[2].element.style.zIndex).toBe('');
+    expect(circle(mapbox.state.markers[1]).style.getPropertyValue('scale')).toBe('1.35');
   });
 
   const [legA, legB] = model.legs;
@@ -514,17 +547,18 @@ describe('Web maps (Review 2, D9)', () => {
       expect(bounds).toEqual([legPoints[0], legPoints[1]]);
     });
 
-    it('highlights the two end markers of the leg with the independent scale property, never the transform', async () => {
+    it('highlights the two end markers of the leg on their circle, never on the element Mapbox positions', async () => {
       const { rerender } = await drawnWithRoads();
       const positions = mapbox.state.markers.map((marker) => marker.element.style.transform);
 
       rerender(<MapboxItineraryMap {...props} selectedLegId={LEG} />);
 
-      expect(mapbox.state.markers.map((marker) => marker.element.style.getPropertyValue('scale'))).toEqual(['', '1.25', '1.25']);
-      expect(mapbox.state.markers.map((marker) => marker.element.style.transform)).toEqual(positions);
+      expect(mapbox.state.markers.map((marker) => circle(marker).style.getPropertyValue('scale'))).toEqual(['', '1.25', '1.25']);
+      expectWrappersUntouched(positions);
 
       rerender(<MapboxItineraryMap {...props} selectedLegId={null} />);
-      expect(mapbox.state.markers.map((marker) => marker.element.style.getPropertyValue('scale'))).toEqual(['', '', '']);
+      expect(mapbox.state.markers.map((marker) => circle(marker).style.getPropertyValue('scale'))).toEqual(['', '', '']);
+      expectWrappersUntouched(positions);
     });
 
     it('ignores a selection that is not a leg of this route', async () => {

@@ -39,7 +39,10 @@ interface DrawnMarker {
   marker: MapboxMarker;
   key: string;
   itemId: number | null;
+  /** The element Mapbox positions (inline `transform`): never styled by us, except its stacking order. */
   element: HTMLElement;
+  /** The visible circle inside it: all highlight styling goes here. */
+  circle: HTMLElement;
 }
 
 /** Straight dashed segments: the whole route while it loads, then only the legs without a road. */
@@ -86,16 +89,24 @@ const lineData = (coordinates: LngLat[][]) => ({
   geometry: { type: 'MultiLineString', coordinates },
 });
 
-function markerElement(label: string, title: string, color: string): HTMLButtonElement {
-  const element = document.createElement('button');
-  element.type = 'button';
-  element.textContent = label;
-  element.title = title;
-  element.setAttribute('aria-label', title);
-  element.style.setProperty('background-color', color);
-  element.className =
+/**
+ * A marker is a plain wrapper (the element Mapbox moves with an inline `transform`) around the visible circle.
+ * Scaling, translating or rotating the wrapper — even through the individual `scale` property, which applies
+ * outside `transform` — would move the marker, so hover and highlight styling lives on the circle only.
+ */
+function markerElement(label: string, title: string, color: string) {
+  const element = document.createElement('div');
+  element.className = 'h-7 w-7';
+  const circle = document.createElement('button');
+  circle.type = 'button';
+  circle.textContent = label;
+  circle.title = title;
+  circle.setAttribute('aria-label', title);
+  circle.style.setProperty('background-color', color);
+  circle.className =
     'flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-md transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#103B39] hover:scale-115';
-  return element;
+  element.appendChild(circle);
+  return { element, circle };
 }
 
 function applyHighlight(
@@ -103,25 +114,25 @@ function applyHighlight(
   highlightedItemId: number | null,
   legEndKeys: ReadonlySet<string>,
 ) {
-  for (const { key, itemId, element } of markers) {
+  for (const { key, itemId, element, circle } of markers) {
+    // `scale` is independent of `transform`, but it still must not be set on the positioned wrapper.
     const active = itemId !== null && itemId === highlightedItemId;
     if (active) {
-      element.setAttribute('aria-current', 'true');
-      // `scale` is independent of `transform`, which Mapbox owns to position the marker.
-      element.style.setProperty('scale', '1.35');
+      circle.setAttribute('aria-current', 'true');
+      circle.style.setProperty('scale', '1.35');
+      circle.style.setProperty('box-shadow', '0 0 0 4px rgba(0, 125, 110, 0.45), 0 4px 12px rgba(0,0,0,0.25)');
       element.style.setProperty('z-index', '10');
-      element.style.setProperty('box-shadow', '0 0 0 4px rgba(0, 125, 110, 0.45), 0 4px 12px rgba(0,0,0,0.25)');
     } else if (legEndKeys.has(key)) {
       // The two ends of the selected leg.
-      element.removeAttribute('aria-current');
-      element.style.setProperty('scale', '1.25');
+      circle.removeAttribute('aria-current');
+      circle.style.setProperty('scale', '1.25');
+      circle.style.setProperty('box-shadow', `0 0 0 3px ${ROUTE_SELECTED_COLOR}, 0 4px 10px rgba(0,0,0,0.25)`);
       element.style.setProperty('z-index', '9');
-      element.style.setProperty('box-shadow', `0 0 0 3px ${ROUTE_SELECTED_COLOR}, 0 4px 10px rgba(0,0,0,0.25)`);
     } else {
-      element.removeAttribute('aria-current');
-      element.style.setProperty('scale', '');
+      circle.removeAttribute('aria-current');
+      circle.style.setProperty('scale', '');
+      circle.style.setProperty('box-shadow', '');
       element.style.setProperty('z-index', '');
-      element.style.setProperty('box-shadow', '');
     }
   }
 }
@@ -342,13 +353,13 @@ export function MapboxItineraryMap({
         if (mapRef.current !== map) return;
         markersRef.current.forEach(({ marker }) => marker.remove());
         markersRef.current = model.markers.map((entry) => {
-          const element = markerElement(entry.label, entry.title, entry.color);
+          const { element, circle } = markerElement(entry.label, entry.title, entry.color);
           if (entry.itemId !== null) {
             const itemId = entry.itemId;
             element.addEventListener('click', () => selectRef.current(itemId));
           }
           const marker = new mapboxgl.Marker({ element }).setLngLat(entry.position).addTo(map);
-          return { marker, key: entry.key, itemId: entry.itemId, element };
+          return { marker, key: entry.key, itemId: entry.itemId, element, circle };
         });
         const source = map.getSource(ROUTE_SOURCE) as GeoSource | undefined;
         source?.setData?.({ type: 'Feature', properties: {}, geometry: model.route });
