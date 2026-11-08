@@ -7,14 +7,32 @@ are decided (see "Decided (previously open)" below, and "Old UC-46 FE code — r
 is implemented and locally verified (simulated gateway) on `Capstone_BE` branch
 `feature/linhnv-daily-payout-transfer`, not yet merged to `develop`.
 
-SRS sources: Report3 v11, §2.2 (UC-71 through UC-74), §3.1.2.1 Table 4.1 (screen list items —
-Payout Records List, Failed Payout Settlement Details, Failed Payout Settlement Action),
-§3.1.2.2 Table 4.2 row 91 (Payout Settlement History, Tour Operator), §3.9.9.
+SRS sources: Report3 v12, §2.2 (UC-71 through UC-74, named "View Payout Records" for UC-72),
+§3.1.2.1 Table 4.1 (screen list items — Payout Records List, Failed Payout Settlement Details,
+Failed Payout Settlement Action), §3.1.2.2 Table 4.2 row 91 (Payout Settlement History, Tour
+Operator), §3.9.9.1–3.9.9.2.
 
-Backend contract: `specs/DAILY-PAYOUT-TRANSFER-be-spec.md` (v2) and
-`plans/DAILY-PAYOUT-TRANSFER-be-plan.md`, on the `Capstone_BE` branch
-`feature/linhnv-daily-payout-transfer` (not yet on `develop` — check out that branch, or its
-worktree, to read them).
+Backend contract: `specs/DAILY-PAYOUT-TRANSFER-be-spec.md` (v3) and
+`plans/DAILY-PAYOUT-TRANSFER-be-plan.md`, on the `Capstone_BE-daily-payout` branch
+`feature/linhnv-daily-payout-transfer` (check out that branch, or its worktree, to read them).
+
+### v12 change — Awaiting Window
+
+v12 adds a new status, **Awaiting Window** (BR-141): every paid booking is held 24 hours after
+payment confirmation before it is eligible for any settlement run — a race-condition fix so a
+cancellation inside BR-157's 24-hour full-refund window is (almost always) resolved before any
+money is transferred to the Tour Operator. SRS §3.9.9.1 lists it alongside `Scheduled`,
+`Processing`, `Settled`, `SettlementFailed`, `Carried Over` as a status Screen 1 must show and
+filter by. The BE's status enum and FE's `PayoutSettlementStatus` type (Task 1) now include it;
+**the BE read API does not synthesize this status for a not-yet-settled booking yet**
+(`DAILY-PAYOUT-TRANSFER-be-plan.md` Task 10A, not shipped) — treat it as a value Screen 1/3 must
+be able to render and filter by, not as something the current `GetPayoutSettlementsQuery`
+response will return today.
+
+BR-160 (Tour Operator account locked): a locked operator's settlements stay in their current
+status — `Awaiting Window` or `Scheduled` — and are not transferred until unlocked. No FE-visible
+difference from an ordinary `Awaiting Window`/`Scheduled` row; mentioned here only so the status
+isn't mistaken for a stuck/broken state when an operator is locked.
 
 ## Scope
 
@@ -104,9 +122,10 @@ Backend endpoints these routes proxy:
 ## Screen 1 — Payout Settlements List (UC-72)
 
 Content (SRS Table 4.1, UC-72 description):
-- Filter bar: Status (dropdown: all statuses, or one of `Scheduled`, `Processing`, `Settled`,
-  `SettlementFailed`, `Carried Over`), Run Date From, Run Date To, `[Apply Filter]`,
-  `[Clear Filter]`.
+- Filter bar: Status (dropdown: all statuses, or one of `Awaiting Window`, `Scheduled`,
+  `Processing`, `Settled`, `SettlementFailed`, `Carried Over` — see "v12 change — Awaiting
+  Window" above for why `Awaiting Window` is listed but not yet returned by the BE), Run Date
+  From, Run Date To, `[Apply Filter]`, `[Clear Filter]`.
 - Table columns: Booking reference, Tour Operator, Run Date, Kind (`Main` / `Retained`), Payout
   Amount (VND, formatted, backend value never recalculated in the browser), Status badge,
   Transfer Reference.

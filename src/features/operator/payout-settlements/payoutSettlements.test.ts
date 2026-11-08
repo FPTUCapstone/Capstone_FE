@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parsePayoutSettlementsResponse } from './payoutSettlements';
+import { parsePayoutSettlementsResponse, PAYOUT_SETTLEMENT_STATUSES } from './payoutSettlements';
 
 const listItem = {
   settlementId: 101, bookingId: 55, tourOperatorUserId: 7, runDate: '2026-11-08',
@@ -13,9 +13,12 @@ describe('parsePayoutSettlementsResponse (operator)', () => {
     expect(parsePayoutSettlementsResponse(response)).toEqual(response);
   });
 
-  it('accepts the "Carried Over" status with a space', () => {
-    const page = { ...response, items: [{ ...listItem, status: 'Carried Over' }] };
-    expect(parsePayoutSettlementsResponse(page).items[0].status).toBe('Carried Over');
+  it('accepts every backend status, including "Carried Over" and "Awaiting Window" with a space', () => {
+    expect(PAYOUT_SETTLEMENT_STATUSES).toContain('Awaiting Window');
+    for (const status of PAYOUT_SETTLEMENT_STATUSES) {
+      const page = { ...response, items: [{ ...listItem, status }] };
+      expect(parsePayoutSettlementsResponse(page).items[0].status).toBe(status);
+    }
   });
 
   it.each([

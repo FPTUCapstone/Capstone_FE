@@ -1,7 +1,19 @@
 # DAILY-PAYOUT-TRANSFER — Web Implementation Plan
 
 Spec: `specs/DAILY-PAYOUT-TRANSFER-fe-spec.md` (draft; open questions 1–3 decided, 4–7 pending
-Lead/PO approval). **Do not start Task 1 until the spec is approved**, per CLAUDE.md/AGENTS.md.
+Lead/PO approval; updated for SRS v12's Awaiting Window status). **Do not start Task 3 until the
+spec is approved**, per CLAUDE.md/AGENTS.md — Tasks 1/2 below predate the v12 update and are
+already done.
+
+## v12 update — Awaiting Window status (done)
+
+SRS v12 adds `Awaiting Window` (BR-141) to the six statuses Screen 1 must show/filter by (spec
+"v12 change — Awaiting Window"). `PayoutSettlementStatus`'s six-value union (Task 1, both admin
+and operator `payoutSettlements.ts`) and the Screen 1 filter dropdown text (spec) now include it.
+The backend does not synthesize this status for a not-yet-settled booking yet
+(`DAILY-PAYOUT-TRANSFER-be-plan.md` Task 10A) — Task 4 (Screen 1) and Task 7 (Screen 3) must
+still render/filter by it (forward-compatible), but no test can yet observe the BE actually
+returning a row with it.
 
 ## Task 0 — Remove the old UC-46 FE code (done)
 
@@ -9,10 +21,10 @@ Completed on this branch, before any new-feature code. See the spec's "Old UC-46
 removed" section for the exact file list. Verified: `npm run lint`, `npm run typecheck`,
 `npm test` (3424/3424 passing), `npm run build` all green after the removal.
 
-Backend: `Capstone_BE` branch `feature/linhnv-daily-payout-transfer` (implemented, local tests
-green, simulated gateway). Endpoints are stable; only message-catalogue codes (spec Open
-question 7) and the exact status code for `daily_payout.not_failed` (Open question 5) are
-unsettled on the BE side.
+Backend: `Capstone_BE-daily-payout` branch `feature/linhnv-daily-payout-transfer` (implemented,
+local tests green, simulated gateway). Endpoints are stable; only message-catalogue codes (spec
+Open question 7), the exact status code for `daily_payout.not_failed` (Open question 5), and
+UC-72's Awaiting Window read-model (BE plan Task 10A) are unsettled on the BE side.
 
 Branch: `feature/linhnv-daily-payout-transfer` (FE), from `origin/develop`.
 
@@ -20,9 +32,10 @@ Each task follows TDD (failing test first), is independently verifiable, and end
 `npm run lint && npm run typecheck && npm test` before moving to the next. `npm run build` runs
 at Task 9 and again before any PR.
 
-## Task 1 — Pure parsing/formatting (`src/features/admin/payout-settlements/payoutSettlements.ts`)
+## Task 1 — Pure parsing/formatting (`src/features/admin/payout-settlements/payoutSettlements.ts`) (done)
 
-- `PayoutSettlementStatus` union type matching the backend's five statuses.
+- `PayoutSettlementStatus` union type matching the backend's six statuses (`Awaiting Window`,
+  `Scheduled`, `Processing`, `Settled`, `SettlementFailed`, `Carried Over` — v12 update above).
 - `parsePayoutSettlementListItem(body)` / `parsePayoutSettlementsResponse(body)`: strict parsers,
   throw on wrong types or an unrecognized status string (same discipline as
   `parsePayoutDetail` in the existing `payoutReview.ts`).

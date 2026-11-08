@@ -3,7 +3,17 @@
 // Duplicated rather than imported: this repo's admin and operator feature slices do not import
 // each other (same reason each keeps its own small format/error-code module instead of a shared
 // one — see the DAILY-PAYOUT-TRANSFER FE spec's Behaviour rules).
-export const PAYOUT_SETTLEMENT_STATUSES = ['Scheduled', 'Processing', 'Settled', 'SettlementFailed', 'Carried Over'] as const;
+// 'Awaiting Window' (SRS v12, BR-141): a paid booking is held 24h after payment confirmation
+// before it is eligible for any run. No PayoutSettlement row exists for it yet — the backend
+// synthesizes this status for UC-72 (not shipped yet; see DAILY-PAYOUT-TRANSFER-be-plan Task 10A).
+export const PAYOUT_SETTLEMENT_STATUSES = [
+  'Awaiting Window',
+  'Scheduled',
+  'Processing',
+  'Settled',
+  'SettlementFailed',
+  'Carried Over',
+] as const;
 export const PAYOUT_SETTLEMENT_KINDS = ['Main', 'Retained'] as const;
 
 export type PayoutSettlementStatus = (typeof PAYOUT_SETTLEMENT_STATUSES)[number];

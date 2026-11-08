@@ -5,6 +5,7 @@ import {
   parseFailedPayoutBatchDetail,
   parsePayoutSettlementListItem,
   parsePayoutSettlementsResponse,
+  PAYOUT_SETTLEMENT_STATUSES,
   validateManualTransferReference,
 } from './payoutSettlements';
 
@@ -42,8 +43,9 @@ describe('parsePayoutSettlementListItem', () => {
     expect(parsePayoutSettlementListItem({ ...listItem, transferReference: null }).transferReference).toBeNull();
   });
 
-  it('accepts every backend status, including the "Carried Over" status with a space', () => {
-    for (const status of ['Scheduled', 'Processing', 'Settled', 'SettlementFailed', 'Carried Over']) {
+  it('accepts every backend status, including "Carried Over" and "Awaiting Window" with a space', () => {
+    expect(PAYOUT_SETTLEMENT_STATUSES).toContain('Awaiting Window');
+    for (const status of PAYOUT_SETTLEMENT_STATUSES) {
       expect(parsePayoutSettlementListItem({ ...listItem, status }).status).toBe(status);
     }
   });
