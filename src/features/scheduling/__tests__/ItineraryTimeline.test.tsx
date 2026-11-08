@@ -279,6 +279,104 @@ describe('ItineraryTimeline (UC-11)', () => {
     expect(screen.getByText(/20\/10/)).toBeDefined();
   });
 
+  describe('selecting a leg on the map', () => {
+    const stop = (overrides: Partial<ItineraryDetailItemDto>): ItineraryDetailItemDto => ({
+      ...mockItems[0],
+      isUnavailable: false,
+      ...overrides,
+    });
+    const legItems: ItineraryDetailItemDto[] = [
+      stop({ itemId: 11, sequenceNo: 1, poiId: 12, poiName: 'Bảo tàng Chăm' }),
+      stop({
+        itemId: 12,
+        sequenceNo: 2,
+        poiId: 88,
+        poiName: 'Ngũ Hành Sơn',
+        travelDurationFromPreviousMinutes: 10,
+        travelDistanceFromPreviousMeters: 8100,
+        transportModeFromPrevious: 'Motorbike',
+      }),
+      stop({
+        itemId: 13,
+        sequenceNo: 3,
+        poiId: 35,
+        poiName: 'Chùa Quan Thế Âm',
+        travelDurationFromPreviousMinutes: 4,
+        travelDistanceFromPreviousMeters: 600,
+        transportModeFromPrevious: 'Motorbike',
+      }),
+    ];
+
+    it('turns the leg pill into a button that names both stops and shows whether it is selected', () => {
+      render(
+        <ItineraryTimeline
+          items={legItems}
+          selectableLegIds={new Set(['item-11>item-12', 'item-12>item-13'])}
+          selectedLegId="item-11>item-12"
+          onSelectLeg={vi.fn()}
+        />,
+      );
+
+      const first = screen.getByRole('button', { name: /Xem trên bản đồ đoạn từ Bảo tàng Chăm đến Ngũ Hành Sơn/ });
+      const second = screen.getByRole('button', { name: /Xem trên bản đồ đoạn từ Ngũ Hành Sơn đến Chùa Quan Thế Âm/ });
+      expect(first.getAttribute('aria-pressed')).toBe('true');
+      expect(second.getAttribute('aria-pressed')).toBe('false');
+      expect(first.textContent).toContain('8,1 km · khoảng 10 phút · 🛵 Xe máy');
+      expect(first.className).toContain('focus-visible:ring-2');
+    });
+
+    it('reports the leg that was pressed', () => {
+      const onSelectLeg = vi.fn();
+      render(
+        <ItineraryTimeline
+          items={legItems}
+          selectableLegIds={new Set(['item-11>item-12', 'item-12>item-13'])}
+          onSelectLeg={onSelectLeg}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /đến Chùa Quan Thế Âm/ }));
+
+      expect(onSelectLeg).toHaveBeenCalledWith('item-12>item-13');
+    });
+
+    it('keeps the change-mode control separate: it does not select the leg', () => {
+      const onSelectLeg = vi.fn();
+      render(
+        <ItineraryTimeline
+          items={legItems}
+          editable
+          onChangeLegMode={vi.fn()}
+          selectableLegIds={new Set(['item-11>item-12'])}
+          onSelectLeg={onSelectLeg}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Đổi phương tiện đến Ngũ Hành Sơn/ }));
+
+      expect(onSelectLeg).not.toHaveBeenCalled();
+    });
+
+    it('leaves a leg the map cannot show as a plain label', () => {
+      render(
+        <ItineraryTimeline
+          items={legItems}
+          selectableLegIds={new Set(['item-11>item-12'])}
+          onSelectLeg={vi.fn()}
+        />,
+      );
+
+      expect(screen.getAllByRole('button', { name: /Xem trên bản đồ đoạn/ })).toHaveLength(1);
+      expect(screen.getAllByTestId('leg-row')[1].textContent).toContain('600 m');
+    });
+
+    it('is a plain label without a selection handler', () => {
+      render(<ItineraryTimeline items={legItems} selectableLegIds={new Set(['item-11>item-12'])} />);
+
+      expect(screen.queryByRole('button', { name: /Xem trên bản đồ đoạn/ })).toBeNull();
+    });
+  });
+
   describe('Review 2 stop actions and lunch card (D4, D11-1/5)', () => {
     const day: ItineraryDetailItemDto[] = [
       { ...mockItems[0], itemId: 21, poiId: 12, poiName: 'Bảo tàng Chăm', plannedArrival: '2026-10-20T08:00:00+07:00', plannedDeparture: '2026-10-20T09:30:00+07:00' },
