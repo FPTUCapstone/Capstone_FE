@@ -68,12 +68,144 @@ describe('fetchRoadLeg (Mapbox Directions per leg)', () => {
     expect([first, second, third]).toEqual([roadLine, roadLine, roadLine]);
   });
 
-  it('does not remember a failed leg, so a later draw can try again', async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    fetchMock.mockResolvedValueOnce(directions(roadLine));
+  describe('remembering failures (A)', () => {
+    const other: ItineraryRouteLeg = {
+      key: 'driving:108.3,16.1;108.31,16.11',
+      from: [108.3, 16.1],
+      to: [108.31, 16.11],
+      profile: 'driving',
+    };
+    const denied = { ok: false, status: 403, json: async () => ({}) };
 
-    expect(await fetchRoadLeg(leg, 'pk.test')).toBeNull();
-    expect(await fetchRoadLeg(leg, 'pk.test')).toEqual(roadLine);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-11-08T08:00:00Z'));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('does not ask again for a failed leg until a few minutes have passed', async () => {
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      fetchMock.mockResolvedValueOnce(directions(roadLine));
+
+      expect(await fetchRoadLeg(leg, 'pk.test')).toBeNull();
+      vi.advanceTimersByTime(60_000);
+      expect(await fetchRoadLeg(leg, 'pk.test')).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(5 * 60_000);
+      expect(await fetchRoadLeg(leg, 'pk.test')).toEqual(roadLine);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([401, 403])('stops calling Directions for every other leg after a %i', async (status) => {
+      fetchMock.mockResolvedValue({ ok: false, status, json: async () => ({}) });
+
+      expect(await fetchRoadLeg(leg, 'pk.test')).toBeNull();
+      vi.advanceTimersByTime(60 * 60_000);
+      expect(await fetchRoadLeg(other, 'pk.test')).toBeNull();
+      expect(await fetchRoadLeg(leg, 'pk.test')).toBeNull();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps asking for other legs after an ordinary failure such as 422', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 422, json: async () => ({}) });
+      fetchMock.mockResolvedValueOnce(directions(roadLine));
+
+      expect(await fetchRoadLeg(leg, 'pk.test')).toBeNull();
+      expect(await fetchRoadLeg(other, 'pk.test')).toEqual(roadLine);
+    });
+
+    it('still serves a leg routed before Directions was refused', async () => {
+      fetchMock.mockResolvedValueOnce(directions(roadLine));
+      fetchMock.mockResolvedValueOnce(denied);
+
+      await fetchRoadLeg(leg, 'pk.test');
+      await fetchRoadLeg(other, 'pk.test');
+
+      expect(await fetchRoadLeg(leg, 'pk.test')).toEqual(roadLine);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('remembering routed legs across page loads (B)', () => {
+    const STORAGE_KEY = 'tripmate:road-legs:v1';
+
+    /** A page load: the module state is gone, sessionStorage is kept. */
+    async function reloadedModule() {
+      vi.resetModules();
+      return import('../utils/mapboxDirections');
+    }
+
+    it('does not call Mapbox again for a leg routed before the page was reloaded', async () => {
+      fetchMock.mockResolvedValue(directions(roadLine));
+      await fetchRoadLeg(leg, 'pk.test');
+
+      const reloaded = await reloadedModule();
+
+      expect(await reloaded.fetchRoadLeg({ ...leg }, 'pk.test')).toEqual(roadLine);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not store failed legs', async () => {
+      fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+      await fetchRoadLeg(leg, 'pk.test');
+      const reloaded = await reloadedModule();
+      fetchMock.mockResolvedValue(directions(roadLine));
+
+      expect(await reloaded.fetchRoadLeg(leg, 'pk.test')).toEqual(roadLine);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      ['not JSON', 'not json'],
+      ['not an object', '[1,2,3]'],
+      ['a leg without a usable line', JSON.stringify({ [leg.key]: [[108.2, 'x']] })],
+    ])('ignores stored data that is %s', async (_name, stored) => {
+      sessionStorage.setItem(STORAGE_KEY, stored);
+      fetchMock.mockResolvedValue(directions(roadLine));
+
+      expect(await fetchRoadLeg(leg, 'pk.test')).toEqual(roadLine);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps working when sessionStorage cannot be read or written', async () => {
+      const broken = {
+        getItem: () => { throw new Error('SecurityError'); },
+        setItem: () => { throw new DOMException('full', 'QuotaExceededError'); },
+        removeItem: () => {},
+      };
+      vi.stubGlobal('sessionStorage', broken);
+      fetchMock.mockResolvedValue(directions(roadLine));
+
+      expect(await fetchRoadLeg(leg, 'pk.test')).toEqual(roadLine);
+    });
+
+    it('keeps only the newest legs once there are too many to store', async () => {
+      fetchMock.mockImplementation(async () => directions(roadLine));
+      const legAt = (n: number): ItineraryRouteLeg => ({
+        key: `driving:108,${n};108,${n + 1}`,
+        from: [108, n],
+        to: [108, n + 1],
+        profile: 'driving',
+      });
+      for (let n = 0; n < 130; n += 1) await fetchRoadLeg(legAt(n), 'pk.test');
+
+      const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}') as Record<string, unknown>;
+
+      expect(Object.keys(stored)).toHaveLength(100);
+      expect(stored[legAt(129).key]).toBeDefined();
+      expect(stored[legAt(0).key]).toBeUndefined();
+    });
+
+    it('does not store a route that is too big, but still returns it', async () => {
+      const huge = Array.from({ length: 40_000 }, (_, n) => [108 + n / 1e6, 16 + n / 1e6]);
+      fetchMock.mockResolvedValue(directions(huge));
+
+      expect(await fetchRoadLeg(leg, 'pk.test')).toHaveLength(40_000);
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+    });
   });
 });

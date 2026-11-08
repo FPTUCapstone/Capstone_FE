@@ -25,8 +25,19 @@ OUT: turn-by-turn/steps, thời gian/khoảng cách lấy từ Mapbox (giữ s�
 **3.2 Client Directions (file mới `utils/mapboxDirections.ts`, thuần, không React)**
 - `fetchRoadLeg(leg, token, signal): Promise<LngLat[] | null>` → `GET https://api.mapbox.com/directions/v5/mapbox/{profile}/{lng,lat;lng,lat}?geometries=geojson&overview=full&alternatives=false&access_token=…`.
 - Trả `null` khi: lỗi mạng, HTTP không ok (401/403/422/429/5xx), `routes[0].geometry.coordinates` thiếu/không hợp lệ (<2 điểm, không phải số). Không throw (trừ AbortError → trả `null` và caller bỏ qua nhờ signal).
-- Cache module-level `Map<key, Promise<LngLat[]>>`: chỉ lưu kết quả **thành công**; chặng lỗi bị xoá khỏi cache để lần vẽ sau (đổi tab/ngày, remount) được thử lại. Token không nằm trong key (một token mỗi phiên). Chặn tăng vô hạn: tối đa 200 key (xoá cũ nhất).
+- Cache module-level `Map<key, Promise<LngLat[]>>` cho kết quả **thành công** (xem 3.2a/3.2b cho chặng lỗi và sessionStorage). Token không nằm trong key (một token mỗi phiên). Chặn tăng vô hạn: tối đa 200 key (xoá cũ nhất).
 - Token `pk.` public hiện có; không log token.
+
+**3.2a Nhớ chặng lỗi (v1.1, theo yêu cầu giảm số lần gọi)**
+- Chặng lỗi được ghi nhớ `FAILURE_TTL_MS = 5 phút` (so với `Date.now()`; test dùng fake timers cho `Date`): trong thời gian đó `fetchRoadLeg` trả `null` mà không gọi Mapbox. Hết hạn → thử lại.
+- HTTP 401/403 → cờ `refused` cho cả phiên trang: mọi chặng chưa có kết quả trả `null` ngay, không gọi nữa (giữ nét đứt thẳng); chặng đã có kết quả trong cache/sessionStorage vẫn dùng. Lỗi khác (422, 429, 5xx, mạng) chỉ ảnh hưởng chính chặng đó.
+- Bảng chặng lỗi cũng giới hạn 200 key.
+
+**3.2b Lưu chặng thành công qua các lần tải trang (v1.1)**
+- `sessionStorage['tripmate:road-legs:v1']` = JSON `{ [legKey]: LngLat[] }`, key là profile + toạ độ làm tròn (cùng `leg.key`). Đọc một lần khi dùng lần đầu, kiểm tra từng entry bằng `isLine`; dữ liệu hỏng/không đúng dạng bị bỏ qua.
+- Giới hạn: tối đa 100 chặng và 500 000 ký tự JSON; vượt thì bỏ chặng cũ nhất; một route đơn lẻ vượt ngân sách thì không lưu (vẫn dùng trong bộ nhớ). Chỉ lưu chặng thành công, không lưu lỗi/refusal.
+- Mọi đọc/ghi/xoá storage bọc `try/catch` (private mode, quota, SSR); lỗi → chạy tiếp chỉ với cache bộ nhớ.
+- `clearRoadLegCache()` (dùng trong test) xoá cả bộ nhớ, chặng lỗi, cờ refused và storage.
 
 **3.3 Vẽ (`MapboxItineraryMap.tsx`)**
 - Giữ `itinerary-route` + layer dashed như cũ → lập tức vẽ đường thẳng (hiển thị ngay, test cũ vẫn đúng).
@@ -56,7 +67,7 @@ Thay câu cũ bằng: "Nét liền: theo đường đi thực tế (Mapbox). Né
 - Test trang (nếu có sẵn test chú thích cũ) cập nhật theo câu mới.
 
 ## 6. Rủi ro / đánh đổi
-- Mỗi lần mở trang = N+1 request Directions (N stop) → tốn quota token; cache giảm lặp. Giới hạn Mapbox 300 req/phút/token — chuyến thường < 20 chặng/ngày nên đủ. YAGNI: chưa dùng Matrix/Map Matching (1 request nhiều waypoint) vì cần mode theo chặng.
+- Mỗi lần mở trang lần đầu = N+1 request Directions (N stop) → tốn quota token; cache bộ nhớ + sessionStorage + nhớ lỗi 5 phút + dừng khi 401/403 giảm lặp (reload và đổi tab ngày không gọi lại chặng đã có). Giới hạn Mapbox 300 req/phút/token — chuyến thường < 20 chặng/ngày nên đủ. YAGNI: chưa dùng Matrix/Map Matching (1 request nhiều waypoint) vì cần mode theo chặng.
 - Token public bị giới hạn URL hoặc thiếu scope directions → mọi chặng nét đứt (đúng như hiện tại), không vỡ trang.
 - Walking profile có giới hạn khoảng cách → chặng dài có thể 422 → fallback nét đứt.
 - Giờ/km hiển thị vẫn từ BE, có thể lệch nhẹ so với đường vẽ.
