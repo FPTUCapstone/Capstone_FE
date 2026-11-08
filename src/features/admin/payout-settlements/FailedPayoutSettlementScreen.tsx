@@ -5,18 +5,31 @@ import { useRouter } from 'next/navigation';
 
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
+import { ConfirmActionDialog } from './ConfirmActionDialog';
+import { ManualSettlementDialog } from './ManualSettlementDialog';
 import { formatRunDate, formatVietnamDateTime, formatVnd, type FailedPayoutBatchDetail } from './payoutSettlements';
-import { fetchFailedPayoutBatchDetail, PayoutSettlementsError } from './payoutSettlementsService';
+import {
+  carryOverFailedPayoutBatch,
+  fetchFailedPayoutBatchDetail,
+  PayoutSettlementsError,
+  recordManualPayoutSettlement,
+  retryFailedPayoutBatch,
+} from './payoutSettlementsService';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'forbidden' | 'unavailable';
+type OpenDialog = 'retry' | 'carryOver' | 'manualSettlement' | null;
 
-/** UC-73 (SRS §3.9.9.2): read-only detail of a failed payout batch. No actions here — Retry /
- * Carry Over / Record Manual Transfer are Task 6, added once this detail view is in place. */
+/** UC-73 (SRS §3.9.9.2): detail of a failed payout batch, plus its three mutually-exclusive
+ * actions (Task 6). Every action re-fetches the detail on success rather than assuming the new
+ * status locally — the same `reloadToken` mechanism the "Retry" button on the unavailable state
+ * already uses, so a stale in-flight fetch from an earlier reload is aborted by its own effect
+ * cleanup and never overwrites a newer reload's result (U03). */
 export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
   const { replace } = useRouter();
   const [detail, setDetail] = useState<FailedPayoutBatchDetail | null>(null);
   const [state, setState] = useState<LoadState>('loading');
-  const [retry, setRetry] = useState(0);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -40,7 +53,12 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
         setState(error instanceof PayoutSettlementsError && error.status === 403 ? 'forbidden' : 'unavailable');
       });
     return () => controller.abort();
-  }, [batchId, replace, retry]);
+  }, [batchId, replace, reloadToken]);
+
+  function reload() {
+    setOpenDialog(null);
+    setReloadToken((value) => value + 1);
+  }
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-8">
@@ -74,7 +92,7 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
             type="button"
             onClick={() => {
               setState('loading');
-              setRetry((value) => value + 1);
+              setReloadToken((value) => value + 1);
             }}
             className="mt-2 rounded-lg border border-current px-3 py-1 font-bold"
           >
@@ -92,6 +110,20 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
             <SummaryField label="Status" value={<Badge>{detail.status}</Badge>} />
             <SummaryField label="Attempt Count" value={String(detail.attemptCount)} />
           </section>
+
+          {detail.status === 'SettlementFailed' ? (
+            <div className="mb-6 flex flex-wrap gap-3">
+              <button type="button" onClick={() => setOpenDialog('retry')} className={actionButton}>
+                Retry Transfer
+              </button>
+              <button type="button" onClick={() => setOpenDialog('carryOver')} className={actionButton}>
+                Carry Over
+              </button>
+              <button type="button" onClick={() => setOpenDialog('manualSettlement')} className={actionButton}>
+                Record Manual Transfer
+              </button>
+            </div>
+          ) : null}
 
           <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0}>
             <table className="min-w-[700px] w-full text-left text-sm">
@@ -119,11 +151,37 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
           </div>
         </>
       ) : null}
+
+      <ConfirmActionDialog
+        isOpen={openDialog === 'retry'}
+        title="Retry Transfer"
+        body="The batch returns to Processing. The resend itself happens on the backend's own retry schedule, not immediately."
+        confirmLabel="Retry Transfer"
+        onConfirm={() => retryFailedPayoutBatch(batchId)}
+        onClose={() => setOpenDialog(null)}
+        onSuccess={reload}
+      />
+      <ConfirmActionDialog
+        isOpen={openDialog === 'carryOver'}
+        title="Carry Over"
+        body="This amount moves to the Tour Operator's next scheduled run instead of retrying this batch."
+        confirmLabel="Carry Over"
+        onConfirm={() => carryOverFailedPayoutBatch(batchId)}
+        onClose={() => setOpenDialog(null)}
+        onSuccess={reload}
+      />
+      <ManualSettlementDialog
+        isOpen={openDialog === 'manualSettlement'}
+        onConfirm={(transferReference) => recordManualPayoutSettlement(batchId, transferReference)}
+        onClose={() => setOpenDialog(null)}
+        onSuccess={reload}
+      />
     </main>
   );
 }
 
 const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
+const actionButton = 'rounded-xl border border-[#006b5f] px-4 py-2 text-sm font-bold text-[#006b5f] hover:bg-[#e6f7f0]';
 
 function SummaryField({ label, value }: { label: string; value: React.ReactNode }) {
   return (

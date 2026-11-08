@@ -191,22 +191,37 @@ rendered; Administrator with a valid ID → screen. `npm run lint && npm run typ
 Task 4 (the tool doesn't see this session's new files); not retried here since Task 4 already
 ruled out a code-side cause.
 
-## Task 6 — Retry / Carry Over / Record Manual Transfer dialogs
+## Task 6 — Retry / Carry Over / Record Manual Transfer dialogs — done
 
-- Three dialogs, each: confirm → call its Task 2 service function → on success, close and
-  re-fetch the detail (never assume the new status locally) → on failure, keep the dialog open
-  with the mapped error (manual-settlement's blank-reference case shown inline, value kept).
-- Actions rendered only while `status === 'SettlementFailed'`; hidden once the re-fetched detail
-  says otherwise.
-- Double-submit guard on each confirm button, same as `PayoutApproveDialog`.
-- Success copy: Retry says the resend happens on the backend's own schedule, not immediately;
-  Carry Over says the amount moves to the operator's next run — per spec Screen 2, to avoid
-  implying instant settlement.
+- `ConfirmActionDialog.tsx`: a no-input confirm dialog shared by Retry Transfer and Carry Over —
+  same shape, only the title/body/confirm label and the service call passed in differ.
+  `ManualSettlementDialog.tsx`: the one dialog with an input, validated with Task 1's own
+  `validateManualTransferReference` rather than re-implementing the trim/blank check. Both reuse
+  `useAccessibleDecisionDialog` from `tour-operator-applications/components/` directly (it is
+  already cross-feature-imported there by `tour-reviews/ModerationDialog.tsx` — a precedent for
+  reusing it rather than duplicating; the plan's original reference, `PayoutApproveDialog`, was
+  removed with UC-46). Confirm → call the passed-in service function → `onSuccess` (caller closes
+  and re-fetches) → on failure, the dialog stays open with the mapped error (manual-settlement
+  keeps the typed value, per spec).
+- `FailedPayoutSettlementScreen.tsx`: three action buttons, rendered only while
+  `detail.status === 'SettlementFailed'`; each opens its dialog via an `openDialog` union state.
+  `onSuccess` closes the dialog and bumps the same `reloadToken` the unavailable-state "Retry"
+  button already used — the status shown is always whatever the re-fetch returns, never assumed
+  locally, and a stale in-flight fetch from an earlier reload is aborted by the effect's own
+  cleanup when a newer reload supersedes it (U03), with no extra code needed beyond that existing
+  mechanism.
+- Success copy: Retry Transfer says the resend happens on the backend's own schedule, not
+  immediately; Carry Over says the amount moves to the Tour Operator's next scheduled run — per
+  spec Screen 2, to avoid implying instant settlement.
 
-Tests: each dialog's happy path (confirm → re-fetch → new status shown); double-click sends one
-request per action; manual-settlement blank reference blocked with value preserved; a stale
-detail response arriving late does not overwrite the status just set by the action's own
-re-fetch (U03).
+Tests (TDD, 5 + 6 dialog unit tests + 5 new screen integration tests, all red-then-green): each
+dialog's happy path and double-click-sends-one-request guard (confirmed via a controllable
+pending promise, not timing); manual-settlement blank reference blocked with the value preserved;
+mapped error shown and dialog kept open on failure. Screen: actions shown only for
+`SettlementFailed`, hidden for every other status; each action's confirm → re-fetch → new status
+shown; the U03 race (two reloads in flight, the earlier one resolving after the later one must not
+overwrite it). `npm run lint && npm run typecheck && npm test` (3576/3576) and `npm run build` all
+green.
 
 ## Task 7 — Payout Settlement History (`PayoutSettlementHistoryScreen.tsx`, `/partner/payout-settlements`)
 
