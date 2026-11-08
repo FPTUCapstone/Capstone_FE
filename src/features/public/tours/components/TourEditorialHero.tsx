@@ -56,7 +56,7 @@ export function TourEditorialHero({ onExploreClick }: TourEditorialHeroProps) {
           <button
             type="button"
             onClick={handleScrollDown}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#007d6e] px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] active:scale-98"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#103B39] px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-md transition hover:bg-[#174B4A] active:scale-98"
           >
             <span>Khám phá tour</span>
             <span className="material-symbols-outlined text-sm">arrow_downward</span>

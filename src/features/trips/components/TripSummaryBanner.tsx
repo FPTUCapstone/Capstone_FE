@@ -14,9 +14,9 @@ export function TripSummaryBanner({ summary, isDemo }: TripSummaryBannerProps) {
   return (
     <section
       aria-label={tripReviewEn.accessibility.tripSummaryAria}
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#00152A] via-[#0F2942] to-[#102A43] p-5 text-white shadow-md sm:p-6"
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1C2928] via-[#0F2942] to-[#103B39] p-5 text-white shadow-md sm:p-6"
     >
-      <div className="pointer-events-none absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-[#006B5F]/20 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-[#174B4A]/20 blur-2xl" />
 
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>

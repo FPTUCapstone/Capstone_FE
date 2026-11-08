@@ -12,7 +12,7 @@ interface VerticalBarChartProps {
 
 export function VerticalBarChart({
   data,
-  color = '#245747',
+  color = '#174B4A',
   height = 240,
   valueFormatter = (val) => String(val),
 }: VerticalBarChartProps) {
@@ -20,7 +20,7 @@ export function VerticalBarChart({
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex h-56 items-center justify-center text-xs text-[#758B74]">
+      <div className="flex h-56 items-center justify-center text-xs text-[#5B6E69]">
         No volume data available.
       </div>
     );
@@ -52,7 +52,7 @@ export function VerticalBarChart({
                 y1={y}
                 x2={totalWidth - paddingX}
                 y2={y}
-                stroke="#E6E4DD"
+                stroke="#DCE2DD"
                 strokeDasharray="3 3"
                 strokeWidth={1}
               />
@@ -60,7 +60,7 @@ export function VerticalBarChart({
                 x={paddingX - 8}
                 y={y + 3}
                 textAnchor="end"
-                className="fill-[#A3B3AB] text-[10px] font-mono"
+                className="fill-[#5B6E69] text-[10px] font-mono"
               >
                 {Math.round(maxVal * pct)}
               </text>
@@ -89,7 +89,7 @@ export function VerticalBarChart({
                   y={10}
                   width={slotWidth}
                   height={chartHeight}
-                  fill="#758B74"
+                  fill="#5B6E69"
                   fillOpacity={0.08}
                   rx={4}
                 />
@@ -100,7 +100,7 @@ export function VerticalBarChart({
                 y={barY}
                 width={barWidth}
                 height={barHeight}
-                fill={isHovered ? '#1B4337' : color}
+                fill={isHovered ? '#103B39' : color}
                 rx={4}
                 className="transition-all duration-200"
               />
@@ -111,7 +111,7 @@ export function VerticalBarChart({
                 y={barY - 6}
                 textAnchor="middle"
                 className={`text-[10px] font-bold font-mono transition-opacity ${
-                  isHovered ? 'fill-[#1C2923] opacity-100' : 'fill-[#74827B] opacity-0 sm:opacity-80'
+                  isHovered ? 'fill-[#1C2928] opacity-100' : 'fill-[#5B6E69] opacity-0 sm:opacity-80'
                 }`}
               >
                 {point.primaryValue}
@@ -123,7 +123,7 @@ export function VerticalBarChart({
                 y={chartHeight + 28}
                 textAnchor="middle"
                 className={`text-[11px] font-medium transition-colors ${
-                  isHovered ? 'fill-[#1C2923] font-bold' : 'fill-[#74827B]'
+                  isHovered ? 'fill-[#1C2928] font-bold' : 'fill-[#5B6E69]'
                 }`}
               >
                 {point.label}
@@ -136,17 +136,17 @@ export function VerticalBarChart({
       {/* Hover Tooltip Overlay */}
       {hoveredIdx !== null && data[hoveredIdx] && (
         <div
-          className="pointer-events-none absolute -top-2 rounded-xl border border-[#2A3B33] bg-[#1C2923] px-3 py-2 text-xs text-white shadow-lg z-20"
+          className="pointer-events-none absolute -top-2 rounded-xl border border-[#103B39] bg-[#1C2928] px-3 py-2 text-xs text-white shadow-lg z-20"
           style={{
             left: `${((hoveredIdx + 0.5) / data.length) * 100}%`,
             transform: 'translateX(-50%) translateY(-100%)',
           }}
         >
-          <p className="font-bold text-[#E8EFE9] border-b border-[#2A3B33] pb-1 mb-1">
+          <p className="font-bold text-[#E8F0EA] border-b border-[#103B39] pb-1 mb-1">
             {data[hoveredIdx].label}
           </p>
           <div className="flex items-center justify-between gap-3 text-[11px]">
-            <span className="text-[#A3B3AB]">Volume:</span>
+            <span className="text-[#5B6E69]">Volume:</span>
             <span className="font-bold text-white">
               {valueFormatter(data[hoveredIdx].primaryValue)}
             </span>

@@ -27,7 +27,7 @@ export function CreateSchedulingRequestPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
             aria-hidden="true"
           />
           <p className="text-xs font-semibold text-slate-500">Đang tải kế hoạch du lịch…</p>
@@ -50,7 +50,7 @@ export function CreateSchedulingRequestPage() {
             aria-label="Breadcrumb"
             className="mb-4 flex items-center gap-2 text-xs text-slate-500"
           >
-            <Link href={ROUTES.home} className="hover:text-[#007d6e] transition">
+            <Link href={ROUTES.home} className="hover:text-[#103B39] transition">
               Trang chủ
             </Link>
             <span className="material-symbols-outlined text-xs">chevron_right</span>
@@ -59,7 +59,7 @@ export function CreateSchedulingRequestPage() {
 
           {/* Page Header */}
           <div className="mb-8 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-[#007d6e] shadow-2xs">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-[#103B39] shadow-2xs">
               <span className="material-symbols-outlined text-sm">auto_awesome</span>
               Thuật toán CSP & Tối ưu hóa thời gian thực
             </div>

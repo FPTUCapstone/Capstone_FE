@@ -35,7 +35,7 @@ export function PaymentHandoffPage({ bookingId }: PaymentHandoffPageProps) {
         <PublicNavigation />
         <main className="flex flex-1 items-center justify-center p-8">
           <div
-            className="h-9 w-9 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            className="h-9 w-9 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
             aria-hidden="true"
           />
         </main>

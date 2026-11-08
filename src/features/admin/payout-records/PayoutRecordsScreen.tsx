@@ -84,9 +84,9 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
       <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Staff finance</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Payout Records</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[#486581]">Review payout requests awaiting Staff assessment.</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#174B4A]">Staff finance</p>
+        <h1 className="mt-2 text-3xl font-extrabold text-[#1C2928]">Payout Records</h1>
+        <p className="mt-2 max-w-3xl text-sm text-[#5B6E69]">Review payout requests awaiting Staff assessment.</p>
       </header>
 
       {data ? <section aria-label="Payout summary" className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -117,12 +117,12 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
         </div>
         {periodError ? <p id="period-error" role="alert" className="mt-3 text-sm font-semibold text-[#8c1030]">{periodError}</p> : null}
         <div className="mt-4 flex flex-wrap gap-3">
-          <button type="submit" className="rounded-xl bg-[#006b5f] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#005048]">Apply Filters</button>
+          <button type="submit" className="rounded-xl bg-[#174B4A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#103B39]">Apply Filters</button>
           <button type="button" onClick={() => { const next = defaultPayoutsSearch(); setDraft(next); setPeriodError(''); navigate(next); }} className="rounded-xl border border-[#9fb3c8] px-5 py-2.5 text-sm font-bold text-[#243b53] hover:bg-[#edf2f7]">Clear</button>
         </div>
       </form>
 
-      {state === 'loading' ? <div role="status" className="rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]">Loading payout records…</div> : null}
+      {state === 'loading' ? <div role="status" className="rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#5B6E69]">Loading payout records…</div> : null}
       {state === 'forbidden' ? <FeedbackAlert tone="error" title="Access denied">{PAYOUT_MESSAGES.forbidden}</FeedbackAlert> : null}
       {state === 'invalid-request' ? <FeedbackAlert tone="error" title="The payout records could not be retrieved with the submitted filters">{invalidMessage ?? PAYOUT_MESSAGES.unavailable}</FeedbackAlert> : null}
       {state === 'unavailable' ? <FeedbackAlert tone="error" title="Unable to load payout records"><p>{PAYOUT_MESSAGES.unavailable}</p><button type="button" onClick={() => { setState('loading'); setData(null); setRetryKey((value) => value + 1); }} className="mt-2 rounded-lg border border-current px-3 py-1 font-bold">Retry</button></FeedbackAlert> : null}
@@ -132,11 +132,11 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
         <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0} aria-label="Payout records table; scroll horizontally on small screens">
           <table className="min-w-[1120px] w-full border-collapse text-left text-sm">
             <caption className="sr-only">Payout records for Staff review</caption>
-            <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
+            <thead className="bg-[#103B39] text-xs uppercase tracking-wide text-white">
               <tr>{['Payout Code', 'Tour Operator', 'Settlement Period', 'Gross Revenue', 'Commission', 'Net Payout', 'Requested Date', 'Status', 'Action'].map((heading) => <th key={heading} scope="col" className="px-4 py-3">{heading}</th>)}</tr>
             </thead>
             <tbody>{data.items.map((payout) => <tr key={payout.payoutId} className="border-t border-[#e6edf5]">
-              <td className="px-4 py-3 font-mono font-bold text-[#00152a]">{payout.payoutCode}</td>
+              <td className="px-4 py-3 font-mono font-bold text-[#1C2928]">{payout.payoutCode}</td>
               <td className="px-4 py-3 font-medium">{payout.operator.companyName}</td>
               <td className="px-4 py-3 whitespace-nowrap">
                 {formatPeriodRange(payout.periodStart, payout.periodEnd)}
@@ -146,7 +146,7 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
               </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">{formatVnd(payout.grossRevenue)}</td>
               <td className="px-4 py-3 text-right whitespace-nowrap">{formatVnd(payout.commissionAmount)}</td>
-              <td className="px-4 py-3 text-right whitespace-nowrap font-bold text-[#00152a]">{formatVnd(payout.netAmount)}</td>
+              <td className="px-4 py-3 text-right whitespace-nowrap font-bold text-[#1C2928]">{formatVnd(payout.netAmount)}</td>
               <td className="px-4 py-3 whitespace-nowrap">{formatRequestedAt(payout.requestedAtUtc)}</td>
               <td className="px-4 py-3"><Badge status={payout.status} alert={payout.status === 'Rejected'}>{formatPayoutStatus(payout.status)}</Badge></td>
               <td className="px-4 py-3">
@@ -161,7 +161,7 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
             </tr>)}</tbody>
           </table>
         </div>
-        <div className="mt-4 flex flex-col gap-3 text-sm text-[#486581] sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 text-sm text-[#5B6E69] sm:flex-row sm:items-center sm:justify-between">
           <p>{data.totalCount} payout record{data.totalCount === 1 ? '' : 's'} · Page {data.pageNumber} of {Math.max(data.totalPages, 1)}</p>
           <div className="flex gap-2">
             <PageButton disabled={data.pageNumber <= 1} onClick={() => navigate({ ...applied, pageNumber: data.pageNumber - 1 })}>Previous</PageButton>
@@ -173,7 +173,7 @@ function PayoutRecordsContent({ queryKey }: { queryKey: string }) {
   );
 }
 
-const inputClass = 'mt-1 w-full rounded-xl border border-[#bcccdc] bg-white px-3 py-2.5 text-sm text-[#102a43] outline-none focus-visible:border-[#006b5f] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40';
+const inputClass = 'mt-1 w-full rounded-xl border border-[#bcccdc] bg-white px-3 py-2.5 text-sm text-[#103B39] outline-none focus-visible:border-[#174B4A] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">{label}{children}</label>;
@@ -181,8 +181,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function SummaryCard({ label, value, alert = false }: { label: string; value: string | number; alert?: boolean }) {
   return <div className={`rounded-2xl border bg-white p-5 shadow-sm ${alert ? 'border-[#f3a79d]' : 'border-[#d7e2ef]'}`}>
-    <p className="text-xs font-bold uppercase tracking-wide text-[#627d98]">{label}</p>
-    <p className={`mt-2 text-2xl font-extrabold ${alert ? 'text-[#b42318]' : 'text-[#00152a]'}`}>{value}</p>
+    <p className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">{label}</p>
+    <p className={`mt-2 text-2xl font-extrabold ${alert ? 'text-[#b42318]' : 'text-[#1C2928]'}`}>{value}</p>
   </div>;
 }
 

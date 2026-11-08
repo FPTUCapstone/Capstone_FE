@@ -33,7 +33,7 @@ function markerElement(label: string, title: string, color: string): HTMLButtonE
   element.setAttribute('aria-label', title);
   element.style.setProperty('background-color', color);
   element.className =
-    'flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-md transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#007d6e] hover:scale-115';
+    'flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-md transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#103B39] hover:scale-115';
   return element;
 }
 
@@ -117,7 +117,7 @@ export function MapboxItineraryMap({
             id: 'itinerary-route-line',
             type: 'line',
             source: ROUTE_SOURCE,
-            paint: { 'line-color': '#007d6e', 'line-width': 3, 'line-dasharray': [2, 1.5] },
+            paint: { 'line-color': '#103B39', 'line-width': 3, 'line-dasharray': [2, 1.5] },
           });
           drawRef.current?.();
         });

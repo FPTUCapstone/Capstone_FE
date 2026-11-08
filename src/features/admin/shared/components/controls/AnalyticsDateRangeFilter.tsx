@@ -26,7 +26,7 @@ export function AnalyticsDateRangeFilter({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-disabled={disabled}
-      className={`inline-flex rounded-xl bg-[#F7F6F2] p-1 border border-[#E6E4DD] ${
+      className={`inline-flex rounded-xl bg-[#F7F5EF] p-1 border border-[#DCE2DD] ${
         disabled ? 'opacity-60' : ''
       }`}
     >
@@ -45,11 +45,11 @@ export function AnalyticsDateRangeFilter({
             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               disabled
                 ? isSelected
-                  ? 'bg-[#74827B] text-white cursor-not-allowed'
-                  : 'text-[#74827B] cursor-not-allowed'
+                  ? 'bg-[#5B6E69] text-white cursor-not-allowed'
+                  : 'text-[#5B6E69] cursor-not-allowed'
                 : isSelected
-                ? 'bg-[#245747] text-white shadow-xs cursor-pointer'
-                : 'text-[#4A5851] hover:text-[#1C2923] hover:bg-[#FFFFFF] cursor-pointer'
+                ? 'bg-[#174B4A] text-white shadow-xs cursor-pointer'
+                : 'text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#FFFFFF] cursor-pointer'
             }`}
           >
             <span>{opt.label}</span>

@@ -20,7 +20,7 @@ export function TourErrorState({ onRetry, message }: TourErrorStateProps) {
       <button
         type="button"
         onClick={onRetry}
-        className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#007d6e] px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#103B39] px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
       >
         <span className="material-symbols-outlined text-base">refresh</span>
         <span>Thử lại</span>
@@ -53,7 +53,7 @@ export function TourEmptyState({ onResetFilters, hasFilters }: TourEmptyStatePro
         <button
           type="button"
           onClick={onResetFilters}
-          className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-xs transition hover:bg-slate-100 hover:text-[#007d6e]"
+          className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-xs transition hover:bg-slate-100 hover:text-[#103B39]"
         >
           <span className="material-symbols-outlined text-base">restart_alt</span>
           <span>Xóa bộ lọc tìm kiếm</span>

@@ -1,7 +1,7 @@
 import { tourModerationEn } from '../resources/en';
 
 export const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]';
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]';
 
 export function DemoModeBanner() {
   return (
@@ -25,15 +25,15 @@ export function PendingIntegrationNotice({ body }: { body: string }) {
     <section
       role="status"
       aria-labelledby="tour-moderation-pending-title"
-      className="rounded-2xl border border-[#c3c6ce] bg-white p-6 text-center shadow-xs sm:p-8"
+      className="rounded-2xl border border-[#DCE2DD] bg-white p-6 text-center shadow-xs sm:p-8"
     >
-      <span className="material-symbols-outlined mb-2 text-3xl text-[#006b5f]" aria-hidden="true">
+      <span className="material-symbols-outlined mb-2 text-3xl text-[#174B4A]" aria-hidden="true">
         cloud_off
       </span>
-      <h2 id="tour-moderation-pending-title" className="text-lg font-bold text-[#00152a]">
+      <h2 id="tour-moderation-pending-title" className="text-lg font-bold text-[#1C2928]">
         {tourModerationEn.pendingIntegration.title}
       </h2>
-      <p className="mx-auto mt-2 max-w-xl text-sm text-[#43474d]">{body}</p>
+      <p className="mx-auto mt-2 max-w-xl text-sm text-[#5B6E69]">{body}</p>
     </section>
   );
 }

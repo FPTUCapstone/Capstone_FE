@@ -111,13 +111,13 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
 
   if (status === 'restoring' || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F6F7]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F5EF]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-[#59616B]">
+          <p className="text-xs font-semibold text-[#5B6E69]">
             {tripReviewEn.tripReview.loadingTrip}
           </p>
         </div>
@@ -130,24 +130,24 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="en">
       <PublicNavigation locale="en" />
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Breadcrumb Navigation */}
         <nav
           aria-label={tripReviewEn.accessibility.breadcrumbAria}
-          className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]"
+          className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]"
         >
-          <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+          <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
             {tripReviewEn.tripReview.breadcrumbHome}
           </Link>
           <span aria-hidden="true">/</span>
-          <Link href={ROUTES.account.trips} className="hover:text-[#006B5F] hover:underline">
+          <Link href={ROUTES.account.trips} className="hover:text-[#174B4A] hover:underline">
             {tripReviewEn.tripReview.breadcrumbTrips}
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#00152A]">
+          <span className="text-[#1C2928]">
             {tripReviewEn.tripReview.breadcrumbReview}
           </span>
         </nav>
@@ -155,14 +155,14 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
         {/* Title Header */}
         <div className="mb-6 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-2">
-            <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#006B5F]">
+            <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#174B4A]">
               {tripReviewEn.tripReview.badgeCode}
             </span>
             <span className="text-xs font-semibold text-slate-500">
               {tripReviewEn.tripReview.badgeLabel}
             </span>
           </div>
-          <h1 className="mt-1 text-2xl font-black text-[#00152A] sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-black text-[#1C2928] sm:text-3xl">
             {tripReviewEn.tripReview.pageTitle}
           </h1>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
@@ -183,7 +183,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
                   ? 'cloud_sync'
                   : 'search_off'}
             </span>
-            <h3 className="text-base font-bold text-[#00152A]">
+            <h3 className="text-base font-bold text-[#1C2928]">
               {fetchError.type === 'NOT_FOUND'
                 ? tripReviewEn.reviewPage.notFoundTitle
                 : fetchError.type === 'FORBIDDEN'
@@ -202,7 +202,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
                     setFetchError(null);
                     setRetryCount((c) => c + 1);
                   }}
-                  className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                  className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
                 >
                   {tripReviewEn.actions.retry}
                 </button>
@@ -223,7 +223,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             <span className="material-symbols-outlined mx-auto mb-2 text-[32px] text-slate-400">
               search_off
             </span>
-            <h3 className="text-base font-bold text-[#00152A]">
+            <h3 className="text-base font-bold text-[#1C2928]">
               {tripReviewEn.reviewPage.notFoundTitle}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
@@ -232,7 +232,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
-                className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
                 {tripReviewEn.actions.backToTrips}
               </Link>
@@ -255,7 +255,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
-                className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
                 {tripReviewEn.actions.backToTrips}
               </Link>
@@ -283,7 +283,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
-                className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
               >
                 {tripReviewEn.actions.backToTrips}
               </Link>

@@ -19,7 +19,7 @@ export function AboutHero() {
   }
 
   return (
-    <section className="relative overflow-hidden bg-[#00152a] text-white pt-16 pb-20 sm:pt-20 sm:pb-24 border-b border-slate-800">
+    <section className="relative overflow-hidden bg-[#103B39] text-white pt-16 pb-20 sm:pt-20 sm:pb-24 border-b border-slate-800">
       {/* Background Subtle Gradient & Ambience */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 right-1/4 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-3xl" />
@@ -106,7 +106,7 @@ export function AboutHero() {
                     e.preventDefault();
                     handleJump(item.id);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-[#007d6e] text-white text-xs font-semibold border border-white/15 transition-all cursor-pointer backdrop-blur-xs hover:border-teal-400"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-[#103B39] text-white text-xs font-semibold border border-white/15 transition-all cursor-pointer backdrop-blur-xs hover:border-teal-400"
                 >
                   <span className="material-symbols-outlined text-sm text-teal-300" aria-hidden="true">
                     {item.icon}

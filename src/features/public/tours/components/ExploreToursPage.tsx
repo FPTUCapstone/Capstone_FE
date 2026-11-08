@@ -301,7 +301,7 @@ function LegacyExploreToursPage() {
                     id="tour-results-heading"
                     ref={resultsHeadingRef}
                     tabIndex={-1}
-                    className="text-xl sm:text-2xl font-black text-[#00152a] tracking-tight outline-hidden"
+                    className="text-xl sm:text-2xl font-black text-[#1C2928] tracking-tight outline-hidden"
                   >
                     Kết Quả Tìm Kiếm
                   </h2>
@@ -347,7 +347,7 @@ function LegacyExploreToursPage() {
                   <span className="text-[11px] font-bold text-slate-500">Đang lọc:</span>
 
                   {filters.destination && (
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#103B39]">
                       <span>Điểm đến: {filters.destination}</span>
                       <button
                         type="button"
@@ -361,7 +361,7 @@ function LegacyExploreToursPage() {
                   )}
 
                   {filters.departureDate && (
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#103B39]">
                       <span>Khởi hành: {filters.departureDate}</span>
                       <button
                         type="button"
@@ -375,7 +375,7 @@ function LegacyExploreToursPage() {
                   )}
 
                   {(filters.minPrice || filters.maxPrice) && (
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#103B39]">
                       <span>
                         Giá: {filters.minPrice ? formatVndPrice(Number(filters.minPrice)) : '0₫'} -{' '}
                         {filters.maxPrice ? formatVndPrice(Number(filters.maxPrice)) : '∞'}

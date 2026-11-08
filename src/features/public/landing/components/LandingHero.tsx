@@ -440,8 +440,8 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             ref={eyebrowRef}
             className="inline-flex items-center gap-2 self-start rounded-full bg-white/90 backdrop-blur-md px-3.5 py-1.5 border border-white/80 shadow-xs"
           >
-            <span className="h-2 w-2 rounded-full bg-[#007D6E] animate-pulse" aria-hidden="true" />
-            <span className="font-[family-name:var(--font-manrope)] text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] text-[#006B5F]">
+            <span className="h-2 w-2 rounded-full bg-[#103B39] animate-pulse" aria-hidden="true" />
+            <span className="font-[family-name:var(--font-manrope)] text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] text-[#174B4A]">
               TripMate · Khám phá miền Trung
             </span>
           </div>
@@ -449,7 +449,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
           {/* Display Headline — Bricolage Grotesque with Cinematic Masked Line Reveal */}
           <h1
             ref={headlineRef}
-            className="mt-4 sm:mt-6 font-[family-name:var(--font-bricolage)] text-[32px] sm:text-5xl md:text-[56px] lg:text-[66px] xl:text-[74px] font-extrabold tracking-[-0.035em] leading-[1.12] sm:leading-[1.08] text-[#00152A] drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]"
+            className="mt-4 sm:mt-6 font-[family-name:var(--font-bricolage)] text-[32px] sm:text-5xl md:text-[56px] lg:text-[66px] xl:text-[74px] font-extrabold tracking-[-0.035em] leading-[1.12] sm:leading-[1.08] text-[#1C2928] drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]"
           >
             Đà Nẵng, nơi <br />
             hành trình bắt đầu.
@@ -471,7 +471,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             {/* Primary CTA: Solid TripMate Teal with arrow */}
             <Link
               href={ROUTES.plan}
-              className="group inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2.5 rounded-xl bg-[#007D6E] px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#007D6E]/30 hover:bg-[#006B5F] hover:shadow-xl hover:shadow-[#007D6E]/40 transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+              className="group inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2.5 rounded-xl bg-[#103B39] px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#103B39]/30 hover:bg-[#174B4A] hover:shadow-xl hover:shadow-[#103B39]/40 transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
             >
               <span>Lập lịch trình</span>
               <span
@@ -485,7 +485,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             {/* Secondary CTA: Clean Dark Navy Button */}
             <Link
               href={ROUTES.tours}
-              className="inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2 rounded-xl bg-white/90 hover:bg-[#00152A] text-[#00152A] hover:text-white border border-white/80 px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold backdrop-blur-md shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+              className="inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2 rounded-xl bg-white/90 hover:bg-[#103B39] text-[#1C2928] hover:text-white border border-white/80 px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold backdrop-blur-md shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
             >
               <span>Khám phá tour</span>
               <span className="material-symbols-outlined text-lg opacity-70" aria-hidden="true">
@@ -500,13 +500,13 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             className="mt-7 sm:mt-10 pt-4 flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-semibold text-slate-800 border-t border-slate-900/15 max-w-lg"
           >
             <div className="inline-flex items-center gap-1.5 rounded-md bg-white/60 px-2 py-1 backdrop-blur-xs">
-              <span className="material-symbols-outlined text-base text-[#007D6E]" aria-hidden="true">
+              <span className="material-symbols-outlined text-base text-[#103B39]" aria-hidden="true">
                 verified
               </span>
               <span>Tour xác thực bản địa</span>
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-md bg-white/60 px-2 py-1 backdrop-blur-xs">
-              <span className="material-symbols-outlined text-base text-[#007D6E]" aria-hidden="true">
+              <span className="material-symbols-outlined text-base text-[#103B39]" aria-hidden="true">
                 map
               </span>
               <span>Lịch trình tối ưu thời gian</span>
@@ -523,7 +523,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             data-testid="hero-playback-toggle"
             onClick={togglePlayback}
             aria-label={isVideoPlaying ? 'Tạm dừng video nền' : 'Phát video nền'}
-            className="group inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-800 hover:text-[#007D6E] backdrop-blur-md border border-white/80 shadow-md transition-all duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#007D6E] focus-visible:ring-offset-2 cursor-pointer"
+            className="group inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-800 hover:text-[#103B39] backdrop-blur-md border border-white/80 shadow-md transition-all duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#103B39] focus-visible:ring-offset-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg" aria-hidden="true">
               {isVideoPlaying ? 'pause' : 'play_arrow'}
@@ -532,7 +532,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
         )}
 
         <div className="flex items-center gap-2 rounded-full bg-white/85 backdrop-blur-md px-4 py-2 text-[11px] sm:text-xs font-semibold text-slate-800 border border-white/80 shadow-md">
-          <span className="material-symbols-outlined text-sm text-[#007D6E]" aria-hidden="true">
+          <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
             location_on
           </span>
           <span>Bán đảo Sơn Trà & Chùa Linh Ứng · Đà Nẵng</span>

@@ -47,7 +47,7 @@ export function PartnerWorkspaceLayout({
   });
 
   return (
-    <div className={`min-h-screen bg-[#F4F7FC] text-[#00152A] lg:flex ${className}`}>
+    <div className={`min-h-screen bg-[#F7F5EF] text-[#1C2928] lg:flex ${className}`}>
       {/* Desktop Fixed Sidebar */}
       <PartnerSidebar
         activeTab={activeTab}
@@ -80,7 +80,7 @@ export function PartnerWorkspaceLayout({
           breadcrumbs={breadcrumbs}
         />
 
-        <main className="flex-1 bg-[#F4F7FC]">
+        <main className="flex-1 bg-[#F7F5EF]">
           {children}
         </main>
       </div>

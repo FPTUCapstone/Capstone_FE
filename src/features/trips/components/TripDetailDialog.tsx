@@ -64,7 +64,7 @@ function Section({
     <section
       ref={ref}
       data-highlighted={highlighted ? 'true' : undefined}
-      className={`rounded-xl border p-3 ${highlighted ? 'border-[#006B5F] bg-[#E6F4F1]/60' : 'border-slate-100 bg-slate-50'}`}
+      className={`rounded-xl border p-3 ${highlighted ? 'border-[#174B4A] bg-[#E6F4F1]/60' : 'border-slate-100 bg-slate-50'}`}
     >
       <h5 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{heading}</h5>
       <div className="mt-2 space-y-1 text-xs">{children}</div>
@@ -143,7 +143,7 @@ function ItinerarySections({ detail }: { detail: ItineraryTripDetail }) {
           {detail.stops.map((stop) => (
             <li key={stop.sequenceNo} className="rounded-lg border border-slate-200 bg-white p-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span data-stop-name className="font-bold text-[#00152A]">
+                <span data-stop-name className="font-bold text-[#1C2928]">
                   {stop.poiName}
                 </span>
                 {stop.visitStatus && (
@@ -228,7 +228,7 @@ export function TripDetailDialog({ item, focus, allowDemo, onClose }: TripDetail
     >
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3">
-          <h4 id={titleId} className="text-base font-extrabold text-[#00152A]">
+          <h4 id={titleId} className="text-base font-extrabold text-[#1C2928]">
             {item.title}
           </h4>
           <button

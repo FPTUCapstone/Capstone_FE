@@ -39,16 +39,16 @@ export function AuthShell({
   const returnLabel = backLabel ?? (admin ? 'Back to Admin Login' : 'Back to Sign In');
 
   return (
-    <main className={`min-h-screen font-sans ${admin ? 'bg-[#F7F6F2]' : 'bg-brand-surface'}`}>
+    <main className={`min-h-screen font-sans ${admin ? 'bg-[#F7F5EF]' : 'bg-brand-surface'}`}>
 
-      <header className={`border-b px-4 py-3 sm:px-8 sm:py-4 ${admin ? 'border-[#2A3B33] bg-[#1C2923] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
+      <header className={`border-b px-4 py-3 sm:px-8 sm:py-4 ${admin ? 'border-[#103B39] bg-[#1C2928] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 sm:gap-4">
           <Link href={ROUTES.home} aria-label="TripMate home">
             <BrandLogo context={admin ? 'admin' : 'main'} inverse={admin} size={24} />
           </Link>
           <Link
             href={returnHref}
-            className={`rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold transition-colors ${admin ? 'text-[#A3B3AB] hover:text-white hover:bg-white/10' : 'text-brand-teal hover:bg-brand-lightTeal'}`}
+            className={`rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold transition-colors ${admin ? 'text-[#5B6E69] hover:text-white hover:bg-white/10' : 'text-brand-teal hover:bg-brand-lightTeal'}`}
 
           >
             {returnLabel}
@@ -65,7 +65,7 @@ export function AuthShell({
               backgroundImage: [
                 'radial-gradient(circle at 20% 20%, rgba(0, 125, 110, 0.35) 0%, transparent 45%)',
                 'radial-gradient(circle at 80% 70%, rgba(255, 112, 67, 0.25) 0%, transparent 45%)',
-                'linear-gradient(135deg, #00152A 0%, #102A43 60%, #006B5F 130%)',
+                'linear-gradient(135deg, #1C2928 0%, #103B39 60%, #174B4A 130%)',
               ].join(', '),
             }}
           >
@@ -175,12 +175,12 @@ export function AuthShell({
 
         <div className={`box-border min-w-0 w-full max-w-full ${singlePanel ? 'max-w-md' : `flex items-center justify-center p-4 sm:p-8 md:p-10 lg:p-12 xl:p-16 ${admin ? 'lg:max-w-lg' : ''}`}`}>
           <section className="w-full max-w-[480px]">
-            <div className={`rounded-3xl p-6 sm:p-8 md:p-10 ${admin ? 'bg-white border border-[#E6E4DD] shadow-sm' : 'bg-brand-card shadow-card-lg border border-slate-100'}`}>
+            <div className={`rounded-3xl p-6 sm:p-8 md:p-10 ${admin ? 'bg-white border border-[#DCE2DD] shadow-sm' : 'bg-brand-card shadow-card-lg border border-slate-100'}`}>
               {admin ? (
                 <div className="mb-6 sm:mb-8 text-center">
-                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${admin ? 'text-[#245747]' : 'text-brand-teal'}`}>{eyebrow}</p>
-                  <h1 className={`mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight ${admin ? 'text-[#1C2923]' : 'text-brand-navy'}`}>{title}</h1>
-                  <p className={`mt-3 text-sm leading-relaxed ${admin ? 'text-[#59616B]' : 'text-brand-textSecondary'}`}>{description}</p>
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${admin ? 'text-[#174B4A]' : 'text-brand-teal'}`}>{eyebrow}</p>
+                  <h1 className={`mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight ${admin ? 'text-[#1C2928]' : 'text-brand-navy'}`}>{title}</h1>
+                  <p className={`mt-3 text-sm leading-relaxed ${admin ? 'text-[#5B6E69]' : 'text-brand-textSecondary'}`}>{description}</p>
                 </div>
               ) : null}
               {children}

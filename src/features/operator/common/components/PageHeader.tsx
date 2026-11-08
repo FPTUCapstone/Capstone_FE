@@ -45,7 +45,7 @@ export function PageHeader({
               type="button"
               onClick={handleBack}
               aria-label="Quay lại"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
             >
               <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
                 arrow_back
@@ -53,7 +53,7 @@ export function PageHeader({
             </button>
           )}
           <div className="flex flex-wrap items-center gap-2.5 min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-[#00152A] sm:text-2xl break-words min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-[#1C2928] sm:text-2xl break-words min-w-0">
               {title}
             </h1>
             {badge && <div className="shrink-0">{badge}</div>}

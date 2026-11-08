@@ -42,7 +42,7 @@ export function ItineraryReviewsDialog({ poiId, name, onClose }: ItineraryReview
         </div>
         <div className="space-y-4 overflow-y-auto px-5 py-4">
           <TripadvisorReviews poiId={poiId} />
-          <Link href={ROUTES.poi(poiId)} className="inline-block text-xs font-bold text-[#007d6e] hover:underline">
+          <Link href={ROUTES.poi(poiId)} className="inline-block text-xs font-bold text-[#103B39] hover:underline">
             Xem chi tiết địa điểm
           </Link>
         </div>

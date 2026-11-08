@@ -254,7 +254,7 @@ export function UpdateCouponView({
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+              <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl">
                 {couponEn.update.title.replace('{code}', coupon.couponCode)}
               </h1>
               <OperatorCouponStatusBadge status={effectiveStatus} />
@@ -324,7 +324,7 @@ export function UpdateCouponView({
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {coupon.validFromUtc ? couponEn.update.metrics.occupied : couponEn.list.kpi.redemptions}
           </p>
-          <p className="mt-1 text-xl font-black text-[#00152A] sm:text-2xl">
+          <p className="mt-1 text-xl font-black text-[#1C2928] sm:text-2xl">
             {coupon.usageCount}
           </p>
           <p className="mt-1 text-[11px] text-slate-500">
@@ -338,7 +338,7 @@ export function UpdateCouponView({
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {couponEn.update.metrics.remaining}
           </p>
-          <p className="mt-1 text-xl font-black text-[#006B5F] sm:text-2xl">
+          <p className="mt-1 text-xl font-black text-[#174B4A] sm:text-2xl">
             {remainingUsages === null ? couponEn.update.metrics.unlimited : remainingUsages}
           </p>
           <p className="mt-1 text-[11px] text-slate-500">{couponEn.update.metrics.available}</p>
@@ -398,7 +398,7 @@ export function UpdateCouponView({
         {/* Left Column: Form Fields (Span 2) */}
         <div className="lg:col-span-2 space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               1. {couponEn.create.sections.general}
             </h2>
 
@@ -432,7 +432,7 @@ export function UpdateCouponView({
                   maxLength={120}
                   aria-invalid={Boolean(errors.name)}
                   aria-describedby={errors.name ? 'couponName-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.name ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -464,7 +464,7 @@ export function UpdateCouponView({
                   onChange={(e) => setDiscountValue(e.target.value)}
                   aria-invalid={Boolean(errors.discountValue)}
                   aria-describedby={errors.discountValue ? 'discountValue-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.discountValue ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -487,7 +487,7 @@ export function UpdateCouponView({
                     step="10000"
                     value={maxDiscountAmount}
                     onChange={(e) => setMaxDiscountAmount(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
                   />
                 </div>
               )}
@@ -503,7 +503,7 @@ export function UpdateCouponView({
                   step="50000"
                   value={minSpend}
                   onChange={(e) => setMinSpend(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
                 />
               </div>
             </div>
@@ -511,7 +511,7 @@ export function UpdateCouponView({
 
           {/* Usage Limit & Validity */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               2. {couponEn.create.sections.validity}
             </h2>
 
@@ -535,7 +535,7 @@ export function UpdateCouponView({
                   onChange={(e) => setUsageLimit(e.target.value)}
                   aria-invalid={Boolean(errors.usageLimit)}
                   aria-describedby={errors.usageLimit ? 'usageLimit-error' : 'usageLimit-desc'}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs font-bold transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.usageLimit ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -581,7 +581,7 @@ export function UpdateCouponView({
                   aria-describedby={
                     errors.usageLimitPerTraveler ? 'usageLimitPerTraveler-error' : undefined
                   }
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.usageLimitPerTraveler
                       ? 'border-rose-400 bg-rose-50/30'
                       : 'border-slate-200 bg-white'
@@ -612,7 +612,7 @@ export function UpdateCouponView({
                   onChange={(e) => setValidFrom(e.target.value)}
                   aria-invalid={Boolean(errors.validFrom)}
                   aria-describedby={errors.validFrom ? 'validFrom-error' : undefined}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
                 />
                 {errors.validFrom && <p id="validFrom-error" role="alert" className="mt-1 text-xs font-bold text-rose-600">{errors.validFrom}</p>}
               </div>
@@ -628,7 +628,7 @@ export function UpdateCouponView({
                   onChange={(e) => setValidTo(e.target.value)}
                   aria-invalid={Boolean(errors.validTo)}
                   aria-describedby={errors.validTo ? 'validTo-error' : undefined}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] ${
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
                     errors.validTo ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
                   }`}
                 />
@@ -643,7 +643,7 @@ export function UpdateCouponView({
 
           {/* Tour Scope */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               3. {couponEn.create.sections.scope}
             </h2>
 
@@ -677,7 +677,7 @@ export function UpdateCouponView({
                 checked={appliesToAllTours}
                 disabled={eligibleTours.length === 0}
                 onChange={(e) => setAppliesToAllTours(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-[#006B5F] focus:ring-[#006B5F] disabled:opacity-50"
+                className="h-4 w-4 rounded border-slate-300 text-[#174B4A] focus:ring-[#174B4A] disabled:opacity-50"
               />
               <span>{couponEn.create.fields.appliesToAllTours}</span>
             </label>
@@ -705,7 +705,7 @@ export function UpdateCouponView({
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleTourSelection(tour.id)}
-                              className="h-4 w-4 rounded border-slate-300 text-[#006B5F] focus:ring-[#006B5F]"
+                              className="h-4 w-4 rounded border-slate-300 text-[#174B4A] focus:ring-[#174B4A]"
                             />
                             <div className="truncate">
                               <span className="font-bold text-slate-800">{tour.title}</span>
@@ -743,7 +743,7 @@ export function UpdateCouponView({
             <button
               type="submit"
               disabled={saving || eligibleTours.length === 0}
-              className="w-full rounded-xl bg-[#006B5F] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-xl bg-[#174B4A] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? couponEn.update.actions.saving : couponEn.update.actions.save}
             </button>

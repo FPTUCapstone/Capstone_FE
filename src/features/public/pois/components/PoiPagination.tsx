@@ -27,7 +27,7 @@ export function PoiPagination({ page, totalPages, onPageChange }: PoiPaginationP
             type="button"
             aria-current={item === page ? 'page' : undefined}
             className={`min-h-11 min-w-11 rounded-xl text-sm font-extrabold ${
-              item === page ? 'bg-[#007d6e] text-white' : 'border border-[#ced9dd] bg-white text-[#29404a]'
+              item === page ? 'bg-[#103B39] text-white' : 'border border-[#ced9dd] bg-white text-[#29404a]'
             }`}
             onClick={() => onPageChange(item)}
           >

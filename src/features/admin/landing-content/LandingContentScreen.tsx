@@ -300,35 +300,35 @@ export function LandingContentScreen() {
   }
 
   const buttonClass =
-    'rounded-xl border border-[#d0d7de] bg-white px-4 py-2 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7] disabled:cursor-not-allowed disabled:opacity-50';
+    'rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-sm font-bold text-[#1C2928] hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-50';
 
   return (
     <UploadStatusContext.Provider value={uploadStatus}>
-    <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-[#191c1e] sm:px-6 md:px-8 md:py-10">
+    <main className="min-h-screen bg-[#F7F5EF] px-4 py-8 text-[#1C2928] sm:px-6 md:px-8 md:py-10">
       <section className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-2xl border border-[#314863] bg-[#00152a] p-6 text-white shadow-md sm:p-8">
+        <header className="rounded-2xl border border-[#5B6E69] bg-[#103B39] p-6 text-white shadow-md sm:p-8">
           <p className="text-xs font-bold tracking-wider text-[#71f8e4] uppercase">{copy.screen.eyebrow}</p>
           <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{copy.screen.title}</h1>
           <p className="mt-3 text-sm leading-relaxed text-[#d1e4ff]">{copy.screen.description}</p>
         </header>
 
         {status === 'loading' && (
-          <p role="status" className="rounded-2xl border border-[#d0d7de] bg-white p-5 text-sm text-[#475467]">
+          <p role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-5 text-sm text-[#5B6E69]">
             {copy.screen.loading}
           </p>
         )}
 
         {status === 'pending' && (
           <section role="status" className="rounded-2xl border border-[#cfe2f3] bg-[#eef6ff] p-5 sm:p-6">
-            <span className="inline-flex rounded-full bg-[#d7f7f1] px-3 py-1 text-xs font-bold text-[#005048]">
+            <span className="inline-flex rounded-full bg-[#d7f7f1] px-3 py-1 text-xs font-bold text-[#103B39]">
               {copy.screen.pendingBadge}
             </span>
             <h2 className="mt-2 text-base font-bold text-[#1d2939]">{copy.screen.pendingTitle}</h2>
-            <p className="mt-1 text-sm leading-relaxed text-[#344054]">{copy.errors.unavailable}</p>
+            <p className="mt-1 text-sm leading-relaxed text-[#5B6E69]">{copy.errors.unavailable}</p>
             <button
               type="button"
               onClick={reload}
-              className="mt-3 rounded-lg border border-[#005048] px-3 py-1.5 text-xs font-bold text-[#005048]"
+              className="mt-3 rounded-lg border border-[#103B39] px-3 py-1.5 text-xs font-bold text-[#103B39]"
             >
               {copy.screen.retry}
             </button>
@@ -416,7 +416,7 @@ export function LandingContentScreen() {
                 </button>
               </div>
             ) : (
-              toursUnverified && <p role="status" className="text-sm text-[#475467]">{copy.editor.tours.loading}</p>
+              toursUnverified && <p role="status" className="text-sm text-[#5B6E69]">{copy.editor.tours.loading}</p>
             )}
             <BannerBlock
               value={draft.banner}

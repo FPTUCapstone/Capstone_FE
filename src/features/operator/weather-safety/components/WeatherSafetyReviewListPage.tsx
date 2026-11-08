@@ -90,7 +90,7 @@ export function WeatherSafetyReviewListPage({
       {/* Header */}
       <div className="border-b border-slate-200 pb-4">
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <span className="material-symbols-outlined text-teal-700 text-3xl" aria-hidden="true">
+          <span className="material-symbols-outlined text-[#174B4A] text-3xl" aria-hidden="true">
             warning
           </span>
           Cảnh báo an toàn thời tiết
@@ -104,7 +104,7 @@ export function WeatherSafetyReviewListPage({
       {/* Main Content State */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
-          <span className="material-symbols-outlined text-4xl animate-spin text-teal-600" aria-hidden="true">
+          <span className="material-symbols-outlined text-4xl animate-spin text-[#174B4A]" aria-hidden="true">
             progress_activity
           </span>
           <p className="text-sm font-medium">Đang tải danh sách cảnh báo thời tiết...</p>

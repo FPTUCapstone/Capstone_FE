@@ -45,7 +45,7 @@ export function ItineraryLegRow({
     <div className="mb-4 ml-10 sm:ml-12" data-testid="leg-row">
       <div className="relative inline-flex flex-wrap items-center gap-2 text-xs text-slate-600">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11.5px] font-medium shadow-2xs">
-          <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+          <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
             route
           </span>
           <span>{parts.join(' · ')}</span>
@@ -55,7 +55,7 @@ export function ItineraryLegRow({
             triggerLabel={`Đổi phương tiện đến ${toName}`}
             triggerContent="Đổi"
             triggerDisabled={disabled}
-            triggerClassName="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-[#007d6e] transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
+            triggerClassName="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-[#103B39] transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
             menuLabel="Chọn phương tiện cho chặng này"
             itemRole="menuitemradio"
             items={LEG_TRANSPORT_MODES.map((option) => ({

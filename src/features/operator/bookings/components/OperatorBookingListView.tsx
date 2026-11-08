@@ -347,7 +347,7 @@ export function OperatorBookingListView({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-[#00152A] sm:text-2xl">
+            <h1 className="text-xl font-bold text-[#1C2928] sm:text-2xl">
               {bookingEn.header.title}
             </h1>
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
@@ -380,7 +380,7 @@ export function OperatorBookingListView({
 
       {/* Demo Mode Notice */}
       {isDemoPermitted && (
-        <div className="flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/70 px-4 py-2.5 text-xs text-[#006B5F]">
+        <div className="flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/70 px-4 py-2.5 text-xs text-[#174B4A]">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">experiment</span>
             <span className="font-semibold">
@@ -429,7 +429,7 @@ export function OperatorBookingListView({
               <span className="material-symbols-outlined text-[18px]">receipt_long</span>
             </span>
           </div>
-          <div className="mt-2 text-xl sm:text-2xl font-black text-[#00152A] break-words">{summary.totalBookings}</div>
+          <div className="mt-2 text-xl sm:text-2xl font-black text-[#1C2928] break-words">{summary.totalBookings}</div>
           <p className="mt-1 text-[11px] text-slate-400 break-words">{bookingEn.summary.totalBookingsSubtitle}</p>
         </div>
 
@@ -440,7 +440,7 @@ export function OperatorBookingListView({
               <span className="material-symbols-outlined text-[18px]">group</span>
             </span>
           </div>
-          <div className="mt-2 text-xl sm:text-2xl font-black text-[#00152A] break-words">{summary.totalParticipants}</div>
+          <div className="mt-2 text-xl sm:text-2xl font-black text-[#1C2928] break-words">{summary.totalParticipants}</div>
           <p className="mt-1 text-[11px] text-slate-400 break-words">{bookingEn.summary.totalParticipantsSubtitle}</p>
         </div>
 
@@ -451,7 +451,7 @@ export function OperatorBookingListView({
               <span className="material-symbols-outlined text-[18px]">payments</span>
             </span>
           </div>
-          <div className="mt-2 text-xl sm:text-2xl font-black text-[#006B5F] break-words">
+          <div className="mt-2 text-xl sm:text-2xl font-black text-[#174B4A] break-words">
             {formatCurrencyVND(summary.totalConfirmedAmount)}
           </div>
           <p className="mt-1 text-[11px] text-slate-400 break-words">{bookingEn.summary.confirmedRevenueSubtitle}</p>
@@ -474,7 +474,7 @@ export function OperatorBookingListView({
                   setDraftFilters((prev) => ({ ...prev, tourId: e.target.value }))
                 }
                 disabled={tourOptions.failed}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:bg-slate-50 disabled:text-slate-400"
               >
                 <option value="ALL">{bookingEn.filters.allTours}</option>
                 {tourOptions.options.map((t) => (
@@ -499,7 +499,7 @@ export function OperatorBookingListView({
                 onChange={(e) =>
                   setDraftFilters((prev) => ({ ...prev, status: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:bg-slate-50 disabled:text-slate-400"
               >
                 <option value="ALL">{bookingEn.filters.allStatuses}</option>
                 <option value="Confirmed">{bookingEn.statuses.Confirmed}</option>
@@ -522,7 +522,7 @@ export function OperatorBookingListView({
                 onChange={(e) =>
                   setDraftFilters((prev) => ({ ...prev, startDate: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:bg-slate-50 disabled:text-slate-400"
               />
             </div>
 
@@ -538,7 +538,7 @@ export function OperatorBookingListView({
                 onChange={(e) =>
                   setDraftFilters((prev) => ({ ...prev, endDate: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:bg-slate-50 disabled:text-slate-400"
               />
             </div>
           </div>
@@ -557,7 +557,7 @@ export function OperatorBookingListView({
                 }
                 placeholder={bookingEn.filters.searchPlaceholder}
                 aria-label={bookingEn.filters.searchAriaLabel}
-                className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:bg-slate-50 disabled:text-slate-400"
               />
             </div>
 
@@ -571,7 +571,7 @@ export function OperatorBookingListView({
               </button>
               <button
                 type="submit"
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50 flex items-center gap-1.5"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50 flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[16px]">filter_alt</span>
                 <span>{bookingEn.filters.apply}</span>
@@ -596,7 +596,7 @@ export function OperatorBookingListView({
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
         {loading ? (
           <div className="p-8 text-center text-xs text-slate-500">
-            <span className="material-symbols-outlined text-[24px] animate-spin text-[#006B5F]">
+            <span className="material-symbols-outlined text-[24px] animate-spin text-[#174B4A]">
               progress_activity
             </span>
             <p className="mt-2">{bookingEn.list.loading}</p>
@@ -643,7 +643,7 @@ export function OperatorBookingListView({
                 <tbody className="divide-y divide-slate-100">
                   {result.items.map((b) => (
                     <tr key={b.bookingId} className="hover:bg-slate-50/70 transition">
-                      <td className="px-4 py-3.5 font-bold text-[#00152A]">
+                      <td className="px-4 py-3.5 font-bold text-[#1C2928]">
                         {b.bookingCode}
                       </td>
                       <td className="px-4 py-3.5 font-medium text-slate-800 max-w-[200px] truncate">
@@ -659,7 +659,7 @@ export function OperatorBookingListView({
                       <td className="px-4 py-3.5 text-center font-bold text-slate-700">
                         {b.quantity}
                       </td>
-                      <td className="px-4 py-3.5 text-right font-bold text-[#006B5F] whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-right font-bold text-[#174B4A] whitespace-nowrap">
                         {formatCurrencyVND(b.totalAmount)}
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
@@ -672,7 +672,7 @@ export function OperatorBookingListView({
                         <button
                           type="button"
                           onClick={() => handleViewDetail(b)}
-                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#006B5F] hover:bg-slate-50 transition"
+                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#174B4A] hover:bg-slate-50 transition"
                         >
                           {bookingEn.list.viewDetail}
                         </button>
@@ -689,7 +689,7 @@ export function OperatorBookingListView({
                 <div key={b.bookingId} className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2 min-w-0">
                     <div className="min-w-0">
-                      <span className="font-bold text-[#00152A] text-sm">{b.bookingCode}</span>
+                      <span className="font-bold text-[#1C2928] text-sm">{b.bookingCode}</span>
                       <p className="font-medium text-slate-800 text-xs mt-0.5 break-words">{b.tour.title}</p>
                     </div>
                     <BookingStatusBadge status={b.status} />
@@ -717,12 +717,12 @@ export function OperatorBookingListView({
                   <div className="flex items-center justify-between pt-1">
                     <div>
                       <span className="text-[11px] text-slate-400 block">{bookingEn.list.tableHeaders.totalAmount}:</span>
-                      <span className="font-bold text-sm text-[#006B5F]">{formatCurrencyVND(b.totalAmount)}</span>
+                      <span className="font-bold text-sm text-[#174B4A]">{formatCurrencyVND(b.totalAmount)}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleViewDetail(b)}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-[#006B5F] hover:bg-slate-50 transition shadow-2xs"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-[#174B4A] hover:bg-slate-50 transition shadow-2xs"
                     >
                       {bookingEn.list.viewDetail}
                     </button>

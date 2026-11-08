@@ -166,7 +166,7 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 rounded-xl bg-[#006B5F] px-4 py-2 text-sm font-bold text-white"
+          className="mt-4 rounded-xl bg-[#174B4A] px-4 py-2 text-sm font-bold text-white"
         >
           Try again
         </button>
@@ -181,12 +181,12 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
       <main className="mx-auto max-w-xl px-4 py-8">
         <Link
           href={ROUTES.home}
-          className="text-sm font-semibold text-[#006B5F]"
+          className="text-sm font-semibold text-[#174B4A]"
         >
           ← Back to TripMate
         </Link>
         <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h1 className="text-xl font-bold text-[#00152A]">Refund progress</h1>
+          <h1 className="text-xl font-bold text-[#1C2928]">Refund progress</h1>
           <p className="mt-1 text-sm text-slate-600">
             Track the refund for booking {bookingId}.
           </p>
@@ -207,7 +207,7 @@ function RefundDetails({ progress }: { progress: RefundProgress }) {
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Booking
             </p>
-            <p className="mt-1 font-mono font-bold text-[#00152A]">
+            <p className="mt-1 font-mono font-bold text-[#1C2928]">
               {progress.bookingCode}
             </p>
           </div>

@@ -132,7 +132,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
   const fromDateMax = toDateValue && toDateValue < todayStr ? toDateValue : todayStr;
 
   return (
-    <div className="rounded-xl border border-[#314863] bg-[#102a43] p-4 text-slate-100 shadow-md">
+    <div className="rounded-xl border border-[#5B6E69] bg-[#103B39] p-4 text-slate-100 shadow-md">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {/* Search Keyword */}
         <div className="xl:col-span-2">
@@ -149,7 +149,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
               value={keywordInput}
               onChange={(e) => handleKeywordChange(e.target.value)}
               placeholder="Search by keyword, email, or entity ID..."
-              className="w-full rounded-lg border border-[#314863] bg-[#00152a] py-2 pl-9 pr-3 text-xs text-[#d1e4ff] placeholder-slate-400 focus:border-[#71f8e4] focus:outline-none"
+              className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] py-2 pl-9 pr-3 text-xs text-[#d1e4ff] placeholder-slate-400 focus:border-[#71f8e4] focus:outline-none"
             />
           </div>
         </div>
@@ -163,7 +163,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
             id="audit-filter-action-type"
             value={filters.actionType || ''}
             onChange={(e) => onChange({ actionType: e.target.value || undefined })}
-            className="w-full rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
+            className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
           >
             <option value="">All Action Types</option>
             {ACTION_TYPES.map((actionType) => (
@@ -181,7 +181,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
             id="audit-filter-actor-role"
             value={filters.actorRole || ''}
             onChange={(e) => onChange({ actorRole: (e.target.value as UserRole) || undefined })}
-            className="w-full rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
+            className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
           >
             <option value="">All Roles</option>
             <option value="Administrator">Administrator</option>
@@ -199,7 +199,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
             id="audit-filter-affected-entity"
             value={filters.affectedEntity || ''}
             onChange={(e) => onChange({ affectedEntity: e.target.value || undefined })}
-            className="w-full rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
+            className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
           >
             <option value="">All Entities</option>
             {AFFECTED_ENTITIES.map((entity) => (
@@ -215,7 +215,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
           </label>
           <div
             onClick={() => handleContainerClick(fromDateRef)}
-            className="group relative flex cursor-pointer items-center rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
+            className="group relative flex cursor-pointer items-center rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
           >
             <span className="material-symbols-outlined mr-2 text-base text-[#71f8e4] transition-colors group-hover:text-white">
               calendar_month
@@ -236,7 +236,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
                   e.stopPropagation();
                   onChange({ fromDateUtc: undefined });
                 }}
-                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#314863] hover:text-white"
+                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#5B6E69] hover:text-white"
                 title="Clear From Date"
                 aria-label="Clear From Date"
               >
@@ -253,7 +253,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
           </label>
           <div
             onClick={() => handleContainerClick(toDateRef)}
-            className="group relative flex cursor-pointer items-center rounded-lg border border-[#314863] bg-[#00152a] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
+            className="group relative flex cursor-pointer items-center rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
           >
             <span className="material-symbols-outlined mr-2 text-base text-[#71f8e4] transition-colors group-hover:text-[#71f8e4]">
               event
@@ -275,7 +275,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
                   e.stopPropagation();
                   onChange({ toDateUtc: undefined });
                 }}
-                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#314863] hover:text-white"
+                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#5B6E69] hover:text-white"
                 title="Clear To Date"
                 aria-label="Clear To Date"
               >
@@ -287,11 +287,11 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
       </div>
 
       {/* Reset Button Action Bar */}
-      <div className="mt-4 flex items-center justify-end border-t border-[#314863]/50 pt-3">
+      <div className="mt-4 flex items-center justify-end border-t border-[#5B6E69]/50 pt-3">
         <button
           type="button"
           onClick={handleReset}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[#314863] bg-[#00152a] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#314863] hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#5B6E69] hover:text-white transition-colors"
         >
           <span className="material-symbols-outlined text-sm">restart_alt</span>
           Reset Filters

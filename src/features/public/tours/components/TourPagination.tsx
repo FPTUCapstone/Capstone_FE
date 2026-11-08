@@ -72,7 +72,7 @@ export function TourPagination({ page, totalPages, onPageChange, copy = legacyCo
             aria-current={isActive ? 'page' : undefined}
             className={`h-9 w-9 rounded-xl text-xs font-bold transition shadow-xs ${
               isActive
-                ? 'bg-[#007d6e] text-white shadow-teal-700/20'
+                ? 'bg-[#103B39] text-white shadow-teal-700/20'
                 : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
             }`}
           >

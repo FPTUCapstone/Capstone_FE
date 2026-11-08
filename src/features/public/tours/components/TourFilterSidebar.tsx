@@ -49,8 +49,8 @@ export function TourFilterSidebar({
       className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs"
     >
       <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-        <div className="flex items-center gap-1.5 font-black text-sm text-[#00152a]">
-          <span className="material-symbols-outlined text-lg text-[#007d6e]">tune</span>
+        <div className="flex items-center gap-1.5 font-black text-sm text-[#1C2928]">
+          <span className="material-symbols-outlined text-lg text-[#103B39]">tune</span>
           <span>Bộ Lọc Tìm Kiếm</span>
         </div>
       </div>
@@ -268,7 +268,7 @@ export function TourFilterSidebar({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f] disabled:cursor-wait disabled:opacity-70"
+            className="w-full inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] disabled:cursor-wait disabled:opacity-70"
           >
             <span className="material-symbols-outlined text-sm">filter_alt</span>
             <span>{isLoading ? 'Đang lọc…' : 'Áp dụng bộ lọc'}</span>
