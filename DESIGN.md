@@ -95,7 +95,7 @@ TripMate uses a hybrid semantic token architecture defined in `app/globals.css` 
 | `bg-brand-navy` | `--color-brand-navy` / `--brand-navy` | `#103B39` | Hero sections, dark public footer, high-contrast headings, card hover backdrops. |
 | `bg-brand-navyContainer` | `--color-brand-navyContainer` / `--brand-navyContainer` | `#0C2423` | Dark elevation surfaces, secondary navigation containers on dark surfaces. |
 | `bg-accent` / `bg-brand-coral` | `--color-accent` / `--color-brand-coral` | `#B96D4C` | Key waypoints, promotional badges, attention alerts, rating highlights, secondary accents. |
-| `text-accent-text` / `hover:bg-coral-hover` | `--color-accent-text` / `--color-coral-hover` | `#995436` | Accessible accent text on light backgrounds (WCAG AA compliant >= 4.5:1), hover states. |
+| `text-accent-text` / `bg-secondary` | `--color-accent-text` / `--color-secondary` | `#995436` | Accessible accent text on light backgrounds & accessible filled button with white text (WCAG AA >= 4.5:1). |
 | `bg-background` / `bg-surface` | `--color-background` / `--color-surface` / `--bg` | `#F7F5EF` | Global page canvas background (warm coastal heritage sand canvas; applied on `<body>`). |
 | `bg-brand-card` / `bg-surface` | `--color-brand-card` / `--color-surface-bright` | `#FFFFFF` | Standard card, modal, dialog, and panel surface background. |
 | `border-border` / `border-brand-border` | `--color-border` / `--color-brand-border` / `--line` | `#DCE2DD` | Card dividers, input borders, table borders, panel separators. |

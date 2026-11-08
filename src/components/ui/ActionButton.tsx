@@ -9,7 +9,7 @@ type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 const variants = {
   primary: 'bg-[#174B4A] text-white hover:bg-[#103B39] shadow-xs active:scale-[0.99]',
   secondary: 'bg-[#1C2928] text-white hover:bg-[#5B6E69]',
-  coral: 'bg-[#B96D4C] text-white hover:bg-[#995436]',
+  coral: 'bg-[#995436] text-white hover:bg-[#803F25] active:bg-[#68331E] active:scale-[0.99] shadow-xs focus-visible:outline-[#995436]',
   teal: 'bg-brand-teal text-white hover:bg-brand-brightTeal active:scale-[0.98] shadow-btn',
   outline: 'border border-[#DCE2DD] bg-[#F7F5EF] text-[#5B6E69] hover:bg-[#E8EEF8] hover:border-[#5B6E69]',
   admin: 'bg-[#174B4A] text-white hover:bg-[#103B39] active:bg-[#15342B] active:scale-[0.99] shadow-xs focus-visible:outline-[#174B4A]',
