@@ -150,3 +150,47 @@ export function formatRunDate(value: string): string {
     new Date(`${value}T00:00:00Z`),
   );
 }
+
+export const formatVnd = (value: number): string =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+
+// Screen 1 filter state (admin list), kept in the URL so a reload or shared link preserves it.
+export type PayoutSettlementsSearch = {
+  status: PayoutSettlementStatus | '';
+  runDateFrom: string;
+  runDateTo: string;
+  pageNumber: number;
+};
+
+export function defaultPayoutSettlementsSearch(): PayoutSettlementsSearch {
+  return { status: '', runDateFrom: '', runDateTo: '', pageNumber: 1 };
+}
+
+export function parsePayoutSettlementsSearch(params: URLSearchParams): PayoutSettlementsSearch {
+  const status = params.get('status');
+  const runDateFrom = params.get('runDateFrom');
+  const runDateTo = params.get('runDateTo');
+  const pageNumber = Number(params.get('pageNumber'));
+  return {
+    status: status && (PAYOUT_SETTLEMENT_STATUSES as readonly string[]).includes(status) ? (status as PayoutSettlementStatus) : '',
+    runDateFrom: isRunDate(runDateFrom) ? runDateFrom : '',
+    runDateTo: isRunDate(runDateTo) ? runDateTo : '',
+    pageNumber: Number.isSafeInteger(pageNumber) && pageNumber > 0 ? pageNumber : 1,
+  };
+}
+
+export function serializePayoutSettlementsSearch(search: PayoutSettlementsSearch): URLSearchParams {
+  const query = new URLSearchParams();
+  if (search.status) query.set('status', search.status);
+  if (search.runDateFrom) query.set('runDateFrom', search.runDateFrom);
+  if (search.runDateTo) query.set('runDateTo', search.runDateTo);
+  if (search.pageNumber > 1) query.set('pageNumber', String(search.pageNumber));
+  return query;
+}
+
+/** Awaiting Window rows have no runDate at all, so an inverted range is the only thing worth
+ * blocking client-side before submit; the backend applies the actual filter. */
+export function validRunDateRange(from: string, to: string): boolean {
+  if (!from || !to) return true;
+  return from <= to;
+}

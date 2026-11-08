@@ -123,19 +123,46 @@ appear in the build's route list with no errors.
 - For use by the Task 4 list page guard (detail page keeps the existing single-role
   `AdminAccessDeniedView` as-is, since UC-73 is Administrator-only).
 
-## Task 4 — Payout Settlements List (`PayoutSettlementsScreen.tsx`, `/admin/payout-settlements`)
+## Task 4 — Payout Settlements List (`PayoutSettlementsScreen.tsx`, `/admin/payout-settlements`) — done
 
 - Server guard in `app/admin/(console)/payout-settlements/page.tsx`: no session → sign-in with
-  `returnUrl`; role not Staff/Administrator → Task 3a's denial view, before any data loads.
-- Filter bar (status, run date from/to) + table + pagination, per spec Screen 1.
-- Row link to Screen 2 only rendered when `status === 'SettlementFailed'` AND session role is
-  Administrator (Staff sees the row, no link).
-- States: loading, empty (SRS's own "No payout settlements match the filters" line), forbidden,
-  unavailable + retry.
+  `returnUrl`; role not Staff/Administrator → Task 3a's denial view, before any data loads. In
+  practice the `(console)` route group's own `layout.tsx` already redirects every unauthenticated
+  request to `/admin/login` (no `returnUrl`) before this page ever runs — this page's own guard
+  still exists per the spec and is what actually fires for an authenticated-but-wrong-role case
+  (today unreachable too, since the admin session cookie only ever encodes Staff or
+  Administrator — kept anyway, see the page's own comment).
+- Filter bar (status — all six values including `Awaiting Window` — run date from/to) + table
+  (Booking, Tour Operator, Run Date, Kind, Payout Amount, Status, Transfer Reference, Actions) +
+  pagination (`totalCount`/`pageSize`, no `totalPages` field on this DTO so computed client-side),
+  per spec Screen 1. A null `runDate` (Awaiting Window row) renders "Not yet scheduled"; a null
+  `transferReference` renders "Not available".
+- Row link to Screen 2 only rendered when `status === 'SettlementFailed'` AND `viewerRole ===
+  'Administrator'` (passed down from the server guard's own verified session role, not re-derived
+  client-side) — Staff sees the row, no link.
+- States: loading, empty (SRS's own "No payout settlements match the filters" line, exactly once —
+  not duplicated into both a title and body), forbidden, unavailable + retry, 401 → sign-in with
+  `returnUrl`.
+- Added to `payoutSettlements.ts`: `formatVnd`, and the URL search-state helpers
+  (`PayoutSettlementsSearch`, `defaultPayoutSettlementsSearch`, `parsePayoutSettlementsSearch`,
+  `serializePayoutSettlementsSearch`, `validRunDateRange`) that Task 1 didn't anticipate needing.
 
-Tests: direct navigation (missing/expired/tampered session → sign-in with `returnUrl`; TourOperator
-or Traveler → denial, no data fetched; Staff and Administrator → screen); every status renders a
-badge; failed-row link visibility by role; empty/forbidden/unavailable states.
+Tests (TDD, 11 screen + 4 page-guard, all red-then-green): direct navigation (missing/tampered
+session → sign-in with `returnUrl`; Staff and Administrator → screen with the right `viewerRole`);
+every status (including `Awaiting Window` and a null `runDate`/`settlementId` row) renders without
+crashing; failed-row link visibility by role (shown for Administrator, hidden for Staff, hidden on
+a non-failed row even for Administrator); empty/forbidden/unavailable states; inverted date range
+blocked before navigating; status-filter and pagination navigation. `npm run lint && npm run
+typecheck && npm test` (3548/3548) and `npm run build` all green; the page and all 6 Task 3 routes
+register cleanly in the build's route list.
+
+**Not verified in a live browser.** `preview_start` consistently 404'd on this route — and on a
+throwaway brand-new probe page at an unrelated path — even after a full process restart and a
+cleared `.next` cache, while every pre-existing `(console)` route kept working. This points to the
+preview tooling's dev server not seeing files created in this session, not a defect in the code:
+`npm run build` compiles and registers the exact same route with no errors, and the component is
+covered by the unit/integration tests above. Added `.claude/launch.json` for whoever can run the
+dev server in an environment that does see this session's files.
 
 ## Task 5 — Failed Payout Settlement Detail (`FailedPayoutSettlementScreen.tsx`, `/admin/payout-settlements/[batchId]`)
 

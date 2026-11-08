@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  defaultPayoutSettlementsSearch,
   formatRunDate,
+  formatVnd,
   parseFailedPayoutBatchDetail,
   parsePayoutSettlementListItem,
   parsePayoutSettlementsResponse,
+  parsePayoutSettlementsSearch,
   PAYOUT_SETTLEMENT_STATUSES,
+  serializePayoutSettlementsSearch,
   validateManualTransferReference,
+  validRunDateRange,
 } from './payoutSettlements';
 
 const listItem = {
@@ -152,5 +157,50 @@ describe('formatRunDate', () => {
   it('formats a calendar date without shifting it to a different day', () => {
     expect(formatRunDate('2026-11-08')).toBe('8 Nov 2026');
     expect(formatRunDate('2026-01-01')).toBe('1 Jan 2026');
+  });
+});
+
+describe('formatVnd', () => {
+  it('formats a VND amount', () => {
+    expect(formatVnd(1_800_000)).toContain('1.800.000');
+  });
+});
+
+describe('payout settlements search state', () => {
+  it('defaults to no filters and page 1', () => {
+    expect(defaultPayoutSettlementsSearch()).toEqual({ status: '', runDateFrom: '', runDateTo: '', pageNumber: 1 });
+  });
+
+  it('round-trips a fully populated search through parse and serialize', () => {
+    const search = { status: 'Awaiting Window' as const, runDateFrom: '2026-11-01', runDateTo: '2026-11-08', pageNumber: 3 };
+    const serialized = serializePayoutSettlementsSearch(search);
+    expect(parsePayoutSettlementsSearch(serialized)).toEqual(search);
+  });
+
+  it.each([
+    ['unrecognized status', 'status=Mystery', { status: '' }],
+    ['malformed runDateFrom', 'runDateFrom=2026/11/01', { runDateFrom: '' }],
+    ['malformed runDateTo', 'runDateTo=not-a-date', { runDateTo: '' }],
+    ['non-positive pageNumber', 'pageNumber=0', { pageNumber: 1 }],
+    ['non-numeric pageNumber', 'pageNumber=abc', { pageNumber: 1 }],
+  ])('falls back to the default for %s', (_label, query, expected) => {
+    expect(parsePayoutSettlementsSearch(new URLSearchParams(query))).toMatchObject(expected);
+  });
+
+  it('omits page 1 and empty filters from the serialized query', () => {
+    expect(serializePayoutSettlementsSearch(defaultPayoutSettlementsSearch()).toString()).toBe('');
+  });
+});
+
+describe('validRunDateRange', () => {
+  it('accepts an empty range, an equal range, and an ordered range', () => {
+    expect(validRunDateRange('', '')).toBe(true);
+    expect(validRunDateRange('2026-11-01', '')).toBe(true);
+    expect(validRunDateRange('2026-11-01', '2026-11-01')).toBe(true);
+    expect(validRunDateRange('2026-11-01', '2026-11-08')).toBe(true);
+  });
+
+  it('rejects an inverted range', () => {
+    expect(validRunDateRange('2026-11-08', '2026-11-01')).toBe(false);
   });
 });

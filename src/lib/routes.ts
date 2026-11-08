@@ -64,5 +64,8 @@ export const ROUTES = {
     routeCreate: '/admin/routes/create',
     pois: '/admin/catalogue/points-of-interest',
     landingContent: '/admin/landing-content',
+    payoutSettlements: '/admin/payout-settlements',
+    payoutSettlementDetail: (batchId: string | number) =>
+      `/admin/payout-settlements/${encodeURIComponent(batchId)}`,
   },
 } as const;
