@@ -1,227 +1,194 @@
-# TripMate Web Scope Matrix
+# TripMate — Web Scope / UI Coverage Matrix
 
-Governance reconciliation: 2026-10-23. The original, non-V2 `Report3_Software-Requirement-Specification.docx` is the requirements authority, after explicitly approved newer requirements with traceable approval. The local original inspected during migration has SHA-256 `22371e92506b098a9a546069038b58b75003371b3b7f85d5cfd6dd913f0d295a`. Historical V2 is not a fallback authority.
+> **Status:** REBASELINED FOR REVIEW — requirements conflicts remain unresolved. This traceability matrix does not amend the SRS or authorize disputed implementation.
 
-The tables and coverage below are the historical 2026-09-06 matrix snapshot, not a reconciled classification of the current original SRS. Their 72-UC catalog, totals, actor assignments, financial status, and references to “Current R3” remain historical claims pending reconciliation. The original contains newer Staff/Administrator and payout material, including UC-73/UC-74. This notice does not renumber UCs, change permissions or platform classifications, or approve screens or financial contracts. Conflicting implementation tasks remain `BLOCKED_REQUIREMENT_APPROVAL`.
+## Source of Truth and Baseline
 
-Finance traceability for PR #54 is retained in [PR54-FINANCE-SCREEN-SPEC-AUDIT.md](./PR54-FINANCE-SCREEN-SPEC-AUDIT.md) as a historical review. Its V2 authority and disabled-mutation statements do not establish current implementation or approval status; verify current source and traceable approvals separately.
+- Canonical SRS: [`Report3_Software-Requirement-Specification.docx`](https://docs.google.com/document/d/1VwPkqRyC6ZlbXBQC0ztdektt0vAyE3qt/edit) — **original non-V2**.
+- Snapshot inspected: **2026-11-08**, SHA-256 `cd97de4bd74df3b5cdc159171ee964093d4bb7ba99ca65b52232f88b11de1c6b`, 9,571,142 bytes.
+- Requirement IDs in this matrix follow **SRS Table 3 — Use Case Description**, covering **UC-01 through UC-75** (75 entries). Detailed §§3.2–3.10, screen descriptions §3.1.2 and authorization Table 5 were reviewed; conflicts are explicitly recorded below.
+- `Capstone_Docs` history and existing UI specs are evidence only; neither V2 nor GitHub/Jira nor an implementation overrides the canonical SRS without explicit, traceable approval.
+- Existing Web Screen means a Web screen **specification** under `ux/web-screen-specifications/`, **not proof of implementation or production deployment**.
 
-This document does not replace the approved SRS. A listed use case does not authorize implementation: a new visual Web screen still requires an approved Web Screen Specification, reviewed UI, and an approved implementation task.
+## Platform/Scope Legend
 
-## A. Historical Scope Verification
-
-Earlier provenance recorded hashes `EF675A01A1F459C1A0994AB0F40B0C99BBAF55CCD68A0F882787D37A12C681B3` and `c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`. They are historical records, not fingerprints of the current original. The latter matches the local V2 copy inspected on 2026-10-23. The original SRS and traceable newer approvals take precedence over all historical V2-based statements below, including the former precedence and actor-resolution rules.
-
-| Verification | Confirmed result | Current R3 evidence |
-|---|---|---|
-| UC catalog | Exactly 72 unique IDs, continuously numbered UC-01 through UC-72; no missing or duplicate ID | §2.2.2, Table 3 |
-| Product architecture | Flutter Mobile and responsive Next.js Web share one back-end | §1 Product Overview |
-| Web technology | Next.js with React and TypeScript | §1 Product Overview and 2026-08-21 change record |
-| Mobile technology | Flutter with Bloc | §1 Product Overview |
-| Backend and data | ASP.NET Core 8 with Clean Architecture, SQL Server, Redis, and Mobile SQLite | §1 Product Overview |
-| Guest | Supported public/account capabilities are on both platforms; the Landing Page belongs to Web | §§1 and 2.1 Actor table |
-| Traveler | Profile, preferences, planning, POI, tour, payment, QR display, history, and review capabilities are shared; explicit active-trip, offline, group, and commercial-service exceptions are Mobile-only | §§1 and 2.1 Actor table; Table 3 |
-| Tour Operator | Profile, application resubmission, tour, coupon, booking, revenue, and payout capabilities are shared; QR scanning is Mobile-only | §§1 and 2.1 Actor table; Table 3 |
-| Administrator | Administrator workspace and UCs are Web-only | §§1, 2.1, and 3.9 |
-| Public Landing Page | `PUBLIC_WEB` product surface without a numbered UC | §§1 and 3.1.2.1 |
-| System-triggered functions | UC-70 and UC-71 are platform-neutral system workflows; UC-72 is explicitly Mobile-only and runs as background synchronization. Visible status does not create a standalone route | §§3.1.4 and 3.10; Table 3 |
-
-Document precedence for this correction is: **Current R3 → R2 → R1 → Register → repository implementation → existing matrix**. Older reports and the Register are recorded when they conflict, but they do not override Current R3. Repository code establishes only current implementation coverage and never product scope.
-
-For an internal R3 conflict, this resolution order is applied: **explicit UC platform statement → Actor platform definition → Product Overview → detailed interface → screen table/mockup**. A lower-priority Next.js mention cannot expand an explicitly Mobile-only UC.
-
-Source labels used below:
-
-- **R3** — `Report3_Software-Requirement-Specification.docx`.
-- **R2** — `Report2_Project Management Plan.docx`.
-- **R1** — `Report1_Project Introduction.docx`.
-- **Register** — `Capstone Project Register_FA26_LongNQ_SE18.docx`.
-- **Screens** — `Report3_Screens_All.html`; supporting visual artifact only.
-
-## B. Document Conflicts
-
-| Conflict | Current R3 | Older Document / Internal Section | Resolution |
-|---|---|---|---|
-| Overall platform ownership | R3 §§1-2.1 assign most Guest, Traveler, and Tour Operator capabilities to both applications and Administrator to Web-only | Register §§3.3-3.5 defines narrower Traveler/Tour Operator Mobile deliverables and Admin Web plus Landing Page. Current workspace R1 §§1.1, 2, and 6 and R2 §§1.1-1.2 already align with Current R3 rather than contradicting it | Current R3 controls; the Register does not reduce current Web scope |
-| Breadth of Mobile-only exceptions | R3 §§1, 2.1, and Table 3 explicitly make alerts/rerouting, travel groups, commercial services, offline use, navigation, and QR scanning Mobile-only where specified | R1 §6.2 LI-5 and R2 objective 2 make broader “both platforms” statements | Apply Current R3 per-UC statements |
-| Shared Tour Operator interfaces | R3 §§1 and 2.1 assign registration, profile, tour, coupon, booking, revenue, and payout functions to both platforms | Internal §§3.2.2-3.2.3 and 3.8 often name only the Next.js interface | Retain `SHARED_WEB_MOBILE`; the detailed interface text is incomplete because it never explicitly removes Mobile support |
-| UC-30 and UC-31 platform | R3 Table 3 explicitly says both commercial-service UCs are Mobile-only; §§1 and 2.1 agree | Internal §§3.6.1-3.6.2 mention Flutter and Next.js; R2 objective 2 is also broader | `SRS_CONFLICT`: keep `MOBILE_ONLY`; new Web routes are `BLOCKED_BY_SRS_CONFLICT` until Current R3 is corrected and approved |
-| UC-43 platform | R3 Table 3 explicitly says QR check-in is Mobile-only; §§1 and 2.1 agree | Internal §3.8.4.4 mentions Flutter and Next.js | `SRS_CONFLICT`: keep `MOBILE_ONLY`; new Web routes are `BLOCKED_BY_SRS_CONFLICT` because the isolated Next.js phrase cannot expand scope |
-| UC-70 trigger, actors, and UI | R3 Table 3 and §3.1.4 describe automatic weather-triggered cancellation and catalog actors Traveler/Tour Operator | Internal §3.10.1 says Operator/Admin declares the cancellation and defines declaration screens | `SRS_CONFLICT`: keep the processing `NON_SCREEN`; new declaration routes are `BLOCKED_BY_SRS_CONFLICT` until R3 is corrected or the manual action is split into a separate UC |
-| UC-71 actor ownership | R3 Table 3 catalog actor is Traveler and describes an automatic refund | Internal §3.10.2 additionally lists System, Tour Operator, and Administrator as execution/notified/escalation roles | Preserve the exact catalog Actor field; keep processing `NON_SCREEN` and record the additional roles only in Evidence/Notes |
-| Mockup labels for UC-29 through UC-31 | R3 Table 3 makes UC-29 shared and UC-30/31 Mobile-only | Screens says UC-29 and UC-31 are Mobile-only and implies UC-30 is shared | Current R3 controls; the visual artifact must be corrected before its platform labels are relied upon |
-| Screen inventory and caption | R3 Tables 4.1 and 4.2 enumerate 92 rows; Table 4.2 contains Mobile-oriented descriptions | R2 §3 Table 7 says 88 screens; R3 internally captions Table 4.2 as a Web screen list | Do not equate screen count with UC or route count; reconcile the screen inventory and caption in R3 |
-| Web technology | R3 §1 and its 2026-08-21 change record specify Next.js with React and TypeScript | Register §3.4 says React.js | Use Current R3's framework baseline; React.js wording does not replace Next.js |
-| Mobile OS target | R3 §1 says Flutter Mobile for Android | Internal R3 §4.2.5 lists Android 9+ and iOS 14+; R1 §1.1 says Android | No Web-scope effect; correct the mobile compatibility statement separately |
-| Stale UC references | R3 Table 3 defines Create POI as UC-52, Initiate Booking Refund as UC-42, and Process Automatic Refund as UC-71 | R2 risk table calls Create POI UC-51 and summarizes refund risk using UC-28/UC-41 | Keep Current R3 numbering; correct R2 cross-references without renumbering UCs |
-
-## C. Final Platform Model
-
-| Classification | Definition |
+| Classification | Meaning |
 |---|---|
-| `PUBLIC_WEB` | Public Web-only product surface. It currently applies to the unnumbered TripMate Landing Page, not to an invented UC. |
-| `SHARED_WEB_MOBILE` | R3 explicitly requires the same UC capability on both responsive Web and Flutter Mobile. It does not imply identical layouts or one route per UC. |
-| `MOBILE_ONLY` | Capability explicitly assigned to Flutter Mobile. It may be a user-facing screen or a background Mobile service. The Web repository must not create an equivalent route without an approved SRS change. |
-| `ADMIN_WEB_ONLY` | Administrator capability delivered through the Web administration workspace. |
-| `NON_SCREEN` | Automated or system-triggered workflow without explicit user-platform ownership that cannot create a standalone Web route. Its outcome may be displayed inside an already-approved screen or notification surface. |
+| `SHARED_WEB_MOBILE` | Detailed SRS explicitly supports responsive Web and Flutter Mobile. |
+| `WEB_CONFIRMED` | Web UI explicitly confirmed; no implied rejection or confirmation of Mobile support. |
+| `MOBILE_ONLY` | Detailed SRS explicitly limits the specific function to Flutter. |
+| `INTERNAL_WEB_ONLY` | Staff/Administrator Web administration workspace; individual permissions may be disputed. |
+| `WEB_WORKFLOW` | Broader system process with an explicit Web interaction or visible state. |
+| `NON_SCREEN` | Action/system operation requiring no dedicated Web page, though existing views may show results. |
+| `CONFLICT_WEB_MOBILE` | Official SRS sections disagree on Web ownership; **owner decision required**. |
 
-Platform Classification and Interaction Type are separate axes. Platform Classification records where the capability belongs; Interaction Type records whether it is a page, action, dialog, or background process. UC-72 is therefore `MOBILE_ONLY` with `NON_SCREEN / background synchronization` interaction. `NON_SCREEN` remains in the classification column for UC-70 and UC-71 because Current R3 defines those system workflows without assigning a user platform.
+## Canonical Web UC Coverage
 
-`Web Required = Yes` means project requirements include a Web surface or Web action. `No` means this repository must not implement a Web equivalent. `No standalone route` means the system behavior may affect approved Web screens, but the UC itself is not route authority.
+| UC | SRS Table 3 Use Case | Actor (SRS Catalogue) | Web Supported | Existing Web Screen Spec | Web Screen Needed | Requirements Trace / Caveat | FE Source Status |
+|---|---|---|---|---|---|---|---|
+| UC-01 | Register Traveler Account | Guest | SHARED_WEB_MOBILE | Traveler Registration; Verify Account | YES — Batch 1 | §3.2.1: public Web and Mobile; Pending Verification via email code; Google can create Active account. | PARTIAL |
+| UC-02 | Register Tour Operator Account | Guest | SHARED_WEB_MOBILE | Tour Operator Registration; Application Submitted state; Operator Application Status | YES — Batch 1 | §3.2.2 explicitly supports both Flutter and Next.js. Operator registration awaits Staff approval; submitted notice is a state, not separate screen. | PARTIAL |
+| UC-03 | Resubmit Tour Operator Application | Tour Operator | SHARED_WEB_MOBILE | Operator Application Status; Resubmit Application | YES — Batch 1 | §3.2.3 explicitly supports both platforms; rejected applicant reuses account, not new registration. | PARTIAL |
+| UC-04 | Sign In | Guest | SHARED_WEB_MOBILE | Public Sign In; Admin Login | YES — Batch 1 | Table 3 actor is Guest; §3.2.4 lists Traveler/Operator/Administrator, while authorization Table 5 also grants Staff administration login. ROLE_CONFLICT. | PARTIAL |
+| UC-05 | Sign Out | Traveler / Tour Operator / Staff / Administrator | NON_SCREEN | None | NO dedicated page | Menu/sign-out action on existing shell; Table 3 includes Staff but detailed §3.2.5 omits Staff. ROLE_CONFLICT. | PARTIAL |
+| UC-06 | Reset Password | Guest | SHARED_WEB_MOBILE | Password Recovery (public and Admin contexts; code/new-password states) | YES — Batch 1 | §3.2.6 email reset code and new-password states; Table 5 lists Staff administration reset context, detailed UC omits Staff. ROLE_CONFLICT. | PARTIAL |
+| UC-07 | Change Password | Traveler / Tour Operator / Staff / Administrator | SHARED_WEB_MOBILE | None | DEFERRED — shells | §3.2.7 authenticated account settings; Table 3 and authorization Table 5 include Staff, detailed actor list omits Staff. ROLE_CONFLICT. | PARTIAL |
+| UC-08 | Update Traveler Profile | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.2.8: Traveler Profile/Edit Profile on responsive Web and Flutter. | PARTIAL |
+| UC-09 | Update Travel Preferences | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.2.9: preferences with interest tags, styles, budget; shared platforms. | PARTIAL |
+| UC-10 | Create Scheduling Request | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.3.1: Scheduling Request form shared across Web and Flutter. | PARTIAL |
+| UC-11 | View Suggested Itinerary | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.3.2: suggested itinerary timeline and map overview on Web and Flutter. | PARTIAL |
+| UC-12 | Explore Points of Interest | Guest / Traveler | SHARED_WEB_MOBILE | None | YES — later batch | Table 3 and Table 5 include Guest POI exploration; §3.3.3 detailed actor names Traveler only. ROLE_CONFLICT. | PARTIAL |
+| UC-13 | Navigate Route | Traveler | MOBILE_ONLY | None | NO Web screen | §3.3.4 real-time navigation UI is Flutter-only. | OUT_OF_SCOPE |
+| UC-14 | Receive Real-Time Alerts | Traveler | MOBILE_ONLY | None | NO Web screen | §3.3.5 real-time trip alerts within Mobile navigation; no corresponding Web alert screen. | OUT_OF_SCOPE |
+| UC-15 | Confirm Re-routing | Traveler | MOBILE_ONLY | None | NO Web screen | §3.3.6 rerouting proposal/confirmation is Flutter-only. | OUT_OF_SCOPE |
+| UC-16 | Download Offline Map & Itinerary | Traveler | MOBILE_ONLY | None | NO Web screen | §3.3.7 offline map/itinerary download is Flutter-only. | OUT_OF_SCOPE |
+| UC-17 | Create Travel Group | Traveler | MOBILE_ONLY | None | NO Web screen | §3.4.1 create travel group is Flutter-only. | OUT_OF_SCOPE |
+| UC-18 | Invite Group Members | Traveler | MOBILE_ONLY | None | NO Web screen | §3.4.2 invite members by code/QR is Flutter-only. | OUT_OF_SCOPE |
+| UC-19 | View Group Members | Traveler | MOBILE_ONLY | None | NO Web screen | §3.4.3 group members screen is Flutter-only. | OUT_OF_SCOPE |
+| UC-20 | Remove Group Member | Traveler | MOBILE_ONLY | None | NO Web screen | §3.4.4 group-host remove action/dialog is Flutter-only. | OUT_OF_SCOPE |
+| UC-21 | Leave Travel Group | Traveler | MOBILE_ONLY | None | NO Web screen | §3.4.5 leave group confirmation is Flutter-only. | OUT_OF_SCOPE |
+| UC-22 | Configure Group Location Sharing | Traveler | MOBILE_ONLY | None | NO Web screen | §3.4.6 GPS sharing settings are Flutter-only. | OUT_OF_SCOPE |
+| UC-23 | Join Shared Group Trip | Traveler | MOBILE_ONLY | None | NO Web screen | §3.4.7 join shared trip by code/QR is Flutter-only. | OUT_OF_SCOPE |
+| UC-24 | Search Tours | Guest / Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.5.1: public search on both Web and Mobile. Search, filters and availability follow detailed SRS. | PARTIAL |
+| UC-25 | Receive Tour Recommendations | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.5.2: Traveler tour recommendations on both Web and Mobile. | PARTIAL |
+| UC-26 | View Tour Details | Guest / Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.5.3: public Tour Details on both Web and Mobile; booking requires Traveler access. | PARTIAL |
+| UC-27 | Book Tour | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.5.4: Traveler Booking UI on Web and Mobile. | PARTIAL |
+| UC-28 | Make Electronic Payment | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.5.5: payment entry Web/Mobile; gateway-hosted page is external, not TripMate UI. | PARTIAL |
+| UC-29 | View QR E-ticket | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.5.6: Traveler QR e-ticket VIEW on Web/Mobile; check-in SCANNING remains UC-43 Mobile-only. | PARTIAL |
+| UC-30 | View Commercial Service | Traveler | MOBILE_ONLY | None | NO Web screen | §3.6.1 explicitly calls Commercial Service Detail/Booking UI Flutter-only. | OUT_OF_SCOPE |
+| UC-31 | Book Commercial Service | Traveler | CONFLICT_WEB_MOBILE | None | HOLD — owner decision | Product Overview says commercial-service booking is Mobile-specific; §3.6.2 Interface explicitly says Flutter AND Next.js. AMBIGUOUS_REQUIREMENT — no Web inclusion/exclusion decided. | BLOCKED_REQUIREMENT |
+| UC-32 | View Trip History | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.7.1: Traveler trip history available Web and Mobile. | PARTIAL |
+| UC-33 | Submit Trip Review | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.7.2: post-trip review Web and Mobile. | PARTIAL |
+| UC-34 | Update Tour Operator Profile | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.1 explicitly specifies Next.js Operator Profile; general Product Overview does not prove separate Mobile UI. | PARTIAL |
+| UC-35 | Create Tour Package | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.2.1 Next.js Tour Package create form. | PARTIAL |
+| UC-36 | Update Tour Package | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.2.2 Next.js Tour Package update form; reuse editor and lifecycle guards. | PARTIAL |
+| UC-37 | Submit Tour for Approval | Tour Operator | WEB_CONFIRMED | None | REUSE/ACTION — later batch | §3.8.2.3 Next.js tour submission confirmation/action; Staff approves via UC-59. | PARTIAL |
+| UC-38 | Create Coupon | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.3.1 Next.js create coupon form. | PARTIAL |
+| UC-39 | Update Coupon | Tour Operator | WEB_CONFIRMED | None | REUSE — later batch | §3.8.3.2 Next.js coupon update; reuse coupon form. | PARTIAL |
+| UC-40 | View Customer Bookings | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.4.1 Next.js Operator customer bookings; scope limited to owned tours. | PARTIAL |
+| UC-41 | Cancel Tour Booking | Tour Operator | WEB_CONFIRMED | None | REUSE/DIALOG — later batch | Table 3 actor is Tour Operator, detailed §3.8.4.2 and Table 5 also allow Traveler self-cancellation. ROLE_CONFLICT; distinct authorization scopes. | PLACEHOLDER_LOCKED |
+| UC-42 | Confirm Booking Refund | Tour Operator | WEB_CONFIRMED | None | YES/REUSE — later batch | Table 3 and §3.8.4.3 say CONFIRM Booking Refund, NOT Initiate Booking Refund; operator console. Do not conflate with system UC-67. | PLACEHOLDER_LOCKED |
+| UC-43 | Check In Traveler by QR Code | Tour Operator | MOBILE_ONLY | None | NO Web screen | §3.8.4.4: camera-based QR check-in scanning is Flutter-only. | OUT_OF_SCOPE |
+| UC-44 | View Revenue Report | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.5.1 Next.js operator revenue report, only own tours. | PARTIAL |
+| UC-45 | Export Revenue Report | Tour Operator | WEB_CONFIRMED | None | REUSE/ACTION — later batch | §3.8.5.2 Next.js revenue export dialog/action. | PARTIAL |
+| UC-46 | View User Accounts | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — role approval hold | Table 3 and authorization Table 5 grant Staff + Administrator role-scoped account views, but §3.9.1.1 says Administrator only. ROLE_CONFLICT; do not implement disputed access. | PLACEHOLDER_UNAVAILABLE |
+| UC-47 | Lock User Account | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — hold permissions | Table 3 and Table 5 grant Staff + Administrator role-scoped locking, but §3.9.1.2 says Administrator only. ROLE_CONFLICT. | PLACEHOLDER_UNAVAILABLE |
+| UC-48 | Unlock User Account | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — hold permissions | Table 3 and Table 5 grant Staff + Administrator role-scoped unlocking, but §3.9.1.3 says Administrator only. ROLE_CONFLICT. | PLACEHOLDER_UNAVAILABLE |
+| UC-49 | Approve Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/ACTION — later batch | §3.9.2.1: STAFF approves Tour Operator applications via moderation workspace. | PARTIAL_CONTRACT_CONFLICT |
+| UC-50 | Reject Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — later batch | §3.9.2.2: STAFF rejects Tour Operator applications with reason. | PARTIAL_CONTRACT_CONFLICT |
+| UC-51 | Create POI | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.3.1: STAFF and Administrator may create POIs. | IMPLEMENTED_SOURCE |
+| UC-52 | Update POI | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE — later batch | §3.9.3.2: STAFF and Administrator may update POIs. | PARTIAL |
+| UC-53 | Remove POI | Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — lifecycle hold | §3.9.3.3: Administrator-only POI removal. Official SRS conditionally allows deletion/deactivation; any soft-delete-only change requires traceable approval. POLICY_HOLD. | MISSING |
+| UC-54 | Create Route | Staff | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.4.1: STAFF creates routes; old matrix incorrectly had UC-54 as Remove POI. | PLACEHOLDER_UNAVAILABLE |
+| UC-55 | Update Route | Staff | INTERNAL_WEB_ONLY | None | REUSE — later batch | §3.9.4.2: STAFF updates routes. | PLACEHOLDER_UNAVAILABLE |
+| UC-56 | Configure Algorithm Parameters | Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.5: Administrator configures scheduling/matching algorithm parameters. | IMPLEMENTED_SOURCE |
+| UC-57 | View Active Trips | Staff | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.6.1: STAFF active trips monitor; no invented intervention rights. | IMPLEMENTED_SOURCE_CONTRACT_CONFLICT |
+| UC-58 | View Active Trip Details | Staff | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.6.2: STAFF active trip details; read-oriented. | IMPLEMENTED_SOURCE_CONTRACT_CONFLICT |
+| UC-59 | Approve Tour Post | Staff | INTERNAL_WEB_ONLY | None | REUSE/ACTION — later batch | §3.9.7.1: STAFF approves Tour Posts. | PARTIAL |
+| UC-60 | Reject Tour Post | Staff | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — later batch | §3.9.7.2: STAFF rejects Tour Posts with reason. | PARTIAL |
+| UC-61 | View Platform Bookings | Staff | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.8: STAFF platform-wide booking monitoring; no unapproved booking interventions. | IMPLEMENTED_SOURCE |
+| UC-62 | Update Landing Page Content | Staff | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.10: STAFF maintains public landing-page content. | IMPLEMENTED_SOURCE |
+| UC-63 | Export Statistical Reports | Administrator | INTERNAL_WEB_ONLY | None | REUSE/ACTION — later batch | §3.9.11: Administrator exports platform statistical reports. | PLACEHOLDER_PENDING_BE |
+| UC-64 | View Audit Logs | Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.12.1: Administrator audit log list/search. | IMPLEMENTED_SOURCE |
+| UC-65 | View Audit Log Details | Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.12.2: Administrator audit log details. | IMPLEMENTED_SOURCE |
+| UC-66 | Handle Weather Warning and Operator Cancellation | Traveler / Tour Operator | WEB_WORKFLOW | None | YES/REUSE — placement hold | §3.10.1: System weather detection, Operator cancellation decision, Traveler notification. Emergency declaration screen on operator OR Web administration workspace; PLACEMENT_CONFLICT; no automatic cancellation. | PARTIAL |
+| UC-67 | Process Refund to Traveler | Traveler | NON_SCREEN | None | NO dedicated page — reuse status | §3.10.2: System + gateway perform refund; catalogue lists Traveler. Status on existing Booking Detail/notification Web UI; ACTOR_CONFLICT. | PARTIAL |
+| UC-68 | Submit Post-Trip Complaint | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.8.6.1: Traveler complaint Web and Flutter form; 3-day deadline and evidence constraints. | MISSING |
+| UC-69 | Respond to Post-Trip Complaint | Tour Operator | WEB_CONFIRMED | None | YES — later batch | §3.8.6.2: Tour Operator console complaint response; full/partial/reject and deadlines. | MISSING |
+| UC-70 | Synchronize Offline Trip Data | Traveler | MOBILE_ONLY | None | NO Web screen | §3.10.3 offline Mobile synchronization banner/result; no Web screen. | OUT_OF_SCOPE |
+| UC-71 | Schedule Payout Settlement | System | NON_SCREEN | None | NO dedicated page | Catalogue and §3.10.4: scheduled payout is automatic System function; do not add Operator Request Payout UI. | NOT_APPLICABLE_AS_SCREEN |
+| UC-72 | View Payout Records | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — role approval hold | Table 3 and Table 5 allow Staff/Administrator payout record view, but detailed §3.9.9.1 mentions Staff only. ROLE_CONFLICT. | IMPLEMENTED_SOURCE_CONFLICT |
+| UC-73 | Review Failed Payout Settlement | Administrator | INTERNAL_WEB_ONLY | None | REUSE — owner review | Table 3 lists Administrator failed-payout review but no corresponding named detailed function section. UI/actions NOT_VERIFIED. | PLACEHOLDER_UNAVAILABLE |
+| UC-74 | Process Payout Settlement | System | NON_SCREEN | None | NO dedicated page | Table 3 and §3.10.5 specify automatic payout, no operator/admin approval; §3.9.9.3 retains Administrator Confirm Payout Settlement. PAYOUT_CONFLICT; do not silently resolve. | CONFLICTING_MANUAL_MODEL |
+| UC-75 | Respond to Partial Refund Proposal | Traveler | SHARED_WEB_MOBILE | None | YES — later batch | §3.8.6.3: Traveler accepts/declines partial refund proposal on Web or Flutter within 3 days. | MISSING |
 
-### Approved-document technology baseline
+## Classification Totals
 
-| Area | Baseline established by the latest reports | Evidence |
-|---|---|---|
-| Web | Next.js with React and TypeScript | Current R3 §1 and 2026-08-21 change record |
-| Mobile | Flutter with Bloc | R3 §1; R2 §§1.2 and 6.3 |
-| Backend | ASP.NET Core 8 with Clean Architecture | R3 §1; R2 §§1.2 and 6.3 |
-| Data | SQL Server, Redis, and Mobile SQLite | R3 §1; R2 §1.2 |
-| External services | Google Maps API, Weather API, Firebase Cloud Messaging, Google OAuth, and VNPay; PayOS is named only as a fallback | R3 §§1 and 4.1 |
-
-The Register's `React.js` wording is superseded for scope purposes by the later R3 change record. Next.js still uses React; the approved framework-level wording is **Next.js with React and TypeScript**.
-
-## D. Final UC / Platform Matrix
-
-Interaction Type describes the interaction shape supported by Current R3. It is not a route count and does not create a Screen Specification.
-
-| UC | Use Case | Actor | Platform Classification | Web Required | Interaction Type | Evidence / Notes |
-|---|---|---|---|---|---|---|
-| UC-01 | Register Traveler Account | Guest | SHARED_WEB_MOBILE | Yes | Multi-step registration flow | R3 §§1, 2.1, 3.2.1 explicitly provide Flutter and responsive Next.js interfaces. |
-| UC-02 | Register Tour Operator Account | Guest | SHARED_WEB_MOBILE | Yes | Multi-step business registration | R3 §§1 and 2.1 say both platforms; §3.2.2 names only Web while R3 Table 4.2 contains the Operator registration screen. Treat the detailed interface as incomplete, not a Mobile removal. |
-| UC-03 | Resubmit Tour Operator Application | Tour Operator | SHARED_WEB_MOBILE | Yes | Status, edit, and resubmit flow | R3 §§1 and 2.1 say both platforms; §3.2.3 names the responsive Web screens. Register independently requires Mobile Operator onboarding. |
-| UC-04 | Sign In | Guest | SHARED_WEB_MOBILE | Yes | Authentication form/flow | R3 §§1, 2.1, 3.2.4 explicitly cover Mobile and Web; Admin uses the Web-specific login surface. |
-| UC-05 | Sign Out | Traveler / Tour Operator / Administrator | SHARED_WEB_MOBILE | Yes | Account action plus confirmation dialog | R3 §3.2.5 explicitly places the action in Mobile and Web account menus; no dedicated route is implied. |
-| UC-06 | Reset Password | Guest | SHARED_WEB_MOBILE | Yes | Multi-step recovery flow | R3 §§2.1 and 3.2.6 explicitly provide Mobile and Web recovery screens, including Admin Web variants in Table 4.1. |
-| UC-07 | Change Password | Traveler / Tour Operator / Administrator | SHARED_WEB_MOBILE | Yes | Account-settings form | R3 §3.2.7 explicitly provides Mobile and Web interfaces; Admin uses Web. |
-| UC-08 | Update Traveler Profile | Traveler | SHARED_WEB_MOBILE | Yes | Profile/detail and edit form | R3 §§2.1 and 3.2.8 explicitly provide Flutter and responsive Next.js screens. |
-| UC-09 | Update Travel Preferences | Traveler | SHARED_WEB_MOBILE | Yes | Settings form | R3 §§2.1 and 3.2.9 explicitly provide Flutter and responsive Next.js screens. |
-| UC-10 | Create Scheduling Request | Traveler | SHARED_WEB_MOBILE | Yes | Planner form | R3 §§1, 2.1, 3.3.1 explicitly provide Flutter and responsive Next.js screens. |
-| UC-11 | View Suggested Itinerary | Traveler | SHARED_WEB_MOBILE | Yes | Timeline/map result view | R3 §§1, 2.1, 3.3.2 explicitly provide Flutter and responsive Next.js screens. |
-| UC-12 | Explore Points of Interest | Guest / Traveler | SHARED_WEB_MOBILE | Yes | Search/list/map plus detail | R3 §§1, 2.1, 3.3.3 explicitly provide Flutter and responsive Next.js screens; Guest ownership comes from Table 3 and §2.1. |
-| UC-13 | Navigate Route | Traveler | MOBILE_ONLY | No | Mobile live-navigation screen | R3 §§1, 2.1, Table 3, and §3.3.4 explicitly say Mobile-only. |
-| UC-14 | Receive Real-Time Alerts | Traveler | MOBILE_ONLY | No | Push/banner/alerts list | R3 §§1, 2.1, Table 3, and §3.3.5 explicitly say Mobile-only. Background alert ingestion does not create a Web route. |
-| UC-15 | Confirm Re-routing | Traveler | MOBILE_ONLY | No | Mobile proposal/decision screen | R3 §§1, 2.1, Table 3, and §3.3.6 explicitly say Mobile-only. |
-| UC-16 | Download Offline Map & Itinerary | Traveler | MOBILE_ONLY | No | Mobile download/offline screen | R3 §§1, 2.1, Table 3, and §3.3.7 explicitly say Mobile-only. |
-| UC-17 | Create Travel Group | Traveler | MOBILE_ONLY | No | Mobile creation form | R3 §§1, 2.1, Table 3, and §3.4.1 explicitly say Mobile-only. |
-| UC-18 | Invite Group Members | Traveler | MOBILE_ONLY | No | Mobile invite/code/QR screen | R3 §§1, 2.1, Table 3, and §3.4.2 explicitly say Mobile-only. |
-| UC-19 | View Group Members | Traveler | MOBILE_ONLY | No | Mobile member list/detail | R3 §§1, 2.1, Table 3, and §3.4.3 explicitly say Mobile-only. |
-| UC-20 | Remove Group Member | Traveler | MOBILE_ONLY | No | Action plus confirmation dialog | R3 Table 3 and §3.4.4 explicitly say Mobile-only; no standalone route is implied. |
-| UC-21 | Leave Travel Group | Traveler | MOBILE_ONLY | No | Action plus confirmation | R3 Table 3 and §3.4.5 explicitly say Mobile-only. |
-| UC-22 | Configure Group Location Sharing | Traveler | MOBILE_ONLY | No | Mobile privacy/settings screen | R3 §§1, 2.1, Table 3, and §3.4.6 explicitly say Mobile-only. |
-| UC-23 | Join Shared Group Trip | Traveler | MOBILE_ONLY | No | Mobile code/QR join flow | R3 §§1, 2.1, Table 3, and §3.4.7 explicitly say Mobile-only. |
-| UC-24 | Search Tours | Guest / Traveler | SHARED_WEB_MOBILE | Yes | Search/filter/list | R3 §§1, 2.1, 3.5.1 explicitly provide Mobile and Next.js Web. |
-| UC-25 | Receive Tour Recommendations | Traveler | SHARED_WEB_MOBILE | Yes | Recommendation list | R3 §§1, 2.1, 3.5.2 explicitly provide Mobile and Next.js Web. |
-| UC-26 | View Tour Details | Guest / Traveler | SHARED_WEB_MOBILE | Yes | Detail view | R3 §§1, 2.1, 3.5.3 explicitly provide Mobile and Next.js Web. |
-| UC-27 | Book Tour | Traveler | SHARED_WEB_MOBILE | Yes | Booking form/confirmation flow | R3 §§1, 2.1, 3.5.4 explicitly provide Mobile and Next.js Web. |
-| UC-28 | Make Electronic Payment | Traveler | SHARED_WEB_MOBILE | Yes | Payment handoff and return flow | R3 Table 3 and §3.5.5 explicitly define Mobile deep-link and Web redirect return paths. |
-| UC-29 | View QR E-ticket | Traveler | SHARED_WEB_MOBILE | Yes | Booking detail and QR display | R3 §§1, 2.1, Table 3, and §3.5.6 say display on both platforms; scanning is UC-43. `MOCKUP_CONFLICT`: Screens incorrectly labels UC-29 Mobile-only. |
-| UC-30 | View Commercial Service | Traveler | MOBILE_ONLY | No | Mobile service list/detail | `SRS_CONFLICT` and `BLOCKED_BY_SRS_CONFLICT`: R3 §§1, 2.1, and Table 3 explicitly say Mobile-only, while §3.6.1 mentions Next.js. The explicit UC platform statement controls; no Web screen is authorized. |
-| UC-31 | Book Commercial Service | Traveler | MOBILE_ONLY | No | Mobile service-booking flow | `SRS_CONFLICT` and `BLOCKED_BY_SRS_CONFLICT`: R3 §§1, 2.1, and Table 3 explicitly say Mobile-only, while §3.6.2 mentions Next.js. The explicit UC platform statement controls; no Web screen is authorized. |
-| UC-32 | View Trip History | Traveler | SHARED_WEB_MOBILE | Yes | History list/detail | R3 §§1, 2.1, and §3.7.1 explicitly provide Mobile and Next.js Web. |
-| UC-33 | Submit Trip Review | Traveler | SHARED_WEB_MOBILE | Yes | Review/rating form | R3 §§1, 2.1, and §3.7.2 explicitly provide Mobile and Next.js Web. |
-| UC-34 | Update Tour Operator Profile | Tour Operator | SHARED_WEB_MOBILE | Yes | Business profile/detail and edit | R3 §§1 and 2.1 explicitly say both platforms; §3.8.1 documents the Next.js management screen. |
-| UC-35 | Create Tour Package | Tour Operator | SHARED_WEB_MOBILE | Yes | Multi-section creation form | R3 §§1 and 2.1 say both platforms; §3.8.2.1 documents the Next.js management screen. |
-| UC-36 | Update Tour Package | Tour Operator | SHARED_WEB_MOBILE | Yes | Edit form | R3 §§1 and 2.1 say both platforms; §3.8.2.2 documents the Next.js management screen. |
-| UC-37 | Submit Tour for Approval | Tour Operator | SHARED_WEB_MOBILE | Yes | Action plus confirmation dialog | R3 Table 3 provides the catalog name; §§1, 2.1, and 3.8.2.3 support both-platform ownership and the Web action. The detail heading says “Submit Tour Package for Approval” but does not define a new UC. |
-| UC-38 | Create Coupon | Tour Operator | SHARED_WEB_MOBILE | Yes | Creation form | R3 §§1 and 2.1 say both platforms; §3.8.3.1 documents the Next.js management screen. |
-| UC-39 | Update Coupon | Tour Operator | SHARED_WEB_MOBILE | Yes | Edit/deactivate form | R3 §§1 and 2.1 say both platforms; §3.8.3.2 documents the Next.js management screen. |
-| UC-40 | View Customer Bookings | Tour Operator | SHARED_WEB_MOBILE | Yes | Booking list/detail | R3 §§1 and 2.1 say both platforms; §3.8.4.1 documents the Next.js management screen. |
-| UC-41 | Cancel Customer Booking | Tour Operator | SHARED_WEB_MOBILE | Yes | Action plus confirmation dialog | R3 §§1 and 2.1 say both platforms; §3.8.4.2 documents the Next.js dialog. No dedicated route is implied. |
-| UC-42 | Initiate Booking Refund | Tour Operator | SHARED_WEB_MOBILE | Yes | Action/dialog within booking detail | R3 §§1 and 2.1 say both platforms; §3.8.4.3 documents the Next.js refund action. |
-| UC-43 | Check In Traveler by QR Code | Tour Operator | MOBILE_ONLY | No | Mobile camera/scanner screen | `SRS_CONFLICT` and `BLOCKED_BY_SRS_CONFLICT`: R3 §§1, 2.1, and Table 3 explicitly say Mobile-only, while §3.8.4.4 mentions Next.js. The explicit UC platform statement controls; no Web screen is authorized. |
-| UC-44 | View Revenue Report | Tour Operator | SHARED_WEB_MOBILE | Yes | Report/dashboard view | R3 §§1 and 2.1 say both platforms; §3.8.5.1 documents the Next.js management screen. `SRS_FINANCIAL_FORMULA_DECISION_PENDING`: UC-44 BR-112 states net amount is gross revenue minus commission, while its processing/post-conditions also mention completed refunds and UC-46 BR-112 explicitly deducts completed refunds. Demo figures are non-authoritative until Product/BA resolves the formula. |
-| UC-45 | Export Revenue Report | Tour Operator | SHARED_WEB_MOBILE | Yes | Export action/dialog | R3 §§1 and 2.1 say both platforms; §3.8.5.2 places the dialog on the Revenue Report screen. No dedicated route is implied. |
-| UC-46 | Request Payout Settlement | Tour Operator | SHARED_WEB_MOBILE | Yes | Payout detail/request form | R3 §§1 and 2.1 say both platforms; §3.8.5.3 documents the Next.js management screen. `SRS_FINANCIAL_FORMULA_DECISION_PENDING`: UC-46 BR-112 explicitly deducts completed refunds, unlike UC-44 BR-112. The Tour Operator does not determine the backend formula; Product/BA approval and an authoritative backend contract are still required. Release scope is Web-first (as UC-44/UC-45): Mobile is DEFERRED pending an SRS platform scope amendment, not omitted. |
-| UC-47 | View User Accounts | Administrator | ADMIN_WEB_ONLY | Yes | Account list/detail | Register §3.3 OBJ6; R3 §§2.1 and 3.9.1.1; Table 4.1. |
-| UC-48 | Lock User Account | Administrator | ADMIN_WEB_ONLY | Yes | Action plus confirmation dialog | R3 §§2.1 and 3.9.1.2; Table 4.1. No dedicated route is implied. |
-| UC-49 | Unlock User Account | Administrator | ADMIN_WEB_ONLY | Yes | Action plus confirmation dialog | R3 §§2.1 and 3.9.1.3; Table 4.1. No dedicated route is implied. |
-| UC-50 | Approve Tour Operator Application | Administrator | ADMIN_WEB_ONLY | Yes | Review-screen action | Register §3.3 OBJ6; R3 §§2.1 and 3.9.2.1; Table 4.1. |
-| UC-51 | Reject Tour Operator Application | Administrator | ADMIN_WEB_ONLY | Yes | Review action with reason | R3 §§2.1 and 3.9.2.2; Table 4.1. R2's Create POI reference to UC-51 is stale. |
-| UC-52 | Create POI | Staff | ADMIN_WEB_ONLY | Yes | Creation form/map input | Team decision (2026-10-15): POIs are created by Staff, not Administrators (the Report 3 V2 catalogue also lists Staff); this supersedes the Administrator actor named in R3 §3.9.3.1 until the SRS is corrected. Register §3.3 OBJ6; R3 §§2.1 and 3.9.3.1; Table 4.1. |
-| UC-53 | Update POI | Administrator | ADMIN_WEB_ONLY | Yes | Edit form/map input | R3 §§2.1 and 3.9.3.2; Table 4.1. |
-| UC-54 | Remove POI | Administrator | ADMIN_WEB_ONLY | Yes | Action plus confirmation dialog | R3 §§2.1 and 3.9.3.3; Table 4.1. No dedicated route is implied. |
-| UC-55 | Create Route | Administrator | ADMIN_WEB_ONLY | Yes | Route creation form/map input | Register §3.3 OBJ6; R3 §§2.1 and 3.9.4.1; Table 4.1. |
-| UC-56 | Update Route | Administrator | ADMIN_WEB_ONLY | Yes | Route edit form/map input | R3 §§2.1 and 3.9.4.2; Table 4.1. |
-| UC-57 | Configure Algorithm Parameters | Administrator | ADMIN_WEB_ONLY | Yes | Configuration form | Register §3.3 OBJ6; R3 §§2.1 and 3.9.5; Table 4.1. |
-| UC-58 | View Active Trips | Administrator | ADMIN_WEB_ONLY | Yes | Monitoring list/dashboard | Register §3.3 OBJ6; R3 §§2.1 and 3.9.6.1; Table 4.1. |
-| UC-59 | View Active Trip Details | Administrator | ADMIN_WEB_ONLY | Yes | Monitoring detail | R3 §§2.1 and 3.9.6.2; Table 4.1. It is read-only unless a separate intervention UC is approved. |
-| UC-60 | Approve Tour Post | Administrator | ADMIN_WEB_ONLY | Yes | Review-screen action | Register §3.3 OBJ6; R3 §§2.1 and 3.9.7.1; Table 4.1. |
-| UC-61 | Reject Tour Post | Administrator | ADMIN_WEB_ONLY | Yes | Review action with reason | R3 §§2.1 and 3.9.7.2; Table 4.1. |
-| UC-62 | View Platform Bookings | Administrator | ADMIN_WEB_ONLY | Yes | Booking list/detail | Register §3.3 OBJ6; R3 §§2.1 and 3.9.8; Table 4.1. It is read-only unless another UC is approved. |
-| UC-63 | View Payout Records | Administrator | ADMIN_WEB_ONLY | Yes | Payout list | R3 §§2.1 and 3.9.9.1; Table 4.1. Amounts are backend-calculated. |
-| UC-64 | View Payout Details | Administrator | ADMIN_WEB_ONLY | Yes | Payout detail | R3 §§2.1 and 3.9.9.2; Table 4.1. |
-| UC-65 | Confirm Payout Settlement | Administrator | ADMIN_WEB_ONLY | Yes | Detail-screen action plus dialog | Register §3.3 OBJ6; R3 §§2.1 and 3.9.9.3; Table 4.1. No dedicated route is implied. |
-| UC-66 | Update Landing Page Content | Administrator | ADMIN_WEB_ONLY | Yes | Content-management screen | Register §3.3 OBJ6; R3 §§2.1 and 3.9.10; Table 4.1. The published Landing Page remains an unnumbered `PUBLIC_WEB` surface. |
-| UC-67 | Export Statistical Reports | Administrator | ADMIN_WEB_ONLY | Yes | Report filters plus export action | Register §3.3 OBJ6; R3 §§2.1 and 3.9.11; Table 4.1. No separate export route is implied. |
-| UC-68 | View Audit Logs | Administrator | ADMIN_WEB_ONLY | Yes | Audit list/filter | R3 §§2.1 and 3.9.12.1; Table 4.1. |
-| UC-69 | View Audit Log Details | Administrator | ADMIN_WEB_ONLY | Yes | Audit detail | R3 §§2.1 and 3.9.12.2; Table 4.1. |
-| UC-70 | Handle Emergency Tour Cancellation | Traveler / Tour Operator | NON_SCREEN | No standalone route | Automated cancellation cascade with embedded status; declaration UI is conflicted | `SRS_CONFLICT` and `BLOCKED_BY_SRS_CONFLICT`: R3 Table 3 and §3.1.4 say automatic/weather-triggered; §3.10.1 instead adds System/Admin roles and Operator/Admin declaration screens. Do not create a new Web route until R3 is corrected or split. |
-| UC-71 | Process Automatic Refund | Traveler | NON_SCREEN | No standalone route | Background refund with progress embedded in approved screens | `SRS_CONFLICT` on actor listing: Table 3 names Traveler, while §3.10.2 also names System, Tour Operator, and Administrator as execution/notified/escalation roles. Processing is automatic; embedded status does not create a route. |
-| UC-72 | Synchronize Offline Trip Data | Traveler | MOBILE_ONLY | No | NON_SCREEN / background synchronization with Mobile-visible banner/result | R3 Table 3 explicitly limits the capability to Mobile; §§3.1.4 and 3.10.3 establish system-triggered processing. Platform ownership and interaction shape are separate axes; no Web route is authorized. |
-
-## E. Matrix Totals
-
-| Classification | Numbered UCs |
+| Classification | Count |
 |---|---:|
-| `SHARED_WEB_MOBILE` | 32 |
-| `MOBILE_ONLY` | 15 |
-| `ADMIN_WEB_ONLY` | 23 |
-| `NON_SCREEN` | 2 |
-| **Total** | **72** |
+| `SHARED_WEB_MOBILE` | 21 |
+| `WEB_CONFIRMED` | 12 |
+| `MOBILE_ONLY` | 14 |
+| `INTERNAL_WEB_ONLY` | 22 |
+| `NON_SCREEN` | 4 |
+| `CONFLICT_WEB_MOBILE` | 1 |
+| `WEB_WORKFLOW` | 1 |
+| **Total** | **75** |
 
-The unnumbered Landing Page is an additional `PUBLIC_WEB` product surface.
+## Current FE Source Evidence
 
-## F. Current Web Repository Coverage
+The status column is a source audit of clean `origin/develop` commit `feb3613d2373a5cea0231d65af3881da0566ecfb` on 2026-11-08. It is not a deployment claim and does not override the SRS.
 
-This coverage was verified against the current route and feature files in this repository on the audit date. “Prototype” means UI and local interactions exist; it does not mean authentication, authorization, API integration, persistence, maps, payment, or operational services are connected.
+| Status | Meaning |
+|---|---|
+| `IMPLEMENTED_SOURCE` | Routed UI and a production-mode service/BFF boundary are present in source; deployment and end-to-end backend behavior were not verified. |
+| `PARTIAL` | Some routed UI/service/tests exist, but the canonical UC is incomplete, mixed with demo/prototype behavior, or lacks full contract verification. |
+| `PLACEHOLDER_LOCKED` | UI exists but the production mutation is deliberately unavailable or represents an obsolete operation. |
+| `PLACEHOLDER_UNAVAILABLE` | Route intentionally renders an unavailable view; it is not implemented capability. |
+| `PLACEHOLDER_PENDING_BE` | Production mode explicitly reports pending backend integration; demo fixtures do not count as implementation. |
+| `MISSING` | No matching routed Web capability was found. |
+| `OUT_OF_SCOPE` | Canonical Mobile-only UC; absence from this Web repository is expected. |
+| `BLOCKED_REQUIREMENT` / `*_CONFLICT` | Source or requirements conflict prevents a compliant implementation claim. |
+| `NOT_APPLICABLE_AS_SCREEN` | Canonical background/action UC has no dedicated Web page requirement. |
 
-| Product Area | Required by Project Scope | Currently Implemented | Status |
-|---|---|---|---|
-| Public Landing Page | Unnumbered `PUBLIC_WEB` surface | `/` composes the current Landing Page feature | PROTOTYPE |
-| Shared Guest/account access | UC-01 through UC-07 where applicable, plus public handoffs | Prototype routes exist for `/sign-in`, `/register`, `/verify-account`, `/forgot-password`, `/partner/register`, `/partner/application`, `/partner/application/resubmit`, `/admin/login`, and `/admin/forgot-password` | PARTIAL_PROTOTYPE |
-| Traveler Web | UC-08 through UC-12, UC-24 through UC-29, UC-32, UC-33, plus shared account UCs | Traveler registration and verification prototypes exist; no production Traveler workspace, planning, discovery, booking, payment, ticket, history, or review integration is present | PARTIAL_PROTOTYPE |
-| Tour Operator Web | UC-34 through UC-42 and UC-44 through UC-46, plus shared onboarding/account UCs | Registration, application status, and resubmission prototypes exist; no operational Operator dashboard or management integration is present | PARTIAL_PROTOTYPE |
-| Administrator Web | UC-47 through UC-69 plus shared sign-in/password actions | Admin login/recovery prototypes, dashboard, mock tour-review queue, and mock review detail/decision UI exist | PARTIAL_PROTOTYPE |
-| Mobile-only | UC-13 through UC-23, UC-30, UC-31, UC-43, and UC-72 | Outside the production scope of this Web repository; UC-72 is background Mobile synchronization rather than a Web route | OUT_OF_SCOPE |
-| System-triggered/non-screen | UC-70 and UC-71 | No standalone Web route is required. Any future status display must belong to an approved existing screen and contract | NOT_APPLICABLE_AS_ROUTE |
-| Production integration | Required eventually for implemented Web scope | No verified production authentication, authorization, backend API, persistence, map, payment, or notification integration was found | NOT_IMPLEMENTED |
+Verified highlights:
 
-## G. Web Implementation Batches
+- Public/account, Traveler planning/discovery/booking/payment/ticket/history/review, Operator workspace, and many internal-console routes now exist; route presence alone is reported as `PARTIAL` unless the production boundary was evident.
+- UC-46–48 render `UserAccount*UnavailableView`; UC-54–55 render `Route*UnavailableView`; UC-73 routes to `PayoutSettlementUnavailableView`.
+- UC-41/42 have cancellation/refund dialog UI, but production actions are locked and the refund wording follows the obsolete “initiate” model. UC-67 has a real refund-progress BFF route, which is status evidence rather than a new canonical page.
+- Operator payout request/cancel UI and Administrator approve/reject endpoints are implemented against the legacy manual model. They conflict with automatic UC-71/74 and cannot be treated as compliant payout completion.
+- UC-49/50, UC-57/58 and related internal features have routed source, but the audited backend authorization differs from the current catalogue roles. Their status retains the contract conflict.
+- UC-63 production mode is explicitly `PENDING_BE_INTEGRATION`; its demo report/export data is not production coverage.
+- No routed complaint or partial-refund proposal capability was found for UC-68, UC-69 or UC-75.
 
-The screen names below come from R3 §§3.1.2 and 3.2-3.9. They are expected interaction surfaces, not a declaration that each item needs its own route. `Report3_Screens_All.html` contains visual mockups, but the provided files do not independently prove review/approval status.
+## Public Web Screen Outside the UC List
 
-| Batch | Related UCs / Functions | Expected Screens | Dependencies | Readiness |
+| Screen | Actor | Existing Web Screen Spec | Requirement | Design Coverage |
 |---|---|---|---|---|
-| 1 — Web foundation, Public, and shared access | Landing Page; UC-01 through UC-07 where Web-supported; public portions of UC-12, UC-24, UC-26 | Landing Page; shared sign-in; Traveler registration/verification; Operator registration/status/resubmission; password recovery/change; POI explore/detail; tour search/detail; sign-out action | Approved Web Screen Specifications; authentication and public catalog API contracts; role/session design | PARTIAL_PROTOTYPE — several routes exist, but production integration is absent |
-| 2 — Traveler Web core | UC-08 through UC-12; UC-25; UC-27 through UC-29; UC-32; UC-33 | Profile/edit; preferences; planner; suggested itinerary; recommendations; tour booking; payment handoff/return; booking detail/QR display; trip history; review | Approved Traveler Web Screen Specifications; CSP, catalog, booking, payment, ticket, and review API contracts | NOT_READY — registration UI exists, operational Traveler Web does not |
-| 3 — Tour Operator Web | UC-34 through UC-42; UC-44 through UC-46 | Operator profile; tour package management; coupon management; customer bookings; cancellation/refund actions; revenue/report export; payout request | Approved Operator Web Screen Specifications; operator authorization; tour, booking, refund, reporting, and payout contracts | PARTIAL_PROTOTYPE — onboarding exists; operational workspace does not |
-| 4 — Admin access, master data, moderation, and content | UC-47 through UC-57; UC-60; UC-61; UC-66, plus Admin variants of UC-04, UC-06, UC-07 | Admin access; accounts; operator review; POI/route management; configuration; tour review; landing content management | Approved Admin Web Screen Specifications; Admin RBAC; account, catalog, moderation, configuration, and content APIs | PARTIAL_PROTOTYPE — Admin access/dashboard and mock tour moderation exist |
-| 5 — Admin monitoring, finance, reports, and audit | UC-58; UC-59; UC-62 through UC-65; UC-67 through UC-69 | Active-trip monitor/detail; platform bookings; payout list/detail/confirmation; statistics/export; audit list/detail | Approved Admin Web Screen Specifications; monitoring, booking, settlement, reporting, audit, and authorization contracts | NOT_READY |
+| TripMate Landing Page | Guest | `ux/web-screen-specifications/tripmate-landing-page-web-screen-spec.md` | §3.1.2.1, Table 4.1; content managed via UC-62 by Staff | Batch 1 screen spec exists; implementation NOT_VERIFIED |
 
-No implementation batch contains Mobile-only UC-13 through UC-23, UC-30, UC-31, UC-43, and UC-72, or route-ineligible UC-70 and UC-71. Conflict-marked functions require corrected and approved requirements before any new Web surface is scheduled.
+## Proposed Web UI Batches (Planning Only)
 
-## H. Change Log
+1. **Batch 1 — Public + Authentication:** Landing Page, UC-01–04 and UC-06; UC-05 action in shells; UC-07 deferred. Existing six Web screen specifications are design artifacts only.
+2. **Batch 2 — Traveler:** UC-08–12, UC-24–29, UC-32–33, UC-68 and UC-75; UC-67 refund status reused in booking details. **UC-31 HOLD**.
+3. **Batch 3 — Tour Operator:** UC-34–42, UC-44–45, UC-66 operator cancellation interaction, UC-69; UC-43 is Mobile-only. Do not invent Tour Operator payout requests.
+4. **Batch 4 — Staff operations:** role-disputed UC-46–48, UC-49–52, UC-54–55, UC-57–62, UC-72 (read-only; role conflict).
+5. **Batch 5 — Administrator governance:** disputed UC-46–48, UC-53, UC-56, UC-63–65, UC-72–73. Payout manual-vs-auto conflict requires owner decision.
 
-“Existing Matrix” below means the pre-audit matrix supplied for correction, not Current R3.
+## Explicit Source Conflicts (Not Resolved)
 
-| Item | Existing Matrix | Corrected Matrix | Reason |
+| Conflict | Affected UCs | Official evidence in conflict | Current treatment |
 |---|---|---|---|
-| Output structure | Summary plus sections A-G | Required sections A-H: verification, conflicts, model, full matrix, totals, coverage, batches, and change log | Matches the final correction request exactly |
-| Scope verification | Implied that the latest SRS was fully consistent | Identifies the exact Current R3 file/hash and verifies architecture, actors, technology, and 72 unique UCs | Prevents accidental use of an obsolete Report 3 |
-| Source precedence | Not documented | Current R3 explicitly controls, followed by R2, R1, Register, repository, and existing matrix | Applies the user-specified authority order rather than inferring one |
-| Platform model | Defined classifications only | Defines route-governance meaning and conservative conflict handling | Prevents a contradictory interface sentence from silently creating Web scope |
-| Technology | Next.js mentioned only in implementation notes | Adds Next.js with React/TypeScript, Flutter/Bloc, ASP.NET Core 8, and documented services as the report baseline | Resolves Register React.js wording through the later R3 change history |
-| UC catalog | UC-01 through UC-72 | Retained all 72 IDs, names, and catalog actors | Automated comparison found no missing, extra, duplicate, renamed, split, or merged catalog row |
-| UC-30/31 | `MOBILE_ONLY` without conflict record | `MOBILE_ONLY` with a blocking SRS contradiction note | R3 catalog says Mobile-only while detailed interface lines mention Next.js |
-| UC-43 | `MOBILE_ONLY` without conflict record | `MOBILE_ONLY` with a blocking SRS contradiction note | R3 catalog says Mobile-only while §3.8.4.4 mentions Next.js |
-| UC-70 | `NON_SCREEN` with only an automatic-workflow note | `NON_SCREEN`, explicitly blocked for new Web UI | R3 §3.10.1 contradicts the catalog by defining manual Operator/Admin declaration screens |
-| UC-70/71 catalog actors | Mixed catalog and detailed-section roles in the Actor column | Exact Table 3 actors in the Actor column; extra System/Admin/notified roles remain in Evidence/Notes | Preserves exact Current R3 catalog ownership while exposing internal actor discrepancies |
-| UC-71 | `NON_SCREEN` | Retained with `SRS_CONFLICT` actor note and embedded-status guidance | Automatic execution may be visible in Booking Detail or monitoring UI but is not a route |
-| UC-72 | `MOBILE_ONLY` without a separate interaction label | `MOBILE_ONLY` with `NON_SCREEN / background synchronization` interaction | R3's explicit Mobile-only statement and background-service description belong to separate axes; neither creates Web scope |
-| Screen interpretation | Notes did not systematically distinguish pages, dialogs, actions, and services | Adds `Interaction Type` for every UC | A UC does not equal a route; export/approve/reject/lock/unlock actions must not become fake pages |
-| Public coverage | Landing Page only; authentication/discovery absent | Records existing public/account and Operator onboarding prototype routes | Verified from the current App Router source tree; production integration is still absent |
-| Traveler coverage | No Traveler routes/features | Registration and verification prototypes exist; operational Traveler Web remains absent | Verified from `app/register`, `app/verify-account`, and Traveler feature files |
-| Tour Operator coverage | No Operator routes/features | Registration, status, and resubmission prototypes exist; operational workspace remains absent | Verified from current `/partner/*` routes and Operator feature files |
-| Admin coverage | Dashboard and tour-review prototypes | Adds verified Admin login/recovery routes; retains dashboard and mock tour moderation | Verified from the current route and feature files |
-| Implementation batches | Batches were based on the old unqualified matrix | Batches include only confirmed Web scope and identify conflict gates | Prevents Mobile-only and system-triggered behavior from becoming Web routes |
+| C-01 | UC-04–07 | Table 3 + authorization Table 5 include Staff; detailed §§3.2.4–3.2.7 largely omit Staff. | STAFF_AUTH_CONFLICT — do not infer final authentication/security permissions. |
+| C-02 | UC-12 | Table 3 + Table 5 include Guest POI browsing; detailed §3.3.3 names Traveler. | ROLE_CONFLICT — preserve Guest as a catalogue role pending decision. |
+| C-03 | UC-31 | Product Overview identifies commercial-service booking as Mobile-specific; §3.6.2 Interface says Next.js + Flutter. | `CONFLICT_WEB_MOBILE`; Web design inclusion HOLD. |
+| C-04 | UC-34–45 | General Product Overview says Operator can use both; detailed §§3.8.1–3.8.5 explicitly name Next.js Web for most Operator screens. | `WEB_CONFIRMED`; no automatic mobile inclusion/exclusion. |
+| C-05 | UC-41 | Table 3 lists Tour Operator; §3.8.4.2 and Table 5 also grant Traveler self-cancellation. | ROLE_CONFLICT — differentiate owned vs customer booking permissions. |
+| C-06 | UC-46–48 | Table 3 + Table 5 assign Staff/Administrator role-scoped account operations; §§3.9.1.1–3.9.1.3 say Administrator-only. | ROLE_CONFLICT — **no access-policy change approved**. |
+| C-07 | UC-49–50 | Table 3 and processing text assign application review to Staff, while the §3.9.2.2 trigger and earlier onboarding narrative refer to Administrator review. | ROLE_CONFLICT — keep catalogue actors; do not change endpoint/UI authorization without approval. |
+| C-08 | UC-53 | §3.9.3.3 conditionally deletes or deactivates a POI. Separate soft-delete proposals do not replace this without traceable approval. | POLICY_HOLD — confirm approved lifecycle change before implementing deviations. |
+| C-09 | UC-66 | §3.10.1 places emergency cancellation in Tour Operator workspace **or** Web administration. Table 6 still describes automatic weather cancellation. | PLACEMENT_AND_FLOW_CONFLICT — Web interaction required, ownership unresolved, and no automatic-cancel assumption. |
+| C-10 | UC-67 | Table 3 actor is Traveler; §3.10.2 execution actors are System/Payment gateway. §3.8.4.2 still says UC-42 performs the gateway refund even though the updated catalogue makes UC-42 operator confirmation and UC-67 processing. | ACTOR_AND_HANDOFF_CONFLICT — reuse refund status UI; do not invent a page or duplicate gateway execution. |
+| C-11 | UC-72 | Table 3 + Table 5 allow Staff/Administrator payout-record viewing; §3.9.9.1 says Staff and also retains manual payout requests. | ROLE_AND_FLOW_CONFLICT; preserve read-only catalogue scope pending approval. |
+| C-12 | UC-71, UC-73, UC-74 | Table 3 and §§3.10.4–3.10.5 specify automatic schedule/process without Operator/Admin approval. Product Overview, actor descriptions, Tables 4.1/4.2/5/6, §3.9.9 and MSG110 retain Operator request, Staff review and Administrator final settlement. | PAYOUT_CONFLICT — no manual-vs-automatic resolution is inferred. |
+| C-13 | UC-71, UC-74 | Table 3 says settlement occurs seven days before departure; §3.10.4 BR141 says a daily 10:00 job after a 24-hour payment window. | TIMING_CONFLICT — no scheduling contract is approved by this matrix. |
+| C-14 | UC-73 | Table 3 includes Administrator review of failed settlements; no corresponding detailed named function section exists. | AMBIGUOUS_REQUIREMENT; UI/actions NOT_VERIFIED. |
+| C-15 | UC-42, UC-67, UC-70–74 | BR135/BR136 are reused for unrelated cancellation and offline-sync rules; BR139 is reused for refund-share and payout formula; BR140 and BR164 are referenced but not defined. | BUSINESS_RULE_COLLISION — identifiers/formulas require BA correction before implementation authority. |
+| C-16 | UC-66, UC-71–74 | Tables 4.2, 5 and 6 retain stale labels/flows such as Initiate Booking Refund, Payout Request, Payout Settlement History, automatic weather cancellation, and approved payout requests. | STALE_CROSS_REFERENCE — retain as conflict evidence, not scope authority. |
+| C-17 | UC-02/03 | Old matrix marked Web only; §§3.2.2–3.2.3 explicitly support Web and Mobile. | Corrected to SHARED_WEB_MOBILE. |
+| C-18 | UC-42 | Old matrix: Initiate Booking Refund; Table 3 and §3.8.4.3: Confirm Booking Refund. | Corrected scope/name; the UC-42/UC-67 handoff remains unresolved. |
+| C-19 | UC-46–75 | Previous matrix used historical UC numbering and stopped at UC-72. | Rebased all catalogue IDs and associated actors against current original Report 3 Table 3. |
+
+## Existing Web Design Evidence
+
+- `docs/BATCH_1_WEB_SCREEN_INVENTORY.md`: historical Batch 1 screen/route choices; not implementation proof.
+- `docs/batch-1-message-reconciliation.md`: message conflicts must remain visible.
+- `ux/web-screen-specifications/`: Web-specific specs observed for public/auth Batch 1. Mobile-first `ux/screen-specifications/` or Stitch prompts are not automatically Web deliverables.
+- `Application Submitted` remains a UC-02 state; UC-06 uses progressive recovery; UC-07 remains deferred.
+- Prior `READY FOR STITCH: YES` applies to the old Batch 1 design review only and does not certify UC-46–75 or the new conflict list.
+
+## Governance and Approval Gate
+
+This is a **traceability update**, not a change to the official SRS, source code, Jira or deployed screens. Before design or implementation decisions affecting any disputed UC, obtain traceable Owner approval and record the chosen precedence. In particular: Staff account permissions, UC-31 Web availability, UC-53 POI deletion lifecycle, UC-66 cancellation UI ownership, and UC-71/73/74 payout authority.
+
+**Implementation verification:** FE source status was audited at clean `origin/develop` commit `feb3613d2373a5cea0231d65af3881da0566ecfb`. Deployment, live environment behavior and full FE/BE compatibility remain `NOT_VERIFIED`; source presence is not production proof.
