@@ -6,6 +6,7 @@
 
 - Canonical SRS: [`Report3_Software-Requirement-Specification.docx`](https://docs.google.com/document/d/1VwPkqRyC6ZlbXBQC0ztdektt0vAyE3qt/edit) — **original non-V2**.
 - Snapshot inspected: **2026-11-08**, SHA-256 `cd97de4bd74df3b5cdc159171ee964093d4bb7ba99ca65b52232f88b11de1c6b`, 9,571,142 bytes.
+- Live authority recheck on **2026-11-08** found Drive revision `0B5_dfpH4IC_wMlAwM25FL25jZ2FWdVZKTFhqRVdOdFRoeDdZPQ`, SHA-256 `d51b7dbbd09d20784284faa9c12ddcdeadb3c0b3bb2010801a0b2f03c4fd2f46`, 9,570,836 bytes. Its Table 3 still contains the same 75 IDs, names and catalogue actors, but other requirement text changed materially after the inspected snapshot. This matrix is therefore **not fully reconciled to the live revision**; payout, cancellation/refund, role and business-rule conflict entries require a separately scoped re-audit before approval.
 - Requirement IDs in this matrix follow **SRS Table 3 — Use Case Description**, covering **UC-01 through UC-75** (75 entries). Detailed §§3.2–3.10, screen descriptions §3.1.2 and authorization Table 5 were reviewed; conflicts are explicitly recorded below.
 - `Capstone_Docs` history and existing UI specs are evidence only; neither V2 nor GitHub/Jira nor an implementation overrides the canonical SRS without explicit, traceable approval.
 - Existing Web Screen means a Web screen **specification** under `ux/web-screen-specifications/`, **not proof of implementation or production deployment**.
@@ -76,7 +77,7 @@
 | UC-48 | Unlock User Account | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — hold permissions | Table 3 and Table 5 grant Staff + Administrator role-scoped unlocking, but §3.9.1.3 says Administrator only. ROLE_CONFLICT. | PLACEHOLDER_UNAVAILABLE |
 | UC-49 | Approve Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/ACTION — later batch | §3.9.2.1: STAFF approves Tour Operator applications via moderation workspace. | PARTIAL_CONTRACT_CONFLICT |
 | UC-50 | Reject Tour Operator Application | Staff | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — later batch | §3.9.2.2: STAFF rejects Tour Operator applications with reason. | PARTIAL_CONTRACT_CONFLICT |
-| UC-51 | Create POI | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.3.1: STAFF and Administrator may create POIs. | IMPLEMENTED_SOURCE |
+| UC-51 | Create POI | Staff/ Administrator | INTERNAL_WEB_ONLY | None | YES — later batch | Table 3 and the §3.9.3.1 actor/purpose text name Staff and Administrator, while the same detailed section's credentials, BR-115, flow and validation remain Administrator-only. Current FE and BE creation authorization is Staff-only. `MISMATCH`; no SRS-compliance claim. | IMPLEMENTED_SOURCE_CONTRACT_CONFLICT |
 | UC-52 | Update POI | Staff/ Administrator | INTERNAL_WEB_ONLY | None | REUSE — later batch | §3.9.3.2: STAFF and Administrator may update POIs. | PARTIAL |
 | UC-53 | Remove POI | Administrator | INTERNAL_WEB_ONLY | None | REUSE/DIALOG — lifecycle hold | §3.9.3.3: Administrator-only POI removal. Official SRS conditionally allows deletion/deactivation; any soft-delete-only change requires traceable approval. POLICY_HOLD. | MISSING |
 | UC-54 | Create Route | Staff | INTERNAL_WEB_ONLY | None | YES — later batch | §3.9.4.1: STAFF creates routes; old matrix incorrectly had UC-54 as Remove POI. | PLACEHOLDER_UNAVAILABLE |
@@ -119,6 +120,8 @@
 
 The status column is a source audit of clean `origin/develop` commit `feb3613d2373a5cea0231d65af3881da0566ecfb` on 2026-11-08. It is not a deployment claim and does not override the SRS.
 
+Baseline delta verification compared `feb3613d2373a5cea0231d65af3881da0566ecfb` with `709e4b4a23d013c3d570e7bf7e0f10fcd14d6e45`: 10 commits changed 10 files limited to Landing Page hero/carousel media and components, Landing tests, package metadata and Vitest setup. No numbered-UC authorization, API/BFF contract, placeholder/production gate or matrix implementation evidence changed. This was a **delta review only**, not a full repository re-audit.
+
 | Status | Meaning |
 |---|---|
 | `IMPLEMENTED_SOURCE` | Routed UI and a production-mode service/BFF boundary are present in source; deployment and end-to-end backend behavior were not verified. |
@@ -138,6 +141,7 @@ Verified highlights:
 - UC-41/42 have cancellation/refund dialog UI, but production actions are locked and the refund wording follows the obsolete “initiate” model. UC-67 has a real refund-progress BFF route, which is status evidence rather than a new canonical page.
 - Operator payout request/cancel UI and Administrator approve/reject endpoints are implemented against the legacy manual model. They conflict with automatic UC-71/74 and cannot be treated as compliant payout completion.
 - UC-49/50, UC-57/58 and related internal features have routed source, but the audited backend authorization differs from the current catalogue roles. Their status retains the contract conflict.
+- UC-51 is implemented in source but is not requirements-compliant: `src/features/admin/create-poi/services/poi-proxy.ts` rejects every role except `Staff`, and Backend `src/TripMate.Api/Controllers/V1/PointsOfInterestController.cs` declares `[Authorize(Roles = nameof(UserRole.Staff))]`. The canonical catalogue actor remains `Staff / Administrator`; actual permissions were not changed.
 - UC-63 production mode is explicitly `PENDING_BE_INTEGRATION`; its demo report/export data is not production coverage.
 - No routed complaint or partial-refund proposal capability was found for UC-68, UC-69 or UC-75.
 
@@ -178,6 +182,7 @@ Verified highlights:
 | C-17 | UC-02/03 | Old matrix marked Web only; §§3.2.2–3.2.3 explicitly support Web and Mobile. | Corrected to SHARED_WEB_MOBILE. |
 | C-18 | UC-42 | Old matrix: Initiate Booking Refund; Table 3 and §3.8.4.3: Confirm Booking Refund. | Corrected scope/name; the UC-42/UC-67 handoff remains unresolved. |
 | C-19 | UC-46–75 | Previous matrix used historical UC numbering and stopped at UC-72. | Rebased all catalogue IDs and associated actors against current original Report 3 Table 3. |
+| C-20 | UC-51 | Table 3 plus the §3.9.3.1 actor/purpose text name Staff/Administrator; the same section's credentials, BR-115, flow and validation say Administrator-only. FE proxy and BE controller instead authorize Staff-only. | `MISMATCH` and `IMPLEMENTED_SOURCE_CONTRACT_CONFLICT`; preserve catalogue actor and do not change runtime permissions without approved requirements. |
 
 ## Existing Web Design Evidence
 
@@ -191,4 +196,4 @@ Verified highlights:
 
 This is a **traceability update**, not a change to the official SRS, source code, Jira or deployed screens. Before design or implementation decisions affecting any disputed UC, obtain traceable Owner approval and record the chosen precedence. In particular: Staff account permissions, UC-31 Web availability, UC-53 POI deletion lifecycle, UC-66 cancellation UI ownership, and UC-71/73/74 payout authority.
 
-**Implementation verification:** FE source status was audited at clean `origin/develop` commit `feb3613d2373a5cea0231d65af3881da0566ecfb`. Deployment, live environment behavior and full FE/BE compatibility remain `NOT_VERIFIED`; source presence is not production proof.
+**Implementation verification:** FE source status was audited at clean `origin/develop` commit `feb3613d2373a5cea0231d65af3881da0566ecfb`; the bounded delta to `709e4b4a23d013c3d570e7bf7e0f10fcd14d6e45` was separately checked and did not affect matrix evidence. Deployment, live environment behavior and full FE/BE compatibility remain `NOT_VERIFIED`; source presence is not production proof. The live SRS revision drift above blocks final requirements approval until its material changes are fully reconciled.
