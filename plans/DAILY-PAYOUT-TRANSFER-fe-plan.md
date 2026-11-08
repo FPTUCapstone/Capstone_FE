@@ -36,7 +36,16 @@ at Task 9 and again before any PR.
 Tests first: malformed/HTML body rejected by each parser; unrecognized status string rejected;
 reference validator boundaries (empty, whitespace-only, leading/trailing spaces trimmed).
 
-## Task 2 — Services (`payoutSettlementsService.ts`, admin and operator)
+## Task 2 — Services (`payoutSettlementsService.ts`, admin and operator) (done)
+
+The operator service needs the same strict list/item parser Task 1 wrote, but this repo's admin
+and operator feature slices do not import each other (same reason each keeps its own small
+format/error-code module instead of a shared one). Rather than have
+`features/operator/payout-settlements` import from `features/admin/...`, it got its own small
+`payoutSettlements.ts` (just the list/item types + parser the operator side needs, no detail/
+attempt types, which are Administrator-only). Kept in its own file, not folded into the service
+file, so a future Task 7 (operator history screen) can import the types without pulling the
+service's `fetch` call along.
 
 - `fetchPayoutSettlements(filters, signal)`, `fetchFailedPayoutBatchDetail(batchId, signal)`,
   `retryFailedPayoutBatch(batchId, signal)`, `carryOverFailedPayoutBatch(batchId, signal)`,
