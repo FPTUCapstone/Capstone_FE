@@ -408,6 +408,15 @@ describe('ViewSuggestedItineraryPage — Review 2 itinerary map (D9)', () => {
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
+  it('explains that the solid line follows roads and the dashed line is only a straight estimate', async () => {
+    vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
+    await renderLoaded(mapped);
+
+    expect(screen.getByText(/Nét liền: theo đường đi thực tế/)).toBeDefined();
+    expect(screen.getByText(/Nét đứt: chỉ nối thẳng theo thứ tự ghé/)).toBeDefined();
+    expect(screen.queryByText(/không phải đường đi thực tế/)).toBeNull();
+  });
+
   it('displays informative empty coordinates card when the stops have no coordinates and never renders arrow diagram', async () => {
     vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
     await renderLoaded(itinerary);

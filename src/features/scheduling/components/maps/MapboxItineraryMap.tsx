@@ -5,7 +5,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useRef } from 'react';
 import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 
-import { boundsOf, ItineraryMapModel } from '../../utils/mapGeometry';
+import { fetchRoadLeg } from '../../utils/mapboxDirections';
+import { boundsOf, ItineraryMapModel, LngLat } from '../../utils/mapGeometry';
 import { isFatalMapError, MAPBOX_STYLE } from './mapboxStyle';
 
 interface MapboxItineraryMapProps {
@@ -23,7 +24,16 @@ interface DrawnMarker {
   element: HTMLElement;
 }
 
+/** Straight dashed segments: the whole route while it loads, then only the legs without a road. */
 const ROUTE_SOURCE = 'itinerary-route';
+/** Solid line along the real roads Mapbox Directions returned. */
+const ROAD_SOURCE = 'itinerary-road';
+
+const lineData = (coordinates: LngLat[][]) => ({
+  type: 'Feature',
+  properties: {},
+  geometry: { type: 'MultiLineString', coordinates },
+});
 
 function markerElement(label: string, title: string, color: string): HTMLButtonElement {
   const element = document.createElement('button');
@@ -57,6 +67,8 @@ function applyHighlight(markers: DrawnMarker[], highlightedItemId: number | null
 /**
  * Itinerary map (Review 2, D9): numbered markers coloured by type, a straight route in visiting order, and
  * marker ↔ timeline highlight. Mapbox base map only — no Google data on it (spec §5).
+ * The route follows real roads per leg (Mapbox Directions); a leg Directions cannot route stays a straight
+ * dashed segment.
  */
 export function MapboxItineraryMap({
   token,
@@ -72,11 +84,14 @@ export function MapboxItineraryMap({
   const unavailableRef = useRef(onUnavailable);
   const highlightRef = useRef(highlightedItemId);
   const drawRef = useRef<(() => void) | null>(null);
+  const tokenRef = useRef(token);
+  const drawCountRef = useRef(0);
 
   useEffect(() => {
     selectRef.current = onSelectItem;
     unavailableRef.current = onUnavailable;
-  }, [onSelectItem, onUnavailable]);
+    tokenRef.current = token;
+  }, [onSelectItem, onUnavailable, token]);
 
   // Create the map once per token; the model is drawn by the effect below.
   useEffect(() => {
@@ -113,6 +128,14 @@ export function MapboxItineraryMap({
             type: 'geojson',
             data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
           });
+          map.addSource(ROAD_SOURCE, { type: 'geojson', data: lineData([]) as never });
+          map.addLayer({
+            id: 'itinerary-road-line',
+            type: 'line',
+            source: ROAD_SOURCE,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#103B39', 'line-width': 4 },
+          });
           map.addLayer({
             id: 'itinerary-route-line',
             type: 'line',
@@ -127,6 +150,7 @@ export function MapboxItineraryMap({
       cancelled = true;
       markersRef.current.forEach(({ marker }) => marker.remove());
       markersRef.current = [];
+      drawCountRef.current += 1;
       map?.remove();
       mapRef.current = null;
     };
@@ -136,6 +160,8 @@ export function MapboxItineraryMap({
     drawRef.current = () => {
       const map = mapRef.current;
       if (!map) return;
+      drawCountRef.current += 1;
+      const drawId = drawCountRef.current;
       void import('mapbox-gl').then(({ default: mapboxgl }) => {
         // The map may have been removed (unmount, token change) while the module was loading.
         if (mapRef.current !== map) return;
@@ -160,6 +186,23 @@ export function MapboxItineraryMap({
             map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 0 });
           }
         }
+        // Straight line is on screen; swap in the road of every leg that Directions can route.
+        if (model.legs.length === 0) return;
+        void Promise.all(model.legs.map((leg) => fetchRoadLeg(leg, tokenRef.current))).then((roads) => {
+          // A newer draw, an unmount or a token change replaced this map state while Mapbox was answering.
+          if (mapRef.current !== map || drawCountRef.current !== drawId) return;
+          const routed: LngLat[][] = [];
+          const straight: LngLat[][] = [];
+          roads.forEach((road, index) => {
+            const { from, to } = model.legs[index];
+            if (road) routed.push(road);
+            else straight.push([from, to]);
+          });
+          const road = map.getSource(ROAD_SOURCE) as { setData?: (data: unknown) => void } | undefined;
+          const route = map.getSource(ROUTE_SOURCE) as { setData?: (data: unknown) => void } | undefined;
+          road?.setData?.(lineData(routed));
+          route?.setData?.(lineData(straight));
+        });
       });
     };
     drawRef.current();

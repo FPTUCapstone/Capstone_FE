@@ -938,9 +938,22 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                             </li>
                           ))}
                         </ul>
-                        <p className="mt-2 text-[11px] text-slate-500">
-                          Đường nối thẳng theo thứ tự ghé, không phải đường đi thực tế.
-                        </p>
+                        <ul className="mt-2 space-y-1 text-[11px] text-slate-500" aria-label="Chú thích đường nối">
+                          <li className="flex items-center gap-2">
+                            <svg width="24" height="4" aria-hidden="true">
+                              <line x1="0" y1="2" x2="24" y2="2" stroke="#103B39" strokeWidth="3" />
+                            </svg>
+                            <span>Nét liền: theo đường đi thực tế (Mapbox).</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <svg width="24" height="4" aria-hidden="true">
+                              <line x1="0" y1="2" x2="24" y2="2" stroke="#103B39" strokeWidth="3" strokeDasharray="5 4" />
+                            </svg>
+                            <span>
+                              Nét đứt: chỉ nối thẳng theo thứ tự ghé khi chưa lấy được đường đi thực tế.
+                            </span>
+                          </li>
+                        </ul>
                       </>
                     )}
                   </section>
