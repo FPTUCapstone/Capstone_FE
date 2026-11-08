@@ -21,7 +21,7 @@ export function WeatherReroutingSection() {
   }
 
   return (
-    <section id="weather-rerouting" className="scroll-mt-20 py-16 sm:py-24 bg-[#00152a] text-white px-4 sm:px-8 relative overflow-hidden border-b border-slate-800">
+    <section id="weather-rerouting" className="scroll-mt-20 py-16 sm:py-24 bg-[#103B39] text-white px-4 sm:px-8 relative overflow-hidden border-b border-slate-800">
       {/* Ambient background lights */}
       <div className="absolute -left-40 top-1/4 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
       <div className="absolute -right-40 bottom-1/4 h-96 w-96 rounded-full bg-rose-500/15 blur-3xl pointer-events-none" />

@@ -17,53 +17,64 @@
 }
 
 @theme {
-  /* Brand colors — TripMate Design System */
-  --color-brand-navy: #00152A;
-  --color-brand-navyContainer: #102A43;
-  --color-brand-teal: #006B5F;
-  --color-brand-brightTeal: #007D6E;
-  --color-brand-lightTeal: #E8F7F4;
-  --color-brand-coral: #FF7043;
-  --color-brand-surface: #F7F9FC;
-  --color-brand-card: #FFFFFF;
-  --color-brand-border: #E2E8F0;
-  --color-brand-textPrimary: #0F172A;
-  --color-brand-textSecondary: #64748B;
+  /* Coastal Heritage Color Palette — Approved TripMate Design System */
+  --color-primary: #174B4A;
+  --color-primary-hover: #103B39;
+  --color-accent: #B96D4C;
+  --color-accent-text: #995436;
+  --color-background: #F7F5EF;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #1C2928;
+  --color-text-secondary: #5B6E69;
+  --color-border: #DCE2DD;
+  --color-soft-accent: #E8F0EA;
 
-  --color-surface: #F4F7FC;
-  --color-surface-dim: #E1E8F3;
+  /* Brand and Semantic Token Mappings (Coastal Heritage) */
+  --color-brand-navy: #103B39;
+  --color-brand-navyContainer: #0C2423;
+  --color-brand-teal: #174B4A;
+  --color-brand-brightTeal: #103B39;
+  --color-brand-lightTeal: #E8F0EA;
+  --color-brand-coral: #B96D4C;
+  --color-brand-surface: #F7F5EF;
+  --color-brand-card: #FFFFFF;
+  --color-brand-border: #DCE2DD;
+  --color-brand-textPrimary: #1C2928;
+  --color-brand-textSecondary: #5B6E69;
+
+  --color-surface-dim: #E8E6DF;
   --color-surface-bright: #FFFFFF;
   --color-surface-container-lowest: #FFFFFF;
-  --color-surface-container-low: #F4F7FC;
-  --color-surface-container: #EEF2F9;
-  --color-surface-container-high: #E3E9F5;
-  --color-surface-container-highest: #D8E0ED;
-  --color-on-surface: #0F1B2D;
-  --color-on-surface-variant: #33425A;
-  --color-inverse-surface: #0F1B2D;
-  --color-inverse-on-surface: #F4F7FC;
-  --color-outline: #6B7C97;
-  --color-outline-variant: #E1E8F3;
-  --color-surface-tint: #1D4ED8;
+  --color-surface-container-low: #F7F5EF;
+  --color-surface-container: #EDEAE1;
+  --color-surface-container-high: #E4E0D5;
+  --color-surface-container-highest: #DCE2DD;
+  --color-on-surface: #1C2928;
+  --color-on-surface-variant: #5B6E69;
+  --color-inverse-surface: #1C2928;
+  --color-inverse-on-surface: #F7F5EF;
+  --color-outline: #5B6E69;
+  --color-outline-variant: #DCE2DD;
+  --color-surface-tint: #174B4A;
 
-  --color-primary: #1D4ED8;
   --color-on-primary: #FFFFFF;
-  --color-primary-container: #2563EB;
+  --color-primary-container: #103B39;
   --color-on-primary-container: #FFFFFF;
-  --color-inverse-primary: #BFD7F5;
-  --color-primary-fixed: #EAF1FE;
-  --color-primary-fixed-dim: #BFD7F5;
-  --color-on-primary-fixed: #0F1B2D;
-  --color-on-primary-fixed-variant: #1D4ED8;
+  --color-inverse-primary: #E8F0EA;
+  --color-primary-fixed: #E8F0EA;
+  --color-primary-fixed-dim: #DCE2DD;
+  --color-on-primary-fixed: #1C2928;
+  --color-on-primary-fixed-variant: #174B4A;
 
-  --color-secondary: #FF6A3D;
+  --color-secondary: #995436;
+  --color-secondary-hover: #803F25;
   --color-on-secondary: #FFFFFF;
-  --color-secondary-container: #FFF0EA;
-  --color-on-secondary-container: #C8461E;
-  --color-secondary-fixed: #FFF0EA;
-  --color-secondary-fixed-dim: #FFD2C2;
-  --color-on-secondary-fixed: #0F1B2D;
-  --color-on-secondary-fixed-variant: #D4603F;
+  --color-secondary-container: #F6EDE8;
+  --color-on-secondary-container: #995436;
+  --color-secondary-fixed: #F6EDE8;
+  --color-secondary-fixed-dim: #E8D3C8;
+  --color-on-secondary-fixed: #1C2928;
+  --color-on-secondary-fixed-variant: #995436;
 
   --color-tertiary: #7C3AED;
   --color-on-tertiary: #FFFFFF;
@@ -71,11 +82,11 @@
   --color-on-tertiary-container: #5B21B6;
   --color-tertiary-fixed: #F1EBFE;
   --color-tertiary-fixed-dim: #DDD6FE;
-  --color-on-tertiary-fixed: #0F1B2D;
+  --color-on-tertiary-fixed: #1C2928;
   --color-on-tertiary-fixed-variant: #6D28D9;
 
-  --color-coral-accent: #FF6A3D;
-  --color-coral-hover: #E8582C;
+  --color-coral-accent: #B96D4C;
+  --color-coral-hover: #995436;
 
   --color-error: #E02D4D;
   --color-on-error: #FFFFFF;
@@ -88,9 +99,9 @@
   --font-body: var(--font-manrope), var(--font-jakarta), sans-serif;
 
   /* Brand shadows */
-  --shadow-soft: 0 4px 20px -2px rgba(0, 21, 42, 0.05);
-  --shadow-btn: 0 4px 12px 0 rgba(0, 107, 95, 0.25);
-  --shadow-card-lg: 0 24px 48px -16px rgba(0, 21, 42, 0.18);
+  --shadow-soft: 0 4px 20px -2px rgba(28, 41, 40, 0.05);
+  --shadow-btn: 0 4px 12px 0 rgba(23, 75, 74, 0.25);
+  --shadow-card-lg: 0 24px 48px -16px rgba(28, 41, 40, 0.18);
 
   /* Brand animations */
   --animate-hero-float-1: hero-float 5s ease-in-out infinite;
@@ -102,16 +113,24 @@
 }
 
 :root {
-  --brand: #1D4ED8;
-  --brand6: #2563EB;
-  --brand1: #EAF1FE;
-  --ink: #0F1B2D;
-  --ink2: #33425A;
-  --mut: #6B7C97;
-  --line: #E1E8F3;
-  --bg: #F4F7FC;
-  --acc: #FF6A3D;
-  --acc1: #FFF0EA;
+  /* Coastal Heritage Canonical CSS Variables */
+  --primary: #174B4A;
+  --primary-hover: #103B39;
+  --accent: #B96D4C;
+  --accent-text: #995436;
+  --bg: #F7F5EF;
+  --surface: #FFFFFF;
+  --ink: #1C2928;
+  --ink2: #5B6E69;
+  --mut: #5B6E69;
+  --line: #DCE2DD;
+  --soft-accent: #E8F0EA;
+
+  --brand: #174B4A;
+  --brand6: #103B39;
+  --brand1: #E8F0EA;
+  --acc: #B96D4C;
+  --acc1: #F6EDE8;
   --grn: #0E9F6E;
   --grn1: #E6F7F0;
   --amb: #D97706;
@@ -121,19 +140,20 @@
   --vio: #7C3AED;
   --vio1: #F1EBFE;
   --r: 14px;
-  --sh: 0 1px 2px rgba(15, 27, 45, .06), 0 8px 22px rgba(15, 27, 45, .06);
-  /* Brand — đồng bộ với HTML reference */
-  --brand-navy: #00152A;
-  --brand-navyContainer: #102A43;
-  --brand-teal: #006B5F;
-  --brand-brightTeal: #007D6E;
-  --brand-lightTeal: #E8F7F4;
-  --brand-coral: #FF7043;
-  --brand-surface: #F7F9FC;
+  --sh: 0 1px 2px rgba(28, 41, 40, .06), 0 8px 22px rgba(28, 41, 40, .06);
+
+  /* Brand compatibility tokens */
+  --brand-navy: #103B39;
+  --brand-navyContainer: #0C2423;
+  --brand-teal: #174B4A;
+  --brand-brightTeal: #103B39;
+  --brand-lightTeal: #E8F0EA;
+  --brand-coral: #B96D4C;
+  --brand-surface: #F7F5EF;
   --brand-card: #FFFFFF;
-  --brand-border: #E2E8F0;
-  --brand-textPrimary: #0F172A;
-  --brand-textSecondary: #64748B;
+  --brand-border: #DCE2DD;
+  --brand-textPrimary: #1C2928;
+  --brand-textSecondary: #5B6E69;
   --font-sans: var(--font-jakarta), var(--font-geist-sans), "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-geist-mono), Consolas, "Courier New", monospace;
   --font-display: var(--font-bricolage), var(--font-jakarta), sans-serif;
@@ -263,8 +283,8 @@ body {
   margin: 0;
   overflow-x: clip;
   font-family: var(--font-sans);
-  background-color: #F4F7FC;
-  color: #0F1B2D;
+  background-color: #F7F5EF;
+  color: #1C2928;
 }
 
 /* Consistent typography inheritance for native interactive form controls */
@@ -488,7 +508,7 @@ textarea {
   animation: pulse-coral 2s infinite;
 }
 
-/* Global Custom Scrollbar — TripMate Brand Identity */
+/* Global Custom Scrollbar — TripMate Brand Identity (Coastal Heritage) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -499,7 +519,7 @@ textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #007D6E;
+  background-color: #174B4A;
   border-radius: 9999px;
   border: 1.5px solid transparent;
   background-clip: padding-box;
@@ -507,11 +527,11 @@ textarea {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #006B5F;
+  background-color: #103B39;
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background-color: #004D40;
+  background-color: #0C2423;
 }
 
 ::-webkit-scrollbar-button,
@@ -539,24 +559,24 @@ textarea {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #007D6E;
+  background-color: #174B4A;
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #006B5F;
+  background-color: #103B39;
 }
 
 /* Standards Fallback for Firefox and browsers without WebKit scrollbar pseudo-elements */
 @supports not selector(::-webkit-scrollbar-thumb) {
   html {
     scrollbar-width: thin;
-    scrollbar-color: #007D6E transparent;
+    scrollbar-color: #174B4A transparent;
   }
 
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #007D6E transparent;
+    scrollbar-color: #174B4A transparent;
   }
 }
 
@@ -600,11 +620,11 @@ textarea {
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(0, 125, 110, 0.4);
+    box-shadow: 0 0 0 0 rgba(23, 75, 74, 0.4);
   }
 
   50% {
-    box-shadow: 0 0 0 12px rgba(0, 125, 110, 0);
+    box-shadow: 0 0 0 12px rgba(23, 75, 74, 0);
   }
 }
 
@@ -735,7 +755,7 @@ textarea {
 }
 
 .shadow-btn {
-  box-shadow: 0 4px 12px 0 rgba(0, 107, 95, 0.25);
+  box-shadow: 0 4px 12px 0 rgba(23, 75, 74, 0.25);
 }
 
 .shadow-card-lg {
@@ -745,16 +765,16 @@ textarea {
 /* Hero panel — gradient + grid pattern (from HTML reference) */
 .hero-bg {
   background-image:
-    radial-gradient(circle at 20% 20%, rgba(0, 125, 110, 0.35) 0%, transparent 45%),
-    radial-gradient(circle at 80% 70%, rgba(255, 112, 67, 0.25) 0%, transparent 45%),
-    linear-gradient(135deg, #00152a 0%, #102a43 60%, #006b5f 130%);
+    radial-gradient(circle at 20% 20%, rgba(23, 75, 74, 0.45) 0%, transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(185, 109, 76, 0.25) 0%, transparent 45%),
+    linear-gradient(135deg, #0C2423 0%, #103B39 60%, #174B4A 130%);
 }
 
 .admin-hero-bg {
   background-image:
-    radial-gradient(circle at 20% 20%, rgba(36, 87, 71, 0.6) 0%, transparent 45%),
-    radial-gradient(circle at 80% 70%, rgba(117, 139, 116, 0.3) 0%, transparent 45%),
-    linear-gradient(135deg, #111d17 0%, #1c2923 50%, #245747 130%);
+    radial-gradient(circle at 20% 20%, rgba(23, 75, 74, 0.6) 0%, transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(91, 110, 105, 0.3) 0%, transparent 45%),
+    linear-gradient(135deg, #0C2423 0%, #103B39 50%, #174B4A 130%);
 }
 
 .grid-pattern {

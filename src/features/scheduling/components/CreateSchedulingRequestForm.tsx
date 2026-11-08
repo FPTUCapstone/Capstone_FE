@@ -486,7 +486,7 @@ export function CreateSchedulingRequestForm({
       {preferencesSynced && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50/80 p-4 text-xs text-teal-900 shadow-xs sm:text-sm">
           <div className="flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-lg text-[#007d6e]">
+            <span className="material-symbols-outlined text-lg text-[#103B39]">
               sync_saved_locally
             </span>
             <span>
@@ -495,7 +495,7 @@ export function CreateSchedulingRequestForm({
           </div>
           <Link
             href={ROUTES.account.preferences}
-            className="inline-flex items-center gap-1 font-bold text-[#007d6e] hover:underline"
+            className="inline-flex items-center gap-1 font-bold text-[#103B39] hover:underline"
           >
             Tùy chỉnh sở thích
             <span className="material-symbols-outlined text-sm">open_in_new</span>
@@ -517,7 +517,7 @@ export function CreateSchedulingRequestForm({
               <button
                 type="button"
                 onClick={() => void handleApplyFixAndResubmit(infeasibilityFix.suggestedHours)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
               >
                 <span className="material-symbols-outlined text-base">update</span>
                 Tăng thời lượng lên {infeasibilityFix.suggestedHours} giờ và thử lại
@@ -532,7 +532,7 @@ export function CreateSchedulingRequestForm({
         <div className="mb-6 rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 p-5 shadow-xs">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="inline-flex items-center gap-1 rounded-md bg-[#007d6e] px-2.5 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1 rounded-md bg-[#103B39] px-2.5 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
                 <span className="material-symbols-outlined text-xs">verified</span>
                 Lịch trình #{generatedItinerary.itineraryId}
               </div>
@@ -547,7 +547,7 @@ export function CreateSchedulingRequestForm({
             </div>
             <Link
               href={ROUTES.itinerary(generatedItinerary.itineraryId)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
             >
               <span>Xem lịch trình chi tiết</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -564,7 +564,7 @@ export function CreateSchedulingRequestForm({
             {/* Card 1: Where — Starting point, Exploration area, End point & Must-see places */}
             <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-7">
               <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#007d6e]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#103B39]">
                   <span className="material-symbols-outlined text-xl">location_on</span>
                 </div>
                 <div>
@@ -591,7 +591,7 @@ export function CreateSchedulingRequestForm({
                     type="button"
                     onClick={() => void locateStartPoint()}
                     disabled={isLocating || isSubmitting}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#006b5f] disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#174B4A] disabled:opacity-60"
                   >
                     <span className="material-symbols-outlined text-base">my_location</span>
                     {isLocating ? 'Đang lấy vị trí…' : 'Dùng vị trí hiện tại'}
@@ -637,7 +637,7 @@ export function CreateSchedulingRequestForm({
                       setReturnToStart(e.target.checked);
                       setValidationErrors((prev) => ({ ...prev, endPoi: '' }));
                     }}
-                    className="h-4 w-4 rounded-sm border-slate-300 text-[#007d6e] accent-[#007d6e] focus:ring-[#007d6e]"
+                    className="h-4 w-4 rounded-sm border-slate-300 text-[#103B39] accent-[#103B39] focus:ring-[#103B39]"
                   />
                   <span className="text-xs font-medium text-slate-700 sm:text-sm">
                     Quay về điểm xuất phát khi kết thúc hành trình
@@ -675,7 +675,7 @@ export function CreateSchedulingRequestForm({
                           className={`inline-flex items-center gap-1.5 rounded-full border py-1 pl-3 pr-1 text-xs font-semibold ${
                             isPrimary
                               ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                              : 'border-teal-200 bg-teal-50 text-[#007d6e]'
+                              : 'border-teal-200 bg-teal-50 text-[#103B39]'
                           }`}
                         >
                           <span>{poi.name}</span>
@@ -704,7 +704,7 @@ export function CreateSchedulingRequestForm({
                   type="button"
                   onClick={() => setPickerTarget('mandatory')}
                   disabled={!startPoint || isSubmitting || mandatoryPois.length >= MAX_MANDATORY_POIS}
-                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-slate-300 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-[#007d6e] hover:text-[#007d6e] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-slate-300 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-[#103B39] hover:text-[#103B39] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-base">add_location_alt</span>
                   Thêm địa điểm muốn ghé
@@ -733,7 +733,7 @@ export function CreateSchedulingRequestForm({
             {/* Card 2: Date, Time & Duration */}
             <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-7">
               <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#007d6e]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#103B39]">
                   <span className="material-symbols-outlined text-xl">schedule</span>
                 </div>
                 <div>
@@ -766,7 +766,7 @@ export function CreateSchedulingRequestForm({
                     className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-800 transition focus:outline-hidden focus:ring-2 ${
                       validationErrors.startDate
                         ? 'border-rose-300 bg-rose-50/30 focus:border-rose-500 focus:ring-rose-200'
-                        : 'border-slate-300 bg-white focus:border-[#007d6e] focus:ring-[#007d6e]/20'
+                        : 'border-slate-300 bg-white focus:border-[#103B39] focus:ring-[#103B39]/20'
                     }`}
                   />
                   {validationErrors.startDate && (
@@ -794,7 +794,7 @@ export function CreateSchedulingRequestForm({
                     className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-800 transition focus:outline-hidden focus:ring-2 ${
                       validationErrors.startTime
                         ? 'border-rose-300 bg-rose-50/30 focus:border-rose-500 focus:ring-rose-200'
-                        : 'border-slate-300 bg-white focus:border-[#007d6e] focus:ring-[#007d6e]/20'
+                        : 'border-slate-300 bg-white focus:border-[#103B39] focus:ring-[#103B39]/20'
                     }`}
                   />
                   {validationErrors.startTime && (
@@ -826,7 +826,7 @@ export function CreateSchedulingRequestForm({
                         setDurationHours(e.target.value.replace(/\D/g, ''));
                         setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
                       }}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#007d6e] focus:outline-none"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#103B39] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -843,7 +843,7 @@ export function CreateSchedulingRequestForm({
                         setDurationMinutes(e.target.value.replace(/\D/g, ''));
                         setValidationErrors((prev) => ({ ...prev, availableHours: '' }));
                       }}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#007d6e] focus:outline-none"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#103B39] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -883,7 +883,7 @@ export function CreateSchedulingRequestForm({
             {/* Card 3: Transport & Rest Preferences */}
             <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-7">
               <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#007d6e]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#103B39]">
                   <span className="material-symbols-outlined text-xl">directions_bike</span>
                 </div>
                 <div>
@@ -917,7 +917,7 @@ export function CreateSchedulingRequestForm({
                         opt.disabled
                           ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 opacity-60'
                           : transportMode === opt.id
-                          ? 'border-[#007d6e] bg-teal-50/70 text-[#007d6e] ring-2 ring-[#007d6e]/20'
+                          ? 'border-[#103B39] bg-teal-50/70 text-[#103B39] ring-2 ring-[#103B39]/20'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                       }`}
                     >
@@ -946,7 +946,7 @@ export function CreateSchedulingRequestForm({
                       onClick={() => setRestPreference(pref.id)}
                       className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition ${
                         restPreference === pref.id
-                          ? 'border-[#007d6e] bg-teal-50/70 text-[#007d6e] ring-2 ring-[#007d6e]/20'
+                          ? 'border-[#103B39] bg-teal-50/70 text-[#103B39] ring-2 ring-[#103B39]/20'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                       }`}
                     >
@@ -964,7 +964,7 @@ export function CreateSchedulingRequestForm({
             {/* Card 4: Budget */}
             <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-7">
               <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#007d6e]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-[#103B39]">
                   <span className="material-symbols-outlined text-xl">payments</span>
                 </div>
                 <div>
@@ -1003,7 +1003,7 @@ export function CreateSchedulingRequestForm({
                     className={`w-full rounded-xl border px-3.5 py-2.5 pr-14 text-sm text-slate-800 transition focus:outline-hidden focus:ring-2 ${
                       validationErrors.budgetVnd
                         ? 'border-rose-300 bg-rose-50/30 focus:border-rose-500 focus:ring-rose-200'
-                        : 'border-slate-300 bg-white focus:border-[#007d6e] focus:ring-[#007d6e]/20'
+                        : 'border-slate-300 bg-white focus:border-[#103B39] focus:ring-[#103B39]/20'
                     }`}
                   />
                   <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400">
@@ -1024,7 +1024,7 @@ export function CreateSchedulingRequestForm({
                       onClick={() => chooseBudget(p.amount)}
                       className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
                         budgetVnd === p.amount
-                          ? 'border-[#007d6e] bg-teal-50 text-[#007d6e]'
+                          ? 'border-[#103B39] bg-teal-50 text-[#103B39]'
                           : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                     >
@@ -1046,14 +1046,14 @@ export function CreateSchedulingRequestForm({
               {isSubmitting ? (
                 <div className="space-y-3 py-4">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                    <span className="material-symbols-outlined animate-spin text-2xl text-[#007d6e]">
+                    <span className="material-symbols-outlined animate-spin text-2xl text-[#103B39]">
                       progress_activity
                     </span>
                   </div>
                   <h3 className="text-sm font-bold text-slate-900 sm:text-base">
                     Đang khởi tạo lịch trình tối ưu với thuật toán CSP...
                   </h3>
-                  <p className="text-xs text-[#007d6e] font-medium animate-pulse">
+                  <p className="text-xs text-[#103B39] font-medium animate-pulse">
                     {optimizationPhase}
                   </p>
                 </div>
@@ -1085,7 +1085,7 @@ export function CreateSchedulingRequestForm({
             <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
               <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-[#007d6e]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-[#103B39]">
                     <span className="material-symbols-outlined text-lg">explore</span>
                   </div>
                   <div>
@@ -1097,7 +1097,7 @@ export function CreateSchedulingRequestForm({
                     </p>
                   </div>
                 </div>
-                <span className="rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#007d6e]">
+                <span className="rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-[#103B39]">
                   {searchRadiusKm} km
                 </span>
               </div>
@@ -1141,7 +1141,7 @@ export function CreateSchedulingRequestForm({
                       });
                     });
                   }}
-                  className="mt-2 h-2 w-full cursor-pointer accent-[#007d6e]"
+                  className="mt-2 h-2 w-full cursor-pointer accent-[#103B39]"
                 />
                 <div className="mt-1 flex justify-between text-[11px] text-slate-400">
                   <span>{MIN_SEARCH_RADIUS_KM} km (Gần)</span>
@@ -1191,13 +1191,13 @@ export function CreateSchedulingRequestForm({
             {/* Card 2: Selected Locations Feedback Overview */}
             <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
               <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 sm:text-sm">
-                <span className="material-symbols-outlined text-base text-[#007d6e]">pin_drop</span>
+                <span className="material-symbols-outlined text-base text-[#103B39]">pin_drop</span>
                 Tóm tắt địa điểm đã chọn
               </h3>
               <div className="mt-3.5 space-y-3">
                 {/* Starting point */}
                 <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007d6e] text-[11px] font-bold text-white">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#103B39] text-[11px] font-bold text-white">
                     A
                   </span>
                   <div className="min-w-0 flex-1">
@@ -1246,7 +1246,7 @@ export function CreateSchedulingRequestForm({
                     <ul className="mt-2 space-y-1">
                       {mandatoryPois.map((p, idx) => (
                         <li key={p.id} className="flex items-center gap-2 text-xs text-slate-600">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#007d6e]" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#103B39]" />
                           <span className="truncate">{idx + 1}. {p.name}</span>
                         </li>
                       ))}
@@ -1263,7 +1263,7 @@ export function CreateSchedulingRequestForm({
             {/* Card 3: Planning Estimates Summary */}
             <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
               <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 sm:text-sm">
-                <span className="material-symbols-outlined text-base text-[#007d6e]">insights</span>
+                <span className="material-symbols-outlined text-base text-[#103B39]">insights</span>
                 Dự kiến hành trình
               </h3>
               <dl className="mt-3.5 space-y-2.5 text-xs text-slate-600">
@@ -1278,7 +1278,7 @@ export function CreateSchedulingRequestForm({
                 {tripEnd && (
                   <div className="flex justify-between items-center py-1 border-b border-slate-100">
                     <dt className="text-slate-500">Dự kiến kết thúc</dt>
-                    <dd className="font-bold text-[#007d6e]">
+                    <dd className="font-bold text-[#103B39]">
                       ~{tripEnd.time} {tripEnd.dayOffset > 0 ? `(ngày +${tripEnd.dayOffset})` : ''}
                     </dd>
                   </div>

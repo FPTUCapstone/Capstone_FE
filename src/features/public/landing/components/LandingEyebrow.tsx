@@ -18,7 +18,7 @@ export function LandingEyebrow({
   const variantStyles =
     variant === 'dark'
       ? 'border-teal-400/30 bg-teal-500/10 text-teal-300'
-      : 'border-teal-200 bg-teal-50 text-[#007d6e]';
+      : 'border-teal-200 bg-teal-50 text-[#103B39]';
 
   return (
     <div

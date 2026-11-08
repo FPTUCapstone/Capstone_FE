@@ -75,7 +75,7 @@ export function OperatorProfilePage() {
           >
             <div className="flex flex-col items-center gap-3">
               <div
-                className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
+                className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
                 aria-hidden="true"
               />
               <p className="text-xs font-semibold text-slate-500">

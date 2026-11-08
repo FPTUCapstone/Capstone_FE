@@ -39,9 +39,9 @@ describe('EditorialSectionNav component', () => {
 
     const destButton = screen.getByRole('button', { name: /01 Điểm Đến Biểu Tượng/i });
     expect(destButton.className).toContain('focus-visible:outline-2');
-    expect(destButton.className).toContain('focus-visible:outline-[#007d6e]');
+    expect(destButton.className).toContain('focus-visible:outline-[#103B39]');
     expect(destButton.className).toContain('focus-visible:ring-2');
-    expect(destButton.className).toContain('focus-visible:ring-[#007d6e]');
+    expect(destButton.className).toContain('focus-visible:ring-[#103B39]');
   });
 
   it('invokes onNavigate with the section id on click', () => {
@@ -84,7 +84,7 @@ describe('EditorialJournalRail component', () => {
     render(<EditorialJournalRail activeCity="hoian" onSelectCity={handleSelectCity} />);
 
     const hoianBtn = screen.getByRole('button', { name: /Xem sổ tay Hội An Hoài Cổ/i });
-    expect(hoianBtn.className).toContain('border-[#007d6e]');
+    expect(hoianBtn.className).toContain('border-[#174B4A]');
   });
 
   it('applies visible focus indicator classes for keyboard navigation on cards', () => {
@@ -93,15 +93,15 @@ describe('EditorialJournalRail component', () => {
 
     const hoianBtn = screen.getByRole('button', { name: /Xem sổ tay Hội An Hoài Cổ/i });
     expect(hoianBtn.className).toContain('focus-visible:outline-2');
-    expect(hoianBtn.className).toContain('focus-visible:outline-[#007d6e]');
+    expect(hoianBtn.className).toContain('focus-visible:outline-[#103B39]');
     expect(hoianBtn.className).toContain('focus-visible:ring-2');
-    expect(hoianBtn.className).toContain('focus-visible:ring-[#007d6e]');
+    expect(hoianBtn.className).toContain('focus-visible:ring-[#103B39]');
 
     const hueBtn = screen.getByRole('button', { name: /Xem sổ tay Cố Đô Huế/i });
     expect(hueBtn.className).toContain('focus-visible:outline-2');
-    expect(hueBtn.className).toContain('focus-visible:outline-[#007d6e]');
+    expect(hueBtn.className).toContain('focus-visible:outline-[#103B39]');
     expect(hueBtn.className).toContain('focus-visible:ring-2');
-    expect(hueBtn.className).toContain('focus-visible:ring-[#007d6e]');
+    expect(hueBtn.className).toContain('focus-visible:ring-[#103B39]');
   });
 });
 

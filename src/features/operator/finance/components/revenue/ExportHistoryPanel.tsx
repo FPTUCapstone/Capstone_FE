@@ -106,7 +106,7 @@ export function ExportHistoryPanel({
     >
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <div>
-          <h3 className="text-sm font-bold text-[#00152A]">{financeEn.exportHistory.title}</h3>
+          <h3 className="text-sm font-bold text-[#1C2928]">{financeEn.exportHistory.title}</h3>
           <p className="text-xs text-slate-500">{financeEn.exportHistory.subtitle}</p>
         </div>
         <button
@@ -199,7 +199,7 @@ export function ExportHistoryPanel({
                           type="button"
                           onClick={() => void handleDownload(item)}
                           disabled={downloadingId === item.id}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#006B5F]/30 bg-[#006B5F]/5 px-3 py-1.5 text-[11px] font-semibold text-[#006B5F] transition-colors hover:bg-[#006B5F]/10 disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#174B4A]/30 bg-[#174B4A]/5 px-3 py-1.5 text-[11px] font-semibold text-[#174B4A] transition-colors hover:bg-[#174B4A]/10 disabled:opacity-50"
                         >
                           <span aria-hidden="true" className="material-symbols-outlined text-[14px]">download</span>
                           {downloadingId === item.id

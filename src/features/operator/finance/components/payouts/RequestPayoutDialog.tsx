@@ -76,7 +76,7 @@ export function RequestPayoutDialog({ isOpen, balance, claimedMonths, bankInfo, 
       <div ref={dialogRef} tabIndex={-1} className="w-full max-w-lg rounded-2xl bg-white p-4 sm:p-6 shadow-xl transition-all max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <h2 id="request-payout-title" className="text-base font-bold text-[#00152A]">
+            <h2 id="request-payout-title" className="text-base font-bold text-[#1C2928]">
               {financeEn.requestDialog.title}
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">{financeEn.requestDialog.subtitle}</p>
@@ -95,7 +95,7 @@ export function RequestPayoutDialog({ isOpen, balance, claimedMonths, bankInfo, 
         <form onSubmit={handleSubmit} className="mt-5 space-y-5">
           {claimedMonths.length > 0 && (
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-xs">
-              <h3 className="font-bold text-[#00152A] mb-2">{financeEn.requestDialog.monthsIncludedTitle}</h3>
+              <h3 className="font-bold text-[#1C2928] mb-2">{financeEn.requestDialog.monthsIncludedTitle}</h3>
               <ul className="space-y-1.5">
                 {claimedMonths.map((m) => (
                   <li key={`${m.year}-${m.month}`} className="flex justify-between">
@@ -110,7 +110,7 @@ export function RequestPayoutDialog({ isOpen, balance, claimedMonths, bankInfo, 
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs space-y-2.5">
             <div className="flex justify-between">
               <span className="font-semibold text-slate-500">{financeEn.requestDialog.periodCountLabel}:</span>
-              <span className="font-bold text-[#00152A]">{balance.periodCount}</span>
+              <span className="font-bold text-[#1C2928]">{balance.periodCount}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-semibold text-slate-500">{financeEn.requestDialog.paymentsLabel}:</span>
@@ -135,8 +135,8 @@ export function RequestPayoutDialog({ isOpen, balance, claimedMonths, bankInfo, 
               </div>
             )}
             <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
-              <span className="text-xs font-bold text-[#00152A]">{financeEn.requestDialog.payableAmountLabel}:</span>
-              <span className="text-base font-extrabold text-[#006B5F]">
+              <span className="text-xs font-bold text-[#1C2928]">{financeEn.requestDialog.payableAmountLabel}:</span>
+              <span className="text-base font-extrabold text-[#174B4A]">
                 {formatVndCurrency(balance.payableNetAmount)}
               </span>
             </div>
@@ -145,21 +145,21 @@ export function RequestPayoutDialog({ isOpen, balance, claimedMonths, bankInfo, 
           <p className="text-[11px] text-slate-500 italic">{financeEn.requestDialog.payableAmountNotice}</p>
 
           <div className="rounded-xl border border-slate-200 p-3.5 bg-white text-xs">
-            <h3 className="font-bold text-[#00152A] mb-2">{financeEn.requestDialog.bankConfirmationTitle}</h3>
+            <h3 className="font-bold text-[#1C2928] mb-2">{financeEn.requestDialog.bankConfirmationTitle}</h3>
             <div className="grid grid-cols-2 gap-2 text-slate-600">
               <div>
                 <span className="text-slate-400 block text-[10px]">{financeEn.payouts.bank.accountHolder}</span>
-                <span className="font-bold uppercase text-[#00152A]">
+                <span className="font-bold uppercase text-[#1C2928]">
                   {bankInfo.accountHolderName || financeEn.payouts.bank.notSet}
                 </span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{financeEn.payouts.bank.bankName}</span>
-                <span className="font-semibold text-[#00152A]">{bankInfo.bankName || financeEn.payouts.bank.notSet}</span>
+                <span className="font-semibold text-[#1C2928]">{bankInfo.bankName || financeEn.payouts.bank.notSet}</span>
               </div>
               <div className="col-span-2">
                 <span className="text-slate-400 block text-[10px]">{financeEn.payouts.bank.accountNumber}</span>
-                <span className="font-mono font-bold text-[#00152A]">
+                <span className="font-mono font-bold text-[#1C2928]">
                   {bankInfo.maskedAccountNumber || financeEn.payouts.bank.notSet}
                 </span>
               </div>
@@ -171,7 +171,7 @@ export function RequestPayoutDialog({ isOpen, balance, claimedMonths, bankInfo, 
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded text-[#006B5F] focus:ring-[#006B5F]"
+              className="mt-0.5 h-4 w-4 rounded text-[#174B4A] focus:ring-[#174B4A]"
             />
             <span>{financeEn.requestDialog.confirmCheckbox}</span>
           </label>
@@ -195,7 +195,7 @@ export function RequestPayoutDialog({ isOpen, balance, claimedMonths, bankInfo, 
             <button
               type="submit"
               disabled={!confirmed || isSubmitting}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#103B39] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isSubmitting ? (
                 <>

@@ -42,7 +42,7 @@ export function WeatherSafetyReviewList({
               onClick={() => onFilterChange(option.key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 isSelected
-                  ? 'bg-teal-700 text-white shadow-2xs'
+                  ? 'bg-[#174B4A] text-white shadow-2xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -63,12 +63,12 @@ export function WeatherSafetyReviewList({
             return (
               <li
                 key={review.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-teal-600 transition cursor-pointer"
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-[#174B4A] transition cursor-pointer"
                 onClick={() => onSelectReview(review.id)}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-slate-900 text-base hover:text-teal-700">
+                    <span className="font-bold text-slate-900 text-base hover:text-[#174B4A]">
                       {review.tourTitle}
                     </span>
                     {review.officialVietnamRiskLevel !== null && (
@@ -107,7 +107,7 @@ export function WeatherSafetyReviewList({
                     deadlineUtc={review.acknowledgementDeadlineUtc}
                     status={review.status}
                   />
-                  <span className="text-teal-700 text-xs font-semibold flex items-center gap-1 hover:underline">
+                  <span className="text-[#174B4A] text-xs font-semibold flex items-center gap-1 hover:underline">
                     Xem chi tiết &amp; xử lý &rarr;
                   </span>
                 </div>

@@ -93,7 +93,7 @@ export function MockCheckoutView() {
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-9 w-9 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            className="h-9 w-9 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
             aria-hidden="true"
           />
           <p className="text-xs font-semibold text-slate-500">
@@ -117,7 +117,7 @@ export function MockCheckoutView() {
     <div className="mx-auto max-w-lg px-4 py-8 font-sans" lang="vi">
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl transition-all">
         {/* Mock Environment Header */}
-        <div className="bg-gradient-to-r from-teal-700 to-[#007d6e] p-6 text-white text-center">
+        <div className="bg-gradient-to-r from-teal-700 to-[#103B39] p-6 text-white text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm mb-3">
             <span className="material-symbols-outlined text-3xl">developer_mode</span>
           </div>
@@ -161,7 +161,7 @@ export function MockCheckoutView() {
             </div>
             <div className="pt-3 border-t border-slate-200/60 flex justify-between items-baseline">
               <span className="text-sm font-semibold text-slate-700">Tổng thanh toán:</span>
-              <span className="text-2xl font-black text-[#007d6e]">
+              <span className="text-2xl font-black text-[#103B39]">
                 {formatCurrency(displayAmount)}
               </span>
             </div>

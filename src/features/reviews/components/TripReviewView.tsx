@@ -136,13 +136,13 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
 
       {/* Trip Context Card (Stitch Banner) */}
       <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#006B5F] to-[#00152A] text-white shadow-xs">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#174B4A] to-[#1C2928] text-white shadow-xs">
           <span className="material-symbols-outlined text-[24px]" aria-hidden="true">
             travel_explore
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#006B5F]">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#174B4A]">
             <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
               event_available
             </span>
@@ -152,7 +152,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
               )}
             </span>
           </div>
-          <h2 className="truncate text-sm font-extrabold text-[#00152A] sm:text-base">
+          <h2 className="truncate text-sm font-extrabold text-[#1C2928] sm:text-base">
             {trip.title}
           </h2>
           <p className="truncate text-xs text-slate-500">
@@ -195,7 +195,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           <div className="mt-4 flex justify-center gap-3">
             <Link
               href={isDemo ? `${ROUTES.account.trips}?demo=1` : ROUTES.account.trips}
-              className="rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
+              className="rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
             >
               {tripReviewEn.actions.backToTrips}
             </Link>
@@ -251,7 +251,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           {/* Section: Review Title (Mandatory per Report 3 §3.7.2) */}
           <section aria-labelledby="title-label" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
             <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="review-title" id="title-label" className="text-sm font-extrabold text-[#00152A]">
+              <label htmlFor="review-title" id="title-label" className="text-sm font-extrabold text-[#1C2928]">
                 {tripReviewEn.tripReview.titleLabel} <span className="text-rose-500">*</span>
               </label>
               <span className="text-xs font-semibold text-slate-400">
@@ -268,10 +268,10 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 if (titleError) setTitleError(null);
               }}
               placeholder={tripReviewEn.tripReview.titlePlaceholder}
-              className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 sm:text-sm ${
+              className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 sm:text-sm ${
                 titleError
                   ? 'border-rose-400 focus:border-rose-500'
-                  : 'border-slate-300 focus:border-[#006B5F]'
+                  : 'border-slate-300 focus:border-[#174B4A]'
               }`}
             />
 
@@ -287,8 +287,8 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             <section aria-labelledby="pacing-title" className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 shadow-xs sm:p-5">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div>
-                  <h3 id="pacing-title" className="text-sm font-extrabold text-[#00152A] flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[18px] text-[#006B5F]" aria-hidden="true">
+                  <h3 id="pacing-title" className="text-sm font-extrabold text-[#1C2928] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-[#174B4A]" aria-hidden="true">
                       psychology
                     </span>
                     {tripReviewEn.tripReview.pacingSectionTitle}
@@ -316,7 +316,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                     onClick={() => setRouteSatisfaction(item.key)}
                     className={`rounded-xl py-2 px-2 text-center text-xs font-bold transition ${
                       routeSatisfaction === item.key
-                        ? 'border border-[#006B5F] bg-[#E6F4F1] text-[#006B5F] shadow-2xs'
+                        ? 'border border-[#174B4A] bg-[#E6F4F1] text-[#174B4A] shadow-2xs'
                         : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -344,12 +344,12 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           {/* Section 4: Detailed Review Commentary */}
           <section aria-labelledby="comment-title" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
             <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="review-comment" id="comment-title" className="text-sm font-extrabold text-[#00152A]">
+              <label htmlFor="review-comment" id="comment-title" className="text-sm font-extrabold text-[#1C2928]">
                 {tripReviewEn.tripReview.commentLabel} <span className="text-rose-500">*</span>
               </label>
               <span
                 className={`text-xs font-semibold ${
-                  isCommentTooLong ? 'text-rose-600' : 'text-[#006B5F]'
+                  isCommentTooLong ? 'text-rose-600' : 'text-[#174B4A]'
                 }`}
               >
                 {tripReviewEn.tripReview.characterCount(commentLength, 500)}
@@ -365,10 +365,10 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 if (commentError) setCommentError(null);
               }}
               placeholder={tripReviewEn.tripReview.commentPlaceholder}
-              className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 sm:text-sm ${
+              className={`w-full rounded-xl border p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 sm:text-sm ${
                 commentError
                   ? 'border-rose-400 focus:border-rose-500'
-                  : 'border-slate-300 focus:border-[#006B5F]'
+                  : 'border-slate-300 focus:border-[#174B4A]'
               }`}
             />
 
@@ -416,7 +416,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
                 type="checkbox"
                 checked={publishWithDisplayName}
                 onChange={(e) => setPublishWithDisplayName(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#006B5F] focus:ring-[#006B5F]"
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#174B4A] focus:ring-[#174B4A]"
               />
               <div className="text-xs">
                 <span className="font-bold text-slate-800">
@@ -444,7 +444,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 rounded-xl bg-[#00152A] py-3.5 px-6 text-sm font-extrabold text-white shadow-md transition hover:bg-[#102A43] active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 rounded-xl bg-[#103B39] py-3.5 px-6 text-sm font-extrabold text-white shadow-md transition hover:bg-[#103B39] active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

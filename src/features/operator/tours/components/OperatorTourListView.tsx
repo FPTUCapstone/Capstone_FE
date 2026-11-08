@@ -79,7 +79,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
       {/* Top Action Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+          <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl">
             Quản lý gói tour
           </h1>
           <p className="mt-1 text-xs text-slate-500">
@@ -89,7 +89,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
 
         <Link
           href={withTourDemoMode(OPERATOR_TOUR_ROUTES.create, isDemo)}
-          className="flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition"
+          className="flex items-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
           Tạo gói tour mới
@@ -132,7 +132,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
               onClick={() => setFilter(tab.key)}
               className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                 isActive
-                  ? 'bg-[#006B5F] text-white shadow-xs'
+                  ? 'bg-[#174B4A] text-white shadow-xs'
                   : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
               }`}
             >
@@ -183,13 +183,13 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                     <tr key={t.id} className="hover:bg-slate-50/50 transition">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#006B5F] font-bold">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#174B4A] font-bold">
                             <span className="material-symbols-outlined text-[20px]">tour</span>
                           </div>
                           <div>
                             <Link
                               href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(t.id), isDemo)}
-                              className="font-bold text-[#00152A] hover:text-[#006B5F] transition"
+                              className="font-bold text-[#1C2928] hover:text-[#174B4A] transition"
                             >
                               {t.title}
                             </Link>
@@ -201,7 +201,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                       </td>
                       <td className="p-4 font-medium text-slate-700">{t.destination}</td>
                       <td className="p-4 text-slate-600">{t.durationDays} ngày</td>
-                      <td className="p-4 font-mono font-bold text-[#00152A]">
+                      <td className="p-4 font-mono font-bold text-[#1C2928]">
                         {t.basePrice.toLocaleString()} đ
                       </td>
                       <td className="p-4">
@@ -228,7 +228,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                           {canSubmit && (
                             <Link
                               href={withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(t.id), isDemo)}
-                              className="inline-flex shrink-0 rounded-lg bg-[#006B5F] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#005249] transition shadow-2xs"
+                              className="inline-flex shrink-0 rounded-lg bg-[#174B4A] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#103B39] transition shadow-2xs"
                             >
                               Gửi duyệt
                             </Link>

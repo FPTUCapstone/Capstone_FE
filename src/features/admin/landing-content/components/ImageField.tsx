@@ -74,9 +74,9 @@ export function ImageField({ label, value, onChange, error, disabled }: ImageFie
           void handleFile(event.target.files?.[0]);
           event.target.value = '';
         }}
-        className="mt-2 block w-full text-sm text-[#475467] file:mr-3 file:rounded-lg file:border file:border-[#d0d7de] file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-bold disabled:cursor-not-allowed"
+        className="mt-2 block w-full text-sm text-[#5B6E69] file:mr-3 file:rounded-lg file:border file:border-[#DCE2DD] file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-bold disabled:cursor-not-allowed"
       />
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#475467]">
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#5B6E69]">
         {uploading ? (
           <span role="status">{copy.editor.image.uploading}</span>
         ) : value ? (
@@ -86,7 +86,7 @@ export function ImageField({ label, value, onChange, error, disabled }: ImageFie
               type="button"
               disabled={disabled}
               onClick={() => onChange(null)}
-              className="rounded-lg border border-[#d0d7de] px-2.5 py-1 font-bold text-[#00152a] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-[#DCE2DD] px-2.5 py-1 font-bold text-[#1C2928] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {copy.editor.image.remove}
             </button>

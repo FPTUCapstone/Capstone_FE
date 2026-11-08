@@ -80,10 +80,10 @@ export function TravelPreferencesPage() {
       <div className="flex min-h-[300px] items-center justify-center p-8" role="status">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-[#59616B]">Đang tải sở thích du lịch…</p>
+          <p className="text-xs font-semibold text-[#5B6E69]">Đang tải sở thích du lịch…</p>
         </div>
       </div>
     );
@@ -96,26 +96,26 @@ export function TravelPreferencesPage() {
   const content = (
     <>
       {!isInsideShell && (
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
-          <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]">
+          <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
             Trang chủ
           </Link>
           <span aria-hidden="true">/</span>
-          <Link href={ROUTES.account.profile} className="hover:text-[#006B5F] hover:underline">
+          <Link href={ROUTES.account.profile} className="hover:text-[#174B4A] hover:underline">
             Tài khoản
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#00152A]">Sở thích du lịch</span>
+          <span className="text-[#1C2928]">Sở thích du lịch</span>
         </nav>
       )}
 
       {/* Account Workspace Navigation Tabs (suppressed automatically inside shell) */}
       <AccountWorkspaceNav activeTab="preferences" />
 
-      <section className="rounded-2xl border border-[#D8E1E4] bg-white p-6 shadow-xs sm:p-8">
-        <header className="mb-6 border-b border-[#D8E1E4] pb-4">
-          <h1 className="text-xl font-black tracking-tight text-[#00152A] sm:text-2xl">Sở thích du lịch</h1>
-          <p className="mt-1 text-xs text-[#59616B] sm:text-sm">
+      <section className="rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:p-8">
+        <header className="mb-6 border-b border-[#DCE2DD] pb-4">
+          <h1 className="text-xl font-black tracking-tight text-[#1C2928] sm:text-2xl">Sở thích du lịch</h1>
+          <p className="mt-1 text-xs text-[#5B6E69] sm:text-sm">
             Tùy chỉnh các tiêu chí ưu tiên để TripMate cá nhân hóa gợi ý và điền sẵn khi lập lịch trình.
           </p>
         </header>
@@ -134,7 +134,7 @@ export function TravelPreferencesPage() {
             <button
               type="button"
               onClick={retry}
-              className="inline-flex min-h-[44px] items-center rounded-xl border border-[#D8E1E4] bg-white px-4 py-2.5 text-xs font-semibold text-[#00152A] hover:bg-[#F3F6F7]"
+              className="inline-flex min-h-[44px] items-center rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-xs font-semibold text-[#1C2928] hover:bg-[#F7F5EF]"
             >
               Thử lại
             </button>
@@ -146,7 +146,7 @@ export function TravelPreferencesPage() {
             <FeedbackAlert tone="warning">{preferenceMessages.locked.MSG125}</FeedbackAlert>
             <Link
               href={SIGN_IN_RETURN}
-              className="inline-flex min-h-[44px] items-center rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#00574D]"
+              className="inline-flex min-h-[44px] items-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#00574D]"
             >
               Đăng nhập lại
             </Link>
@@ -165,7 +165,7 @@ export function TravelPreferencesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         {content}
       </main>

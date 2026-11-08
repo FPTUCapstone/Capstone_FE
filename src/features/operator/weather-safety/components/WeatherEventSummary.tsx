@@ -61,9 +61,9 @@ export function WeatherEventSummary({ review, className = '' }: WeatherEventSumm
       </div>
 
       {/* Official Vietnam Risk Classification */}
-      <div className="rounded-lg bg-teal-50/50 border border-teal-100 p-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center gap-1.5 mb-3">
-          <span className="material-symbols-outlined text-[16px] text-teal-700" aria-hidden="true">
+      <div className="rounded-lg bg-[#E8F0EA]/50 border border-[#DCE2DD] p-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#1C2928] flex items-center gap-1.5 mb-3">
+          <span className="material-symbols-outlined text-[16px] text-[#174B4A]" aria-hidden="true">
             gavel
           </span>
           Đánh giá rủi ro thiên tai Việt Nam
@@ -71,7 +71,7 @@ export function WeatherEventSummary({ review, className = '' }: WeatherEventSumm
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div>
             <span className="text-slate-500 block">Cấp rủi ro thiên tai:</span>
-            <span className="font-bold text-base text-teal-800">
+            <span className="font-bold text-base text-[#174B4A]">
               {review.officialVietnamRiskLevel !== null
                 ? `Cấp ${review.officialVietnamRiskLevel}`
                 : 'Chưa phân cấp'}

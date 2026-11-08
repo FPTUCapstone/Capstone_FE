@@ -14,7 +14,7 @@ interface TextFieldProps {
 }
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-xl border border-[#d0d7de] bg-white px-3.5 py-2.5 text-sm text-[#191c1e] disabled:cursor-not-allowed disabled:bg-[#f2f4f7] disabled:text-[#667085] aria-[invalid=true]:border-[#b42318]';
+  'mt-2 w-full rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2.5 text-sm text-[#1C2928] disabled:cursor-not-allowed disabled:bg-[#F7F5EF] disabled:text-[#667085] aria-[invalid=true]:border-[#b42318]';
 
 export function TextField({ label, value, onChange, error, disabled, type = 'text', multiline = false }: TextFieldProps) {
   const id = useId();

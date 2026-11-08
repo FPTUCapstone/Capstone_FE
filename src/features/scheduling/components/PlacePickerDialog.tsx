@@ -175,11 +175,11 @@ export function PlacePickerDialog({
             placeholder={showAddresses ? 'Địa chỉ, khách sạn, trường học hoặc địa điểm…' : 'Tên địa điểm…'}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-[#007d6e] focus:outline-hidden focus:ring-2 focus:ring-[#007d6e]/20"
+            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-[#103B39] focus:outline-hidden focus:ring-2 focus:ring-[#103B39]/20"
           />
           <button
             type="submit"
-            className="rounded-xl bg-[#007d6e] px-4 text-sm font-bold text-white hover:bg-[#006b5f]"
+            className="rounded-xl bg-[#103B39] px-4 text-sm font-bold text-white hover:bg-[#174B4A]"
           >
             Tìm
           </button>
@@ -198,7 +198,7 @@ export function PlacePickerDialog({
                   setQuery(suggestion);
                   void search(suggestion);
                 }}
-                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-[#007d6e] hover:bg-teal-50/50 hover:text-[#007d6e]"
+                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-[#103B39] hover:bg-teal-50/50 hover:text-[#103B39]"
               >
                 {suggestion}
               </button>
@@ -280,7 +280,7 @@ export function PlacePickerDialog({
                           })}
                           className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
                         >
-                          <span className="material-symbols-outlined mt-0.5 text-lg text-[#007d6e]">
+                          <span className="material-symbols-outlined mt-0.5 text-lg text-[#103B39]">
                             place
                           </span>
                           <span>

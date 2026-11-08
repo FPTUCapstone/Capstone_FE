@@ -141,8 +141,8 @@ export function ResubmitApplicationForm() {
   return (
     <PartnerShell title="Correct and resubmit application" description="Update the rejected application without creating another account.">
       <div className="mb-6"><FeedbackAlert tone="error" title="Latest rejection reason">{application.rejectionReason || 'No reason recorded.'}</FeedbackAlert></div>
-      <form className="rounded-3xl border border-[#d8dadd] bg-white p-5 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8" noValidate onSubmit={handleSubmit}>
-        <fieldset disabled={submitting} className="border-0 p-0"><legend className="text-xl font-extrabold text-[#00152a]">Company and contact information</legend><div className="mt-5 grid gap-5 sm:grid-cols-2">
+      <form className="rounded-3xl border border-[#DCE2DD] bg-white p-5 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8" noValidate onSubmit={handleSubmit}>
+        <fieldset disabled={submitting} className="border-0 p-0"><legend className="text-xl font-extrabold text-[#1C2928]">Company and contact information</legend><div className="mt-5 grid gap-5 sm:grid-cols-2">
           <TextField label="Company Name" name="companyName" value={values.companyName} error={errors.companyName} onChange={(e) => update('companyName', e.target.value)} />
           <TextField label="Business Licence Number" name="businessLicenseNo" value={values.businessLicenseNo} error={errors.businessLicenseNo} onChange={(e) => update('businessLicenseNo', e.target.value)} />
           <TextField label="Tax Code" name="taxCode" value={values.taxCode} error={errors.taxCode} onChange={(e) => update('taxCode', e.target.value)} />
@@ -151,15 +151,15 @@ export function ResubmitApplicationForm() {
           <TextField label="Contact Phone Number" name="contactPhone" type="tel" value={values.contactPhone} error={errors.contactPhone} onChange={(e) => update('contactPhone', e.target.value)} />
         </div></fieldset>
 
-        <fieldset disabled={submitting} className="mt-8 border-0 border-t border-[#d8dadd] p-0 pt-8"><legend className="text-xl font-extrabold text-[#00152a]">Documents</legend>
+        <fieldset disabled={submitting} className="mt-8 border-0 border-t border-[#DCE2DD] p-0 pt-8"><legend className="text-xl font-extrabold text-[#1C2928]">Documents</legend>
           <div className="mt-4 space-y-2">{application.documents.map((document) => <div key={document.documentId} className="rounded-xl border p-3 text-sm font-semibold">{document.documentType} #{document.documentId} · {document.status}</div>)}</div>
-          <label className="mt-4 block font-bold text-[#00152a]">Replacement Business Licence (optional)<input className={fieldClassName} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setLicence(event.target.files?.[0])} /></label>
-          <p className="mt-1 text-xs text-[#59616b]">Leave empty to submit the latest existing licence for review again.</p>{errors.businessLicenseDocument && <p className="mt-2 text-xs font-semibold text-[#ba1a1a]">{errors.businessLicenseDocument}</p>}
-          <label className="mt-4 block font-bold text-[#00152a]">Supporting documents (optional, up to 5)<input className={fieldClassName} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setSupporting(Array.from(event.target.files ?? []))} /></label>{errors.supportingDocuments && <p className="mt-2 text-xs font-semibold text-[#ba1a1a]">{errors.supportingDocuments}</p>}
+          <label className="mt-4 block font-bold text-[#1C2928]">Replacement Business Licence (optional)<input className={fieldClassName} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setLicence(event.target.files?.[0])} /></label>
+          <p className="mt-1 text-xs text-[#5B6E69]">Leave empty to submit the latest existing licence for review again.</p>{errors.businessLicenseDocument && <p className="mt-2 text-xs font-semibold text-[#ba1a1a]">{errors.businessLicenseDocument}</p>}
+          <label className="mt-4 block font-bold text-[#1C2928]">Supporting documents (optional, up to 5)<input className={fieldClassName} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setSupporting(Array.from(event.target.files ?? []))} /></label>{errors.supportingDocuments && <p className="mt-2 text-xs font-semibold text-[#ba1a1a]">{errors.supportingDocuments}</p>}
         </fieldset>
 
         {globalError && <div className="mt-5"><FeedbackAlert tone="error">{globalError}</FeedbackAlert></div>}
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Link href={ROUTES.partner.application} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a]">Cancel</Link><ActionButton type="submit" loading={submitting} variant="coral">Resubmit Application</ActionButton></div>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Link href={ROUTES.partner.application} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#1C2928]">Cancel</Link><ActionButton type="submit" loading={submitting} variant="coral">Resubmit Application</ActionButton></div>
       </form>
     </PartnerShell>
   );

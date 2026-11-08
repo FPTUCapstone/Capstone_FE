@@ -125,7 +125,7 @@ export function PopoverMenu({
                 item.onSelect();
               }}
               className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold transition hover:bg-slate-50 focus:bg-slate-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-                item.checked ? 'text-[#007d6e]' : 'text-slate-700'
+                item.checked ? 'text-[#103B39]' : 'text-slate-700'
               }`}
             >
               {item.label}

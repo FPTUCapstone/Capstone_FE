@@ -61,9 +61,9 @@ export function TourReviewDecisionPanel() {
   };
 
   return (
-    <section aria-labelledby="tour-decision-title" className="rounded-2xl border border-[#c3c6ce] bg-white p-5 shadow-xs">
-      <h2 id="tour-decision-title" className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#00152a]">
-        <span className="material-symbols-outlined text-[#006b5f]" aria-hidden="true">
+    <section aria-labelledby="tour-decision-title" className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs">
+      <h2 id="tour-decision-title" className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#1C2928]">
+        <span className="material-symbols-outlined text-[#174B4A]" aria-hidden="true">
           checklist
         </span>
         {copy.title}
@@ -88,8 +88,8 @@ export function TourReviewDecisionPanel() {
       ) : null}
 
       <fieldset disabled={decided} aria-describedby="tour-checklist-hint">
-        <legend className="mb-1 text-xs font-bold uppercase tracking-wider text-[#43474d]">{copy.checklistLegend}</legend>
-        <p id="tour-checklist-hint" className="mb-3 text-xs text-[#43474d]">
+        <legend className="mb-1 text-xs font-bold uppercase tracking-wider text-[#5B6E69]">{copy.checklistLegend}</legend>
+        <p id="tour-checklist-hint" className="mb-3 text-xs text-[#5B6E69]">
           {copy.checklistHint}
         </p>
         <div className="space-y-3">
@@ -102,19 +102,19 @@ export function TourReviewDecisionPanel() {
                   setChecklist((current) => ({ ...current, [key]: !current[key] }));
                   setChecklistError(false);
                 }}
-                className={`mt-0.5 h-4 w-4 rounded accent-[#006b5f] ${focusRing}`}
+                className={`mt-0.5 h-4 w-4 rounded accent-[#174B4A] ${focusRing}`}
               />
-              <span className="text-sm font-medium leading-tight text-[#191c1e]">{copy.criteria[key]}</span>
+              <span className="text-sm font-medium leading-tight text-[#1C2928]">{copy.criteria[key]}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
       <div className="mt-5">
-        <label htmlFor="tour-reviewer-note" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#43474d]">
+        <label htmlFor="tour-reviewer-note" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
           {copy.noteLabel}
         </label>
-        <p id="tour-reviewer-note-hint" className="mb-1 text-xs text-[#43474d]">
+        <p id="tour-reviewer-note-hint" className="mb-1 text-xs text-[#5B6E69]">
           {copy.noteHint}
         </p>
         <textarea
@@ -125,7 +125,7 @@ export function TourReviewDecisionPanel() {
           disabled={decided}
           aria-describedby="tour-reviewer-note-hint"
           onChange={(event) => setNote(event.target.value)}
-          className={`w-full rounded-xl border border-[#c3c6ce] bg-[#f7f9fc] p-3 text-sm ${focusRing}`}
+          className={`w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] p-3 text-sm ${focusRing}`}
         />
       </div>
 
@@ -141,7 +141,7 @@ export function TourReviewDecisionPanel() {
           onClick={handleApproveClick}
           disabled={decided}
           aria-describedby={checklistError ? 'tour-checklist-error' : undefined}
-          className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[#006b5f] text-sm font-bold text-white hover:bg-[#005048] disabled:opacity-60 ${focusRing}`}
+          className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[#174B4A] text-sm font-bold text-white hover:bg-[#103B39] disabled:opacity-60 ${focusRing}`}
         >
           <span className="material-symbols-outlined text-base" aria-hidden="true">
             check_circle
@@ -152,7 +152,7 @@ export function TourReviewDecisionPanel() {
           type="button"
           onClick={() => setRejectOpen(true)}
           disabled={decided}
-          className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-[#c3c6ce] bg-[#eceef1] text-sm font-bold text-[#ba1a1a] hover:bg-[#ffdad6] disabled:opacity-60 ${focusRing}`}
+          className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-[#DCE2DD] text-sm font-bold text-[#ba1a1a] hover:bg-[#ffdad6] disabled:opacity-60 ${focusRing}`}
         >
           <span className="material-symbols-outlined text-base" aria-hidden="true">
             close
@@ -173,7 +173,7 @@ export function TourReviewDecisionPanel() {
           <button
             type="button"
             onClick={() => setApproveOpen(false)}
-            className={`min-h-11 rounded-xl border border-[#c3c6ce] px-4 text-sm font-bold text-[#00152a] hover:bg-[#eceef1] ${focusRing}`}
+            className={`min-h-11 rounded-xl border border-[#DCE2DD] px-4 text-sm font-bold text-[#1C2928] hover:bg-[#DCE2DD] ${focusRing}`}
           >
             {tourModerationEn.approveDialog.cancel}
           </button>
@@ -183,7 +183,7 @@ export function TourReviewDecisionPanel() {
               setApproveOpen(false);
               setDecision({ kind: 'approved' });
             }}
-            className={`min-h-11 rounded-xl bg-[#006b5f] px-4 text-sm font-bold text-white hover:bg-[#005048] ${focusRing}`}
+            className={`min-h-11 rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white hover:bg-[#103B39] ${focusRing}`}
           >
             {tourModerationEn.approveDialog.confirm}
           </button>

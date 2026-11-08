@@ -57,24 +57,24 @@ export function AdminAnalyticsTabView({
   return (
     <section aria-labelledby="platform-analytics-title" className="space-y-6">
       {/* Analytics Workspace Header */}
-      <header className="rounded-2xl border border-[#2A3B33] bg-[#1C2923] p-6 text-white shadow-sm sm:p-8">
+      <header className="rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-white shadow-sm sm:p-8">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#758B74]">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
                 Enterprise Business Intelligence
               </span>
             </div>
             <h2 id="platform-analytics-title" className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
               Platform Analytics
             </h2>
-            <p className="mt-1 text-sm text-[#A3B3AB]">
+            <p className="mt-1 text-sm text-[#5B6E69]">
               Business performance, booking activity and platform insights
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-[#A3B3AB]">Time Range:</span>
+            <span className="text-xs font-semibold text-[#5B6E69]">Time Range:</span>
             <AnalyticsDateRangeFilter
               value={timeRange}
               onChange={setTimeRange}
@@ -108,7 +108,7 @@ export function AdminAnalyticsTabView({
                 >
                   <AreaTrendChart
                     data={currentRevenue.trend}
-                    primaryColor="#245747"
+                    primaryColor="#174B4A"
                     gradientId="admin-rev-trend-grad"
                     valueFormatter={vndFormatter}
                   />
@@ -140,7 +140,7 @@ export function AdminAnalyticsTabView({
                 >
                   <VerticalBarChart
                     data={currentBookings.volumeTrend}
-                    color="#245747"
+                    color="#174B4A"
                     valueFormatter={(val) => `${val} orders`}
                   />
                 </ChartCard>
@@ -172,7 +172,7 @@ export function AdminAnalyticsTabView({
                 >
                   <HorizontalBarChart
                     categories={currentServices.byCategory}
-                    barColor="#245747"
+                    barColor="#174B4A"
                   />
                 </ChartCard>
 
@@ -185,8 +185,8 @@ export function AdminAnalyticsTabView({
                     data={currentServices.trendComparison}
                     primaryLabel="Tours & Experiences"
                     secondaryLabel="Attractions & Admissions"
-                    primaryColor="#245747"
-                    secondaryColor="#758B74"
+                    primaryColor="#174B4A"
+                    secondaryColor="#5B6E69"
                   />
                 </ChartCard>
               </div>
@@ -205,7 +205,7 @@ export function AdminAnalyticsTabView({
                 >
                   <AreaTrendChart
                     data={currentSystem.activityTrend}
-                    primaryColor="#758B74"
+                    primaryColor="#5B6E69"
                     gradientId="admin-sys-trend-grad"
                     valueFormatter={(val: number) => `${val.toLocaleString()} sessions`}
                   />

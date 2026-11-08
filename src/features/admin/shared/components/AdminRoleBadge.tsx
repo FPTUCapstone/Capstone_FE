@@ -10,8 +10,8 @@ export function AdminRoleBadge({ role, size = 'sm', className = '' }: AdminRoleB
   const isStaff = role === 'Staff';
 
   const badgeStyles = isStaff
-    ? 'border-[#758B74] bg-[#E8EFE9] text-[#1C2923]'
-    : 'border-[#B87558] bg-[#F7EBE5] text-[#7A3F26]';
+    ? 'border-[#5B6E69] bg-[#E8F0EA] text-[#1C2928]'
+    : 'border-[#B96D4C] bg-[#F7EBE5] text-[#995436]';
 
   const sizeStyles =
     size === 'sm'

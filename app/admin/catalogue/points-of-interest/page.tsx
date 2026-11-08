@@ -27,7 +27,7 @@ export default async function AdminPoiCatalogPage() {
   }
 
   return (
-    <div className="admin-theme min-h-screen bg-[#F7F6F2] text-[#1C2923]">
+    <div className="admin-theme min-h-screen bg-[#F7F5EF] text-[#1C2928]">
       <AdminConsoleShell role={session.role}>
         <PoiCatalogListView />
       </AdminConsoleShell>

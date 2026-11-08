@@ -130,7 +130,7 @@ function CancelBookingModalContent({
             <span className="material-symbols-outlined text-[24px]">cancel</span>
           </div>
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-lg font-bold text-[#00152A]">
+            <h2 id={titleId} className="text-lg font-bold text-[#1C2928]">
               {bookingEn.cancelDialog.title} {booking.bookingCode}
             </h2>
             <p id={descId} className="text-xs text-slate-500">
@@ -185,7 +185,7 @@ function CancelBookingModalContent({
           <p className="mt-1 text-amber-800 font-medium">{refundPreview.policyApplied}</p>
           <div className="mt-2 flex items-center justify-between border-t border-amber-200/60 pt-2 text-xs">
             <span className="text-amber-800">{bookingEn.cancelDialog.estimatedRefundLabel}</span>
-            <span className="text-sm font-extrabold text-[#006B5F]">
+            <span className="text-sm font-extrabold text-[#174B4A]">
               {formatCurrencyVND(refundPreview.refundableAmount)}
             </span>
           </div>
@@ -207,7 +207,7 @@ function CancelBookingModalContent({
               value={reasonType}
               onChange={(e) => setReasonType(e.target.value as CancellationReasonValue)}
               disabled={loading}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:opacity-50"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:opacity-50"
             >
               {CANCELLATION_REASONS.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -235,7 +235,7 @@ function CancelBookingModalContent({
               className={`w-full rounded-xl border px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-1 disabled:opacity-50 ${
                 validationError
                   ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500 bg-rose-50/30'
-                  : 'border-slate-300 focus:border-[#006B5F] focus:ring-[#006B5F] bg-white'
+                  : 'border-slate-300 focus:border-[#174B4A] focus:ring-[#174B4A] bg-white'
               }`}
             />
             {validationError && (

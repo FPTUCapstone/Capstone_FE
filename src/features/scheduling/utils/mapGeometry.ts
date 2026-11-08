@@ -41,9 +41,9 @@ export function circlePolygon(
 export type MapMarkerKind = 'start' | 'end' | 'attraction' | 'food';
 
 export const MARKER_COLORS: Record<MapMarkerKind, string> = {
-  start: '#0f172a',
+  start: '#1C2928',
   end: '#7c3aed',
-  attraction: '#007d6e',
+  attraction: '#103B39',
   food: '#d97706',
 };
 

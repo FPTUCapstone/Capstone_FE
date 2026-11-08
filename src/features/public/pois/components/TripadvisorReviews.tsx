@@ -134,7 +134,7 @@ function ReviewItem({
               <button
                 type="button"
                 onClick={() => setShowTranslation(false)}
-                className="font-bold text-[#007d6e] hover:underline"
+                className="font-bold text-[#103B39] hover:underline"
               >
                 Xem bản gốc
               </button>
@@ -144,7 +144,7 @@ function ReviewItem({
               type="button"
               onClick={() => void translate()}
               disabled={translating}
-              className="font-bold text-[#007d6e] hover:underline disabled:opacity-60"
+              className="font-bold text-[#103B39] hover:underline disabled:opacity-60"
             >
               {translating ? 'Đang dịch…' : 'Dịch sang tiếng Việt'}
             </button>

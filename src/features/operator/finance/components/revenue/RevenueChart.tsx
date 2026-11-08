@@ -15,7 +15,7 @@ export function RevenueChart({ chartData }: RevenueChartProps) {
   if (!chartData || chartData.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs text-center">
-        <h3 className="text-sm font-bold text-[#00152A]">
+        <h3 className="text-sm font-bold text-[#1C2928]">
           {financeEn.revenue.chart.title}
         </h3>
         <p className="mt-1 text-xs text-slate-500">
@@ -39,7 +39,7 @@ export function RevenueChart({ chartData }: RevenueChartProps) {
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <h3 className="text-sm font-bold text-[#00152A]">
+          <h3 className="text-sm font-bold text-[#1C2928]">
             {financeEn.revenue.chart.title}
           </h3>
           <p className="text-xs text-slate-500">
@@ -54,7 +54,7 @@ export function RevenueChart({ chartData }: RevenueChartProps) {
               Gross
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-xs bg-[#006B5F] inline-block" />
+              <span className="h-2.5 w-2.5 rounded-xs bg-[#174B4A] inline-block" />
               Net
             </span>
             <span className="inline-flex items-center gap-1.5">
@@ -114,7 +114,7 @@ export function RevenueChart({ chartData }: RevenueChartProps) {
                   {/* Net Bar */}
                   <div
                     style={{ height: `${Math.max(4, netHeightPct)}%` }}
-                    className="w-4 rounded-t-sm bg-[#006B5F] transition-all hover:bg-[#005249]"
+                    className="w-4 rounded-t-sm bg-[#174B4A] transition-all hover:bg-[#103B39]"
                     title={`Net: ${formatVndCurrency(pt.netAmount)}`}
                   />
                   {/* Commission Bar */}
@@ -179,7 +179,7 @@ export function RevenueChart({ chartData }: RevenueChartProps) {
                   <td className="px-4 py-2 text-right text-amber-700 font-medium">
                     {formatVndCurrency(pt.commission)}
                   </td>
-                  <td className="px-4 py-2 text-right font-bold text-[#006B5F]">
+                  <td className="px-4 py-2 text-right font-bold text-[#174B4A]">
                     {formatVndCurrency(pt.netAmount)}
                   </td>
                   <td className="px-4 py-2 text-center">{pt.bookingsCount}</td>

@@ -15,12 +15,12 @@ export function AdminChangePasswordView() {
   return (
     <main className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
-        <Link href={ROUTES.admin.dashboard} className="hover:text-[#006B5F] hover:underline">
+      <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]">
+        <Link href={ROUTES.admin.dashboard} className="hover:text-[#174B4A] hover:underline">
           Administration Workspace
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="text-[#00152A]">Bảo mật &amp; Đổi mật khẩu</span>
+        <span className="text-[#1C2928]">Bảo mật &amp; Đổi mật khẩu</span>
       </nav>
 
       <ChangePasswordForm

@@ -53,13 +53,13 @@ export function ActiveTripDetailsScreen({ tripId }: { tripId: string }) {
       <header className="mb-6">
         <Link
           href={ROUTES.admin.activeTrips}
-          className="inline-flex items-center gap-1 text-sm font-bold text-[#006b5f] hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-bold text-[#174B4A] hover:underline"
         >
           ← Back to Active Trips
         </Link>
-        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Administrator monitoring</p>
+        <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#174B4A]">Administrator monitoring</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-extrabold text-[#00152a]">{detail?.tripCode ?? `TRIP-${tripId}`}</h1>
+          <h1 className="text-3xl font-extrabold text-[#1C2928]">{detail?.tripCode ?? `TRIP-${tripId}`}</h1>
           {detail ? <Badge>{detail.tripType === 'SelfPlanned' ? 'Self-Planned' : 'Tour'}</Badge> : null}
           {detail ? <Badge alert={detail.currentState === 'Interrupted'}>{detail.currentState}</Badge> : null}
           {state === 'ready' ? (
@@ -73,14 +73,14 @@ export function ActiveTripDetailsScreen({ tripId }: { tripId: string }) {
           ) : null}
         </div>
         {detail ? (
-          <p className="mt-2 text-sm text-[#486581]">
+          <p className="mt-2 text-sm text-[#5B6E69]">
             {detail.groupOrTraveler}
             {detail.destination ? ` · ${detail.destination}` : ''}
           </p>
         ) : null}
       </header>
 
-      {state === 'loading' ? <div role="status" className="rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]">Loading trip details…</div> : null}
+      {state === 'loading' ? <div role="status" className="rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#5B6E69]">Loading trip details…</div> : null}
       {state === 'not-found' ? <FeedbackAlert tone="error" title="Trip unavailable">{DETAIL_MESSAGES.notFound}</FeedbackAlert> : null}
       {state === 'forbidden' ? <FeedbackAlert tone="error" title="Access denied">{DETAIL_MESSAGES.forbidden}</FeedbackAlert> : null}
       {state === 'unavailable' ? (
@@ -108,20 +108,20 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
       <section aria-label="Current traveler location" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Current Traveler Location</SectionTitle>
         {detail.currentLocation ? (
-          <p className="mt-2 text-sm text-[#102a43]">
+          <p className="mt-2 text-sm text-[#103B39]">
             <span className="font-mono">
               {formatCoordinate(detail.currentLocation.latitude)}, {formatCoordinate(detail.currentLocation.longitude)}
             </span>
-            <span className="ml-2 text-[#486581]">as of {formatVietnamDateTime(detail.currentLocation.asOfUtc)}</span>
+            <span className="ml-2 text-[#5B6E69]">as of {formatVietnamDateTime(detail.currentLocation.asOfUtc)}</span>
           </p>
-        ) : <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.notAvailable}</p>}
+        ) : <p className="mt-2 text-sm text-[#5B6E69]">{DETAIL_MESSAGES.notAvailable}</p>}
       </section>
 
       <GroupPanelSection panels={detail.groupPanel} />
 
       <section aria-label="Itinerary progress" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Itinerary Progress</SectionTitle>
-        {detail.itineraryProgress.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> :
+        {detail.itineraryProgress.length === 0 ? <p className="mt-2 text-sm text-[#5B6E69]">{DETAIL_MESSAGES.empty}</p> :
         <ScrollableTable label="Itinerary progress table" headings={['#', 'Stop', 'Kind', 'Arrival', 'Departure', 'Status']}>
           {detail.itineraryProgress.map((item) => (
             <tr key={item.itemId} className="border-t border-[#e6edf5]">
@@ -139,14 +139,14 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
 
       <section aria-label="FSM state history" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>FSM State History</SectionTitle>
-        {detail.stateHistory.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> : (
+        {detail.stateHistory.length === 0 ? <p className="mt-2 text-sm text-[#5B6E69]">{DETAIL_MESSAGES.empty}</p> : (
           <ol className="mt-3 space-y-3 border-l-2 border-[#d7e2ef] pl-4">
             {detail.stateHistory.map((change, index) => (
               <li key={`${change.changedAtUtc}-${index}`} className="text-sm">
-                <p className="font-semibold text-[#102a43]">
+                <p className="font-semibold text-[#103B39]">
                   {change.fromState ? `${change.fromState} → ` : ''}{change.toState}
                 </p>
-                <p className="text-[#486581]">
+                <p className="text-[#5B6E69]">
                   {formatVietnamDateTime(change.changedAtUtc)}
                   {change.triggeredBy ? ` · ${change.triggeredBy}` : ''}
                   {change.reason ? ` · ${change.reason}` : ''}
@@ -159,15 +159,15 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
 
       <section aria-label="Incidents" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Incidents</SectionTitle>
-        {detail.incidents.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> : (
+        {detail.incidents.length === 0 ? <p className="mt-2 text-sm text-[#5B6E69]">{DETAIL_MESSAGES.empty}</p> : (
           <ul className="mt-3 space-y-3">
             {detail.incidents.map((incident) => (
               <li key={incident.incidentId} className={`rounded-xl border p-4 ${incident.resolvedAtUtc ? 'border-[#e6edf5]' : 'border-[#f3a79d] bg-[#fff8f6]'}`}>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge alert={!incident.resolvedAtUtc}>{incident.resolvedAtUtc ? 'Resolved' : 'Open'}</Badge>
-                  <span className="text-sm font-bold text-[#102a43]">{incident.incidentType}</span>
-                  <span className="text-xs text-[#486581]">Detected {formatVietnamDateTime(incident.detectedAtUtc)}</span>
-                  {incident.resolvedAtUtc ? <span className="text-xs text-[#486581]">Resolved {formatVietnamDateTime(incident.resolvedAtUtc)}</span> : null}
+                  <span className="text-sm font-bold text-[#103B39]">{incident.incidentType}</span>
+                  <span className="text-xs text-[#5B6E69]">Detected {formatVietnamDateTime(incident.detectedAtUtc)}</span>
+                  {incident.resolvedAtUtc ? <span className="text-xs text-[#5B6E69]">Resolved {formatVietnamDateTime(incident.resolvedAtUtc)}</span> : null}
                 </div>
                 {incident.description ? <p className="mt-1 text-sm text-[#334e68]">{incident.description}</p> : null}
                 {incident.weatherEvent ? (
@@ -177,7 +177,7 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
                     </Badge>
                     <span className="ml-2 font-semibold">{incident.weatherEvent.eventType}</span>
                     {incident.weatherEvent.regionName ? <span className="ml-2">{incident.weatherEvent.regionName}</span> : null}
-                    <span className="ml-2 text-xs text-[#627d98]">
+                    <span className="ml-2 text-xs text-[#5B6E69]">
                       {formatVietnamDateTime(incident.weatherEvent.validFromUtc)} → {formatVietnamDateTime(incident.weatherEvent.validToUtc)}
                     </span>
                   </p>
@@ -190,17 +190,17 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
 
       <section aria-label="Rerouting events" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Rerouting Events</SectionTitle>
-        {detail.reroutingEvents.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> : (
+        {detail.reroutingEvents.length === 0 ? <p className="mt-2 text-sm text-[#5B6E69]">{DETAIL_MESSAGES.empty}</p> : (
           <ul className="mt-3 space-y-3">
             {detail.reroutingEvents.map((event) => (
               <li key={event.reroutingId} className="rounded-xl border border-[#e6edf5] p-4 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>{event.status}</Badge>
-                  <span className="text-xs text-[#486581]">Proposed {formatVietnamDateTime(event.proposedAtUtc)}</span>
-                  {event.decidedAtUtc ? <span className="text-xs text-[#486581]">Decided {formatVietnamDateTime(event.decidedAtUtc)}</span> : null}
+                  <span className="text-xs text-[#5B6E69]">Proposed {formatVietnamDateTime(event.proposedAtUtc)}</span>
+                  {event.decidedAtUtc ? <span className="text-xs text-[#5B6E69]">Decided {formatVietnamDateTime(event.decidedAtUtc)}</span> : null}
                 </div>
                 {event.hasProposedItinerarySnapshot ? (
-                  <p className="mt-1 text-xs text-[#627d98]">{DETAIL_MESSAGES.snapshotAvailable}</p>
+                  <p className="mt-1 text-xs text-[#5B6E69]">{DETAIL_MESSAGES.snapshotAvailable}</p>
                 ) : null}
               </li>
             ))}
@@ -210,7 +210,7 @@ function TripDetailSections({ detail }: { detail: ActiveTripDetail }) {
 
       <section aria-label="Location trail" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
         <SectionTitle>Location Trail</SectionTitle>
-        {detail.locationTrail.length === 0 ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.empty}</p> :
+        {detail.locationTrail.length === 0 ? <p className="mt-2 text-sm text-[#5B6E69]">{DETAIL_MESSAGES.empty}</p> :
         <ScrollableTable label="Location trail table" headings={['Latitude', 'Longitude', 'Recorded', 'Captured']}>
           {detail.locationTrail.map((point, index) => (
             <tr key={`${point.recordedAtUtc}-${index}`} className="border-t border-[#e6edf5]">
@@ -231,12 +231,12 @@ function GroupPanelSection({ panels }: { panels: GroupPanel[] | null }) {
   return (
     <section aria-label="Group panel" className="rounded-2xl border border-[#d7e2ef] bg-white p-5 shadow-sm">
       <SectionTitle>Group Panel</SectionTitle>
-      {panels === null ? <p className="mt-2 text-sm text-[#486581]">{DETAIL_MESSAGES.notAvailable}</p> : (
+      {panels === null ? <p className="mt-2 text-sm text-[#5B6E69]">{DETAIL_MESSAGES.notAvailable}</p> : (
         <div className="mt-3 space-y-4">
           {panels.map((panel) => (
             <div key={panel.groupId} className="rounded-xl border border-[#e6edf5] p-4">
-              <p className="text-sm font-bold text-[#102a43]">
-                {panel.groupName} <span className="font-normal text-[#486581]">· Host {panel.hostName}</span>
+              <p className="text-sm font-bold text-[#103B39]">
+                {panel.groupName} <span className="font-normal text-[#5B6E69]">· Host {panel.hostName}</span>
               </p>
               <ScrollableTable label={`Members table for ${panel.groupName}`} headings={['Member', 'Joined', 'Location Sharing']}>
                 {panel.members.map((member) => (
@@ -261,8 +261,8 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 
 const StatusCard = ({ label, value, alert = false }: { label: string; value: string | number; alert?: boolean }) => (
   <div className={`rounded-2xl border bg-white p-5 shadow-sm ${alert ? 'border-[#f3a79d]' : 'border-[#d7e2ef]'}`}>
-    <p className="text-xs font-bold uppercase tracking-wide text-[#627d98]">{label}</p>
-    <p className={`mt-2 text-2xl font-extrabold ${alert ? 'text-[#b42318]' : 'text-[#00152a]'}`}>{value}</p>
+    <p className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">{label}</p>
+    <p className={`mt-2 text-2xl font-extrabold ${alert ? 'text-[#b42318]' : 'text-[#1C2928]'}`}>{value}</p>
   </div>
 );
 
