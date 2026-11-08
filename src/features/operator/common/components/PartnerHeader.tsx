@@ -22,6 +22,7 @@ export interface PartnerHeaderProps {
 
 const TAB_LABELS: Record<PartnerWorkspaceTabKey, string> = {
   dashboard: 'Bảng điều khiển',
+  weatherSafety: 'Cảnh báo an toàn',
   tours: 'Gói tour',
   coupons: 'Mã giảm giá',
   bookings: 'Đơn đặt chỗ',

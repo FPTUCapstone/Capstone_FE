@@ -1,17 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
+import { getWeatherSafetyReviewBadgeCount } from '@/features/operator/weather-safety/weatherSafetyApi';
 
-export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts';
+export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts' | 'weatherSafety';
 
 interface PartnerWorkspaceNavProps {
   activeTab: PartnerWorkspaceTabKey;
   className?: string;
   operatorName?: string;
+  weatherAlertBadgeCount?: number;
 }
 
 interface NavItem {
@@ -28,6 +30,12 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     label: 'Bảng điều khiển',
     icon: 'dashboard',
     href: ROUTES.partner.dashboard,
+  },
+  {
+    key: 'weatherSafety',
+    label: 'Cảnh báo an toàn',
+    icon: 'warning',
+    href: ROUTES.partner.weatherSafetyReviews,
   },
   {
     key: 'tours',
@@ -80,8 +88,28 @@ export function PartnerWorkspaceNav({
   activeTab,
   className = '',
   operatorName,
+  weatherAlertBadgeCount,
 }: PartnerWorkspaceNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [serverBadgeCount, setServerBadgeCount] = useState<number>(0);
+  const badgeCount = weatherAlertBadgeCount ?? serverBadgeCount;
+
+  useEffect(() => {
+    if (weatherAlertBadgeCount !== undefined) {
+      return;
+    }
+    let isMounted = true;
+    getWeatherSafetyReviewBadgeCount()
+      .then((count) => {
+        if (isMounted) setServerBadgeCount(count);
+      })
+      .catch(() => {
+        // silent fallback
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [weatherAlertBadgeCount]);
 
   return (
     <>
@@ -186,16 +214,23 @@ export function PartnerWorkspaceNav({
                     <Link
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
+                      className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition ${
                         isActive
                           ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
                           : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-                        {item.icon}
+                      <span className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
                       </span>
-                      <span>{item.label}</span>
+                      {item.key === 'weatherSafety' && badgeCount > 0 && (
+                        <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
+                          {badgeCount}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
