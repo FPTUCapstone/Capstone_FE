@@ -172,7 +172,7 @@ export const adminStaffEn = {
           'Verify Tour Operator payout settlement requests and coordinate disbursement processing.',
         status: 'pendingBackend' as const,
         availabilityNote:
-          'Payout records review is active in console (/admin/payouts); final banking settlement disbursement is pending SRS Table 5 reconciliation and financial service contracts.',
+          'Superseded by the automatic daily settlement run (DAILY-PAYOUT-TRANSFER, SRS v11 UC-71 to UC-74); the Tour Operator payout-request review model this card described no longer exists.',
       },
       {
         id: 'landing-content-management',

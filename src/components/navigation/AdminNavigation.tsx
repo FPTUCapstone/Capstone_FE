@@ -52,14 +52,6 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
           </Link>
           {isStaffUser ? (
             <Link
-              href={ROUTES.admin.payouts}
-              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#A3B3AB] hover:bg-[#273830] hover:text-[#F7F6F2] transition"
-            >
-              Payout Records
-            </Link>
-          ) : null}
-          {isStaffUser ? (
-            <Link
               href={ROUTES.admin.createPoi}
               className="rounded-lg px-3 py-2 text-xs font-semibold text-[#A3B3AB] hover:bg-[#273830] hover:text-[#F7F6F2] transition"
             >

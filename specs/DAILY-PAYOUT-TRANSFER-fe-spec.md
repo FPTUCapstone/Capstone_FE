@@ -1,0 +1,260 @@
+# DAILY-PAYOUT-TRANSFER — Web Screen Specification
+
+## Status
+
+**Draft — pending Lead/PO approval for the remaining open questions (4–7).** Open questions 1–3
+are decided (see "Decided (previously open)" below, and "Old UC-46 FE code — removed"). Backend
+is implemented and locally verified (simulated gateway) on `Capstone_BE` branch
+`feature/linhnv-daily-payout-transfer`, not yet merged to `develop`.
+
+SRS sources: Report3 v11, §2.2 (UC-71 through UC-74), §3.1.2.1 Table 4.1 (screen list items —
+Payout Records List, Failed Payout Settlement Details, Failed Payout Settlement Action),
+§3.1.2.2 Table 4.2 row 91 (Payout Settlement History, Tour Operator), §3.9.9.
+
+Backend contract: `specs/DAILY-PAYOUT-TRANSFER-be-spec.md` (v2) and
+`plans/DAILY-PAYOUT-TRANSFER-be-plan.md`, on the `Capstone_BE` branch
+`feature/linhnv-daily-payout-transfer` (not yet on `develop` — check out that branch, or its
+worktree, to read them).
+
+## Scope
+
+Three read screens and one action surface, replacing the old UC-46 payout-request model (request
+payout, approve/reject, available balance, settlement months) that SRS v11 removed:
+
+1. **Payout Settlements List** (UC-72) — Staff and Administrator, read-only.
+2. **Failed Payout Settlement Details + Action** (UC-73) — Administrator only: view a failed
+   batch's gateway history and act on it (Retry / Carry Over / Record Manual Transfer).
+3. **Payout Settlement History** (PD-13, Table 4.2 row 91) — Tour Operator, read-only, their own
+   settlements only.
+
+Out of scope for this spec:
+- Any backend change (already done on the BE branch above).
+- Mobile. **Decided:** Screen 3 (Payout Settlement History) is Web-only, confirmed by the
+  developer. `docs/WEB_SCOPE_MATRIX.md` classifies the equivalent old screens (UC-63/64/65) as
+  `ADMIN_WEB_ONLY`, consistent with this.
+
+## Old UC-46 FE code — removed (resolved)
+
+`develop` had a substantial FE implementation of the **old** UC-46 model (request payout
+settlement, approve/reject, available balance, settlement months, cancel). **Decided and done**
+(on this branch, before Task 1 of the plan): removed entirely —
+- `src/features/admin/payout-records/*`, `src/features/admin/payout-review/*`, and their routes
+  `app/admin/(console)/payouts/{page.tsx,[payoutId]/page.tsx,settlement/page.tsx}`.
+- `app/api/admin/payouts/*` (list, detail, approve, reject) and
+  `app/api/operator/payouts/{route.ts,[payoutCode]/cancel,available-balance,settlement-months}`.
+- The old request-flow components under `src/features/operator/finance/components/payouts/*`
+  (`RequestPayoutDialog`, `CancelPayoutDialog`, `PayoutRequestHistoryTable`,
+  `SettlementMonthsTable`) and the corresponding service/proxy/type/fixture code trimmed to
+  bank-account only.
+- Sidebar links ("Payout Review", "Payout Settlement") and route constants
+  (`ROUTES.admin.payouts`, `.payoutDetails`, `.payoutSettlement`) removed.
+
+**Kept, unchanged:** `/api/operator/payouts/bank-account` (GET/PUT) and the
+`OperatorPayoutView`/`BeneficiaryBankCard` UI at `/partner/payouts` — a Tour Operator still needs
+to configure a beneficiary bank account to receive the new model's automatic transfer.
+
+Verified on this branch: `npm run lint`, `npm run typecheck`, `npm test` (3424/3424), and
+`npm run build` all pass after the removal, before any of this spec's new code was written.
+
+This spec's new screens still use **new, separate routes** (below), now simply because they are
+a different feature, not to dodge a collision.
+
+## Routes
+
+- `/admin/payout-settlements` — Payout Settlements List (UC-72). Staff and Administrator.
+- `/admin/payout-settlements/[batchId]` — Failed Payout Settlement Details + Action (UC-73).
+  Administrator only. Reachable directly, and via a row action from the list when a row's status
+  is `SettlementFailed`.
+- `/partner/payout-settlements` — Payout Settlement History (PD-13). Tour Operator only.
+
+Web proxy only: the browser calls `app/api/admin/payout-settlements/...` and
+`app/api/operator/payout-settlements/...` route handlers; those call the backend. The browser
+never calls the backend directly (existing pattern — the old `payout-records`/`payout-review`
+proxies that set this pattern were removed with the rest of UC-46 (see above); the still-standing
+reference is `src/features/admin/platform-bookings/platformBookingsProxy.ts`, same session +
+role-check + upstream-forward shape).
+
+Backend endpoints these routes proxy:
+- `GET /api/v1/admin/payout-settlements` (Staff or Administrator)
+- `GET /api/v1/admin/payout-settlements/{batchId}` (Administrator)
+- `POST /api/v1/admin/payout-settlements/{batchId}/retry` (Administrator)
+- `POST /api/v1/admin/payout-settlements/{batchId}/carry-over` (Administrator)
+- `POST /api/v1/admin/payout-settlements/{batchId}/manual-settlement` (Administrator)
+- `GET /api/v1/operator/payout-settlements` (Tour Operator, scoped to the signed-in operator)
+
+## Server-side guards
+
+- `/admin/payout-settlements`: no valid session → redirect to admin sign-in with `returnUrl`
+  set to this route; role other than `Staff` or `Administrator` → access-denied view before any
+  data loads. **Decided:** extend `AdminAccessDeniedView` to accept either role (plan Task 3a)
+  rather than adding a second component.
+- `/admin/payout-settlements/[batchId]`: same pattern, required role `Administrator` only — this
+  one already fits `AdminAccessDeniedView` as-is.
+- `/partner/payout-settlements`: existing `PartnerRouteGuard` / `partnerRouteDecision` pattern
+  (`src/features/operator/access/*`). This is role **and** application-status gated, not role
+  alone: `<PartnerRouteGuard route="dashboard">`, the same check the bank-account page at
+  `/partner/payouts` already uses — only an **Approved** Tour Operator enters; Traveler/Staff/
+  Administrator are redirected to their own home, and a TourOperator whose application is not yet
+  Approved is redirected to `/partner/application`, not shown a generic denial. `PartnerRoute`
+  (`partnerRouteDecision.ts`) has no dedicated `'payout-settlements'` member and does not need
+  one — reusing `'dashboard'`'s check is correct unless the developer wants a distinct permission.
+- The BFF role check is a second layer, not a replacement, same as every existing admin/partner
+  route (`platformBookingsProxy.ts` pattern).
+
+## Screen 1 — Payout Settlements List (UC-72)
+
+Content (SRS Table 4.1, UC-72 description):
+- Filter bar: Status (dropdown: all statuses, or one of `Scheduled`, `Processing`, `Settled`,
+  `SettlementFailed`, `Carried Over`), Run Date From, Run Date To, `[Apply Filter]`,
+  `[Clear Filter]`.
+- Table columns: Booking reference, Tour Operator, Run Date, Kind (`Main` / `Retained`), Payout
+  Amount (VND, formatted, backend value never recalculated in the browser), Status badge,
+  Transfer Reference.
+- A row with status `SettlementFailed` links to Screen 2 (Administrator only — Staff sees the row
+  but no link, consistent with read-only access).
+- Pagination, same control as the existing `PlatformBookingsScreen`
+  (`src/features/admin/platform-bookings/`) — the old `PayoutRecordsScreen` this would otherwise
+  cite was removed with the rest of UC-46 (see above).
+
+States: loading (skeleton), empty ("No payout settlements match the filters" — SRS Table 4.1
+validation line), forbidden (401 → sign-in with return URL; 403 → access-denied), unavailable
+(500/network → retry).
+
+## Screen 2 — Failed Payout Settlement Details + Action (UC-73)
+
+Content (SRS 3.9.9.2, Table 4.1):
+- Header: batch id, Tour Operator, Run Date, Total Amount, Status (`SettlementFailed`), Attempt
+  Count.
+- Attempt history table: Attempt Number, Sent At (Asia/Ho_Chi_Minh), Outcome, Failure Reason.
+- Actions, each a confirmation dialog, mutually exclusive (one batch, one resolution):
+  - **`[Retry Transfer]`** — no extra input. Confirms, then the batch returns to `Processing`;
+    the actual resend happens on the backend's own retry sweep (PD-7a), not synchronously in this
+    request — the dialog's success copy must say so, not imply instant settlement.
+  - **`[Carry Over]`** — no extra input. Confirms, then the batch becomes `Carried Over`; its
+    amount is picked up by the operator's next daily run (PD-10). Success copy states this.
+  - **`[Record Manual Transfer]`** — a required text field, the external transfer reference.
+    Validation: non-blank after trim (backend: `daily_payout.manual_reference_required`, 400).
+- After any action succeeds: close its dialog, re-fetch the detail, show the new status from
+  that response (never assume the client-side guess is final — same re-fetch-after-action
+  philosophy as `TourOperatorApplicationDetailView`'s Approve/Reject flow
+  (`src/features/admin/tour-operator-applications/`; the old `PayoutReviewScreen` this would
+  otherwise cite was removed with the rest of UC-46), even though this backend does not currently
+  model a concurrent-admin 409 for these three actions — see **Open question 4**).
+- Actions are visible only while `Status === 'SettlementFailed'`; once changed (by this admin or
+  another), the re-fetched detail drives which, if any, actions show again.
+
+States: loading, not found (`daily_payout.batch_not_found`), forbidden (401/403), unavailable
+(500/network + retry). Not-failed on direct action attempt (`daily_payout.not_failed`, 409 or
+400 depending on BE's final mapping — **Open question 5**) re-fetches and shows the current
+status instead of a generic error.
+
+## Screen 3 — Payout Settlement History (Tour Operator, PD-13)
+
+Content (SRS Table 4.2 row 91: "Displays the Tour Operator's scheduled and settled payouts per
+booking"):
+- Table columns: Booking reference, Run Date, Kind, Payout Amount, Status, Transfer Reference.
+- No filters beyond pagination in SRS's one-line description; **Open question 6**: whether to add
+  a status/date filter to match Screen 1's affordance (recommended, for consistency, but not SRS-
+  mandated — needs Lead/PO confirmation before adding UI the SRS does not describe).
+- Scoped to the signed-in Tour Operator only; the backend already enforces this
+  (`currentUserService.UserId`), the FE does not pass or trust any operator id from the client.
+- No actions. Read-only, same as Screen 1 / the `platform-bookings` pattern on the admin side.
+
+States: loading, empty, forbidden (401 → sign-in; Traveler/Staff/Administrator → redirected to
+their own home per `partnerRouteDecision`; TourOperator not yet Approved → redirected to
+`/partner/application`), unavailable (500/network + retry).
+
+## Behaviour rules
+
+- Server decides everything: amounts, statuses, and which actions apply. The browser never
+  computes or guesses a settlement amount or status transition.
+- Currency and date formatting: there is no single shared formatter across admin features (each
+  feature keeps its own small `format.ts`/util, e.g. `src/features/admin/tour-reviews/utils/
+  format.ts`, `platformBookings.ts`'s `formatVnd`/`formatVietnamDateTime`). This feature follows
+  that convention with its own `formatVnd`/`formatRunDate` (Task 1 of the plan), not a new
+  cross-feature shared module.
+- Keyboard and a11y: dialogs trap focus, Escape closes when no request is in flight (same as
+  `ApproveModal`/`RejectModal` in `src/features/admin/tour-operator-applications/`), WCAG 2.2 AA
+  per NFR 4.2.1.
+- Double-submit protection on every action button (disabled while in flight), same pattern as
+  those existing Approve/Reject modals.
+
+## Responsive
+
+- Breakpoints 320 / 390 / 768 / 1024 / 1440 px (TEAM_ENGINEERING_RULES V01). Tables scroll
+  horizontally inside their own container at narrow widths; no page-level horizontal scroll.
+  Dialogs full-width on phones.
+
+## Message codes
+
+SRS v11 leaves these as unassigned placeholders: `[MSG-new-A]`...`[MSG-new-T]` for several
+UC-73-adjacent validations, and `[MSG-new-F]`/`[MSG-new-G]` for "retry scheduled" / "all retries
+failed". Following the precedent set by MSG157 (O1 decision in the UC-64/73/74 spec): **this FE
+spec does not invent wording.** Exact user-facing copy for each state (not-found, forbidden,
+validation, success per action) is assigned from the message catalogue once Lead/PO assigns real
+MSG codes, or from a project-approved interim catalogue entry if that is faster — this is
+**Open question 7**, and blocks only the exact copy, not the screen structure or logic above.
+
+## Acceptance criteria
+
+1. Staff and Administrator can both open `/admin/payout-settlements` and filter by status and
+   run-date range; a Tour Operator or Traveler gets access-denied with no data loaded.
+2. Only a Staff/Administrator session gets any settlement data back from
+   `app/api/admin/payout-settlements/...`; the response contains server-computed amounts only.
+3. `/admin/payout-settlements/[batchId]` is reachable only by an Administrator; Staff is denied.
+4. All three actions on Screen 2 are visible only when status is `SettlementFailed`, confirm in a
+   dialog, and re-fetch the detail on success rather than assuming the new status locally.
+5. Record Manual Transfer blocks submission on a blank reference, with the entered (blank) state
+   visibly flagged, consistent with existing form validation patterns in this repo.
+6. `/partner/payout-settlements` shows only the signed-in Tour Operator's own rows; the id used to
+   scope the query is never taken from a client-supplied value.
+7. 401/403/404/500/network each show the mapped state; double-clicking any action button sends
+   exactly one request.
+8. No console errors on the happy path for any of the three screens.
+
+## Tests (TEAM_ENGINEERING_RULES U01–U05, V01–V02)
+
+- Unit: query/response parsers for all three screens (strict shape validation, as
+  `platformBookings.ts`'s `parsePlatformBookingsResponse` does — the old `payoutReview.ts`'s
+  `parsePayoutDetail` this would otherwise cite was removed with the rest of UC-46); manual-
+  transfer-reference validator (blank/whitespace rejected, trimmed value kept on success).
+- Component: list renders every status badge; row link to Screen 2 appears only for
+  `SettlementFailed` **and** an Administrator session; action buttons on Screen 2 appear only for
+  `SettlementFailed` and disappear once re-fetch shows otherwise; history table never renders a
+  row whose operator id differs from the session (defence-in-depth check even though the backend
+  already filters).
+- Service/proxy: 401/403/404/500/network and malformed/HTML-instead-of-JSON bodies all mapped to
+  failure, never success (U01); BFF forwards only the allowed fields on the manual-settlement
+  body (just `transferReference`).
+- Race (U03): a stale detail response arriving after an action does not overwrite a newer status
+  already rendered from that action's own re-fetch.
+- Double-submit (U05): each of the three Screen 2 actions sends exactly one request when its
+  button is double-clicked.
+- Direct navigation to each route: missing/expired/tampered session → sign-in with the right
+  `returnUrl`; wrong role → the matching denial view, with no settlement data fetched beforehand.
+- Responsive: 320 / 390 / 768 / 1024 / 1440 px, no overflow (V01).
+
+## Decided (previously open)
+
+1. **Platform ownership of Screen 3: Web-only.** Confirmed by the developer. Matches
+   `docs/WEB_SCOPE_MATRIX.md`'s `ADMIN_WEB_ONLY` classification of the equivalent old screens.
+2. **Fate of the old UC-46 FE code: removed.** See "Old UC-46 FE code — removed" above for the
+   exact file list and verification.
+3. **Dual-role access-denied: extend `AdminAccessDeniedView`.** One component, a
+   `requiredRoles?: RequiredAdministrationRole[]` prop (plan Task 3a), not a second component.
+
+## Open questions
+
+These block specific details, not the overall screen structure; the plan sequences work so
+unaffected tasks are not stalled by them.
+
+4. **Concurrent-admin race on Screen 2 actions.** The BE spec does not document a 409 for two
+   admins acting on the same failed batch at once (unlike the old Approve/Reject's documented
+   409). Confirm with BE whether a second action on an already-resolved batch returns a specific
+   conflict code, or just `daily_payout.not_failed`.
+5. **Exact HTTP status for `daily_payout.not_failed`.** Confirm with BE (400 vs 409) so the proxy
+   error-mapping table is exact, not guessed.
+6. **Add filters to Screen 3?** SRS's one-line description does not ask for them; recommended for
+   consistency with Screen 1 but needs explicit Lead/PO sign-off before adding UI beyond the SRS
+   text (AGENTS.md "Clarify First").
+7. **Message catalogue codes** for every state on all three screens (see "Message codes" above).

@@ -53,8 +53,6 @@ export const ROUTES = {
     createPoi: '/admin/catalogue/points-of-interest/new',
     activeTrips: '/admin/trips/active',
     bookings: '/admin/bookings',
-    payouts: '/admin/payouts',
-    payoutDetails: (id: string) => `/admin/payouts/${encodeURIComponent(id)}`,
     algorithmParameters: '/admin/settings/algorithm-parameters',
     activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
     users: '/admin/users',
@@ -66,6 +64,5 @@ export const ROUTES = {
     routeCreate: '/admin/routes/create',
     pois: '/admin/catalogue/points-of-interest',
     landingContent: '/admin/landing-content',
-    payoutSettlement: '/admin/payouts/settlement',
   },
 } as const;
