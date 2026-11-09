@@ -223,18 +223,33 @@ shown; the U03 race (two reloads in flight, the earlier one resolving after the 
 overwrite it). `npm run lint && npm run typecheck && npm test` (3576/3576) and `npm run build` all
 green.
 
-## Task 7 — Payout Settlement History (`PayoutSettlementHistoryScreen.tsx`, `/partner/payout-settlements`)
+## Task 7 — Payout Settlement History (`PayoutSettlementHistoryScreen.tsx`, `/partner/payout-settlements`) — done
 
-- Platform: Web-only (decided). Server guard: `PartnerRouteGuard` / `partnerRouteDecision`
-  pattern, TourOperator-only, same as
-  other `/partner/*` routes.
-- Table + pagination per spec Screen 3; no filters unless Open question 6 is confirmed (if
-  confirmed, add the same filter bar as Task 4's, reusing its component rather than duplicating).
-- Read-only: no actions.
+- Platform: Web-only (decided). Server guard: `app/partner/payout-settlements/page.tsx` just
+  wraps the screen in `<PartnerRouteGuard route="dashboard">` — the same check the bank-account
+  page at `/partner/payouts` already uses. No page-level test: `PartnerRouteGuard`/
+  `partnerRouteDecision` already have their own generic test suites covering every route/role
+  combination, and the sibling `/partner/payouts` page has no test of its own either — same
+  convention.
+- Table (Booking, Run Date, Kind, Payout Amount, Status, Transfer Reference) + local-state
+  pagination per spec Screen 3. **No filters** — Open question 6 is still undecided, and the
+  SRS's one-line description does not ask for them (AGENTS.md "Clarify First"); add Task 4's
+  filter bar here later if confirmed. Read-only: no actions.
+- **Found and fixed a real bug while building this**: the operator service
+  (`fetchOperatorPayoutSettlementHistory`, written in Task 2) sent `pageNumber` in its query
+  string, but `OperatorPayoutSettlementsController.GetHistory` binds `page` — the admin list
+  endpoint uses `pageNumber`, but this operator endpoint does not, and the Task 3 proxy's own
+  allow-list already only forwarded `page`/`pageSize`. Pagination beyond page 1 was silently
+  broken (always returned page 1) until now.
+- Added `formatVnd`/`formatRunDate` to the operator's own `payoutSettlements.ts` (Task 1 didn't
+  anticipate needing them there, same as the admin side's Task 4 addition).
 
-Tests: direct navigation guard (non-TourOperator → denial, no data fetched); table renders only
-rows whose `tourOperatorUserId` matches the session's own id (defence-in-depth, even though the
-backend already scopes the query); empty/forbidden/unavailable states.
+Tests (TDD, 7 screen + 2 new formatter + 1 service-URL fix, all red-then-green where applicable):
+own-operator row renders; a row for a different `tourOperatorUserId` is filtered out
+(defence-in-depth, even though the backend already scopes the query); loading/empty/forbidden/
+unavailable-with-retry states; pagination requests the right page. `npm run lint && npm run
+typecheck && npm test` (3585/3585) and `npm run build` all green; the route registers as static
+(client-rendered, no page-level data fetch) in the build output.
 
 ## Task 8 — Message catalogue wiring (spec Open question 7)
 

@@ -33,13 +33,15 @@ describe('fetchOperatorPayoutSettlementHistory', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/operator/payout-settlements');
   });
 
-  it('includes pageNumber when beyond page 1', async () => {
+  it('includes page (not pageNumber — the backend binds `page`) when beyond page 1', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(listResponse));
 
     await fetchOperatorPayoutSettlementHistory(2, 20);
 
     const [url] = fetchMock.mock.calls[0];
-    expect(new URL(url, 'http://localhost').searchParams.get('pageNumber')).toBe('2');
+    const params = new URL(url, 'http://localhost').searchParams;
+    expect(params.get('page')).toBe('2');
+    expect(params.get('pageNumber')).toBeNull();
   });
 
   it.each([

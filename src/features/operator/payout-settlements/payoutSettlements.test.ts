@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parsePayoutSettlementsResponse, PAYOUT_SETTLEMENT_STATUSES } from './payoutSettlements';
+import { formatRunDate, formatVnd, parsePayoutSettlementsResponse, PAYOUT_SETTLEMENT_STATUSES } from './payoutSettlements';
 
 const listItem = {
   settlementId: 101, bookingId: 55, tourOperatorUserId: 7, runDate: '2026-11-08',
@@ -37,5 +37,17 @@ describe('parsePayoutSettlementsResponse (operator)', () => {
     const parsed = parsePayoutSettlementsResponse(page).items[0];
     expect(parsed.settlementId).toBeNull();
     expect(parsed.runDate).toBeNull();
+  });
+});
+
+describe('formatVnd', () => {
+  it('formats a VND amount', () => {
+    expect(formatVnd(1_800_000)).toContain('1.800.000');
+  });
+});
+
+describe('formatRunDate', () => {
+  it('formats a calendar date without shifting it to a different day', () => {
+    expect(formatRunDate('2026-11-08')).toBe('8 Nov 2026');
   });
 });

@@ -83,3 +83,14 @@ export function parsePayoutSettlementsResponse(value: unknown): PayoutSettlement
     items: value.items.map(parsePayoutSettlementListItem),
   };
 }
+
+export const formatVnd = (value: number): string =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+
+/** RunDate is a calendar date (no time-of-day), so this formats it as-is rather than converting
+ * a timezone, which would risk shifting it to a different day. */
+export function formatRunDate(value: string): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).format(
+    new Date(`${value}T00:00:00Z`),
+  );
+}

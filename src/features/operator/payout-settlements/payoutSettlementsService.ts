@@ -34,8 +34,11 @@ export async function fetchOperatorPayoutSettlementHistory(
   pageSize = 20,
   signal?: AbortSignal,
 ): Promise<PayoutSettlementsResponse> {
+  // The backend's OperatorPayoutSettlementsController.GetHistory binds `page`, not `pageNumber`
+  // (unlike the admin side's GetPayoutSettlementsQuery, which does use `pageNumber`) — matching
+  // the BFF proxy's own allow-listed query fields (payoutSettlementsProxy.ts, Task 3).
   const query = new URLSearchParams();
-  if (pageNumber > 1) query.set('pageNumber', String(pageNumber));
+  if (pageNumber > 1) query.set('page', String(pageNumber));
   if (pageSize !== 20) query.set('pageSize', String(pageSize));
   const suffix = query.toString() ? `?${query}` : '';
 
