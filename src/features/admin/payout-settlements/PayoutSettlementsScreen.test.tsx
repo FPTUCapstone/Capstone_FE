@@ -23,6 +23,7 @@ import { PayoutSettlementsScreen } from './PayoutSettlementsScreen';
 
 const settledRow = {
   settlementId: 101,
+  batchId: 40,
   bookingId: 55,
   tourOperatorUserId: 7,
   runDate: '2026-11-08',
@@ -34,6 +35,9 @@ const settledRow = {
 
 const failedRow = {
   settlementId: 102,
+  // Deliberately different from settlementId: a batch gathers multiple bookings per Tour
+  // Operator per run (PD-14), so the two ids are never interchangeable in general.
+  batchId: 61,
   bookingId: 56,
   tourOperatorUserId: 8,
   runDate: '2026-11-08',
@@ -45,6 +49,7 @@ const failedRow = {
 
 const awaitingRow = {
   settlementId: null,
+  batchId: null,
   bookingId: 57,
   tourOperatorUserId: 9,
   runDate: null,
@@ -80,11 +85,11 @@ describe('PayoutSettlementsScreen', () => {
     expect(table.getByText('SIM-TRX-001')).toBeTruthy();
   });
 
-  it('shows a View Details link on a SettlementFailed row for an Administrator viewer', async () => {
+  it('shows a View Details link on a SettlementFailed row, pointing at the batch (not the settlement) id', async () => {
     vi.mocked(fetchPayoutSettlements).mockResolvedValue(response([failedRow]));
     render(<PayoutSettlementsScreen viewerRole="Administrator" />);
     await screen.findByRole('table');
-    expect(screen.getByRole('link', { name: /view details/i }).getAttribute('href')).toBe('/admin/payout-settlements/102');
+    expect(screen.getByRole('link', { name: /view details/i }).getAttribute('href')).toBe('/admin/payout-settlements/61');
   });
 
   it('does not show a View Details link for a Staff viewer, even on a SettlementFailed row', async () => {

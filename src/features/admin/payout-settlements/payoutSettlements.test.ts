@@ -17,6 +17,7 @@ import {
 
 const listItem = {
   settlementId: 101,
+  batchId: 42,
   bookingId: 55,
   tourOperatorUserId: 7,
   runDate: '2026-11-08',
@@ -61,11 +62,12 @@ describe('parsePayoutSettlementListItem', () => {
   });
 
   // An "Awaiting Window" row (UC-72, BE Task 10A) is synthesized for a booking with no
-  // settlement yet — it has no settlementId or runDate, unlike a real settlement row.
-  it('accepts a null settlementId and runDate for an Awaiting Window row', () => {
-    const awaiting = { ...listItem, settlementId: null, runDate: null, status: 'Awaiting Window' };
+  // settlement yet — it has no settlementId, batchId or runDate, unlike a real settlement row.
+  it('accepts a null settlementId, batchId and runDate for an Awaiting Window row', () => {
+    const awaiting = { ...listItem, settlementId: null, batchId: null, runDate: null, status: 'Awaiting Window' };
     const parsed = parsePayoutSettlementListItem(awaiting);
     expect(parsed.settlementId).toBeNull();
+    expect(parsed.batchId).toBeNull();
     expect(parsed.runDate).toBeNull();
   });
 
@@ -73,6 +75,7 @@ describe('parsePayoutSettlementListItem', () => {
     ['unrecognized status', { ...listItem, status: 'Mystery' }],
     ['unrecognized kind', { ...listItem, kind: 'Bonus' }],
     ['non-numeric settlementId', { ...listItem, settlementId: '101' }],
+    ['non-numeric batchId', { ...listItem, batchId: '42' }],
     ['negative payoutAmount', { ...listItem, payoutAmount: -1 }],
     ['malformed runDate', { ...listItem, runDate: '2026/11/08' }],
     ['non-string transferReference', { ...listItem, transferReference: 42 }],

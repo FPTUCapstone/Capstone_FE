@@ -215,7 +215,7 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
                     <td className="px-4 py-3">
                       {item.status === 'SettlementFailed' && viewerRole === 'Administrator' ? (
                         <Link
-                          href={ROUTES.admin.payoutSettlementDetail(item.settlementId!)}
+                          href={ROUTES.admin.payoutSettlementDetail(item.batchId!)}
                           className="inline-flex whitespace-nowrap rounded-lg border border-[#006b5f] px-3 py-2 font-bold text-[#006b5f] hover:bg-[#e6f7f0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"
                         >
                           View Details

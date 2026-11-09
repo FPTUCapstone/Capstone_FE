@@ -20,7 +20,7 @@ function htmlResponse(status = 502): Response {
 }
 
 const listItem = {
-  settlementId: 1, bookingId: 2, tourOperatorUserId: 3, runDate: '2026-11-08',
+  settlementId: 1, batchId: 42, bookingId: 2, tourOperatorUserId: 3, runDate: '2026-11-08',
   kind: 'Main', payoutAmount: 100_000, status: 'Settled', transferReference: 'SIM-1',
 };
 const listResponse = { pageNumber: 1, pageSize: 20, totalCount: 1, items: [listItem] };

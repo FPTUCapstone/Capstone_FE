@@ -20,6 +20,10 @@ export type PayoutSettlementListItem = {
   // null for a synthesized "Awaiting Window" row (UC-72, BE Task 10A): no PayoutSettlement
   // exists yet for it, so it has neither a settlement id nor an assigned run date.
   settlementId: number | null;
+  // The UC-73 batch this settlement belongs to (PD-14: one batch gathers every booking for a
+  // Tour Operator in one run) — never settlementId, which only coincides with it when a batch
+  // has exactly one booking. Null for the same synthesized rows as settlementId.
+  batchId: number | null;
   bookingId: number;
   tourOperatorUserId: number;
   runDate: string | null;
@@ -68,6 +72,7 @@ export function parsePayoutSettlementListItem(value: unknown): PayoutSettlementL
   if (
     !isRecord(value) ||
     !isNullableSafeInteger(value.settlementId) ||
+    !isNullableSafeInteger(value.batchId) ||
     !isSafeInteger(value.bookingId) ||
     !isSafeInteger(value.tourOperatorUserId) ||
     !isNullableRunDate(value.runDate) ||
