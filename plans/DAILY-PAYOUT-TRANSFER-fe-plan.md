@@ -260,14 +260,29 @@ typecheck && npm test` (3585/3585) and `npm run build` all green; the route regi
 
 Tests: snapshot/text assertions updated to the final catalogue strings.
 
-## Task 9 — Verification
+## Task 9 — Verification — done (partial; two sub-items environment-limited, see below)
 
-- `npm run lint && npm run typecheck && npm test && npm run build` (record result honestly,
-  including any environment-limited step).
-- Responsive check at 320 / 390 / 768 / 1024 / 1440 px (V01) for all three screens.
-- Local end-to-end against the BE branch (not the simulated-only unit tests): list → failed-row
-  → detail → retry; list → failed-row → detail → carry-over; list → failed-row → detail →
-  manual-settlement; partner history shows only that operator's rows.
+- `npm run lint && npm run typecheck && npm test && npm run build`: all green.
+  Lint clean, typecheck clean (`tsc --noEmit`), tests 3585/3585 passed across 332 files, build
+  succeeded and registered every new route (`/admin/payout-settlements`,
+  `/admin/payout-settlements/[batchId]`, `/partner/payout-settlements`, plus the 5 admin + 1
+  operator BFF API routes) with no build errors.
+- Responsive check at 320/390/768/1024/1440px (V01): **not performed**. The dev-server preview
+  tool in this sandbox cannot see any route file created in this session — confirmed again just
+  now with a fresh server start: `/admin/payout-settlements` 404s while a pre-existing route
+  (`/admin/bookings`) still correctly redirects to `/admin/login`, identical to the behavior
+  first diagnosed in Task 4 (throwaway probe page, cache clear, server restart — all ruled out
+  there as the cause). `npm run build` registering the routes cleanly rules out a code defect;
+  this is a tooling/environment limitation, not re-diagnosed further here since Task 4 already
+  exhausted the obvious causes. The three screens use the same Tailwind responsive classes
+  (`sm:`/`md:`) and table/card patterns as already-shipped screens elsewhere in the app, but this
+  has not been visually confirmed in-browser.
+- Local end-to-end against the BE branch: **not performed**. This sandbox has no SQL Server
+  instance and no way to run the BE API alongside this FE dev server against a real database, so
+  a true live end-to-end (list → failed-row → detail → retry/carry-over/manual-settlement;
+  partner history scoping) could not be exercised. This is covered instead by the integration-
+  style unit tests within each screen (mocked proxy/service layer, real component tree) — see
+  Tasks 4–7 — which is the closest substitute available here.
 
 ## Out of scope
 
