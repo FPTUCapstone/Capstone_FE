@@ -140,7 +140,7 @@ export function TripHistoryView() {
           type="button"
           onClick={() => handleTabChange('Upcoming')}
           className={`${TAB_BUTTON} ${
-            activeTab === 'Upcoming' ? 'bg-white text-[#00152A] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            activeTab === 'Upcoming' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.upcoming}
@@ -150,13 +150,13 @@ export function TripHistoryView() {
           type="button"
           onClick={() => handleTabChange('Completed')}
           className={`${TAB_BUTTON} flex items-center justify-center gap-1.5 ${
-            activeTab === 'Completed' ? 'bg-white text-[#00152A] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            activeTab === 'Completed' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <span className="inline-block h-2 w-2 rounded-full bg-[#006B5F]" />
+          <span className="inline-block h-2 w-2 rounded-full bg-[#174B4A]" />
           <span>{tripReviewEn.tripHistory.tabs.completed}</span>
           {activeTab === 'Completed' && totalCount > 0 && (
-            <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.5 text-[10px] font-extrabold text-[#006B5F]">
+            <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.5 text-[10px] font-extrabold text-[#174B4A]">
               {totalCount}
             </span>
           )}
@@ -166,7 +166,7 @@ export function TripHistoryView() {
           type="button"
           onClick={() => handleTabChange('Cancelled')}
           className={`${TAB_BUTTON} ${
-            activeTab === 'Cancelled' ? 'bg-white text-[#00152A] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            activeTab === 'Cancelled' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.cancelled}
@@ -211,12 +211,12 @@ export function TripHistoryView() {
               luggage
             </span>
           </div>
-          <h3 className="text-base font-bold text-[#00152A]">{tripReviewEn.tripHistory.empty.title}</h3>
+          <h3 className="text-base font-bold text-[#1C2928]">{tripReviewEn.tripHistory.empty.title}</h3>
           <p className="mt-1 text-xs text-slate-500">{tripReviewEn.tripHistory.empty.description}</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={ROUTES.plan}
-              className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
+              className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
             >
               {tripReviewEn.actions.planSmartItinerary}
             </Link>

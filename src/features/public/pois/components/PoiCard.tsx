@@ -22,7 +22,7 @@ export function PoiCard({ poi, isSelected = false, onSelect }: PoiCardProps) {
       onClick={handleCardClick}
       className={`group relative flex flex-col sm:flex-row overflow-hidden rounded-[24px] border transition-all duration-200 cursor-pointer ${
         isSelected
-          ? 'border-[#007d6e] bg-[#f4faf8] shadow-[0_12px_32px_rgba(0,125,110,.14)] ring-2 ring-[#007d6e]'
+          ? 'border-[#103B39] bg-[#f4faf8] shadow-[0_12px_32px_rgba(0,125,110,.14)] ring-2 ring-[#103B39]'
           : 'border-[#dce4e8] bg-white shadow-[0_8px_24px_rgba(0,21,42,.05)] hover:-translate-y-0.5 hover:border-[#b4cfc9] hover:shadow-[0_14px_36px_rgba(0,21,42,.09)]'
       }`}
     >
@@ -34,12 +34,12 @@ export function PoiCard({ poi, isSelected = false, onSelect }: PoiCardProps) {
           className="h-full w-full object-cover"
         />
         <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-1.5 z-10">
-          <span className="rounded-full bg-[#00152a]/90 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-xs">
+          <span className="rounded-full bg-[#103B39]/90 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-xs">
             {poi.categoryName}
           </span>
           <span
             className={`rounded-full px-2.5 py-1 text-[11px] font-bold text-white shadow-xs ${
-              poi.isOpenNow ? 'bg-[#007d6e]' : 'bg-[#66727b]'
+              poi.isOpenNow ? 'bg-[#103B39]' : 'bg-[#66727b]'
             }`}
           >
             {poi.isOpenNow ? '● Đang mở cửa' : '○ Đã đóng'}
@@ -51,7 +51,7 @@ export function PoiCard({ poi, isSelected = false, onSelect }: PoiCardProps) {
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-5 min-w-0">
         <div>
           <div className="flex items-start justify-between gap-3">
-            <h2 className="line-clamp-1 min-w-0 text-lg font-black tracking-[-0.02em] text-[#00152a] group-hover:text-[#007d6e] transition-colors sm:text-xl">
+            <h2 className="line-clamp-1 min-w-0 text-lg font-black tracking-[-0.02em] text-[#1C2928] group-hover:text-[#103B39] transition-colors sm:text-xl">
               <Link
                 href={`/pois/${poi.id}`}
                 onClick={(e) => e.stopPropagation()}
@@ -60,7 +60,7 @@ export function PoiCard({ poi, isSelected = false, onSelect }: PoiCardProps) {
                 {poi.name}
               </Link>
             </h2>
-            <p className="shrink-0 font-extrabold text-[#007d6e] text-sm">
+            <p className="shrink-0 font-extrabold text-[#103B39] text-sm">
               <span className="text-[#e65100]" aria-hidden="true">★</span>{' '}
               {poi.averageRating?.toFixed(1) ?? 'Chưa có'}
             </p>
@@ -77,7 +77,7 @@ export function PoiCard({ poi, isSelected = false, onSelect }: PoiCardProps) {
             </span>
             {poi.hasShelter ? <span className="rounded-md bg-[#eef3f4] px-2.5 py-1">⌂ Mái che</span> : null}
             {poi.distanceKm !== null ? (
-              <span className="rounded-md bg-[#e4f5f1] px-2.5 py-1 text-[#006b5f] font-bold">
+              <span className="rounded-md bg-[#e4f5f1] px-2.5 py-1 text-[#174B4A] font-bold">
                 ⌖ Cách {poi.distanceKm.toFixed(2)} km
               </span>
             ) : null}
@@ -91,7 +91,7 @@ export function PoiCard({ poi, isSelected = false, onSelect }: PoiCardProps) {
           <Link
             href={`/pois/${poi.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[#007d6e] px-3.5 text-xs font-bold text-white hover:bg-[#006b5f] transition-colors focus-visible:outline-offset-2"
+            className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[#103B39] px-3.5 text-xs font-bold text-white hover:bg-[#174B4A] transition-colors focus-visible:outline-offset-2"
           >
             Xem chi tiết <span aria-hidden="true" className="ml-1.5">→</span>
           </Link>

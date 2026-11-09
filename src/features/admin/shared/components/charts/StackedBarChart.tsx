@@ -18,7 +18,7 @@ export function StackedBarChart({
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex h-56 items-center justify-center text-xs text-[#758B74]">
+      <div className="flex h-56 items-center justify-center text-xs text-[#5B6E69]">
         No composition data available.
       </div>
     );
@@ -45,7 +45,7 @@ export function StackedBarChart({
   return (
     <div className="relative w-full">
       {/* Legend */}
-      <div className="mb-3 flex flex-wrap items-center justify-end gap-3 text-xs font-medium text-[#4A5851]">
+      <div className="mb-3 flex flex-wrap items-center justify-end gap-3 text-xs font-medium text-[#5B6E69]">
         {legendItems.map((item) => (
           <div key={item.id} className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-xs" style={{ backgroundColor: item.color }} />
@@ -70,7 +70,7 @@ export function StackedBarChart({
                 y1={y}
                 x2={totalWidth - paddingX}
                 y2={y}
-                stroke="#E6E4DD"
+                stroke="#DCE2DD"
                 strokeDasharray="3 3"
                 strokeWidth={1}
               />
@@ -78,7 +78,7 @@ export function StackedBarChart({
                 x={paddingX - 8}
                 y={y + 3}
                 textAnchor="end"
-                className="fill-[#A3B3AB] text-[10px] font-mono"
+                className="fill-[#5B6E69] text-[10px] font-mono"
               >
                 {Math.round((maxTotal * pct) / 1000) > 0
                   ? `${Math.round((maxTotal * pct) / 1000)}k`
@@ -109,7 +109,7 @@ export function StackedBarChart({
                   y={10}
                   width={slotWidth}
                   height={chartHeight}
-                  fill="#758B74"
+                  fill="#5B6E69"
                   fillOpacity={0.08}
                   rx={4}
                 />
@@ -142,7 +142,7 @@ export function StackedBarChart({
                 y={chartHeight + 28}
                 textAnchor="middle"
                 className={`text-[11px] font-medium transition-colors ${
-                  isHovered ? 'fill-[#1C2923] font-bold' : 'fill-[#74827B]'
+                  isHovered ? 'fill-[#1C2928] font-bold' : 'fill-[#5B6E69]'
                 }`}
               >
                 {point.label}
@@ -155,15 +155,15 @@ export function StackedBarChart({
       {/* Hover Tooltip Overlay */}
       {hoveredIdx !== null && data[hoveredIdx] && (
         <div
-          className="pointer-events-none absolute -top-2 rounded-xl border border-[#2A3B33] bg-[#1C2923] px-3.5 py-2.5 text-xs text-white shadow-xl z-20 min-w-[160px]"
+          className="pointer-events-none absolute -top-2 rounded-xl border border-[#103B39] bg-[#1C2928] px-3.5 py-2.5 text-xs text-white shadow-xl z-20 min-w-[160px]"
           style={{
             left: `${((hoveredIdx + 0.5) / data.length) * 100}%`,
             transform: 'translateX(-50%) translateY(-100%)',
           }}
         >
-          <div className="flex items-center justify-between border-b border-[#2A3B33] pb-1.5 mb-1.5">
-            <span className="font-bold text-[#E8EFE9]">{data[hoveredIdx].label}</span>
-            <span className="text-[11px] text-[#A3B3AB] font-mono">
+          <div className="flex items-center justify-between border-b border-[#103B39] pb-1.5 mb-1.5">
+            <span className="font-bold text-[#E8F0EA]">{data[hoveredIdx].label}</span>
+            <span className="text-[11px] text-[#5B6E69] font-mono">
               Total: {valueFormatter(totals[hoveredIdx])}
             </span>
           </div>
@@ -173,7 +173,7 @@ export function StackedBarChart({
               <div key={seg.id} className="flex items-center justify-between gap-3 text-[11px]">
                 <div className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: seg.color }} />
-                  <span className="text-[#A3B3AB]">{seg.label}</span>
+                  <span className="text-[#5B6E69]">{seg.label}</span>
                 </div>
                 <span className="font-semibold text-white">{valueFormatter(seg.value)}</span>
               </div>

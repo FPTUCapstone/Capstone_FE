@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+  root: fileURLToPath(new URL('.', import.meta.url)),
   plugins: [tsconfigPaths(), react()],
   resolve: {
     alias: {

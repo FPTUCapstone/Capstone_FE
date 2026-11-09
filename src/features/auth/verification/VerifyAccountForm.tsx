@@ -158,7 +158,7 @@ export function VerifyAccountForm({ deliveryFailed = false, email = '', flow }: 
 
         <Link
           href={ROUTES.signIn}
-          className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#CBD5E1] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-sm"
+          className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#DCE2DD] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-sm"
         >
           <span>Proceed to Sign In</span>
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>

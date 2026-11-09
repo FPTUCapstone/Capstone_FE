@@ -66,7 +66,7 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
           <button
             type="button"
             onClick={() => setStep('reason')}
-            className={`min-h-11 rounded-xl border border-[#c3c6ce] px-4 text-sm font-bold text-[#00152a] hover:bg-[#eceef1] ${focusRing}`}
+            className={`min-h-11 rounded-xl border border-[#DCE2DD] px-4 text-sm font-bold text-[#1C2928] hover:bg-[#DCE2DD] ${focusRing}`}
           >
             {copy.back}
           </button>
@@ -101,14 +101,14 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
     >
       <form noValidate onSubmit={handleReasonSubmit} className="space-y-4">
         <div>
-          <label htmlFor="reject-tour-category" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#43474d]">
+          <label htmlFor="reject-tour-category" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
             {copy.categoryLabel}
           </label>
           <select
             id="reject-tour-category"
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className={`min-h-11 w-full rounded-xl border border-[#c3c6ce] bg-white px-3 text-sm ${focusRing}`}
+            className={`min-h-11 w-full rounded-xl border border-[#DCE2DD] bg-white px-3 text-sm ${focusRing}`}
           >
             <option value="">{copy.categoryPlaceholder}</option>
             {DEMO_REJECTION_REASON_CATEGORIES.map((option) => (
@@ -119,10 +119,10 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
           </select>
         </div>
         <div>
-          <label htmlFor="reject-tour-reason" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#43474d]">
+          <label htmlFor="reject-tour-reason" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
             {copy.reasonLabel}
           </label>
-          <p id={hintId} className="mb-1 text-xs text-[#43474d]">
+          <p id={hintId} className="mb-1 text-xs text-[#5B6E69]">
             {copy.reasonHint}
           </p>
           <textarea
@@ -135,7 +135,7 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
             aria-describedby={showError && !detail.trim() ? `${hintId} ${errorId}` : hintId}
             onChange={(event) => setDetail(event.target.value)}
             className={`w-full rounded-xl border bg-white p-3 text-sm ${
-              showError && !detail.trim() ? 'border-[#ba1a1a]' : 'border-[#c3c6ce]'
+              showError && !detail.trim() ? 'border-[#ba1a1a]' : 'border-[#DCE2DD]'
             } ${focusRing}`}
           />
           {showError && !detail.trim() ? (
@@ -148,7 +148,7 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
           <button
             type="button"
             onClick={close}
-            className={`min-h-11 rounded-xl border border-[#c3c6ce] px-4 text-sm font-bold text-[#00152a] hover:bg-[#eceef1] ${focusRing}`}
+            className={`min-h-11 rounded-xl border border-[#DCE2DD] px-4 text-sm font-bold text-[#1C2928] hover:bg-[#DCE2DD] ${focusRing}`}
           >
             {copy.cancel}
           </button>

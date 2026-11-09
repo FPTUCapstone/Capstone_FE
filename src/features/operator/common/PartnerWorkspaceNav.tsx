@@ -1,17 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
+import { getWeatherSafetyReviewBadgeCount } from '@/features/operator/weather-safety/weatherSafetyApi';
 
-export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts';
+export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts' | 'weatherSafety';
 
 interface PartnerWorkspaceNavProps {
   activeTab: PartnerWorkspaceTabKey;
   className?: string;
   operatorName?: string;
+  weatherAlertBadgeCount?: number;
 }
 
 interface NavItem {
@@ -28,6 +30,12 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     label: 'Bảng điều khiển',
     icon: 'dashboard',
     href: ROUTES.partner.dashboard,
+  },
+  {
+    key: 'weatherSafety',
+    label: 'Cảnh báo an toàn',
+    icon: 'warning',
+    href: ROUTES.partner.weatherSafetyReviews,
   },
   {
     key: 'tours',
@@ -80,8 +88,28 @@ export function PartnerWorkspaceNav({
   activeTab,
   className = '',
   operatorName,
+  weatherAlertBadgeCount,
 }: PartnerWorkspaceNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [serverBadgeCount, setServerBadgeCount] = useState<number>(0);
+  const badgeCount = weatherAlertBadgeCount ?? serverBadgeCount;
+
+  useEffect(() => {
+    if (weatherAlertBadgeCount !== undefined) {
+      return;
+    }
+    let isMounted = true;
+    getWeatherSafetyReviewBadgeCount()
+      .then((count) => {
+        if (isMounted) setServerBadgeCount(count);
+      })
+      .catch(() => {
+        // silent fallback
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [weatherAlertBadgeCount]);
 
   return (
     <>
@@ -91,7 +119,7 @@ export function PartnerWorkspaceNav({
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
             aria-label={mobileOpen ? 'Đóng menu quản lý' : 'Mở menu quản lý'}
             aria-expanded={mobileOpen}
           >
@@ -125,7 +153,7 @@ export function PartnerWorkspaceNav({
 
       {/* Sidebar Navigation (Desktop Fixed / Mobile Drawer) */}
       <aside
-        className={`fixed bottom-0 top-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-[#00152A] text-white transition-transform duration-200 ease-in-out lg:static lg:z-auto lg:translate-x-0 ${
+        className={`fixed bottom-0 top-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-[#103B39] text-white transition-transform duration-200 ease-in-out lg:static lg:z-auto lg:translate-x-0 ${
           mobileOpen ? 'left-0 translate-x-0' : '-translate-x-full'
         } ${className}`}
         aria-label="Điều hướng không gian làm việc đối tác"
@@ -186,16 +214,23 @@ export function PartnerWorkspaceNav({
                     <Link
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
+                      className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition ${
                         isActive
-                          ? 'bg-[#006B5F] font-bold text-white shadow-2xs'
+                          ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
                           : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-                        {item.icon}
+                      <span className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
                       </span>
-                      <span>{item.label}</span>
+                      {item.key === 'weatherSafety' && badgeCount > 0 && (
+                        <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
+                          {badgeCount}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -242,7 +277,7 @@ export function PartnerWorkspaceNav({
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
                         isActive
-                          ? 'bg-[#006B5F] font-bold text-white shadow-2xs'
+                          ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
                           : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
@@ -262,7 +297,7 @@ export function PartnerWorkspaceNav({
         <div className="border-t border-slate-800 p-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#006B5F] text-xs font-black text-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#174B4A] text-xs font-black text-white">
                 {operatorName ? operatorName.slice(0, 2).toUpperCase() : 'TO'}
               </div>
               <div className="min-w-0 flex-1">

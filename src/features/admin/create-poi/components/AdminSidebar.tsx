@@ -5,10 +5,10 @@ import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export function AdminSidebar() {
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-[#102a43] text-white z-50 flex flex-col justify-between shadow-md">
+    <aside className="fixed left-0 top-0 h-full w-64 bg-[#103B39] text-white z-50 flex flex-col justify-between shadow-md">
       <div className="flex flex-col flex-1 overflow-y-auto">
         {/* Brand Header */}
-        <div className="h-16 flex items-center px-6 bg-[#00152a]/40 border-b border-white/5">
+        <div className="h-16 flex items-center px-6 bg-[#103B39]/40 border-b border-white/5">
           <BrandLogo context="admin" inverse size={20} />
         </div>
 
@@ -36,7 +36,7 @@ export function AdminSidebar() {
             <div className="pl-8 pr-2 space-y-1">
               <Link
                 href={ROUTES.admin.createPoi}
-                className="flex items-center justify-between px-3 py-2 transition-all bg-[#006b5f] text-white font-semibold rounded-lg shadow-xs"
+                className="flex items-center justify-between px-3 py-2 transition-all bg-[#174B4A] text-white font-semibold rounded-lg shadow-xs"
               >
                 <span className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#6df5e1]"></span>
@@ -85,9 +85,9 @@ export function AdminSidebar() {
       </div>
 
       {/* Profile Footer */}
-      <div className="p-4 bg-[#00152a]/30 flex items-center justify-between gap-2 border-t border-white/5">
+      <div className="p-4 bg-[#103B39]/30 flex items-center justify-between gap-2 border-t border-white/5">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-[#00152a] flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#103B39] flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-white text-[18px]">person</span>
           </div>
           <div className="flex flex-col min-w-0">

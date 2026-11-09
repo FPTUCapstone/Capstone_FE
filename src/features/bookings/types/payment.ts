@@ -29,7 +29,7 @@ export interface BookingPaymentStatusDto {
   bookingId: number | string;
   /** Display fallback until a booking-detail read is introduced. */
   bookingCode?: string;
-  bookingStatus: 'PendingPayment' | 'Confirmed' | 'Cancelled' | 'Completed' | 'Expired';
+  bookingStatus: 'PendingPayment' | 'Confirmed' | 'Cancelled' | 'Completed' | 'Expired' | 'Interrupted';
   paymentStatus: 'Unpaid' | 'Pending' | 'Paid' | 'Failed' | 'Refunded' | 'PartiallyRefunded';
   paymentId?: number | null;
   gateway?: PaymentProvider | null;

@@ -168,7 +168,7 @@ export function CategorySelect({ options, value, onChange, disabled = false }: C
       disabled={disabled}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50 sm:text-sm"
+      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50 sm:text-sm"
     >
       <option value="">Chưa phân loại</option>
       {options.map((category) => (

@@ -140,7 +140,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
       <div className="flex min-h-[60vh] items-center justify-center" role="status">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            className="h-10 w-10 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
             aria-hidden="true"
           />
           <p className="text-xs font-semibold text-slate-500">Đang tải vé điện tử…</p>
@@ -166,7 +166,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
             {error.kind === 'signIn' ? (
               <Link
                 href={`${ROUTES.signIn}?returnUrl=${encodeURIComponent(returnPath)}`}
-                className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#006b5f]"
+                className="rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#174B4A]"
               >
                 Đăng nhập
               </Link>
@@ -175,7 +175,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
               <button
                 type="button"
                 onClick={retry}
-                className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#006b5f]"
+                className="rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#174B4A]"
               >
                 Thử lại
               </button>
@@ -199,13 +199,13 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 font-sans print:p-0" lang="vi">
       <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs text-slate-500 print:hidden">
-        <Link href={ROUTES.home} className="transition hover:text-[#007d6e]">
+        <Link href={ROUTES.home} className="transition hover:text-[#103B39]">
           Trang chủ
         </Link>
         <span className="material-symbols-outlined text-xs" aria-hidden="true">
           chevron_right
         </span>
-        <Link href={ROUTES.account.trips} className="transition hover:text-[#007d6e]">
+        <Link href={ROUTES.account.trips} className="transition hover:text-[#103B39]">
           Chuyến đi của tôi
         </Link>
         <span className="material-symbols-outlined text-xs" aria-hidden="true">
@@ -233,7 +233,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
       ) : null}
 
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
-        <div className="bg-gradient-to-r from-teal-800 to-[#00152a] p-6 text-center text-white">
+        <div className="bg-gradient-to-r from-teal-800 to-[#1C2928] p-6 text-center text-white">
           <span
             className={`inline-block rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wider ${STATUS_STYLE[ticket.ticketStatus]}`}
           >
@@ -298,7 +298,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
             <button
               type="button"
               onClick={() => refresh(ticket)}
-              className="rounded-xl bg-[#007d6e] px-4 py-2 font-bold text-white transition hover:bg-[#006b5f]"
+              className="rounded-xl bg-[#103B39] px-4 py-2 font-bold text-white transition hover:bg-[#174B4A]"
             >
               Làm mới
             </button>
@@ -319,7 +319,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
             type="button"
             disabled={!online || refreshing}
             onClick={() => setConfirming(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#007d6e] px-6 py-3 text-xs font-bold text-white shadow-md transition hover:bg-[#006b5f] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#103B39] px-6 py-3 text-xs font-bold text-white shadow-md transition hover:bg-[#174B4A] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="material-symbols-outlined text-base" aria-hidden="true">
               refresh

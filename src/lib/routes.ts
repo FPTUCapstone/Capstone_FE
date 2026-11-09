@@ -27,6 +27,8 @@ export const ROUTES = {
     createCoupon: '/partner/coupons/create',
     revenue: '/partner/revenue',
     payouts: '/partner/payouts',
+    weatherSafetyReviews: '/partner/weather-safety-reviews',
+    weatherSafetyReview: (id: string | number) => `/partner/weather-safety-reviews/${id}`,
   },
   account: {
     profile: '/account/profile',

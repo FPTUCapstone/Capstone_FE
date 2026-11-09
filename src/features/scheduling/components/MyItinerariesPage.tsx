@@ -90,7 +90,7 @@ export function MyItinerariesPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
             aria-hidden="true"
           />
           <p className="text-xs font-semibold text-slate-500">Đang tải chuyến đi của bạn…</p>
@@ -112,7 +112,7 @@ export function MyItinerariesPage() {
             aria-label="Breadcrumb"
             className="mb-4 flex items-center gap-2 text-xs text-slate-500"
           >
-            <Link href={ROUTES.home} className="hover:text-[#007d6e] transition">
+            <Link href={ROUTES.home} className="hover:text-[#103B39] transition">
               Trang chủ
             </Link>
             <span className="material-symbols-outlined text-xs">chevron_right</span>
@@ -122,7 +122,7 @@ export function MyItinerariesPage() {
           {/* Page Header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200 pb-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-[#007d6e]">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-[#103B39]">
                 <span className="material-symbols-outlined text-sm">folder_shared</span>
                 Thư viện lịch trình cá nhân
               </div>
@@ -136,7 +136,7 @@ export function MyItinerariesPage() {
             </div>
             <Link
               href={ROUTES.plan}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#007d6e] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
             >
               <span className="material-symbols-outlined text-sm">auto_awesome</span>
               Lập lịch trình mới
@@ -166,7 +166,7 @@ export function MyItinerariesPage() {
           {/* Loading Skeleton / Spinner */}
           {trips.length === 0 && isLoading && (
             <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
-              <div className="h-9 w-9 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent" />
+              <div className="h-9 w-9 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent" />
               <p className="text-xs font-semibold text-slate-500">Đang tải…</p>
             </div>
           )}
@@ -174,7 +174,7 @@ export function MyItinerariesPage() {
           {/* Empty State */}
           {trips.length === 0 && !isLoading && !error && (
             <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-[#007d6e]">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-[#103B39]">
                 <span className="material-symbols-outlined text-3xl">map</span>
               </div>
               <h2 className="mt-4 text-base font-bold text-slate-900">
@@ -186,7 +186,7 @@ export function MyItinerariesPage() {
               <div className="mt-6">
                 <Link
                   href={ROUTES.plan}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f]"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
                 >
                   <span className="material-symbols-outlined text-sm">auto_awesome</span>
                   <span>Bắt đầu tạo lịch trình</span>
@@ -211,10 +211,10 @@ export function MyItinerariesPage() {
                 type="button"
                 onClick={() => requestPage(loadedPages + 1)}
                 disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-[#007d6e] hover:text-[#007d6e] disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-[#103B39] hover:text-[#103B39] disabled:opacity-60"
               >
                 {isLoading && (
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#007d6e] border-t-transparent" />
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#103B39] border-t-transparent" />
                 )}
                 <span>{isLoading ? 'Đang tải…' : 'Xem thêm chuyến đi'}</span>
               </button>
@@ -239,7 +239,7 @@ function TripCard({ trip }: { trip: ItinerarySummaryDto }) {
   return (
     <Link
       href={ROUTES.itinerary(trip.itineraryId)}
-      className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:border-[#007d6e]/50 hover:shadow-md"
+      className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:border-[#103B39]/50 hover:shadow-md"
     >
       <div>
         {/* Badges row */}
@@ -255,7 +255,7 @@ function TripCard({ trip }: { trip: ItinerarySummaryDto }) {
         </div>
 
         {/* Title */}
-        <h2 className="text-sm font-bold text-slate-900 group-hover:text-[#007d6e] transition-colors sm:text-base line-clamp-2">
+        <h2 className="text-sm font-bold text-slate-900 group-hover:text-[#103B39] transition-colors sm:text-base line-clamp-2">
           {title}
         </h2>
 
@@ -275,7 +275,7 @@ function TripCard({ trip }: { trip: ItinerarySummaryDto }) {
       </div>
 
       {/* Card Footer CTA */}
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-[#007d6e]">
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-[#103B39]">
         <span>Xem lịch trình chi tiết</span>
         <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
           arrow_forward
@@ -289,7 +289,7 @@ function Tag({ children, tone }: { children: React.ReactNode; tone?: 'success' }
   return (
     <span
       className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-        tone === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-teal-50 text-[#007d6e]'
+        tone === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-teal-50 text-[#103B39]'
       }`}
     >
       {children}

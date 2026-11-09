@@ -41,19 +41,19 @@ const STEPS: StepItem[] = [
 
 export function HowItWorksPreviewSection() {
   return (
-    <section className="scroll-mt-20 py-16 sm:py-20 bg-white px-4 sm:px-8 border-b border-slate-200">
-      <div className="mx-auto max-w-7xl">
+    <section className="scroll-mt-20 py-16 sm:py-20 bg-white px-3 sm:px-6 lg:px-8 border-b border-slate-200">
+      <div className="mx-auto max-w-7xl xl:max-w-[1440px]">
         {/* Section Header: Calm Editorial Hierarchy */}
         <ScrollReveal animation="fade-up">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-12 border-b border-slate-100">
             <div>
-              <div className="inline-flex items-center gap-2 text-xs font-bold text-[#007d6e] mb-2.5">
+              <div className="inline-flex items-center gap-2 text-xs font-bold text-[#103B39] mb-2.5">
                 <span className="material-symbols-outlined text-sm" aria-hidden="true">
                   alt_route
                 </span>
                 <span>Cách thức hoạt động</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-black text-[#00152a] tracking-tight text-balance">
+              <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-black text-[#1C2928] tracking-tight text-balance">
                 Ba Bước Khởi Hành Trọn Vẹn
               </h2>
               <p className="mt-3 text-slate-600 text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
@@ -64,7 +64,7 @@ export function HowItWorksPreviewSection() {
 
             <Link
               href={`${ROUTES.about}#planning`}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#007d6e] hover:text-[#005f56] transition group shrink-0"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#103B39] hover:text-[#174B4A] transition group shrink-0"
             >
               <span>Tìm hiểu sâu về công nghệ TripMate</span>
               <span className="material-symbols-outlined text-sm group-hover:translate-x-0.5 transition-transform" aria-hidden="true">
@@ -82,10 +82,10 @@ export function HowItWorksPreviewSection() {
                 <div>
                   {/* Step Header: Sequential Number & Icon */}
                   <div className="flex items-center justify-between gap-4 mb-6">
-                    <span className="text-3xl font-black text-[#00152a]/20 group-hover:text-[#007d6e]/40 transition-colors font-mono tracking-tight">
+                    <span className="text-3xl font-black text-[#1C2928]/20 group-hover:text-[#103B39]/40 transition-colors font-mono tracking-tight">
                       {item.step}
                     </span>
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-100/80 flex items-center justify-center text-[#007d6e] group-hover:bg-[#007d6e] group-hover:text-white transition-colors">
+                    <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-100/80 flex items-center justify-center text-[#103B39] group-hover:bg-[#103B39] group-hover:text-white transition-colors">
                       <span className="material-symbols-outlined text-2xl" aria-hidden="true">
                         {item.icon}
                       </span>
@@ -93,10 +93,10 @@ export function HowItWorksPreviewSection() {
                   </div>
 
                   {/* Step Content */}
-                  <div className="inline-block px-2.5 py-0.5 rounded-md bg-teal-50/70 border border-teal-200/50 text-[11px] font-semibold text-[#006B5F] mb-3">
+                  <div className="inline-block px-2.5 py-0.5 rounded-md bg-teal-50/70 border border-teal-200/50 text-[11px] font-semibold text-[#174B4A] mb-3">
                     {item.tag}
                   </div>
-                  <h3 className="text-xl font-bold text-[#00152a] tracking-tight mb-2.5">
+                  <h3 className="text-xl font-bold text-[#1C2928] tracking-tight mb-2.5">
                     {item.title}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -109,7 +109,7 @@ export function HowItWorksPreviewSection() {
                   <span className="text-[11px] font-medium text-slate-500">
                     Bước {idx + 1} trên 3
                   </span>
-                  <span className="material-symbols-outlined text-base text-slate-300 group-hover:text-[#007d6e] group-hover:translate-x-1 transition-all" aria-hidden="true">
+                  <span className="material-symbols-outlined text-base text-slate-300 group-hover:text-[#103B39] group-hover:translate-x-1 transition-all" aria-hidden="true">
                     east
                   </span>
                 </div>

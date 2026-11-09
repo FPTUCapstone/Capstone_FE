@@ -6,7 +6,7 @@ import { ROUTES } from '@/lib/routes';
 
 export function AboutCtaSection() {
   return (
-    <section className="py-16 sm:py-24 bg-[#00152a] text-white px-4 sm:px-8 relative overflow-hidden border-t border-slate-800">
+    <section className="py-16 sm:py-24 bg-[#103B39] text-white px-4 sm:px-8 relative overflow-hidden border-t border-slate-800">
       {/* Background Ambience */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] rounded-full bg-teal-500/15 blur-3xl" />
@@ -33,7 +33,7 @@ export function AboutCtaSection() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
               href={ROUTES.plan}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#007d6e] hover:bg-[#006b5f] text-white text-sm font-bold px-7 py-3 shadow-lg shadow-teal-900/50 transition cursor-pointer"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#103B39] hover:bg-[#174B4A] text-white text-sm font-bold px-7 py-3 shadow-lg shadow-teal-900/50 transition cursor-pointer"
             >
               <span>Lập lịch trình ngay</span>
               <span className="material-symbols-outlined text-base" aria-hidden="true">

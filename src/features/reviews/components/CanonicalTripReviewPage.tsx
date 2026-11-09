@@ -106,36 +106,36 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="en">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="en">
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
-          <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]">
+          <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
             Home
           </Link>
           <span aria-hidden="true">/</span>
-          <Link href={ROUTES.account.trips} className="hover:text-[#006B5F] hover:underline">
+          <Link href={ROUTES.account.trips} className="hover:text-[#174B4A] hover:underline">
             My Trips
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#00152A]">Trip Review</span>
+          <span className="text-[#1C2928]">Trip Review</span>
         </nav>
 
         <div className="mb-6">
           <div className="flex items-center gap-2">
-            <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#006B5F]">
+            <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#174B4A]">
               UC-33
             </span>
             <span className="text-xs font-semibold text-slate-500">
               Review &amp; Rating
             </span>
           </div>
-          <h1 className="mt-1 text-2xl font-black text-[#00152A] sm:text-3xl">Trip review</h1>
+          <h1 className="mt-1 text-2xl font-black text-[#1C2928] sm:text-3xl">Trip review</h1>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
             Share your travel experience to help future travelers and improve services.
           </p>
         </div>
 
-        <Link href={ROUTES.account.trips} className="inline-flex items-center gap-1 text-xs font-bold text-[#006B5F] hover:underline">
+        <Link href={ROUTES.account.trips} className="inline-flex items-center gap-1 text-xs font-bold text-[#174B4A] hover:underline">
           ← Back to trip history
         </Link>
       {busy && !context ? <p className="mt-6" role="status">Loading review…</p> : null}
@@ -176,7 +176,7 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
             <label className="flex gap-2 text-sm"><input type="checkbox" checked={publishDisplayName} onChange={e => setPublishDisplayName(e.target.checked)} /> Publish my display name</label>
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Link href={ROUTES.account.trips} className="inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-3 font-bold">Cancel</Link>
-              {!readOnly ? <button className="rounded-xl bg-[#006B5F] px-4 py-3 font-bold text-white" type="submit">{current ? 'Update review' : 'Publish review'}</button> : null}
+              {!readOnly ? <button className="rounded-xl bg-[#174B4A] px-4 py-3 font-bold text-white" type="submit">{current ? 'Update review' : 'Publish review'}</button> : null}
             </div>
           </fieldset>
         </form>}

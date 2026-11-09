@@ -107,7 +107,7 @@ export const CENTRAL_DESTINATIONS: DestinationHighlight[] = [
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDSsQeV_BefjZ5QiBZ3PmO-CDVT3IBy5NXfoZ2VHn0M58mlOxXhD9GRDIkIWHrTt3kfJMoxkQj7H_KtkjV1X-FklLOtTQWnZ8G2tgGNAZtjmPLf6Gb0sD4jzcK6xC6sEKHZZH6R2a9sAuExeiHmokXHQRUKZvySbdk51tmeQVI8hAKaFh9BXdO6733zhohdI_FJTSGah_gvVppbxkDUlnE-LbiGEP_woNGqE00KWQfAejQA0kQjrl4',
     description: 'Nổi bật với Bãi biển Mỹ Khê top thế giới, Bán đảo Sơn Trà nguyên sơ, danh thắng Ngũ Hành Sơn huyền bí và Cầu Rồng phun lửa ấn tượng.',
     topPois: ['Bán đảo Sơn Trà & Chùa Linh Ứng', 'Bãi biển Mỹ Khê', 'Cầu Rồng & Sông Hàn', 'Ngũ Hành Sơn', 'Bảo tàng Điêu khắc Chăm'],
-    accentColor: '#007d6e',
+    accentColor: '#103B39',
   },
   {
     id: 'hoian',

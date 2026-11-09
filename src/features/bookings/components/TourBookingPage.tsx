@@ -91,7 +91,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
                 <main className="flex flex-1 items-center justify-center p-8">
           <div className="flex flex-col items-center gap-3">
             <div
-              className="h-9 w-9 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+              className="h-9 w-9 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
               aria-hidden="true"
             />
             <p className="text-xs font-semibold text-slate-500">
@@ -127,7 +127,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
                     ? ROUTES.partner.dashboard
                     : ROUTES.admin.dashboard
                 }
-                className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+                className="rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#174B4A] transition"
               >
                 Về Không gian làm việc ({context.role})
               </Link>
@@ -168,7 +168,7 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
                 </p>
                 <Link
                   href={`/tours/${id}/book?demo=1${scheduleId ? `&scheduleId=${scheduleId}` : ''}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white hover:bg-[#174B4A] transition"
                 >
                   <span className="material-symbols-outlined text-sm">science</span>
                   <span>Mở giao diện đặt tour Demo (?demo=1)</span>

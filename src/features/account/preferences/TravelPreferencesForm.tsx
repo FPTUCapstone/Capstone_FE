@@ -44,9 +44,9 @@ interface TravelPreferencesFormProps {
 type Feedback = { tone: 'success' | 'error' | 'warning'; message: string };
 
 const chipBase =
-  'inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006B5F]';
-const chipActive = 'border-[#006B5F] bg-[#006B5F] text-white';
-const chipIdle = 'border-[#D8E1E4] bg-white text-[#00152A] hover:bg-[#F3F6F7]';
+  'inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]';
+const chipActive = 'border-[#174B4A] bg-[#174B4A] text-white';
+const chipIdle = 'border-[#DCE2DD] bg-white text-[#1C2928] hover:bg-[#F7F5EF]';
 
 function FieldError({ id, code }: { id: string; code?: string }) {
   if (!code) return null;
@@ -213,19 +213,19 @@ export function TravelPreferencesForm({
         {formError ? <FeedbackAlert tone="warning">{formError}</FeedbackAlert> : null}
       </div>
 
-      <div className="rounded-xl border border-[#006B5F]/20 bg-[#E6F4F1] p-4 text-xs leading-relaxed text-[#004D40]">
+      <div className="rounded-xl border border-[#174B4A]/20 bg-[#E6F4F1] p-4 text-xs leading-relaxed text-[#174B4A]">
         Mọi mục đều không bắt buộc. Sở thích là ràng buộc linh hoạt: TripMate dùng chúng để điền sẵn khi lập lịch
         trình và xếp hạng gợi ý, nhưng không vượt qua giờ mở cửa, ngân sách hay an toàn.
       </div>
 
       {/* 1. Interests */}
       <fieldset className="space-y-3" aria-describedby="interests-hint interests-error">
-        <legend className="text-sm font-bold uppercase tracking-wide text-[#00152A]">1. Sở thích trải nghiệm</legend>
-        <p id="interests-hint" className="text-xs text-[#59616B]">
+        <legend className="text-sm font-bold uppercase tracking-wide text-[#1C2928]">1. Sở thích trải nghiệm</legend>
+        <p id="interests-hint" className="text-xs text-[#5B6E69]">
           Chọn tối đa {MAX_INTERESTS} chủ đề. Đã chọn: {draft.interests.length} / {MAX_INTERESTS}
         </p>
         {options.interests.length === 0 ? (
-          <p className="rounded-lg bg-[#F3F6F7] p-3 text-xs text-[#59616B]">{preferenceMessages.catalog.emptyInterests}</p>
+          <p className="rounded-lg bg-[#F7F5EF] p-3 text-xs text-[#5B6E69]">{preferenceMessages.catalog.emptyInterests}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {options.interests.map((option) => {
@@ -254,8 +254,8 @@ export function TravelPreferencesForm({
       </fieldset>
 
       {/* 2. Transport */}
-      <fieldset className="space-y-3 border-t border-[#D8E1E4]/70 pt-4" aria-describedby="transport-error">
-        <legend className="text-sm font-bold uppercase tracking-wide text-[#00152A]">2. Phương tiện ưa chuộng</legend>
+      <fieldset className="space-y-3 border-t border-[#DCE2DD]/70 pt-4" aria-describedby="transport-error">
+        <legend className="text-sm font-bold uppercase tracking-wide text-[#1C2928]">2. Phương tiện ưa chuộng</legend>
         <div className="flex flex-wrap gap-2">
           {options.preferredTransportModes.map((key) => {
             const selected = draft.preferredTransportMode === key;
@@ -277,8 +277,8 @@ export function TravelPreferencesForm({
       </fieldset>
 
       {/* 3. Pace */}
-      <fieldset className="space-y-3 border-t border-[#D8E1E4]/70 pt-4" aria-describedby="pace-error">
-        <legend className="text-sm font-bold uppercase tracking-wide text-[#00152A]">3. Nhịp độ tham quan</legend>
+      <fieldset className="space-y-3 border-t border-[#DCE2DD]/70 pt-4" aria-describedby="pace-error">
+        <legend className="text-sm font-bold uppercase tracking-wide text-[#1C2928]">3. Nhịp độ tham quan</legend>
         <div className="flex flex-wrap gap-2">
           {options.travelPaces.map((key) => {
             const selected = draft.travelPace === key;
@@ -300,8 +300,8 @@ export function TravelPreferencesForm({
       </fieldset>
 
       {/* 4. Food */}
-      <fieldset className="space-y-3 border-t border-[#D8E1E4]/70 pt-4" aria-describedby="food-error">
-        <legend className="text-sm font-bold uppercase tracking-wide text-[#00152A]">4. Chế độ ăn uống</legend>
+      <fieldset className="space-y-3 border-t border-[#DCE2DD]/70 pt-4" aria-describedby="food-error">
+        <legend className="text-sm font-bold uppercase tracking-wide text-[#1C2928]">4. Chế độ ăn uống</legend>
         <div className="flex flex-wrap gap-2">
           {options.foodPreferences.map((key) => {
             const selected = draft.foodPreferences.includes(key);
@@ -323,9 +323,9 @@ export function TravelPreferencesForm({
       </fieldset>
 
       {/* 5. Risk tolerance */}
-      <fieldset className="space-y-3 border-t border-[#D8E1E4]/70 pt-4" aria-describedby="risk-hint risk-error">
-        <legend className="text-sm font-bold uppercase tracking-wide text-[#00152A]">5. Mức chấp nhận rủi ro</legend>
-        <p id="risk-hint" className="text-xs text-[#59616B]">
+      <fieldset className="space-y-3 border-t border-[#DCE2DD]/70 pt-4" aria-describedby="risk-hint risk-error">
+        <legend className="text-sm font-bold uppercase tracking-wide text-[#1C2928]">5. Mức chấp nhận rủi ro</legend>
+        <p id="risk-hint" className="text-xs text-[#5B6E69]">
           Mức độ bạn sẵn sàng thử trải nghiệm mạo hiểm. Đây không phải mức nguy hiểm thực tế; cảnh báo an toàn luôn được
           ưu tiên.
         </p>
@@ -365,12 +365,12 @@ export function TravelPreferencesForm({
         </div>
       ) : null}
 
-      <div className="flex flex-col-reverse gap-3 border-t border-[#D8E1E4] pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col-reverse gap-3 border-t border-[#DCE2DD] pt-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={() => setConfirmingClear(true)}
           disabled={submitting}
-          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#D8E1E4] bg-white px-4 py-2.5 text-xs font-semibold text-[#59616B] transition hover:bg-[#F3F6F7] hover:text-[#00152A]"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-xs font-semibold text-[#5B6E69] transition hover:bg-[#F7F5EF] hover:text-[#1C2928]"
         >
           <span className="material-symbols-outlined text-base" aria-hidden="true">
             restart_alt
@@ -382,7 +382,7 @@ export function TravelPreferencesForm({
           type="submit"
           variant="primary"
           loading={submitting}
-          className="!bg-[#006B5F] hover:!bg-[#00574D] sm:min-w-[170px]"
+          className="!bg-[#174B4A] hover:!bg-[#00574D] sm:min-w-[170px]"
         >
           Lưu sở thích
         </ActionButton>

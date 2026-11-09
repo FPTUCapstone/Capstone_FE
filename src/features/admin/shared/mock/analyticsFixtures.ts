@@ -117,57 +117,57 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         {
           label: 'Sun',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 12100000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 2175000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 225000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 12100000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 2175000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 225000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Mon',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 15150000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 2730000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 320000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 15150000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 2730000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 320000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Tue',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 17800000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 3210000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 390000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 17800000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 3210000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 390000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Wed',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 16500000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 2970000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 330000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 16500000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 2970000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 330000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Thu',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 20500000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 3690000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 410000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 20500000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 3690000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 410000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Fri',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 23800000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 4275000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 425000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 23800000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 4275000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 425000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Sat',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 21300000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 3825000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 375000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 21300000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 3825000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 375000, color: '#B96D4C' },
           ],
         },
       ],
@@ -189,33 +189,33 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         {
           label: 'Week 1',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 106800000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 19200000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 2000000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 106800000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 19200000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 2000000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Week 2',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 128500000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 23100000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 2400000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 128500000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 23100000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 2400000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Week 3',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 143500000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 25800000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 2700000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 143500000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 25800000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 2700000, color: '#B96D4C' },
           ],
         },
         {
           label: 'Week 4',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 153500000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 27600000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 2900000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 153500000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 27600000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 2900000, color: '#B96D4C' },
           ],
         },
       ],
@@ -236,25 +236,25 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         {
           label: 'August',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 434200000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 78000000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 7800000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 434200000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 78000000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 7800000, color: '#B96D4C' },
           ],
         },
         {
           label: 'September',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 534400000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 96000000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 9600000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 534400000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 96000000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 9600000, color: '#B96D4C' },
           ],
         },
         {
           label: 'October',
           segments: [
-            { id: 'payout', label: 'Operator Payout', value: 567800000, color: '#245747' },
-            { id: 'comm', label: 'Platform Comm.', value: 102000000, color: '#758B74' },
-            { id: 'refund', label: 'Refunds', value: 10200000, color: '#B87558' },
+            { id: 'payout', label: 'Operator Payout', value: 567800000, color: '#174B4A' },
+            { id: 'comm', label: 'Platform Comm.', value: 102000000, color: '#5B6E69' },
+            { id: 'refund', label: 'Refunds', value: 10200000, color: '#B96D4C' },
           ],
         },
       ],
@@ -278,10 +278,10 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         { date: '2026-10-24', label: 'Sat', primaryValue: 14 },
       ],
       statusDistribution: [
-        { id: 'completed', label: 'Completed', value: 54, percentage: 70, color: '#245747' },
-        { id: 'confirmed', label: 'Confirmed', value: 14, percentage: 18, color: '#758B74' },
+        { id: 'completed', label: 'Completed', value: 54, percentage: 70, color: '#174B4A' },
+        { id: 'confirmed', label: 'Confirmed', value: 14, percentage: 18, color: '#5B6E69' },
         { id: 'pending', label: 'Pending', value: 6, percentage: 8, color: '#C88A36' },
-        { id: 'cancelled', label: 'Cancelled', value: 3, percentage: 4, color: '#B87558' },
+        { id: 'cancelled', label: 'Cancelled', value: 3, percentage: 4, color: '#B96D4C' },
       ],
     },
     '30D': {
@@ -298,10 +298,10 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         { date: '2026-10-16', label: 'Week 4', primaryValue: 90 },
       ],
       statusDistribution: [
-        { id: 'completed', label: 'Completed', value: 238, percentage: 73, color: '#245747' },
-        { id: 'confirmed', label: 'Confirmed', value: 55, percentage: 17, color: '#758B74' },
+        { id: 'completed', label: 'Completed', value: 238, percentage: 73, color: '#174B4A' },
+        { id: 'confirmed', label: 'Confirmed', value: 55, percentage: 17, color: '#5B6E69' },
         { id: 'pending', label: 'Pending', value: 17, percentage: 5, color: '#C88A36' },
-        { id: 'cancelled', label: 'Cancelled', value: 17, percentage: 5, color: '#B87558' },
+        { id: 'cancelled', label: 'Cancelled', value: 17, percentage: 5, color: '#B96D4C' },
       ],
     },
     '90D': {
@@ -317,10 +317,10 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         { date: '2026-10', label: 'October', primaryValue: 360 },
       ],
       statusDistribution: [
-        { id: 'completed', label: 'Completed', value: 710, percentage: 73, color: '#245747' },
-        { id: 'confirmed', label: 'Confirmed', value: 165, percentage: 17, color: '#758B74' },
+        { id: 'completed', label: 'Completed', value: 710, percentage: 73, color: '#174B4A' },
+        { id: 'confirmed', label: 'Confirmed', value: 165, percentage: 17, color: '#5B6E69' },
         { id: 'pending', label: 'Pending', value: 49, percentage: 5, color: '#C88A36' },
-        { id: 'cancelled', label: 'Cancelled', value: 49, percentage: 5, color: '#B87558' },
+        { id: 'cancelled', label: 'Cancelled', value: 49, percentage: 5, color: '#B96D4C' },
       ],
     },
   },
@@ -406,10 +406,10 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         { date: '2026-10-24', label: 'Sat', primaryValue: 880 },
       ],
       activityComposition: [
-        { id: 'search', label: 'Search & Explore', value: 2170, percentage: 45, color: '#245747' },
-        { id: 'itinerary', label: 'Itinerary Generation', value: 1445, percentage: 30, color: '#758B74' },
+        { id: 'search', label: 'Search & Explore', value: 2170, percentage: 45, color: '#174B4A' },
+        { id: 'itinerary', label: 'Itinerary Generation', value: 1445, percentage: 30, color: '#5B6E69' },
         { id: 'checkout', label: 'Booking & Checkout', value: 725, percentage: 15, color: '#C88A36' },
-        { id: 'account', label: 'Reviews & Account', value: 480, percentage: 10, color: '#B87558' },
+        { id: 'account', label: 'Reviews & Account', value: 480, percentage: 10, color: '#B96D4C' },
       ],
     },
     '30D': {
@@ -426,10 +426,10 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         { date: '2026-10-16', label: 'Week 4', primaryValue: 5900 },
       ],
       activityComposition: [
-        { id: 'search', label: 'Search & Explore', value: 9630, percentage: 45, color: '#245747' },
-        { id: 'itinerary', label: 'Itinerary Generation', value: 6420, percentage: 30, color: '#758B74' },
+        { id: 'search', label: 'Search & Explore', value: 9630, percentage: 45, color: '#174B4A' },
+        { id: 'itinerary', label: 'Itinerary Generation', value: 6420, percentage: 30, color: '#5B6E69' },
         { id: 'checkout', label: 'Booking & Checkout', value: 3210, percentage: 15, color: '#C88A36' },
-        { id: 'account', label: 'Reviews & Account', value: 2140, percentage: 10, color: '#B87558' },
+        { id: 'account', label: 'Reviews & Account', value: 2140, percentage: 10, color: '#B96D4C' },
       ],
     },
     '90D': {
@@ -445,10 +445,10 @@ export const ADMIN_FULL_ANALYTICS: FullAdminAnalyticsDataset = {
         { date: '2026-10', label: 'October', primaryValue: 24200 },
       ],
       activityComposition: [
-        { id: 'search', label: 'Search & Explore', value: 29160, percentage: 45, color: '#245747' },
-        { id: 'itinerary', label: 'Itinerary Generation', value: 19440, percentage: 30, color: '#758B74' },
+        { id: 'search', label: 'Search & Explore', value: 29160, percentage: 45, color: '#174B4A' },
+        { id: 'itinerary', label: 'Itinerary Generation', value: 19440, percentage: 30, color: '#5B6E69' },
         { id: 'checkout', label: 'Booking & Checkout', value: 9720, percentage: 15, color: '#C88A36' },
-        { id: 'account', label: 'Reviews & Account', value: 6480, percentage: 10, color: '#B87558' },
+        { id: 'account', label: 'Reviews & Account', value: 6480, percentage: 10, color: '#B96D4C' },
       ],
     },
   },
@@ -561,57 +561,57 @@ export const STAFF_FULL_ANALYTICS: FullStaffAnalyticsDataset = {
       ],
       queueStatus: [
         { id: 'pending', label: 'Pending', value: 18, percentage: 13, color: '#C88A36' },
-        { id: 'in_progress', label: 'In Progress', value: 12, percentage: 9, color: '#758B74' },
-        { id: 'completed', label: 'Completed', value: 100, percentage: 73, color: '#245747' },
-        { id: 'rejected', label: 'Rejected', value: 6, percentage: 5, color: '#B87558' },
+        { id: 'in_progress', label: 'In Progress', value: 12, percentage: 9, color: '#5B6E69' },
+        { id: 'completed', label: 'Completed', value: 100, percentage: 73, color: '#174B4A' },
+        { id: 'rejected', label: 'Rejected', value: 6, percentage: 5, color: '#B96D4C' },
       ],
       queueVolumeTrend: [
         {
           label: 'Sun',
           segments: [
-            { id: 'proc', label: 'Processed', value: 15, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 15, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 3, color: '#C88A36' },
           ],
         },
         {
           label: 'Mon',
           segments: [
-            { id: 'proc', label: 'Processed', value: 21, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 21, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 4, color: '#C88A36' },
           ],
         },
         {
           label: 'Tue',
           segments: [
-            { id: 'proc', label: 'Processed', value: 25, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 25, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 5, color: '#C88A36' },
           ],
         },
         {
           label: 'Wed',
           segments: [
-            { id: 'proc', label: 'Processed', value: 21, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 21, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 4, color: '#C88A36' },
           ],
         },
         {
           label: 'Thu',
           segments: [
-            { id: 'proc', label: 'Processed', value: 27, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 27, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 5, color: '#C88A36' },
           ],
         },
         {
           label: 'Fri',
           segments: [
-            { id: 'proc', label: 'Processed', value: 30, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 30, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 6, color: '#C88A36' },
           ],
         },
         {
           label: 'Sat',
           segments: [
-            { id: 'proc', label: 'Processed', value: 23, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 23, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 4, color: '#C88A36' },
           ],
         },
@@ -626,36 +626,36 @@ export const STAFF_FULL_ANALYTICS: FullStaffAnalyticsDataset = {
       ],
       queueStatus: [
         { id: 'pending', label: 'Pending', value: 75, percentage: 12, color: '#C88A36' },
-        { id: 'in_progress', label: 'In Progress', value: 52, percentage: 8, color: '#758B74' },
-        { id: 'completed', label: 'Completed', value: 465, percentage: 75, color: '#245747' },
-        { id: 'rejected', label: 'Rejected', value: 28, percentage: 5, color: '#B87558' },
+        { id: 'in_progress', label: 'In Progress', value: 52, percentage: 8, color: '#5B6E69' },
+        { id: 'completed', label: 'Completed', value: 465, percentage: 75, color: '#174B4A' },
+        { id: 'rejected', label: 'Rejected', value: 28, percentage: 5, color: '#B96D4C' },
       ],
       queueVolumeTrend: [
         {
           label: 'Week 1',
           segments: [
-            { id: 'proc', label: 'Processed', value: 135, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 135, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 20, color: '#C88A36' },
           ],
         },
         {
           label: 'Week 2',
           segments: [
-            { id: 'proc', label: 'Processed', value: 150, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 150, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 22, color: '#C88A36' },
           ],
         },
         {
           label: 'Week 3',
           segments: [
-            { id: 'proc', label: 'Processed', value: 160, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 160, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 18, color: '#C88A36' },
           ],
         },
         {
           label: 'Week 4',
           segments: [
-            { id: 'proc', label: 'Processed', value: 153, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 153, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 15, color: '#C88A36' },
           ],
         },
@@ -670,29 +670,29 @@ export const STAFF_FULL_ANALYTICS: FullStaffAnalyticsDataset = {
       ],
       queueStatus: [
         { id: 'pending', label: 'Pending', value: 220, percentage: 12, color: '#C88A36' },
-        { id: 'in_progress', label: 'In Progress', value: 145, percentage: 8, color: '#758B74' },
-        { id: 'completed', label: 'Completed', value: 1365, percentage: 75, color: '#245747' },
-        { id: 'rejected', label: 'Rejected', value: 90, percentage: 5, color: '#B87558' },
+        { id: 'in_progress', label: 'In Progress', value: 145, percentage: 8, color: '#5B6E69' },
+        { id: 'completed', label: 'Completed', value: 1365, percentage: 75, color: '#174B4A' },
+        { id: 'rejected', label: 'Rejected', value: 90, percentage: 5, color: '#B96D4C' },
       ],
       queueVolumeTrend: [
         {
           label: 'August',
           segments: [
-            { id: 'proc', label: 'Processed', value: 520, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 520, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 65, color: '#C88A36' },
           ],
         },
         {
           label: 'September',
           segments: [
-            { id: 'proc', label: 'Processed', value: 605, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 605, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 58, color: '#C88A36' },
           ],
         },
         {
           label: 'October',
           segments: [
-            { id: 'proc', label: 'Processed', value: 635, color: '#245747' },
+            { id: 'proc', label: 'Processed', value: 635, color: '#174B4A' },
             { id: 'pend', label: 'Pending', value: 52, color: '#C88A36' },
           ],
         },

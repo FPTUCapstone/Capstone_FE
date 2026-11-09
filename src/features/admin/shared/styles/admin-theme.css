@@ -6,51 +6,51 @@
 
 .admin-theme {
   /* Core Brand Colors */
-  --admin-forest-charcoal: #1C2923;
-  --admin-forest-accent: #245747;
-  --admin-forest-hover: #1B4337;
+  --admin-forest-charcoal: #1C2928;
+  --admin-forest-accent: #174B4A;
+  --admin-forest-hover: #103B39;
   --admin-forest-active: #14332A;
-  --admin-sage: #758B74;
-  --admin-sage-light: #E8EFE9;
-  --admin-ivory: #F7F6F2;
-  --admin-copper: #B87558;
+  --admin-sage: #5B6E69;
+  --admin-sage-light: #E8F0EA;
+  --admin-ivory: #F7F5EF;
+  --admin-copper: #B96D4C;
   --admin-copper-light: #F7EBE5;
-  --admin-copper-text: #7A3F26;
+  --admin-copper-text: #995436;
 
   /* Surfaces & Canvas */
-  --admin-surface-canvas: #F7F6F2;
+  --admin-surface-canvas: #F7F5EF;
   --admin-surface-card: #FFFFFF;
-  --admin-surface-card-subtle: #F0EFEA;
-  --admin-surface-sidebar: #1C2923;
-  --admin-surface-sidebar-hover: #273830;
-  --admin-surface-sidebar-active: #245747;
+  --admin-surface-card-subtle: #F7F5EF;
+  --admin-surface-sidebar: #1C2928;
+  --admin-surface-sidebar-hover: #103B39;
+  --admin-surface-sidebar-active: #174B4A;
   --admin-surface-dialog: #FFFFFF;
   --admin-surface-overlay: rgba(28, 41, 35, 0.45);
 
   /* Borders & Dividers */
-  --admin-border-subtle: #E6E4DD;
-  --admin-border-default: #D8D5CC;
-  --admin-border-strong: #758B74;
-  --admin-border-sidebar: #2A3B33;
+  --admin-border-subtle: #DCE2DD;
+  --admin-border-default: #DCE2DD;
+  --admin-border-strong: #5B6E69;
+  --admin-border-sidebar: #103B39;
 
   /* Typography & Inks (WCAG 2.2 AA Verified) */
-  --admin-text-primary: #1C2923;
-  --admin-text-secondary: #4A5851;
-  --admin-text-muted: #53665D; /* Darkened from #74827B to achieve 6.13:1 contrast on white (WCAG 2.2 AA) */
-  --admin-text-on-dark: #F7F6F2;
-  --admin-text-on-dark-muted: #A3B3AB;
+  --admin-text-primary: #1C2928;
+  --admin-text-secondary: #5B6E69;
+  --admin-text-muted: #53665D; /* Darkened from #5B6E69 to achieve 6.13:1 contrast on white (WCAG 2.2 AA) */
+  --admin-text-on-dark: #F7F5EF;
+  --admin-text-on-dark-muted: #5B6E69;
 
   /* Buttons & Interactive Elements */
-  --admin-btn-primary-bg: #245747;
-  --admin-btn-primary-hover: #1B4337;
+  --admin-btn-primary-bg: #174B4A;
+  --admin-btn-primary-hover: #103B39;
   --admin-btn-primary-text: #FFFFFF;
 
   --admin-btn-secondary-bg: #FFFFFF;
-  --admin-btn-secondary-border: #D8D5CC;
-  --admin-btn-secondary-hover: #F0EFEA;
-  --admin-btn-secondary-text: #1C2923;
+  --admin-btn-secondary-border: #DCE2DD;
+  --admin-btn-secondary-hover: #F7F5EF;
+  --admin-btn-secondary-text: #1C2928;
 
-  --admin-btn-copper-bg: #9C5539; /* Adjusted from #B87558 to achieve 5.57:1 contrast with white text */
+  --admin-btn-copper-bg: #9C5539; /* Adjusted from #B96D4C to achieve 5.57:1 contrast with white text */
   --admin-btn-copper-hover: #85462D;
   --admin-btn-copper-text: #FFFFFF;
 
@@ -71,12 +71,12 @@
   --admin-badge-rejected-text: #9E2B25;
   --admin-badge-rejected-border: #F4C5BF;
 
-  --admin-badge-locked-bg: #EDECE8;
+  --admin-badge-locked-bg: #F7F5EF;
   --admin-badge-locked-text: #515553;
   --admin-badge-locked-border: #D2D1CC;
 
   --admin-badge-alert-bg: #FCEEE9;
-  --admin-badge-alert-text: #7A3F26;
+  --admin-badge-alert-text: #995436;
   --admin-badge-alert-border: #EFC6B6;
 }
 

@@ -106,15 +106,15 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
   if (failure || !detail) {
     const content = detailStatusText(failure ?? 'network');
     return (
-      <div className="min-h-screen bg-[#f3f6f7]" lang="vi">
+      <div className="min-h-screen bg-[#F7F5EF]" lang="vi">
         <main className="mx-auto flex min-h-[70vh] max-w-2xl items-center px-4 py-12 sm:px-8">
           <section className="w-full rounded-[28px] border border-[#d5e0e3] bg-white p-8 text-center shadow-[0_18px_50px_rgba(0,21,42,.08)]">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#edf1f2] text-2xl text-[#5f6c73]" aria-hidden="true">⌖</div>
-            <h1 className="mt-5 text-2xl font-black text-[#00152a] sm:text-3xl">{content.title}</h1>
+            <h1 className="mt-5 text-2xl font-black text-[#1C2928] sm:text-3xl">{content.title}</h1>
             <p className="mt-3 text-sm leading-relaxed text-[#59676e]">{content.description}</p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               {failure === 'network' ? (
-                <button type="button" onClick={() => { setLoading(true); setFailure(null); setRequestVersion((value) => value + 1); }} className="min-h-11 rounded-xl bg-[#007d6e] px-5 text-sm font-bold text-white">Thử lại</button>
+                <button type="button" onClick={() => { setLoading(true); setFailure(null); setRequestVersion((value) => value + 1); }} className="min-h-11 rounded-xl bg-[#103B39] px-5 text-sm font-bold text-white">Thử lại</button>
               ) : null}
               <Link href="/pois" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#cbd7db] bg-white px-5 text-sm font-bold text-[#29404a]">Về trang Khám phá</Link>
             </div>
@@ -128,15 +128,15 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
   const heroPhotos = detail.photos.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-white text-[#00152a]" lang="vi">
+    <div className="min-h-screen bg-white text-[#1C2928]" lang="vi">
       
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <button type="button" onClick={goBack} className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-extrabold text-[#006b5f] hover:bg-[#edf8f5]">← Quay lại kết quả khám phá</button>
+          <button type="button" onClick={goBack} className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-extrabold text-[#174B4A] hover:bg-[#edf8f5]">← Quay lại kết quả khám phá</button>
           <nav aria-label="Đường dẫn" className="text-xs font-semibold text-[#66747b]">
-            <Link href="/" className="hover:text-[#006b5f]">Trang chủ</Link> <span aria-hidden="true">/</span>{' '}
-            <Link href="/pois" className="hover:text-[#006b5f]">Địa điểm</Link> <span aria-hidden="true">/</span>{' '}
-            <span aria-current="page" className="text-[#00152a]">{detail.name}</span>
+            <Link href="/" className="hover:text-[#174B4A]">Trang chủ</Link> <span aria-hidden="true">/</span>{' '}
+            <Link href="/pois" className="hover:text-[#174B4A]">Địa điểm</Link> <span aria-hidden="true">/</span>{' '}
+            <span aria-current="page" className="text-[#1C2928]">{detail.name}</span>
           </nav>
         </div>
 
@@ -151,18 +151,18 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
 
         <section className="py-7 sm:py-9">
           <div className="flex flex-wrap gap-2 text-xs font-extrabold">
-            <span className="rounded-full bg-[#00152a] px-3 py-2 text-white">{detail.categoryName}</span>
-            <span className={`rounded-full px-3 py-2 ${detail.isOpenNow ? 'bg-[#d9f3ed] text-[#006b5f]' : 'bg-[#e8edef] text-[#4f5e65]'}`}>
+            <span className="rounded-full bg-[#103B39] px-3 py-2 text-white">{detail.categoryName}</span>
+            <span className={`rounded-full px-3 py-2 ${detail.isOpenNow ? 'bg-[#d9f3ed] text-[#174B4A]' : 'bg-[#e8edef] text-[#4f5e65]'}`}>
               {detail.isOpenNow ? '● Đang mở cửa hôm nay' : '○ Hiện đang đóng cửa'}
             </span>
           </div>
           <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
             <div className="max-w-4xl">
-              <h1 className="text-4xl font-black leading-tight tracking-[-.04em] text-[#00152a] sm:text-5xl">{detail.name}</h1>
+              <h1 className="text-4xl font-black leading-tight tracking-[-.04em] text-[#1C2928] sm:text-5xl">{detail.name}</h1>
               <p className="mt-4 text-base leading-relaxed text-[#536169] sm:text-lg">{detail.address ?? 'Địa chỉ đang được cập nhật'}</p>
             </div>
             <div className="flex w-fit items-center gap-3 rounded-2xl bg-[#f0f4f5] px-4 py-3">
-              <span className="rounded-xl bg-[#007d6e] px-3 py-2 text-xl font-black text-white">{detail.averageRating?.toFixed(1) ?? '—'}</span>
+              <span className="rounded-xl bg-[#103B39] px-3 py-2 text-xl font-black text-white">{detail.averageRating?.toFixed(1) ?? '—'}</span>
               <div>
                 {detail.averageRating !== null ? (
                   <p className="font-black text-[#e65100]" aria-label={`${detail.averageRating.toFixed(1)} trên 5 sao`}>
@@ -207,14 +207,14 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
             <div className="mt-8 rounded-2xl border border-[#b4dbd3] bg-[#edf8f5] p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-black text-[#006b5f] text-base">Lập lịch trình cùng địa điểm này</h3>
+                  <h3 className="font-black text-[#174B4A] text-base">Lập lịch trình cùng địa điểm này</h3>
                   <p className="mt-1 text-xs leading-relaxed text-[#2d6259]">
                     Thêm điểm tham quan này vào hành trình tự động cân đối thời gian và cung đường tại công cụ Lập lịch trình TripMate.
                   </p>
                 </div>
                 <Link
                   href="/plan"
-                  className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-[#007d6e] px-4 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-[#103B39] px-4 text-xs font-bold text-white hover:bg-[#174B4A] transition"
                 >
                   Lập lịch trình →
                 </Link>
@@ -240,7 +240,7 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
                   return (
                     <div key={day} className={`flex min-h-11 items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm ${dayOfWeek === todayVietnam ? 'bg-[#dce4e5] font-extrabold' : ''}`}>
                       <span>{day}{dayOfWeek === todayVietnam ? ' (Hôm nay)' : ''}</span>
-                      <span className={closed ? 'text-[#68767c]' : 'font-bold text-[#006b5f]'}>{hoursLabel ?? 'Đóng cửa'}</span>
+                      <span className={closed ? 'text-[#68767c]' : 'font-bold text-[#174B4A]'}>{hoursLabel ?? 'Đóng cửa'}</span>
                     </div>
                   );
                 })}
@@ -259,7 +259,7 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
                 />
               </div>
               <p className="mt-3 break-all rounded-xl bg-white px-3 py-2 font-mono text-xs text-[#526169]">{detail.latitude.toFixed(6)}, {detail.longitude.toFixed(6)}</p>
-              <button type="button" onClick={copyCoordinates} className="mt-3 min-h-11 w-full rounded-xl border border-[#a9c9c3] bg-white px-4 text-sm font-extrabold text-[#006b5f]">{copyMessage}</button>
+              <button type="button" onClick={copyCoordinates} className="mt-3 min-h-11 w-full rounded-xl border border-[#a9c9c3] bg-white px-4 text-sm font-extrabold text-[#174B4A]">{copyMessage}</button>
             </section>
           </aside>
         </div>
@@ -277,8 +277,8 @@ interface InfoCardProps {
 function InfoCard({ eyebrow, value, detail }: InfoCardProps) {
   return (
     <article className="rounded-[20px] bg-[#f0f4f5] p-5">
-      <p className="text-xs font-black uppercase tracking-[.11em] text-[#007d6e]">{eyebrow}</p>
-      <p className="mt-2 text-lg font-black text-[#00152a]">{value}</p>
+      <p className="text-xs font-black uppercase tracking-[.11em] text-[#103B39]">{eyebrow}</p>
+      <p className="mt-2 text-lg font-black text-[#1C2928]">{value}</p>
       <p className="mt-2 text-xs leading-relaxed text-[#66747b]">{detail}</p>
     </article>
   );

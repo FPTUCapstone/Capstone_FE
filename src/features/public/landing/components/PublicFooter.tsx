@@ -7,7 +7,7 @@ import { ROUTES } from '@/lib/routes';
 
 export function PublicFooter() {
   return (
-    <footer className="border-t border-slate-800 bg-[#00152a] text-slate-300 px-4 py-14 sm:px-8">
+    <footer className="border-t border-slate-800 bg-[#103B39] text-slate-300 px-4 py-14 sm:px-8">
       <ScrollReveal animation="fade-up">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800/80">
@@ -22,13 +22,13 @@ export function PublicFooter() {
               </p>
               <div className="space-y-2 text-xs text-slate-400 pt-2">
                 <p className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+                  <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
                     support_agent
                   </span>
                   <span>Hỗ trợ: <strong className="text-white">1900 8899</strong> | <strong className="text-white">hotro@tripmate.vn</strong></span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-[#007d6e]" aria-hidden="true">
+                  <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
                     location_on
                   </span>
                   <span>Trụ sở vận hành: <strong className="text-white">Đà Nẵng, Việt Nam</strong></span>
@@ -123,7 +123,7 @@ export function PublicFooter() {
               <div className="pt-4 space-y-2">
                 <Link
                   href={ROUTES.partner.register}
-                  className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-[#007d6e] hover:bg-[#006b5f] text-white text-xs font-bold py-2.5 px-4 shadow-sm transition"
+                  className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-[#103B39] hover:bg-[#174B4A] text-white text-xs font-bold py-2.5 px-4 shadow-sm transition"
                 >
                   <span>Trở thành đối tác</span>
                   <span className="material-symbols-outlined text-sm" aria-hidden="true">

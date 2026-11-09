@@ -26,11 +26,11 @@ export function TourRecommendationsSection({
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-100/70 px-3 py-1 text-[11px] font-bold text-[#007d6e] mb-2">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-100/70 px-3 py-1 text-[11px] font-bold text-[#103B39] mb-2">
             <span className="material-symbols-outlined text-sm">auto_awesome</span>
             <span>Hệ Thống Gợi Ý Thông Minh TripMate</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-[#00152a] tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-[#1C2928] tracking-tight">
             Tour Dành Riêng Cho Bạn
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-slate-600">

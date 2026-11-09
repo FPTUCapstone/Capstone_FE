@@ -22,6 +22,25 @@ describe('PartnerSidebar', () => {
     expect(screen.getByRole('link', { name: /Hồ sơ doanh nghiệp/i })).toBeDefined();
   });
 
+  it('links to the safety alerts from every workspace page, without the demo flag', () => {
+    const { rerender } = render(<PartnerSidebar activeTab="tours" />);
+    const link = () => screen.getByRole('link', { name: /Cảnh báo an toàn/i });
+    expect(link().getAttribute('href')).toBe('/partner/weather-safety-reviews');
+    expect(link().getAttribute('aria-current')).toBeNull();
+
+    rerender(<PartnerSidebar activeTab="weatherSafety" isDemo={true} />);
+    expect(link().getAttribute('href')).toBe('/partner/weather-safety-reviews');
+    expect(link().getAttribute('aria-current')).toBe('page');
+  });
+
+  it('shows how many safety alerts need attention only when there are some', () => {
+    const { rerender } = render(<PartnerSidebar activeTab="tours" weatherAlertBadgeCount={0} />);
+    expect(screen.getByRole('link', { name: /Cảnh báo an toàn/i }).textContent).not.toMatch(/\d/);
+
+    rerender(<PartnerSidebar activeTab="tours" weatherAlertBadgeCount={3} />);
+    expect(screen.getByRole('link', { name: /Cảnh báo an toàn/i }).textContent).toMatch(/3/);
+  });
+
   it('marks the active tab with aria-current="page"', () => {
     render(<PartnerSidebar activeTab="tours" />);
 

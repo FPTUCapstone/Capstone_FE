@@ -166,7 +166,7 @@ export function TourCard({ tour, searchContextQuery, aggregateRating, copy = leg
         </div>
 
         {/* Tour Title */}
-        <h3 className="mb-3 line-clamp-2 text-base font-bold text-[#00152a] group-hover:text-[#007d6e] transition-colors">
+        <h3 className="mb-3 line-clamp-2 text-base font-bold text-[#1C2928] group-hover:text-[#103B39] transition-colors">
           <Link href={detailHref} className="focus:outline-hidden focus:underline">
             {tour.title}
           </Link>
@@ -187,14 +187,14 @@ export function TourCard({ tour, searchContextQuery, aggregateRating, copy = leg
         <div className="mt-auto flex items-end justify-between border-t border-slate-100 pt-3">
           <div>
             <span className="block text-[11px] text-slate-500">{copy.priceFrom}</span>
-            <span className="text-lg font-black text-[#007d6e]">
+            <span className="text-lg font-black text-[#103B39]">
               {formatVndPrice(tour.basePrice)}
             </span>
           </div>
 
           <Link
             href={detailHref}
-            className="inline-flex items-center gap-1 rounded-xl bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#007d6e] transition hover:bg-[#007d6e] hover:text-white"
+            className="inline-flex items-center gap-1 rounded-xl bg-teal-50 px-3 py-1.5 text-xs font-bold text-[#103B39] transition hover:bg-[#103B39] hover:text-white"
             aria-label={copy.detailsAria(tour.title)}
           >
             <span>{copy.details}</span>

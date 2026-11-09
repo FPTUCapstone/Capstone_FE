@@ -85,25 +85,25 @@ export function AdminBreadcrumbs({ role = 'Administrator', className = '' }: Adm
 
   if (crumbs.length <= 1) {
     return (
-      <nav aria-label="Breadcrumb" className={`flex items-center text-xs text-[#4A5851] ${className}`}>
-        <span className="font-semibold text-[#1C2923]">{homeLabel}</span>
+      <nav aria-label="Breadcrumb" className={`flex items-center text-xs text-[#5B6E69] ${className}`}>
+        <span className="font-semibold text-[#1C2928]">{homeLabel}</span>
       </nav>
     );
   }
 
   return (
-    <nav aria-label="Breadcrumb" className={`flex items-center text-xs text-[#4A5851] ${className}`}>
+    <nav aria-label="Breadcrumb" className={`flex items-center text-xs text-[#5B6E69] ${className}`}>
       <ol className="flex items-center gap-1.5 flex-wrap">
         {crumbs.map((crumb, idx) => (
           <li key={crumb.href + idx} className="inline-flex items-center gap-1.5">
             {idx > 0 && (
-              <span className="material-symbols-outlined text-[12px] text-[#74827B]" aria-hidden="true">
+              <span className="material-symbols-outlined text-[12px] text-[#5B6E69]" aria-hidden="true">
                 chevron_right
               </span>
             )}
             {crumb.isCurrent ? (
               <span
-                className="font-semibold text-[#1C2923]"
+                className="font-semibold text-[#1C2928]"
                 aria-current="page"
               >
                 {crumb.label}
@@ -111,7 +111,7 @@ export function AdminBreadcrumbs({ role = 'Administrator', className = '' }: Adm
             ) : (
               <Link
                 href={crumb.href}
-                className="text-[#4A5851] hover:text-[#245747] transition-colors"
+                className="text-[#5B6E69] hover:text-[#174B4A] transition-colors"
               >
                 {crumb.label}
               </Link>

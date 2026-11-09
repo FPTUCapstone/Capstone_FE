@@ -46,19 +46,29 @@ describe('Global Typography Architecture & Standardization', () => {
   });
 
   it('wires font variable classes on both html and body in RootLayout for SSR & portal resilience', () => {
-    // Both html and body must carry the font variable classes
-    expect(layoutSource).toMatch(
-      /<html[^>]*className=\{`\$\{geistSans\.variable\}\s+\$\{geistMono\.variable\}\s+\$\{jakarta\.variable\}`\}/,
-    );
-    expect(layoutSource).toMatch(
-      /<body[^>]*\$\{jakarta\.variable\}[^>]*font-sans/,
-    );
+    // Both html and body must carry the required font variable classes
+    const expectedFontVariables = [
+      'geistSans.variable',
+      'geistMono.variable',
+      'jakarta.variable',
+      'bricolage.variable',
+      'manrope.variable',
+    ];
+
+    for (const variableName of expectedFontVariables) {
+      const escaped = variableName.replace('.', '\\.');
+      expect(layoutSource).toMatch(new RegExp(`<html[^>]*className=[^>]*\\$\\{${escaped}\\}`));
+      expect(layoutSource).toMatch(new RegExp(`<body[^>]*className=[^>]*\\$\\{${escaped}\\}`));
+    }
+    expect(layoutSource).toMatch(/<body[^>]*font-sans/);
   });
 
   it('validates display: swap is configured on Next.js font loaders for FOIT prevention', () => {
     expect(layoutSource).toMatch(/const\s+geistSans\s*=\s*Geist\(\{[^}]*display:\s*['"]swap['"]/);
     expect(layoutSource).toMatch(/const\s+geistMono\s*=\s*Geist_Mono\(\{[^}]*display:\s*['"]swap['"]/);
     expect(layoutSource).toMatch(/const\s+jakarta\s*=\s*Plus_Jakarta_Sans\(\{[^}]*display:\s*['"]swap['"]/);
+    expect(layoutSource).toMatch(/const\s+bricolage\s*=\s*Bricolage_Grotesque\(\{[^}]*display:\s*['"]swap['"]/);
+    expect(layoutSource).toMatch(/const\s+manrope\s*=\s*Manrope\(\{[^}]*display:\s*['"]swap['"]/);
   });
 
   it('verifies comprehensive multi-platform system fallback chain in --font-sans', () => {

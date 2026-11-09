@@ -87,14 +87,14 @@ export function AccountWorkspaceNav({
                 aria-selected={isActive}
                 className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-150 ${
                   isActive
-                    ? 'bg-[#006B5F] text-white shadow-xs'
-                    : 'text-[#33425A] hover:bg-slate-100 hover:text-[#00152A]'
+                    ? 'bg-[#174B4A] text-white shadow-xs'
+                    : 'text-[#5B6E69] hover:bg-slate-100 hover:text-[#1C2928]'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span
                     className={`material-symbols-outlined text-[20px] transition-transform ${
-                      isActive ? 'text-white' : 'text-[#64748B] group-hover:text-[#006B5F]'
+                      isActive ? 'text-white' : 'text-[#5B6E69] group-hover:text-[#174B4A]'
                     }`}
                     aria-hidden="true"
                   >
@@ -137,7 +137,7 @@ export function AccountWorkspaceNav({
   return (
     <nav
       aria-label={accountCommonEn.navigation.workspaceNavAria}
-      className={`mb-6 flex border-b border-[#D8E1E4] overflow-x-auto ${className}`}
+      className={`mb-6 flex border-b border-[#DCE2DD] overflow-x-auto ${className}`}
     >
       <div className="flex gap-2 min-w-full sm:min-w-0" role="tablist">
         {ACCOUNT_WORKSPACE_TABS.map((tab) => {
@@ -150,8 +150,8 @@ export function AccountWorkspaceNav({
               aria-selected={isActive}
               className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm transition ${
                 isActive
-                  ? 'border-[#006B5F] font-bold text-[#006B5F]'
-                  : 'border-transparent font-medium text-[#59616B] hover:border-slate-300 hover:text-[#00152A]'
+                  ? 'border-[#174B4A] font-bold text-[#174B4A]'
+                  : 'border-transparent font-medium text-[#5B6E69] hover:border-slate-300 hover:text-[#1C2928]'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
@@ -162,7 +162,7 @@ export function AccountWorkspaceNav({
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                     isActive
-                      ? 'bg-[#E6F4F1] text-[#006B5F]'
+                      ? 'bg-[#E6F4F1] text-[#174B4A]'
                       : 'bg-slate-100 text-slate-500'
                   }`}
                 >

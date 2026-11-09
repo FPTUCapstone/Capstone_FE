@@ -9,6 +9,8 @@ import { HowItWorksPreviewSection } from './components/HowItWorksPreviewSection'
 import { FeaturedToursSection } from './components/FeaturedToursSection';
 import { FinalCtaSection } from './components/FinalCtaSection';
 import { PublicFooter } from './components/PublicFooter';
+import { EditorialSectionNav } from './components/EditorialSectionNav';
+import { EditorialJournalRail } from './components/EditorialJournalRail';
 
 export function LandingPage() {
   return (
@@ -21,13 +23,48 @@ export function LandingPage() {
 function LandingContent() {
   const { scrollTo } = useSmoothScroll();
   const [activeCity, setActiveCity] = useState<'danang' | 'hoian' | 'hue'>('danang');
+  const [activeSection, setActiveSection] = useState<string>('destinations');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     function handleScroll() {
       setShowScrollTop(window.scrollY > 400);
+
+      const sectionIds = ['destinations', 'how-it-works', 'tours', 'final-cta'];
+      const ACTIVATION_THRESHOLD = 200; // px from top of viewport
+
+      // If scrolled near bottom of page, activate final CTA
+      const scrollHeight = document.documentElement.scrollHeight;
+      const isAtBottom =
+        window.scrollY > 200 &&
+        scrollHeight > window.innerHeight &&
+        window.innerHeight + window.scrollY >= scrollHeight - 50;
+      if (isAtBottom) {
+        setActiveSection('final-cta');
+        return;
+      }
+
+      let matched = false;
+      for (let i = sectionIds.length - 1; i >= 0; i--) {
+        const id = sectionIds[i];
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= ACTIVATION_THRESHOLD) {
+            setActiveSection(id);
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      if (!matched) {
+        setActiveSection('destinations');
+      }
     }
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -35,12 +72,27 @@ function LandingContent() {
     setActiveCity(city);
   }
 
+  function scrollToSection(id: string) {
+    const el = document.getElementById(id);
+    if (el) {
+      if (scrollTo) {
+        scrollTo(el, { offset: -80 });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
+
   function scrollToTop() {
-    scrollTo(0);
+    if (scrollTo) {
+      scrollTo(0);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f7fc] text-[#0F1B2D] font-sans antialiased selection:bg-teal-100 selection:text-teal-900 relative overflow-x-clip">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928] font-sans antialiased selection:bg-teal-100 selection:text-teal-900 relative overflow-x-clip">
       <main>
         {/* 1. Calm Editorial Scenic Travel Hero */}
         <LandingHero
@@ -48,17 +100,39 @@ function LandingContent() {
           onSelectCity={handleSelectCity}
         />
 
-        {/* 2. Central Vietnam Destination Showcase */}
-        <CentralVietnamShowcase activeCity={activeCity} onSelectCity={handleSelectCity} />
+        {/* 2. Editorial 3-Column Discovery Area (Bounded Rails) */}
+        <div className="relative w-full max-w-[1880px] mx-auto px-2 sm:px-4 lg:px-6">
+          <div className="flex items-start justify-center gap-3 xl:gap-4 2xl:gap-6">
+            
+            {/* Left Rail: Numbered Section Navigation */}
+            <EditorialSectionNav
+              activeSection={activeSection}
+              onNavigate={scrollToSection}
+            />
 
-        {/* 3. Three-Step How It Works Guide */}
-        <HowItWorksPreviewSection />
+            {/* Center Column: Preserved Landing Sections */}
+            <div className="flex-1 min-w-0 max-w-[1440px] space-y-0">
+              <CentralVietnamShowcase activeCity={activeCity} onSelectCity={handleSelectCity} />
 
-        {/* 4. Verified Curated Tours */}
-        <FeaturedToursSection />
+              <div id="how-it-works">
+                <HowItWorksPreviewSection />
+              </div>
 
-        {/* 5. Final Horizon CTA Section */}
-        <FinalCtaSection />
+              <FeaturedToursSection />
+            </div>
+
+            {/* Right Rail: Travel Journal Vignettes */}
+            <EditorialJournalRail
+              activeCity={activeCity}
+              onSelectCity={handleSelectCity}
+            />
+          </div>
+        </div>
+
+        {/* 3. Final Horizon CTA Section (100% Edge-to-Edge Full-Bleed) */}
+        <div id="final-cta" className="w-full">
+          <FinalCtaSection />
+        </div>
       </main>
 
       {/* Shared Editorial Public Footer */}
@@ -69,7 +143,7 @@ function LandingContent() {
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#007d6e] text-white shadow-xl hover:bg-[#006b5f] flex items-center justify-center transition-all duration-300 hover:scale-105 cursor-pointer animate-in fade-in zoom-in-75 border border-white/20"
+          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#103B39] text-white shadow-xl hover:bg-[#174B4A] flex items-center justify-center transition-all duration-300 hover:scale-105 cursor-pointer animate-in fade-in zoom-in-75 border border-white/20"
           aria-label="Cuộn lên đầu trang"
         >
           <span className="material-symbols-outlined text-2xl">arrow_upward</span>

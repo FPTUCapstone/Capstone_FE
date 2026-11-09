@@ -169,13 +169,13 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     const isExplicitFull = typeof localStorage !== 'undefined' && localStorage.getItem('tripmate_motion') === 'full';
     console.log(
       `%c[TripMate Motion]%c Active: %c${motionMode.toUpperCase()}%c | OS prefers-reduced-motion: %c${osReduced}%c | User Opt-in: %c${isExplicitFull ? 'YES' : 'NO'}`,
-      'color: #006B5F; font-weight: bold;',
+      'color: #174B4A; font-weight: bold;',
       'color: inherit;',
       motionMode === 'full' ? 'color: #0E9F6E; font-weight: bold;' : 'color: #D97706; font-weight: bold;',
       'color: inherit;',
       osReduced ? 'color: #E02D4D; font-weight: bold;' : 'color: #0E9F6E; font-weight: bold;',
       'color: inherit;',
-      isExplicitFull ? 'color: #0E9F6E; font-weight: bold;' : 'color: #64748B;'
+      isExplicitFull ? 'color: #0E9F6E; font-weight: bold;' : 'color: #5B6E69;'
     );
 
     // If reduced motion is requested, do not initialize Lenis

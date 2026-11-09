@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ItineraryDetailDto, ItineraryDetailItemDto } from '../types/schedulingTypes';
-import { buildItineraryMapModel, circlePolygon, MARKER_COLORS } from '../utils/mapGeometry';
+import { buildItineraryMapModel, circlePolygon, legIdBetweenItems, MARKER_COLORS } from '../utils/mapGeometry';
 
 function item(overrides: Partial<ItineraryDetailItemDto>): ItineraryDetailItemDto {
   return {
@@ -79,5 +79,101 @@ describe('buildItineraryMapModel (D9 itinerary map)', () => {
     const model = buildItineraryMapModel({ items: [item({ latitude: null, longitude: null })] });
 
     expect(model.markers).toEqual([]);
+  });
+
+  describe('legs (road route per leg)', () => {
+    const base: Pick<ItineraryDetailDto, 'items' | 'startLocation' | 'endLocation' | 'transportMode'> = {
+      transportMode: 'Motorbike',
+      startLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      endLocation: { latitude: 16.07, longitude: 108.25, address: null },
+      items: [
+        item({ itemId: 11, sequenceNo: 1, latitude: 16.06, longitude: 108.22, transportModeFromPrevious: 'Walking' }),
+        item({ itemId: 12, sequenceNo: 2, latitude: 16.065, longitude: 108.23 }),
+      ],
+    };
+
+    it('has one leg between each pair of consecutive points', () => {
+      const { legs } = buildItineraryMapModel(base);
+
+      expect(legs.map((leg) => [leg.from, leg.to])).toEqual([
+        [[108.2, 16.05], [108.22, 16.06]],
+        [[108.22, 16.06], [108.23, 16.065]],
+        [[108.23, 16.065], [108.25, 16.07]],
+      ]);
+    });
+
+    it('walks legs into a stop reached on foot and drives the rest (motorbike and car share the driving profile)', () => {
+      const { legs } = buildItineraryMapModel(base);
+
+      expect(legs.map((leg) => leg.profile)).toEqual(['walking', 'driving', 'driving']);
+    });
+
+    it('falls back to the trip mode, and to driving when there is none', () => {
+      const walkingTrip = buildItineraryMapModel({ ...base, transportMode: 'Walking' });
+      const noMode = buildItineraryMapModel({ ...base, transportMode: null });
+      const transit = buildItineraryMapModel({ ...base, transportMode: 'PublicTransit' });
+
+      expect(walkingTrip.legs.map((leg) => leg.profile)).toEqual(['walking', 'walking', 'walking']);
+      expect(noMode.legs.map((leg) => leg.profile)).toEqual(['walking', 'driving', 'driving']);
+      expect(transit.legs.map((leg) => leg.profile)).toEqual(['walking', 'driving', 'driving']);
+    });
+
+    it('skips a leg whose two ends are the same place and keeps the loop leg back to the start', () => {
+      const loop = buildItineraryMapModel({
+        ...base,
+        endLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      });
+      const stacked = buildItineraryMapModel({
+        ...base,
+        items: [
+          base.items[0],
+          item({ itemId: 12, sequenceNo: 2, latitude: 16.06, longitude: 108.22 }),
+        ],
+      });
+
+      expect(loop.legs).toHaveLength(3);
+      expect(loop.legs[2].to).toEqual([108.2, 16.05]);
+      expect(stacked.legs).toHaveLength(2);
+    });
+
+    it('gives each leg a key made of its profile and rounded ends, and has no legs without stops', () => {
+      const { legs } = buildItineraryMapModel(base);
+
+      expect(legs[0].key).toBe('walking:108.2,16.05;108.22,16.06');
+      expect(buildItineraryMapModel({ items: [] }).legs).toEqual([]);
+    });
+  });
+});
+
+describe('leg identity (select one leg)', () => {
+  const stops = [
+    item({ itemId: 11, sequenceNo: 1, latitude: 16.06, longitude: 108.22 }),
+    item({ itemId: 12, sequenceNo: 2, latitude: 16.065, longitude: 108.23 }),
+  ];
+
+  it('names a leg after the markers at its two ends, so the timeline can address it', () => {
+    const { legs } = buildItineraryMapModel({
+      startLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      endLocation: { latitude: 16.07, longitude: 108.25, address: null },
+      items: stops,
+    });
+
+    expect(legs.map((leg) => [leg.fromKey, leg.toKey])).toEqual([
+      ['start', 'item-11'],
+      ['item-11', 'item-12'],
+      ['item-12', 'end'],
+    ]);
+    expect(legs.map((leg) => leg.id)).toEqual(['start>item-11', 'item-11>item-12', 'item-12>end']);
+    expect(legIdBetweenItems(11, 12)).toBe('item-11>item-12');
+  });
+
+  it('ends a loop trip on the start marker, the only marker at that place', () => {
+    const { legs } = buildItineraryMapModel({
+      startLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      endLocation: { latitude: 16.05, longitude: 108.2, address: null },
+      items: stops,
+    });
+
+    expect(legs[legs.length - 1].toKey).toBe('start');
   });
 });

@@ -113,7 +113,7 @@ export function TourSearchBar({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#007d6e] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#006b5f] disabled:cursor-wait disabled:opacity-70 h-[38px]"
+              className="w-full inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] disabled:cursor-wait disabled:opacity-70 h-[38px]"
             >
               <span className="material-symbols-outlined text-sm">search</span>
               <span>{isLoading ? 'Đang tìm…' : 'Tìm kiếm tour'}</span>
