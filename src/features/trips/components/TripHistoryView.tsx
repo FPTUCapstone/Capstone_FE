@@ -216,7 +216,7 @@ export function TripHistoryView() {
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={ROUTES.plan}
-              className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
+              className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#103B39]"
             >
               {tripReviewEn.actions.planSmartItinerary}
             </Link>

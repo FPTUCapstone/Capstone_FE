@@ -468,7 +468,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     aria-expanded={isPartnerMenuOpen}
                     aria-haspopup="menu"
                     aria-label={strings.account.partnerMenuAria}
-                    className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A] cursor-pointer"
+                    className="flex items-center gap-2 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#d5e7dc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A] cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-base" aria-hidden="true">
                       storefront
@@ -583,7 +583,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                 <Link
                   href={ROUTES.account.profile}
                   aria-label={strings.account.profileAria}
-                  className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
+                  className="flex items-center gap-2 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#d5e7dc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
                 >
                   {currentTravelerProfile?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -621,7 +621,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
               </Link>
               <Link
                 href={ROUTES.register}
-                className="min-h-10 inline-flex items-center rounded-xl bg-[#174B4A] text-white px-4 py-2 text-xs font-bold shadow-xs hover:bg-[#004D46] transition btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
+                className="min-h-10 inline-flex items-center rounded-xl bg-[#174B4A] text-white px-4 py-2 text-xs font-bold shadow-xs hover:bg-[#103B39] transition btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
               >
                 {strings.account.register}
               </Link>
@@ -775,7 +775,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     <Link
                       href={isOperatorApproved ? ROUTES.partner.dashboard : ROUTES.partner.application}
                       onClick={() => setIsDrawerOpen(false)}
-                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-teal-200 bg-teal-50 text-xs font-bold text-[#174B4A]"
+                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] text-xs font-bold text-[#174B4A]"
                     >
                       <span className="material-symbols-outlined text-base">storefront</span>
                       <span className="truncate">{displayName}</span>
@@ -793,7 +793,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     <Link
                       href={ROUTES.account.profile}
                       onClick={() => setIsDrawerOpen(false)}
-                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-teal-200 bg-teal-50 text-xs font-bold text-[#174B4A]"
+                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] text-xs font-bold text-[#174B4A]"
                     >
                       <span className="material-symbols-outlined text-base">account_circle</span>
                       <span className="truncate">{displayName}</span>
@@ -813,7 +813,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                   <Link
                     href={ROUTES.register}
                     onClick={() => setIsDrawerOpen(false)}
-                    className="w-full block text-center py-2.5 rounded-xl bg-[#174B4A] text-white text-xs font-bold shadow-xs hover:bg-[#004D46] transition"
+                    className="w-full block text-center py-2.5 rounded-xl bg-[#174B4A] text-white text-xs font-bold shadow-xs hover:bg-[#103B39] transition"
                   >
                     {strings.account.register}
                   </Link>

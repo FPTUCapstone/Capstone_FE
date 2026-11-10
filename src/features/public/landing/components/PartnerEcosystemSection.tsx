@@ -5,7 +5,7 @@ import { LandingEyebrow } from './LandingEyebrow';
 
 export function PartnerEcosystemSection() {
   return (
-    <section id="partner" className="scroll-mt-20 py-16 sm:py-24 bg-[#103B39] text-white px-4 sm:px-8 border-b border-slate-800">
+    <section id="partner" className="scroll-mt-20 py-16 sm:py-24 bg-[#103B39] text-white px-4 sm:px-8 border-b border-[#174B4A]/30">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left: Narrative & Value Proposition */}
@@ -65,7 +65,7 @@ export function PartnerEcosystemSection() {
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Link
                   href={ROUTES.partner.register}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-400 hover:bg-teal-300 px-6 py-3 text-sm font-black text-[#1C2928] shadow-lg shadow-teal-400/20 transition-all cursor-pointer active:scale-95 btn-press"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white hover:bg-[#F7F5EF] px-6 py-3 text-sm font-black text-[#103B39] shadow-lg shadow-black/20 transition-all cursor-pointer active:scale-95 btn-press"
                 >
                   <span>Đăng ký Trở thành Tour Operator</span>
                   <span className="material-symbols-outlined text-lg">arrow_forward</span>
@@ -104,7 +104,7 @@ export function PartnerEcosystemSection() {
                   <div className="relative group/metric">
                     {/* Soft dynamic colored shadow behind metric card */}
                     <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-teal-500/30 to-sky-400/20 blur-md opacity-45 group-hover/metric:opacity-80 transition-opacity duration-500 animate-orb-1 pointer-events-none" />
-                    <div className="relative z-10 p-3 rounded-xl bg-[#00172D]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
+                    <div className="relative z-10 p-3 rounded-xl bg-[#0C2423]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
                       <p className="text-[11px] text-slate-400 font-medium">Đơn đặt tuần này</p>
                       <p className="text-lg font-black text-white mt-0.5">48 Đơn</p>
                     </div>
@@ -112,7 +112,7 @@ export function PartnerEcosystemSection() {
                   <div className="relative group/metric">
                     {/* Soft dynamic colored shadow behind metric card */}
                     <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-emerald-500/35 to-teal-400/25 blur-md opacity-45 group-hover/metric:opacity-80 transition-opacity duration-500 animate-orb-2 pointer-events-none" />
-                    <div className="relative z-10 p-3 rounded-xl bg-[#00172D]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
+                    <div className="relative z-10 p-3 rounded-xl bg-[#0C2423]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
                       <p className="text-[11px] text-slate-400 font-medium">Doanh thu Escrow</p>
                       <p className="text-lg font-black text-teal-300 mt-0.5">26.4M</p>
                     </div>
@@ -120,7 +120,7 @@ export function PartnerEcosystemSection() {
                   <div className="relative group/metric">
                     {/* Soft dynamic colored shadow behind metric card */}
                     <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-amber-500/30 to-orange-400/20 blur-md opacity-45 group-hover/metric:opacity-80 transition-opacity duration-500 animate-orb-1 pointer-events-none" />
-                    <div className="relative z-10 p-3 rounded-xl bg-[#00172D]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
+                    <div className="relative z-10 p-3 rounded-xl bg-[#0C2423]/90 border border-white/10 backdrop-blur-xs transition-transform duration-300 group-hover/metric:-translate-y-0.5">
                       <p className="text-[11px] text-slate-400 font-medium">Tỉ lệ Check-in</p>
                       <p className="text-lg font-black text-emerald-400 mt-0.5">99.2%</p>
                     </div>

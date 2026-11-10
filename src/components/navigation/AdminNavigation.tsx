@@ -39,27 +39,27 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
           {!isStaffUser ? (
             <Link
               href={ROUTES.admin.dashboard}
-              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
             >
               {adminStaffEn.navigation.adminDashboard}
             </Link>
           ) : null}
           <Link
             href={ROUTES.admin.staffDashboard}
-            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
           >
             {adminStaffEn.navigation.staffDashboard}
           </Link>
           <Link
             href={ROUTES.admin.payoutSettlements}
-            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
           >
             Payout Settlements
           </Link>
           {isStaffUser ? (
             <Link
               href={ROUTES.admin.createPoi}
-              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
             >
               {adminStaffEn.navigation.createPoi}
             </Link>
@@ -68,31 +68,31 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
             <>
               <Link
                 href={ROUTES.admin.tourReviews}
-                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
               >
                 {adminStaffEn.navigation.tourReviews}
               </Link>
               <Link
                 href={ROUTES.admin.activeTrips}
-                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
               >
                 Active Trips
               </Link>
               <Link
                 href={ROUTES.admin.reports}
-                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
               >
                 {adminStaffEn.navigation.statisticalReports}
               </Link>
               <Link
                 href={ROUTES.admin.algorithmParameters}
-                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
               >
                 {adminStaffEn.navigation.algorithmSettings}
               </Link>
               <Link
                 href={ROUTES.admin.auditLogs}
-                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
               >
                 {adminStaffEn.navigation.auditLogs}
               </Link>
@@ -103,10 +103,10 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
         <div className="flex items-center gap-2">
           <Link
             href={ROUTES.admin.accountSecurity}
-            className="flex items-center gap-1.5 rounded-lg border border-[#103B39] bg-[#17221D] px-3 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition"
+            className="flex items-center gap-1.5 rounded-lg border border-[#103B39] bg-[#17221D] px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
             title={adminStaffEn.navigation.securityTitle}
           >
-            <span className="material-symbols-outlined text-[16px] text-[#5B6E69]">lock_reset</span>
+            <span className="material-symbols-outlined text-[16px] text-[#DCE2DD]">lock_reset</span>
             <span>{adminStaffEn.navigation.securityLabel}</span>
           </Link>
           <AdminLogoutButton />

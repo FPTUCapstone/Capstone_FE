@@ -6,7 +6,7 @@ export default function HeroPanel() {
       sticky
       title={
         <>
-          Lên kế hoạch <span className="text-brand-brightTeal">du lịch</span> chỉ trong vài phút.
+          Lên kế hoạch <span className="text-teal-300">du lịch</span> chỉ trong vài phút.
         </>
       }
       description="Công cụ dành riêng cho traveler Việt — tối ưu lịch trình, khám phá điểm đến và đồng hành cùng bạn trên mọi chuyến đi."

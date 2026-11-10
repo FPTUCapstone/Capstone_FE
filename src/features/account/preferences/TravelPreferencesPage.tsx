@@ -146,7 +146,7 @@ export function TravelPreferencesPage() {
             <FeedbackAlert tone="warning">{preferenceMessages.locked.MSG125}</FeedbackAlert>
             <Link
               href={SIGN_IN_RETURN}
-              className="inline-flex min-h-[44px] items-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#00574D]"
+              className="inline-flex min-h-[44px] items-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#103B39]"
             >
               Đăng nhập lại
             </Link>

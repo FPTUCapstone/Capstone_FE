@@ -195,7 +195,7 @@ export function TripReviewView({ trip }: TripReviewViewProps) {
           <div className="mt-4 flex justify-center gap-3">
             <Link
               href={isDemo ? `${ROUTES.account.trips}?demo=1` : ROUTES.account.trips}
-              className="rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D]"
+              className="rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#103B39]"
             >
               {tripReviewEn.actions.backToTrips}
             </Link>
