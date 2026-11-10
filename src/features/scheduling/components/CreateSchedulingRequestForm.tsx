@@ -322,43 +322,9 @@ export function CreateSchedulingRequestForm({
 
     setIsSubmitting(true);
 
-    // Live CSP optimization step progression for delightful feedback
-    setOptimizationPhase('Kiểm tra trạng thái & giờ mở cửa điểm tham quan...');
-    await new Promise((r) => setTimeout(r, 400));
-
-    setOptimizationPhase(
-      `Tính toán ma trận thời gian & lộ trình di chuyển (${
-        transportMode === 'Walking'
-          ? 'Đi bộ'
-          : transportMode === 'Motorbike'
-          ? 'Xe máy'
-          : transportMode === 'Car'
-          ? 'Ô tô / Taxi'
-          : 'Công cộng'
-      })...`,
-    );
-    await new Promise((r) => setTimeout(r, 500));
-
-    setOptimizationPhase('Chạy thuật toán thỏa mãn ràng buộc CSP (Constraint Satisfaction)...');
-    await new Promise((r) => setTimeout(r, 500));
-
-    // Authoritative pre-request check: verify start instant is still in the future right before POST
-    if (!isFutureVietnamStartAt(startDate, startTime)) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        startDate:
-          'Thời gian bắt đầu phải sau thời điểm hiện tại theo giờ Việt Nam (Asia/Ho_Chi_Minh).',
-      }));
-      setFeedback({
-        tone: 'error',
-        title: 'Thông tin chưa hợp lệ',
-        message:
-          'Thời gian bắt đầu đã trôi qua trong quá trình khởi tạo. Vui lòng chọn lại giờ bắt đầu ở tương lai.',
-      });
-      setIsSubmitting(false);
-      setOptimizationPhase(null);
-      return;
-    }
+    // ADR-002 (G3): no scripted progress steps or artificial delay. validate() has just checked that
+    // the start is in the future, and nothing waits between it and the POST.
+    setOptimizationPhase('Đang gửi yêu cầu tới máy chủ TripMate...');
 
     // Construct backend payload (validate() guarantees the places are chosen).
     const startAtIso = buildVietnamStartAtIso(startDate, startTime);
@@ -394,7 +360,7 @@ export function CreateSchedulingRequestForm({
 
     try {
       const result = await createSchedulingRequest(payload, { idempotencyKey });
-      setOptimizationPhase('Hoàn tất! Lịch trình tối ưu đã sẵn sàng.');
+      setOptimizationPhase('Hoàn tất! Lịch trình đã sẵn sàng.');
       setGeneratedItinerary(result.data);
 
       setFeedback({
@@ -448,10 +414,15 @@ export function CreateSchedulingRequestForm({
           suggestedHours,
         });
 
+        // ADR-002 (G3): show the backend reason (budget, closed place, area, time...) instead of an
+        // invented time shortfall; extending the trip stays available as an optional quick fix.
         setFeedback({
           tone: 'error',
-          title: 'Không thể tạo lịch trình tối ưu',
-          message: `Không thể xếp lịch: Các điểm bắt buộc cần tối thiểu ${requiredMinutes} phút (bao gồm di chuyển và tham quan), vượt quá thời lượng ${currentMins} phút của bạn.`,
+          title: 'Không thể xếp lịch với các ràng buộc hiện tại',
+          message: `Lý do từ hệ thống: ${
+            apiErr.message ||
+            'các ràng buộc về thời gian, ngân sách hoặc khu vực không khả thi.'
+          }`,
         });
       } else {
         setInfeasibilityFix(null);
@@ -1051,7 +1022,7 @@ export function CreateSchedulingRequestForm({
                     </span>
                   </div>
                   <h3 className="text-sm font-bold text-slate-900 sm:text-base">
-                    Đang khởi tạo lịch trình tối ưu với thuật toán CSP...
+                    Đang xếp lịch trình bằng thuật toán CSP...
                   </h3>
                   <p className="text-xs text-[#103B39] font-medium animate-pulse">
                     {optimizationPhase}

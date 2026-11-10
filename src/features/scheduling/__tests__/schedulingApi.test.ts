@@ -7,11 +7,14 @@ import {
   regenerateItinerary,
   NO_ALTERNATIVE_CODE,
   NO_ALTERNATIVE_MESSAGE,
+  GENERATION_TIMEOUT_CODE,
+  GENERATION_TIMEOUT_MESSAGE,
   adjustItineraryItems,
   getItineraryById,
   isDemoAllowedInCurrentEnv,
 } from '../services/schedulingApi';
 import { CreateSchedulingRequestPayload, ItineraryDetailDto } from '../types/schedulingTypes';
+import { CSP_FALLBACK_NOTICE } from '../utils/itineraryPresentation';
 
 describe('UC-10 Scheduling API Service', () => {
   const samplePayload: CreateSchedulingRequestPayload = {
@@ -110,6 +113,52 @@ describe('UC-10 Scheduling API Service', () => {
 
       expect(result.success).toBe(true);
       expect(result.data.itineraryId).toBe(456);
+    });
+
+    // ADR-002 (G3): the success message follows the backend provenance instead of always claiming a CSP optimum.
+    it('returns the MSG35 notice when the backend served a heuristic fallback', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          schedulingRequestId: 123,
+          itineraryId: 456,
+          title: 'Lịch trình Đà Nẵng',
+          status: 'Draft',
+          totalEstimatedCost: 0,
+          totalDurationMinutes: 480,
+          items: [],
+          provenance: {
+            solverOutcome: 'heuristic_fallback_csp_time_limit',
+            solverKind: 'CspFallback',
+            objectiveMode: 'Lexicographic',
+            searchCompleted: false,
+            timeOfDayRefined: false,
+          },
+        }),
+      });
+
+      const result = await createSchedulingRequest(samplePayload, { accessToken: 'fake-token' });
+
+      expect(result.messageCode).toBe('MSG35');
+      expect(result.message).toBe(CSP_FALLBACK_NOTICE);
+    });
+
+    it('explains a retryable generation timeout in Vietnamese instead of the English backend title', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({
+          title: 'The itinerary could not be generated in time. Please try again.',
+          errorCode: 'planning.generation_timeout',
+        }),
+      });
+
+      await expect(createSchedulingRequest(samplePayload, { accessToken: 'fake-token' })).rejects.toMatchObject({
+        status: 503,
+        code: GENERATION_TIMEOUT_CODE,
+        message: GENERATION_TIMEOUT_MESSAGE,
+      });
     });
 
     it('C15-1: throws server.malformed_response when 201 body is non-JSON', async () => {
@@ -596,6 +645,25 @@ describe('UC-10 Scheduling API Service', () => {
         status: 422,
         code: NO_ALTERNATIVE_CODE,
         message: NO_ALTERNATIVE_MESSAGE,
+      });
+    });
+
+    it('explains a retryable regeneration timeout in Vietnamese', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        status: 503,
+        ok: false,
+        json: async () => ({
+          title: 'The itinerary could not be generated in time. Please try again.',
+          errorCode: 'itinerary.generation_timeout',
+        }),
+      });
+
+      await expect(
+        regenerateItinerary(789, { accessToken: 'traveler-token', idempotencyKey: 'operation-key' }),
+      ).rejects.toMatchObject({
+        status: 503,
+        code: 'itinerary.generation_timeout',
+        message: GENERATION_TIMEOUT_MESSAGE,
       });
     });
 

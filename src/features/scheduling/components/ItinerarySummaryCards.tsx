@@ -7,13 +7,14 @@ import {
 } from '../types/schedulingTypes';
 import { formatVnd } from '@/lib/priceLabel';
 
-import { splitItineraryCosts } from '../utils/itineraryPresentation';
+import { describeProvenance, splitItineraryCosts } from '../utils/itineraryPresentation';
 
 interface ItinerarySummaryCardsProps {
   itinerary: ItineraryDetailDto | SchedulingResponseDto;
 }
 
 export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps) {
+  const scheduleSource = describeProvenance(itinerary.provenance);
   const visitCount = itinerary.items.filter(
     (i) => (('kind' in i ? i.kind : (i as { itemKind: string }).itemKind) === 'Visit'),
   ).length;
@@ -111,18 +112,20 @@ export function ItinerarySummaryCards({ itinerary }: ItinerarySummaryCardsProps)
         </span>
       </div>
 
-      {/* Stat 4: Optimization Engine */}
-      <div className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4 shadow-2xs">
+      {/* Stat 4: where the schedule came from (ADR-002, G3) */}
+      <div data-testid="schedule-source" className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4 shadow-2xs">
         <div className="flex items-center gap-2 text-teal-800">
           <span className="material-symbols-outlined text-lg text-[#103B39]">
             auto_awesome
           </span>
-          <span className="text-xs font-bold">Thuật toán CSP</span>
+          <span className="text-xs font-bold">Nguồn lịch trình</span>
         </div>
-        <p className="mt-2 text-lg font-black text-[#103B39] sm:text-xl">
-          Tối ưu hoàn tất
+        <p className="mt-2 text-base font-black text-[#103B39] sm:text-lg">
+          {scheduleSource?.label ?? 'Chưa ghi nhận'}
         </p>
-        <span className="text-[11px] text-teal-700">Đã tạo lịch trình</span>
+        <span className="text-[11px] text-teal-700">
+          {scheduleSource?.detail ?? 'Lịch tạo trước khi TripMate ghi nguồn gốc'}
+        </span>
       </div>
     </div>
   );

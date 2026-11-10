@@ -22,6 +22,7 @@ import {
   StopInfeasibleDetails,
   SuggestionQuery,
 } from '../types/schedulingTypes';
+import { creationSuccessMessage } from '../utils/itineraryPresentation';
 
 export class ItineraryHttpError extends Error {
   readonly status: number;
@@ -244,8 +245,7 @@ export async function createSchedulingRequest(
 
     return {
       success: true,
-      messageCode: 'MSG30',
-      message: 'Khởi tạo lịch trình tối ưu thành công! TripMate đã áp dụng thuật toán CSP hoàn tất.',
+      ...creationSuccessMessage(body.provenance),
       data: body,
     };
   }
@@ -306,6 +306,15 @@ export async function createSchedulingRequest(
         detail ||
         'Ràng buộc thời gian hoặc khu vực không khả thi để tạo lịch trình. Vui lòng mở rộng bán kính hoặc thời lượng.',
       status: 422,
+      errors: fieldErrors,
+    } satisfies SchedulingApiError;
+  }
+
+  if (errorCode === GENERATION_TIMEOUT_CODE) {
+    throw {
+      code: GENERATION_TIMEOUT_CODE,
+      message: GENERATION_TIMEOUT_MESSAGE,
+      status: res.status,
       errors: fieldErrors,
     } satisfies SchedulingApiError;
   }
@@ -624,6 +633,9 @@ async function mutateItinerary(
   if (code === NO_ALTERNATIVE_CODE) {
     throw new ItineraryHttpError(response.status, NO_ALTERNATIVE_MESSAGE, code);
   }
+  if (code === REGENERATION_TIMEOUT_CODE) {
+    throw new ItineraryHttpError(response.status, GENERATION_TIMEOUT_MESSAGE, code);
+  }
   throw new ItineraryHttpError(
     response.status,
     detail ?? 'Không thể cập nhật lịch trình. Vui lòng thử lại sau.',
@@ -634,6 +646,15 @@ async function mutateItinerary(
 export const NAVIGATION_IN_PROGRESS_CODE = 'itinerary.navigation_in_progress';
 export const NAVIGATION_IN_PROGRESS_MESSAGE =
   'Chuyến đi đang được điều hướng trên ứng dụng TripMate. Hãy kết thúc chuyến trên app trước khi thay đổi lịch trình.';
+
+/**
+ * ADR-002 (G2): the CSP reached its time limit and the heuristic found no plan. The request itself is
+ * valid, so this is a retry message, not "change your request".
+ */
+export const GENERATION_TIMEOUT_CODE = 'planning.generation_timeout';
+export const REGENERATION_TIMEOUT_CODE = 'itinerary.generation_timeout';
+export const GENERATION_TIMEOUT_MESSAGE =
+  'Hệ thống chưa kịp xếp xong lịch trình trong thời gian cho phép. Yêu cầu của bạn vẫn hợp lệ, vui lòng thử lại sau ít phút.';
 
 /** Regenerating found nothing different: the API keeps the current version. */
 export const NO_ALTERNATIVE_CODE = 'itinerary.no_alternative';
