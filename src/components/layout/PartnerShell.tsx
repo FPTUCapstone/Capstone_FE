@@ -12,7 +12,7 @@ type PartnerShellProps = {
 
 export function PartnerShell({ children, description, title }: PartnerShellProps) {
   return (
-    <main className="min-h-screen bg-[#f3f6f8] text-[#1C2928]">
+    <main className="min-h-screen bg-[#F7F5EF] text-[#1C2928]">
       <header className="border-b border-[#DCE2DD] bg-white px-4 py-3 sm:px-8 sm:py-4">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 sm:gap-4">
           <Link href={ROUTES.home} aria-label="TripMate home">

@@ -11,7 +11,7 @@ type HeroPanelProps = {
 export default function HeroPanel({
   title = (
     <>
-      Lên kế hoạch <span className="text-brand-brightTeal">du lịch</span> chỉ
+      Lên kế hoạch <span className="text-teal-300">du lịch</span> chỉ
       trong vài phút.
     </>
   ),

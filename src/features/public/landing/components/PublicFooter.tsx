@@ -7,14 +7,14 @@ import { ROUTES } from '@/lib/routes';
 
 export function PublicFooter() {
   return (
-    <footer className="border-t border-slate-800 bg-[#103B39] text-slate-300 px-4 py-14 sm:px-8">
+    <footer className="border-t border-[#174B4A]/30 bg-[#0C2423] text-slate-300 px-4 py-14 sm:px-8">
       <ScrollReveal animation="fade-up">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800/80">
             {/* Col 1: TripMate Brand & Contact info */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <BrandLogo size={26} />
+                <BrandLogo size={26} inverse />
               </div>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm">
                 Nền tảng công nghệ du lịch thông minh Miền Trung Việt Nam.
@@ -22,13 +22,13 @@ export function PublicFooter() {
               </p>
               <div className="space-y-2 text-xs text-slate-400 pt-2">
                 <p className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
+                  <span className="material-symbols-outlined text-sm text-[#E8F0EA]" aria-hidden="true">
                     support_agent
                   </span>
                   <span>Hỗ trợ: <strong className="text-white">1900 8899</strong> | <strong className="text-white">hotro@tripmate.vn</strong></span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
+                  <span className="material-symbols-outlined text-sm text-[#E8F0EA]" aria-hidden="true">
                     location_on
                   </span>
                   <span>Trụ sở vận hành: <strong className="text-white">Đà Nẵng, Việt Nam</strong></span>
@@ -105,7 +105,7 @@ export function PublicFooter() {
             </div>
 
             {/* Col 4: Hợp tác cùng TripMate (Guest Partner Onboarding Hub) */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xs flex flex-col justify-between">
+            <div className="rounded-2xl border border-white/10 bg-[#103B39]/70 p-5 backdrop-blur-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="material-symbols-outlined text-lg text-teal-400" aria-hidden="true">
@@ -123,7 +123,7 @@ export function PublicFooter() {
               <div className="pt-4 space-y-2">
                 <Link
                   href={ROUTES.partner.register}
-                  className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-[#103B39] hover:bg-[#174B4A] text-white text-xs font-bold py-2.5 px-4 shadow-sm transition"
+                  className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-[#174B4A] hover:bg-[#103B39] text-white text-xs font-bold py-2.5 px-4 shadow-sm transition border border-[#174B4A]/60"
                 >
                   <span>Trở thành đối tác</span>
                   <span className="material-symbols-outlined text-sm" aria-hidden="true">

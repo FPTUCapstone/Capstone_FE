@@ -49,7 +49,7 @@ function buildMarkerContent(poi: PoiSummary, isSelected: boolean): HTMLElement {
 
   const tooltipCard = document.createElement('div');
   tooltipCard.className =
-    'rounded-xl border border-[#cfe1de] bg-white/98 p-3 shadow-xl backdrop-blur-xs text-left';
+    'rounded-xl border border-[#DCE2DD] bg-white/98 p-3 shadow-xl backdrop-blur-xs text-left';
 
   // Category, Rating, Status Row
   const headerRow = document.createElement('div');
@@ -330,18 +330,18 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
   return (
     <section
       data-lenis-prevent="true"
-      className="relative h-[560px] w-full overflow-hidden rounded-[28px] border border-[#cfdbdf] bg-[#e8eff2] shadow-[0_14px_40px_rgba(0,21,42,.08)] lg:h-[720px] xl:h-[760px]"
+      className="relative h-[560px] w-full overflow-hidden rounded-[28px] border border-[#DCE2DD] bg-[#EDEAE1] shadow-[0_14px_40px_rgba(0,21,42,.08)] lg:h-[720px] xl:h-[760px]"
       aria-label="Bản đồ địa lý khám phá địa điểm"
     >
       {/* Fallback state when token is missing, WebGL fails or map error occurs */}
       {mapError ? (
         <div className="absolute inset-0 z-20 flex items-center justify-center p-8 text-center bg-[#F7F5EF]">
-          <div className="max-w-md rounded-2xl border border-[#d3dfe3] bg-white p-6 shadow-sm">
+          <div className="max-w-md rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-sm">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#fde8e8] text-2xl text-[#c81e1e]" aria-hidden="true">
               ⌖
             </span>
             <p className="mt-4 text-base font-extrabold text-[#1C2928]">Bản đồ địa lý chưa khả dụng</p>
-            <p className="mt-2 text-xs leading-relaxed text-[#5d6a71]">{mapError}</p>
+            <p className="mt-2 text-xs leading-relaxed text-[#5B6E69]">{mapError}</p>
             <p className="mt-3 text-[11px] font-semibold text-[#103B39]">
               Danh sách kết quả bên trái vẫn hoạt động bình thường với đầy đủ thông tin địa điểm.
             </p>
@@ -358,16 +358,16 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
       />
 
       {/* Map Header Status Badge */}
-      <div className="absolute left-4 top-4 z-20 max-w-[calc(100%-4rem)] rounded-xl border border-[#b9d9d2] bg-white/95 px-3 py-2 text-xs font-extrabold text-[#174B4A] shadow-sm backdrop-blur">
+      <div className="absolute left-4 top-4 z-20 max-w-[calc(100%-4rem)] rounded-xl border border-[#DCE2DD] bg-white/95 px-3 py-2 text-xs font-extrabold text-[#174B4A] shadow-sm backdrop-blur">
         Bản đồ địa lý tương tác (Mapbox)
       </div>
 
       {/* Empty Coordinates State */}
       {validItems.length === 0 && !mapError ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center p-8 text-center bg-white/60 backdrop-blur-xs">
-          <div className="max-w-sm rounded-2xl bg-white/95 p-6 shadow-sm border border-[#dce5e8]">
+          <div className="max-w-sm rounded-2xl bg-white/95 p-6 shadow-sm border border-[#DCE2DD]">
             <p className="text-base font-extrabold text-[#1C2928]">Chưa có tọa độ hiển thị</p>
-            <p className="mt-2 text-xs leading-relaxed text-[#5d6a71]">
+            <p className="mt-2 text-xs leading-relaxed text-[#5B6E69]">
               Các địa điểm trong bộ lọc hiện tại chưa có tọa độ khả dụng để đặt điểm mốc trên bản đồ.
             </p>
           </div>
@@ -377,7 +377,7 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
       {/* Selected POI Floating Preview Card */}
       {selectedPoi ? (
         <article
-          className="absolute bottom-4 left-4 right-4 z-20 rounded-2xl border border-[#d5e0e3] bg-white p-3.5 shadow-[0_18px_50px_rgba(0,21,42,.2)] sm:p-4 transition-all duration-300"
+          className="absolute bottom-4 left-4 right-4 z-20 rounded-2xl border border-[#DCE2DD] bg-white p-3.5 shadow-[0_18px_50px_rgba(0,21,42,.2)] sm:p-4 transition-all duration-300"
           aria-label={`Chi tiết xem trước: ${selectedPoi.name}`}
         >
           <div className="flex min-w-0 items-center gap-3.5">
@@ -388,7 +388,7 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-[.08em] text-[#103B39] bg-[#e4f5f1] px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-[.08em] text-[#103B39] bg-[#E8F0EA] px-2 py-0.5 rounded-full">
                   Đang chọn trên bản đồ
                 </span>
                 <span className="text-xs font-extrabold text-[#e65100]">
@@ -398,10 +398,10 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
               <h2 className="mt-1 line-clamp-1 text-base font-black leading-tight text-[#1C2928]">
                 {selectedPoi.name}
               </h2>
-              <p className="mt-0.5 line-clamp-1 text-xs text-[#59656d]">
+              <p className="mt-0.5 line-clamp-1 text-xs text-[#5B6E69]">
                 {selectedPoi.address ?? 'Địa chỉ đang cập nhật'}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#53626a]">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#5B6E69]">
                 <span className="font-semibold text-[#30434c]">{selectedPoi.categoryName}</span>
                 <span className={`font-bold ${selectedPoi.isOpenNow ? 'text-[#174B4A]' : 'text-[#68767c]'}`}>
                   {selectedPoi.isOpenNow ? '● Đang mở cửa' : '○ Đã đóng'}
@@ -415,7 +415,7 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
             </div>
             <Link
               href={`/pois/${selectedPoi.id}`}
-              className="hidden min-h-11 shrink-0 items-center rounded-xl bg-[#103B39] px-4 text-sm font-bold text-white hover:bg-[#174B4A] transition sm:inline-flex"
+              className="hidden min-h-11 shrink-0 items-center rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white hover:bg-[#103B39] transition sm:inline-flex"
             >
               Xem chi tiết →
             </Link>

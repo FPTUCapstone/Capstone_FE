@@ -71,7 +71,7 @@ shadows:
 
 TripMate Web is an intelligent travel atlas and multi-tenant portal for Central Vietnam (Đà Nẵng, Hội An, Cố Đô Huế). The visual identity combines **editorial cultural heritage** with **clean operational utility**:
 
-1. **Atmospheric Cultural Clarity**: Public interfaces leverage high-fidelity photographic landscapes, rich Navy (`#00152A`) backgrounds, deep Brand Teal (`#006B5F`), and energetic Coral (`#FF7043` / `#FF6A3D`) accents to evoke Vietnam's central coastline and ancient architectural heritage.
+1. **Atmospheric Cultural Clarity**: Public interfaces leverage high-fidelity photographic landscapes, deep heritage surfaces (`#0C2423` / `#103B39`), primary Coastal Teal (`#174B4A`), and warm Coral (`#B96D4C` / `#995436`) accents to evoke Vietnam's central coastline and ancient architectural heritage.
 2. **Operational Rigor & Legibility**: Management, administrator, and partner workspaces utilize a crisp, structured Slate/White palette (`#FFFFFF` surfaces over `#F4F7FC` / `#F7F9FC` canvas) anchored by functional Blue (`#1D4ED8`) and Slate typography for optimal data density and rapid scanning.
 3. **Continuous Motion & Flow**: Interactions feel fluid rather than abrupt, utilizing Lenis smooth scrolling, subtle ScrollReveal staggered fades, and physics-based capsule indicator transitions.
 4. **Zero Unjustified Decoration**: UI chrome recedes behind authentic photography and verified travel data; rounded corners, borders, and shadows have clear functional roles.
@@ -111,8 +111,8 @@ TripMate uses a hybrid semantic token architecture defined in `app/globals.css` 
 ### 2.2 Semantic Color Rule: Dual-Primary Architecture
 
 > [!IMPORTANT]
-> **Teal (`#006B5F`) and Blue (`#1D4ED8`) serve different semantic domains:**
-> - **Brand Teal (`#006B5F`)**: Reserved for **Public Travel Discovery** (Landing Page, Tour Discovery, POI Explorer, Public Capsule Navigation).
+> **Brand Teal (`#174B4A`) and Operational Blue (`#1D4ED8`) serve different semantic domains:**
+> - **Brand Teal (`#174B4A`)**: Reserved for **Public Travel Discovery** (Landing Page, Tour Discovery, POI Explorer, Public Capsule Navigation).
 > - **Operational Blue (`#1D4ED8`)**: Reserved for **Account & Operational Workflows** (Sign In, Registration, Partner Portal, Admin Console, Checkout, Financial Management).
 > 
 > *Never merge or homogenize these two palettes into a single arbitrary primary color.*

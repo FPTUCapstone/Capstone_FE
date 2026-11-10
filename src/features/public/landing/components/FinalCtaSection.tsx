@@ -7,10 +7,10 @@ import { LandingEyebrow } from './LandingEyebrow';
 
 export function FinalCtaSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#1C2928] to-[#00283a] text-white py-20 sm:py-28 px-4 sm:px-8 border-t border-slate-800">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#103B39] via-[#0C2423] to-[#0C2423] text-white py-20 sm:py-28 px-4 sm:px-8 border-t border-[#174B4A]/30">
       {/* Ambient background glow */}
       <div className="absolute left-1/2 -top-24 -translate-x-1/2 h-96 w-96 rounded-full bg-teal-500/15 blur-3xl pointer-events-none" />
-      <div className="absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-[#B96D4C]/15 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 mx-auto max-w-4xl text-center">
         {/* Eyebrow */}
@@ -41,7 +41,7 @@ export function FinalCtaSection() {
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href={ROUTES.plan}
-              className="w-full sm:w-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-400 hover:bg-teal-300 px-8 py-3.5 text-sm font-black text-[#1C2928] shadow-lg shadow-teal-400/25 transition-all cursor-pointer active:scale-95 btn-press"
+              className="w-full sm:w-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white hover:bg-[#F7F5EF] px-8 py-3.5 text-sm font-black text-[#103B39] shadow-lg shadow-black/20 transition-all cursor-pointer active:scale-95 btn-press"
             >
               <span>Lập hành trình ngay</span>
               <span className="material-symbols-outlined text-lg">bolt</span>

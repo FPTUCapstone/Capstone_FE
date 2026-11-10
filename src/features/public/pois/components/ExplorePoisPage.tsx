@@ -134,9 +134,9 @@ export function ExplorePoisPage() {
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
       <main>
-        <section className="border-b border-[#d7e0e3] bg-[#001f35] px-4 py-6 text-white sm:px-8 sm:py-8">
+        <section className="border-b border-[#174B4A]/40 bg-[#0C2423] px-4 py-6 text-white sm:px-8 sm:py-8">
           <div className="mx-auto max-w-7xl">
-            <nav aria-label="Đường dẫn điều hướng" className="mb-2 text-xs font-semibold text-[#8eb0bc]">
+            <nav aria-label="Đường dẫn điều hướng" className="mb-2 text-xs font-semibold text-[#DCE2DD]">
               <Link href="/" className="hover:text-white transition">Trang chủ</Link>{' '}
               <span aria-hidden="true">/</span>{' '}
               <span aria-current="page" className="text-white">Khám phá địa điểm</span>
@@ -144,23 +144,23 @@ export function ExplorePoisPage() {
             <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
               <div>
                 <h1 className="text-2xl font-black tracking-[-.035em] sm:text-3xl lg:text-4xl text-white">Khám phá địa điểm</h1>
-                <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-[#c7dce5] sm:text-sm">
+                <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-[#E8F0EA]/85 sm:text-sm">
                   Tìm kiếm và định vị các điểm tham quan đang hoạt động, lọc theo nhu cầu và xem trực tiếp trên bản đồ địa lý Mapbox.
                 </p>
               </div>
-              <div className="inline-flex w-fit items-center rounded-full border border-[#3a6572] bg-white/10 px-3.5 py-1.5 text-xs font-bold text-[#d8f3ef]">
+              <div className="inline-flex w-fit items-center rounded-full border border-[#174B4A] bg-white/10 px-3.5 py-1.5 text-xs font-bold text-[#E8F0EA]">
                 {data ? `${data.totalCount} địa điểm phù hợp` : 'Đang cập nhật dữ liệu'}
               </div>
             </div>
           </div>
         </section>
 
-        <section className="border-b border-[#d7e0e3] bg-[#e8edef] px-4 py-3 sm:px-8">
+        <section className="border-b border-[#DCE2DD] bg-[#EDEAE1] px-4 py-3 sm:px-8">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-semibold text-[#46575f]">
+            <p className="text-sm font-semibold text-[#5B6E69]">
               {hasOrigin ? '⌖ Đã bật vị trí: có thể sắp xếp và lọc theo khoảng cách.' : '⌖ GPS chưa bật: danh sách mặc định không dùng khoảng cách.'}
             </p>
-            <button type="button" onClick={requestLocation} className="min-h-11 w-fit rounded-xl border border-[#a8c7c1] bg-white px-4 text-sm font-extrabold text-[#174B4A] hover:bg-[#f1fbf8]">
+            <button type="button" onClick={requestLocation} className="min-h-11 w-fit rounded-xl border border-[#DCE2DD] bg-white px-4 text-sm font-extrabold text-[#174B4A] hover:bg-[#E8F0EA]">
               {hasOrigin ? 'Cập nhật vị trí' : 'Bật định vị'}
             </button>
           </div>
@@ -168,12 +168,12 @@ export function ExplorePoisPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8 sm:py-9">
           {locationMessage ? (
-            <div className="mb-5 rounded-2xl border border-[#b7d7d1] bg-[#edf9f6] px-4 py-3 text-sm font-semibold text-[#165d55]" role="status">
+            <div className="mb-5 rounded-2xl border border-[#B2D6C4] bg-[#E8F0EA] px-4 py-3 text-sm font-semibold text-[#103B39]" role="status">
               {locationMessage}
             </div>
           ) : null}
           {validationMessage || urlSearchValidation ? (
-            <div className="mb-5 rounded-2xl border border-[#f1c3bc] bg-[#fff3f0] px-4 py-3 text-sm font-semibold text-[#8c2e24]" role="alert">
+            <div className="mb-5 rounded-2xl border border-[#F7C9D3] bg-[#FDECEF] px-4 py-3 text-sm font-semibold text-[#8C1030]" role="alert">
               {validationMessage ?? urlSearchValidation}
             </div>
           ) : null}
@@ -186,7 +186,7 @@ export function ExplorePoisPage() {
                 type="button"
                 onClick={() => updateFilters({ categoryId: null })}
                 aria-pressed={filters.categoryId === null}
-                className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === null ? 'bg-[#103B39] text-white' : 'bg-[#e9eef0] text-[#3b4b53]'}`}
+                className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === null ? 'bg-[#174B4A] text-white shadow-xs' : 'bg-[#EDEAE1] text-[#5B6E69] hover:bg-[#E8F0EA] hover:text-[#174B4A]'}`}
               >
                 Tất cả
               </button>
@@ -196,14 +196,14 @@ export function ExplorePoisPage() {
                   type="button"
                   onClick={() => updateFilters({ categoryId: category.id })}
                   aria-pressed={filters.categoryId === category.id}
-                  className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === category.id ? 'bg-[#103B39] text-white' : 'bg-[#e9eef0] text-[#3b4b53]'}`}
+                  className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === category.id ? 'bg-[#174B4A] text-white shadow-xs' : 'bg-[#EDEAE1] text-[#5B6E69] hover:bg-[#E8F0EA] hover:text-[#174B4A]'}`}
                 >
                   {category.name}
                 </button>
               ))}
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(180px,1fr)_auto_auto]">
-              <label className="flex min-h-11 items-center gap-3 rounded-xl border border-[#ced9dd] bg-white px-3 text-sm font-semibold text-[#30434c]">
+              <label className="flex min-h-11 items-center gap-3 rounded-xl border border-[#DCE2DD] bg-white px-3 text-sm font-semibold text-[#5B6E69]">
                 <span className="shrink-0">Sắp xếp</span>
                 <select
                   value={filters.sort}
@@ -217,7 +217,7 @@ export function ExplorePoisPage() {
                 </select>
               </label>
               {hasOrigin ? (
-                <label className="flex min-h-11 items-center gap-2 rounded-xl border border-[#ced9dd] px-3 text-sm font-semibold">
+                <label className="flex min-h-11 items-center gap-2 rounded-xl border border-[#DCE2DD] px-3 text-sm font-semibold text-[#5B6E69]">
                   Bán kính
                   <select
                     aria-label="Bán kính tìm kiếm"
@@ -240,16 +240,16 @@ export function ExplorePoisPage() {
                 type="button"
                 onClick={() => updateFilters({ openNow: !filters.openNow })}
                 aria-pressed={filters.openNow}
-                className={`min-h-11 rounded-xl px-4 text-sm font-bold ${filters.openNow ? 'bg-[#d9f3ed] text-[#174B4A] ring-1 ring-[#80cbbf]' : 'bg-[#edf1f2] text-[#405159]'}`}
+                className={`min-h-11 rounded-xl px-4 text-sm font-bold ${filters.openNow ? 'bg-[#E8F0EA] text-[#174B4A] ring-1 ring-[#174B4A]/30' : 'bg-[#EDEAE1] text-[#5B6E69] hover:bg-[#E8F0EA]'}`}
               >
                 {filters.openNow ? '● Đang mở cửa' : '○ Lọc đang mở cửa'}
               </button>
             </div>
           </section>
 
-          <div className="mt-5 flex rounded-xl border border-[#d4dee1] bg-[#e8edef] p-1 lg:hidden" aria-label="Chế độ hiển thị">
+          <div className="mt-5 flex rounded-xl border border-[#DCE2DD] bg-[#EDEAE1] p-1 lg:hidden" aria-label="Chế độ hiển thị">
             {(['list', 'map'] as const).map((mode) => (
-              <button key={mode} type="button" onClick={() => setViewMode(mode)} aria-pressed={viewMode === mode} className={`min-h-11 flex-1 rounded-lg text-sm font-extrabold ${viewMode === mode ? 'bg-[#103B39] text-white shadow-sm' : 'text-[#405159]'}`}>
+              <button key={mode} type="button" onClick={() => setViewMode(mode)} aria-pressed={viewMode === mode} className={`min-h-11 flex-1 rounded-lg text-sm font-extrabold ${viewMode === mode ? 'bg-[#174B4A] text-white shadow-xs' : 'text-[#5B6E69]'}`}>
                 {mode === 'list' ? '☷ Danh sách' : '⌖ Bản đồ'}
               </button>
             ))}
@@ -281,7 +281,7 @@ export function ExplorePoisPage() {
                     />
                   ))}
                   <div className="rounded-2xl border border-[#DCE2DD] bg-white px-4 py-4 md:col-span-2 lg:col-span-1">
-                    <p className="mb-4 text-center text-sm font-semibold text-[#56666e]">Đang hiển thị {resultRange(data)}</p>
+                    <p className="mb-4 text-center text-sm font-semibold text-[#5B6E69]">Đang hiển thị {resultRange(data)}</p>
                     <PoiPagination page={data.page} totalPages={data.totalPages} onPageChange={(page) => updateFilters({ page })} />
                   </div>
                 </div>

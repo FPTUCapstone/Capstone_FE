@@ -9,7 +9,7 @@ export function PublicPasswordRecoveryPage() {
         title={
           <>
             Khôi phục tài khoản{' '}
-            <span className="text-brand-brightTeal">TripMate</span>
+            <span className="text-teal-300">TripMate</span>
           </>
         }
         description="Nhận mã xác nhận qua email và tạo mật khẩu mới chỉ trong vài bước đơn giản."

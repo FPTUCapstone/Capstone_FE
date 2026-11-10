@@ -10,7 +10,7 @@ export function PublicSignInPage() {
         title={
           <>
             Chào mừng trở lại{' '}
-            <span className="text-brand-brightTeal">TripMate</span>
+            <span className="text-teal-300">TripMate</span>
           </>
         }
         description="Đăng nhập để quản lý lịch trình, khám phá điểm đến và đồng hành cùng bạn trên mọi chuyến đi."

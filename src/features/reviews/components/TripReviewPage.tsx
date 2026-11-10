@@ -202,7 +202,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
                     setFetchError(null);
                     setRetryCount((c) => c + 1);
                   }}
-                  className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                  className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39]"
                 >
                   {tripReviewEn.actions.retry}
                 </button>
@@ -232,7 +232,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
-                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39]"
               >
                 {tripReviewEn.actions.backToTrips}
               </Link>
@@ -255,7 +255,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
-                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39]"
               >
                 {tripReviewEn.actions.backToTrips}
               </Link>
@@ -283,7 +283,7 @@ export function TripReviewPage({ tripId }: TripReviewPageProps) {
             <div className="mt-5">
               <Link
                 href={ROUTES.account.trips}
-                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#00574D]"
+                className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39]"
               >
                 {tripReviewEn.actions.backToTrips}
               </Link>
