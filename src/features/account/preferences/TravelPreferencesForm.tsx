@@ -382,7 +382,7 @@ export function TravelPreferencesForm({
           type="submit"
           variant="primary"
           loading={submitting}
-          className="!bg-[#174B4A] hover:!bg-[#00574D] sm:min-w-[170px]"
+          className="!bg-[#174B4A] hover:!bg-[#103B39] sm:min-w-[170px]"
         >
           Lưu sở thích
         </ActionButton>

@@ -347,7 +347,7 @@ textarea {
 }
 
 .btn-mut:hover {
-  background: #E8EEF8;
+  background: #EDEAE1;
 }
 
 .segs {
@@ -400,8 +400,8 @@ textarea {
   gap: 9px;
   line-height: 1.5;
   background: var(--brand1);
-  color: #12379B;
-  border: 1px solid #C6DAFB;
+  color: #103B39;
+  border: 1px solid #B2D6C4;
 }
 
 .badge-pill {

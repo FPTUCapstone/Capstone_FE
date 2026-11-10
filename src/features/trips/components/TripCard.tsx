@@ -148,7 +148,7 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
         {canWriteReview && (
           <Link
             href={reviewHref}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#174B4A] py-2 px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#00574D] active:scale-98"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#174B4A] py-2 px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#103B39] active:scale-98"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
               rate_review

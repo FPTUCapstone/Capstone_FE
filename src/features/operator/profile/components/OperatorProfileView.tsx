@@ -546,7 +546,7 @@ export function OperatorProfileView({
           className={`w-full sm:w-auto text-center rounded-xl px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 ${
             !isDemo
               ? 'bg-slate-400 cursor-not-allowed opacity-60'
-              : 'bg-[#174B4A] hover:bg-[#00574D] disabled:opacity-50'
+              : 'bg-[#174B4A] hover:bg-[#103B39] disabled:opacity-50'
           }`}
         >
           {submitting ? 'Đang lưu...' : !isDemo ? 'Lưu thông tin (Chờ máy chủ)' : 'Lưu thông tin'}

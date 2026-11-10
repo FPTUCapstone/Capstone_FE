@@ -26,8 +26,8 @@ const featureCards = [
 ];
 
 const stats = [
-  { value: "120+", label: "Điểm đến nổi bật", color: "text-brand-brightTeal" },
-  { value: "15K+", label: "Traveler đang dùng", color: "text-brand-brightTeal" },
+  { value: "120+", label: "Điểm đến nổi bật", color: "text-teal-300" },
+  { value: "15K+", label: "Traveler đang dùng", color: "text-teal-300" },
   { value: "4.9★", label: "Đánh giá trung bình", color: "text-brand-coral" },
 ];
 
@@ -57,7 +57,7 @@ export default function AuthHeroPanel({ title, description, sticky = false }: Au
         <div className="space-y-10 max-w-xl">
           <div className="space-y-5">
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold tracking-wide backdrop-blur-sm">
-              <span className="material-symbols-outlined text-[16px] text-brand-brightTeal">
+              <span className="material-symbols-outlined text-[16px] text-teal-300">
                 auto_awesome
               </span>
               HÀNH TRÌNH THÔNG MINH CHO NGƯỜI VIỆT

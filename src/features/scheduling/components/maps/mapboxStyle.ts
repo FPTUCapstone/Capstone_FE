@@ -25,7 +25,7 @@ export function widthByZoom(stops: ReadonlyArray<readonly [number, number]>) {
 }
 
 /** Road legs shade from the start colour to the colour of the end marker, in visiting order. */
-export const ROUTE_START_COLOR = '#006B5F';
+export const ROUTE_START_COLOR = '#174B4A';
 export const ROUTE_END_COLOR = MARKER_COLORS.end;
 
 const channelsOf = (hex: string) => [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
