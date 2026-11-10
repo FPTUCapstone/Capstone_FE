@@ -34,6 +34,23 @@ import { ExportHistoryPanel } from './ExportHistoryPanel';
 // the tab is actually visible (see the visibility-driven effect below).
 const REVENUE_POLL_INTERVAL_MS = 45_000;
 
+/** The calendar month containing "now" (local time), so a freshly loaded or Reset report
+ * defaults to whatever month revenue is actually happening in — never a date baked in at
+ * whatever month this screen happened to be built. */
+function currentMonthRange(): { startDate: string; endDate: string } {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-based
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  // Built from local calendar fields directly — never through toISOString(), which converts
+  // to UTC and can shift the date across local/UTC midnight depending on the viewer's timezone.
+  return {
+    startDate: `${year}-${pad(month + 1)}-01`,
+    endDate: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+  };
+}
+
 export function OperatorRevenueView() {
   const { context } = useWebSession();
   const searchParams = useSearchParams();
@@ -52,10 +69,8 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
   actorUserId: string | number | undefined;
   isDemo: boolean;
 }) {
-  // Seeded development records are in the current reporting month.
   const initialFilters: RevenueFilterInput = {
-    startDate: '2026-10-01',
-    endDate: '2026-10-31',
+    ...currentMonthRange(),
     granularity: 'monthly',
     tourId: undefined,
   };
@@ -214,7 +229,10 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
 
   const handleResetFilters = () => {
     setIsLoading(true);
-    setAppliedFilters(initialFilters);
+    // Recomputed here rather than reusing initialFilters: that value was captured at this
+    // component's last render, which may have been well before the clock ticked into a new
+    // month in a long-lived session — Reset must reflect the current month right now.
+    setAppliedFilters({ ...currentMonthRange(), granularity: 'monthly', tourId: undefined });
     setCurrentPage(1);
     setRequestToken((token) => token + 1);
   };

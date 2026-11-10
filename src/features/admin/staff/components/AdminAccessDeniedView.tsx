@@ -3,15 +3,26 @@ import Link from 'next/link';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
 import { ROUTES } from '@/lib/routes';
 
-type RequiredAdministrationRole = 'Administrator' | 'Staff';
+export type RequiredAdministrationRole = 'Administrator' | 'Staff';
 
 export function AdminAccessDeniedView({
   requiredRole = 'Administrator',
+  requiredRoles,
   description,
-}: { requiredRole?: RequiredAdministrationRole; description?: string }) {
-  const copy = requiredRole === 'Staff'
-    ? adminStaffEn.staffAccessDenied
-    : adminStaffEn.accessDenied;
+}: {
+  requiredRole?: RequiredAdministrationRole;
+  /** DAILY-PAYOUT-TRANSFER plan Task 3a: a route that allows either role (UC-72). When set,
+   * the viewer has neither role at all, so there is no "return to your own dashboard" link —
+   * only the sign-in link is shown. */
+  requiredRoles?: RequiredAdministrationRole[];
+  description?: string;
+}) {
+  const dual = (requiredRoles?.length ?? 0) > 0;
+  const copy = dual
+    ? adminStaffEn.eitherAccessDenied
+    : requiredRole === 'Staff'
+      ? adminStaffEn.staffAccessDenied
+      : adminStaffEn.accessDenied;
   const returnHref = requiredRole === 'Staff'
     ? ROUTES.admin.dashboard
     : ROUTES.admin.staffDashboard;
@@ -44,12 +55,14 @@ export function AdminAccessDeniedView({
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Link
-            href={returnHref}
-            className="inline-flex items-center justify-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
-          >
-            {returnLabel}
-          </Link>
+          {!dual && (
+            <Link
+              href={returnHref}
+              className="inline-flex items-center justify-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
+            >
+              {returnLabel}
+            </Link>
+          )}
           <Link
             href={ROUTES.admin.login}
             className="inline-flex items-center justify-center rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-sm font-semibold text-[#1e293b] transition hover:bg-[#f8fafc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1C2928]"

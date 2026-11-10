@@ -19,7 +19,6 @@ interface AdminSignInFormProps {
 const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
   ROUTES.admin.staffDashboard,
   ROUTES.admin.accountSecurity,
-  ROUTES.admin.payouts,
   ROUTES.admin.createPoi,
   ROUTES.admin.pois,
 ]);

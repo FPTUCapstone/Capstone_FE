@@ -27,6 +27,7 @@ export const ROUTES = {
     createCoupon: '/partner/coupons/create',
     revenue: '/partner/revenue',
     payouts: '/partner/payouts',
+    payoutSettlements: '/partner/payout-settlements',
     weatherSafetyReviews: '/partner/weather-safety-reviews',
     weatherSafetyReview: (id: string | number) => `/partner/weather-safety-reviews/${id}`,
   },
@@ -53,8 +54,6 @@ export const ROUTES = {
     createPoi: '/admin/catalogue/points-of-interest/new',
     activeTrips: '/admin/trips/active',
     bookings: '/admin/bookings',
-    payouts: '/admin/payouts',
-    payoutDetails: (id: string) => `/admin/payouts/${encodeURIComponent(id)}`,
     algorithmParameters: '/admin/settings/algorithm-parameters',
     activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
     users: '/admin/users',
@@ -66,6 +65,8 @@ export const ROUTES = {
     routeCreate: '/admin/routes/create',
     pois: '/admin/catalogue/points-of-interest',
     landingContent: '/admin/landing-content',
-    payoutSettlement: '/admin/payouts/settlement',
+    payoutSettlements: '/admin/payout-settlements',
+    payoutSettlementDetail: (batchId: string | number) =>
+      `/admin/payout-settlements/${encodeURIComponent(batchId)}`,
   },
 } as const;

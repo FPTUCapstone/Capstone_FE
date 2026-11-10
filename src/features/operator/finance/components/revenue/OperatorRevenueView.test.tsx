@@ -31,6 +31,12 @@ describe('OperatorRevenueView (Screen #89)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Pins "today" so the default (and Reset) filter range — computed from the real clock,
+    // see OperatorRevenueView's currentMonthRange — lands on October 2026, matching this
+    // suite's existing fixtures and assertions. Fakes only Date, not setTimeout/setInterval,
+    // so this component's own polling and testing-library's waitFor still run on real timers.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
     mockActorUserId = 101;
     process.env = {
       ...originalEnv,
@@ -43,6 +49,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
   afterEach(() => {
     process.env = originalEnv;
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('renders Screen #89 with header, demo banner, summary metrics, chart, and table', async () => {
@@ -195,6 +202,37 @@ describe('OperatorRevenueView (Screen #89)', () => {
     expect(screen.getByText(/Excel Spreadsheet \(\.xlsx\)/i)).toBeDefined();
   });
 
+  // Regression: the default/Reset filter range used to be hardcoded to whatever month this
+  // screen was built in (2026-10), so a booking paid in a later month never showed up until
+  // the operator manually changed the date filter. It must track the real clock instead.
+  it('defaults the filter range to the current calendar month, not a fixed one', () => {
+    vi.setSystemTime(new Date('2026-11-20T00:00:00Z'));
+    render(<OperatorRevenueView />);
+
+    expect((screen.getByLabelText(/Start Date/i) as HTMLInputElement).value).toBe('2026-11-01');
+    expect((screen.getByLabelText(/End Date/i) as HTMLInputElement).value).toBe('2026-11-30');
+  });
+
+  it('Reset recomputes the current calendar month rather than reusing a stale default', async () => {
+    render(<OperatorRevenueView />);
+    // The Reset button is disabled while isLoading — wait for the initial load to settle first,
+    // same as the Refresh test below, or the click is silently ignored.
+    await waitFor(() => {
+      expect(screen.getByTestId('revenue-last-updated').textContent).toMatch(/^Updated /);
+    });
+
+    const startDateInput = screen.getByLabelText(/Start Date/i) as HTMLInputElement;
+    fireEvent.change(startDateInput, { target: { value: '2026-01-01' } });
+    vi.setSystemTime(new Date('2026-12-05T00:00:00Z'));
+
+    fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Start Date/i) as HTMLInputElement).value).toBe('2026-12-01');
+    });
+    expect((screen.getByLabelText(/End Date/i) as HTMLInputElement).value).toBe('2026-12-31');
+  });
+
   it('shows when the report was last loaded and lets the operator force a reload without changing filters', async () => {
     render(<OperatorRevenueView />);
 
@@ -220,6 +258,8 @@ describe('OperatorRevenueView (Screen #89)', () => {
         /^Updated /
       );
     });
+    // Still the default October 2026 range (pinned "now" in beforeEach) — Refresh must not
+    // perturb the applied filters.
     expect(
       (screen.getByLabelText(/Start Date/i) as HTMLInputElement).value
     ).toBe('2026-10-01');

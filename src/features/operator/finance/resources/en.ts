@@ -156,42 +156,20 @@ export const financeEn = {
     empty: 'No exports yet. Use Export Report above to create one.',
   },
 
+  // The UC-46 "available balance" / settlement-months / payout-request-history sections were
+  // removed along with that model (DAILY-PAYOUT-TRANSFER). Only the beneficiary bank account
+  // block remains; the new model's settlement history lives in a separate feature
+  // (src/features/operator/payout-settlements), not this finance workspace resource file.
   payouts: {
-    title: 'Payout Settlement',
-    subtitle:
-      'Review settlement months, beneficiary bank details, and track payout request history.',
+    title: 'Beneficiary Bank Account',
+    subtitle: 'Manage the bank account that receives your automatic daily settlement transfers.',
     demoNoticeTitle: 'Demo Payout Mode Active',
     demoNoticeDesc:
-      'Settlement calculations and payout requests below operate on deterministic demo fixtures for testing. Local demo requests are not persisted to production or placed in the live Staff review queue.',
-    pendingNoticeTitle: 'Backend Integration Pending',
-    availableToWithdraw: 'Available to withdraw',
-    availableToWithdrawHelp:
-      'Sum of every closed, eligible settlement month not yet claimed by a payout request. One request claims the entire balance at once. This can differ from the Revenue Report, which reports by payment month; Payout Settlement reports by the month each booking becomes final.',
-
-    months: {
-      title: 'Settlement Months',
-      subtitle: 'Months with completed bookings eligible for payout requests.',
-      yearLabel: 'Year',
-      colMonth: 'Settlement Month',
-      colEligibleBookings: 'Eligible Bookings',
-      colPayments: 'Payments Received',
-      colRefunded: 'Refunded',
-      colCommission: 'Commission',
-      colPayable: 'Payable Net',
-      colStatus: 'Month Status',
-      colCoverage: 'Coverage',
-      statusClosed: 'Closed',
-      statusOpen: 'Open (Ongoing)',
-      coverageOpen: 'Still open',
-      coverageAvailable: 'In available balance',
-      coverageIncluded: 'Included in payout',
-      btnRequestPayout: 'Request Available Balance',
-      emptyMonths: 'No settlement months available for this account.',
-    },
+      'The bank account below operates on deterministic demo fixtures for testing. Local demo edits are not persisted to production.',
 
     bank: {
       title: 'Beneficiary Bank Account',
-      subtitle: 'Bank account configured for receiving payout settlements.',
+      subtitle: 'Bank account configured for receiving automatic payout transfers.',
       accountHolder: 'Account Holder',
       bankName: 'Bank Name',
       accountNumber: 'Account Number',
@@ -202,59 +180,6 @@ export const financeEn = {
       savedSuccess: 'Beneficiary bank details updated successfully.',
       accountNumberPlaceholder: 'Enter new account number',
     },
-
-    history: {
-      title: 'Payout Request History',
-      subtitle: 'Track submitted payout requests and settlement status.',
-      colPayoutCode: 'Payout Code',
-      colPeriod: 'Period Covered',
-      colPayable: 'Payable Net',
-      colStatus: 'Status',
-      colRequestedDate: 'Requested Date',
-      colSettledDate: 'Settled Date',
-      colActions: 'Actions',
-      periodMonthsSuffix: 'months',
-      btnCancelRequest: 'Cancel Request',
-      statusPendingReview: 'Pending Review',
-      statusApprovedForSettlement: 'Approved for Settlement',
-      statusSettlementProcessing: 'Settlement Processing',
-      statusSettled: 'Settled',
-      statusSettlementFailed: 'Settlement Failed (Retrying)',
-      statusRejected: 'Rejected',
-      statusCancelled: 'Cancelled',
-      settlementFailedNotice: 'The transfer is being retried automatically. No action needed.',
-      emptyHistory: 'No payout requests have been submitted yet.',
-    },
-  },
-
-  requestDialog: {
-    title: 'Submit Payout Request',
-    subtitle: 'Review the available balance and confirm the payout request for every outstanding month.',
-    monthsIncludedTitle: 'Settlement months included',
-    periodCountLabel: 'Months Included',
-    paymentsLabel: 'Payments Received',
-    refundedLabel: 'Refunded',
-    commissionLabel: 'Platform Commission',
-    adjustmentsLabel: 'Adjustments from earlier refunds',
-    payableAmountLabel: 'Payable Net',
-    payableAmountNotice:
-      'The payable amount is computed and verified entirely on the server. It cannot be edited after submission.',
-    bankConfirmationTitle: 'Destination Bank Account',
-    confirmCheckbox:
-      'I confirm the beneficiary bank information is correct and request settlement for the full available balance.',
-    submitBtn: 'Confirm Payout Request',
-    submittingBtn: 'Submitting Request…',
-    cancelBtn: 'Cancel',
-  },
-
-  cancelDialog: {
-    title: 'Cancel Payout Request',
-    subtitle: 'Are you sure you want to cancel payout request {code} for {amount}?',
-    explanation:
-      'Once cancelled, this payout request will be closed and its settlement months will return to the available balance.',
-    confirmBtn: 'Confirm Cancellation',
-    cancellingBtn: 'Cancelling…',
-    keepBtn: 'Keep Request',
   },
 
   messages: {
@@ -271,14 +196,6 @@ export const financeEn = {
     PENDING_BE_INTEGRATION:
       'Finance and payout services are pending backend API integration. No financial values are fabricated in production.',
     BACKEND_INTEGRATION_PENDING: 'Backend integration pending',
-    // UC-46 payout-specific outcomes pending PO message-number assignment (BE spec OPEN-4).
-    // Neutral placeholder wording; never MSG29/MSG31/MSG118/MSG119/MSG120/MSG131-136.
-    PAYOUT_PLACEHOLDER_INVALID_MONTH: 'The selected settlement month is invalid.',
-    PAYOUT_PLACEHOLDER_MONTH_NOT_CLOSED: 'This settlement month has not closed yet.',
-    PAYOUT_PLACEHOLDER_NOT_REQUESTABLE: 'The combined payable amount across all outstanding months is not positive.',
-    PAYOUT_PLACEHOLDER_ACTIVE_EXISTS: 'A payout request is already in progress for this account.',
-    PAYOUT_PLACEHOLDER_BELOW_MINIMUM: 'The payable amount is below the configured minimum payout.',
-    PAYOUT_PLACEHOLDER_NOT_CANCELLABLE: 'This payout request can no longer be cancelled.',
     DEMO_ASYNC_EXPORT_SIMULATION:
       'Demo UI simulation only. No background export job was created and no notification will be sent. Genuine asynchronous exporting is pending backend integration.',
   },
