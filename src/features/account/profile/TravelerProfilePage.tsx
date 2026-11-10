@@ -31,13 +31,13 @@ export function TravelerProfilePage() {
 
   if (status === 'restoring') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F6F7]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F5EF]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#006B5F] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-[#59616B]">Đang tải thông tin tài khoản…</p>
+          <p className="text-xs font-semibold text-[#5B6E69]">Đang tải thông tin tài khoản…</p>
         </div>
       </div>
     );
@@ -50,12 +50,12 @@ export function TravelerProfilePage() {
   const content = (
     <>
       {!isInsideShell && (
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#59616B]">
-          <Link href={ROUTES.home} className="hover:text-[#006B5F] hover:underline">
+        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]">
+          <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
             Trang chủ
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#00152A]">Tài khoản cá nhân</span>
+          <span className="text-[#1C2928]">Tài khoản cá nhân</span>
         </nav>
       )}
 
@@ -80,7 +80,7 @@ export function TravelerProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F6F7] text-[#00152A]" lang="vi">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         {content}
       </main>

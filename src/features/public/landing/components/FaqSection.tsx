@@ -9,15 +9,15 @@ export function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="scroll-mt-20 py-16 sm:py-24 bg-[#f4f7fc] px-4 sm:px-8 border-b border-slate-200">
+    <section id="faq" className="scroll-mt-20 py-16 sm:py-24 bg-[#F7F5EF] px-4 sm:px-8 border-b border-slate-200">
       <div className="mx-auto max-w-4xl">
         <ScrollReveal animation="fade-up">
           <div className="text-center mb-12">
             <LandingEyebrow icon="help" className="mb-3">
               Giải đáp thắc mắc
             </LandingEyebrow>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#00152a] tracking-tight">
-              Câu hỏi thường gặp về <span className="text-[#007d6e]">TripMate</span>
+            <h2 className="text-3xl sm:text-4xl font-black text-[#1C2928] tracking-tight">
+              Câu hỏi thường gặp về <span className="text-[#103B39]">TripMate</span>
             </h2>
             <p className="mt-3 text-slate-500 text-sm sm:text-base text-pretty">
               Tổng hợp các câu hỏi về thuật toán CSP, cơ chế cứu nguy thời tiết và quy trình bảo vệ quyền lợi du khách.
@@ -40,7 +40,7 @@ export function FaqSection() {
               >
                 <div
                   className={`rounded-2xl border transition-all duration-300 overflow-hidden shadow-xs ${
-                    isOpen ? 'border-[#007d6e] bg-white shadow-md' : 'border-slate-200 bg-white hover:border-slate-300'
+                    isOpen ? 'border-[#103B39] bg-white shadow-md' : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
                   <button
@@ -49,12 +49,12 @@ export function FaqSection() {
                     aria-expanded={isOpen}
                     aria-controls={answerId}
                     onClick={() => setOpenIndex(isOpen ? null : index)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#00152a] hover:text-[#007d6e] transition-colors cursor-pointer"
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#1C2928] hover:text-[#103B39] transition-colors cursor-pointer"
                   >
                     <span>{faq.q}</span>
                     <span
                       className={`material-symbols-outlined text-slate-400 transition-transform duration-300 ${
-                        isOpen ? 'rotate-180 text-[#007d6e]' : ''
+                        isOpen ? 'rotate-180 text-[#103B39]' : ''
                       }`}
                       aria-hidden="true"
                     >

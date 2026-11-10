@@ -28,7 +28,7 @@ export function RevenueDetailTable({
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
         <div>
-          <h3 className="text-sm font-bold text-[#00152A]">
+          <h3 className="text-sm font-bold text-[#1C2928]">
             {financeEn.revenue.detailTable.title}
           </h3>
           <p className="text-xs text-slate-500">
@@ -81,7 +81,7 @@ export function RevenueDetailTable({
                 {items.map((tour) => (
                   <tr key={tour.tourId} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-4 py-3.5">
-                      <div className="font-semibold text-[#00152A]">
+                      <div className="font-semibold text-[#1C2928]">
                         {tour.tourName}
                       </div>
                       <div className="text-[10px] text-slate-400 font-mono">
@@ -103,7 +103,7 @@ export function RevenueDetailTable({
                     <td className="px-4 py-3.5 text-right font-medium text-amber-700">
                       {formatVndCurrency(tour.commission)}
                     </td>
-                    <td className="px-4 py-3.5 text-right font-bold text-[#006B5F]">
+                    <td className="px-4 py-3.5 text-right font-bold text-[#174B4A]">
                       {formatVndCurrency(tour.netAmount)}
                     </td>
                   </tr>

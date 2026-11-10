@@ -5,7 +5,7 @@ import { LandingEyebrow } from './LandingEyebrow';
 
 export function PartnerEcosystemSection() {
   return (
-    <section id="partner" className="scroll-mt-20 py-16 sm:py-24 bg-[#00152a] text-white px-4 sm:px-8 border-b border-slate-800">
+    <section id="partner" className="scroll-mt-20 py-16 sm:py-24 bg-[#103B39] text-white px-4 sm:px-8 border-b border-slate-800">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left: Narrative & Value Proposition */}
@@ -65,7 +65,7 @@ export function PartnerEcosystemSection() {
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Link
                   href={ROUTES.partner.register}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-400 hover:bg-teal-300 px-6 py-3 text-sm font-black text-[#00152a] shadow-lg shadow-teal-400/20 transition-all cursor-pointer active:scale-95 btn-press"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-400 hover:bg-teal-300 px-6 py-3 text-sm font-black text-[#1C2928] shadow-lg shadow-teal-400/20 transition-all cursor-pointer active:scale-95 btn-press"
                 >
                   <span>Đăng ký Trở thành Tour Operator</span>
                   <span className="material-symbols-outlined text-lg">arrow_forward</span>

@@ -24,10 +24,10 @@ async function main() {
   let createPoiClass = await page.locator('aside nav a[href="/admin/catalogue/points-of-interest/new"]').getAttribute('class');
 
   console.log('--- Test 1: On Catalog Page ---');
-  console.log('POI Catalog isActive (expected TRUE):', poiCatalogClass.includes('bg-[#245747]'));
-  console.log('Create POI isActive (expected FALSE):', createPoiClass.includes('bg-[#245747]'));
+  console.log('POI Catalog isActive (expected TRUE):', poiCatalogClass.includes('bg-[#174B4A]'));
+  console.log('Create POI isActive (expected FALSE):', createPoiClass.includes('bg-[#174B4A]'));
 
-  if (!poiCatalogClass.includes('bg-[#245747]') || createPoiClass.includes('bg-[#245747]')) {
+  if (!poiCatalogClass.includes('bg-[#174B4A]') || createPoiClass.includes('bg-[#174B4A]')) {
     throw new Error('Test 1 failed: Catalog page active state mismatch');
   }
 
@@ -40,10 +40,10 @@ async function main() {
   createPoiClass = await page.locator('aside nav a[href="/admin/catalogue/points-of-interest/new"]').getAttribute('class');
 
   console.log('--- Test 2: On Create POI Page ---');
-  console.log('POI Catalog isActive (expected FALSE):', poiCatalogClass.includes('bg-[#245747]'));
-  console.log('Create POI isActive (expected TRUE):', createPoiClass.includes('bg-[#245747]'));
+  console.log('POI Catalog isActive (expected FALSE):', poiCatalogClass.includes('bg-[#174B4A]'));
+  console.log('Create POI isActive (expected TRUE):', createPoiClass.includes('bg-[#174B4A]'));
 
-  if (poiCatalogClass.includes('bg-[#245747]') || !createPoiClass.includes('bg-[#245747]')) {
+  if (poiCatalogClass.includes('bg-[#174B4A]') || !createPoiClass.includes('bg-[#174B4A]')) {
     throw new Error('Test 2 failed: Create POI active state mismatch');
   }
 

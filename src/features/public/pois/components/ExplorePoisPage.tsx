@@ -132,7 +132,7 @@ export function ExplorePoisPage() {
     : (data?.items[0]?.id ?? null);
 
   return (
-    <div className="min-h-screen bg-[#f3f6f7] text-[#00152a]" lang="vi">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
       <main>
         <section className="border-b border-[#d7e0e3] bg-[#001f35] px-4 py-6 text-white sm:px-8 sm:py-8">
           <div className="mx-auto max-w-7xl">
@@ -160,7 +160,7 @@ export function ExplorePoisPage() {
             <p className="text-sm font-semibold text-[#46575f]">
               {hasOrigin ? '⌖ Đã bật vị trí: có thể sắp xếp và lọc theo khoảng cách.' : '⌖ GPS chưa bật: danh sách mặc định không dùng khoảng cách.'}
             </p>
-            <button type="button" onClick={requestLocation} className="min-h-11 w-fit rounded-xl border border-[#a8c7c1] bg-white px-4 text-sm font-extrabold text-[#006b5f] hover:bg-[#f1fbf8]">
+            <button type="button" onClick={requestLocation} className="min-h-11 w-fit rounded-xl border border-[#a8c7c1] bg-white px-4 text-sm font-extrabold text-[#174B4A] hover:bg-[#f1fbf8]">
               {hasOrigin ? 'Cập nhật vị trí' : 'Bật định vị'}
             </button>
           </div>
@@ -178,7 +178,7 @@ export function ExplorePoisPage() {
             </div>
           ) : null}
 
-          <section aria-label="Tìm kiếm và lọc địa điểm" className="rounded-[24px] border border-[#d8e1e4] bg-white p-4 shadow-[0_8px_30px_rgba(0,21,42,.05)] sm:p-5">
+          <section aria-label="Tìm kiếm và lọc địa điểm" className="rounded-[24px] border border-[#DCE2DD] bg-white p-4 shadow-[0_8px_30px_rgba(0,21,42,.05)] sm:p-5">
             <PoiSearchForm key={filters.search} initialValue={filters.search} onSubmit={submitSearch} />
 
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label={POI_CATEGORY_PREVIEW_ENABLED ? 'Danh mục xem trước' : 'Danh mục'}>
@@ -186,7 +186,7 @@ export function ExplorePoisPage() {
                 type="button"
                 onClick={() => updateFilters({ categoryId: null })}
                 aria-pressed={filters.categoryId === null}
-                className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === null ? 'bg-[#007d6e] text-white' : 'bg-[#e9eef0] text-[#3b4b53]'}`}
+                className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === null ? 'bg-[#103B39] text-white' : 'bg-[#e9eef0] text-[#3b4b53]'}`}
               >
                 Tất cả
               </button>
@@ -196,7 +196,7 @@ export function ExplorePoisPage() {
                   type="button"
                   onClick={() => updateFilters({ categoryId: category.id })}
                   aria-pressed={filters.categoryId === category.id}
-                  className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === category.id ? 'bg-[#007d6e] text-white' : 'bg-[#e9eef0] text-[#3b4b53]'}`}
+                  className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-bold ${filters.categoryId === category.id ? 'bg-[#103B39] text-white' : 'bg-[#e9eef0] text-[#3b4b53]'}`}
                 >
                   {category.name}
                 </button>
@@ -208,7 +208,7 @@ export function ExplorePoisPage() {
                 <select
                   value={filters.sort}
                   onChange={(event) => updateFilters({ sort: event.target.value as PoiSearchState['sort'] })}
-                  className="min-h-11 min-w-0 flex-1 bg-transparent font-bold text-[#00152a] outline-none"
+                  className="min-h-11 min-w-0 flex-1 bg-transparent font-bold text-[#1C2928] outline-none"
                   aria-label="Sắp xếp địa điểm"
                 >
                   <option value="name">Tên A–Z</option>
@@ -240,7 +240,7 @@ export function ExplorePoisPage() {
                 type="button"
                 onClick={() => updateFilters({ openNow: !filters.openNow })}
                 aria-pressed={filters.openNow}
-                className={`min-h-11 rounded-xl px-4 text-sm font-bold ${filters.openNow ? 'bg-[#d9f3ed] text-[#006b5f] ring-1 ring-[#80cbbf]' : 'bg-[#edf1f2] text-[#405159]'}`}
+                className={`min-h-11 rounded-xl px-4 text-sm font-bold ${filters.openNow ? 'bg-[#d9f3ed] text-[#174B4A] ring-1 ring-[#80cbbf]' : 'bg-[#edf1f2] text-[#405159]'}`}
               >
                 {filters.openNow ? '● Đang mở cửa' : '○ Lọc đang mở cửa'}
               </button>
@@ -249,7 +249,7 @@ export function ExplorePoisPage() {
 
           <div className="mt-5 flex rounded-xl border border-[#d4dee1] bg-[#e8edef] p-1 lg:hidden" aria-label="Chế độ hiển thị">
             {(['list', 'map'] as const).map((mode) => (
-              <button key={mode} type="button" onClick={() => setViewMode(mode)} aria-pressed={viewMode === mode} className={`min-h-11 flex-1 rounded-lg text-sm font-extrabold ${viewMode === mode ? 'bg-[#007d6e] text-white shadow-sm' : 'text-[#405159]'}`}>
+              <button key={mode} type="button" onClick={() => setViewMode(mode)} aria-pressed={viewMode === mode} className={`min-h-11 flex-1 rounded-lg text-sm font-extrabold ${viewMode === mode ? 'bg-[#103B39] text-white shadow-sm' : 'text-[#405159]'}`}>
                 {mode === 'list' ? '☷ Danh sách' : '⌖ Bản đồ'}
               </button>
             ))}
@@ -259,12 +259,12 @@ export function ExplorePoisPage() {
             <section className={`${viewMode === 'list' ? 'block' : 'hidden'} min-w-0 lg:block`} aria-label="Danh sách địa điểm">
               <div className="mb-4 flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[.15em] text-[#007d6e]">Kết quả khám phá</p>
-                  <h2 ref={resultsHeadingRef} tabIndex={-1} className="mt-1 text-xl font-black text-[#00152a] outline-none" aria-live="polite">
+                  <p className="text-xs font-extrabold uppercase tracking-[.15em] text-[#103B39]">Kết quả khám phá</p>
+                  <h2 ref={resultsHeadingRef} tabIndex={-1} className="mt-1 text-xl font-black text-[#1C2928] outline-none" aria-live="polite">
                     {data ? resultRange(data) : 'Đang tải kết quả'}
                   </h2>
                 </div>
-                {loading && data ? <span className="text-xs font-bold text-[#007d6e]">Đang cập nhật…</span> : null}
+                {loading && data ? <span className="text-xs font-bold text-[#103B39]">Đang cập nhật…</span> : null}
               </div>
 
               {loading && !data ? <PoiListSkeleton /> : null}
@@ -280,7 +280,7 @@ export function ExplorePoisPage() {
                       onSelect={() => setSelectedPoiId(poi.id)}
                     />
                   ))}
-                  <div className="rounded-2xl border border-[#d8e1e4] bg-white px-4 py-4 md:col-span-2 lg:col-span-1">
+                  <div className="rounded-2xl border border-[#DCE2DD] bg-white px-4 py-4 md:col-span-2 lg:col-span-1">
                     <p className="mb-4 text-center text-sm font-semibold text-[#56666e]">Đang hiển thị {resultRange(data)}</p>
                     <PoiPagination page={data.page} totalPages={data.totalPages} onPageChange={(page) => updateFilters({ page })} />
                   </div>
@@ -335,10 +335,10 @@ function PoiSearchForm({ initialValue, onSubmit }: PoiSearchFormProps) {
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="Tìm danh lam, bãi biển, hang động…"
-          className="min-h-12 w-full rounded-xl border border-[#ced9dd] bg-[#f3f6f7] py-3 pl-11 pr-4 text-base font-semibold text-[#00152a] placeholder:text-[#718087] focus:border-[#007d6e] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8dd7ce]"
+          className="min-h-12 w-full rounded-xl border border-[#ced9dd] bg-[#F7F5EF] py-3 pl-11 pr-4 text-base font-semibold text-[#1C2928] placeholder:text-[#718087] focus:border-[#103B39] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8dd7ce]"
         />
       </div>
-      <button type="submit" className="min-h-12 rounded-xl bg-[#007d6e] px-6 text-sm font-extrabold text-white hover:bg-[#006b5f]">Tìm kiếm</button>
+      <button type="submit" className="min-h-12 rounded-xl bg-[#103B39] px-6 text-sm font-extrabold text-white hover:bg-[#174B4A]">Tìm kiếm</button>
     </form>
   );
 }

@@ -79,7 +79,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       {/* Header bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+          <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl">
             Gửi duyệt gói tour
           </h1>
           <p className="mt-1 text-xs text-slate-500">
@@ -142,11 +142,11 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#006B5F]">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#174B4A]">
               <span className="material-symbols-outlined text-[28px]">tour</span>
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#00152A] sm:text-lg">{tour.title}</h2>
+              <h2 className="text-base font-extrabold text-[#1C2928] sm:text-lg">{tour.title}</h2>
               <p className="mt-1 font-mono text-xs text-slate-500">
                 {tour.tourCode} · {tour.destination} · {tour.durationDays} ngày · {tour.basePrice.toLocaleString()} đ
               </p>
@@ -161,7 +161,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         {/* Left Column: Submission Checklist */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
           <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-base font-extrabold text-[#00152A]">
+            <h3 className="text-base font-extrabold text-[#1C2928]">
               Danh mục kiểm tra bắt buộc (Checklist)
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -211,12 +211,12 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         {/* Right Column: Next Steps & Note to Reviewer */}
         <div className="space-y-6">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               Quy trình tiếp theo
             </h3>
             <div className="mt-4 space-y-3.5 text-xs text-slate-600">
               <div className="flex items-start gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#006B5F]/10 text-[11px] font-extrabold text-[#006B5F]">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#174B4A]/10 text-[11px] font-extrabold text-[#174B4A]">
                   1
                 </span>
                 <p>
@@ -224,13 +224,13 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
                 </p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#006B5F]/10 text-[11px] font-extrabold text-[#006B5F]">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#174B4A]/10 text-[11px] font-extrabold text-[#174B4A]">
                   2
                 </span>
                 <p>Quản trị viên TripMate sẽ kiểm tra tính pháp lý, giá cả và nội dung lịch trình.</p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#006B5F]/10 text-[11px] font-extrabold text-[#006B5F]">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#174B4A]/10 text-[11px] font-extrabold text-[#174B4A]">
                   3
                 </span>
                 <p>
@@ -246,7 +246,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
 
           {/* Note to Reviewer */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <label htmlFor="reviewer-note" className="block text-xs font-bold text-[#00152A]">
+            <label htmlFor="reviewer-note" className="block text-xs font-bold text-[#1C2928]">
               Ghi chú gửi Quản trị viên (Tùy chọn)
             </label>
             <textarea
@@ -255,7 +255,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
               value={reviewerNote}
               onChange={(e) => setReviewerNote(e.target.value)}
               placeholder="Ví dụ: Chuyến đi khởi hành buổi tối, bao gồm vé tham quan và thuyền hoa đăng..."
-              className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20"
+              className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
             />
           </section>
         </div>
@@ -274,7 +274,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           type="button"
           onClick={() => setShowConfirmModal(true)}
           disabled={!isSubmittableStatus || !completeness.isEligibleForSubmission || submitting}
-          className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+          className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
         >
           Gửi yêu cầu xét duyệt
         </button>
@@ -289,7 +289,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs animate-in fade-in duration-150"
         >
           <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl">
-            <h3 id="modal-title" className="text-base font-extrabold text-[#00152A]">
+            <h3 id="modal-title" className="text-base font-extrabold text-[#1C2928]">
               Gửi gói tour này để xét duyệt?
             </h3>
             <p className="mt-2 text-xs leading-relaxed text-slate-600">
@@ -309,7 +309,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={submitting}
-                className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+                className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
               >
                 {submitting ? 'Đang gửi...' : 'Xác nhận gửi'}
               </button>

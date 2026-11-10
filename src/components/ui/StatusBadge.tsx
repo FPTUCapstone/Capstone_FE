@@ -6,9 +6,9 @@ type StatusBadgeProps = {
 };
 
 const tones = {
-  teal: 'bg-[#6df5e1]/30 text-[#006b5f]',
+  teal: 'bg-[#6df5e1]/30 text-[#174B4A]',
   coral: 'bg-[#ffdad4] text-[#872015]',
-  neutral: 'bg-[#e0e3e6] text-[#43474d]',
+  neutral: 'bg-[#DCE2DD] text-[#5B6E69]',
   warning: 'bg-amber-100 text-amber-800',
   danger: 'bg-[#ffdad6] text-[#93000a]',
 };

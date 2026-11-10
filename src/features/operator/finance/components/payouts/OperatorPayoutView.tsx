@@ -94,7 +94,7 @@ export function OperatorPayoutView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#00152A] tracking-tight">{financeEn.payouts.title}</h1>
+        <h1 className="text-xl font-bold text-[#1C2928] tracking-tight">{financeEn.payouts.title}</h1>
         <p className="mt-1 text-xs text-slate-500">{financeEn.payouts.subtitle}</p>
       </div>
 

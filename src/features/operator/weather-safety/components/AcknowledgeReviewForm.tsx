@@ -80,7 +80,7 @@ export function AcknowledgeReviewForm({
     >
       <div className="border-b border-slate-100 pb-3">
         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <span className="material-symbols-outlined text-teal-700" aria-hidden="true">
+          <span className="material-symbols-outlined text-[#174B4A]" aria-hidden="true">
             assignment_turned_in
           </span>
           Xác nhận tiếp nhận cảnh báo
@@ -116,7 +116,7 @@ export function AcknowledgeReviewForm({
           onChange={(e) => setInstructions(e.target.value)}
           disabled={submitting}
           placeholder="Ghi chú cho đội của bạn (không bắt buộc)"
-          className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-600 focus:outline-hidden focus:ring-1 focus:ring-teal-600 disabled:bg-slate-100 disabled:cursor-not-allowed"
+          className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:bg-slate-100 disabled:cursor-not-allowed"
         />
         <div className="mt-1 flex justify-end text-[11px] text-slate-500">
           <span>{instructions.length} / 1000 ký tự</span>
@@ -130,7 +130,7 @@ export function AcknowledgeReviewForm({
         <button
           type="submit"
           disabled={submitting}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-5 py-2.5 text-xs font-bold text-white shadow-2xs hover:bg-teal-800 focus:outline-hidden focus:ring-2 focus:ring-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-2xs hover:bg-[#103B39] focus:outline-hidden focus:ring-2 focus:ring-[#103B39] disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {submitting ? (
             <>

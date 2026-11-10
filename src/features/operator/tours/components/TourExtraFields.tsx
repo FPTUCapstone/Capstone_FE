@@ -5,7 +5,7 @@ import { REVIEW_BLOCKER_MESSAGES, TOUR_WARNING_MESSAGES } from '../services/oper
 import type { TourDepartureSchedule, TourWarning } from '../types/tourLifecycle';
 
 const inputClass =
-  'mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50';
+  'mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50';
 
 interface TourTermsFieldsProps {
   highlights: string;
@@ -20,7 +20,7 @@ export function TourTermsFields(props: TourTermsFieldsProps) {
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="field-highlights" className="block text-xs font-bold text-[#00152A]">Điểm nổi bật</label>
+        <label htmlFor="field-highlights" className="block text-xs font-bold text-[#1C2928]">Điểm nổi bật</label>
         <textarea
           id="field-highlights"
           rows={2}
@@ -31,7 +31,7 @@ export function TourTermsFields(props: TourTermsFieldsProps) {
         />
       </div>
       <div>
-        <label htmlFor="field-requirements" className="block text-xs font-bold text-[#00152A]">Yêu cầu đối với du khách</label>
+        <label htmlFor="field-requirements" className="block text-xs font-bold text-[#1C2928]">Yêu cầu đối với du khách</label>
         <textarea
           id="field-requirements"
           rows={2}
@@ -85,7 +85,7 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
       </div>
       </div>
       <details className="text-xs">
-        <summary className="cursor-pointer font-medium text-slate-600 hover:text-[#006B5F]">
+        <summary className="cursor-pointer font-medium text-slate-600 hover:text-[#174B4A]">
           Thiết lập giá riêng cho lịch này
         </summary>
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">

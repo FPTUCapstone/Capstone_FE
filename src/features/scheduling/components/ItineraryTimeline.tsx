@@ -17,6 +17,7 @@ import {
   stopDisplayName,
 } from '../utils/itineraryPresentation';
 import { formatPriceLabel } from '@/lib/priceLabel';
+import { legIdBetweenItems } from '../utils/mapGeometry';
 import { ItineraryLegRow } from './ItineraryLegRow';
 import { ItineraryStopMenu, StopMenuAction } from './ItineraryStopMenu';
 
@@ -45,6 +46,11 @@ interface ItineraryTimelineProps {
   /** Stop highlighted from the map (and reported back on hover). */
   highlightedItemId?: number | null;
   onHighlightItem?: (itemId: number | null) => void;
+  /** Legs (by `legIdBetweenItems`) the map can show: their pill becomes a button. */
+  selectableLegIds?: ReadonlySet<string>;
+  /** Leg currently shown on its own on the map. */
+  selectedLegId?: string | null;
+  onSelectLeg?: (legId: string) => void;
 }
 
 export function ItineraryTimeline({
@@ -62,6 +68,9 @@ export function ItineraryTimeline({
   onAddFood,
   highlightedItemId = null,
   onHighlightItem,
+  selectableLegIds,
+  selectedLegId = null,
+  onSelectLeg,
 }: ItineraryTimelineProps) {
   if (!items || items.length === 0) {
     return (
@@ -167,7 +176,7 @@ export function ItineraryTimeline({
               {startsNewDay && (
                 <div id={`day-section-${vietnamDayKey(item.plannedArrival)}`} className="scroll-mt-28 mb-3">
                   <p className="text-sm font-bold capitalize text-slate-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base text-[#007d6e]">event</span>
+                    <span className="material-symbols-outlined text-base text-[#103B39]">event</span>
                     <span>{formatVietnamDayLabel(item.plannedArrival)}</span>
                   </p>
                 </div>
@@ -177,7 +186,14 @@ export function ItineraryTimeline({
                 item.travelDurationFromPreviousMinutes !== null &&
                 item.travelDurationFromPreviousMinutes !== undefined && (
                   <ItineraryLegRow
+                    fromName={previous ? stopDisplayName(previous) : undefined}
                     toName={stopDisplayName(item)}
+                    onSelect={
+                      onSelectLeg && previous && selectableLegIds?.has(legIdBetweenItems(previous.itemId, item.itemId))
+                        ? () => onSelectLeg(legIdBetweenItems(previous.itemId, item.itemId))
+                        : undefined
+                    }
+                    selected={previous !== null && selectedLegId === legIdBetweenItems(previous.itemId, item.itemId)}
                     minutes={item.travelDurationFromPreviousMinutes}
                     meters={item.travelDistanceFromPreviousMeters}
                     mode={legMode(item)}
@@ -202,7 +218,7 @@ export function ItineraryTimeline({
               {/* Stop Card */}
               <div
                 className={`relative flex items-start gap-3.5 rounded-2xl border p-4 shadow-2xs transition sm:gap-4 sm:p-5 ${
-                  highlightedItemId === item.itemId ? 'ring-2 ring-[#007d6e]/50 ' : ''
+                  highlightedItemId === item.itemId ? 'ring-2 ring-[#103B39]/50 ' : ''
                 }${
                   item.isUnavailable
                     ? 'border-rose-200 bg-rose-50/30'
@@ -218,7 +234,7 @@ export function ItineraryTimeline({
                       ? 'bg-rose-500 text-white'
                       : isRest
                       ? 'bg-amber-500 text-white'
-                      : 'bg-[#007d6e] text-white'
+                      : 'bg-[#103B39] text-white'
                   }`}
                 >
                   {item.sequenceNo}
@@ -246,7 +262,7 @@ export function ItineraryTimeline({
                             className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold ${
                               isRest
                                 ? 'bg-amber-100 text-amber-900'
-                                : 'bg-teal-100 text-[#007d6e]'
+                                : 'bg-teal-100 text-[#103B39]'
                             }`}
                           >
                             <span className="material-symbols-outlined text-xs">
@@ -341,7 +357,7 @@ export function ItineraryTimeline({
                     {item.poiId ? (
                       <Link
                         href={ROUTES.poi(item.poiId)}
-                        className="ml-auto inline-flex items-center gap-1 font-bold text-[#007d6e] hover:underline"
+                        className="ml-auto inline-flex items-center gap-1 font-bold text-[#103B39] hover:underline"
                       >
                         <span>Chi tiết địa điểm</span>
                         <span className="material-symbols-outlined text-sm">
@@ -376,7 +392,7 @@ export function ItineraryTimeline({
           type="button"
           onClick={() => onAddFood(lastItem)}
           disabled={busy}
-          className="w-full rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-[#007d6e] hover:text-[#007d6e] disabled:opacity-60"
+          className="w-full rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-[#103B39] hover:text-[#103B39] disabled:opacity-60"
         >
           ＋ Thêm quán ăn
         </button>

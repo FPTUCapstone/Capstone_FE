@@ -235,7 +235,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-            <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl break-words">
+            <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl break-words">
               {initialTour.title}
             </h1>
             <span className="rounded-md bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-bold text-slate-700 shrink-0">
@@ -360,7 +360,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
           {/* Card 1: Editable Fields with Diff Indicator */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-extrabold text-[#00152A]">Thông tin có thể chỉnh sửa</h3>
+              <h3 className="text-base font-extrabold text-[#1C2928]">Thông tin có thể chỉnh sửa</h3>
               {isApproved && (
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-800">
                   Sẽ tạo v{initialTour.version + 1}
@@ -370,7 +370,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
 
             <div className="mt-4 space-y-4">
               <div>
-                <label htmlFor="field-title" className="block text-xs font-bold text-[#00152A]">
+                <label htmlFor="field-title" className="block text-xs font-bold text-[#1C2928]">
                   Tên gói tour <span className="text-rose-500" aria-hidden="true">*</span>
                 </label>
                 <input
@@ -379,14 +379,14 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   disabled={isPending}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50 disabled:text-slate-500"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50 disabled:text-slate-500"
                 />
                 {errors.title && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.title}</p>}
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#00152A]">
+                  <label id="label-destination" htmlFor="field-destination" className="block text-xs font-bold text-[#1C2928]">
                     Điểm đến chính <span className="text-rose-500" aria-hidden="true">*</span>
                   </label>
                   {isDemo ? (
@@ -396,7 +396,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                       disabled={isPending}
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                     />
                   ) : (
                     <DestinationCheckboxes
@@ -412,7 +412,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 </div>
 
                 <div>
-                  <label htmlFor="field-category" className="block text-xs font-bold text-[#00152A]">
+                  <label htmlFor="field-category" className="block text-xs font-bold text-[#1C2928]">
                     Danh mục tour
                   </label>
                   {isDemo ? (
@@ -421,7 +421,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                       disabled={isPending}
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                     >
                       <option value="Di sản & Thiên nhiên">Di sản & Thiên nhiên</option>
                       <option value="Văn hóa & Ẩm thực">Văn hóa & Ẩm thực</option>
@@ -440,7 +440,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
               </div>
 
               <div>
-                <label htmlFor="field-description" className="block text-xs font-bold text-[#00152A]">
+                <label htmlFor="field-description" className="block text-xs font-bold text-[#1C2928]">
                   Mô tả gói tour <span className="text-rose-500" aria-hidden="true">*</span>
                 </label>
                 <textarea
@@ -449,14 +449,14 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   disabled={isPending}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                 />
                 {errors.description && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.description}</p>}
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="field-inclusions" className="block text-xs font-bold text-[#00152A]">
+                  <label htmlFor="field-inclusions" className="block text-xs font-bold text-[#1C2928]">
                     Dịch vụ bao gồm
                   </label>
                   <textarea
@@ -465,12 +465,12 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                     disabled={isPending}
                     value={inclusions}
                     onChange={(e) => setInclusions(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="field-exclusions" className="block text-xs font-bold text-[#00152A]">
+                  <label htmlFor="field-exclusions" className="block text-xs font-bold text-[#1C2928]">
                     Dịch vụ không bao gồm
                   </label>
                   <textarea
@@ -479,13 +479,13 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                     disabled={isPending}
                     value={exclusions}
                     onChange={(e) => setExclusions(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="field-policy" className="block text-xs font-bold text-[#00152A]">
+                <label htmlFor="field-policy" className="block text-xs font-bold text-[#1C2928]">
                   Chính sách hủy tour <span className="text-rose-500" aria-hidden="true">*</span>
                 </label>
                 {isDemo ? (
@@ -495,7 +495,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                     disabled={isPending}
                     value={cancellationPolicy}
                     onChange={(e) => setCancellationPolicy(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#006B5F] focus:outline-hidden disabled:bg-slate-50"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                   />
                 ) : (
                   <CancellationPolicySelect
@@ -517,7 +517,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-[#00152A]">Lịch trình & Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></h3>
+                <h3 className="text-base font-extrabold text-[#1C2928]">Lịch trình & Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></h3>
                 <p className="mt-0.5 text-xs text-slate-500">
                   Xem và điều chỉnh các điểm dừng trong chương trình tour.
                 </p>
@@ -540,7 +540,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   }}
                   className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
                 >
-                  <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold text-slate-800">Ngày {day.dayNo}</p>{!isPending && <button type="button" onClick={() => handleAddActivity(dIdx)} className="inline-flex items-center gap-1 text-xs font-bold text-[#006B5F] hover:underline"><span className="material-symbols-outlined text-[17px]" aria-hidden="true">add_circle</span>Thêm điểm dừng</button>}</div>
+                  <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold text-slate-800">Ngày {day.dayNo}</p>{!isPending && <button type="button" onClick={() => handleAddActivity(dIdx)} className="inline-flex items-center gap-1 text-xs font-bold text-[#174B4A] hover:underline"><span className="material-symbols-outlined text-[17px]" aria-hidden="true">add_circle</span>Thêm điểm dừng</button>}</div>
                   <div className="mt-3 space-y-3">
                     {day.activities.map((act, aIdx) => (
                       <div key={act.id} draggable={!isPending} onDragStart={() => setDraggedActivity({ dayIndex: dIdx, activityIndex: aIdx })} onDragEnd={() => setDraggedActivity(null)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => {
@@ -578,7 +578,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         <div className="space-y-6">
           {/* Card: Departure Schedules with Sold Slots (BR-61) */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               Lịch khởi hành & Chỗ đã bán <span className="text-rose-500" aria-hidden="true">*</span>
             </h3>
             <p className="mt-1 text-[11px] text-slate-500">
@@ -643,7 +643,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
 
           {!isDemo && (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-              <h3 className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#00152A]">Thông tin bổ sung</h3>
+              <h3 className="border-b border-slate-100 pb-3 text-base font-extrabold text-[#1C2928]">Thông tin bổ sung</h3>
               <div className="mt-3">
                 <TourTermsFields
                   highlights={highlights}
@@ -668,7 +668,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
 
           {/* Card: Version History (Screen #42) */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#00152A] border-b border-slate-100 pb-3">
+            <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
               Lịch sử phiên bản
             </h3>
             <div className="mt-3 space-y-2.5 text-xs">
@@ -687,7 +687,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                     <p className="font-medium">v1 · Đã duyệt</p>
                     <p className="text-[10px] text-slate-400">Đã lưu trữ</p>
                   </div>
-                  <span className="text-[11px] text-[#006B5F] font-bold">Xem lại</span>
+                  <span className="text-[11px] text-[#174B4A] font-bold">Xem lại</span>
                 </div>
               )}
             </div>
@@ -709,7 +709,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
               type="button"
               onClick={() => handleSave(false)}
               disabled={submitting}
-              className="w-full sm:w-auto text-center rounded-xl border border-[#006B5F] bg-white px-5 py-2.5 text-xs font-bold text-[#006B5F] hover:bg-[#006B5F]/5 transition disabled:opacity-50"
+              className="w-full sm:w-auto text-center rounded-xl border border-[#174B4A] bg-white px-5 py-2.5 text-xs font-bold text-[#174B4A] hover:bg-[#174B4A]/5 transition disabled:opacity-50"
             >
               {submitting ? 'Đang lưu…' : isApproved ? 'Lưu thành bản nháp mới' : 'Lưu thay đổi'}
             </button>
@@ -718,7 +718,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 type="button"
                 onClick={() => router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(initialTour.id), isDemo))}
                 disabled={submitting}
-                className="w-full sm:w-auto text-center rounded-xl bg-[#006B5F] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50"
+                className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
               >
                 Gửi xét duyệt
               </button>

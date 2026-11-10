@@ -109,7 +109,7 @@ export function CspSimulatorSection({
   return (
     <section id="csp-simulator" className="scroll-mt-20 py-10 sm:py-14 lg:py-16 bg-[#FAFAF8] px-4 sm:px-8 border-b border-stone-200 relative overflow-hidden">
       {/* 1. Ambient Celestial & Algorithm Glow Orbs */}
-      <div className="absolute top-1/4 -right-28 w-[450px] h-[450px] rounded-full bg-gradient-to-bl from-[#007D6E]/12 via-teal-400/5 to-transparent blur-3xl pointer-events-none animate-orb-1" />
+      <div className="absolute top-1/4 -right-28 w-[450px] h-[450px] rounded-full bg-gradient-to-bl from-[#103B39]/12 via-teal-400/5 to-transparent blur-3xl pointer-events-none animate-orb-1" />
       <div className="absolute bottom-10 -left-20 w-[420px] h-[420px] rounded-full bg-gradient-to-tr from-[#D97706]/12 via-amber-400/5 to-transparent blur-3xl pointer-events-none animate-orb-2" />
 
       {/* 2. Subtle GIS Coordinate Dot Grid Pattern */}
@@ -119,7 +119,7 @@ export function CspSimulatorSection({
         {/* Section Header: Editorial Stagger Hierarchy */}
         <div className="text-center max-w-3xl mx-auto">
           <EditorialTextReveal delay={40} duration={400}>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#007d6e] mb-2.5">
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#103B39] mb-2.5">
               <span className="material-symbols-outlined text-sm" aria-hidden="true">
                 alt_route
               </span>
@@ -128,7 +128,7 @@ export function CspSimulatorSection({
           </EditorialTextReveal>
 
           <EditorialTextReveal delay={120} duration={480}>
-            <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#121E28] tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#1C2928] tracking-tight">
               Lập Kế Hoạch 1 Ngày Hoàn Hảo cùng TripMate
             </h2>
           </EditorialTextReveal>
@@ -160,7 +160,7 @@ export function CspSimulatorSection({
                   onClick={() => handleCityChange('danang')}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 btn-press ${
                     activeCity === 'danang'
-                      ? 'bg-[#007d6e] text-white shadow-xs scale-[1.02]'
+                      ? 'bg-[#103B39] text-white shadow-xs scale-[1.02]'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -212,7 +212,7 @@ export function CspSimulatorSection({
                     onClick={() => handlePaceChange('balanced')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                       selectedPace === 'balanced'
-                        ? 'bg-white text-[#007d6e] shadow-2xs font-bold'
+                        ? 'bg-white text-[#103B39] shadow-2xs font-bold'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
@@ -236,7 +236,7 @@ export function CspSimulatorSection({
                   type="button"
                   onClick={runSolverAnimation}
                   disabled={isSolving}
-                  className="px-3 py-1.5 rounded-xl border border-teal-200 bg-teal-50 text-[#007d6e] hover:bg-teal-100 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 btn-press"
+                  className="px-3 py-1.5 rounded-xl border border-teal-200 bg-teal-50 text-[#103B39] hover:bg-teal-100 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 btn-press"
                 >
                   <span className={`material-symbols-outlined text-sm ${isSolving ? 'animate-spin' : ''}`}>
                     sync
@@ -258,9 +258,9 @@ export function CspSimulatorSection({
             {/* Dynamic CSP Solver Progress Bar */}
             {isSolving && (
               <div className="my-4 p-4 rounded-xl bg-teal-50 border border-teal-200 flex flex-col gap-2 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between text-xs font-bold text-[#007d6e]">
+                <div className="flex items-center justify-between text-xs font-bold text-[#103B39]">
                   <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#007d6e] animate-ping" />
+                    <span className="w-2 h-2 rounded-full bg-[#103B39] animate-ping" />
                     {solvingStep === 1 && 'Bước 1: Nạp danh mục điểm đến, kiểm tra giờ mở cửa và khoảng cách di chuyển...'}
                     {solvingStep === 2 && 'Bước 2: Cân đối khung giờ hoàng hôn & giảm thiểu nắng trưa...'}
                     {solvingStep === 3 && 'Bước 3: Hoàn tất lịch trình 1 ngày tối ưu theo nhịp độ!'}
@@ -269,7 +269,7 @@ export function CspSimulatorSection({
                 </div>
                 <div className="w-full h-1.5 bg-teal-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#007d6e] transition-all duration-300"
+                    className="h-full bg-[#103B39] transition-all duration-300"
                     style={{ width: `${solvingStep * 33}%` }}
                   />
                 </div>
@@ -325,7 +325,7 @@ export function CspSimulatorSection({
                     }}
                     className={`group rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden animate-in fade-in slide-in-from-bottom-2 ${
                       isExpanded
-                        ? 'border-[#007d6e] bg-white shadow-md'
+                        ? 'border-[#103B39] bg-white shadow-md'
                         : 'border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 hover:shadow-xs'
                     }`}
                   >
@@ -335,15 +335,15 @@ export function CspSimulatorSection({
                         <div
                           className={`w-10 h-10 rounded-2xl border flex items-center justify-center font-bold text-sm shadow-xs transition-colors shrink-0 overflow-hidden ${
                             isExpanded
-                              ? 'bg-[#007d6e] text-white border-[#007d6e]'
-                              : 'bg-white border-slate-200 text-[#007d6e] group-hover:bg-[#007d6e] group-hover:text-white'
+                              ? 'bg-[#103B39] text-white border-[#103B39]'
+                              : 'bg-white border-slate-200 text-[#103B39] group-hover:bg-[#103B39] group-hover:text-white'
                           }`}
                         >
                           <span className="material-symbols-outlined text-lg select-none">{item.icon}</span>
                         </div>
                         <div>
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="text-xs font-mono font-bold text-[#007d6e] bg-teal-50/90 px-2 py-0.5 rounded-md border border-teal-200/60 shadow-2xs">
+                            <span className="text-xs font-mono font-bold text-[#103B39] bg-teal-50/90 px-2 py-0.5 rounded-md border border-teal-200/60 shadow-2xs">
                               {item.time}
                             </span>
                             <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/50">
@@ -353,7 +353,7 @@ export function CspSimulatorSection({
                               {item.tag}
                             </span>
                           </div>
-                          <h4 className="text-base font-bold text-[#00152a] group-hover:text-[#007d6e] transition-colors">
+                          <h4 className="text-base font-bold text-[#1C2928] group-hover:text-[#103B39] transition-colors">
                             {item.title}
                           </h4>
                         </div>
@@ -366,7 +366,7 @@ export function CspSimulatorSection({
                         </span>
                         <span
                           className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${
-                            isExpanded ? 'rotate-180 text-[#007d6e]' : ''
+                            isExpanded ? 'rotate-180 text-[#103B39]' : ''
                           }`}
                         >
                           expand_more
@@ -378,7 +378,7 @@ export function CspSimulatorSection({
                     {isExpanded && (
                       <div className="px-5 pb-5 pt-2 border-t border-slate-100 bg-teal-50/20 text-xs text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150">
                         <div className="flex items-start gap-2 max-w-xl">
-                          <span className="material-symbols-outlined text-base text-[#007d6e] shrink-0 mt-0.5">
+                          <span className="material-symbols-outlined text-base text-[#103B39] shrink-0 mt-0.5">
                             psychology
                           </span>
                           <p>
@@ -399,12 +399,12 @@ export function CspSimulatorSection({
             {/* Bottom Call to Action */}
             <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-slate-500">
               <p className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-base text-[#007d6e]">check_circle</span>
+                <span className="material-symbols-outlined text-base text-[#103B39]">check_circle</span>
                 <span>Lịch trình đã tự động loại trừ tắc đường và đảm bảo thời gian dự phòng an toàn.</span>
               </p>
               <Link
                 href={ROUTES.tours}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#007d6e] hover:text-teal-800 hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#103B39] hover:text-teal-800 hover:underline cursor-pointer"
               >
                 <span>Xem các tour có sẵn cùng tuyến</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>

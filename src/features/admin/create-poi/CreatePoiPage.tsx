@@ -153,20 +153,20 @@ export function CreatePoiPage() {
   const preview = Object.keys(validatePoiForm(formData)).length === 0 ? toCreatePoiRequest(formData) : null;
 
   return (
-    <div className="pb-16 text-[#1C2923]">
+    <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
         {/* Workspace Header - Forest Charcoal Authority */}
-        <header className="mb-6 rounded-2xl border border-[#2A3B33] bg-[#1C2923] p-6 text-[#F7F6F2] shadow-sm md:p-8">
+        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#758B74] bg-[#273830] px-3 py-1 text-xs font-bold tracking-wider text-[#E8EFE9] uppercase">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
                 <span className="material-symbols-outlined text-[14px]">add_location_alt</span>
                 <span>Spatial Operations — UC-52</span>
               </div>
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                 Create Point of Interest
               </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#A3B3AB]">
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
                 Register a tourist attraction, coordinates, and operating schedule in the TripMate catalogue.
               </p>
             </div>
@@ -174,7 +174,7 @@ export function CreatePoiPage() {
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href={ROUTES.admin.pois}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#758B74] bg-[#273830] px-3.5 py-2 text-xs font-bold text-[#E8EFE9] hover:bg-[#2F443A] transition"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#5B6E69] bg-[#103B39] px-3.5 py-2 text-xs font-bold text-[#E8F0EA] hover:bg-[#2F443A] transition"
               >
                 <span className="material-symbols-outlined text-[16px]">arrow_back</span>
                 <span>Back to Catalog</span>
@@ -183,7 +183,7 @@ export function CreatePoiPage() {
                 type="button"
                 disabled={busy}
                 onClick={handleReset}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#D8D5CC] bg-white px-3.5 py-2 text-xs font-bold text-[#1C2923] hover:bg-[#F7F6F2] transition disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-bold text-[#1C2928] hover:bg-[#F7F5EF] transition disabled:opacity-50"
               >
                 <span>Discard</span>
               </button>
@@ -191,7 +191,7 @@ export function CreatePoiPage() {
                 type="button"
                 disabled={saveDisabled || busy}
                 onClick={() => handleSubmit()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#245747] border border-[#758B74] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#1B4337] focus-visible:outline-2 focus-visible:outline-[#758B74] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#174B4A] border border-[#5B6E69] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-[#5B6E69] disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]">save</span>
                 <span>{busy ? 'Saving POI...' : 'Save POI'}</span>
@@ -202,7 +202,7 @@ export function CreatePoiPage() {
 
         {/* Catalogue Status Bar */}
         <div
-          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6E4DD] bg-white px-4 py-3 text-xs text-[#53665D]"
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#DCE2DD] bg-white px-4 py-3 text-xs text-[#53665D]"
           role="status"
         >
           <div className="flex items-center gap-2">
@@ -230,7 +230,7 @@ export function CreatePoiPage() {
             type="button"
             disabled={catalogueLoading || busy}
             onClick={reloadCatalogue}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#D8D5CC] bg-[#F7F6F2] px-2.5 py-1 text-xs font-semibold text-[#1C2923] hover:bg-[#EDECE8] transition disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-[#DCE2DD] bg-[#F7F5EF] px-2.5 py-1 text-xs font-semibold text-[#1C2928] hover:bg-[#F7F5EF] transition disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[14px]">refresh</span>
             <span>Reload</span>
@@ -261,7 +261,7 @@ export function CreatePoiPage() {
                       type="button"
                       disabled={busy}
                       onClick={() => void sendRequest({ ...duplicate.request, confirmDuplicate: true })}
-                      className="min-h-11 rounded-xl bg-[#245747] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#1B4337] transition"
+                      className="min-h-11 rounded-xl bg-[#174B4A] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition"
                     >
                       Confirm duplicate and create
                     </button>
@@ -271,7 +271,7 @@ export function CreatePoiPage() {
                         setDuplicate(null);
                         setFailure(null);
                       }}
-                      className="min-h-11 rounded-xl border border-[#D8D5CC] bg-white px-4 text-xs font-semibold text-[#1C2923] hover:bg-[#F7F6F2] transition"
+                      className="min-h-11 rounded-xl border border-[#DCE2DD] bg-white px-4 text-xs font-semibold text-[#1C2928] hover:bg-[#F7F5EF] transition"
                     >
                       Review form
                     </button>
@@ -301,7 +301,7 @@ export function CreatePoiPage() {
               <button
                 type="button"
                 onClick={handleReset}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#245747] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#1B4337] transition"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
                 <span>Create Another POI</span>

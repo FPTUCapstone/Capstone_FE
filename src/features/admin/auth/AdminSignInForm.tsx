@@ -142,7 +142,7 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
           onChange={(event) => setPassword(event.target.value)}
         />
         <div className="flex justify-end">
-          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#245747] hover:text-[#1B4337] hover:underline">
+          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#174B4A] hover:text-[#103B39] hover:underline">
             {adminStaffEn.login.forgotPassword}
           </Link>
         </div>
@@ -151,7 +151,7 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
         </ActionButton>
       </form>
       {message ? <div className="mt-6"><FeedbackAlert tone="error">{message}</FeedbackAlert></div> : null}
-      <p className="mt-6 rounded-lg border border-[#E1E8E4] bg-[#F1F4F2] px-3 py-2 text-center text-[11px] leading-relaxed text-[#2A3B33]">
+      <p className="mt-6 rounded-lg border border-[#E1E8E4] bg-[#F1F4F2] px-3 py-2 text-center text-[11px] leading-relaxed text-[#103B39]">
         {adminStaffEn.login.footerNote}
       </p>
     </div>

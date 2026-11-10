@@ -61,7 +61,7 @@ export function EmergencyImpactPanel({
   if (loading) {
     return (
       <div className={`rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 space-y-2 ${className}`}>
-        <span className="material-symbols-outlined text-3xl animate-spin text-teal-600" aria-hidden="true">
+        <span className="material-symbols-outlined text-3xl animate-spin text-[#174B4A]" aria-hidden="true">
           progress_activity
         </span>
         <p className="text-xs font-semibold">Đang tính toán tác động vận hành từ máy chủ...</p>
@@ -100,7 +100,7 @@ export function EmergencyImpactPanel({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <span className="material-symbols-outlined text-teal-700" aria-hidden="true">
+            <span className="material-symbols-outlined text-[#174B4A]" aria-hidden="true">
               analytics
             </span>
             Xem trước tác động vận hành

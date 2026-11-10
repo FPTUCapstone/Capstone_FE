@@ -47,24 +47,24 @@ export function StaffAnalyticsTabView({
   return (
     <section aria-labelledby="staff-analytics-title" className="space-y-6">
       {/* Analytics Workspace Header */}
-      <header className="rounded-2xl border border-[#2A3B33] bg-[#1C2923] p-6 text-white shadow-sm sm:p-8">
+      <header className="rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-white shadow-sm sm:p-8">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#758B74]">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
                 Staff Operations Intelligence
               </span>
             </div>
             <h2 id="staff-analytics-title" className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
               Operational Analytics
             </h2>
-            <p className="mt-1 text-sm text-[#A3B3AB]">
+            <p className="mt-1 text-sm text-[#5B6E69]">
               Task throughput, queue metrics, and operational performance
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-[#A3B3AB]">Time Range:</span>
+            <span className="text-xs font-semibold text-[#5B6E69]">Time Range:</span>
             <AnalyticsDateRangeFilter
               value={timeRange}
               onChange={setTimeRange}
@@ -100,8 +100,8 @@ export function StaffAnalyticsTabView({
                     data={currentWorkload.workloadTrend}
                     primaryLabel="Tasks Received"
                     secondaryLabel="Tasks Completed"
-                    primaryColor="#245747"
-                    secondaryColor="#758B74"
+                    primaryColor="#174B4A"
+                    secondaryColor="#5B6E69"
                     valueFormatter={(v) => `${v} tasks`}
                   />
                 </ChartCard>
@@ -113,7 +113,7 @@ export function StaffAnalyticsTabView({
                 >
                   <HorizontalBarChart
                     categories={currentWorkload.byTaskType}
-                    barColor="#245747"
+                    barColor="#174B4A"
                   />
                 </ChartCard>
               </div>
@@ -163,7 +163,7 @@ export function StaffAnalyticsTabView({
                 >
                   <AreaTrendChart
                     data={currentPerformance.completionTrend}
-                    primaryColor="#245747"
+                    primaryColor="#174B4A"
                     gradientId="staff-perf-trend-grad"
                     valueFormatter={(v) => `${v}%`}
                   />
@@ -176,7 +176,7 @@ export function StaffAnalyticsTabView({
                 >
                   <HorizontalBarChart
                     categories={currentPerformance.processingDuration}
-                    barColor="#758B74"
+                    barColor="#5B6E69"
                   />
                 </ChartCard>
               </div>

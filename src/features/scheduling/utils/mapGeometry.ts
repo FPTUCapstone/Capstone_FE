@@ -4,7 +4,7 @@
  */
 
 import type { GeoPoint } from '../services/placeSearchApi';
-import type { ItineraryDetailDto } from '../types/schedulingTypes';
+import type { ItineraryDetailDto, TransportMode } from '../types/schedulingTypes';
 
 /** [longitude, latitude] as GeoJSON expects. */
 export type LngLat = [number, number];
@@ -41,9 +41,9 @@ export function circlePolygon(
 export type MapMarkerKind = 'start' | 'end' | 'attraction' | 'food';
 
 export const MARKER_COLORS: Record<MapMarkerKind, string> = {
-  start: '#0f172a',
+  start: '#1C2928',
   end: '#7c3aed',
-  attraction: '#007d6e',
+  attraction: '#103B39',
   food: '#d97706',
 };
 
@@ -65,9 +65,61 @@ export interface ItineraryMapMarker {
   itemId: number | null;
 }
 
+/** Mapbox Directions profile of a leg. Mapbox has no motorbike/transit profile: those drive. */
+export type RouteProfile = 'walking' | 'driving';
+
+/** One hop between two consecutive points of the route; drawn along real roads when Directions answers. */
+export interface ItineraryRouteLeg {
+  /** Profile + rounded ends: identifies the leg for caching. */
+  key: string;
+  /** `${fromKey}>${toKey}`: identifies the leg for selection (timeline ↔ map). */
+  id: string;
+  /** Key of the marker at each end: `start`, `item-<itemId>` or `end`. */
+  fromKey: string;
+  toKey: string;
+  from: LngLat;
+  to: LngLat;
+  profile: RouteProfile;
+}
+
 export interface ItineraryMapModel {
   markers: ItineraryMapMarker[];
   route: { type: 'LineString'; coordinates: LngLat[] };
+  legs: ItineraryRouteLeg[];
+}
+
+/** Id of the leg between two consecutive stops, as the timeline and the map both know it. */
+export const legIdBetweenItems = (fromItemId: number, toItemId: number) => `item-${fromItemId}>item-${toItemId}`;
+
+const profileOf = (mode: TransportMode | null | undefined): RouteProfile =>
+  mode === 'Walking' ? 'walking' : 'driving';
+
+const roundedPoint = (point: LngLat) => `${Number(point[0].toFixed(5))},${Number(point[1].toFixed(5))}`;
+
+interface RoutePoint {
+  key: string;
+  position: LngLat;
+  mode: TransportMode | null | undefined;
+}
+
+function buildLegs(points: RoutePoint[]): ItineraryRouteLeg[] {
+  const legs: ItineraryRouteLeg[] = [];
+  for (let index = 1; index < points.length; index += 1) {
+    const { position: from, key: fromKey } = points[index - 1];
+    const { position: to, mode, key: toKey } = points[index];
+    if (samePlace(from, to)) continue;
+    const profile = profileOf(mode);
+    legs.push({
+      key: `${profile}:${roundedPoint(from)};${roundedPoint(to)}`,
+      id: `${fromKey}>${toKey}`,
+      fromKey,
+      toKey,
+      from,
+      to,
+      profile,
+    });
+  }
+  return legs;
 }
 
 const samePlace = (a: LngLat, b: LngLat) =>
@@ -75,9 +127,10 @@ const samePlace = (a: LngLat, b: LngLat) =>
 
 export function buildItineraryMapModel(
   itinerary: Pick<ItineraryDetailDto, 'items'> &
-    Partial<Pick<ItineraryDetailDto, 'startLocation' | 'endLocation'>>,
+    Partial<Pick<ItineraryDetailDto, 'startLocation' | 'endLocation' | 'transportMode'>>,
 ): ItineraryMapModel {
   const stops: ItineraryMapMarker[] = [];
+  const itemModes = new Map<string, TransportMode | null | undefined>();
   for (const item of itinerary.items) {
     if (typeof item.latitude !== 'number' || typeof item.longitude !== 'number') continue;
     const kind: MapMarkerKind = item.costKind === 'AverageSpend' ? 'food' : 'attraction';
@@ -90,11 +143,13 @@ export function buildItineraryMapModel(
       position: [item.longitude, item.latitude],
       itemId: item.itemId,
     });
+    itemModes.set(`item-${item.itemId}`, item.transportModeFromPrevious);
   }
-  if (stops.length === 0) return { markers: [], route: { type: 'LineString', coordinates: [] } };
+  if (stops.length === 0) return { markers: [], route: { type: 'LineString', coordinates: [] }, legs: [] };
 
   const markers: ItineraryMapMarker[] = [];
   const route: LngLat[] = [];
+  const points: RoutePoint[] = [];
   const start = itinerary.startLocation;
   const startPosition: LngLat | null = start ? [start.longitude, start.latitude] : null;
   if (start && startPosition) {
@@ -108,9 +163,14 @@ export function buildItineraryMapModel(
       itemId: null,
     });
     route.push(startPosition);
+    points.push({ key: 'start', position: startPosition, mode: null });
   }
   markers.push(...stops);
   route.push(...stops.map((stop) => stop.position));
+  for (const stop of stops) {
+    const mode = itemModes.get(stop.key) ?? itinerary.transportMode;
+    points.push({ key: stop.key, position: stop.position, mode });
+  }
 
   const end = itinerary.endLocation;
   if (end) {
@@ -128,8 +188,10 @@ export function buildItineraryMapModel(
       });
     }
     route.push(endPosition);
+    const endsAtStart = startPosition !== null && samePlace(startPosition, endPosition);
+    points.push({ key: endsAtStart ? 'start' : 'end', position: endPosition, mode: itinerary.transportMode });
   }
-  return { markers, route: { type: 'LineString', coordinates: route } };
+  return { markers, route: { type: 'LineString', coordinates: route }, legs: buildLegs(points) };
 }
 
 /** South-west and north-east corners around all points. */

@@ -286,7 +286,7 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
       {/* Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#00152A] tracking-tight">
+          <h1 className="text-xl font-bold text-[#1C2928] tracking-tight">
             {financeEn.revenue.title}
           </h1>
           <p className="mt-1 text-xs text-slate-500">
@@ -307,7 +307,7 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
             type="button"
             onClick={handleManualRefresh}
             disabled={isLoading}
-            className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
+            className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#1C2928] disabled:opacity-50"
           >
             <span
               aria-hidden="true"
@@ -321,7 +321,7 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
           <button
             type="button"
             onClick={() => setIsExportDialogOpen(true)}
-            className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249]"
+            className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#103B39]"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
             <span>{financeEn.revenue.filters.exportBtn}</span>

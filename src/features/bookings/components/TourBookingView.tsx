@@ -343,15 +343,15 @@ export function TourBookingView({
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 font-sans" lang="vi">
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs text-slate-500">
-        <Link href={ROUTES.home} className="hover:text-[#007d6e] transition">
+        <Link href={ROUTES.home} className="hover:text-[#103B39] transition">
           Trang chủ
         </Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link href={ROUTES.tours} className="hover:text-[#007d6e] transition">
+        <Link href={ROUTES.tours} className="hover:text-[#103B39] transition">
           Gói tour
         </Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link href={ROUTES.tour(tour.tourId)} className="hover:text-[#007d6e] transition truncate max-w-xs">
+        <Link href={ROUTES.tour(tour.tourId)} className="hover:text-[#103B39] transition truncate max-w-xs">
           {tour.title}
         </Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
@@ -378,10 +378,10 @@ export function TourBookingView({
 
       {/* Stepper Indicator */}
       <div className="mb-8 flex items-center justify-center gap-2 sm:gap-4 text-xs">
-        <div className={`flex items-center gap-2 font-bold ${createdBooking ? 'text-slate-400' : 'text-[#007d6e]'}`}>
+        <div className={`flex items-center gap-2 font-bold ${createdBooking ? 'text-slate-400' : 'text-[#103B39]'}`}>
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              createdBooking ? 'bg-emerald-600 text-white' : 'bg-[#007d6e] text-white shadow-sm'
+              createdBooking ? 'bg-emerald-600 text-white' : 'bg-[#103B39] text-white shadow-sm'
             }`}
           >
             {createdBooking ? '✓' : '1'}
@@ -391,10 +391,10 @@ export function TourBookingView({
 
         <div className="h-0.5 w-8 sm:w-16 bg-slate-200" />
 
-        <div className={`flex items-center gap-2 font-bold ${createdBooking ? 'text-[#007d6e]' : 'text-slate-400'}`}>
+        <div className={`flex items-center gap-2 font-bold ${createdBooking ? 'text-[#103B39]' : 'text-slate-400'}`}>
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              createdBooking ? 'bg-[#007d6e] text-white shadow-sm' : 'bg-slate-200 text-slate-500'
+              createdBooking ? 'bg-[#103B39] text-white shadow-sm' : 'bg-slate-200 text-slate-500'
             }`}
           >
             2
@@ -449,7 +449,7 @@ export function TourBookingView({
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <span className="inline-block rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-[#007d6e] mb-1">
+                <span className="inline-block rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-[#103B39] mb-1">
                   {tour.operatorName}
                 </span>
                 <h2 className="text-base font-bold text-slate-900 line-clamp-1">{tour.title}</h2>
@@ -462,7 +462,7 @@ export function TourBookingView({
             {/* Schedule Selector */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#007d6e] text-base">calendar_month</span>
+                <span className="material-symbols-outlined text-[#103B39] text-base">calendar_month</span>
                 Chọn lịch khởi hành
               </h3>
 
@@ -479,7 +479,7 @@ export function TourBookingView({
                       onClick={() => setSelectedSchedule(schedule)}
                       className={`w-full text-left rounded-xl p-3.5 border transition flex items-center justify-between text-xs ${
                         isSelected
-                          ? 'border-[#007d6e] bg-teal-50/40 ring-1 ring-[#007d6e]'
+                          ? 'border-[#103B39] bg-teal-50/40 ring-1 ring-[#103B39]'
                           : isAvailable
                           ? 'border-slate-200 bg-white hover:border-slate-300'
                           : 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
@@ -491,7 +491,7 @@ export function TourBookingView({
                             Khởi hành: {formatDatetime(schedule.startDatetime)}
                           </span>
                           {isSelected && (
-                            <span className="rounded-full bg-[#007d6e] px-2 py-0.2 text-[10px] font-bold text-white">
+                            <span className="rounded-full bg-[#103B39] px-2 py-0.2 text-[10px] font-bold text-white">
                               Đã chọn
                             </span>
                           )}
@@ -502,7 +502,7 @@ export function TourBookingView({
                       </div>
 
                       <div className="text-right">
-                        <span className="font-bold text-sm text-[#007d6e]">
+                        <span className="font-bold text-sm text-[#103B39]">
                           {formatCurrency(schedule.price, schedule.currency)}
                         </span>
                         <p className={`text-[11px] mt-0.5 ${schedule.remainingSlots > 5 ? 'text-slate-500' : 'text-amber-600 font-semibold'}`}>
@@ -518,7 +518,7 @@ export function TourBookingView({
             {/* Travelers Counter */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <h3 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#007d6e] text-base">group</span>
+                <span className="material-symbols-outlined text-[#103B39] text-base">group</span>
                 Số lượng khách tham gia
               </h3>
               <p className="text-xs text-slate-500 mb-4">
@@ -552,7 +552,7 @@ export function TourBookingView({
                       type="button"
                       disabled={totalTravelers >= remainingSlots}
                       onClick={() => setAdultCount((prev) => prev + 1)}
-                      className="h-8 w-8 rounded-lg bg-[#007d6e] font-bold text-white hover:bg-[#006b5f] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
+                      className="h-8 w-8 rounded-lg bg-[#103B39] font-bold text-white hover:bg-[#174B4A] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
                       aria-label="Tăng 1 người lớn"
                     >
                       +
@@ -586,7 +586,7 @@ export function TourBookingView({
                       type="button"
                       disabled={totalTravelers >= remainingSlots}
                       onClick={() => setChildCount((prev) => prev + 1)}
-                      className="h-8 w-8 rounded-lg bg-[#007d6e] font-bold text-white hover:bg-[#006b5f] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
+                      className="h-8 w-8 rounded-lg bg-[#103B39] font-bold text-white hover:bg-[#174B4A] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
                       aria-label="Tăng 1 trẻ em"
                     >
                       +
@@ -620,7 +620,7 @@ export function TourBookingView({
                       type="button"
                       disabled={totalTravelers >= remainingSlots}
                       onClick={() => setInfantCount((prev) => prev + 1)}
-                      className="h-8 w-8 rounded-lg bg-[#007d6e] font-bold text-white hover:bg-[#006b5f] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
+                      className="h-8 w-8 rounded-lg bg-[#103B39] font-bold text-white hover:bg-[#174B4A] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
                       aria-label="Tăng 1 em bé"
                     >
                       +
@@ -639,7 +639,7 @@ export function TourBookingView({
             {/* Lead Traveler Contact Form */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#007d6e] text-base">badge</span>
+                <span className="material-symbols-outlined text-[#103B39] text-base">badge</span>
                 Thông tin người đặt (Trưởng đoàn)
               </h3>
 
@@ -664,7 +664,7 @@ export function TourBookingView({
                     className={`w-full rounded-xl border px-3 py-2.5 text-xs text-slate-900 focus:outline-hidden focus:ring-1 ${
                       requiredFieldErrors.leadName
                         ? 'border-red-500 bg-red-50 focus:border-red-600 focus:ring-red-500'
-                        : 'border-slate-300 focus:border-[#007d6e] focus:ring-[#007d6e]'
+                        : 'border-slate-300 focus:border-[#103B39] focus:ring-[#103B39]'
                     }`}
                   />
                   {requiredFieldErrors.leadName && (
@@ -694,7 +694,7 @@ export function TourBookingView({
                     className={`w-full rounded-xl border px-3 py-2.5 text-xs text-slate-900 focus:outline-hidden focus:ring-1 ${
                       requiredFieldErrors.leadPhone
                         ? 'border-red-500 bg-red-50 focus:border-red-600 focus:ring-red-500'
-                        : 'border-slate-300 focus:border-[#007d6e] focus:ring-[#007d6e]'
+                        : 'border-slate-300 focus:border-[#103B39] focus:ring-[#103B39]'
                     }`}
                   />
                   {requiredFieldErrors.leadPhone && (
@@ -724,7 +724,7 @@ export function TourBookingView({
                     className={`w-full rounded-xl border px-3 py-2.5 text-xs text-slate-900 focus:outline-hidden focus:ring-1 ${
                       requiredFieldErrors.leadEmail
                         ? 'border-red-500 bg-red-50 focus:border-red-600 focus:ring-red-500'
-                        : 'border-slate-300 focus:border-[#007d6e] focus:ring-[#007d6e]'
+                        : 'border-slate-300 focus:border-[#103B39] focus:ring-[#103B39]'
                     }`}
                   />
                   {requiredFieldErrors.leadEmail && (
@@ -744,7 +744,7 @@ export function TourBookingView({
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
                     placeholder="Ví dụ: Ăn chay, người già đi cùng, hỗ trợ xe lăn..."
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs text-slate-900 focus:border-[#007d6e] focus:outline-hidden focus:ring-1 focus:ring-[#007d6e]"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs text-slate-900 focus:border-[#103B39] focus:outline-hidden focus:ring-1 focus:ring-[#103B39]"
                   />
                 </div>
               </div>
@@ -756,7 +756,7 @@ export function TourBookingView({
             {/* Coupon Card */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#007d6e] text-base">local_activity</span>
+                <span className="material-symbols-outlined text-[#103B39] text-base">local_activity</span>
                 Mã giảm giá / Ưu đãi
               </h3>
 
@@ -796,7 +796,7 @@ export function TourBookingView({
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="Ví dụ: HOIAN15 hoặc BANA15"
-                    className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs uppercase text-slate-900 focus:border-[#007d6e] focus:outline-hidden"
+                    className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs uppercase text-slate-900 focus:border-[#103B39] focus:outline-hidden"
                   />
                   <button
                     type="submit"
@@ -846,9 +846,9 @@ export function TourBookingView({
 
                 <div className="border-t border-dashed border-slate-200 pt-3 flex items-baseline justify-between">
                   <span className="text-sm font-bold text-slate-900">Tổng thanh toán:</span>
-                  <span className="text-2xl font-black text-[#007d6e] inline-flex items-center gap-2">
+                  <span className="text-2xl font-black text-[#103B39] inline-flex items-center gap-2">
                     {quoteLoading && (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#007d6e] border-t-transparent" />
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#103B39] border-t-transparent" />
                     )}
                     {totalAmount === undefined ? '—' : formatCurrency(totalAmount)}
                   </span>
@@ -875,7 +875,7 @@ export function TourBookingView({
                     }}
                     aria-invalid={Boolean(requiredFieldErrors.agreedTerms)}
                     aria-describedby={requiredFieldErrors.agreedTerms ? 'agreed-terms-error' : undefined}
-                    className={`mt-0.5 h-4 w-4 rounded text-[#007d6e] focus:ring-[#007d6e] ${requiredFieldErrors.agreedTerms ? 'border-red-500' : 'border-slate-300'}`}
+                    className={`mt-0.5 h-4 w-4 rounded text-[#103B39] focus:ring-[#103B39] ${requiredFieldErrors.agreedTerms ? 'border-red-500' : 'border-slate-300'}`}
                   />
                   <span>
                     Tôi xác nhận thông tin chính xác và đồng ý với{' '}
@@ -907,7 +907,7 @@ export function TourBookingView({
                   !effectiveQuote
                 }
                 onClick={handleCreateBooking}
-                className="w-full rounded-xl bg-[#007d6e] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full rounded-xl bg-[#103B39] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#174B4A] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -954,7 +954,7 @@ export function TourBookingView({
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
                   Chờ thanh toán
                 </span>
-                <p className="text-2xl font-black text-[#007d6e] mt-1">
+                <p className="text-2xl font-black text-[#103B39] mt-1">
                   {createdBooking ? formatCurrency(createdBooking.totalAmount, createdBooking.currency) : '—'}
                 </p>
               </div>
@@ -969,7 +969,7 @@ export function TourBookingView({
           <button
             type="button"
             onClick={handleGoToPayment}
-            className="w-full rounded-xl bg-[#007d6e] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] cursor-pointer flex items-center justify-center gap-2"
+            className="w-full rounded-xl bg-[#103B39] py-3.5 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#174B4A] cursor-pointer flex items-center justify-center gap-2"
           >
             <span>Thanh toán ngay</span>
             <span className="material-symbols-outlined text-base">arrow_forward</span>

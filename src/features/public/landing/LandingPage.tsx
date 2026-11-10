@@ -92,7 +92,7 @@ function LandingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f7fc] text-[#0F1B2D] font-sans antialiased selection:bg-teal-100 selection:text-teal-900 relative overflow-x-clip">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928] font-sans antialiased selection:bg-teal-100 selection:text-teal-900 relative overflow-x-clip">
       <main>
         {/* 1. Calm Editorial Scenic Travel Hero */}
         <LandingHero
@@ -143,7 +143,7 @@ function LandingContent() {
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#007d6e] text-white shadow-xl hover:bg-[#006b5f] flex items-center justify-center transition-all duration-300 hover:scale-105 cursor-pointer animate-in fade-in zoom-in-75 border border-white/20"
+          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#103B39] text-white shadow-xl hover:bg-[#174B4A] flex items-center justify-center transition-all duration-300 hover:scale-105 cursor-pointer animate-in fade-in zoom-in-75 border border-white/20"
           aria-label="Cuộn lên đầu trang"
         >
           <span className="material-symbols-outlined text-2xl">arrow_upward</span>

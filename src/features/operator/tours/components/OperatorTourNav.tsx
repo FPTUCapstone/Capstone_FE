@@ -74,7 +74,7 @@ export function OperatorTourNav({
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <Link href={ROUTES.partner.dashboard} className="flex items-center gap-2 group">
             <BrandLogo />
-            <span className="rounded-full bg-[#006B5F]/10 px-2 py-0.5 text-[10px] font-bold text-[#006B5F]">
+            <span className="rounded-full bg-[#174B4A]/10 px-2 py-0.5 text-[10px] font-bold text-[#174B4A]">
               Operator
             </span>
           </Link>
@@ -87,11 +87,11 @@ export function OperatorTourNav({
 
         {/* Operator Profile Preview Card */}
         <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3 border border-slate-100">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#006B5F] font-bold text-white shadow-xs">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#174B4A] font-bold text-white shadow-xs">
             {operatorName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-bold text-[#00152A]">{operatorName}</p>
+            <p className="truncate text-xs font-bold text-[#1C2928]">{operatorName}</p>
             <p className="text-[11px] text-slate-500">
               {operatorCommonEn.navigation.verifiedPartnerBadge}
             </p>
@@ -112,8 +112,8 @@ export function OperatorTourNav({
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
                   isActive
-                    ? 'bg-[#006B5F] text-white shadow-xs'
-                    : 'text-slate-700 hover:bg-slate-50 hover:text-[#006B5F]'
+                    ? 'bg-[#174B4A] text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-50 hover:text-[#174B4A]'
                 }`}
               >
                 <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
@@ -132,8 +132,8 @@ export function OperatorTourNav({
               href="/partner/profile"
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
                 activeTab === 'profile'
-                  ? 'bg-[#006B5F] text-white shadow-xs'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-[#006B5F]'
+                  ? 'bg-[#174B4A] text-white shadow-xs'
+                  : 'text-slate-700 hover:bg-slate-50 hover:text-[#174B4A]'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]" aria-hidden="true">

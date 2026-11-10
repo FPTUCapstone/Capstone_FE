@@ -14,29 +14,29 @@ const featureCards = [
     icon: 'admin_panel_settings',
     title: 'Control Center',
     desc: 'Quản trị hệ thống toàn diện',
-    iconBg: 'bg-[#245747]/60',
+    iconBg: 'bg-[#174B4A]/60',
     position: 'top-0 left-0 animate-float-1',
   },
   {
     icon: 'verified',
     title: 'Tour Moderation',
     desc: 'Kiểm duyệt & phê duyệt tour',
-    iconBg: 'bg-[#758B74]/40',
+    iconBg: 'bg-[#5B6E69]/40',
     position: 'top-16 right-0 animate-float-2',
   },
   {
     icon: 'history_edu',
     title: 'Audit Logs',
     desc: 'Theo dõi mọi hoạt động hệ thống',
-    iconBg: 'bg-[#A3B3AB]/30',
+    iconBg: 'bg-[#5B6E69]/30',
     position: 'bottom-0 left-12 animate-float-3',
   },
 ];
 
 const stats = [
-  { value: '24/7', label: 'Giám sát hệ thống', color: 'text-[#A3B3AB]' },
-  { value: '100%', label: 'Kiểm soát truy cập', color: 'text-[#A3B3AB]' },
-  { value: '15ph', label: 'Phiên bảo mật', color: 'text-[#758B74]' },
+  { value: '24/7', label: 'Giám sát hệ thống', color: 'text-[#5B6E69]' },
+  { value: '100%', label: 'Kiểm soát truy cập', color: 'text-[#5B6E69]' },
+  { value: '15ph', label: 'Phiên bảo mật', color: 'text-[#5B6E69]' },
 ];
 
 export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
@@ -45,8 +45,8 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
       {/* Hero Panel */}
       <aside className="relative hidden lg:flex admin-hero-bg text-white overflow-hidden">
         <div className="absolute inset-0 grid-pattern opacity-40" />
-        <div className="absolute -top-32 -right-24 w-[420px] h-[420px] bg-[#245747]/50 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-16 w-[360px] h-[360px] bg-[#758B74]/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-32 -right-24 w-[420px] h-[420px] bg-[#174B4A]/50 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-16 w-[360px] h-[360px] bg-[#5B6E69]/25 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
           {/* Brand Header */}
@@ -55,7 +55,7 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
               <BrandLogo size={24} />
             </div>
             <span className="text-2xl font-extrabold tracking-tight">TripMate</span>
-            <span className="rounded bg-[#245747] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[#E8EFEA] border border-[#758B74]/40">
+            <span className="rounded bg-[#174B4A] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[#E8F0EA] border border-[#5B6E69]/40">
               Admin
             </span>
           </div>
@@ -64,14 +64,14 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
           <div className="space-y-10 max-w-xl">
             <div className="space-y-5">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold tracking-wide backdrop-blur-sm">
-                <span className="material-symbols-outlined text-[16px] text-[#A3B3AB]">
+                <span className="material-symbols-outlined text-[16px] text-[#5B6E69]">
                   shield
                 </span>
                 ADMINISTRATION WORKSPACE
               </span>
               <h1 className="text-5xl xl:text-6xl font-extrabold leading-[1.1] tracking-tight">
                 Quản trị{' '}
-                <span className="text-[#758B74]">TripMate</span>
+                <span className="text-[#5B6E69]">TripMate</span>
               </h1>
               <p className="text-lg text-white/70 leading-relaxed max-w-md">
                 {adminStaffEn.login.description}
@@ -116,13 +116,13 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
       {/* Form Panel */}
       <main className="flex items-center justify-center p-6 sm:p-10 lg:p-12 xl:p-16 bg-brand-surface relative">
         <div className="absolute top-6 left-6 lg:hidden flex items-center space-x-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-[#1C2923] flex items-center justify-center shadow-md text-white">
+          <div className="w-10 h-10 rounded-2xl bg-[#1C2928] flex items-center justify-center shadow-md text-white">
             <BrandLogo size={22} />
           </div>
           <span className="text-xl font-extrabold tracking-tight text-brand-navy">
             TripMate
           </span>
-          <span className="rounded bg-[#245747] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#E8EFEA]">
+          <span className="rounded bg-[#174B4A] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#E8F0EA]">
             Admin
           </span>
         </div>
@@ -130,7 +130,7 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
         <div className="absolute top-6 right-6">
           <Link
             href={ROUTES.signIn}
-            className="text-sm font-semibold text-[#758B74] hover:text-[#245747] transition-colors"
+            className="text-sm font-semibold text-[#5B6E69] hover:text-[#174B4A] transition-colors"
           >
             {adminStaffEn.login.backLabel}
           </Link>
@@ -139,7 +139,7 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
         <div className="w-full max-w-[480px]">
           <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">
             <div className="mb-8">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#245747]">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#174B4A]">
                 {adminStaffEn.login.eyebrow}
               </p>
               <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy">
