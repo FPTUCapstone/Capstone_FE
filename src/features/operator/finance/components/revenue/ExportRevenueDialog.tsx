@@ -81,6 +81,9 @@ export function ExportRevenueDialog({
       aria-modal="true"
       aria-labelledby="export-dialog-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSubmitting) onClose();
+      }}
     >
       <div
         ref={dialogRef}

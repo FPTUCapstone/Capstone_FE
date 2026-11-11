@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { useAccessibleDialog } from '@/components/ui/useAccessibleDialog';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import {
@@ -40,6 +42,11 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const confirmDialogRef = useAccessibleDialog({
+    isOpen: showConfirmModal,
+    onClose: () => setShowConfirmModal(false),
+    locked: submitting,
+  });
 
   const handleConfirmSubmit = async () => {
     setErrorMessage(null);
@@ -283,10 +290,14 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       {/* Confirmation Modal (Screen #43 Dialog) */}
       {showConfirmModal && (
         <div
+          ref={confirmDialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !submitting) setShowConfirmModal(false);
+          }}
         >
           <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl">
             <h3 id="modal-title" className="text-base font-extrabold text-[#1C2928]">

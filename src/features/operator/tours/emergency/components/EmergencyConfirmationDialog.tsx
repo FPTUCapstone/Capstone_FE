@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useAccessibleDialog } from '@/components/ui/useAccessibleDialog';
+
 interface EmergencyConfirmationDialogProps {
   isOpen: boolean;
   title: string;
@@ -22,16 +24,22 @@ export function EmergencyConfirmationDialog({
   onConfirm,
   onCancel,
 }: EmergencyConfirmationDialogProps) {
+  const dialogRef = useAccessibleDialog({ isOpen, onClose: onCancel });
+
   if (!isOpen) return null;
 
   const isStop = actionType === 'EmergencyStopActive';
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
     >
       <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center gap-3 text-rose-600 border-b border-slate-100 pb-3">

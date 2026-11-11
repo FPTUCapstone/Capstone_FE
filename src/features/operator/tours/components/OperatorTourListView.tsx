@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+
+import { useAccessibleDialog } from '@/components/ui/useAccessibleDialog';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import { removeOperatorTour } from '../services/operatorTourService';
@@ -23,6 +25,11 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   const [tourPendingDeletion, setTourPendingDeletion] = useState<TourPackageDto | null>(null);
   const successTimeoutRef = useRef<number | null>(null);
+  const deleteDialogRef = useAccessibleDialog({
+    isOpen: tourPendingDeletion !== null,
+    onClose: () => setTourPendingDeletion(null),
+    locked: deletingId !== null,
+  });
 
   useEffect(() => () => {
     if (successTimeoutRef.current !== null) window.clearTimeout(successTimeoutRef.current);
@@ -253,7 +260,14 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
       </div>
       {deleteError && !tourPendingDeletion && <p role="alert" className="mt-3 text-sm font-medium text-rose-600">{deleteError}</p>}
       {tourPendingDeletion && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" role="presentation">
+        <div
+          ref={deleteDialogRef}
+          className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && deletingId === null) setTourPendingDeletion(null);
+          }}
+        >
           <section role="dialog" aria-modal="true" aria-labelledby="delete-tour-title" aria-describedby="delete-tour-description" className="w-full max-w-md rounded-2xl border-t-4 border-rose-500 bg-white p-6 shadow-2xl">
             <div>
               <h2 id="delete-tour-title" className="text-lg font-extrabold text-slate-900">Xóa gói tour?</h2>

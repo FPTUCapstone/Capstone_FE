@@ -52,7 +52,12 @@ export function ConfirmDialog({ open, busy, title, body, confirmLabel, onConfirm
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !busy) onCancel();
+      }}
+    >
       <div
         ref={dialogRef}
         role="dialog"

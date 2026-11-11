@@ -165,4 +165,17 @@ describe('ItinerarySuggestionsDialog (D6, D11-2/8)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByTestId('suggestion-501')).toBeDefined();
   });
+
+  it('closes when the user clicks the backdrop', async () => {
+    vi.spyOn(schedulingApi, 'getItinerarySuggestions').mockResolvedValueOnce(response);
+    const onClose = vi.fn();
+    render(
+      <ItinerarySuggestionsDialog itineraryId={789} query={{ kind: 'Food', afterItemId: 11 }} title="t" nameOf={() => null} onChoose={vi.fn()} onClose={onClose} />,
+    );
+
+    await screen.findByRole('dialog');
+    fireEvent.mouseDown(screen.getByRole('dialog').parentElement!);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

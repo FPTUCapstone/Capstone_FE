@@ -21,7 +21,12 @@ export function ItineraryReviewsDialog({ poiId, name, onClose }: ItineraryReview
   useDialogFocus(dialogRef, closeRef, onClose);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <div
         ref={dialogRef}
         role="dialog"

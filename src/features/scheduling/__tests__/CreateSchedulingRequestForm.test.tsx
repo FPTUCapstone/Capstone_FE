@@ -920,4 +920,34 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       { timeout: 4000 },
     );
   });
+
+  it('brings the generated itinerary result into view and focuses its heading', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-01T01:00:00.000Z'));
+    const scrollIntoView = vi.fn();
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.spyOn(schedulingApi, 'createSchedulingRequest').mockResolvedValueOnce(mockSuccessResponse);
+
+    render(<CreateSchedulingRequestForm />);
+    await chooseStartAndArea();
+    fireEvent.change(screen.getByLabelText(/Ngày bắt đầu/i), { target: { value: '2026-10-05' } });
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+
+    await vi.advanceTimersByTimeAsync(1500);
+    await flush();
+
+    const heading = screen.getByRole('heading', { name: mockSuccessResponse.data.title });
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(focus).toHaveBeenCalled();
+    expect(heading.tabIndex).toBe(-1);
+  });
 });

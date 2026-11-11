@@ -116,6 +116,8 @@ export function CreateSchedulingRequestForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [optimizationPhase, setOptimizationPhase] = useState<string | null>(null);
   const [generatedItinerary, setGeneratedItinerary] = useState<SchedulingResponseDto | null>(null);
+  const generatedResultRef = useRef<HTMLDivElement>(null);
+  const generatedResultHeadingRef = useRef<HTMLHeadingElement>(null);
   const [feedback, setFeedback] = useState<{
     tone: 'success' | 'warning' | 'error' | 'info';
     title?: string;
@@ -127,6 +129,21 @@ export function CreateSchedulingRequestForm({
     currentMinutes: number;
     suggestedHours: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (!generatedItinerary) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      generatedResultRef.current?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+      generatedResultHeadingRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [generatedItinerary]);
 
   const locateStartPoint = async () => {
     setIsLocating(true);
@@ -529,14 +546,23 @@ export function CreateSchedulingRequestForm({
 
       {/* Generated Itinerary Result Banner (Link to UC-11) */}
       {generatedItinerary && (
-        <div className="mb-6 rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 p-5 shadow-xs">
+        <div
+          ref={generatedResultRef}
+          role="status"
+          aria-live="polite"
+          className="mb-6 scroll-mt-6 rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 p-5 shadow-xs motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3"
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="inline-flex items-center gap-1 rounded-md bg-[#103B39] px-2.5 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
                 <span className="material-symbols-outlined text-xs">verified</span>
                 Lịch trình #{generatedItinerary.itineraryId}
               </div>
-              <h3 className="mt-1.5 text-base font-black text-slate-900 sm:text-lg">
+              <h3
+                ref={generatedResultHeadingRef}
+                tabIndex={-1}
+                className="mt-1.5 text-base font-black text-slate-900 outline-none sm:text-lg"
+              >
                 {generatedItinerary.title}
               </h3>
               <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">

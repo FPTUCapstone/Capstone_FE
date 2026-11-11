@@ -76,6 +76,15 @@ describe('TripDetailDialog — loading and accessibility', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
+  it('closes when the backdrop is clicked', async () => {
+    fetchTripDetailMock.mockResolvedValue(detail('commerceBooking', '9001'));
+    const onClose = show(detail('commerceBooking', '9001'));
+
+    fireEvent.mouseDown(dialog());
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps Tab inside the dialog', async () => {
     fetchTripDetailMock.mockResolvedValue(detail('commerceBooking', '9004'));
     show(detail('commerceBooking', '9004'));

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { useAccessibleDialog } from '@/components/ui/useAccessibleDialog';
+
 import {
   fetchBookingCancellationPreview,
   submitBookingCancellation,
@@ -25,6 +27,11 @@ export function BookingCancelDialog({ bookingId, onClose, onCancelled }: Booking
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const dialogRef = useAccessibleDialog({
+    isOpen: true,
+    onClose,
+    locked: submitting,
+  });
 
   useEffect(() => {
     let active = true;
@@ -59,7 +66,16 @@ export function BookingCancelDialog({ bookingId, onClose, onCancelled }: Booking
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="booking-cancel-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="booking-cancel-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !submitting) onClose();
+      }}
+    >
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h2 id="booking-cancel-title" className="text-lg font-bold text-slate-900">
           {m.title}
