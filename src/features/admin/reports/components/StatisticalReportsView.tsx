@@ -11,12 +11,14 @@ import {
 } from '../guards/statisticalReportAuth';
 import { statisticalReportsEn } from '../resources/en';
 import {
+  CANONICAL_BOOKING_TYPE_OPTIONS,
   DEFAULT_DRAFT_CRITERIA,
   areCriteriaEqual,
+  fetchProductionReportingDestinations,
+  fetchProductionReportingOperators,
   fetchProductionReportingPeriods,
   fetchProductionStatisticalReport,
   formatVndCurrency,
-  getFilterOptionsByMode,
   productionExportUrl,
 } from '../services/statisticalReportService';
 import type {
@@ -25,6 +27,7 @@ import type {
   ExportFormat,
   GeneratedStatisticalReport,
   PeriodGranularity,
+  StatisticalFilterOption,
   StatisticalReportCriteria,
   StatisticalReportType,
   StatisticalWorkspaceMode,
@@ -86,6 +89,8 @@ export function StatisticalReportsView({
   );
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>('');
   const [productionPeriods, setProductionPeriods] = useState<readonly ProductionReportingPeriodOption[]>([]);
+  const [productionOperators, setProductionOperators] = useState<readonly StatisticalFilterOption[]>([]);
+  const [productionDestinations, setProductionDestinations] = useState<readonly StatisticalFilterOption[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,6 +107,17 @@ export function StatisticalReportsView({
       .catch((error: unknown) => {
         if (!controller.signal.aborted) setLiveAnnouncement(error instanceof Error ? error.message : 'Unable to load closed reporting periods.');
       });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchProductionReportingOperators(controller.signal)
+      .then(setProductionOperators)
+      .catch(() => { /* Dropdown degrades to "All Tour Operators" only; the generate flow still works. */ });
+    void fetchProductionReportingDestinations(controller.signal)
+      .then(setProductionDestinations)
+      .catch(() => { /* Dropdown degrades to "All Destinations" only; the generate flow still works. */ });
     return () => controller.abort();
   }, []);
 
@@ -163,7 +179,11 @@ export function StatisticalReportsView({
   const availablePeriods = productionPeriods.filter(
     (period) => period.granularity === draftCriteria.periodGranularity,
   );
-  const activeFilterOptions = getFilterOptionsByMode('PRODUCTION');
+  const activeFilterOptions = {
+    operators: [{ id: 'ALL', label: copy.filters.allOperatorsLabel }, ...productionOperators],
+    destinations: [{ id: 'ALL', label: copy.filters.allDestinationsLabel }, ...productionDestinations],
+    bookingTypes: CANONICAL_BOOKING_TYPE_OPTIONS,
+  };
   const isDraftDirty =
     resolvedAppliedCriteria !== null && !areCriteriaEqual(draftCriteria, resolvedAppliedCriteria);
 
@@ -195,8 +215,8 @@ export function StatisticalReportsView({
       reportType: draftCriteria.reportType as StatisticalReportType,
       periodGranularity: draftCriteria.periodGranularity,
       periodKey: draftCriteria.periodKey,
-      operatorId: 'ALL',
-      destinationId: 'ALL',
+      operatorId: draftCriteria.operatorId,
+      destinationId: draftCriteria.destinationId,
       bookingType: draftCriteria.bookingType,
     };
 
@@ -208,9 +228,10 @@ export function StatisticalReportsView({
     setLiveAnnouncement('Generating the closed-period report.');
     try {
       const report = await fetchProductionStatisticalReport(nextApplied);
+      const hasData = report.breakdownRows.length > 0 && report.hasData !== false;
       setGeneratedReport(report);
-      setResultState(report.breakdownRows.length ? 'GENERATED' : 'NO_DATA');
-      setLiveAnnouncement(report.breakdownRows.length ? 'Statistical report generated.' : copy.states.noDataMessage);
+      setResultState(hasData ? 'GENERATED' : 'NO_DATA');
+      setLiveAnnouncement(hasData ? 'Statistical report generated.' : copy.states.noDataMessage);
     } catch (error) {
       setResultState('GENERATION_ERROR');
       setLiveAnnouncement(error instanceof Error ? error.message : copy.states.generationErrorMessage);
@@ -493,9 +514,6 @@ export function StatisticalReportsView({
                   </select>
                 </div>
               </div>
-              <p className="mt-3 text-xs text-[#5B6E69]">
-                {copy.filters.productionDynamicFiltersNotice}
-              </p>
             </details>
 
             {/* Draft vs Applied Notice */}

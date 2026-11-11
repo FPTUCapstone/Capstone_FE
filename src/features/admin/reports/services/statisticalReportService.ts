@@ -12,13 +12,14 @@ import type {
   StatisticalBookingTypeOption,
   StatisticalBreakdownRow,
   StatisticalChartPoint,
+  StatisticalFilterOption,
   StatisticalFilterOptionSet,
   StatisticalReportCriteria,
   StatisticalSummaryMetric,
   StatisticalWorkspaceMode,
 } from '../types/statisticalReports';
 
-const CANONICAL_BOOKING_TYPE_OPTIONS: readonly StatisticalBookingTypeOption[] = [
+export const CANONICAL_BOOKING_TYPE_OPTIONS: readonly StatisticalBookingTypeOption[] = [
   { id: 'ALL', label: statisticalReportsEn.filters.bookingTypes.ALL },
   { id: 'TOUR_PACKAGE', label: statisticalReportsEn.filters.bookingTypes.TOUR_PACKAGE },
   {
@@ -894,10 +895,6 @@ export function buildDemoExportArtifact(
       ext: 'csv',
       mime: 'text/csv;charset=utf-8',
     },
-    PDF: {
-      ext: 'pdf',
-      mime: 'application/pdf',
-    },
   };
 
   const { ext, mime } = extMap[format];
@@ -1071,6 +1068,8 @@ function parseBackendReport(value: unknown, criteria: AppliedStatisticalReportCr
   }));
   const denominator = points.reduce((total, point) => total + Math.max(0, point.primaryValue), 0);
   const chartPoints = points.map((point) => ({ ...point, sharePercent: denominator ? Math.round((Math.max(0, point.primaryValue) / denominator) * 100) : 0 }));
+  const hasData = report.metrics.some((metric) => metric.value !== 0) ||
+    report.breakdown.some((row) => row.primaryValue !== 0 || row.secondaryValue !== 0);
   return {
     criteria,
     period: { key: periodKey, granularity: criteria.periodGranularity, label: periodKey, startDateDisplay: displayDate(report.period.startDate), endDateDisplay: displayDate(report.period.endDate), isClosed: true },
@@ -1082,6 +1081,7 @@ function parseBackendReport(value: unknown, criteria: AppliedStatisticalReportCr
       ? ['Component', 'Commission impact', 'Calculation basis', '']
       : ['Segment', 'Primary value', 'Related value', ''],
     breakdownRows: rows,
+    hasData,
   };
 }
 
@@ -1133,6 +1133,38 @@ export async function fetchProductionReportingPeriods(signal?: AbortSignal): Pro
       startDateDisplay: displayDate(period.startDate),
       endDateDisplay: displayDate(period.endDate),
     }];
+  });
+}
+
+/** Approved Tour Operators available to scope a report to, read live rather than hardcoded. */
+export async function fetchProductionReportingOperators(signal?: AbortSignal): Promise<readonly StatisticalFilterOption[]> {
+  const response = await fetch('/api/admin/statistical-reports/operators', {
+    credentials: 'same-origin', headers: { Accept: 'application/json' }, signal,
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok || !Array.isArray(body)) {
+    throw new Error('Unable to load tour operators.');
+  }
+  return body.flatMap((value) => {
+    const operator = value as { id?: unknown; name?: unknown };
+    if (typeof operator.id !== 'number' || typeof operator.name !== 'string') return [];
+    return [{ id: String(operator.id), label: operator.name }];
+  });
+}
+
+/** The public destination catalogue, reused here to scope a report to one destination. */
+export async function fetchProductionReportingDestinations(signal?: AbortSignal): Promise<readonly StatisticalFilterOption[]> {
+  const response = await fetch('/api/admin/statistical-reports/destinations', {
+    credentials: 'same-origin', headers: { Accept: 'application/json' }, signal,
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok || !Array.isArray(body)) {
+    throw new Error('Unable to load destinations.');
+  }
+  return body.flatMap((value) => {
+    const destination = value as { destinationId?: unknown; name?: unknown };
+    if (typeof destination.destinationId !== 'number' || typeof destination.name !== 'string') return [];
+    return [{ id: String(destination.destinationId), label: destination.name }];
   });
 }
 

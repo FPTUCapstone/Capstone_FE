@@ -120,8 +120,6 @@ export const statisticalReportsEn = {
   filters: {
     allOperatorsLabel: 'All Tour Operators',
     allDestinationsLabel: 'All Destinations',
-    productionDynamicFiltersNotice:
-      'Dynamic Tour Operator and Destination filters will become available after Backend reporting integration.',
     demoOperators: {
       'OP-101': 'Central Heritage Journeys',
       'OP-102': 'Danang Coastal Expeditions',
@@ -390,7 +388,6 @@ export const statisticalReportsEn = {
     formats: {
       CSV: 'CSV (.csv)',
       EXCEL: 'Excel (.xlsx)',
-      PDF: 'PDF (.pdf) — Not Supported',
     },
     exportButton: 'Export',
     previewButton: 'Preview Format Scope',

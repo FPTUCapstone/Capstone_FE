@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   canAccessStatisticalReports,
@@ -16,6 +16,9 @@ import {
   findProductionPeriodOption,
   formatVietnamDateDdMmYyyy,
   formatVndCurrency,
+  fetchProductionReportingDestinations,
+  fetchProductionReportingOperators,
+  fetchProductionStatisticalReport,
   generateDemoStatisticalReport,
   getDemoPeriodFixturesByGranularity,
   getFilterOptionsByMode,
@@ -301,7 +304,7 @@ describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
       expect(csvArtifact.contentPreview).toContain('Destination=DEST-HOI');
       expect(csvArtifact.auditEventSummary).toContain('StatisticalReportExported');
 
-      for (const binaryFormat of ['EXCEL', 'PDF'] as const) {
+      for (const binaryFormat of ['EXCEL'] as const) {
         const previewArtifact = buildDemoExportArtifact(report, binaryFormat);
         expect(previewArtifact.isDownloadable).toBe(false);
         expect(previewArtifact.csvContent).toBeUndefined();
@@ -509,6 +512,97 @@ describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
         // Safe Vietnamese label preserved
         expect(csv).toContain('Đà Nẵng Discovery');
       });
+    });
+  });
+
+  describe('fetchProductionStatisticalReport — hasData (no-data detection)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const criteria: AppliedStatisticalReportCriteria = {
+      reportType: 'USER_GROWTH',
+      periodGranularity: 'CLOSED_MONTH',
+      periodKey: '2026-09',
+      operatorId: 'ALL',
+      destinationId: 'ALL',
+      bookingType: 'ALL',
+    };
+
+    function stubFetch(metrics: Array<{ value: number }>, breakdown: Array<{ primaryValue: number; secondaryValue: number }>) {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          period: { periodKey: '2026-09', startDate: '2026-09-01', endDate: '2026-09-30' },
+          generatedAtUtc: '2026-10-01T00:00:00Z',
+          metrics: metrics.map((metric, index) => ({ key: `m${index}`, label: `Metric ${index}`, value: metric.value, isCurrency: false })),
+          breakdown: breakdown.map((row, index) => ({ key: `r${index}`, label: `Row ${index}`, primaryValue: row.primaryValue, secondaryValue: row.secondaryValue, tertiaryValue: 0, isCurrency: false })),
+        }),
+      }));
+    }
+
+    it('is false when every summary metric and breakdown value is zero', async () => {
+      stubFetch([{ value: 0 }, { value: 0 }], [{ primaryValue: 0, secondaryValue: 0 }]);
+
+      const report = await fetchProductionStatisticalReport(criteria);
+
+      expect(report.hasData).toBe(false);
+    });
+
+    it('is true when at least one metric is non-zero', async () => {
+      stubFetch([{ value: 0 }, { value: 3 }], [{ primaryValue: 0, secondaryValue: 0 }]);
+
+      const report = await fetchProductionStatisticalReport(criteria);
+
+      expect(report.hasData).toBe(true);
+    });
+
+    it('is true when at least one breakdown value is non-zero', async () => {
+      stubFetch([{ value: 0 }], [{ primaryValue: 0, secondaryValue: 5 }]);
+
+      const report = await fetchProductionStatisticalReport(criteria);
+
+      expect(report.hasData).toBe(true);
+    });
+  });
+
+  describe('live filter option fetchers (Tour Operator / Destination)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('fetchProductionReportingOperators maps the backend id/name shape to id/label options', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([{ id: 101, name: 'Hoi An Travel Co.' }, { id: 102, name: 'Da Nang Discovery' }]),
+      }));
+
+      const options = await fetchProductionReportingOperators();
+
+      expect(options).toEqual([
+        { id: '101', label: 'Hoi An Travel Co.' },
+        { id: '102', label: 'Da Nang Discovery' },
+      ]);
+    });
+
+    it('fetchProductionReportingDestinations maps the backend destinationId/name shape to id/label options', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([{ destinationId: 1, name: 'Đà Nẵng' }, { destinationId: 2, name: 'Hội An' }]),
+      }));
+
+      const options = await fetchProductionReportingDestinations();
+
+      expect(options).toEqual([
+        { id: '1', label: 'Đà Nẵng' },
+        { id: '2', label: 'Hội An' },
+      ]);
+    });
+
+    it('fetchProductionReportingOperators throws when the response is not ok', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: () => Promise.resolve(null) }));
+
+      await expect(fetchProductionReportingOperators()).rejects.toThrow('Unable to load tour operators.');
     });
   });
 });

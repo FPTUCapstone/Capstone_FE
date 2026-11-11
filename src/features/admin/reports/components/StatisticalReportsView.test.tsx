@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({
@@ -213,11 +213,6 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         statisticalReportsEn.filters.bookingTypes.TOUR_PACKAGE,
         statisticalReportsEn.filters.bookingTypes.COMMERCIAL_SERVICE,
       ]);
-
-      // 4. Semantic notice explaining dynamic filter availability is shown
-      expect(
-        screen.getByText(statisticalReportsEn.filters.productionDynamicFiltersNotice),
-      ).toBeTruthy();
 
       // Verify zero fabricated statistics, zero charts, and disabled export
       expect(screen.queryByRole('table')).toBeNull();
@@ -492,6 +487,58 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
 
       anchorClickSpy.mockRestore();
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe('3. Generate Report sends the selected Tour Operator / Destination (regression)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('includes the selected operatorUserId and destinationId in the report request instead of forcing ALL', async () => {
+      const reportCalls: string[] = [];
+      vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/statistical-reports/periods')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{ periodKey: '2026-09', startDate: '2026-09-01', endDate: '2026-09-30' }]),
+          });
+        }
+        if (url.includes('/statistical-reports/operators')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 555, name: 'Oceanic Travel Co.' }]) });
+        }
+        if (url.includes('/statistical-reports/destinations')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve([{ destinationId: 7, name: 'Hoi An' }]) });
+        }
+        reportCalls.push(url);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            period: { periodKey: '2026-09', startDate: '2026-09-01', endDate: '2026-09-30' },
+            generatedAtUtc: '2026-10-01T00:00:00Z',
+            metrics: [{ key: 'm0', label: 'Metric', value: 1, isCurrency: false }],
+            breakdown: [{ key: 'r0', label: 'Row', primaryValue: 1, secondaryValue: 1, tertiaryValue: 0, isCurrency: false }],
+          }),
+        });
+      }));
+
+      render(<StatisticalReportsView actorRole="Administrator" />);
+
+      const operatorSelect = await waitFor(() => {
+        const select = screen.getByLabelText(statisticalReportsEn.criteriaForm.operatorFilterLabel) as HTMLSelectElement;
+        expect(Array.from(select.options).some((o) => o.value === '555')).toBe(true);
+        return select;
+      });
+      const destinationSelect = screen.getByLabelText(statisticalReportsEn.criteriaForm.destinationFilterLabel) as HTMLSelectElement;
+
+      fireEvent.change(operatorSelect, { target: { value: '555' } });
+      fireEvent.change(destinationSelect, { target: { value: '7' } });
+      fireEvent.click(screen.getByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }));
+
+      await waitFor(() => expect(reportCalls.length).toBeGreaterThan(0));
+      expect(reportCalls[0]).toContain('operatorUserId=555');
+      expect(reportCalls[0]).toContain('destinationId=7');
     });
   });
 });

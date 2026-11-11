@@ -48,6 +48,51 @@ export async function proxyStatisticalReport(request: Request): Promise<Response
   }
 }
 
+export async function proxyStatisticalReportPeriods(request: Request): Promise<Response> {
+  const token = await authorize();
+  if (!token) return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+  try {
+    const upstream = await fetchBackend(upstreamPath(request, '/periods'), { headers: { Authorization: `Bearer ${token}` }, signal: request.signal });
+    const body: unknown = await upstream.json().catch(() => null);
+    if (upstream.status === 401) return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+    if (body === null) return jsonNoStore({ title: 'The statistical reporting service is unavailable.' }, 503);
+    return jsonNoStore(body, upstream.status);
+  } catch {
+    return jsonNoStore({ title: 'The statistical reporting service could not be reached.' }, 503);
+  }
+}
+
+export async function proxyStatisticalReportOperators(request: Request): Promise<Response> {
+  const token = await authorize();
+  if (!token) return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+  try {
+    const upstream = await fetchBackend(upstreamPath(request, '/operators'), { headers: { Authorization: `Bearer ${token}` }, signal: request.signal });
+    const body: unknown = await upstream.json().catch(() => null);
+    if (upstream.status === 401) return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+    if (body === null) return jsonNoStore({ title: 'The statistical reporting service is unavailable.' }, 503);
+    return jsonNoStore(body, upstream.status);
+  } catch {
+    return jsonNoStore({ title: 'The statistical reporting service could not be reached.' }, 503);
+  }
+}
+
+// Destinations are a public catalogue (GET /api/v1/destinations, AllowAnonymous on the backend) —
+// routed through this same admin-session gate purely for consistency with the other reporting
+// filter endpoints, not because the backend itself requires it.
+export async function proxyStatisticalReportDestinations(request: Request): Promise<Response> {
+  const token = await authorize();
+  if (!token) return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+  try {
+    const upstream = await fetchBackend('/api/v1/destinations', { headers: { Authorization: `Bearer ${token}` }, signal: request.signal });
+    const body: unknown = await upstream.json().catch(() => null);
+    if (upstream.status === 401) return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+    if (body === null) return jsonNoStore({ title: 'The statistical reporting service is unavailable.' }, 503);
+    return jsonNoStore(body, upstream.status);
+  } catch {
+    return jsonNoStore({ title: 'The statistical reporting service could not be reached.' }, 503);
+  }
+}
+
 export async function proxyStatisticalReportExport(request: Request): Promise<Response> {
   const token = await authorize();
   if (!token) return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
