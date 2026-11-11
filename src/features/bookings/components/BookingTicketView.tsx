@@ -11,6 +11,7 @@ import { ticketMessages } from '../resources/ticketMessages';
 import { isBookingDemoAllowedInCurrentEnv } from '../services/bookingApi';
 import { fetchTicket, refreshTicketQr, TicketClientError, type TicketKey } from '../services/ticketClient';
 import type { TicketStatus, TicketView } from '../types/ticket';
+import { BookingCancelAction } from './BookingCancelAction';
 import { QrCodeDisplay } from './QrCodeDisplay';
 
 interface BookingTicketViewProps {
@@ -343,6 +344,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
         >
           Về chuyến đi của tôi
         </Link>
+        <BookingCancelAction bookingId={ticket.bookingId} ticketStatus={ticket.ticketStatus} />
       </div>
       {canRefresh && !online ? (
         <p className="mt-3 text-center text-xs text-slate-500 print:hidden">{ticketMessages.offline}</p>

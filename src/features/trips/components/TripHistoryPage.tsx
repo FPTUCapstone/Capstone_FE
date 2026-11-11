@@ -77,15 +77,7 @@ export function TripHistoryPage() {
 
       {/* Header Title Section */}
       <div className="mb-6">
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#174B4A]">
-            {tripReviewEn.tripHistory.badgeCode}
-          </span>
-          <span className="text-xs font-semibold text-slate-500">
-            {tripReviewEn.tripHistory.badgeLabel}
-          </span>
-        </div>
-        <h1 className="mt-1 text-2xl font-black text-[#1C2928] sm:text-3xl">
+        <h1 className="text-2xl font-black text-[#1C2928] sm:text-3xl">
           {tripReviewEn.tripHistory.pageTitle}
         </h1>
         <p className="mt-1 text-xs text-slate-500 sm:text-sm">

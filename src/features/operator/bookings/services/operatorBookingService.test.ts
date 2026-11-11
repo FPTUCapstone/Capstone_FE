@@ -36,16 +36,6 @@ describe('operatorBookingService', () => {
 
   describe('UC-40 View Customer Bookings', () => {
     describe('Cancel and refund outside demo mode (UC-41/UC-42 are not integrated yet)', () => {
-      it('disallows cancellation in production mode without backend', async () => {
-        const result = await cancelCustomerBooking(
-          'booking-0141',
-          { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'Customer requested' },
-          { isDemo: false }
-        );
-        expect(result.success).toBe(false);
-        expect(result.messageCode).toBe('PENDING_BE_INTEGRATION');
-      });
-
       it('disallows initiating refund in production mode without backend', async () => {
         const result = await initiateBookingRefund('booking-0141', {}, { isDemo: false });
         expect(result.success).toBe(false);
@@ -264,6 +254,68 @@ describe('operatorBookingService', () => {
         });
         expect(res.messageCode).toBe('MSG128');
       });
+    });
+  });
+
+  describe('UC-41 live cancellation through the BFF', () => {
+    const fetchMock = vi.fn();
+
+    beforeEach(() => {
+      fetchMock.mockReset();
+      vi.stubGlobal('fetch', fetchMock);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const payload = { reasonType: 'CUSTOMER_REQUEST' as const, reasonDetail: '  Cannot travel  ' };
+
+    it('posts the trimmed reason with a fresh Idempotency-Key to the BFF cancellation route', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { bookingId: 42, status: 'Cancelled', refundAmount: 0 } }), { status: 200 })
+      );
+
+      const result = await cancelCustomerBooking('42', payload, { isDemo: false });
+
+      expect(result.success).toBe(true);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('/api/v1/bookings/42/cancellation');
+      expect(init.method).toBe('POST');
+      expect(init.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/i);
+      expect(JSON.parse(init.body)).toEqual({ reasonCategory: 'CUSTOMER_REQUEST', reasonDetail: 'Cannot travel' });
+    });
+
+    it('rejects an empty reason before calling the backend (BR-106, MSG123)', async () => {
+      const result = await cancelCustomerBooking('42', { reasonType: 'OTHER', reasonDetail: '   ' }, { isDemo: false });
+
+      expect(result.messageCode).toBe('MSG123');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [403, undefined, 'MSG126'],
+      [404, 'booking.not_found', 'MSG128'],
+      [409, 'booking.cancellation.invalid_state', 'MSG133'],
+      [422, 'booking.cancellation.reason_required', 'MSG123'],
+      [503, 'CANCELLATION_UNAVAILABLE', 'MSG127'],
+    ])('maps backend status %s (%s) to %s', async (status, errorCode, expected) => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(errorCode ? { errorCode } : {}), { status })
+      );
+
+      const result = await cancelCustomerBooking('42', payload, { isDemo: false });
+
+      expect(result.success).toBe(false);
+      expect(result.messageCode).toBe(expected);
+    });
+
+    it('reports a system error when the network call fails (MSG127)', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('offline'));
+
+      const result = await cancelCustomerBooking('42', payload, { isDemo: false });
+
+      expect(result.messageCode).toBe('MSG127');
     });
   });
 
@@ -927,17 +979,11 @@ describe('operatorBookingService live mode (UC-40 BFF)', () => {
     });
   });
 
-  describe('cancel and refund stay locked outside demo mode (UC-41/UC-42 are not integrated by UC-40)', () => {
+  describe('refund stays locked outside demo mode (UC-42 is not integrated by UC-41)', () => {
     it('never calls the BFF and keeps the pending-integration answer', async () => {
-      const cancel = await cancelCustomerBooking(
-        '1201',
-        { reasonType: 'CUSTOMER_REQUEST', reasonDetail: 'x' },
-        { isDemo: false }
-      );
       const refund = await initiateBookingRefund('1201', {}, { isDemo: false });
 
       expect(fetchMock).not.toHaveBeenCalled();
-      expect(cancel.messageCode).toBe('PENDING_BE_INTEGRATION');
       expect(refund.messageCode).toBe('PENDING_BE_INTEGRATION');
     });
   });
