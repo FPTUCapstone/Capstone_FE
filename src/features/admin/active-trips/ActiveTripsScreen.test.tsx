@@ -39,6 +39,13 @@ describe('ActiveTripsScreen', () => {
     expect(screen.getByText('View Details')).toBeTruthy();
   });
 
+  it('shows a role-neutral eyebrow since Staff and Administrator both open this page', async () => {
+    render(<ActiveTripsScreen />);
+    await screen.findByText('TRIP-42');
+    expect(screen.getByText('Active Trip Monitoring')).toBeTruthy();
+    expect(screen.queryByText('Administrator monitoring')).toBeNull();
+  });
+
   it('does not fetch while the Administrator is typing', async () => {
     render(<ActiveTripsScreen />);
     await screen.findByText('TRIP-42');

@@ -86,7 +86,7 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
       <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#174B4A]">Administrator monitoring</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#174B4A]">Active Trip Monitoring</p>
         <h1 className="mt-2 text-3xl font-extrabold text-[#1C2928]">Active Trips</h1>
         <p className="mt-2 max-w-3xl text-sm text-[#5B6E69]">Monitor trips that are navigating, exploring, or temporarily interrupted.</p>
       </header>
