@@ -33,7 +33,7 @@ describe('AccountWorkspaceNav', () => {
 
     const prefTab = screen.getByRole('tab', { name: new RegExp(accountCommonEn.navigation.tabs.preferences, 'i') });
     expect(prefTab.getAttribute('aria-selected')).toBe('true');
-    expect(prefTab.textContent).toContain('UC-09');
+    expect(prefTab.textContent).not.toContain('UC-09');
   });
 
   it('suppresses rendering when invoked inside shell without explicit variant to avoid duplicates', () => {

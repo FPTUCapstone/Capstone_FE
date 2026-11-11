@@ -8,10 +8,8 @@ export const accountCommonEn = {
     tabs: {
       profile: 'Personal Profile',
       preferences: 'Travel Preferences',
-      preferencesBadge: 'UC-09',
       security: 'Security & Password',
       trips: 'My Trips',
-      tripsBadge: 'UC-32',
     },
   },
 } as const;

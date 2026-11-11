@@ -63,8 +63,6 @@ export const tripReviewEn = {
     breadcrumbHome: 'Home',
     breadcrumbAccount: 'My Account',
     breadcrumbTrips: 'My Trips',
-    badgeCode: 'UC-32',
-    badgeLabel: 'Trip Management',
     pageTitle: 'My Trips',
     pageSubtitle:
       'Review your booked tours and self-planned itineraries with TripMate.',

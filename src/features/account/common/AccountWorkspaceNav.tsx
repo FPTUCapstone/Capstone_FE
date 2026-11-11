@@ -34,7 +34,6 @@ export const ACCOUNT_WORKSPACE_TABS: NavTabItem[] = [
     label: accountCommonEn.navigation.tabs.preferences,
     href: ROUTES.account.preferences,
     icon: 'tune',
-    badge: accountCommonEn.navigation.tabs.preferencesBadge,
   },
   {
     key: 'security',
@@ -47,7 +46,6 @@ export const ACCOUNT_WORKSPACE_TABS: NavTabItem[] = [
     label: accountCommonEn.navigation.tabs.trips,
     href: ROUTES.account.trips,
     icon: 'route',
-    badge: accountCommonEn.navigation.tabs.tripsBadge,
   },
 ];
 
