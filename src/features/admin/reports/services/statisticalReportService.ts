@@ -1112,7 +1112,7 @@ function displayPeriodLabel(key: string, startDate: string, endDate: string): st
   return `${key} (${displayDate(startDate)}–${displayDate(endDate)})`;
 }
 
-/** Reads the periods closed by UC-67 rather than relying on release-specific fixtures. */
+/** Reads the periods closed by UC-63 rather than relying on release-specific fixtures. */
 export async function fetchProductionReportingPeriods(signal?: AbortSignal): Promise<readonly ProductionReportingPeriodOption[]> {
   const response = await fetch('/api/admin/statistical-reports/periods', {
     credentials: 'same-origin', headers: { Accept: 'application/json' }, signal,

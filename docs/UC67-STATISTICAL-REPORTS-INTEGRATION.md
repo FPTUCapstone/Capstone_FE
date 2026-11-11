@@ -1,8 +1,8 @@
-# UC-67 Statistical Reports integration boundary
+# UC-63 Statistical Reports integration boundary
 
 ## Requirements and approval status
 
-- Authoritative requirements: `Report3_Software-Requirement-Specification-V2.docx`, UC-67, section 3.9.11, Screen #32.
+- Authoritative requirements: `Report3_Software-Requirement-Specification-V2.docx`, UC-63, section 3.9.11, Screen #32.
 - Actor: Administrator. Staff, Traveler, and Tour Operator accounts cannot access this workspace.
 - `WEB_SCREEN_SPEC_APPROVAL_PENDING`: no approved Web Screen Specification for Screen #32 was found in the repository or PR evidence. This implementation must not be described as UX-approved until Product/BA supplies that approval.
 - The SRS remains authoritative for functional scope. Its references to a screen do not constitute approval of the detailed Web layout, responsive behavior, or interaction design.
@@ -33,13 +33,13 @@ The server session seal uses `TRIPMATE_ADMIN_SESSION_SECRET`. The variable is do
 
 ## SRS conflicts requiring Product/BA resolution
 
-`SRS_MESSAGE_CODE_RECONCILIATION_PENDING` applies to these conflicts between UC-67 section 3.9.11 and Appendix 5.3:
+`SRS_MESSAGE_CODE_RECONCILIATION_PENDING` applies to these conflicts between UC-63 section 3.9.11 and Appendix 5.3:
 
-- `MSG29`: UC-67 uses it for a report period that is not closed; Appendix 5.3 assigns it to POI geographic coordinate validation.
-- `MSG117`: UC-67 uses it for report generation failure; Appendix 5.3 assigns it to algorithm parameter updates.
-- `MSG149`: UC-67 uses it for successful file delivery, while the Appendix 5.3 catalogue ends at `MSG130`.
+- `MSG29`: UC-63 uses it for a report period that is not closed; Appendix 5.3 assigns it to POI geographic coordinate validation.
+- `MSG117`: UC-63 uses it for report generation failure; Appendix 5.3 assigns it to algorithm parameter updates.
+- `MSG149`: UC-63 uses it for successful file delivery, while the Appendix 5.3 catalogue ends at `MSG130`.
 
-There is also `SRS_MAPPING_GAP_PLATFORM_REVENUE_SCREENS_37_38`: section 3.1.2 lists Screens #37 and #38, but the SRS provides no matching detailed use cases; UC-67 names Screen #32. The implementation uses descriptive English resource text and does not assert that these conflicting codes have been resolved.
+There is also `SRS_MAPPING_GAP_PLATFORM_REVENUE_SCREENS_37_38`: section 3.1.2 lists Screens #37 and #38, but the SRS provides no matching detailed use cases; UC-63 names Screen #32. The implementation uses descriptive English resource text and does not assert that these conflicting codes have been resolved.
 
 ## Shared CSV utility convergence and demo policy decisions
 

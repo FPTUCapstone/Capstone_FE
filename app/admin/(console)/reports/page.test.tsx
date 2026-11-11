@@ -86,7 +86,7 @@ function mockValidSealedSession(
   return { token, seal: sealed.seal };
 }
 
-describe('UC-67 /admin/reports protected route & BFF-signed session boundary', () => {
+describe('UC-63 /admin/reports protected route & BFF-signed session boundary', () => {
   let priorSecret: string | undefined;
 
   beforeEach(() => {

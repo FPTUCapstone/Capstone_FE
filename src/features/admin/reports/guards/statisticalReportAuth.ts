@@ -7,7 +7,7 @@ export interface ResolveStatisticalWorkspaceModeOptions {
 }
 
 /**
- * Authorization and workspace mode guards for UC-67 Export Statistical Reports (Screen #32).
+ * Authorization and workspace mode guards for UC-63 Export Statistical Reports (Screen #32).
  *
  * Canonical Requirements & SRS V2 Alignment:
  * - Specification Section: Report 3 V2 §3.9.11 (Screen #32 Statistical Reports).
@@ -23,7 +23,7 @@ export interface ResolveStatisticalWorkspaceModeOptions {
  * SRS Discrepancy & Conflict Register:
  * - SRS_MAPPING_GAP_PLATFORM_REVENUE_SCREENS_37_38: Report 3 V2 §3.1.2 lists Screens #37
  *   ("Platform Revenue Report") and #38 ("Export Platform Revenue Report") in the screen table,
- *   but provides no corresponding detailed use case specification. UC-67 is defined at §3.9.11
+ *   but provides no corresponding detailed use case specification. UC-63 is defined at §3.9.11
  *   exclusively targeting Screen #32 ("Statistical Reports").
  * - Application Messages Discrepancies (§3.9.11 vs Appendix §5.3):
  *   - MSG29: In §3.9.11 denotes "Report period must be closed", whereas Appendix §5.3 assigns
@@ -44,7 +44,7 @@ export function canAccessStatisticalReports(role: string | null | undefined): bo
 }
 
 /**
- * Production environment gate for UC-67 statistical report demo fixtures.
+ * Production environment gate for UC-63 statistical report demo fixtures.
  * Strictly requires non-production environment AND explicit NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true'.
  * Production environment ALWAYS wins (returns false).
  */
@@ -56,7 +56,7 @@ export function isStatisticalDemoAllowedInEnv(
 }
 
 /**
- * Resolves workspace mode for UC-67 Statistical Reports.
+ * Resolves workspace mode for UC-63 Statistical Reports.
  * In non-production with NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true', accepts canonical "?demo=1"
  * or backward-compatible "?demo=true".
  * In production or without the explicit demo environment gate, strictly returns 'PRODUCTION'.

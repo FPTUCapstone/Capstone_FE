@@ -31,7 +31,7 @@ import type {
   StatisticalReportType,
 } from '../types/statisticalReports';
 
-describe('statisticalReportService & statisticalReportAuth (UC-67)', () => {
+describe('statisticalReportService & statisticalReportAuth (UC-63)', () => {
   describe('Defense-in-Depth Role Authorization Boundary (BR-115)', () => {
     it('authorizes only Administrator and rejects all other roles and falsy values', () => {
       expect(canAccessStatisticalReports('Administrator')).toBe(true);

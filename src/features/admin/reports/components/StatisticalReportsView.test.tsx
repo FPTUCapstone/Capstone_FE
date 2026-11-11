@@ -28,7 +28,7 @@ function collectAllStrings(value: unknown): string[] {
   return [];
 }
 
-describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)', () => {
+describe('Screen #32 StatisticalReportsView (UC-63 Export Statistical Reports)', () => {
   const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
 
   beforeEach(() => {
@@ -539,6 +539,29 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       await waitFor(() => expect(reportCalls.length).toBeGreaterThan(0));
       expect(reportCalls[0]).toContain('operatorUserId=555');
       expect(reportCalls[0]).toContain('destinationId=7');
+    });
+
+    it('tells the user when the Tour Operator and Destination options fail to load instead of silently showing only "All"', async () => {
+      vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/statistical-reports/periods')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{ periodKey: '2026-09', startDate: '2026-09-01', endDate: '2026-09-30' }]),
+          });
+        }
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({ title: 'unavailable' }) });
+      }));
+
+      render(<StatisticalReportsView actorRole="Administrator" />);
+
+      expect(
+        await screen.findByText(statisticalReportsEn.filters.loadErrorMessage),
+      ).toBeTruthy();
+      const operatorSelect = screen.getByLabelText(statisticalReportsEn.criteriaForm.operatorFilterLabel) as HTMLSelectElement;
+      expect(Array.from(operatorSelect.options).map((o) => o.textContent)).toEqual([
+        statisticalReportsEn.filters.allOperatorsLabel,
+      ]);
     });
   });
 });

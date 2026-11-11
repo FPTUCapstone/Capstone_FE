@@ -120,6 +120,8 @@ export const statisticalReportsEn = {
   filters: {
     allOperatorsLabel: 'All Tour Operators',
     allDestinationsLabel: 'All Destinations',
+    loadErrorMessage:
+      'Tour Operator and Destination options could not be loaded. Only "All" is available until they load.',
     demoOperators: {
       'OP-101': 'Central Heritage Journeys',
       'OP-102': 'Danang Coastal Expeditions',

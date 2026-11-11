@@ -91,6 +91,7 @@ export function StatisticalReportsView({
   const [productionPeriods, setProductionPeriods] = useState<readonly ProductionReportingPeriodOption[]>([]);
   const [productionOperators, setProductionOperators] = useState<readonly StatisticalFilterOption[]>([]);
   const [productionDestinations, setProductionDestinations] = useState<readonly StatisticalFilterOption[]>([]);
+  const [productionFilterLoadError, setProductionFilterLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -112,12 +113,15 @@ export function StatisticalReportsView({
 
   useEffect(() => {
     const controller = new AbortController();
+    const reportFilterLoadFailure = () => {
+      if (!controller.signal.aborted) setProductionFilterLoadError(statisticalReportsEn.filters.loadErrorMessage);
+    };
     void fetchProductionReportingOperators(controller.signal)
       .then(setProductionOperators)
-      .catch(() => { /* Dropdown degrades to "All Tour Operators" only; the generate flow still works. */ });
+      .catch(reportFilterLoadFailure);
     void fetchProductionReportingDestinations(controller.signal)
       .then(setProductionDestinations)
-      .catch(() => { /* Dropdown degrades to "All Destinations" only; the generate flow still works. */ });
+      .catch(reportFilterLoadFailure);
     return () => controller.abort();
   }, []);
 
@@ -514,6 +518,11 @@ export function StatisticalReportsView({
                   </select>
                 </div>
               </div>
+              {productionFilterLoadError ? (
+                <p role="status" className="mt-3 text-xs font-semibold text-rose-700">
+                  {productionFilterLoadError}
+                </p>
+              ) : null}
             </details>
 
             {/* Draft vs Applied Notice */}
