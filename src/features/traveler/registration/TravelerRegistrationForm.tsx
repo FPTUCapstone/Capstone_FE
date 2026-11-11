@@ -316,10 +316,10 @@ export function TravelerRegistrationForm() {
       )}
 
       {/* Form card */}
-      <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">
+      <div className="bg-brand-card rounded-3xl shadow-card-lg p-6 sm:p-8 md:p-10 border border-slate-100">
         {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">
             Tạo tài khoản Traveler
           </h2>
           <p className="text-sm text-brand-textSecondary leading-relaxed">
@@ -484,7 +484,7 @@ export function TravelerRegistrationForm() {
           type="button"
           disabled={loading}
           onClick={handleGoogle}
-          className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#CBD5E1] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-3 transition-all duration-200 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full h-12 bg-white hover:bg-slate-50 active:scale-[0.98] border border-[#DCE2DD] rounded-xl text-[#1E293B] font-medium text-sm flex items-center justify-center gap-3 transition-all duration-200 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
         >
           <svg width="18" height="18" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

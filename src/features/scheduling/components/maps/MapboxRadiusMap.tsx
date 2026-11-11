@@ -64,13 +64,13 @@ export function MapboxRadiusMap({ token, center, radiusKm, onUnavailable }: Mapb
             id: 'search-radius-fill',
             type: 'fill',
             source: RADIUS_SOURCE,
-            paint: { 'fill-color': '#007d6e', 'fill-opacity': 0.12 },
+            paint: { 'fill-color': '#103B39', 'fill-opacity': 0.12 },
           });
           map.addLayer({
             id: 'search-radius-outline',
             type: 'line',
             source: RADIUS_SOURCE,
-            paint: { 'line-color': '#007d6e', 'line-width': 2 },
+            paint: { 'line-color': '#103B39', 'line-width': 2 },
           });
           loadedRef.current = true;
           drawRef.current?.();

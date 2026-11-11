@@ -1,0 +1,51 @@
+export const devTourSearchCopy = {
+  title: 'Tour Search V2 — Development',
+  notice: 'Functional test only. Semantic ranking has no relevance threshold; hybrid uses experimental RRF configuration. This is not production search.',
+  keyword: 'What experience are you looking for?', destination: 'Destination', startDate: 'Start date', endDate: 'End date',
+  minPrice: 'Minimum price (VND)', maxPrice: 'Maximum price (VND)', durationDays: 'Duration (days)',
+  category: 'Category', minimumRating: 'Minimum rating', sort: 'Sort order', mode: 'Search mode', pageSize: 'Results per page',
+  allCategories: 'All active categories', defaultSort: 'Backend default', search: 'Search tours', clearFilters: 'Clear filters',
+  results: 'Search results', loading: 'Searching tours…', empty: 'No matching tours.', retry: 'Retry search',
+  searchFailure: 'Search failed. Please retry. (MSG127)',
+  formCriteria: 'Use this form for your next search. The displayed criteria below describe the results currently shown.',
+  displayedCriteria: 'Displayed search criteria', page: 'Page', anyCriteria: 'Any',
+  retainedResults: 'Previous successful results and their displayed criteria are retained. They are not results for the pending or failed search.',
+  categoryFailure: 'Categories could not be loaded. Retry to load the active server catalogue.', retryCategories: 'Retry categories',
+  invalidResponse: 'The development server returned an invalid search response.',
+  unavailable: 'Development search is temporarily unavailable. Please retry.',
+  invalidFilters: 'The search filters are invalid.',
+  requestFailed: 'Development search could not return complete results. Please retry after the corpus and vectors are verified.',
+  ratingUnknown: 'Not yet rated', rating: 'Rating',
+  showing: (count: number, total: number) => `Showing ${count} of ${total} tours`,
+  card: {
+    soldOut: 'Sold out', availableSlots: (count: number) => `${count} places left`, available: 'Available',
+    noSchedule: 'No upcoming schedule', unknown: 'Unknown', days: (count: number) => `${count} days`,
+    departure: 'Departure:', priceFrom: 'From', details: 'Details', detailsAria: (title: string) => `View details for ${title}`,
+  },
+  pagination: {
+    navigation: 'Tour results pagination', previous: 'Previous page', previousShort: 'Previous',
+    next: 'Next page', nextShort: 'Next', goToPage: (page: number) => `Go to page ${page}`, page: (page: number) => `Page ${page}`,
+  },
+  modes: { lexical: 'Lexical', semantic: 'Semantic', hybrid: 'Hybrid' },
+  sorts: {
+    relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low',
+    rating: 'Rating', departureDate: 'Departure date',
+  },
+  validation: {
+    textLength: 'Text filters exceed the supported length.', mode: 'Select a supported search mode.',
+    sort: 'Select a supported sort order.', page: 'Page must be positive and page size must be 20.',
+    numeric: 'Prices must be non-negative whole numbers and duration must be positive.',
+    priceRange: 'Price exceeds the supported VND range.', minMax: 'Minimum price cannot exceed maximum price.',
+    rating: 'Minimum rating must be between 1 and 5.', dates: 'Enter valid calendar dates.',
+    dateOrder: 'Start date cannot be after end date.',
+  },
+} as const;
+
+export const DEV_SEARCH_ERRORS: Readonly<Record<string, string>> = {
+  'DevSearch.CorpusTooLarge': 'The semantic test corpus exceeds 256 tours. No partial results were returned.',
+  'DevSearch.IndexIncomplete': 'Vectors are missing, stale, or use an incompatible model. No partial results were returned.',
+  'DevSearch.InvalidVector': 'The vector data is invalid. No partial results were returned.',
+  'DevSearch.InvalidCandidates': 'The vector candidate set is invalid. No partial results were returned.',
+  'DevSearch.DependencyUnavailable': 'The embedding or vector service is unavailable. No partial results were returned.',
+  'DevSearch.SqlUnavailable': 'SQL validation is unavailable. No unverified results were returned.',
+};

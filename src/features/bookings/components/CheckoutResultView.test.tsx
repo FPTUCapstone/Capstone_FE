@@ -6,22 +6,24 @@ import { getCheckoutResultRedirectUrl } from './CheckoutResultPage';
 import { CheckoutResultView } from './CheckoutResultView';
 
 const mockSearchParams = new URLSearchParams();
+const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => mockSearchParams,
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: replaceMock }),
 }));
 
 describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    replaceMock.mockReset();
     mockSearchParams.delete('bookingId');
     mockSearchParams.delete('status');
     mockSearchParams.delete('code');
     mockSearchParams.delete('cancel');
   });
 
-  it('renders payment success state and return-home action when backend reports Confirmed', async () => {
+  it('renders payment success state with the e-ticket and return-home actions when backend reports Confirmed', async () => {
     mockSearchParams.set('bookingId', '42');
 
     vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValueOnce({
@@ -50,7 +52,8 @@ describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
       expect(screen.getByText('1729221234567')).toBeTruthy();
       const homeLink = screen.getByRole('link', { name: /Về trang chủ/i });
       expect(homeLink.getAttribute('href')).toBe('/');
-      expect(screen.queryByRole('link', { name: /Xem Vé Điện Tử QR/i })).toBeNull();
+      const ticketLink = screen.getByRole('link', { name: /Xem vé điện tử/i });
+      expect(ticketLink.getAttribute('href')).toBe('/bookings/42/ticket');
     });
   });
 
@@ -151,6 +154,31 @@ describe('CheckoutResultView (UC-28 Canonical Payment Status)', () => {
       });
 
       expect(screen.getByText('Thanh Toán Hoàn Tất!')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stays on the paid result instead of returning home by itself (UC-29 W2)', async () => {
+    vi.useFakeTimers();
+    try {
+      mockSearchParams.set('bookingId', '42');
+      vi.spyOn(paymentApi, 'getBookingPaymentStatus').mockResolvedValue({
+        bookingId: '42', bookingCode: 'BK-20261018-0042', bookingStatus: 'Confirmed', paymentStatus: 'Paid',
+        paymentExpiresAt: '2026-10-18T10:30:00Z', activePayment: null,
+      });
+
+      render(<CheckoutResultView />);
+      // First let the status request settle and the paid view mount, then let a full minute pass.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
+      expect(screen.getByText('Thanh Toán Hoàn Tất!')).toBeTruthy();
+      expect(replaceMock).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

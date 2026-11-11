@@ -12,7 +12,12 @@ interface AuditLogDetailDrawerProps {
   onClose: () => void;
 }
 
-export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
+export function AuditLogDetailDrawer(props: AuditLogDetailDrawerProps) {
+  if (!props.isOpen) return null;
+  return <AuditLogDetailSession key={props.logId} {...props} />;
+}
+
+function AuditLogDetailSession({ logId, isOpen, onClose }: AuditLogDetailDrawerProps) {
   const router = useRouter();
   const [detail, setDetail] = useState<AuditLogDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +27,18 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedRef = useRef<Element | null>(null);
+  const copyTimersRef = useRef<Partial<Record<'before' | 'after', ReturnType<typeof setTimeout>>>>({});
+  const copySessionRef = useRef(0);
+
+  const clearCopyFeedback = useCallback(() => {
+    copySessionRef.current += 1;
+    Object.values(copyTimersRef.current).forEach(clearTimeout);
+    copyTimersRef.current = {};
+    setCopiedBefore(false);
+    setCopiedAfter(false);
+  }, []);
+
+  useEffect(() => clearCopyFeedback, [isOpen, logId, clearCopyFeedback]);
 
   // Loading is derived: an open drawer with neither data nor error is fetching.
   const isLoading = isOpen && logId !== null && detail === null && error === null;
@@ -30,10 +47,9 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
     setDetail(null);
     setError(null);
     setCopyError(null);
-    setCopiedBefore(false);
-    setCopiedAfter(false);
+    clearCopyFeedback();
     onClose();
-  }, [onClose]);
+  }, [onClose, clearCopyFeedback]);
 
   useEffect(() => {
     if (!isOpen || logId === null) {
@@ -80,11 +96,12 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
     if (!isOpen) return;
 
     previouslyFocusedRef.current = document.activeElement;
-    window.setTimeout(() => {
+    const focusTimer = window.setTimeout(() => {
       closeButtonRef.current?.focus();
     }, 0);
 
     return () => {
+      window.clearTimeout(focusTimer);
       const previouslyFocused = previouslyFocusedRef.current;
       if (previouslyFocused instanceof HTMLElement) {
         previouslyFocused.focus();
@@ -143,6 +160,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
 
   const handleCopy = async (text: string, type: 'before' | 'after') => {
     setCopyError(null);
+    const copySession = copySessionRef.current;
 
     try {
       if (!navigator.clipboard?.writeText) {
@@ -150,14 +168,17 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
       }
 
       await navigator.clipboard.writeText(text);
+      if (copySession !== copySessionRef.current) return;
+      clearTimeout(copyTimersRef.current[type]);
       if (type === 'before') {
         setCopiedBefore(true);
-        setTimeout(() => setCopiedBefore(false), 2000);
+        copyTimersRef.current.before = setTimeout(() => setCopiedBefore(false), 2000);
       } else {
         setCopiedAfter(true);
-        setTimeout(() => setCopiedAfter(false), 2000);
+        copyTimersRef.current.after = setTimeout(() => setCopiedAfter(false), 2000);
       }
     } catch {
+      if (copySession !== copySessionRef.current) return;
       setCopyError('Unable to copy audit data. Please select and copy the text manually.');
     }
   };
@@ -225,10 +246,10 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
         aria-labelledby="audit-log-detail-title"
         aria-describedby="audit-log-detail-description"
         tabIndex={-1}
-        className="relative w-full max-w-3xl max-h-[85vh] my-auto rounded-2xl border border-[#314863] bg-[#00152a] text-[#d1e4ff] shadow-2xl flex flex-col z-10 overflow-hidden"
+        className="relative w-full max-w-3xl max-h-[85vh] my-auto rounded-2xl border border-[#5B6E69] bg-[#103B39] text-[#d1e4ff] shadow-2xl flex flex-col z-10 overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/90 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#5B6E69] bg-[#103B39]/90 px-6 py-4">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-2xl text-[#71f8e4]">
               read_more
@@ -237,7 +258,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
               <h2 id="audit-log-detail-title" className="text-lg font-bold text-white flex items-center gap-2">
                 Audit Log Details
                 {logId && (
-                  <span className="rounded bg-[#314863] px-2 py-0.5 font-mono text-xs text-[#71f8e4]">
+                  <span className="rounded bg-[#5B6E69] px-2 py-0.5 font-mono text-xs text-[#71f8e4]">
                     #{logId}
                   </span>
                 )}
@@ -249,7 +270,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
             ref={closeButtonRef}
             type="button"
             onClick={handleClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-[#314863] hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-[#5B6E69] hover:text-white transition-colors"
             title="Close (ESC)"
             aria-label="Close audit log details"
           >
@@ -284,7 +305,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
           ) : detail ? (
             <>
               {/* Event Overview Card */}
-              <div className="rounded-xl border border-[#314863] bg-[#102a43]/50 p-4 space-y-3">
+              <div className="rounded-xl border border-[#5B6E69] bg-[#103B39]/50 p-4 space-y-3">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2]">
                   Event Info
                 </div>
@@ -317,7 +338,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
               </div>
 
               {/* Actor Card */}
-              <div className="rounded-xl border border-[#314863] bg-[#102a43]/50 p-4 space-y-3">
+              <div className="rounded-xl border border-[#5B6E69] bg-[#103B39]/50 p-4 space-y-3">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2]">
                   Actor Details
                 </div>
@@ -361,7 +382,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
               </div>
 
               {/* Affected Entity Card */}
-              <div className="rounded-xl border border-[#314863] bg-[#102a43]/50 p-4 space-y-3">
+              <div className="rounded-xl border border-[#5B6E69] bg-[#103B39]/50 p-4 space-y-3">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#9edbd2]">
                   Target Object
                 </div>
@@ -410,8 +431,8 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                 )}
 
                 {/* Before Data */}
-                <div className="rounded-xl border border-[#314863] bg-[#00152a] overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/70 px-4 py-2.5 text-xs">
+                <div className="rounded-xl border border-[#5B6E69] bg-[#103B39] overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#5B6E69] bg-[#103B39]/70 px-4 py-2.5 text-xs">
                     <span className="font-semibold text-amber-300 flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-base">history</span>
                       Before Data State
@@ -420,7 +441,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                       <button
                         type="button"
                         onClick={() => handleCopy(formatJson(detail.beforeData) || '', 'before')}
-                        className="flex items-center gap-1 rounded bg-[#314863]/60 px-2 py-1 text-[11px] text-[#71f8e4] hover:bg-[#314863] transition-colors"
+                        className="flex items-center gap-1 rounded bg-[#5B6E69]/60 px-2 py-1 text-[11px] text-[#71f8e4] hover:bg-[#5B6E69] transition-colors"
                       >
                         <span className="material-symbols-outlined text-xs">
                           {copiedBefore ? 'check' : 'content_copy'}
@@ -441,8 +462,8 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                 </div>
 
                 {/* After Data */}
-                <div className="rounded-xl border border-[#314863] bg-[#00152a] overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-[#314863] bg-[#102a43]/70 px-4 py-2.5 text-xs">
+                <div className="rounded-xl border border-[#5B6E69] bg-[#103B39] overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#5B6E69] bg-[#103B39]/70 px-4 py-2.5 text-xs">
                     <span className="font-semibold text-emerald-300 flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-base">update</span>
                       After Data State
@@ -451,7 +472,7 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
                       <button
                         type="button"
                         onClick={() => handleCopy(formatJson(detail.afterData) || '', 'after')}
-                        className="flex items-center gap-1 rounded bg-[#314863]/60 px-2 py-1 text-[11px] text-[#71f8e4] hover:bg-[#314863] transition-colors"
+                        className="flex items-center gap-1 rounded bg-[#5B6E69]/60 px-2 py-1 text-[11px] text-[#71f8e4] hover:bg-[#5B6E69] transition-colors"
                       >
                         <span className="material-symbols-outlined text-xs">
                           {copiedAfter ? 'check' : 'content_copy'}
@@ -476,11 +497,11 @@ export function AuditLogDetailDrawer({ logId, isOpen, onClose }: AuditLogDetailD
         </div>
 
         {/* Footer */}
-        <div className="border-t border-[#314863] bg-[#102a43]/90 px-6 py-3.5 flex justify-end">
+        <div className="border-t border-[#5B6E69] bg-[#103B39]/90 px-6 py-3.5 flex justify-end">
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg border border-[#314863] bg-[#00152a] px-4 py-2 text-xs font-semibold text-slate-200 hover:border-[#71f8e4] hover:text-white transition-colors"
+            className="rounded-lg border border-[#5B6E69] bg-[#103B39] px-4 py-2 text-xs font-semibold text-slate-200 hover:border-[#71f8e4] hover:text-white transition-colors"
           >
             Close
           </button>

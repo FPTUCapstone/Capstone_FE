@@ -15,8 +15,8 @@ export default function PoisPage() {
     <PageTransition>
       <Suspense
         fallback={
-          <main className="mx-auto min-h-screen max-w-4xl bg-[#f3f6f7] px-4 py-12" lang="vi">
-            <h1 className="mb-8 text-3xl font-black text-[#00152a]">Khám phá địa điểm tham quan</h1>
+          <main className="mx-auto min-h-screen max-w-4xl bg-[#F7F5EF] px-4 py-12" lang="vi">
+            <h1 className="mb-8 text-3xl font-black text-[#1C2928]">Khám phá địa điểm tham quan</h1>
             <PoiListSkeleton />
           </main>
         }

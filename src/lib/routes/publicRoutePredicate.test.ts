@@ -7,6 +7,11 @@ describe('isPublicNavigationRoute (Strict Positive Whitelist)', () => {
     expect(isPublicNavigationRoute('///')).toBe(true);
   });
 
+  it('returns true for about page', () => {
+    expect(isPublicNavigationRoute('/about')).toBe(true);
+    expect(isPublicNavigationRoute('/about/')).toBe(true);
+  });
+
   it('returns false for empty, null, or undefined', () => {
     expect(isPublicNavigationRoute('')).toBe(false);
     expect(isPublicNavigationRoute(null)).toBe(false);

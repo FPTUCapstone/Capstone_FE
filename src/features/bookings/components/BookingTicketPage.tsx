@@ -7,19 +7,22 @@ import { useEffect } from 'react';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { isBookingDemoAllowedInCurrentEnv } from '@/features/bookings/services/bookingApi';
 import { ROUTES } from '@/lib/routes';
+
+import type { TicketKey } from '../services/ticketClient';
 import { BookingTicketView } from './BookingTicketView';
 
 interface BookingTicketPageProps {
-  id?: string;
-  ticketId?: string;
+  /** `ticketId` from Trip History, `bookingId` from the payment result (UC-29 W3). */
+  ticketKey: TicketKey;
 }
 
-export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTicketPageProps) {
+export function BookingTicketPage({ ticketKey }: BookingTicketPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, context } = useWebSession();
 
-  const ticketId = (explicitTicketId || id || '').trim();
+  const pagePath =
+    'ticketId' in ticketKey ? ROUTES.account.ticket(ticketKey.ticketId) : ROUTES.bookingTicket(ticketKey.bookingId);
 
   const isDemo =
     searchParams.get('demo') === '1' && isBookingDemoAllowedInCurrentEnv();
@@ -29,12 +32,10 @@ export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTic
     if (status === 'restoring') return;
 
     if (status === 'unauthenticated' && !isDemo) {
-      const returnUrl = `/bookings/${ticketId}/ticket${
-        searchParams.toString() ? `?${searchParams.toString()}` : ''
-      }`;
+      const returnUrl = `${pagePath}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
       router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(returnUrl)}`);
     }
-  }, [status, isDemo, ticketId, searchParams, router]);
+  }, [status, isDemo, pagePath, searchParams, router]);
 
   if (status === 'restoring') {
     return (
@@ -42,7 +43,7 @@ export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTic
                 <main className="flex flex-1 items-center justify-center p-8">
           <div className="flex flex-col items-center gap-3">
             <div
-              className="h-9 w-9 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+              className="h-9 w-9 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
               aria-hidden="true"
             />
             <p className="text-xs font-semibold text-slate-500">
@@ -77,7 +78,7 @@ export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTic
                     ? ROUTES.partner.dashboard
                     : ROUTES.admin.dashboard
                 }
-                className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+                className="rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#174B4A] transition"
               >
                 Về Không gian làm việc ({context.role})
               </Link>
@@ -97,7 +98,7 @@ export function BookingTicketPage({ id, ticketId: explicitTicketId }: BookingTic
   return (
     <div className="min-h-screen bg-[#f8fafc]">
             <main className="pb-16 pt-4">
-        <BookingTicketView ticketId={ticketId} />
+        <BookingTicketView ticketKey={ticketKey} returnPath={pagePath} />
       </main>
     </div>
   );

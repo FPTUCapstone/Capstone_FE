@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useId, useRef, useState
 import { createPortal } from 'react-dom';
 import {
   CANCELLATION_REASONS,
-  type BookingDto,
+  type BookingDetailView,
   type CancellationReasonValue,
   type CancelBookingPayload,
 } from '../types/bookingLifecycle';
@@ -14,14 +14,14 @@ import { bookingEn } from '../resources/en';
 
 interface CancelBookingDialogProps {
   open: boolean;
-  booking: BookingDto | null;
+  booking: BookingDetailView | null;
   loading?: boolean;
   onClose: () => void;
   onConfirm: (payload: CancelBookingPayload) => Promise<void> | void;
 }
 
 interface CancelBookingModalContentProps {
-  booking: BookingDto;
+  booking: BookingDetailView;
   loading: boolean;
   onClose: () => void;
   onConfirm: (payload: CancelBookingPayload) => Promise<void> | void;
@@ -122,7 +122,7 @@ function CancelBookingModalContent({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-start gap-3 border-b border-slate-100 pb-4">
@@ -130,7 +130,7 @@ function CancelBookingModalContent({
             <span className="material-symbols-outlined text-[24px]">cancel</span>
           </div>
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-lg font-bold text-[#00152A]">
+            <h2 id={titleId} className="text-lg font-bold text-[#1C2928]">
               {bookingEn.cancelDialog.title} {booking.bookingCode}
             </h2>
             <p id={descId} className="text-xs text-slate-500">
@@ -152,19 +152,19 @@ function CancelBookingModalContent({
         <div className="my-4 rounded-xl bg-slate-50 p-4 border border-slate-100 text-xs space-y-2">
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.tourLabel}</span>
-            <span className="font-semibold text-slate-800 text-right">{booking.tourName}</span>
+            <span className="font-semibold text-slate-800 text-right">{booking.tour.title}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.departureLabel}</span>
-            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.departureDate)}</span>
+            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.schedule.startAtUtc)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.contactLabel}</span>
-            <span className="font-semibold text-slate-800">{booking.contactName} ({booking.contactPhone})</span>
+            <span className="font-semibold text-slate-800">{booking.booker.fullName} ({booking.booker.phoneNumber ?? '-'})</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.cancelDialog.participantsLabel}</span>
-            <span className="font-semibold text-slate-800">{booking.participantsCount} {bookingEn.cancelDialog.passengers}</span>
+            <span className="font-semibold text-slate-800">{booking.quantity} {bookingEn.cancelDialog.passengers}</span>
           </div>
           <div className="flex justify-between border-t border-slate-200/60 pt-2">
             <span className="text-slate-500">{bookingEn.cancelDialog.totalLabel}</span>
@@ -185,7 +185,7 @@ function CancelBookingModalContent({
           <p className="mt-1 text-amber-800 font-medium">{refundPreview.policyApplied}</p>
           <div className="mt-2 flex items-center justify-between border-t border-amber-200/60 pt-2 text-xs">
             <span className="text-amber-800">{bookingEn.cancelDialog.estimatedRefundLabel}</span>
-            <span className="text-sm font-extrabold text-[#006B5F]">
+            <span className="text-sm font-extrabold text-[#174B4A]">
               {formatCurrencyVND(refundPreview.refundableAmount)}
             </span>
           </div>
@@ -207,7 +207,7 @@ function CancelBookingModalContent({
               value={reasonType}
               onChange={(e) => setReasonType(e.target.value as CancellationReasonValue)}
               disabled={loading}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:opacity-50"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:opacity-50"
             >
               {CANCELLATION_REASONS.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -235,7 +235,7 @@ function CancelBookingModalContent({
               className={`w-full rounded-xl border px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-1 disabled:opacity-50 ${
                 validationError
                   ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500 bg-rose-50/30'
-                  : 'border-slate-300 focus:border-[#006B5F] focus:ring-[#006B5F] bg-white'
+                  : 'border-slate-300 focus:border-[#174B4A] focus:ring-[#174B4A] bg-white'
               }`}
             />
             {validationError && (
@@ -246,20 +246,20 @@ function CancelBookingModalContent({
           </div>
 
           {/* Action Buttons (CR-13 Idempotency: disabled during loading) */}
-          <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-slate-100 pt-4">
             <button
               ref={cancelBtnRef}
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+              className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50 text-center"
             >
               {bookingEn.cancelDialog.closeBtn}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 transition disabled:opacity-50 flex items-center gap-1.5"
+              className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-rose-700 transition disabled:opacity-50 gap-1.5"
             >
               {loading ? (
                 <>

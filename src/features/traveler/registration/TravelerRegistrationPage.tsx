@@ -1,42 +1,31 @@
-import { AuthShell } from '@/components/layout/AuthShell';
-import { TravelerRegistrationForm } from '@/features/traveler/registration/TravelerRegistrationForm';
+import BrandLogo from '@/components/registration/BrandLogo';
+import HeroPanel from '@/components/registration/HeroPanel';
+import { TravelerRegistrationForm } from './TravelerRegistrationForm';
 
 export function TravelerRegistrationPage() {
   return (
-    <AuthShell
-      eyebrow="HÀNH TRÌNH THÔNG MINH CHO NGƯỜI VIỆT"
-      title={
-        <>
-          Lên kế hoạch{' '}
-          <span className="text-brand-brightTeal">du lịch</span>
-          {' '}chỉ trong vài phút.
-        </>
-      }
-      description="Công cụ dành riêng cho traveler Việt — tối ưu lịch trình, khám phá điểm đến và đồng hành cùng bạn trên mọi chuyến đi."
-      points={[
-        '120+|Điểm đến nổi bật',
-        '15K+|Traveler đang dùng',
-        '4.9★|Đánh giá trung bình',
-      ]}
-      heroPanels={[
-        {
-          icon: 'route',
-          title: 'Lịch trình thông minh',
-          description: 'CSP Engine tối ưu giờ đi',
-        },
-        {
-          icon: 'thunderstorm',
-          title: 'Cảnh báo thời tiết',
-          description: 'Tự động điều chỉnh kế hoạch',
-        },
-        {
-          icon: 'groups',
-          title: 'Đồng hành nhóm',
-          description: 'Chia sẻ vị trí GPS thời gian thực',
-        },
-      ]}
-    >
-      <TravelerRegistrationForm />
-    </AuthShell>
+    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr] lg:items-start">
+      <HeroPanel />
+
+      <main className="flex items-center justify-center p-6 sm:p-10 lg:p-12 xl:p-16 bg-brand-surface relative">
+        <div className="absolute top-6 left-6 lg:hidden flex items-center space-x-2.5">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-navy to-brand-navyContainer flex items-center justify-center shadow-md text-white">
+            <BrandLogo size={22} />
+          </div>
+          <span className="text-xl font-extrabold tracking-tight text-brand-navy">
+            TripMate
+          </span>
+        </div>
+
+        <div className="w-full max-w-[480px] pt-16 sm:pt-20 lg:pt-0">
+          <TravelerRegistrationForm />
+
+          <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
+            Bằng việc đăng ký, bạn đã đồng ý với các điều khoản của TripMate.
+            <br />© 2026 TripMate — Hành trình của bạn, công nghệ của chúng tôi.
+          </p>
+        </div>
+      </main>
+    </div>
   );
 }

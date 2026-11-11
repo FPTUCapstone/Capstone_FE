@@ -2,21 +2,21 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { BookingDto, InitiateRefundPayload } from '../types/bookingLifecycle';
+import type { BookingDetailView, InitiateRefundPayload } from '../types/bookingLifecycle';
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
 import { bookingEn } from '../resources/en';
 
 interface InitiateRefundDialogProps {
   open: boolean;
-  booking: BookingDto | null;
+  booking: BookingDetailView | null;
   loading?: boolean;
   onClose: () => void;
   onConfirm: (payload: InitiateRefundPayload) => Promise<void> | void;
 }
 
 interface InitiateRefundModalContentProps {
-  booking: BookingDto;
+  booking: BookingDetailView;
   loading: boolean;
   onClose: () => void;
   onConfirm: (payload: InitiateRefundPayload) => Promise<void> | void;
@@ -90,7 +90,7 @@ function InitiateRefundModalContent({
   }, [handleClose]);
 
   const refundPreview = calculateDemoBookingRefundPreview(booking);
-  const channel = booking.paymentTransaction?.paymentChannel || 'VNPay';
+  const channel = booking.payment?.gateway ?? '-';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,15 +110,15 @@ function InitiateRefundModalContent({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-start gap-3 border-b border-slate-100 pb-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-[#006B5F]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-[#174B4A]">
             <span className="material-symbols-outlined text-[24px]">payments</span>
           </div>
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-lg font-bold text-[#00152A]">
+            <h2 id={titleId} className="text-lg font-bold text-[#1C2928]">
               {bookingEn.refundDialog.title} {booking.bookingCode}
             </h2>
             <p id={descId} className="text-xs text-slate-500">
@@ -144,11 +144,11 @@ function InitiateRefundModalContent({
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.refundDialog.tourLabel}</span>
-            <span className="font-semibold text-slate-800 text-right">{booking.tourName}</span>
+            <span className="font-semibold text-slate-800 text-right">{booking.tour.title}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.refundDialog.departureLabel}</span>
-            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.departureDate)}</span>
+            <span className="font-semibold text-slate-800">{formatVietnamDate(booking.schedule.startAtUtc)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">{bookingEn.refundDialog.paidLabel}</span>
@@ -162,7 +162,7 @@ function InitiateRefundModalContent({
 
         {/* Refund Computation Section */}
         <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50/60 p-4 text-xs space-y-2">
-          <div className="flex items-center gap-1.5 font-bold text-[#006B5F]">
+          <div className="flex items-center gap-1.5 font-bold text-[#174B4A]">
             <span className="material-symbols-outlined text-[18px]">calculate</span>
             <span>{bookingEn.refundDialog.computationHeader}</span>
           </div>
@@ -177,7 +177,7 @@ function InitiateRefundModalContent({
           </div>
           <div className="flex justify-between border-t border-teal-200/60 pt-2 text-xs">
             <span className="font-bold text-slate-700">{bookingEn.refundDialog.refundableLabel}</span>
-            <span className="text-base font-extrabold text-[#006B5F]">
+            <span className="text-base font-extrabold text-[#174B4A]">
               {formatCurrencyVND(refundPreview.refundableAmount)}
             </span>
           </div>
@@ -207,25 +207,25 @@ function InitiateRefundModalContent({
               onChange={(e) => setNotes(e.target.value)}
               placeholder={bookingEn.refundDialog.notesPlaceholder}
               disabled={loading}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-1 focus:ring-[#006B5F] disabled:opacity-50"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:border-[#174B4A] focus:outline-hidden focus:ring-1 focus:ring-[#174B4A] disabled:opacity-50"
             />
           </div>
 
           {/* Action Buttons (CR-13 Idempotency: disabled during loading) */}
-          <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-slate-100 pt-4">
             <button
               ref={cancelBtnRef}
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+              className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50 text-center"
             >
               {bookingEn.refundDialog.closeBtn}
             </button>
             <button
               type="submit"
               disabled={loading || !refundPreview.eligible || refundPreview.refundableAmount <= 0}
-              className="rounded-xl bg-[#006B5F] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition disabled:opacity-50 flex items-center gap-1.5"
+              className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50 gap-1.5"
             >
               {loading ? (
                 <>

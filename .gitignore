@@ -12,3 +12,8 @@ coverage/
 !.env.example
 .firebase/
 
+# Local UC-39 browser evidence; keep only reviewed Markdown reports in Git.
+reports/evidence_uc39/
+reports/uc39-live/**/*.png
+reports/uc39-live/**/*.json
+

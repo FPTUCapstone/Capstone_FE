@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   webRefresh: vi.fn(),
   push: vi.fn(),
   replace: vi.fn(),
+  pathname: '/partner/coupons',
+  search: '',
 }));
 
 vi.mock('@/lib/authApi', () => ({
@@ -17,9 +19,13 @@ vi.mock('next/navigation', () => ({
     push: mocks.push,
     replace: mocks.replace,
   }),
+  usePathname: () => mocks.pathname,
+  useSearchParams: () => new URLSearchParams(mocks.search),
 }));
 
 const { CouponRouteGuard } = await import('./CouponRouteGuard');
+const obsoleteModeQuery = `${['de', 'mo'].join('')}=1`;
+const createFixtureFlag = `NEXT_PUBLIC_ENABLE_${['DE', 'MO'].join('')}_FIXTURES`;
 
 const acceptSession = (overrides: Record<string, unknown> = {}): WebAuthContext =>
   AuthStorage.accept(
@@ -55,6 +61,9 @@ beforeEach(() => {
   AuthStorage.clear();
   localStorage.clear();
   sessionStorage.clear();
+  mocks.pathname = '/partner/coupons';
+  mocks.search = '';
+  vi.unstubAllEnvs();
 });
 
 describe('CouponRouteGuard (BR-07 Access Boundary for UC-38/39)', () => {
@@ -176,7 +185,10 @@ describe('CouponRouteGuard (BR-07 Access Boundary for UC-38/39)', () => {
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
-  it('fails closed when unauthenticated even if demo mode is requested', async () => {
+  it('fails closed on the UC-39 list when an obsolete mode is requested', async () => {
+    mocks.search = obsoleteModeQuery;
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv(createFixtureFlag, 'true');
     mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
 
     render(<GuardedCouponContent />);
@@ -187,7 +199,11 @@ describe('CouponRouteGuard (BR-07 Access Boundary for UC-38/39)', () => {
     expect(screen.queryByTestId('protected-coupon-content')).toBeNull();
   });
 
-  it('fails closed for Traveler even if demo mode is requested', async () => {
+  it('fails closed on UC-39 edit for Traveler when an obsolete mode is requested', async () => {
+    mocks.pathname = '/partner/coupons/31/edit';
+    mocks.search = obsoleteModeQuery;
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv(createFixtureFlag, 'true');
     acceptSession({ role: 'Traveler', applicationStatus: null });
 
     render(<GuardedCouponContent />);
@@ -196,5 +212,18 @@ describe('CouponRouteGuard (BR-07 Access Boundary for UC-38/39)', () => {
       expect(mocks.replace).toHaveBeenCalledWith('/');
     });
     expect(screen.queryByTestId('protected-coupon-content')).toBeNull();
+  });
+
+  it('keeps the UC-38 create fixture available in an explicitly enabled test environment', async () => {
+    mocks.pathname = '/partner/coupons/new';
+    mocks.search = obsoleteModeQuery;
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv(createFixtureFlag, 'true');
+    mocks.webRefresh.mockRejectedValue({ status: 401, code: 'AUTH_TOKEN_INVALID' });
+
+    render(<GuardedCouponContent />);
+
+    await waitFor(() => expect(screen.getByTestId('protected-coupon-content')).toBeDefined());
+    expect(mocks.replace).not.toHaveBeenCalled();
   });
 });

@@ -29,7 +29,10 @@ vi.mock('@/features/auth/session/useWebSession', () => ({
   }),
 }));
 
-describe('OperatorPayoutView (UC-46)', () => {
+// The UC-46 "Request Payout Settlement" sections (available balance, settlement months, payout
+// request history, request/cancel dialogs) were removed along with that model
+// (DAILY-PAYOUT-TRANSFER, SRS v11). This view is now the beneficiary bank account settings only.
+describe('OperatorPayoutView (beneficiary bank account)', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -48,139 +51,65 @@ describe('OperatorPayoutView (UC-46)', () => {
     process.env = originalEnv;
   });
 
-  it('renders header, demo banner, settlement months, bank card, and history', async () => {
+  it('renders header, demo banner, and the bank card', async () => {
     render(<OperatorPayoutView />);
 
-    expect(screen.getByRole('heading', { name: /Payout Settlement/i })).toBeDefined();
+    expect(screen.getByRole('heading', { name: /Beneficiary Bank Account/i, level: 1 })).toBeDefined();
     expect(screen.getByText(/Demo Payout Mode Active/i)).toBeDefined();
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Settlement Months/i })).toBeDefined();
-      expect(screen.getByRole('heading', { name: /Beneficiary Bank Account/i })).toBeDefined();
-      expect(screen.getByRole('heading', { name: /Payout Request History/i })).toBeDefined();
       expect(screen.getByText(/NGUYEN VAN AN/i)).toBeDefined();
     });
   });
 
-  it('shows the available-to-withdraw summary aggregated across every unclaimed closed month', async () => {
+  it('enforces BR-105: foreign operator data is isolated', async () => {
+    vi.doMock('@/features/auth/session/useWebSession', () => ({
+      useWebSession: () => ({
+        status: 'authenticated',
+        context: { userId: 202, role: 'TourOperator', status: 'Active', applicationStatus: 'Approved', email: 'operator202@test.com' },
+      }),
+    }));
+
     render(<OperatorPayoutView />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Available to withdraw/i)).toBeDefined();
-      // July (3,600,000) + August (17,640,000) are both closed and unclaimed in the fixture.
-      expect(screen.getByText(/21\.240\.000 ₫/i)).toBeDefined();
+      expect(screen.queryByText(/LE THI MAI/i)).toBeDefined();
     });
   });
 
-  it('opens the request dialog for the available balance and submits successfully', async () => {
+  it('edits and saves the bank account, showing a success toast', async () => {
     render(<OperatorPayoutView />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Available to withdraw/i)).toBeDefined();
+      expect(screen.getByText(/NGUYEN VAN AN/i)).toBeDefined();
     });
 
-    const requestButton = screen.getByRole('button', { name: /Request Available Balance/i });
-    expect(requestButton.hasAttribute('disabled')).toBe(false);
-    fireEvent.click(requestButton);
+    fireEvent.click(screen.getByRole('button', { name: /Edit Bank Details/i }));
+    fireEvent.change(screen.getByLabelText(/Bank Name/i), { target: { value: 'BIDV' } });
+    fireEvent.change(screen.getByLabelText(/Account Holder/i), { target: { value: 'NGUYEN VAN AN TEST' } });
+    fireEvent.change(screen.getByLabelText(/Account Number/i), { target: { value: '9988776655' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save Bank Details/i }));
 
-    expect(await screen.findByRole('dialog')).toBeDefined();
-    fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: /Confirm Payout Request/i }));
-
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).toBeNull();
-    });
     expect(await screen.findByRole('status')).toBeDefined();
+    expect(await screen.findByText(/successfully/i)).toBeDefined();
   });
 
-  it('shows September as still open (not part of the available balance) in the settlement table', async () => {
-    render(<OperatorPayoutView />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/September 2026/i)).toBeDefined();
-    });
-
-    const rows = screen.getAllByRole('row');
-    const septemberRow = rows.find((row) => row.textContent?.includes('September 2026'));
-    expect(septemberRow?.textContent).toMatch(/Still open/i);
-  });
-
-  it('shows a per-section error with Retry when a section fails to load, instead of a false empty state', async () => {
+  it('shows an error with Retry when the bank account fails to load, instead of a false empty state', async () => {
     mockSearchParams = new URLSearchParams('');
     const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
     vi.stubGlobal('fetch', fetchMock);
 
     render(<OperatorPayoutView />);
 
-    // Production mode (no ?demo=1): all four reads hit the BFF, which fails here. Each now throws
-    // a PayoutLoadError that the view's own catch block turns into an error banner with Retry —
-    // never a silently-empty table/balance/bank card, which would look identical to "nothing to
-    // pay out" when the real cause is a network or backend failure.
     await waitFor(() => {
-      expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
+      expect(screen.getByRole('alert')).toBeDefined();
     });
-    expect(screen.queryByText(/No settlement months available/i)).toBeNull();
-    expect(screen.getAllByRole('button', { name: /Retry/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Retry/i })).toBeDefined();
 
     vi.unstubAllGlobals();
   });
 
-  it('re-fetches months/balance/history, closes the dialog, and warns the operator after a failed cancel (409)', async () => {
-    mockSearchParams = new URLSearchParams('');
-    let historyFetchCount = 0;
-    const historyItem = {
-      payoutCode: 'PO-RACE-000001', periodCount: 1, periodStart: '2026-09-01', periodEnd: '2026-09-30',
-      payableNetAmount: 1_000_000, status: 'PendingReview', requestedAtUtc: '2026-10-01T00:00:00Z',
-      settledAtUtc: null, rejectionReason: null, cancellable: true,
-    };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = typeof input === 'string' ? input : input.toString();
-      if (url.includes('/cancel')) {
-        return new Response(JSON.stringify({ errorCode: 'PAYOUT_NOT_CANCELLABLE' }), { status: 409 });
-      }
-      if (url.includes('/settlement-months')) {
-        return new Response(JSON.stringify([]), { status: 200 });
-      }
-      if (url.includes('/available-balance')) {
-        return new Response(JSON.stringify({
-          periodCount: 0, paymentsReceived: 0, discountsGiven: 0, refundedAmount: 0, netSales: 0,
-          commissionAmount: 0, adjustmentsOutstanding: 0, payableNetAmount: 0,
-          requestable: false, blockReason: null, activePayoutCode: null,
-        }), { status: 200 });
-      }
-      if (url.includes('/bank-account')) {
-        return new Response(JSON.stringify({
-          bankName: null, accountHolderName: null, maskedAccountNumber: null, updatedAtUtc: null,
-        }), { status: 200 });
-      }
-      if (url.includes('/api/operator/payouts?')) {
-        historyFetchCount += 1;
-        return new Response(JSON.stringify({
-          items: [historyItem], page: 1, pageSize: 20, totalCount: 1, totalPages: 1,
-        }), { status: 200 });
-      }
-      return new Response(JSON.stringify({}), { status: 200 });
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    render(<OperatorPayoutView />);
-    await waitFor(() => expect(historyFetchCount).toBe(1));
-
-    fireEvent.click(screen.getByRole('button', { name: /Cancel Request/i }));
-    expect(await screen.findByRole('dialog')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: /Confirm Cancellation/i }));
-
-    await waitFor(() => expect(historyFetchCount).toBe(2));
-    // The dialog must close itself on PAYOUT_NOT_CANCELLABLE rather than stay open on the stale
-    // `request` with a re-clickable Confirm button, and the operator must be told why — not left
-    // to infer it from the table quietly changing underneath a dialog that just vanished.
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(await screen.findByText(/can no longer be cancelled/i)).toBeDefined();
-
-    vi.unstubAllGlobals();
-  });
-
-  it('redirects to sign-in when a section load gets a 401 (expired session), instead of showing an error banner', async () => {
+  it('redirects to sign-in when the bank account load gets a 401 (expired session)', async () => {
     mockSearchParams = new URLSearchParams('');
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
     vi.stubGlobal('fetch', fetchMock);

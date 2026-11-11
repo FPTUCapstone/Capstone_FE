@@ -15,6 +15,7 @@ interface RevenueFilterControlsProps {
   onResetFilters: () => void;
   onOpenExport: () => void;
   isLoading?: boolean;
+  isToursLoading?: boolean;
 }
 
 export function RevenueFilterControls({
@@ -24,6 +25,7 @@ export function RevenueFilterControls({
   onResetFilters,
   onOpenExport,
   isLoading = false,
+  isToursLoading = false,
 }: RevenueFilterControlsProps) {
   // Local draft state (CR-02)
   const [draftFilters, setDraftFilters] =
@@ -81,7 +83,7 @@ export function RevenueFilterControls({
                     startDate: e.target.value,
                   }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#006B5F] focus:bg-white focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#174B4A] focus:bg-white focus:outline-hidden"
               />
             </div>
 
@@ -100,7 +102,7 @@ export function RevenueFilterControls({
                 onChange={(e) =>
                   setDraftFilters((prev) => ({ ...prev, endDate: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#006B5F] focus:bg-white focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#174B4A] focus:bg-white focus:outline-hidden"
               />
             </div>
 
@@ -121,7 +123,7 @@ export function RevenueFilterControls({
                     granularity: e.target.value as RevenuePeriodGranularity,
                   }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#006B5F] focus:bg-white focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#174B4A] focus:bg-white focus:outline-hidden"
               >
                 <option value="daily">
                   {financeEn.revenue.filters.granularityDaily}
@@ -145,6 +147,9 @@ export function RevenueFilterControls({
               </label>
               <select
                 id="revenue-tour-scope"
+                disabled={isToursLoading}
+                aria-busy={isToursLoading}
+                aria-describedby={isToursLoading ? 'revenue-tour-loading' : undefined}
                 value={draftFilters.tourId || 'all'}
                 onChange={(e) =>
                   setDraftFilters((prev) => ({
@@ -152,7 +157,7 @@ export function RevenueFilterControls({
                     tourId: e.target.value === 'all' ? undefined : e.target.value,
                   }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#006B5F] focus:bg-white focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#174B4A] focus:bg-white focus:outline-hidden"
               >
                 <option value="all">
                   {financeEn.revenue.filters.allTours}
@@ -163,15 +168,20 @@ export function RevenueFilterControls({
                   </option>
                 ))}
               </select>
+              {isToursLoading && (
+                <p id="revenue-tour-loading" role="status" aria-live="polite" className="mt-1.5 text-xs text-slate-500">
+                  {financeEn.revenue.tourFiltersLoading}
+                </p>
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 pt-2 lg:pt-0">
+          <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 w-full lg:w-auto">
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:opacity-50"
+              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#103B39] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]">filter_list</span>
               <span>{financeEn.revenue.filters.applyBtn}</span>
@@ -181,7 +191,7 @@ export function RevenueFilterControls({
               type="button"
               onClick={handleReset}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#00152A] disabled:opacity-50"
+              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#1C2928] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]">restart_alt</span>
               <span>{financeEn.revenue.filters.resetBtn}</span>
@@ -190,7 +200,7 @@ export function RevenueFilterControls({
             <button
               type="button"
               onClick={onOpenExport}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-[#00152A]"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-[#1C2928]"
             >
               <span aria-hidden="true" className="material-symbols-outlined text-[16px]">download</span>
               <span>{financeEn.revenue.filters.exportBtn}</span>

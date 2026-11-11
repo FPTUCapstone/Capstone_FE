@@ -61,17 +61,17 @@ export function ConfirmDialog({ open, busy, title, body, confirmLabel, onConfirm
         onKeyDown={handleKeyDown}
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
       >
-        <h2 id={titleId} className="text-lg font-extrabold text-[#00152a]">
+        <h2 id={titleId} className="text-lg font-extrabold text-[#1C2928]">
           {title}
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-[#475467]">{body}</p>
+        <p className="mt-2 text-sm leading-relaxed text-[#5B6E69]">{body}</p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             ref={cancelRef}
             type="button"
             disabled={busy}
             onClick={onCancel}
-            className="rounded-xl border border-[#d0d7de] px-4 py-2 text-sm font-bold text-[#00152a]"
+            className="rounded-xl border border-[#DCE2DD] px-4 py-2 text-sm font-bold text-[#1C2928]"
           >
             {cancelLabel}
           </button>
@@ -79,7 +79,7 @@ export function ConfirmDialog({ open, busy, title, body, confirmLabel, onConfirm
             type="button"
             disabled={busy}
             onClick={onConfirm}
-            className="rounded-xl bg-[#00152a] px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-[#103B39] px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {confirmLabel}
           </button>

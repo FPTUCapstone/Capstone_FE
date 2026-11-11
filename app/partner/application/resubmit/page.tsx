@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { ResubmitApplicationForm } from '@/features/operator/application/ResubmitApplicationForm';
-import { PartnerRouteGuard } from '@/features/auth/routing/PartnerRouteGuard';
+import { PartnerRouteGuard } from '@/features/operator/access/PartnerRouteGuard';
 
 export const metadata: Metadata = { title: 'Resubmit Application' };
 

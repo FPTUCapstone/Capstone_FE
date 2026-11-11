@@ -64,7 +64,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
   const { secondsLeft: resendSecondsLeft, isOnCooldown: resendOnCooldown, startCooldown: startResendCooldown } = useVerificationEmailCooldown(RESEND_COOLDOWN_SECONDS);
   const signInRoute = admin ? ROUTES.admin.login : ROUTES.signIn;
   const backLinkClass = admin
-    ? 'flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#00152a] hover:bg-[#f2f4f7]'
+    ? 'flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#1C2928] hover:bg-[#F7F5EF]'
     : 'flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.98]';
   const currentIndex = steps.findIndex((item) => item.id === step);
 
@@ -205,7 +205,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             onChange={(event) => setEmail(event.target.value)}
             leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">mail</span> : undefined}
           />
-          <ActionButton type="submit" variant={admin ? 'primary' : 'teal'} loading={loading} className="group w-full">
+          <ActionButton type="submit" variant={admin ? 'forest' : 'teal'} loading={loading} className="group w-full">
             <span>Send Reset Code</span>
             {!admin ? <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span> : null}
           </ActionButton>
@@ -262,7 +262,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
           />
           {feedback ? <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert> : null}
           <div className="grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            <ActionButton className="min-w-0 w-full" type="submit" variant={admin ? 'primary' : 'teal'} loading={loading}>Reset Password</ActionButton>
+            <ActionButton className="min-w-0 w-full" type="submit" variant={admin ? 'forest' : 'teal'} loading={loading}>Reset Password</ActionButton>
             <ActionButton
               className="min-w-0 w-full"
               type="button"
@@ -295,7 +295,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
           </FeedbackAlert>
           <p className="text-sm leading-relaxed text-brand-textSecondary">For your security, sign in with your new password the next time you access TripMate.</p>
           <Link href={signInRoute} className={admin
-            ? 'flex min-h-11 items-center justify-center rounded-xl bg-[#00152a] px-5 py-3 text-sm font-bold text-white hover:bg-[#102a43]'
+            ? 'flex min-h-11 items-center justify-center rounded-xl bg-[#103B39] px-5 py-3 text-sm font-bold text-white hover:bg-[#103B39]'
             : 'group flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-white shadow-btn transition hover:bg-brand-brightTeal active:scale-[0.98]'}>
             {admin ? 'Return to Admin Login' : 'Sign In'}
             {!admin ? <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span> : null}

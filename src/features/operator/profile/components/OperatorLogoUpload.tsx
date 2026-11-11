@@ -78,7 +78,7 @@ export function OperatorLogoUpload({
     <div
       className={`rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-xs ${className}`}
     >
-      <h3 className="text-sm font-extrabold text-[#00152A]">Logo doanh nghiệp</h3>
+      <h3 className="text-sm font-extrabold text-[#1C2928]">Logo doanh nghiệp</h3>
       <p className="mt-0.5 text-xs text-slate-500">
         Tệp hình ảnh &bull; Dung lượng tối đa 5MB (BR-16)
       </p>
@@ -126,7 +126,7 @@ export function OperatorLogoUpload({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#006B5F] bg-[#E6F4F1] px-3 py-1.5 text-xs font-bold text-[#006B5F] transition hover:bg-[#d2ede8] active:scale-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#174B4A] bg-[#E6F4F1] px-3 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#d2ede8] active:scale-95 disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
                   upload

@@ -13,6 +13,77 @@ import {
   type EligibleTourDto,
   type UpdateCouponPayload,
 } from '../types/couponLifecycle';
+import {
+  getEligibleCouponTours,
+  getOperatorCoupon,
+  listOperatorCoupons,
+  setOperatorCouponActivation,
+  updateOperatorCoupon,
+  type OperatorCouponRecord,
+} from './couponApi';
+
+function vietnamDate(instant: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date(instant));
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function mapOperatorCoupon(record: OperatorCouponRecord): CouponDto {
+  const now = Date.now();
+  const status: CouponStatus = record.status === 'Expired' || Date.parse(record.validToUtc) <= now ? 'Expired'
+    : record.status === 'Disabled' ? 'Inactive'
+      : Date.parse(record.validFromUtc) > now ? 'Scheduled' : 'Active';
+  return {
+    id: String(record.couponId), couponCode: record.code, name: record.name,
+    operatorUserId: record.ownerOperatorUserId, discountType: record.discountType,
+    discountValue: record.discountValue, maxDiscountAmount: record.maxDiscountAmount,
+    minSpend: record.minOrderAmount, usageLimit: record.usageLimit,
+    usageLimitPerTraveler: record.usageLimitPerUser, usageCount: record.usedCount,
+    validFrom: vietnamDate(record.validFromUtc), validTo: vietnamDate(record.validToUtc),
+    validFromUtc: record.validFromUtc, validToUtc: record.validToUtc,
+    appliesToAllTours: false, appliedTourIds: record.applicableTourIds.map(String),
+    status, createdAt: record.createdAtUtc, updatedAt: record.updatedAtUtc,
+  };
+}
+
+function productionFailure(error: unknown): CouponActionResult {
+  const status = error && typeof error === 'object' && 'status' in error
+    ? Number((error as { status: unknown }).status) : 0;
+  if (status === 401 || status === 403) return {
+    status: 'UNAUTHORIZED', message: status === 401
+      ? 'Your session has expired. Please sign in again.'
+      : 'Only approved tour operators can manage coupons.',
+  };
+  if (status === 404) return { status: 'NOT_FOUND', message: OPERATOR_COUPON_MESSAGES.NOT_FOUND };
+  if (status === 409) return { status: 'CONFLICT', message: 'Coupon usage changed. Reload the coupon before saving again.' };
+  if (status === 400 || status === 422) {
+    const backendErrors = error && typeof error === 'object' && 'fieldErrors' in error
+      ? (error as { fieldErrors?: Record<string, string> }).fieldErrors : undefined;
+    const fieldMap: Record<string, string> = {
+      Name: 'name', DiscountType: 'discountType', DiscountValue: 'discountValue',
+      MaxDiscountAmount: 'maxDiscountAmount', MinOrderAmount: 'minSpend',
+      UsageLimit: 'usageLimit', UsageLimitPerUser: 'usageLimitPerTraveler',
+      ValidFromUtc: 'validFrom', ValidToUtc: 'validTo', ApplicableTourIds: 'appliedTourIds',
+    };
+    const errors = backendErrors
+      ? Object.fromEntries(Object.entries(backendErrors).map(([key, value]) => [fieldMap[key] ?? key, value]))
+      : undefined;
+    return {
+      status: 'VALIDATION_ERROR', message: 'Review the coupon details and selected tours.', errors,
+    };
+  }
+  return { status: 'SYSTEM_ERROR', message: OPERATOR_COUPON_MESSAGES.SYSTEM_ERROR };
+}
+
+function matchesActor(record: OperatorCouponRecord, actorId?: number | string): boolean {
+  return hasValidActorIdentity(actorId) && String(record.ownerOperatorUserId) === String(actorId);
+}
+
+function invalidCouponResponse(): CouponActionResult {
+  return { status: 'SYSTEM_ERROR', message: 'The coupon response was invalid. Refresh and try again.' };
+}
 
 /**
  * In-memory state store for Demo fixtures during interactive testing and exploration.
@@ -79,7 +150,7 @@ export function deriveCouponTemporalStatus(
 
 /**
  * Verifies that an authenticated actor identity is present and non-empty.
- * Ownership-sensitive Demo operations fail closed when actor identity is missing.
+ * Ownership-sensitive operations fail closed when actor identity is missing.
  */
 function hasValidActorIdentity(
   currentUserId: number | string | undefined | null
@@ -249,13 +320,54 @@ export function validateUpdateCoupon(
   options?: {
     ownedTourIds?: string[];
     today?: string;
+    now?: Date;
   }
 ): CouponValidationErrors {
+  if (currentCoupon.validFromUtc && currentCoupon.validToUtc) {
+    const errors: CouponValidationErrors = {};
+    const now = options?.now?.getTime() ?? Date.now();
+    if (!payload.name.trim()) errors.name = OPERATOR_COUPON_MESSAGES.REQUIRED_FIELD;
+    else if (payload.name.trim().length > 120) errors.name = OPERATOR_COUPON_MESSAGES.NAME_TOO_LONG;
+    if (payload.discountType !== currentCoupon.discountType) errors.discountType = 'Discount type cannot change.';
+    if (!isPositiveFiniteNumber(payload.discountValue)
+      || (currentCoupon.discountType === 'Percentage' && payload.discountValue > 100)) {
+      errors.discountValue = OPERATOR_COUPON_MESSAGES.INVALID_NUMERIC;
+    }
+    if (currentCoupon.discountType === 'Percentage' && !isPositiveFiniteNumber(payload.maxDiscountAmount)) {
+      errors.maxDiscountAmount = OPERATOR_COUPON_MESSAGES.INVALID_NUMERIC;
+    }
+    if (payload.minSpend !== null && payload.minSpend !== undefined && !isNonNegativeFiniteNumber(payload.minSpend)) {
+      errors.minSpend = OPERATOR_COUPON_MESSAGES.INVALID_NUMERIC;
+    }
+    if (payload.usageLimit !== null && (!isPositiveInteger(payload.usageLimit)
+      || payload.usageLimit < currentCoupon.usageCount)) {
+      errors.usageLimit = OPERATOR_COUPON_MESSAGES.USAGE_LIMIT_BELOW_USAGE_COUNT;
+    }
+    if (payload.usageLimitPerTraveler !== null && payload.usageLimitPerTraveler !== undefined
+      && !isPositiveInteger(payload.usageLimitPerTraveler)) {
+      errors.usageLimitPerTraveler = OPERATOR_COUPON_MESSAGES.INVALID_NUMERIC;
+    }
+    const from = Date.parse(payload.validFrom);
+    const to = Date.parse(payload.validTo);
+    if (!Number.isFinite(from)) errors.validFrom = OPERATOR_COUPON_MESSAGES.INVALID_VALIDITY_PERIOD;
+    if (!Number.isFinite(to) || to <= now || to <= from) errors.validTo = OPERATOR_COUPON_MESSAGES.INVALID_VALIDITY_PERIOD;
+    if (Date.parse(currentCoupon.validFromUtc) <= now && from !== Date.parse(currentCoupon.validFromUtc)) {
+      errors.validFrom = 'The start time cannot change after the coupon has started.';
+    }
+    const owned = options?.ownedTourIds ?? [];
+    if (!owned.length || (!payload.appliesToAllTours && (!payload.appliedTourIds.length
+      || payload.appliedTourIds.some((id) => !owned.includes(id))))) {
+      errors.appliedTourIds = OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_TOUR_SCOPE;
+    }
+    return errors;
+  }
   const errors: CouponValidationErrors = {};
 
   // Mandatory fields (Report 3 §3.8.3.2 -> MSG01)
   if (!payload.name || payload.name.trim().length === 0) {
     errors.name = OPERATOR_COUPON_MESSAGES.REQUIRED_FIELD;
+  } else if (payload.name.trim().length > 120) {
+    errors.name = OPERATOR_COUPON_MESSAGES.NAME_TOO_LONG;
   }
 
   // Numeric fields validation (MSG143)
@@ -279,9 +391,9 @@ export function validateUpdateCoupon(
   }
 
   // BR-99: Usage Limit must be a positive integer and not reduced below recorded Usage Count (MSG143)
-  if (!isPositiveInteger(payload.usageLimit)) {
+  if (payload.usageLimit !== null && !isPositiveInteger(payload.usageLimit)) {
     errors.usageLimit = OPERATOR_COUPON_MESSAGES.INVALID_NUMERIC;
-  } else if (payload.usageLimit < currentCoupon.usageCount) {
+  } else if (payload.usageLimit !== null && payload.usageLimit < currentCoupon.usageCount) {
     errors.usageLimit = OPERATOR_COUPON_MESSAGES.USAGE_LIMIT_BELOW_USAGE_COUNT;
   }
 
@@ -334,55 +446,33 @@ export function validateUpdateCoupon(
 }
 
 /**
- * Retrieves the operator's coupons list.
- * In production mode: returns truthful PENDING_BE_INTEGRATION since BE endpoints are not yet merged.
- * In demo mode: returns owned coupons from memory store.
+ * Retrieves the authenticated operator's coupons from the backend.
  */
 export async function getOperatorCoupons(options?: {
   allowDemo?: boolean;
   currentUserId?: number | string;
 }): Promise<CouponActionResult<CouponDto[]>> {
   const allowDemo = Boolean(options?.allowDemo) && isCouponDemoAllowedInCurrentEnv();
-
   if (allowDemo) {
     if (!hasValidActorIdentity(options?.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        data: [],
-        isDemo: true,
-      };
+      return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER, data: [], isDemo: true };
     }
-
-    const ownedCoupons = demoCouponsStore.filter(
-      (coupon) => String(coupon.operatorUserId) === String(options.currentUserId)
-    );
-
-    // Enrich with tour summaries scoped to the coupon owner's owned tours (A12)
-    const enriched = ownedCoupons.map((coupon) => {
-      const ownerTours = getDemoOwnedTours(coupon.operatorUserId);
-      const appliedTours = coupon.appliesToAllTours
-        ? ownerTours
-        : ownerTours.filter((t) => coupon.appliedTourIds.includes(t.id));
-      return {
-        ...coupon,
-        appliedTours,
-      };
-    });
-
-    return {
-      status: 'SUCCESS',
-      data: enriched,
-      isDemo: true,
-    };
+    const owned = demoCouponsStore.filter((c) => String(c.operatorUserId) === String(options.currentUserId));
+    return { status: 'SUCCESS', data: owned, isDemo: true };
+  }
+  if (!hasValidActorIdentity(options?.currentUserId)) {
+    return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER, data: [] };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    data: [],
-    isDemo: false,
-  };
+  try {
+    const records = await listOperatorCoupons();
+    if (!records.every((record) => matchesActor(record, options?.currentUserId))) {
+      return { ...invalidCouponResponse(), data: [] };
+    }
+    return { status: 'SUCCESS', data: records.map(mapOperatorCoupon) };
+  } catch (error) {
+    return { ...productionFailure(error), data: [] };
+  }
 }
 
 /**
@@ -413,12 +503,22 @@ export async function getEligibleTours(options?: {
     };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    data: [],
-    isDemo: false,
-  };
+  if (!hasValidActorIdentity(options?.currentUserId)) {
+    return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER, data: [], isDemo: false };
+  }
+
+  try {
+    const tours = await getEligibleCouponTours();
+    return {
+      status: 'SUCCESS', data: tours.map((tour): EligibleTourDto => ({
+        id: String(tour.id), tourCode: String(tour.id), title: tour.title,
+        destination: tour.destination ?? undefined, basePrice: tour.basePrice,
+        status: 'Published', operatorUserId: options?.currentUserId ?? 0,
+      })), isDemo: false,
+    };
+  } catch (error) {
+    return { ...productionFailure(error), data: [], isDemo: false };
+  }
 }
 
 /**
@@ -428,63 +528,22 @@ export async function getEligibleTours(options?: {
 export async function getOperatorCouponById(
   id: string,
   options?: {
-    allowDemo?: boolean;
     currentUserId?: number | string;
   }
 ): Promise<CouponActionResult<CouponDto>> {
-  const allowDemo = Boolean(options?.allowDemo) && isCouponDemoAllowedInCurrentEnv();
-
-  if (allowDemo) {
-    if (!hasValidActorIdentity(options?.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const decodedId = decodeURIComponent(id);
-    const coupon = demoCouponsStore.find(
-      (c) => c.id === decodedId || c.couponCode.toUpperCase() === decodedId.toUpperCase()
-    );
-
-    if (!coupon) {
-      return {
-        status: 'NOT_FOUND',
-        message: OPERATOR_COUPON_MESSAGES.NOT_FOUND,
-        isDemo: true,
-      };
-    }
-
-    // Ownership check (BR-102 -> MSG126)
-    if (String(coupon.operatorUserId) !== String(options.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const ownerTours = getDemoOwnedTours(coupon.operatorUserId);
-    const appliedTours = coupon.appliesToAllTours
-      ? ownerTours
-      : ownerTours.filter((t) => coupon.appliedTourIds.includes(t.id));
-
-    return {
-      status: 'SUCCESS',
-      data: {
-        ...coupon,
-        appliedTours,
-      },
-      isDemo: true,
-    };
+  if (!hasValidActorIdentity(options?.currentUserId)) {
+    return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    const record = await getOperatorCoupon(id);
+    if (String(record.couponId) !== id || !matchesActor(record, options?.currentUserId)) {
+      return invalidCouponResponse();
+    }
+    return { status: 'SUCCESS', data: mapOperatorCoupon(record) };
+  } catch (error) {
+    return productionFailure(error);
+  }
 }
 
 /**
@@ -593,113 +652,37 @@ export async function updateCoupon(
   id: string,
   payload: UpdateCouponPayload,
   options?: {
-    allowDemo?: boolean;
     currentUserId?: number | string;
-    today?: string;
+    eligibleTourIds?: string[];
   }
 ): Promise<CouponActionResult<CouponDto>> {
-  const allowDemo = Boolean(options?.allowDemo) && isCouponDemoAllowedInCurrentEnv();
-
-  if (allowDemo) {
-    if (!hasValidActorIdentity(options?.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const decodedId = decodeURIComponent(id);
-    const existingIndex = demoCouponsStore.findIndex(
-      (c) => c.id === decodedId || c.couponCode.toUpperCase() === decodedId.toUpperCase()
-    );
-
-    if (existingIndex === -1) {
-      return {
-        status: 'NOT_FOUND',
-        message: OPERATOR_COUPON_MESSAGES.NOT_FOUND,
-        isDemo: true,
-      };
-    }
-
-    const currentCoupon = demoCouponsStore[existingIndex];
-
-    // Ownership check (BR-102 -> MSG126)
-    if (String(currentCoupon.operatorUserId) !== String(options.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const ownedTours = getDemoOwnedTours(options.currentUserId);
-    const ownedTourIds = ownedTours.map((t) => t.id);
-    const today = options?.today || getTodayDateString();
-    const errors = validateUpdateCoupon(currentCoupon, payload, { ownedTourIds, today });
-    if (Object.keys(errors).length > 0) {
-      return {
-        status: 'VALIDATION_ERROR',
-        errors,
-        message: errors.usageLimit || OPERATOR_COUPON_MESSAGES.REQUIRED_SUMMARY,
-        isDemo: true,
-      };
-    }
-
-    let newStatus = payload.status || currentCoupon.status;
-    if (newStatus !== 'Inactive') {
-      newStatus = deriveCouponTemporalStatus(
-        {
-          status: 'Active',
-          validFrom: payload.validFrom,
-          validTo: payload.validTo,
-        },
-        today
-      );
-    }
-
-    const updatedCoupon: CouponDto = {
-      ...currentCoupon,
-      name: payload.name.trim(),
-      discountType: payload.discountType || currentCoupon.discountType,
-      discountValue: Number(payload.discountValue),
-      maxDiscountAmount:
-        payload.maxDiscountAmount !== undefined && payload.maxDiscountAmount !== null
-          ? Number(payload.maxDiscountAmount)
-          : null,
-      minSpend:
-        payload.minSpend !== undefined && payload.minSpend !== null
-          ? Number(payload.minSpend)
-          : null,
-      usageLimit: Number(payload.usageLimit),
-      usageLimitPerTraveler:
-        payload.usageLimitPerTraveler !== undefined && payload.usageLimitPerTraveler !== null
-          ? Number(payload.usageLimitPerTraveler)
-          : null,
-      validFrom: payload.validFrom,
-      validTo: payload.validTo,
-      appliesToAllTours: payload.appliesToAllTours,
-      appliedTourIds: payload.appliesToAllTours ? [] : payload.appliedTourIds,
-      status: newStatus,
-      updatedAt: new Date().toISOString(),
-      isDemo: true,
-    };
-
-    demoCouponsStore[existingIndex] = updatedCoupon;
-
-    return {
-      status: 'SUCCESS',
-      data: updatedCoupon,
-      message: OPERATOR_COUPON_MESSAGES.UPDATE_SUCCESS,
-      isDemo: true,
-    };
+  if (!hasValidActorIdentity(options?.currentUserId)) {
+    return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  const ids = payload.appliesToAllTours ? options?.eligibleTourIds : payload.appliedTourIds;
+  const tourIds = ids?.map(Number);
+  if (!tourIds?.length || !tourIds.every((tourId) => Number.isSafeInteger(tourId) && tourId > 0)
+    || !payload.discountType || !/Z$|[+-]\d\d:\d\d$/.test(payload.validFrom)
+    || !/Z$|[+-]\d\d:\d\d$/.test(payload.validTo)) {
+    return { status: 'VALIDATION_ERROR', message: 'Review the coupon dates and selected tours.' };
+  }
+  try {
+    const saved = await updateOperatorCoupon(id, {
+      name: payload.name.trim(), discountType: payload.discountType,
+      discountValue: payload.discountValue,
+      maxDiscountAmount: payload.discountType === 'Percentage' ? payload.maxDiscountAmount ?? null : null,
+      minOrderAmount: payload.minSpend ?? 0,
+      usageLimit: payload.usageLimit,
+      usageLimitPerUser: payload.usageLimitPerTraveler ?? null,
+      validFromUtc: payload.validFrom, validToUtc: payload.validTo,
+      applicableTourIds: tourIds,
+    });
+    if (String(saved.couponId) !== id || !matchesActor(saved, options?.currentUserId)) return invalidCouponResponse();
+    return { status: 'SUCCESS', data: mapOperatorCoupon(saved), message: OPERATOR_COUPON_MESSAGES.UPDATE_SUCCESS };
+  } catch (error) {
+    return productionFailure(error);
+  }
 }
 
 /**
@@ -710,63 +693,23 @@ export async function updateCoupon(
 export async function deactivateCoupon(
   id: string,
   options?: {
-    allowDemo?: boolean;
     currentUserId?: number | string;
   }
 ): Promise<CouponActionResult<CouponDto>> {
-  const allowDemo = Boolean(options?.allowDemo) && isCouponDemoAllowedInCurrentEnv();
-
-  if (allowDemo) {
-    if (!hasValidActorIdentity(options?.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const decodedId = decodeURIComponent(id);
-    const existingIndex = demoCouponsStore.findIndex(
-      (c) => c.id === decodedId || c.couponCode.toUpperCase() === decodedId.toUpperCase()
-    );
-
-    if (existingIndex === -1) {
-      return {
-        status: 'NOT_FOUND',
-        message: OPERATOR_COUPON_MESSAGES.NOT_FOUND,
-        isDemo: true,
-      };
-    }
-
-    const current = demoCouponsStore[existingIndex];
-    if (String(current.operatorUserId) !== String(options.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const deactivated: CouponDto = {
-      ...current,
-      status: 'Inactive',
-      updatedAt: new Date().toISOString(),
-    };
-    demoCouponsStore[existingIndex] = deactivated;
-
-    return {
-      status: 'SUCCESS',
-      data: deactivated,
-      message: OPERATOR_COUPON_MESSAGES.DEACTIVATE_SUCCESS,
-      isDemo: true,
-    };
+  if (!hasValidActorIdentity(options?.currentUserId)) {
+    return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    const saved = await setOperatorCouponActivation(id, false);
+    if (String(saved.couponId) !== id || !matchesActor(saved, options?.currentUserId)) return invalidCouponResponse();
+    return {
+      status: 'SUCCESS', data: mapOperatorCoupon(saved),
+      message: OPERATOR_COUPON_MESSAGES.DEACTIVATE_SUCCESS,
+    };
+  } catch (error) {
+    return productionFailure(error);
+  }
 }
 
 /**
@@ -776,83 +719,21 @@ export async function deactivateCoupon(
 export async function activateCoupon(
   id: string,
   options?: {
-    allowDemo?: boolean;
     currentUserId?: number | string;
-    today?: string;
   }
 ): Promise<CouponActionResult<CouponDto>> {
-  const allowDemo = Boolean(options?.allowDemo) && isCouponDemoAllowedInCurrentEnv();
-
-  if (allowDemo) {
-    if (!hasValidActorIdentity(options?.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const decodedId = decodeURIComponent(id);
-    const existingIndex = demoCouponsStore.findIndex(
-      (c) => c.id === decodedId || c.couponCode.toUpperCase() === decodedId.toUpperCase()
-    );
-
-    if (existingIndex === -1) {
-      return {
-        status: 'NOT_FOUND',
-        message: OPERATOR_COUPON_MESSAGES.NOT_FOUND,
-        isDemo: true,
-      };
-    }
-
-    const current = demoCouponsStore[existingIndex];
-    if (String(current.operatorUserId) !== String(options.currentUserId)) {
-      return {
-        status: 'UNAUTHORIZED',
-        message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER,
-        isDemo: true,
-      };
-    }
-
-    const today = options?.today || getTodayDateString();
-    if (isCouponExpired(current.validTo, today)) {
-      return {
-        status: 'VALIDATION_ERROR',
-        errors: {
-          validTo: OPERATOR_COUPON_MESSAGES.EXPIRED_REACTIVATION_BLOCKED,
-        },
-        message: OPERATOR_COUPON_MESSAGES.EXPIRED_REACTIVATION_BLOCKED,
-        isDemo: true,
-      };
-    }
-
-    const activeStatus = deriveCouponTemporalStatus(
-      {
-        status: 'Active',
-        validFrom: current.validFrom,
-        validTo: current.validTo,
-      },
-      today
-    );
-
-    const activated: CouponDto = {
-      ...current,
-      status: activeStatus,
-      updatedAt: new Date().toISOString(),
-    };
-    demoCouponsStore[existingIndex] = activated;
-
-    return {
-      status: 'SUCCESS',
-      data: activated,
-      message: OPERATOR_COUPON_MESSAGES.ACTIVATE_SUCCESS,
-      isDemo: true,
-    };
+  if (!hasValidActorIdentity(options?.currentUserId)) {
+    return { status: 'UNAUTHORIZED', message: OPERATOR_COUPON_MESSAGES.UNAUTHORIZED_OWNER };
   }
 
-  return {
-    status: 'PENDING_BE_INTEGRATION',
-    message: OPERATOR_COUPON_MESSAGES.PENDING_BE_INTEGRATION,
-    isDemo: false,
-  };
+  try {
+    const saved = await setOperatorCouponActivation(id, true);
+    if (String(saved.couponId) !== id || !matchesActor(saved, options?.currentUserId)) return invalidCouponResponse();
+    return {
+      status: 'SUCCESS', data: mapOperatorCoupon(saved),
+      message: OPERATOR_COUPON_MESSAGES.ACTIVATE_SUCCESS,
+    };
+  } catch (error) {
+    return productionFailure(error);
+  }
 }

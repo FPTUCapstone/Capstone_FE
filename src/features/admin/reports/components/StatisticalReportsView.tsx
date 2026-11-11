@@ -111,7 +111,7 @@ export function StatisticalReportsView({
         <section
           aria-labelledby="statistical-reports-access-denied-title"
           role="alert"
-          className="w-full rounded-2xl border border-[#d0d7de] bg-white p-6 shadow-sm sm:p-8"
+          className="w-full rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-sm sm:p-8"
         >
           <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold tracking-wide text-rose-800">
             <svg
@@ -130,27 +130,27 @@ export function StatisticalReportsView({
           </div>
           <h1
             id="statistical-reports-access-denied-title"
-            className="text-xl font-extrabold tracking-tight text-[#00152a] sm:text-2xl"
+            className="text-xl font-extrabold tracking-tight text-[#1C2928] sm:text-2xl"
           >
             {copy.accessDenied.title}
           </h1>
           <p className="mt-2 text-sm font-semibold text-rose-700">{copy.accessDenied.message}</p>
-          <p className="mt-1 text-sm leading-relaxed text-[#475467]">{copy.accessDenied.detail}</p>
+          <p className="mt-1 text-sm leading-relaxed text-[#5B6E69]">{copy.accessDenied.detail}</p>
           {effectiveRole === 'PENDING_AUTH_SESSION_VERIFICATION' ? (
-            <p className="mt-2 text-xs leading-relaxed text-[#475467]">
+            <p className="mt-2 text-xs leading-relaxed text-[#5B6E69]">
               {copy.accessDenied.unverifiedSessionNotice}
             </p>
           ) : null}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href={ROUTES.admin.login}
-              className="inline-flex items-center justify-center rounded-xl bg-[#006b5f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#005048] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"
+              className="inline-flex items-center justify-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
             >
               {copy.accessDenied.returnToSignIn}
             </Link>
             <Link
               href={ROUTES.home}
-              className="inline-flex items-center justify-center rounded-xl border border-[#cbd5e1] bg-white px-4 py-2.5 text-sm font-semibold text-[#1e293b] transition hover:bg-[#f8fafc]"
+              className="inline-flex items-center justify-center rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-sm font-semibold text-[#1e293b] transition hover:bg-[#f8fafc]"
             >
               {copy.accessDenied.returnToDashboard}
             </Link>
@@ -253,17 +253,17 @@ export function StatisticalReportsView({
     copy.exportPanel.disabledNoGeneratedReportReason;
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] pb-20 text-[#191c1e]">
+    <div className="min-h-screen bg-[#F7F5EF] pb-20 text-[#1C2928]">
       <div className="sr-only" role="status" aria-live="polite">
         {liveAnnouncement}
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:px-8 md:py-10">
         {/* Top Page Header */}
-        <header className="mb-4 rounded-2xl border border-[#314863] bg-[#00152a] px-5 py-4 text-white shadow-md sm:px-6 sm:py-5">
+        <header className="mb-4 rounded-2xl border border-[#5B6E69] bg-[#103B39] px-5 py-4 text-white shadow-md sm:px-6 sm:py-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#314863] bg-[#102a43] px-3 py-1 text-xs font-bold tracking-wider text-[#71f8e4] uppercase">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#71f8e4] uppercase">
                 <span className="h-2 w-2 rounded-full bg-[#71f8e4]" aria-hidden="true" />
                 <span>{copy.header.eyebrow}</span>
               </div>
@@ -276,10 +276,10 @@ export function StatisticalReportsView({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-xl border border-[#314863] bg-[#102a43] px-3 py-1.5 text-xs font-semibold text-[#d1e4ff]">
+              <span className="rounded-xl border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-[#d1e4ff]">
                 {copy.header.timezoneBadge}
               </span>
-              <span className="rounded-xl border border-[#314863] bg-[#102a43] px-3 py-1.5 text-xs font-semibold text-[#71f8e4]">
+              <span className="rounded-xl border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-[#71f8e4]">
                 {copy.header.currencyBadge}
               </span>
             </div>
@@ -289,16 +289,16 @@ export function StatisticalReportsView({
         {/* Criteria Form Panel */}
         <section
           aria-labelledby="statistical-criteria-heading"
-          className="mb-8 rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs sm:p-6"
+          className="mb-8 rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs sm:p-6"
         >
           <div className="mb-5 border-b border-[#eaecf0] pb-4">
             <h2
               id="statistical-criteria-heading"
-              className="text-lg font-extrabold tracking-tight text-[#00152a]"
+              className="text-lg font-extrabold tracking-tight text-[#1C2928]"
             >
               {copy.criteriaForm.sectionTitle}
             </h2>
-            <p className="mt-1 text-xs text-[#475467] sm:text-sm">
+            <p className="mt-1 text-xs text-[#5B6E69] sm:text-sm">
               {copy.criteriaForm.sectionDescription}
             </p>
           </div>
@@ -307,7 +307,7 @@ export function StatisticalReportsView({
             <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
             {/* Single report-type selector */}
             <div className="space-y-2">
-              <label htmlFor="report-type-select" className="block text-sm font-bold text-[#00152a]">
+              <label htmlFor="report-type-select" className="block text-sm font-bold text-[#1C2928]">
                 {copy.criteriaForm.reportTypeLegend}
               </label>
               <select
@@ -328,7 +328,7 @@ export function StatisticalReportsView({
                       ? 'report-type-description'
                       : undefined
                 }
-                className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 py-2.5 text-sm text-[#0f172a] focus:border-[#006b5f] focus:outline-none"
+                className="w-full rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2.5 text-sm text-[#1C2928] focus:border-[#174B4A] focus:outline-none"
               >
                 <option value="">{copy.criteriaForm.reportTypePlaceholder}</option>
                 {REPORT_TYPE_KEYS.map((typeKey) => (
@@ -338,7 +338,7 @@ export function StatisticalReportsView({
                 ))}
               </select>
               {draftCriteria.reportType ? (
-                <p id="report-type-description" className="text-xs leading-relaxed text-[#475467]">
+                <p id="report-type-description" className="text-xs leading-relaxed text-[#5B6E69]">
                   {copy.reportTypes[draftCriteria.reportType].description}
                 </p>
               ) : null}
@@ -352,7 +352,7 @@ export function StatisticalReportsView({
             {/* Period Selection (Closed Month / Closed Quarter / Closed Year) */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <fieldset>
-                <legend className="mb-2 block text-sm font-bold text-[#00152a]">
+                <legend className="mb-2 block text-sm font-bold text-[#1C2928]">
                   {copy.criteriaForm.periodGranularityLegend}
                 </legend>
                 <div className="flex flex-wrap gap-2">
@@ -364,10 +364,10 @@ export function StatisticalReportsView({
                         type="button"
                         aria-pressed={active}
                         onClick={() => handleGranularityChange(granularity)}
-                        className={`rounded-xl px-3.5 py-2 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f] ${
+                        className={`rounded-xl px-3.5 py-2 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A] ${
                           active
-                            ? 'bg-[#00152a] text-white'
-                            : 'border border-[#cbd5e1] bg-[#f8fafc] text-[#334155] hover:bg-[#f1f5f9]'
+                            ? 'bg-[#103B39] text-white'
+                            : 'border border-[#DCE2DD] bg-[#f8fafc] text-[#334155] hover:bg-[#f1f5f9]'
                         }`}
                       >
                         {copy.granularities[granularity]}
@@ -380,7 +380,7 @@ export function StatisticalReportsView({
               <div>
                 <label
                   htmlFor="reporting-period-select"
-                  className="mb-2 block text-sm font-bold text-[#00152a]"
+                  className="mb-2 block text-sm font-bold text-[#1C2928]"
                 >
                   {copy.criteriaForm.periodSelectLabel}
                 </label>
@@ -393,7 +393,7 @@ export function StatisticalReportsView({
                   }}
                   aria-invalid={Boolean(fieldErrors.periodKey)}
                   aria-describedby={fieldErrors.periodKey ? 'reporting-period-error' : undefined}
-                  className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 py-2.5 text-sm text-[#0f172a] focus:border-[#006b5f] focus:outline-none"
+                  className="w-full rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2.5 text-sm text-[#1C2928] focus:border-[#174B4A] focus:outline-none"
                 >
                   <option value="">{copy.criteriaForm.periodPlaceholder}</option>
                   {availablePeriods.map((period) => (
@@ -417,14 +417,14 @@ export function StatisticalReportsView({
 
             {/* Optional filters supplied by the production reporting API (collapsed by default). */}
             <details className="rounded-xl border border-[#eaecf0] bg-[#f8fafc] p-4">
-              <summary className="cursor-pointer text-xs font-bold tracking-wider text-[#475467] uppercase">
+              <summary className="cursor-pointer text-xs font-bold tracking-wider text-[#5B6E69] uppercase">
                 {copy.criteriaForm.optionalFiltersHeading}
               </summary>
               <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label
                     htmlFor="filter-operator-select"
-                    className="mb-1.5 block text-xs font-semibold text-[#344054]"
+                    className="mb-1.5 block text-xs font-semibold text-[#5B6E69]"
                   >
                     {copy.criteriaForm.operatorFilterLabel}
                   </label>
@@ -434,7 +434,7 @@ export function StatisticalReportsView({
                     onChange={(e) =>
                       setDraftCriteria((prev) => ({ ...prev, operatorId: e.target.value }))
                     }
-                    className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3 py-2 text-sm text-[#0f172a]"
+                    className="w-full rounded-xl border border-[#DCE2DD] bg-white px-3 py-2 text-sm text-[#1C2928]"
                   >
                     {activeFilterOptions.operators.map((op) => (
                       <option key={op.id} value={op.id}>
@@ -447,7 +447,7 @@ export function StatisticalReportsView({
                 <div>
                   <label
                     htmlFor="filter-destination-select"
-                    className="mb-1.5 block text-xs font-semibold text-[#344054]"
+                    className="mb-1.5 block text-xs font-semibold text-[#5B6E69]"
                   >
                     {copy.criteriaForm.destinationFilterLabel}
                   </label>
@@ -457,7 +457,7 @@ export function StatisticalReportsView({
                     onChange={(e) =>
                       setDraftCriteria((prev) => ({ ...prev, destinationId: e.target.value }))
                     }
-                    className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3 py-2 text-sm text-[#0f172a]"
+                    className="w-full rounded-xl border border-[#DCE2DD] bg-white px-3 py-2 text-sm text-[#1C2928]"
                   >
                     {activeFilterOptions.destinations.map((dest) => (
                       <option key={dest.id} value={dest.id}>
@@ -470,7 +470,7 @@ export function StatisticalReportsView({
                 <div>
                   <label
                     htmlFor="filter-booking-type-select"
-                    className="mb-1.5 block text-xs font-semibold text-[#344054]"
+                    className="mb-1.5 block text-xs font-semibold text-[#5B6E69]"
                   >
                     {copy.criteriaForm.bookingTypeFilterLabel}
                   </label>
@@ -483,7 +483,7 @@ export function StatisticalReportsView({
                         bookingType: e.target.value as BookingTypeFilter,
                       }))
                     }
-                    className="w-full rounded-xl border border-[#cbd5e1] bg-white px-3 py-2 text-sm text-[#0f172a]"
+                    className="w-full rounded-xl border border-[#DCE2DD] bg-white px-3 py-2 text-sm text-[#1C2928]"
                   >
                     {activeFilterOptions.bookingTypes.map((bt) => (
                       <option key={bt.id} value={bt.id}>
@@ -493,7 +493,7 @@ export function StatisticalReportsView({
                   </select>
                 </div>
               </div>
-              <p className="mt-3 text-xs text-[#475467]">
+              <p className="mt-3 text-xs text-[#5B6E69]">
                 {copy.filters.productionDynamicFiltersNotice}
               </p>
             </details>
@@ -512,14 +512,14 @@ export function StatisticalReportsView({
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 type="submit"
-                className="inline-flex items-center justify-center rounded-xl bg-[#006b5f] px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-[#005048] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"
+                className="inline-flex items-center justify-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
               >
                 {copy.criteriaForm.generateButton}
               </button>
               <button
                 type="button"
                 onClick={handleCancelCriteriaChanges}
-                className="inline-flex items-center justify-center rounded-xl border border-[#cbd5e1] bg-white px-4 py-2.5 text-sm font-semibold text-[#1e293b] transition hover:bg-[#f8fafc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00152a]"
+                className="inline-flex items-center justify-center rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-sm font-semibold text-[#1e293b] transition hover:bg-[#f8fafc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1C2928]"
               >
                 {copy.criteriaForm.cancelButton}
               </button>
@@ -530,23 +530,23 @@ export function StatisticalReportsView({
         {/* Export Format & Export Action Panel */}
         <section
           aria-labelledby="statistical-export-heading"
-          className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs sm:p-6"
+          className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs sm:p-6"
         >
           <div className="mb-4 border-b border-[#eaecf0] pb-4">
             <h2
               id="statistical-export-heading"
-              className="text-lg font-extrabold tracking-tight text-[#00152a]"
+              className="text-lg font-extrabold tracking-tight text-[#1C2928]"
             >
               {copy.exportPanel.sectionTitle}
             </h2>
-            <p className="mt-1 text-xs text-[#475467] sm:text-sm">
+            <p className="mt-1 text-xs text-[#5B6E69] sm:text-sm">
               {copy.exportPanel.sectionDescription}
             </p>
           </div>
 
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <fieldset>
-              <legend className="mb-2 block text-sm font-bold text-[#00152a]">
+              <legend className="mb-2 block text-sm font-bold text-[#1C2928]">
                 {copy.exportPanel.formatLegend}
               </legend>
               <div className="flex flex-wrap gap-3">
@@ -555,10 +555,10 @@ export function StatisticalReportsView({
                   return (
                     <label
                       key={fmt}
-                      className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition focus-within:ring-2 focus-within:ring-[#006b5f] ${
+                      className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition focus-within:ring-2 focus-within:ring-[#174B4A] ${
                         selected
-                          ? 'border-[#006b5f] bg-[#f0fdf9] text-[#00152a]'
-                          : 'border-[#cbd5e1] bg-white text-[#334155]'
+                          ? 'border-[#174B4A] bg-[#f0fdf9] text-[#1C2928]'
+                          : 'border-[#DCE2DD] bg-white text-[#334155]'
                       }`}
                     >
                       <input
@@ -567,7 +567,7 @@ export function StatisticalReportsView({
                         value={fmt}
                         checked={selected}
                         onChange={() => setExportFormat(fmt)}
-                        className="h-4 w-4 accent-[#006b5f]"
+                        className="h-4 w-4 accent-[#174B4A]"
                       />
                       <span>{copy.exportPanel.formats[fmt]}</span>
                     </label>
@@ -582,7 +582,7 @@ export function StatisticalReportsView({
                 disabled={!canExport}
                 aria-describedby={!canExport ? 'export-disabled-reason' : undefined}
                 onClick={handleExportReport}
-                className="inline-flex items-center justify-center rounded-xl bg-[#00152a] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#102a43] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f] disabled:cursor-not-allowed disabled:bg-[#cbd5e1] disabled:text-[#475467]"
+                className="inline-flex items-center justify-center rounded-xl bg-[#103B39] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A] disabled:cursor-not-allowed disabled:bg-[#DCE2DD] disabled:text-[#5B6E69]"
               >
                 {copy.exportPanel.exportButton}
               </button>
@@ -641,7 +641,7 @@ export function StatisticalReportsView({
                 </svg>
                 <span>{copy.modeBanner.productionBadge}</span>
               </div>
-              <h3 className="text-lg font-extrabold text-[#00152a]">
+              <h3 className="text-lg font-extrabold text-[#1C2928]">
                 {copy.states.loadingTitle}
               </h3>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#344054]">
@@ -686,13 +686,13 @@ export function StatisticalReportsView({
           {resultState === 'NO_DATA' ? (
             <div
               role="status"
-              className="rounded-2xl border border-[#d0d7de] bg-white p-6 text-center sm:p-8"
+              className="rounded-2xl border border-[#DCE2DD] bg-white p-6 text-center sm:p-8"
             >
-              <h3 className="text-lg font-extrabold text-[#00152a]">{copy.states.noDataTitle}</h3>
+              <h3 className="text-lg font-extrabold text-[#1C2928]">{copy.states.noDataTitle}</h3>
               <p className="mt-2 text-sm font-semibold text-[#344054]">
                 {copy.states.noDataMessage}
               </p>
-              <p className="mt-1 text-xs text-[#475467]">{copy.states.noDataDescription}</p>
+              <p className="mt-1 text-xs text-[#5B6E69]">{copy.states.noDataDescription}</p>
             </div>
           ) : null}
 
@@ -702,13 +702,13 @@ export function StatisticalReportsView({
           generatedReport.breakdownRows.length > 0 ? (
             <div className="space-y-6">
               {/* Applied Criteria Metadata Banner */}
-              <div className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs">
+              <div className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eaecf0] pb-4">
                   <div>
-                    <span className="text-xs font-bold tracking-wider text-[#006b5f] uppercase">
+                    <span className="text-xs font-bold tracking-wider text-[#174B4A] uppercase">
                       {copy.results.appliedHeaderTitle}
                     </span>
-                    <h3 className="mt-0.5 text-xl font-extrabold text-[#00152a]">
+                    <h3 className="mt-0.5 text-xl font-extrabold text-[#1C2928]">
                       {copy.reportTypes[generatedReport.criteria.reportType].label}
                     </h3>
                   </div>
@@ -716,28 +716,28 @@ export function StatisticalReportsView({
 
                 <dl className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
                   <div>
-                    <dt className="font-semibold text-[#475467]">
+                    <dt className="font-semibold text-[#5B6E69]">
                       {copy.results.appliedCriteriaSummaryLabel}
                     </dt>
-                    <dd className="mt-0.5 font-bold text-[#00152a]">
+                    <dd className="mt-0.5 font-bold text-[#1C2928]">
                       {copy.reportTypes[generatedReport.criteria.reportType].label} (
                       {copy.granularities[generatedReport.criteria.periodGranularity]})
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-semibold text-[#475467]">
+                    <dt className="font-semibold text-[#5B6E69]">
                       {copy.results.periodWindowLabel}
                     </dt>
-                    <dd className="mt-0.5 font-bold text-[#00152a]">
+                    <dd className="mt-0.5 font-bold text-[#1C2928]">
                       {generatedReport.period.startDateDisplay} –{' '}
                       {generatedReport.period.endDateDisplay} ({generatedReport.period.key})
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-semibold text-[#475467]">
+                    <dt className="font-semibold text-[#5B6E69]">
                       {copy.results.generatedTimestampLabel}
                     </dt>
-                    <dd className="mt-0.5 font-bold text-[#00152a]">
+                    <dd className="mt-0.5 font-bold text-[#1C2928]">
                       {generatedReport.generatedAtDisplay}
                     </dd>
                   </div>
@@ -753,12 +753,12 @@ export function StatisticalReportsView({
                 {generatedReport.summaryMetrics.map((metric) => (
                   <article
                     key={metric.id}
-                    className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-xs"
+                    className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs"
                   >
-                    <p className="text-xs font-bold tracking-wide text-[#475467] uppercase">
+                    <p className="text-xs font-bold tracking-wide text-[#5B6E69] uppercase">
                       {metric.label}
                     </p>
-                    <p className="mt-2 font-mono text-xl font-extrabold text-[#00152a] sm:text-2xl">
+                    <p className="mt-2 font-mono text-xl font-extrabold text-[#1C2928] sm:text-2xl">
                       {metric.formattedValue}
                     </p>
                     <p className="mt-1.5 text-xs text-[#667085]">{metric.contextNote}</p>
@@ -769,13 +769,13 @@ export function StatisticalReportsView({
               {/* Distribution chart: directly under the KPI cards so it is the first detail read */}
               <section
                 aria-labelledby="statistical-chart-heading"
-                className="rounded-2xl border border-[#d0d7de] bg-white p-6 shadow-xs sm:p-8"
+                className="rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:p-8"
               >
                 <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
-                  <h4 id="statistical-chart-heading" className="text-xl font-extrabold text-[#00152a]">
+                  <h4 id="statistical-chart-heading" className="text-xl font-extrabold text-[#1C2928]">
                     {copy.results.chartSectionTitle}
                   </h4>
-                  <span className="text-sm font-semibold text-[#475467]">
+                  <span className="text-sm font-semibold text-[#5B6E69]">
                     {generatedReport.chartUnitLabel}
                   </span>
                 </div>
@@ -785,7 +785,7 @@ export function StatisticalReportsView({
                       key={point.id}
                       className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(14rem,1fr)_3fr] md:items-center md:gap-6"
                     >
-                      <span className="text-base font-bold text-[#00152a] sm:text-lg">
+                      <span className="text-base font-bold text-[#1C2928] sm:text-lg">
                         {point.label}
                       </span>
                       <div className="flex items-center gap-4">
@@ -794,11 +794,11 @@ export function StatisticalReportsView({
                           className="h-11 flex-1 overflow-hidden rounded-lg bg-[#eef2f6]"
                         >
                           <div
-                            className="h-full rounded-lg bg-[#006b5f]"
+                            className="h-full rounded-lg bg-[#174B4A]"
                             style={{ width: `${Math.max(0, Math.min(100, point.sharePercent))}%` }}
                           />
                         </div>
-                        <span className="min-w-[15rem] shrink-0 text-right font-mono text-base font-bold text-[#00152a] sm:text-lg">
+                        <span className="min-w-[15rem] shrink-0 text-right font-mono text-base font-bold text-[#1C2928] sm:text-lg">
                           {point.formattedPrimaryValue} · {point.sharePercent}%
                         </span>
                       </div>
@@ -813,7 +813,7 @@ export function StatisticalReportsView({
                   aria-label={copy.results.revenueFormulaTitle}
                   className="rounded-2xl border border-[#bae6fd] bg-[#f0f9ff] p-5"
                 >
-                  <h4 className="text-sm font-extrabold text-[#00152a]">
+                  <h4 className="text-sm font-extrabold text-[#1C2928]">
                     {copy.results.revenueFormulaTitle}
                   </h4>
                   <p className="mt-1 text-xs text-[#344054]">
@@ -821,34 +821,34 @@ export function StatisticalReportsView({
                   </p>
                   <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
                     <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
-                      <dt className="text-xs font-semibold text-[#475467]">
+                      <dt className="text-xs font-semibold text-[#5B6E69]">
                         {copy.results.confirmedGrossLabel}
                       </dt>
-                      <dd className="mt-1 font-mono text-sm font-bold text-[#00152a]">
+                      <dd className="mt-1 font-mono text-sm font-bold text-[#1C2928]">
                         {formatVndCurrency(
                           generatedReport.revenueBreakdown.confirmedBookingsGrossVnd,
                         )}
                       </dd>
                     </div>
                     <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
-                      <dt className="text-xs font-semibold text-[#475467]">
+                      <dt className="text-xs font-semibold text-[#5B6E69]">
                         {copy.results.completedGrossLabel}
                       </dt>
-                      <dd className="mt-1 font-mono text-sm font-bold text-[#00152a]">
+                      <dd className="mt-1 font-mono text-sm font-bold text-[#1C2928]">
                         {formatVndCurrency(
                           generatedReport.revenueBreakdown.completedBookingsGrossVnd,
                         )}
                       </dd>
                     </div>
                     <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
-                      <dt className="text-xs font-semibold text-[#475467]">
+                      <dt className="text-xs font-semibold text-[#5B6E69]">
                         {copy.results.recordedRefundsLabel}
                       </dt>
                       <dd className="mt-1 font-mono text-sm font-bold text-rose-700">
                         -{formatVndCurrency(generatedReport.revenueBreakdown.recordedRefundsVnd)}
                       </dd>
                     </div>
-                    <div className="rounded-xl bg-[#00152a] p-3.5 text-white">
+                    <div className="rounded-xl bg-[#1C2928] p-3.5 text-white">
                       <dt className="text-xs font-semibold text-[#71f8e4]">
                         {copy.results.netPlatformRevenueLabel}
                       </dt>

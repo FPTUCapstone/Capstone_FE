@@ -7,7 +7,7 @@ type FeedbackAlertProps = {
 };
 
 const tones = {
-  info: 'border-[#C6DAFB] bg-[#EAF1FE] text-[#12379B]',
+  info: 'border-[#B2D6C4] bg-[#E8F0EA] text-[#103B39]',
   success: 'border-[#B9E7D4] bg-[#E6F7F0] text-[#085B3E]',
   warning: 'border-[#F6DCAE] bg-[#FEF3E2] text-[#7C4A03]',
   error: 'border-[#F7C9D3] bg-[#FDECEF] text-[#8C1030]',

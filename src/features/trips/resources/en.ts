@@ -63,8 +63,6 @@ export const tripReviewEn = {
     breadcrumbHome: 'Home',
     breadcrumbAccount: 'My Account',
     breadcrumbTrips: 'My Trips',
-    badgeCode: 'UC-32',
-    badgeLabel: 'Trip Management',
     pageTitle: 'My Trips',
     pageSubtitle:
       'Review your booked tours and self-planned itineraries with TripMate.',
@@ -101,6 +99,7 @@ export const tripReviewEn = {
       PendingPayment: 'Awaiting payment',
       Cancelled: 'Cancelled',
       Expired: 'Expired',
+      Interrupted: 'Đã dừng vì an toàn',
       Active: 'Planned',
     } as Record<string, string>,
     refundStatusLabels: {

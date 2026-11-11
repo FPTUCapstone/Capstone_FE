@@ -6,6 +6,8 @@ TripMate is a smart travel planning and travel services platform. This repositor
 
 The canonical team guideline is [Frontend Engineering Convention](docs/FRONTEND_ENGINEERING_CONVENTION.md). It defines architecture, routing, UI, state/API boundaries, security, testing, review, and incremental migration. Its dated audit distinguishes existing implementation from proposed standards and branch-specific work; older implementation inventories below may lag source changes. Product scope remains governed by the approved SRS and [Web scope matrix](docs/WEB_SCOPE_MATRIX.md).
 
+Current migration evidence, verification limits and unresolved requirements are recorded in the [migration final report](docs/FRONTEND_MIGRATION_FINAL_REPORT.md). Older inventories below are historical implementation snapshots; consult the report and current source before treating them as current integration status.
+
 ## Project Scope
 
 The approved Web product model contains four areas:
@@ -88,6 +90,14 @@ cp .env.example .env.local
 The public POI category chips are deliberately disabled in production until Backend provides an approved public category catalogue. `NEXT_PUBLIC_POI_CATEGORY_PREVIEW=true` is a development-only visual preview and must not be used to claim production category filtering.
 
 UC-11 itinerary demo fixtures are disabled by default. They require the exact public opt-in `NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true` in a non-production environment plus an explicit demo request; production always rejects fixtures regardless of the flag.
+
+### TM-70 local Search V2 functional smoke
+
+The existing `/tours` search and `/api/tours` legacy contract remain the default. The approved development Search V2 UI is opt-in through the server-only variables `TM70_SEARCH_DEV_ENABLED=true`, `TM70_SEARCH_DEV_ORIGIN`, `TM70_SEARCH_DEV_BACKEND_ORIGIN`, and an ephemeral `TM70_SEARCH_DEV_KEY` (at least 32 characters, matching Backend). Never prefix the key with `NEXT_PUBLIC_`, commit it, or put it in a browser request. `/api/dev/tours/search` and `/api/dev/tours/categories` attach it only from the Next server to the configured numeric loopback Backend origin. Production builds and runtimes always disable this feature.
+
+Run only with a loopback listener: `npm run dev -- --hostname 127.0.0.1 -p 3017`, then open the exact configured origin `http://127.0.0.1:3017/tours`. Verify the listener is bound to `127.0.0.1` before testing. Do not expose it through `0.0.0.0`, a proxy, a tunnel, or public staging. Request URL/Host/Origin and the pinned Next-generated forwarding metadata are validated, but HTTP headers do not prove the peer address. The loopback listener is a required security boundary; public staging requires a separately approved authenticated access path.
+
+Development mode supports `lexical`, `semantic`, and `hybrid` with the canonical V2 filters. Categories come from the active Backend catalogue; category codes are sent unchanged. SQL remains authoritative for business filters. Semantic smoke has no relevance threshold and hybrid uses Backend's experimental RRF setting; neither is a production relevance decision. Exceeding 256 semantic corpus tours, missing/stale/incompatible vectors, invalid candidates, or unavailable SQL/vector/embedding dependencies produce explicit errors instead of fabricated empty or partial results. Clearing the flag/key and restarting Next restores the legacy UI; no SQL cleanup or production activation is involved. SEM-D1–D5 remain open.
 
 ### Firebase Web configuration
 

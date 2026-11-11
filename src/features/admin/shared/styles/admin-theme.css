@@ -1,0 +1,131 @@
+/* ==========================================================================
+   TRIPMATE ADMINISTRATION WORKSPACE THEME (BATCH E)
+   Visual Direction: Forest & Warm Ivory (Warm Minimal Enterprise)
+   Scoped strictly under .admin-theme namespace
+   ========================================================================== */
+
+.admin-theme {
+  /* Core Brand Colors */
+  --admin-forest-charcoal: #1C2928;
+  --admin-forest-accent: #174B4A;
+  --admin-forest-hover: #103B39;
+  --admin-forest-active: #14332A;
+  --admin-sage: #5B6E69;
+  --admin-sage-light: #E8F0EA;
+  --admin-ivory: #F7F5EF;
+  --admin-copper: #B96D4C;
+  --admin-copper-light: #F7EBE5;
+  --admin-copper-text: #995436;
+
+  /* Surfaces & Canvas */
+  --admin-surface-canvas: #F7F5EF;
+  --admin-surface-card: #FFFFFF;
+  --admin-surface-card-subtle: #F7F5EF;
+  --admin-surface-sidebar: #1C2928;
+  --admin-surface-sidebar-hover: #103B39;
+  --admin-surface-sidebar-active: #174B4A;
+  --admin-surface-dialog: #FFFFFF;
+  --admin-surface-overlay: rgba(28, 41, 35, 0.45);
+
+  /* Borders & Dividers */
+  --admin-border-subtle: #DCE2DD;
+  --admin-border-default: #DCE2DD;
+  --admin-border-strong: #5B6E69;
+  --admin-border-sidebar: #103B39;
+
+  /* Typography & Inks (WCAG 2.2 AA Verified) */
+  --admin-text-primary: #1C2928;
+  --admin-text-secondary: #5B6E69;
+  --admin-text-muted: #53665D; /* Darkened from #5B6E69 to achieve 6.13:1 contrast on white (WCAG 2.2 AA) */
+  --admin-text-on-dark: #F7F5EF;
+  --admin-text-on-dark-muted: #5B6E69;
+
+  /* Buttons & Interactive Elements */
+  --admin-btn-primary-bg: #174B4A;
+  --admin-btn-primary-hover: #103B39;
+  --admin-btn-primary-text: #FFFFFF;
+
+  --admin-btn-secondary-bg: #FFFFFF;
+  --admin-btn-secondary-border: #DCE2DD;
+  --admin-btn-secondary-hover: #F7F5EF;
+  --admin-btn-secondary-text: #1C2928;
+
+  --admin-btn-copper-bg: #9C5539; /* Adjusted from #B96D4C to achieve 5.57:1 contrast with white text */
+  --admin-btn-copper-hover: #85462D;
+  --admin-btn-copper-text: #FFFFFF;
+
+  --admin-btn-danger-bg: #C93B2B;
+  --admin-btn-danger-hover: #A82E20;
+  --admin-btn-danger-text: #FFFFFF;
+
+  /* Badges & Semantic Statuses */
+  --admin-badge-approved-bg: #E7F2EC;
+  --admin-badge-approved-text: #1B5E3C;
+  --admin-badge-approved-border: #BCE0CD;
+
+  --admin-badge-pending-bg: #FBF3E8;
+  --admin-badge-pending-text: #8F5419;
+  --admin-badge-pending-border: #F2D8B3;
+
+  --admin-badge-rejected-bg: #FBEBE8;
+  --admin-badge-rejected-text: #9E2B25;
+  --admin-badge-rejected-border: #F4C5BF;
+
+  --admin-badge-locked-bg: #F7F5EF;
+  --admin-badge-locked-text: #515553;
+  --admin-badge-locked-border: #D2D1CC;
+
+  --admin-badge-alert-bg: #FCEEE9;
+  --admin-badge-alert-text: #995436;
+  --admin-badge-alert-border: #EFC6B6;
+}
+
+/* Custom utility classes inside administration workspace */
+.admin-theme .admin-card {
+  background-color: var(--admin-surface-card);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(28, 41, 35, 0.05);
+}
+
+.admin-theme .admin-card-header {
+  border-bottom: 1px solid var(--admin-border-subtle);
+  padding: 1.25rem 1.5rem;
+}
+
+.admin-theme .admin-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--admin-btn-primary-bg);
+  color: var(--admin-btn-primary-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 150ms ease-in-out;
+}
+
+.admin-theme .admin-btn-primary:hover {
+  background-color: var(--admin-btn-primary-hover);
+}
+
+.admin-theme .admin-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--admin-btn-secondary-bg);
+  border: 1px solid var(--admin-btn-secondary-border);
+  color: var(--admin-btn-secondary-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 150ms ease-in-out;
+}
+
+.admin-theme .admin-btn-secondary:hover {
+  background-color: var(--admin-btn-secondary-hover);
+}

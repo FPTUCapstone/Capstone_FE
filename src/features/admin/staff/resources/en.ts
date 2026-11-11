@@ -52,6 +52,13 @@ export const adminStaffEn = {
     returnToAdminButton: 'Return to System Overview',
     returnToAdminSignInButton: 'Switch Administration Account',
   },
+  eitherAccessDenied: {
+    eyebrow: 'Restricted Administration Module',
+    title: 'Staff or Administrator Access Required',
+    description:
+      'This module is reserved for Staff and Administrator accounts. Please sign in with an administration account to continue.',
+    returnToAdminSignInButton: 'Go to Administration Sign In',
+  },
   staffDashboard: {
     eyebrow: 'Operational Administration Workspace',
     title: 'Staff Operations Dashboard',
@@ -74,6 +81,11 @@ export const adminStaffEn = {
       'Operational throughput charts and moderation turnaround summaries will be enabled once reporting aggregation endpoints are finalized. No synthetic chart figures are displayed.',
     openModuleLabel: 'Open Workspace',
     unavailableModuleLabel: 'Module Unavailable',
+    tabs: {
+      overview: 'Overview',
+      analytics: 'Analytics',
+    },
+    analyticsBadge: 'New',
     statusBadges: {
       available: 'Available in Console',
       pendingBackend: 'Pending Backend Contract',
@@ -146,16 +158,18 @@ export const adminStaffEn = {
         description:
           'Monitor active traveler itineraries and review operational alerts across regions.',
         status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting real-time active trip monitoring endpoints.',
+        availabilityNote:
+          'Screen and BFF are integrated in console navigation (/admin/trips/active); awaiting real-time WebSocket alerts and streaming events integration.',
       },
       {
         id: 'platform-booking-oversight',
         title: 'Platform Booking & Refund Operations',
         category: 'Commercial Operations',
         description:
-          'Inspect platform-wide tour bookings, verify payment states, and process eligible traveler refunds.',
-        status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting administration booking list and refund processing endpoints.',
+          'Inspect platform-wide tour bookings and verify booking and payment states without exposing payment credentials.',
+        status: 'available' as const,
+        href: '/admin/bookings',
+        actionLabel: 'Open Booking Register',
       },
       {
         id: 'payout-settlement-review',
@@ -164,7 +178,8 @@ export const adminStaffEn = {
         description:
           'Verify Tour Operator payout settlement requests and coordinate disbursement processing.',
         status: 'pendingBackend' as const,
-        availabilityNote: 'Awaiting administration payout queue and settlement decision endpoints.',
+        availabilityNote:
+          'Superseded by the automatic daily settlement run (DAILY-PAYOUT-TRANSFER, SRS v11 UC-71 to UC-74); the Tour Operator payout-request review model this card described no longer exists.',
       },
       {
         id: 'landing-content-management',

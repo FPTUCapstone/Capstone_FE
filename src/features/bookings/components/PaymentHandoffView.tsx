@@ -124,7 +124,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
     return (
       <div className="flex flex-1 items-center justify-center p-8">
         <div
-          className="h-9 w-9 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+          className="h-9 w-9 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
           aria-hidden="true"
         />
       </div>
@@ -150,6 +150,34 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
     );
   }
 
+  if (booking.bookingStatus !== 'PendingPayment' && booking.bookingStatus !== 'Expired') {
+    const stopped = booking.bookingStatus === 'Interrupted';
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center font-sans" lang="vi">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-xs text-slate-400 font-semibold uppercase">Mã đơn đặt tour</p>
+          <p className="text-base font-black font-mono text-slate-900 mb-3">#{booking.bookingId}</p>
+          {stopped && (
+            <span className="inline-block rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800 mb-3">
+              Đã dừng vì an toàn
+            </span>
+          )}
+          <p className="text-xs text-slate-600 leading-relaxed mb-6">
+            {stopped
+              ? 'Tour này đã dừng vì lý do an toàn nên đơn không cần thanh toán thêm. Việc thanh toán và hoàn tiền được xử lý riêng theo chính sách hủy booking áp dụng.'
+              : 'Đơn đặt tour này không còn chờ thanh toán.'}
+          </p>
+          <Link
+            href={ROUTES.account.trips}
+            className="inline-flex rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+          >
+            Về chuyến đi của tôi
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 space-y-6 font-sans" lang="vi">
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -162,7 +190,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
               Chờ thanh toán
             </span>
-            <p className="text-2xl font-black text-[#007d6e] mt-1">
+            <p className="text-2xl font-black text-[#103B39] mt-1">
               {formatCurrency(booking.amount ?? 0, booking.currency ?? 'VND')}
             </p>
           </div>
@@ -189,14 +217,14 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
         <>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#007d6e] text-base">payments</span>
+              <span className="material-symbols-outlined text-[#103B39] text-base">payments</span>
               Cổng thanh toán điện tử
             </h3>
 
             <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#007d6e] text-white">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#103B39] text-white">
                     <span className="material-symbols-outlined text-xl">qr_code_2</span>
                   </div>
                   <div>
@@ -236,7 +264,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
             type="button"
             disabled={isSubmitting || secondsRemaining <= 0}
             onClick={handleProceedPayment}
-            className="w-full rounded-2xl bg-[#007d6e] py-4 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#006b5f] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full rounded-2xl bg-[#103B39] py-4 px-4 text-center text-sm font-bold text-white shadow-md transition hover:bg-[#174B4A] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>

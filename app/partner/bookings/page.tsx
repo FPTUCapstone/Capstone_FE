@@ -3,7 +3,8 @@
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
-import { OperatorTourNav } from '@/features/operator/tours/components/OperatorTourNav';
+import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
+import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { OperatorBookingListView } from '@/features/operator/bookings/components/OperatorBookingListView';
 import { isBookingDemoAllowedInCurrentEnv } from '@/features/operator/bookings/data/operatorBookingDemoFixtures';
 import type { BookingFilterParams, BookingStatus } from '@/features/operator/bookings/types/bookingLifecycle';
@@ -34,20 +35,15 @@ function OperatorBookingsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-8 lg:flex-row">
-          <OperatorTourNav activeTab="bookings" isDemo={isDemo} />
-          <main className="flex-1 min-w-0">
-            <OperatorBookingListView
-              initialParams={initialParams}
-              isDemo={isDemo}
-              demoActorUserId={demoActorUserId}
-            />
-          </main>
-        </div>
-      </div>
-    </div>
+    <PartnerWorkspaceLayout activeTab="bookings" isDemo={isDemo}>
+      <PageContentContainer>
+        <OperatorBookingListView
+          initialParams={initialParams}
+          isDemo={isDemo}
+          demoActorUserId={demoActorUserId}
+        />
+      </PageContentContainer>
+    </PartnerWorkspaceLayout>
   );
 }
 
@@ -56,7 +52,7 @@ export default function OperatorBookingsPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#F8FAFC] p-8 text-center text-xs text-slate-500">
-          Loading customer booking management...
+          Đang tải quản lý đặt tour...
         </div>
       }
     >

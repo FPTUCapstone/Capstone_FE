@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/features/auth/session/authSession', () => ({
   AuthStorage: { getAccessToken: () => 'operator-token' },
 }));
-vi.mock('@/lib/authApi', () => ({ getApiBase: () => 'http://api.test/api/v1' }));
+vi.mock('@/lib/apiBase', () => ({ getApiBase: () => 'http://api.test/api/v1' }));
 
 import {
   createTourPackage,

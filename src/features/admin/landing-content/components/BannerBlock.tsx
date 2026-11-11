@@ -14,8 +14,8 @@ export function BannerBlock({ value, errors, onChange, disabled }: BannerBlockPr
   const copy = landingContentEn.editor.banner;
 
   return (
-    <section aria-label={copy.title} className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-extrabold text-[#00152a]">{copy.title}</h2>
+    <section aria-label={copy.title} className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="text-lg font-extrabold text-[#1C2928]">{copy.title}</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <ImageField
           label={copy.image}

@@ -77,7 +77,7 @@ export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankC
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <div>
-          <h2 className="text-base font-bold text-[#00152A]">{financeEn.payouts.bank.title}</h2>
+          <h2 className="text-base font-bold text-[#1C2928]">{financeEn.payouts.bank.title}</h2>
           <p className="mt-0.5 text-xs text-slate-500">{financeEn.payouts.bank.subtitle}</p>
         </div>
 
@@ -108,7 +108,7 @@ export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankC
                   setDraftBank((prev) => ({ ...prev, accountHolderName: e.target.value.toUpperCase() }))
                 }
                 placeholder="NGUYEN VAN AN"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium uppercase text-slate-800 transition-colors focus:border-[#006B5F] focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium uppercase text-slate-800 transition-colors focus:border-[#174B4A] focus:outline-hidden"
               />
             </div>
 
@@ -122,7 +122,7 @@ export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankC
                 value={draftBank.bankName}
                 onChange={(e) => setDraftBank((prev) => ({ ...prev, bankName: e.target.value }))}
                 placeholder="Vietcombank"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#006B5F] focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 transition-colors focus:border-[#174B4A] focus:outline-hidden"
               />
             </div>
 
@@ -137,7 +137,7 @@ export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankC
                 value={draftBank.accountNumber}
                 onChange={(e) => setDraftBank((prev) => ({ ...prev, accountNumber: e.target.value }))}
                 placeholder={financeEn.payouts.bank.accountNumberPlaceholder}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-mono font-medium text-slate-800 transition-colors focus:border-[#006B5F] focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-mono font-medium text-slate-800 transition-colors focus:border-[#174B4A] focus:outline-hidden"
               />
             </div>
           </div>
@@ -161,7 +161,7 @@ export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankC
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-xl bg-[#006B5F] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#005249] disabled:opacity-50"
+              className="rounded-xl bg-[#174B4A] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#103B39] disabled:opacity-50"
             >
               {financeEn.payouts.bank.saveBtn}
             </button>
@@ -173,14 +173,14 @@ export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankC
             <span className="text-[11px] font-semibold text-slate-400">
               {financeEn.payouts.bank.accountHolder}
             </span>
-            <p className="mt-1 text-xs font-bold text-[#00152A] uppercase">
+            <p className="mt-1 text-xs font-bold text-[#1C2928] uppercase">
               {bankInfo.accountHolderName || financeEn.payouts.bank.notSet}
             </p>
           </div>
 
           <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
             <span className="text-[11px] font-semibold text-slate-400">{financeEn.payouts.bank.bankName}</span>
-            <p className="mt-1 text-xs font-bold text-[#00152A]">
+            <p className="mt-1 text-xs font-bold text-[#1C2928]">
               {bankInfo.bankName || financeEn.payouts.bank.notSet}
             </p>
           </div>
@@ -189,7 +189,7 @@ export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankC
             <span className="text-[11px] font-semibold text-slate-400">
               {financeEn.payouts.bank.accountNumber}
             </span>
-            <p className="mt-1 text-xs font-bold font-mono text-[#00152A]">
+            <p className="mt-1 text-xs font-bold font-mono text-[#1C2928]">
               {bankInfo.maskedAccountNumber || financeEn.payouts.bank.notSet}
             </p>
           </div>

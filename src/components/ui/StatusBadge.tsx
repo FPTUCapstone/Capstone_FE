@@ -6,11 +6,11 @@ type StatusBadgeProps = {
 };
 
 const tones = {
-  teal: 'bg-[#6df5e1]/30 text-[#006b5f]',
-  coral: 'bg-[#ffdad4] text-[#872015]',
-  neutral: 'bg-[#e0e3e6] text-[#43474d]',
-  warning: 'bg-amber-100 text-amber-800',
-  danger: 'bg-[#ffdad6] text-[#93000a]',
+  teal: 'bg-[#E8F0EA] text-[#174B4A] border border-[#174B4A]/20',
+  coral: 'bg-[#F6EDE8] text-[#995436] border border-[#995436]/20',
+  neutral: 'bg-[#DCE2DD] text-[#1C2928]',
+  warning: 'bg-[#FEF3E2] text-[#7C4A03] border border-[#F6DCAE]',
+  danger: 'bg-[#FDECEF] text-[#8C1030] border border-[#F7C9D3]',
 };
 
 export function StatusBadge({ children, tone = 'neutral' }: StatusBadgeProps) {

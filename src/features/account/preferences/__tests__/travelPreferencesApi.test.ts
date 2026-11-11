@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthStorage } from '@/features/auth/session/authSession';
-import { getApiBase } from '@/lib/authApi';
+import { getApiBase } from '@/lib/apiBase';
 
 import {
   getTravelPreferenceOptions,

@@ -73,40 +73,40 @@ export function ChangePasswordForm({
   return (
     <section
       aria-labelledby="change-password-heading"
-      className={`rounded-2xl border border-[#D8E1E4] bg-white p-6 shadow-xs sm:p-8 ${className}`}
+      className={`rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:p-8 ${className}`}
       data-integration-status={
         integrationPending ? capability.integrationStatus : 'AVAILABLE'
       }
     >
       <div className="mb-6">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006B5F]">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#174B4A]">
           Bảo mật tài khoản
         </p>
         <h1
           id="change-password-heading"
-          className="mt-1 text-2xl font-black tracking-tight text-[#00152A] sm:text-3xl"
+          className="mt-1 text-2xl font-black tracking-tight text-[#1C2928] sm:text-3xl"
         >
           Đổi mật khẩu
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-[#59616B]">
+        <p className="mt-2 text-sm leading-relaxed text-[#5B6E69]">
           Kiểm tra yêu cầu bảo mật cho mật khẩu hiện tại và mật khẩu mới của bạn.
         </p>
       </div>
 
       {userDisplay?.email || userDisplay?.name ? (
-        <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-[#E1E8F3] bg-[#F8FAFB] p-3.5 sm:p-4">
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-[#DCE2DD] bg-[#F8FAFB] p-3.5 sm:p-4">
           <div className="flex min-w-0 items-center gap-3">
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#00152A] text-xs font-bold text-white"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#103B39] text-xs font-bold text-white"
               aria-hidden="true"
             >
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-[#00152A]">
+              <p className="truncate text-sm font-bold text-[#1C2928]">
                 {userDisplay.name || userDisplay.email}
               </p>
-              <p className="truncate text-xs text-[#59616B]">{userDisplay.email}</p>
+              <p className="truncate text-xs text-[#5B6E69]">{userDisplay.email}</p>
             </div>
           </div>
           {userDisplay.role ? (
@@ -155,7 +155,7 @@ export function ChangePasswordForm({
           placeholder="••••••••"
         />
 
-        <div className="border-t border-[#E1E8F3]" />
+        <div className="border-t border-[#DCE2DD]" />
 
         <PasswordField
           id="new-password"
@@ -180,8 +180,8 @@ export function ChangePasswordForm({
           placeholder="••••••••"
         />
 
-        <div className="rounded-xl border border-[#D8E1E4] bg-[#F8FAFB] p-3.5 text-xs leading-relaxed text-[#59616B]">
-          <p className="mb-1 font-bold text-[#00152A]">Yêu cầu bảo mật:</p>
+        <div className="rounded-xl border border-[#DCE2DD] bg-[#F8FAFB] p-3.5 text-xs leading-relaxed text-[#5B6E69]">
+          <p className="mb-1 font-bold text-[#1C2928]">Yêu cầu bảo mật:</p>
           <ul className="list-disc space-y-0.5 pl-4">
             <li>Tối thiểu 8 ký tự và không chứa khoảng trắng.</li>
             <li>Có ít nhất một chữ hoa (A–Z) và một chữ thường (a–z).</li>

@@ -1,8 +1,8 @@
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
 import {
   MSG127_SYSTEM_ERROR,
   PENDING_BE_INTEGRATION_ERROR_CODE,
-} from '@/features/trips/services/tripHistoryApi';
+} from '@/features/trips/legacyReviewContext';
 import type { CreateReviewPayload, ReviewSubmissionResult } from '../types/review';
 import { ReviewApiError } from '../types/review';
 

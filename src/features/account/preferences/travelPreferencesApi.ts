@@ -1,5 +1,5 @@
 import { AuthStorage } from '@/features/auth/session/authSession';
-import { getApiBase } from '@/lib/authApi';
+import { getApiBase } from '@/lib/apiBase';
 
 import {
   PREFERENCE_FIELDS,

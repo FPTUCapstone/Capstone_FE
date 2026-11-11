@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
+import { isSameOriginRequest } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
 
 const REFRESH_COOKIE = 'tripmate_refresh';
@@ -44,6 +45,8 @@ function safeFailure(status: number, body: unknown): Response {
 
 /** POST create (immutable filter snapshot) and GET paginated history — same BE resource. */
 export async function proxyRevenueExports(request: Request): Promise<Response> {
+  if (request.method === 'POST' && !isSameOriginRequest(request)) return safeFailure(403, null);
+
   try {
     const token = await operatorToken(request.signal);
     if (!token) return safeFailure(401, null);

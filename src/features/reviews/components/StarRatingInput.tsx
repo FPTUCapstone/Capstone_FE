@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
 
 interface StarRatingInputProps {
   value: number;
@@ -39,7 +39,7 @@ export function StarRatingInput({ value, onChange, error }: StarRatingInputProps
 
   return (
     <section aria-labelledby="rating-title" className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-xs">
-      <h3 id="rating-title" className="text-sm font-extrabold text-[#00152A] sm:text-base">
+      <h3 id="rating-title" className="text-sm font-extrabold text-[#1C2928] sm:text-base">
         {tripReviewEn.tripReview.ratingSectionTitle} <span className="text-rose-500">*</span>
       </h3>
       <p className="mt-1 text-xs text-slate-500">
@@ -72,7 +72,7 @@ export function StarRatingInput({ value, onChange, error }: StarRatingInputProps
               onMouseEnter={() => setHoverVal(star)}
               onMouseLeave={() => setHoverVal(0)}
               onKeyDown={(e) => handleKeyDown(e, star)}
-              className="p-1 text-amber-400 transition transform hover:scale-115 active:scale-95 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F] rounded-lg"
+              className="p-1 text-amber-400 transition transform hover:scale-115 active:scale-95 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] rounded-lg"
             >
               <span
                 className={`material-symbols-outlined text-[34px] sm:text-[38px] drop-shadow-2xs ${

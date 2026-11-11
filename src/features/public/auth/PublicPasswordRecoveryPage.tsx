@@ -9,7 +9,7 @@ export function PublicPasswordRecoveryPage() {
         title={
           <>
             Khôi phục tài khoản{' '}
-            <span className="text-brand-brightTeal">TripMate</span>
+            <span className="text-teal-300">TripMate</span>
           </>
         }
         description="Nhận mã xác nhận qua email và tạo mật khẩu mới chỉ trong vài bước đơn giản."
@@ -28,8 +28,8 @@ export function PublicPasswordRecoveryPage() {
           </span>
         </div>
 
-        <div className="w-full max-w-[480px] pt-20 lg:pt-0">
-          <div className="rounded-3xl border border-slate-100 bg-brand-card p-8 shadow-card-lg sm:p-10">
+        <div className="w-full max-w-[480px] pt-16 sm:pt-20 lg:pt-0">
+          <div className="rounded-3xl border border-slate-100 bg-brand-card p-6 sm:p-8 md:p-10 shadow-card-lg">
             <PasswordRecoveryFlow />
           </div>
 

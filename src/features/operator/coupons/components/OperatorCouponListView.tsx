@@ -11,14 +11,12 @@ import {
 import {
   OPERATOR_COUPON_ROUTES,
   buildCouponListUrl,
-  withCouponDemoMode,
 } from '../routes';
 import { OperatorCouponStatusBadge } from './OperatorCouponStatusBadge';
 import { couponEn } from '../resources/en';
 
 interface OperatorCouponListViewProps {
   coupons: CouponDto[];
-  isDemo?: boolean;
 }
 
 type FilterTab = 'ALL' | CouponStatus;
@@ -48,10 +46,7 @@ function formatDiscountSummary(coupon: CouponDto): string {
   return formatCurrency(coupon.discountValue);
 }
 
-export function OperatorCouponListView({
-  coupons,
-  isDemo = false,
-}: OperatorCouponListViewProps) {
+export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -88,12 +83,11 @@ export function OperatorCouponListView({
   const startIndexDisplay = totalItems === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const endIndexDisplay = Math.min(safePage * pageSize, totalItems);
 
-  // Update URL on filter or page change (preserving demo=1)
+  // Update URL on filter or page change.
   const updateUrl = (newPage: number, newStatus: FilterTab) => {
     const url = buildCouponListUrl({
       page: newPage,
       status: newStatus,
-      isDemo,
     });
     router.replace(url, { scroll: false });
   };
@@ -121,60 +115,16 @@ export function OperatorCouponListView({
   const currentListUrl = buildCouponListUrl({
     page: safePage,
     status: activeTab,
-    isDemo,
   });
 
-  const createHref = withCouponDemoMode(
-    `${OPERATOR_COUPON_ROUTES.create}?returnUrl=${encodeURIComponent(currentListUrl)}`,
-    isDemo
-  );
+  const createHref = `${OPERATOR_COUPON_ROUTES.create}?returnUrl=${encodeURIComponent(currentListUrl)}`;
 
   return (
     <div className="space-y-6">
-      {/* Production Truthfulness Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-blue-900 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[20px] text-blue-600 shrink-0">
-              info
-            </span>
-            <div className="space-y-1">
-              <p className="font-extrabold">{couponEn.list.banners.productionTitle}</p>
-              <p className="text-blue-700 leading-relaxed">
-                {couponEn.list.banners.productionBody}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Demo Mode Notice */}
-      {isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-xs text-amber-900 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[20px] text-amber-600 shrink-0">
-              science
-            </span>
-            <div className="space-y-1">
-              <p className="font-extrabold">{couponEn.list.banners.demoTitle}</p>
-              <p className="text-amber-800 leading-relaxed">
-                {couponEn.list.banners.demoBody}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Workspace Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-[#00152A] sm:text-2xl">
+          <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl">
             {couponEn.list.title}
           </h1>
           <p className="mt-1 text-xs text-slate-500">{couponEn.list.description}</p>
@@ -182,7 +132,7 @@ export function OperatorCouponListView({
 
         <Link
           href={createHref}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#006B5F] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#005249] transition"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
           <span>{couponEn.list.createButton}</span>
@@ -195,7 +145,7 @@ export function OperatorCouponListView({
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {couponEn.list.kpi.total}
           </p>
-          <p className="mt-1 text-2xl font-black text-[#00152A]">{stats.total}</p>
+          <p className="mt-1 text-2xl font-black text-[#1C2928]">{stats.total}</p>
           <p className="mt-1 text-[11px] text-slate-500">{couponEn.list.kpi.totalSubtext}</p>
         </div>
 
@@ -209,11 +159,11 @@ export function OperatorCouponListView({
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {couponEn.list.kpi.redemptions}
+            {couponEn.list.kpi.occupied}
           </p>
           <p className="mt-1 text-2xl font-black text-blue-600">{stats.totalRedemptions}</p>
           <p className="mt-1 text-[11px] text-slate-500">
-            {couponEn.list.kpi.redemptionsSubtext}
+            {couponEn.list.kpi.occupiedSubtext}
           </p>
         </div>
       </div>
@@ -240,7 +190,7 @@ export function OperatorCouponListView({
                 onClick={() => handleTabChange(tab.key)}
                 className={`whitespace-nowrap border-b-2 px-3 py-2 text-xs font-bold transition ${
                   isActive
-                    ? 'border-[#006B5F] text-[#006B5F]'
+                    ? 'border-[#174B4A] text-[#174B4A]'
                     : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
                 }`}
               >
@@ -278,7 +228,7 @@ export function OperatorCouponListView({
                     {couponEn.list.table.discount}
                   </th>
                   <th scope="col" className="px-5 py-3.5">
-                    {couponEn.list.table.usageProgress}
+                    {couponEn.list.kpi.occupied}
                   </th>
                   <th scope="col" className="px-5 py-3.5">
                     {couponEn.list.table.validityPeriod}
@@ -296,20 +246,16 @@ export function OperatorCouponListView({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedCoupons.map((coupon) => {
-                  const usagePercentage = Math.min(
-                    100,
-                    Math.round(((coupon.usageCount || 0) / coupon.usageLimit) * 100)
+                  const usagePercentage = coupon.usageLimit === null ? 0 : Math.min(
+                    100, Math.round((coupon.usageCount / coupon.usageLimit) * 100)
                   );
-                  const editHref = withCouponDemoMode(
-                    `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`,
-                    isDemo
-                  );
+                  const editHref = `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`;
 
                   return (
                     <tr key={coupon.id} className="hover:bg-slate-50/60 transition">
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-xs font-black tracking-wider text-[#00152A]">
+                          <span className="font-mono text-xs font-black tracking-wider text-[#1C2928]">
                             {coupon.couponCode}
                           </span>
                           <span className="text-slate-600 font-medium line-clamp-1">
@@ -318,7 +264,7 @@ export function OperatorCouponListView({
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 font-bold text-[#006B5F]">
+                      <td className="px-5 py-4 font-bold text-[#174B4A]">
                         {formatDiscountSummary(coupon)}
                       </td>
 
@@ -326,21 +272,17 @@ export function OperatorCouponListView({
                         <div className="w-32">
                           <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
                             <span>
-                              {couponEn.list.table.usagesCount.replace(
-                                '{count}',
-                                String(coupon.usageCount)
-                              )}
+                              {couponEn.list.table.occupiedCount.replace('{count}', String(coupon.usageCount))}
                             </span>
                             <span>
-                              {couponEn.list.table.usagesLimit.replace(
-                                '{limit}',
-                                String(coupon.usageLimit)
+                              {coupon.usageLimit === null ? couponEn.list.table.unlimited : couponEn.list.table.usagesLimit.replace(
+                                '{limit}', String(coupon.usageLimit)
                               )}
                             </span>
                           </div>
                           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
-                              className="h-full rounded-full bg-[#006B5F]"
+                              className="h-full rounded-full bg-[#174B4A]"
                               style={{ width: `${usagePercentage}%` }}
                             />
                           </div>
@@ -378,7 +320,7 @@ export function OperatorCouponListView({
                       <td className="px-5 py-4 text-right">
                         <Link
                           href={editHref}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#006B5F] transition"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#174B4A] transition"
                         >
                           <span className="material-symbols-outlined text-[16px]">edit</span>
                           <span>{couponEn.list.table.editAction}</span>
@@ -394,20 +336,16 @@ export function OperatorCouponListView({
           {/* Mobile / Tablet Cards View */}
           <div className="lg:hidden divide-y divide-slate-100">
             {paginatedCoupons.map((coupon) => {
-              const usagePercentage = Math.min(
-                100,
-                Math.round(((coupon.usageCount || 0) / coupon.usageLimit) * 100)
+              const usagePercentage = coupon.usageLimit === null ? 0 : Math.min(
+                100, Math.round((coupon.usageCount / coupon.usageLimit) * 100)
               );
-              const editHref = withCouponDemoMode(
-                `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`,
-                isDemo
-              );
+              const editHref = `${OPERATOR_COUPON_ROUTES.edit(coupon.id)}?returnUrl=${encodeURIComponent(currentListUrl)}`;
 
               return (
                 <div key={coupon.id} className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <span className="font-mono text-sm font-black tracking-wider text-[#00152A]">
+                      <span className="font-mono text-sm font-black tracking-wider text-[#1C2928]">
                         {coupon.couponCode}
                       </span>
                       <p className="mt-0.5 text-xs font-bold text-slate-700">{coupon.name}</p>
@@ -420,7 +358,7 @@ export function OperatorCouponListView({
                       <span className="text-[10px] text-slate-400 uppercase font-bold">
                         {couponEn.list.table.discount}:
                       </span>
-                      <p className="font-bold text-[#006B5F]">{formatDiscountSummary(coupon)}</p>
+                      <p className="font-bold text-[#174B4A]">{formatDiscountSummary(coupon)}</p>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase font-bold">
@@ -434,14 +372,14 @@ export function OperatorCouponListView({
 
                   <div className="space-y-1">
                     <div className="flex justify-between text-[11px] font-medium text-slate-500">
-                      <span>{couponEn.list.table.usageProgress}</span>
+                      <span>{couponEn.list.kpi.occupied}</span>
                       <span>
-                        {coupon.usageCount} / {coupon.usageLimit}
+                        {coupon.usageCount} / {coupon.usageLimit === null ? couponEn.list.table.unlimited : coupon.usageLimit}
                       </span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-[#006B5F]"
+                        className="h-full rounded-full bg-[#174B4A]"
                         style={{ width: `${usagePercentage}%` }}
                       />
                     </div>

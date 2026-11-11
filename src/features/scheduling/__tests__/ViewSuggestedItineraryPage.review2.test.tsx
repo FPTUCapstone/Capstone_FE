@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ROUTE_LINE_COLOR, ROUTE_START_COLOR, STRAIGHT_LINE_OPACITY } from '../components/maps/mapboxStyle';
 import { ViewSuggestedItineraryPage } from '../components/ViewSuggestedItineraryPage';
 import * as schedulingApi from '../services/schedulingApi';
 import { ItineraryDetailDto, ItineraryDetailItemDto } from '../types/schedulingTypes';
@@ -343,13 +344,15 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
 
 vi.mock('../components/maps/LazyMaps', () => ({
   LazyItineraryMap: ({
+    selectedLegId,
     model,
     onSelectItem,
   }: {
     model: { markers: Array<{ label: string; itemId: number | null }> };
     onSelectItem: (itemId: number) => void;
+    selectedLegId?: string | null;
   }) => (
-    <div data-testid="itinerary-map">
+    <div data-testid="itinerary-map" data-selected-leg={selectedLegId ?? ''}>
       {model.markers.map((marker) => (
         <button
           key={marker.label}
@@ -379,11 +382,13 @@ describe('ViewSuggestedItineraryPage — Review 2 itinerary map (D9)', () => {
     vi.unstubAllEnvs();
   });
 
-  it('keeps the order diagram without a Mapbox token', async () => {
+  it('displays informative fallback card without a Mapbox token and never renders arrow diagram', async () => {
     vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', '');
     await renderLoaded(mapped);
 
-    expect(screen.getByText('Sơ đồ thứ tự điểm dừng')).toBeDefined();
+    expect(screen.getByText('Bản đồ lộ trình')).toBeDefined();
+    expect(screen.getByText('Chưa cấu hình Mapbox Access Token')).toBeDefined();
+    expect(screen.queryByText('Sơ đồ thứ tự điểm dừng')).toBeNull();
     expect(screen.queryByTestId('itinerary-map')).toBeNull();
   });
 
@@ -406,11 +411,98 @@ describe('ViewSuggestedItineraryPage — Review 2 itinerary map (D9)', () => {
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
-  it('keeps the diagram when the stops have no coordinates', async () => {
+  it('explains that the solid line follows roads and the dashed line is only a straight estimate', async () => {
+    vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
+    await renderLoaded(mapped);
+
+    expect(screen.getByText(/Nét liền: theo đường đi thực tế/)).toBeDefined();
+    expect(screen.getByText(/Nét đứt: chỉ nối thẳng theo thứ tự ghé/)).toBeDefined();
+    expect(screen.queryByText(/không phải đường đi thực tế/)).toBeNull();
+    // The swatches use the same colours as the lines on the map.
+    const legend = document.querySelector('ul[aria-label="Chú thích đường nối"]')!;
+    const roadSwatch = legend.querySelector('[data-testid="road-swatch"]') as HTMLElement;
+    expect(roadSwatch.style.background).toContain('linear-gradient');
+    expect(roadSwatch.getAttribute('style')?.toLowerCase()).toContain(ROUTE_START_COLOR.toLowerCase().slice(1));
+    expect(screen.getByText(/mũi tên chỉ hướng đi/)).toBeDefined();
+    const dashed = legend.querySelector('line')!;
+    expect(dashed.getAttribute('stroke')).toBe(ROUTE_LINE_COLOR);
+    expect(dashed.getAttribute('stroke-opacity')).toBe(String(STRAIGHT_LINE_OPACITY));
+    expect(dashed.getAttribute('stroke-dasharray')).not.toBeNull();
+  });
+
+  describe('viewing one leg on the map', () => {
+    const FIRST_LEG = 'item-11>item-12';
+    const SECOND_LEG = 'item-12>item-13';
+    const selectedLeg = () => screen.getByTestId('itinerary-map').getAttribute('data-selected-leg');
+    const legButton = (to: string) =>
+      screen.getByRole('button', { name: new RegExp(`Xem trên bản đồ đoạn từ .* đến ${to}`) });
+
+    beforeEach(() => {
+      vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
+      Element.prototype.scrollIntoView = vi.fn();
+    });
+
+    it('shows the pressed leg on the map, marks its button pressed and brings the map into view', async () => {
+      await renderLoaded(mapped);
+      expect(selectedLeg()).toBe('');
+
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+
+      expect(selectedLeg()).toBe(FIRST_LEG);
+      expect(legButton('Ngũ Hành Sơn').getAttribute('aria-pressed')).toBe('true');
+      expect(legButton('Bãi biển Non Nước').getAttribute('aria-pressed')).toBe('false');
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ block: 'nearest' }));
+
+      fireEvent.click(legButton('Bãi biển Non Nước'));
+      expect(selectedLeg()).toBe(SECOND_LEG);
+    });
+
+    it('goes back to the whole route when the same leg is pressed again', async () => {
+      await renderLoaded(mapped);
+
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+
+      expect(selectedLeg()).toBe('');
+    });
+
+    it('goes back to the whole route on Escape', async () => {
+      await renderLoaded(mapped);
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(selectedLeg()).toBe('');
+    });
+
+    it('offers a "Xem toàn bộ lộ trình" button on the map only while a leg is selected', async () => {
+      await renderLoaded(mapped);
+      expect(screen.queryByRole('button', { name: 'Xem toàn bộ lộ trình' })).toBeNull();
+
+      fireEvent.click(legButton('Ngũ Hành Sơn'));
+      expect(screen.getByText(/Đoạn đang xem được tô màu cam đất/)).toBeDefined();
+      fireEvent.click(screen.getByRole('button', { name: 'Xem toàn bộ lộ trình' }));
+
+      expect(selectedLeg()).toBe('');
+      expect(screen.queryByRole('button', { name: 'Xem toàn bộ lộ trình' })).toBeNull();
+    });
+
+    it('does not turn legs into buttons when the map is not shown', async () => {
+      vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', '');
+      await renderLoaded(mapped);
+
+      expect(screen.queryByRole('button', { name: /Xem trên bản đồ đoạn/ })).toBeNull();
+    });
+  });
+
+  it('displays informative empty coordinates card when the stops have no coordinates and never renders arrow diagram', async () => {
     vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test');
     await renderLoaded(itinerary);
 
-    expect(screen.getByText('Sơ đồ thứ tự điểm dừng')).toBeDefined();
+    expect(screen.getByText('Bản đồ lộ trình')).toBeDefined();
+    expect(screen.getByText('Chưa có tọa độ hiển thị')).toBeDefined();
+    expect(screen.queryByText('Sơ đồ thứ tự điểm dừng')).toBeNull();
+    expect(screen.queryByTestId('itinerary-map')).toBeNull();
   });
 });
 

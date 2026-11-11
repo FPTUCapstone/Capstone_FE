@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createBooking,
   getBooking,
-  getTicket,
   initiatePayment,
   isBookingDemoAllowedInCurrentEnv,
   quoteBooking,
@@ -270,55 +269,6 @@ describe('bookingApi service (UC-27, UC-28, UC-29)', () => {
 
       const params = new URLSearchParams('vnp_ResponseCode=00');
       await expect(verifyPayment(params)).rejects.toMatchObject({
-        status: 501,
-        message: expect.stringContaining('PENDING_BE_INTEGRATION'),
-      });
-    });
-  });
-
-  describe('getTicket (UC-29)', () => {
-    it('returns demo ticket in demo mode', async () => {
-      setNodeEnv('development');
-      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
-
-      const ticket = await getTicket('tkt-demo-03', { allowDemo: true });
-      expect(ticket.ticketCode).toBe('TKT-8F4K29QX-03');
-      expect(ticket.status).toBe('Valid');
-      expect(ticket.qrPayload).toBe('TRIPMATE-TKT-8F4K29QX-03-VERIFIED');
-    });
-
-    it('calls /api/tickets/{ticketId} with ticketId in real mode', async () => {
-      setNodeEnv('production');
-      const mockFetch = vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            ticketId: 'ticket-456',
-            ticketCode: 'TKT-TEST-456',
-            bookingId: 'booking-123',
-            status: 'Valid',
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        ),
-      );
-      vi.stubGlobal('fetch', mockFetch);
-
-      const ticket = await getTicket('ticket-456');
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/api/tickets/ticket-456',
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Accept: 'application/json',
-          }),
-        }),
-      );
-      expect(ticket.ticketId).toBe('ticket-456');
-    });
-
-    it('throws 501 PENDING_BE_INTEGRATION in real mode', async () => {
-      setNodeEnv('production');
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })));
-
-      await expect(getTicket('tkt-real-03')).rejects.toMatchObject({
         status: 501,
         message: expect.stringContaining('PENDING_BE_INTEGRATION'),
       });

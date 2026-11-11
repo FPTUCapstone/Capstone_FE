@@ -237,7 +237,7 @@ export function OperatorProfileView({
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 id="section-company-info" className="text-base font-extrabold text-[#00152A]">
+                <h3 id="section-company-info" className="text-base font-extrabold text-[#1C2928]">
                   Thông tin doanh nghiệp
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -254,7 +254,7 @@ export function OperatorProfileView({
               <div>
                 <label
                   htmlFor="field-businessName"
-                  className="block text-xs font-bold text-[#00152A]"
+                  className="block text-xs font-bold text-[#1C2928]"
                 >
                   Tên doanh nghiệp lữ hành
                 </label>
@@ -271,10 +271,10 @@ export function OperatorProfileView({
                   placeholder="Ví dụ: Han River Travel Co., Ltd"
                   aria-invalid={Boolean(errors.businessName)}
                   aria-describedby={errors.businessName ? 'err-businessName' : undefined}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                     errors.businessName
                       ? 'border-rose-400 focus:border-rose-500'
-                      : 'border-slate-300 focus:border-[#006B5F]'
+                      : 'border-slate-300 focus:border-[#174B4A]'
                   }`}
                 />
                 {errors.businessName && (
@@ -290,7 +290,7 @@ export function OperatorProfileView({
                 <div>
                   <label
                     htmlFor="field-contactEmail"
-                    className="block text-xs font-bold text-[#00152A]"
+                    className="block text-xs font-bold text-[#1C2928]"
                   >
                     Email liên hệ công việc
                   </label>
@@ -307,10 +307,10 @@ export function OperatorProfileView({
                     placeholder="contact@hanrivertravel.vn"
                     aria-invalid={Boolean(errors.contactEmail)}
                     aria-describedby={errors.contactEmail ? 'err-contactEmail' : undefined}
-                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
+                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                       errors.contactEmail
                         ? 'border-rose-400 focus:border-rose-500'
-                        : 'border-slate-300 focus:border-[#006B5F]'
+                        : 'border-slate-300 focus:border-[#174B4A]'
                     }`}
                   />
                   {errors.contactEmail && (
@@ -324,7 +324,7 @@ export function OperatorProfileView({
                 <div>
                   <label
                     htmlFor="field-contactPhone"
-                    className="block text-xs font-bold text-[#00152A]"
+                    className="block text-xs font-bold text-[#1C2928]"
                   >
                     Số điện thoại liên hệ
                   </label>
@@ -341,10 +341,10 @@ export function OperatorProfileView({
                     placeholder="0236 388 1234"
                     aria-invalid={Boolean(errors.contactPhone)}
                     aria-describedby={errors.contactPhone ? 'err-contactPhone' : undefined}
-                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
+                    className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                       errors.contactPhone
                         ? 'border-rose-400 focus:border-rose-500'
-                        : 'border-slate-300 focus:border-[#006B5F]'
+                        : 'border-slate-300 focus:border-[#174B4A]'
                     }`}
                   />
                   {errors.contactPhone && (
@@ -359,7 +359,7 @@ export function OperatorProfileView({
               <div>
                 <label
                   htmlFor="field-businessAddress"
-                  className="block text-xs font-bold text-[#00152A]"
+                  className="block text-xs font-bold text-[#1C2928]"
                 >
                   Địa chỉ trụ sở chính
                 </label>
@@ -376,10 +376,10 @@ export function OperatorProfileView({
                   placeholder="02 Nguyễn Văn Linh, Hải Châu, Đà Nẵng"
                   aria-invalid={Boolean(errors.businessAddress)}
                   aria-describedby={errors.businessAddress ? 'err-businessAddress' : undefined}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                     errors.businessAddress
                       ? 'border-rose-400 focus:border-rose-500'
-                      : 'border-slate-300 focus:border-[#006B5F]'
+                      : 'border-slate-300 focus:border-[#174B4A]'
                   }`}
                 />
                 {errors.businessAddress && (
@@ -393,7 +393,7 @@ export function OperatorProfileView({
               <div>
                 <label
                   htmlFor="field-website"
-                  className="block text-xs font-bold text-[#00152A]"
+                  className="block text-xs font-bold text-[#1C2928]"
                 >
                   Website chính thức
                 </label>
@@ -408,7 +408,7 @@ export function OperatorProfileView({
                   }}
                   disabled={!canEdit}
                   placeholder="https://hanrivertravel.vn"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#006B5F] focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -417,7 +417,7 @@ export function OperatorProfileView({
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="field-businessDescription"
-                    className="block text-xs font-bold text-[#00152A]"
+                    className="block text-xs font-bold text-[#1C2928]"
                   >
                     Mô tả giới thiệu doanh nghiệp
                   </label>
@@ -438,10 +438,10 @@ export function OperatorProfileView({
                   placeholder="Giới thiệu kinh nghiệm, lĩnh vực thế mạnh và cam kết chất lượng tour của doanh nghiệp..."
                   aria-invalid={Boolean(errors.businessDescription)}
                   aria-describedby={errors.businessDescription ? 'err-businessDescription' : undefined}
-                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
                     errors.businessDescription
                       ? 'border-rose-400 focus:border-rose-500'
-                      : 'border-slate-300 focus:border-[#006B5F]'
+                      : 'border-slate-300 focus:border-[#174B4A]'
                   }`}
                 />
                 {errors.businessDescription && (
@@ -471,7 +471,7 @@ export function OperatorProfileView({
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 id="section-legal-docs" className="text-sm font-extrabold text-[#00152A]">
+              <h3 id="section-legal-docs" className="text-sm font-extrabold text-[#1C2928]">
                 Thông tin pháp lý & Tài khoản
               </h3>
               <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
@@ -483,7 +483,7 @@ export function OperatorProfileView({
               {/* Business Licence Number (Read-only, BR-08) */}
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <span className="text-slate-500">Số GPKD lữ hành:</span>
-                <span className="font-mono font-bold text-[#00152A]">
+                <span className="font-mono font-bold text-[#1C2928]">
                   {initialProfile.businessLicenceNumber || (
                     <span className="italic text-slate-400 font-sans">Chờ tích hợp máy chủ</span>
                   )}
@@ -493,7 +493,7 @@ export function OperatorProfileView({
               {/* Tax Code (Read-only, BR-08) */}
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <span className="text-slate-500">Mã số thuế:</span>
-                <span className="font-mono font-bold text-[#00152A]">
+                <span className="font-mono font-bold text-[#1C2928]">
                   {initialProfile.taxCode || (
                     <span className="italic text-slate-400 font-sans">Chờ tích hợp máy chủ</span>
                   )}
@@ -522,19 +522,19 @@ export function OperatorProfileView({
 
             {/* Legal Notice note from Screen #76 */}
             <p className="mt-4 rounded-xl bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-600 border border-slate-100">
-              <span className="font-bold text-[#00152A]">Lưu ý:</span> Số giấy phép kinh doanh và mã số thuế là duy nhất và không thể chỉnh sửa qua chức năng này (BR-08). Các thay đổi pháp lý cần xác minh lại phải tuân theo quy trình và quy tắc nghiệp vụ tương ứng của TripMate.
+              <span className="font-bold text-[#1C2928]">Lưu ý:</span> Số giấy phép kinh doanh và mã số thuế là duy nhất và không thể chỉnh sửa qua chức năng này (BR-08). Các thay đổi pháp lý cần xác minh lại phải tuân theo quy trình và quy tắc nghiệp vụ tương ứng của TripMate.
             </p>
           </section>
         </div>
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <button
           type="button"
           onClick={handleCancel}
           disabled={!canEdit}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Hủy
         </button>
@@ -543,10 +543,10 @@ export function OperatorProfileView({
           type="submit"
           disabled={!canEdit}
           title={!isDemo ? 'Tính năng lưu đang chờ kết nối dịch vụ máy chủ' : undefined}
-          className={`rounded-xl px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 ${
+          className={`w-full sm:w-auto text-center rounded-xl px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 ${
             !isDemo
               ? 'bg-slate-400 cursor-not-allowed opacity-60'
-              : 'bg-[#006B5F] hover:bg-[#00574D] disabled:opacity-50'
+              : 'bg-[#174B4A] hover:bg-[#103B39] disabled:opacity-50'
           }`}
         >
           {submitting ? 'Đang lưu...' : !isDemo ? 'Lưu thông tin (Chờ máy chủ)' : 'Lưu thông tin'}

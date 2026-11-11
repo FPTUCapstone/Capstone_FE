@@ -32,6 +32,13 @@ export const adminDashboardEn = {
     'This overview shows live links only where a module is available. Platform indicators will appear after the reporting services are connected.',
   modulesHeading: 'Administration modules',
   openModuleLabel: 'Open module',
+  tabs: {
+    overview: 'Overview',
+    analytics: 'Analytics',
+  },
+  analyticsBadge: 'New',
+  previewAnalyticsShow: 'Show platform analytics preview',
+  previewAnalyticsHide: 'Hide platform analytics preview',
   statusLabels: {
     available: 'Available',
     pendingIntegration: 'Pending integration',

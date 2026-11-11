@@ -25,8 +25,8 @@ export function FeaturedToursBlock({ value, tours, errors, onChange, disabled }:
   }
 
   return (
-    <section aria-label={copy.title} className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-extrabold text-[#00152a]">{copy.title}</h2>
+    <section aria-label={copy.title} className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="text-lg font-extrabold text-[#1C2928]">{copy.title}</h2>
       {options.length === 0 ? (
         <p className="mt-3 text-sm text-[#667085]">{copy.empty}</p>
       ) : (

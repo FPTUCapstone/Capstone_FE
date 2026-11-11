@@ -39,15 +39,17 @@ export function AuthShell({
   const returnLabel = backLabel ?? (admin ? 'Back to Admin Login' : 'Back to Sign In');
 
   return (
-    <main className={`min-h-screen ${admin ? 'bg-[#0F1B2D]' : 'bg-brand-surface font-sans'}`}>
-      <header className={`border-b px-5 py-4 sm:px-8 ${admin ? 'border-[#33425A] bg-[#0F1B2D] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+    <main className={`min-h-screen font-sans ${admin ? 'bg-[#F7F5EF]' : 'bg-brand-surface'}`}>
+
+      <header className={`border-b px-4 py-3 sm:px-8 sm:py-4 ${admin ? 'border-[#103B39] bg-[#1C2928] text-white' : 'border-brand-border bg-white text-brand-textPrimary'}`}>
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 sm:gap-4">
           <Link href={ROUTES.home} aria-label="TripMate home">
-            <BrandLogo inverse={admin} size={24} />
+            <BrandLogo context={admin ? 'admin' : 'main'} inverse={admin} size={24} />
           </Link>
           <Link
             href={returnHref}
-            className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${admin ? 'text-[#BFD7F5] hover:bg-white/10' : 'text-brand-teal hover:bg-brand-lightTeal'}`}
+            className={`rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold transition-colors ${admin ? 'text-[#E8F0EA] hover:text-white hover:bg-white/10' : 'text-brand-teal hover:bg-brand-lightTeal'}`}
+
           >
             {returnLabel}
           </Link>
@@ -61,9 +63,9 @@ export function AuthShell({
             aria-label="TripMate travel context"
             style={{
               backgroundImage: [
-                'radial-gradient(circle at 20% 20%, rgba(0, 125, 110, 0.35) 0%, transparent 45%)',
-                'radial-gradient(circle at 80% 70%, rgba(255, 112, 67, 0.25) 0%, transparent 45%)',
-                'linear-gradient(135deg, #00152A 0%, #102A43 60%, #006B5F 130%)',
+                'radial-gradient(circle at 20% 20%, rgba(23, 75, 74, 0.45) 0%, transparent 45%)',
+                'radial-gradient(circle at 80% 70%, rgba(185, 109, 76, 0.25) 0%, transparent 45%)',
+                'linear-gradient(135deg, #0C2423 0%, #103B39 60%, #174B4A 130%)',
               ].join(', '),
             }}
           >
@@ -88,7 +90,7 @@ export function AuthShell({
 
                 {/* Eyebrow */}
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold tracking-wide backdrop-blur-sm">
-                  <span className="material-symbols-outlined text-[16px] text-brand-brightTeal">auto_awesome</span>
+                  <span className="material-symbols-outlined text-[16px] text-teal-300">auto_awesome</span>
                   {eyebrow}
                 </div>
 
@@ -159,7 +161,7 @@ export function AuthShell({
                 <div className="grid grid-cols-3 gap-6 max-w-lg">
                   {points.map((point, idx) => (
                     <div key={point}>
-                      <div className={`text-3xl font-extrabold ${idx === points.length - 1 ? 'text-brand-coral' : 'text-brand-brightTeal'}`}>
+                      <div className={`text-3xl font-extrabold ${idx === points.length - 1 ? 'text-brand-coral' : 'text-teal-300'}`}>
                         {point.split('|')[0]}
                       </div>
                       <div className="text-xs text-white/65 mt-1">{point.split('|')[1]}</div>
@@ -171,14 +173,14 @@ export function AuthShell({
           </aside>
         ) : null}
 
-        <div className={`box-border min-w-0 w-full max-w-full ${singlePanel ? 'max-w-md' : `flex items-center justify-center p-6 sm:p-10 lg:p-12 xl:p-16 ${admin ? 'lg:max-w-lg' : ''}`}`}>
+        <div className={`box-border min-w-0 w-full max-w-full ${singlePanel ? 'max-w-md' : `flex items-center justify-center p-4 sm:p-8 md:p-10 lg:p-12 xl:p-16 ${admin ? 'lg:max-w-lg' : ''}`}`}>
           <section className="w-full max-w-[480px]">
-            <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">
+            <div className={`rounded-3xl p-6 sm:p-8 md:p-10 ${admin ? 'bg-white border border-[#DCE2DD] shadow-sm' : 'bg-brand-card shadow-card-lg border border-slate-100'}`}>
               {admin ? (
-                <div className="mb-8 text-center">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-teal">{eyebrow}</p>
-                  <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy">{title}</h1>
-                  <p className="mt-3 text-sm leading-relaxed text-brand-textSecondary">{description}</p>
+                <div className="mb-6 sm:mb-8 text-center">
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${admin ? 'text-[#174B4A]' : 'text-brand-teal'}`}>{eyebrow}</p>
+                  <h1 className={`mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight ${admin ? 'text-[#1C2928]' : 'text-brand-navy'}`}>{title}</h1>
+                  <p className={`mt-3 text-sm leading-relaxed ${admin ? 'text-[#5B6E69]' : 'text-brand-textSecondary'}`}>{description}</p>
                 </div>
               ) : null}
               {children}

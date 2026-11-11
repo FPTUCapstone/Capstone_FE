@@ -38,6 +38,8 @@ Before creating new frontend code:
 
 ### 2.1 Audit provenance
 
+**Governance update — 2026-10-23:** The original, non-V2 `Report3_Software-Requirement-Specification.docx` is the requirements authority after traceably approved newer requirements. Its inspected local SHA-256 is `22371e92506b098a9a546069038b58b75003371b3b7f85d5cfd6dd913f0d295a`; local V2 is `c8d927a56b7720da3f8b4df38ffdd6eecc1ebd8d315e6bc104ca41c9b163f076`. The dated audit below describes the older snapshot. Its identical-hash statement, 72-UC counts, actor inventory and branch-specific integration status are historical observations, not current product authority. The original contains newer Staff/Administrator and payout material, including UC-73/UC-74. Reconciliation must record conflicts without silently changing permissions, UC numbering, platform classification or financial rules; dependent tasks remain `BLOCKED_REQUIREMENT_APPROVAL`. See the [matrix reconciliation notice](WEB_SCOPE_MATRIX.md).
+
 The integrated baseline is local `develop` at `5670067` (Merge pull request #41), audited on 2026-10-14. The supplied working checkout, `feature/web-operator-revenue-payouts` at `3a2a951`, was also inspected; it was 76 commits ahead of local `develop`. No remote freshness is claimed. Branch-specific observations below are not claims about integrated `develop`.
 
 Evidence inspected:

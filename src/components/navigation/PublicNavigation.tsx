@@ -326,9 +326,9 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
       : []),
     {
       key: 'weather',
-      href: isLanding ? '#weather-rerouting' : `${ROUTES.home}#weather-rerouting`,
+      href: `${ROUTES.about}#weather`,
       label: strings.links.weatherRerouting,
-      isAnchor: isLanding,
+      isAnchor: false,
     },
     { key: 'tours', href: ROUTES.tours, label: strings.links.localTours },
   ];
@@ -348,7 +348,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
       {/* Landing Scroll Progress Indicator */}
       {isLanding && (
         <div
-          className="absolute bottom-0 left-0 h-[2.5px] bg-[#005F56] transition-transform duration-75 origin-left"
+          className="absolute bottom-0 left-0 h-[2.5px] bg-[#174B4A] transition-transform duration-75 origin-left"
           style={{ transform: `scaleX(${scrollProgress})`, width: '100%' }}
           aria-hidden="true"
         />
@@ -363,7 +363,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
             updateActivePill(null);
           }}
           aria-label={strings.brandAria}
-          className="shrink-0 rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56]"
+          className="shrink-0 rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
         >
           <BrandLogo />
         </Link>
@@ -397,12 +397,12 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
           {navItems.map((item) => {
             const isSelected = selectedKey === item.key;
             const isHovered = hoveredKey === item.key && !isSelected;
-            const linkClassName = `relative z-10 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-bold transition-colors duration-200 btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56] ${
+            const linkClassName = `relative z-10 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-bold transition-colors duration-200 btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A] ${
               isSelected
-                ? 'text-[#005F56]'
+                ? 'text-[#174B4A]'
                 : isHovered
-                ? 'text-[#121E28]'
-                : 'text-[#121E28]/70'
+                ? 'text-[#1C2928]'
+                : 'text-[#1C2928]/70'
             }`;
 
             const commonProps = {
@@ -468,7 +468,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     aria-expanded={isPartnerMenuOpen}
                     aria-haspopup="menu"
                     aria-label={strings.account.partnerMenuAria}
-                    className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-xs font-bold text-[#005F56] transition hover:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56] cursor-pointer"
+                    className="flex items-center gap-2 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#d5e7dc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A] cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-base" aria-hidden="true">
                       storefront
@@ -509,10 +509,10 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                               href={ROUTES.partner.dashboard}
                               role="menuitem"
                               onClick={() => setIsPartnerMenuOpen(false)}
-                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 hover:text-[#005F56]"
+                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 hover:text-[#174B4A]"
                             >
                               <span
-                                className="material-symbols-outlined text-base text-[#005F56]"
+                                className="material-symbols-outlined text-base text-[#174B4A]"
                                 aria-hidden="true"
                               >
                                 dashboard
@@ -523,7 +523,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                               href={ROUTES.partner.profile}
                               role="menuitem"
                               onClick={() => setIsPartnerMenuOpen(false)}
-                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 hover:text-[#005F56]"
+                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 hover:text-[#174B4A]"
                             >
                               <span
                                 className="material-symbols-outlined text-base text-slate-500"
@@ -572,7 +572,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
               ) : context?.role === 'Administrator' || context?.role === 'Staff' ? (
                 <Link
                   href={ROUTES.admin.dashboard}
-                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56]"
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
                 >
                   <span className="material-symbols-outlined text-base" aria-hidden="true">
                     admin_panel_settings
@@ -583,7 +583,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                 <Link
                   href={ROUTES.account.profile}
                   aria-label={strings.account.profileAria}
-                  className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-xs font-bold text-[#005F56] transition hover:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56]"
+                  className="flex items-center gap-2 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#d5e7dc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
                 >
                   {currentTravelerProfile?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -615,13 +615,13 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
             <div className="flex items-center gap-3">
               <Link
                 href={ROUTES.signIn}
-                className="min-h-10 inline-flex items-center px-4 py-2 text-xs font-bold text-[#121E28] hover:text-[#005F56] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56]"
+                className="min-h-10 inline-flex items-center px-4 py-2 text-xs font-bold text-[#1C2928] hover:text-[#174B4A] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
               >
                 {strings.account.signIn}
               </Link>
               <Link
                 href={ROUTES.register}
-                className="min-h-10 inline-flex items-center rounded-xl bg-[#005F56] text-white px-4 py-2 text-xs font-bold shadow-xs hover:bg-[#004D46] transition btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56]"
+                className="min-h-10 inline-flex items-center rounded-xl bg-[#174B4A] text-white px-4 py-2 text-xs font-bold shadow-xs hover:bg-[#103B39] transition btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
               >
                 {strings.account.register}
               </Link>
@@ -635,7 +635,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
             type="button"
             onClick={() => setIsDrawerOpen(true)}
             aria-label={drawerStrings.openAria}
-            className="p-2 rounded-xl text-[#121E28] hover:bg-[#EFECE4] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56]"
+            className="p-2 rounded-xl text-[#1C2928] hover:bg-[#EFECE4] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
           >
             <span className="material-symbols-outlined text-2xl">menu</span>
           </button>
@@ -653,7 +653,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label={drawerStrings.navAria}>
           <div
-            className="fixed inset-0 bg-[#121E28]/40 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-[#1C2928]/40 backdrop-blur-xs transition-opacity"
             onClick={() => setIsDrawerOpen(false)}
             aria-hidden="true"
           />
@@ -671,7 +671,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                   type="button"
                   onClick={() => setIsDrawerOpen(false)}
                   aria-label={drawerStrings.closeAria}
-                  className="p-2 rounded-xl text-[#121E28] hover:bg-[#EFECE4] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#005F56]"
+                  className="p-2 rounded-xl text-[#1C2928] hover:bg-[#EFECE4] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
                 >
                   <span className="material-symbols-outlined text-2xl">close</span>
                 </button>
@@ -682,12 +682,12 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                 <Link
                   href={ROUTES.pois}
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#121E28] hover:bg-[#EFECE4] transition btn-press"
+                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
                 >
-                  <span className="material-symbols-outlined text-xl text-[#005F56]">explore</span>
+                  <span className="material-symbols-outlined text-xl text-[#174B4A]">explore</span>
                   <div>
                     <div>{strings.links.explore}</div>
-                    <div className="text-[10px] font-normal text-[#64748B]">
+                    <div className="text-[10px] font-normal text-[#5B6E69]">
                       {drawerStrings.poisDesc}
                     </div>
                   </div>
@@ -696,12 +696,12 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                 <a
                   href={isLanding ? '#destinations' : `${ROUTES.home}#destinations`}
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#121E28] hover:bg-[#EFECE4] transition btn-press"
+                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
                 >
-                  <span className="material-symbols-outlined text-xl text-[#005F56]">location_on</span>
+                  <span className="material-symbols-outlined text-xl text-[#174B4A]">location_on</span>
                   <div>
                     <div>{strings.links.destinations}</div>
-                    <div className="text-[10px] font-normal text-[#64748B]">
+                    <div className="text-[10px] font-normal text-[#5B6E69]">
                       {drawerStrings.destinationsDesc}
                     </div>
                   </div>
@@ -710,40 +710,40 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                 <Link
                   href={ROUTES.plan}
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#121E28] hover:bg-[#EFECE4] transition btn-press"
+                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
                 >
-                  <span className="material-symbols-outlined text-xl text-[#005F56]">calendar_month</span>
+                  <span className="material-symbols-outlined text-xl text-[#174B4A]">calendar_month</span>
                   <div>
                     <div>{strings.links.smartItinerary}</div>
-                    <div className="text-[10px] font-normal text-[#64748B]">
+                    <div className="text-[10px] font-normal text-[#5B6E69]">
                       {drawerStrings.planDesc}
                     </div>
                   </div>
                 </Link>
 
-                <a
-                  href={isLanding ? '#weather-rerouting' : `${ROUTES.home}#weather-rerouting`}
+                <Link
+                  href={`${ROUTES.about}#weather`}
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#121E28] hover:bg-[#EFECE4] transition btn-press"
+                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
                 >
-                  <span className="material-symbols-outlined text-xl text-[#005F56]">thunderstorm</span>
+                  <span className="material-symbols-outlined text-xl text-[#174B4A]">thunderstorm</span>
                   <div>
                     <div>{strings.links.weatherRerouting}</div>
-                    <div className="text-[10px] font-normal text-[#64748B]">
+                    <div className="text-[10px] font-normal text-[#5B6E69]">
                       {drawerStrings.weatherDesc}
                     </div>
                   </div>
-                </a>
+                </Link>
 
                 <Link
                   href={ROUTES.tours}
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#121E28] hover:bg-[#EFECE4] transition btn-press"
+                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
                 >
-                  <span className="material-symbols-outlined text-xl text-[#005F56]">tour</span>
+                  <span className="material-symbols-outlined text-xl text-[#174B4A]">tour</span>
                   <div>
                     <div>{strings.links.localTours}</div>
-                    <div className="text-[10px] font-normal text-[#64748B]">
+                    <div className="text-[10px] font-normal text-[#5B6E69]">
                       {drawerStrings.toursDesc}
                     </div>
                   </div>
@@ -753,12 +753,12 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                   <Link
                     href={ROUTES.myItineraries}
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#121E28] hover:bg-[#EFECE4] transition btn-press"
+                    className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
                   >
-                    <span className="material-symbols-outlined text-xl text-[#005F56]">receipt_long</span>
+                    <span className="material-symbols-outlined text-xl text-[#174B4A]">receipt_long</span>
                     <div>
                       <div>{strings.links.myItineraries}</div>
-                      <div className="text-[10px] font-normal text-[#64748B]">
+                      <div className="text-[10px] font-normal text-[#5B6E69]">
                         {drawerStrings.myItinerariesDesc}
                       </div>
                     </div>
@@ -775,7 +775,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     <Link
                       href={isOperatorApproved ? ROUTES.partner.dashboard : ROUTES.partner.application}
                       onClick={() => setIsDrawerOpen(false)}
-                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-teal-200 bg-teal-50 text-xs font-bold text-[#005F56]"
+                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] text-xs font-bold text-[#174B4A]"
                     >
                       <span className="material-symbols-outlined text-base">storefront</span>
                       <span className="truncate">{displayName}</span>
@@ -793,7 +793,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     <Link
                       href={ROUTES.account.profile}
                       onClick={() => setIsDrawerOpen(false)}
-                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-teal-200 bg-teal-50 text-xs font-bold text-[#005F56]"
+                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] text-xs font-bold text-[#174B4A]"
                     >
                       <span className="material-symbols-outlined text-base">account_circle</span>
                       <span className="truncate">{displayName}</span>
@@ -806,14 +806,14 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                   <Link
                     href={ROUTES.signIn}
                     onClick={() => setIsDrawerOpen(false)}
-                    className="w-full block text-center py-2.5 rounded-xl border border-[#D5CEBF] text-xs font-bold text-[#121E28] bg-white hover:bg-[#EFECE4] transition"
+                    className="w-full block text-center py-2.5 rounded-xl border border-[#D5CEBF] text-xs font-bold text-[#1C2928] bg-white hover:bg-[#EFECE4] transition"
                   >
                     {strings.account.signIn}
                   </Link>
                   <Link
                     href={ROUTES.register}
                     onClick={() => setIsDrawerOpen(false)}
-                    className="w-full block text-center py-2.5 rounded-xl bg-[#005F56] text-white text-xs font-bold shadow-xs hover:bg-[#004D46] transition"
+                    className="w-full block text-center py-2.5 rounded-xl bg-[#174B4A] text-white text-xs font-bold shadow-xs hover:bg-[#103B39] transition"
                   >
                     {strings.account.register}
                   </Link>

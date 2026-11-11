@@ -47,6 +47,18 @@ function renderCard(item: TripListItem, onOpenDetail = vi.fn(), isDemo = false) 
 const link = (name: string) => screen.queryByRole('link', { name: new RegExp(name, 'i') });
 const button = (name: string) => screen.queryByRole('button', { name: new RegExp(name, 'i') });
 
+describe('TripCard — stopped tour', () => {
+  it('labels a tour stopped by the Operator and offers no ticket, refund or review', () => {
+    renderCard(booking({ tab: 'Cancelled', status: 'Interrupted' }));
+
+    expect(screen.getByText('Đã dừng vì an toàn')).toBeDefined();
+    expect(screen.queryByText('Interrupted')).toBeNull();
+    expect(link('ticket')).toBeNull();
+    expect(link('refund')).toBeNull();
+    expect(link('review')).toBeNull();
+  });
+});
+
 describe('TripCard — content', () => {
   it('shows only what the booking contract provides', () => {
     renderCard(booking());
@@ -174,7 +186,7 @@ describe('TripCard — e-ticket, refund and details actions', () => {
   it('E-ticket links to the ticket id, never the booking id', () => {
     renderCard(booking({ actions: { canReview: false, canViewETicket: true, ticketId: '77', canViewRefund: false } }));
 
-    expect(link('View E-Ticket')?.getAttribute('href')).toBe('/bookings/77/ticket');
+    expect(link('View E-Ticket')?.getAttribute('href')).toBe('/account/tickets/77');
   });
 
   it('E-ticket is absent when canViewETicket is false, even if a ticket id is present', () => {

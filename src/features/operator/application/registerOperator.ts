@@ -1,4 +1,4 @@
-import { getApiBase } from '@/lib/authApi';
+import { getApiBase } from '@/lib/apiBase';
 
 export interface OperatorRegistrationInput {
   firebaseIdToken: string;

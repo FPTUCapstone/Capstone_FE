@@ -5,8 +5,7 @@ import type { CouponDto, EligibleTourDto } from '../types/couponLifecycle';
  * Demo fixtures are NEVER exposed in production environments.
  */
 export function isCouponDemoAllowedInCurrentEnv(): boolean {
-  if (process.env.NODE_ENV === 'production') return false;
-  return process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
+  return process.env.NODE_ENV !== 'production';
 }
 
 export const DEMO_ELIGIBLE_TOURS: EligibleTourDto[] = [

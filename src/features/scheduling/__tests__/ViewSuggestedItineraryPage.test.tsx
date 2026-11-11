@@ -381,17 +381,16 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
       expect(printMock).toHaveBeenCalledTimes(1);
     });
 
-    it('TRUTH-3: renders truthful sequential stops diagram without fake coordinates or radius', async () => {
+    it('TRUTH-3: renders "Bản đồ lộ trình" and does not render arrow diagram "Sơ đồ thứ tự điểm dừng"', async () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
 
       render(<ViewSuggestedItineraryPage itineraryId="789" />);
 
       await waitFor(() => {
-        expect(screen.getByText('Sơ đồ thứ tự điểm dừng')).toBeDefined();
+        expect(screen.getByText('Bản đồ lộ trình')).toBeDefined();
       });
 
-      expect(screen.getByText('Thứ tự điểm dừng')).toBeDefined();
-      expect(screen.getByText(/Sơ đồ thể hiện trình tự các điểm dừng trong lịch trình/i)).toBeDefined();
+      expect(screen.queryByText('Sơ đồ thứ tự điểm dừng')).toBeNull();
       expect(screen.queryByText('Bản đồ hành trình trực quan')).toBeNull();
       expect(screen.queryByText(/16\.0544/i)).toBeNull();
       expect(screen.queryByText(/Bán kính hoạt động: 10 km/i)).toBeNull();

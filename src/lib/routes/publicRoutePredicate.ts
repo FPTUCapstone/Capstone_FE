@@ -6,6 +6,7 @@
  *
  * Authorized Public Surfaces:
  * - Home: `/`
+ * - About: `/about`
  * - Tours: `/tours`, `/tours/:id`, `/tours/:id/book`, etc.
  * - Points of Interest: `/pois`, `/pois/:id`, etc.
  * - Scheduling & Itinerary: `/plan`, `/itineraries`, `/itinerary/:id`, etc.
@@ -27,6 +28,7 @@
 
 const PUBLIC_WHITELIST_PATTERNS: RegExp[] = [
   /^\/$/,                                // Home
+  /^\/about(?:\/.*)?$/,                  // About TripMate
   /^\/tours(?:\/.*)?$/,                  // Explore Tours & Detail & Book
   /^\/pois(?:\/.*)?$/,                   // Explore POIs & Detail
   /^\/plan(?:\/.*)?$/,                   // Smart Scheduling Request

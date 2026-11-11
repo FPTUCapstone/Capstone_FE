@@ -26,10 +26,10 @@ export function BrandLogo({
   className = '',
 }: BrandLogoProps) {
   const width = Math.round(size * TRIPMATE_SYMBOL_ASPECT_RATIO);
-  const color = inverse ? 'text-white' : 'text-[#10283b]';
+  const color = inverse ? 'text-white' : 'text-[#1C2928]';
 
   return (
-    <span className={`inline-flex items-center gap-2.5 ${color} ${className}`}>
+    <span className={`inline-flex items-center gap-2 sm:gap-2.5 ${color} ${className}`}>
       <svg
         width={width}
         height={size}
@@ -43,7 +43,7 @@ export function BrandLogo({
         <path d={TRIPMATE_SYMBOL_PATH} />
       </svg>
       {variant !== 'icon' && (
-        <span className="text-xl font-extrabold tracking-tight sm:text-2xl whitespace-nowrap">
+        <span className="text-lg font-extrabold tracking-tight sm:text-xl md:text-2xl whitespace-nowrap">
           {labels[context]}
         </span>
       )}

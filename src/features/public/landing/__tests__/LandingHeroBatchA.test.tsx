@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LandingHero } from '../components/LandingHero';
 import { CentralVietnamShowcase } from '../components/CentralVietnamShowcase';
@@ -28,64 +28,108 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Homepage v2.0: LandingHero Editorial Travel & Destination Discovery', () => {
-  it('renders solid calm headline and editorial travel copy with Central Vietnam scenic photography', () => {
+describe('Homepage v2.0: LandingHero Modern Explorer Da Nang Travel Hero', () => {
+  it('renders correct Da Nang headline and editorial travel copy', () => {
     const handleSelectCity = vi.fn();
     const { container } = render(
       <LandingHero activeCity="danang" onSelectCity={handleSelectCity} />
     );
 
+    // 1. Correct Da Nang headline
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1.textContent).toContain('Khám phá miền Trung theo cách của bạn');
+    expect(h1.textContent).toContain('Đà Nẵng, nơi');
+    expect(h1.textContent).toContain('hành trình bắt đầu.');
 
-    // Supporting copy is clear and inviting
+    // 2. Supporting copy is clear and inviting
     expect(
       screen.getByText(
-        /Tìm những điểm đến đáng nhớ, khám phá tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn/i
+        /Khám phá những điểm đến đáng nhớ, trải nghiệm tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn/i
       )
     ).toBeDefined();
 
-    // Section uses dark navy photographic container
+    // 3. Location eyebrow label
+    expect(screen.getByText(/TripMate · Khám phá miền Trung/i)).toBeDefined();
+
+    // 4. Section container has full-bleed layout
     const heroSection = container.querySelector('section')!;
-    expect(heroSection.className).toContain('bg-[#00152a]');
-
-    // Location eyebrow tag
-    expect(screen.getByText(/Central Vietnam Travel Atlas • Da Nang - Hoi An - Hue/i)).toBeDefined();
-
-    // Background image is present with meaningful alt text
-    const bgImg = container.querySelector('img')!;
-    expect(bgImg).not.toBeNull();
-    expect(bgImg.getAttribute('alt')).toContain('Đà Nẵng');
+    expect(heroSection.getAttribute('aria-label')).toBe('Đà Nẵng — Nơi hành trình bắt đầu');
   });
 
-  it('provides unified 3-pill city switcher that triggers onSelectCity', () => {
-    const handleSelectCity = vi.fn();
-    render(<LandingHero activeCity="danang" onSelectCity={handleSelectCity} />);
+  it('renders signature Da Nang photography with descriptive alt text and high priority', () => {
+    const { container } = render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
 
-    const danangBtn = screen.getByRole('button', { name: 'Đà Nẵng' });
-    const hoianBtn = screen.getByRole('button', { name: 'Hội An' });
-    const hueBtn = screen.getByRole('button', { name: 'Cố Đô Huế' });
-
-    expect(danangBtn.className).toContain('bg-[#007d6e]');
-
-    fireEvent.click(hoianBtn);
-    expect(handleSelectCity).toHaveBeenCalledWith('hoian');
-
-    fireEvent.click(hueBtn);
-    expect(handleSelectCity).toHaveBeenCalledWith('hue');
+    const img = container.querySelector('img')!;
+    expect(img).not.toBeNull();
+    expect(img.getAttribute('src')).toBe('/images/landing/hero-danang-sontra.jpg');
+    expect(img.getAttribute('alt')).toBe(
+      'Toàn cảnh bán đảo Sơn Trà và vịnh biển Đà Nẵng dưới ánh nắng sớm'
+    );
+    expect(img.getAttribute('loading')).toBe('eager');
   });
 
-  it('exposes dominant travel CTAs with verified routes', () => {
+  it('renders text content directly layered over image with scrim and trust badges', () => {
     render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
 
-    const planLink = screen.getByRole('link', { name: /Lập lịch trình/i });
+    // Trust indicators
+    expect(screen.getByText('Tour xác thực bản địa')).toBeDefined();
+    expect(screen.getByText('Lịch trình tối ưu thời gian')).toBeDefined();
+
+    // Photo credit tag
+    expect(screen.getByText('Bán đảo Sơn Trà & Chùa Linh Ứng · Đà Nẵng')).toBeDefined();
+  });
+
+  it('exposes dominant travel CTAs with verified routes and accessible names', () => {
+    render(<LandingHero activeCity="danang" onSelectCity={vi.fn()} />);
+
+    // Primary CTA: Lập lịch trình -> /plan
+    const planLink = screen.getByRole('link', { name: /lập lịch trình/i });
     expect(planLink.getAttribute('href')).toBe(ROUTES.plan);
 
-    const poisLink = screen.getByRole('link', { name: /Khám phá điểm đến/i });
-    expect(poisLink.getAttribute('href')).toBe(ROUTES.pois);
-
-    const toursLink = screen.getByRole('link', { name: /Xem các tour bản địa/i });
+    // Secondary CTA: Khám phá tour -> /tours
+    const toursLink = screen.getByRole('link', { name: /khám phá tour/i });
     expect(toursLink.getAttribute('href')).toBe(ROUTES.tours);
+  });
+
+  it('is static and does not automatically rotate away from Da Nang', () => {
+    vi.useFakeTimers();
+    try {
+      const handleSelectCity = vi.fn();
+      const { container } = render(
+        <LandingHero activeCity="danang" onSelectCity={handleSelectCity} />
+      );
+
+      // Advance by 8000ms, then 16000ms
+      act(() => {
+        vi.advanceTimersByTime(24000);
+      });
+
+      // Headline and image remain Đà Nẵng
+      const h1 = screen.getByRole('heading', { level: 1 });
+      expect(h1.textContent).toContain('Đà Nẵng, nơi');
+
+      const img = container.querySelector('img')!;
+      expect(img.getAttribute('src')).toBe('/images/landing/hero-danang-sontra.jpg');
+      expect(handleSelectCity).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('retains Da Nang photo composition when activeCity prop changes externally', () => {
+    const { container, rerender } = render(
+      <LandingHero activeCity="danang" onSelectCity={vi.fn()} />
+    );
+
+    // Initial Da Nang state
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      '/images/landing/hero-danang-sontra.jpg'
+    );
+
+    // Rerender with 'hoian' - Hero intentionally stays Da Nang signature
+    rerender(<LandingHero activeCity="hoian" onSelectCity={vi.fn()} />);
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      '/images/landing/hero-danang-sontra.jpg'
+    );
   });
 });
 

@@ -3,6 +3,7 @@ import {
   formatCurrencyVND,
   formatVietnamDate,
   formatVietnamDateTime,
+  toVietnamIsoDate,
   VIETNAM_TIMEZONE,
 } from './dateFormat';
 
@@ -34,6 +35,13 @@ describe('dateFormat utilities (CR-07)', () => {
     const formatted = formatVietnamDateTime(isoString);
     expect(formatted).toMatch(/19\/09\/2026/);
     expect(formatted).toMatch(/08:15/);
+  });
+
+  it('reduces an instant to its Asia/Ho_Chi_Minh calendar day (YYYY-MM-DD) across the UTC boundary', () => {
+    expect(toVietnamIsoDate('2026-11-01T16:59:59Z')).toBe('2026-11-01');
+    expect(toVietnamIsoDate('2026-11-01T17:00:00Z')).toBe('2026-11-02');
+    expect(toVietnamIsoDate('2026-11-02T16:59:59Z')).toBe('2026-11-02');
+    expect(toVietnamIsoDate('not-a-date')).toBeNull();
   });
 
   it('formats VND currency properly', () => {

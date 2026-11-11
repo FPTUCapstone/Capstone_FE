@@ -80,14 +80,14 @@ test('unsupported query removal prevents query parameter injection and backend 4
     unsupportedParam: 'malicious',
     internalFlag: 'true',
     admin: '1',
-    sort: 'price',
+    sort: 'priceAsc',
   });
 
   await proxyTourRequest([], query);
   assert.ok(!requestedPath.includes('unsupportedParam'));
   assert.ok(!requestedPath.includes('internalFlag'));
   assert.ok(!requestedPath.includes('admin'));
-  assert.ok(!requestedPath.includes('sort'));
+  assert.ok(requestedPath.includes('sort=priceAsc'));
   assert.ok(requestedPath.includes('destination=Da\+Nang'));
 });
 

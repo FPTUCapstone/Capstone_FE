@@ -30,6 +30,43 @@ describe('PaymentHandoffView (UC-28 entry point)', () => {
     });
   });
 
+  describe('a booking that no longer waits for payment', () => {
+    const settled = (bookingStatus: string) => {
+      vi.mocked(paymentApi.getBookingPaymentStatus).mockResolvedValue({
+        bookingId: '148',
+        bookingCode: 'BK-20261015-0148',
+        bookingStatus,
+        paymentStatus: 'Paid',
+        amount: 1700000,
+        currency: 'VND',
+        bookingPaymentExpiresAtUtc: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      } as Awaited<ReturnType<typeof paymentApi.getBookingPaymentStatus>>);
+    };
+
+    it('tells the Traveler a stopped tour needs no payment and offers none', async () => {
+      settled('Interrupted');
+      const createSpy = vi.spyOn(paymentApi, 'createOrReusePayment');
+
+      render(<PaymentHandoffView bookingId="148" />);
+
+      expect(await screen.findByText('Đã dừng vì an toàn')).toBeDefined();
+      expect(screen.getByText(/xử lý riêng theo chính sách hủy booking/i)).toBeDefined();
+      expect(screen.queryByRole('button', { name: /Thanh toán/i })).toBeNull();
+      expect(screen.queryByText(/Chờ thanh toán/i)).toBeNull();
+      expect(screen.queryByText(/Giữ chỗ trong/i)).toBeNull();
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+
+    it.each(['Confirmed', 'Cancelled', 'Completed'])('offers no payment for a %s booking', async (status) => {
+      settled(status);
+
+      render(<PaymentHandoffView bookingId="148" />);
+
+      expect(await screen.findByText(/không còn chờ thanh toán/i)).toBeDefined();
+      expect(screen.queryByRole('button', { name: /Thanh toán/i })).toBeNull();
+    });
+  });
+
   it('loads the demo booking by id and displays payment gateway details', async () => {
     render(<PaymentHandoffView bookingId="bk-demo-0148" isDemo={true} />);
 

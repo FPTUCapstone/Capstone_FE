@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
 import type { ReviewPhotoItem } from '../types/review';
 
 interface PhotoUploadPreviewProps {
@@ -93,7 +93,7 @@ export function PhotoUploadPreview({
   return (
     <section aria-labelledby="photos-title" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
       <div className="flex items-center justify-between mb-2">
-        <h3 id="photos-title" className="text-sm font-extrabold text-[#00152A]">
+        <h3 id="photos-title" className="text-sm font-extrabold text-[#1C2928]">
           {tripReviewEn.tripReview.photosOptionalTitle}
         </h3>
         <span className="text-xs font-semibold text-slate-500">
@@ -154,10 +154,10 @@ export function PhotoUploadPreview({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-2 text-center text-slate-500 transition hover:border-[#006B5F] hover:bg-[#E6F4F1]/30 hover:text-[#006B5F] active:scale-95"
+            className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-2 text-center text-slate-500 transition hover:border-[#174B4A] hover:bg-[#E6F4F1]/30 hover:text-[#174B4A] active:scale-95"
             aria-label={tripReviewEn.accessibility.addPhotoAria}
           >
-            <span className="material-symbols-outlined text-[24px] text-[#006B5F]">
+            <span className="material-symbols-outlined text-[24px] text-[#174B4A]">
               add_photo_alternate
             </span>
             <span className="mt-1 text-[11px] font-bold text-slate-800">
@@ -171,7 +171,7 @@ export function PhotoUploadPreview({
       </div>
 
       <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-400">
-        <span className="material-symbols-outlined text-[14px] text-[#006B5F]" aria-hidden="true">
+        <span className="material-symbols-outlined text-[14px] text-[#174B4A]" aria-hidden="true">
           info
         </span>
         <span>{tripReviewEn.demo.photoLocalPreviewNotice}</span>

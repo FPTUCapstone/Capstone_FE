@@ -28,12 +28,12 @@ export function VersionPanel({ published, history, onRestore, disabled }: Versio
   const copy = landingContentEn.versionPanel;
 
   return (
-    <section aria-label={copy.title} className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-extrabold text-[#00152a]">{copy.publishedHeading}</h2>
+    <section aria-label={copy.title} className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="text-lg font-extrabold text-[#1C2928]">{copy.publishedHeading}</h2>
       <p className="mt-2 text-base font-bold text-[#1d2939]">
         {copy.versionLabel} {published.versionNumber}
       </p>
-      <dl className="mt-2 grid gap-1 text-sm text-[#475467] sm:grid-cols-2">
+      <dl className="mt-2 grid gap-1 text-sm text-[#5B6E69] sm:grid-cols-2">
         <div>
           <dt className="font-semibold">{copy.publishedBy}</dt>
           <dd>{published.publishedByName}</dd>
@@ -44,7 +44,7 @@ export function VersionPanel({ published, history, onRestore, disabled }: Versio
         </div>
       </dl>
 
-      <h3 className="mt-5 text-sm font-bold tracking-wide text-[#344054] uppercase">{copy.historyHeading}</h3>
+      <h3 className="mt-5 text-sm font-bold tracking-wide text-[#5B6E69] uppercase">{copy.historyHeading}</h3>
       {history.length === 0 ? (
         <p className="mt-2 text-sm text-[#667085]">{copy.noHistory}</p>
       ) : (
@@ -60,7 +60,7 @@ export function VersionPanel({ published, history, onRestore, disabled }: Versio
                 disabled={disabled}
                 onClick={() => onRestore(version.versionId)}
                 aria-label={`${copy.restore} ${version.versionNumber}`}
-                className="rounded-lg border border-[#d0d7de] px-3 py-1.5 text-xs font-bold text-[#00152a] hover:bg-[#f2f4f7] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-[#DCE2DD] px-3 py-1.5 text-xs font-bold text-[#1C2928] hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {copy.restore}
               </button>

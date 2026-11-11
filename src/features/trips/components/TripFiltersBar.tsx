@@ -13,7 +13,7 @@ interface TripFiltersBarProps {
 }
 
 const INPUT_CLASS =
-  'rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 focus:border-[#006B5F] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#006B5F]/20';
+  'rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 focus:border-[#174B4A] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20';
 
 /**
  * Trip-type and date-range filters. The backend has no free-text search, so there is none here.

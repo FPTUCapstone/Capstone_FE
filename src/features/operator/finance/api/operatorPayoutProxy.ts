@@ -1,6 +1,7 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { fetchBackend } from '@/lib/server/backend';
+import { isSameOriginRequest } from '@/lib/server/adminSession';
 
 const REFRESH_COOKIE = 'tripmate_refresh';
 
@@ -15,6 +16,14 @@ export async function proxyOperatorPayout(
   resourcePath: string,
   options: { method?: string; forwardQuery?: boolean } = {}
 ): Promise<Response> {
+  const method = options.method ?? request.method;
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !isSameOriginRequest(request)) {
+    return Response.json({ errorCode: 'OPERATOR_NOT_APPROVED' }, {
+      status: 403,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+
   try {
     const refresh = (await cookies()).get(REFRESH_COOKIE)?.value;
     if (!refresh) return Response.json({ errorCode: 'OPERATOR_NOT_APPROVED' }, { status: 401 });
@@ -32,7 +41,6 @@ export async function proxyOperatorPayout(
       return Response.json({ errorCode: 'OPERATOR_NOT_APPROVED' }, { status: 401 });
     }
 
-    const method = options.method ?? request.method;
     const url = new URL(request.url);
     const search = options.forwardQuery === false ? '' : url.search;
 

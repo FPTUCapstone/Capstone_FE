@@ -16,7 +16,7 @@ export function MobileAppShowcaseSection() {
                 {/* Screen Container */}
                 <div className="rounded-[2.4rem] overflow-hidden bg-slate-50 text-slate-900 flex flex-col min-h-[580px]">
                   {/* Status bar */}
-                  <div className="bg-[#00152a] text-white px-6 pt-5 pb-3 flex items-center justify-between text-[11px] font-bold">
+                  <div className="bg-[#103B39] text-white px-6 pt-5 pb-3 flex items-center justify-between text-[11px] font-bold">
                     <span>09:41</span>
                     <div className="flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-xs">signal_cellular_4_bar</span>
@@ -26,7 +26,7 @@ export function MobileAppShowcaseSection() {
                   </div>
 
                   {/* App Bar */}
-                  <div className="bg-[#00152a] text-white px-5 pb-4 flex items-center justify-between">
+                  <div className="bg-[#103B39] text-white px-5 pb-4 flex items-center justify-between">
                     <div>
                       <p className="text-[10px] text-teal-300 uppercase font-bold tracking-wider">Đang di chuyển • Đà Nẵng</p>
                       <h4 className="text-sm font-black">Chuyến đi 1 Ngày Tối Ưu</h4>
@@ -50,7 +50,7 @@ export function MobileAppShowcaseSection() {
                     {/* Dynamic QR Ticket Drawer Preview */}
                     <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-2xl text-[#007d6e]">qr_code_2</span>
+                        <span className="material-symbols-outlined text-2xl text-[#103B39]">qr_code_2</span>
                       </div>
                       <div>
                         <p className="text-xs font-bold text-slate-900">Dynamic QR E-Ticket</p>
@@ -64,13 +64,13 @@ export function MobileAppShowcaseSection() {
                         <p className="text-xs font-bold text-slate-900">Nhóm &ldquo;Khám phá Hội An&rdquo;</p>
                         <p className="text-[10px] text-slate-400">4 thành viên đang chia sẻ vị trí</p>
                       </div>
-                      <span className="material-symbols-outlined text-[#007d6e] text-lg">groups</span>
+                      <span className="material-symbols-outlined text-[#103B39] text-lg">groups</span>
                     </div>
                   </div>
 
                   {/* Bottom Tab Bar */}
                   <div className="bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between text-slate-400 text-xs">
-                    <span className="material-symbols-outlined text-[#007d6e] font-bold">home</span>
+                    <span className="material-symbols-outlined text-[#103B39] font-bold">home</span>
                     <span className="material-symbols-outlined">map</span>
                     <span className="material-symbols-outlined">confirmation_number</span>
                     <span className="material-symbols-outlined">person</span>
@@ -87,8 +87,8 @@ export function MobileAppShowcaseSection() {
                 Ứng dụng di động đồng hành (iOS &amp; Android)
               </LandingEyebrow>
 
-              <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-[#00152a] tracking-tight leading-[1.15]">
-                Ứng dụng Di động TripMate: <span className="text-[#007d6e]">Người bạn đồng hành</span> trên từng cung đường
+              <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-[#1C2928] tracking-tight leading-[1.15]">
+                Ứng dụng Di động TripMate: <span className="text-[#103B39]">Người bạn đồng hành</span> trên từng cung đường
               </h2>
 
               <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed text-pretty">
@@ -100,7 +100,7 @@ export function MobileAppShowcaseSection() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-2">
               <ScrollReveal animation="fade-left" delay={100}>
                 <div className="flex items-start gap-3.5 p-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#007d6e] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#103B39] flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined">cloud_sync</span>
                   </div>
                   <div>
@@ -112,7 +112,7 @@ export function MobileAppShowcaseSection() {
 
               <ScrollReveal animation="fade-left" delay={180}>
                 <div className="flex items-start gap-3.5 p-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#007d6e] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#103B39] flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined">near_me</span>
                   </div>
                   <div>
@@ -124,7 +124,7 @@ export function MobileAppShowcaseSection() {
 
               <ScrollReveal animation="fade-left" delay={260}>
                 <div className="flex items-start gap-3.5 p-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#007d6e] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#103B39] flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined">share_location</span>
                   </div>
                   <div>
@@ -136,7 +136,7 @@ export function MobileAppShowcaseSection() {
 
               <ScrollReveal animation="fade-left" delay={340}>
                 <div className="flex items-start gap-3.5 p-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#007d6e] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#103B39] flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined">qr_code_2</span>
                   </div>
                   <div>

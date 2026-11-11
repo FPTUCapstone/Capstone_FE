@@ -19,8 +19,8 @@ interface AdminSignInFormProps {
 const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
   ROUTES.admin.staffDashboard,
   ROUTES.admin.accountSecurity,
-  ROUTES.admin.payouts,
   ROUTES.admin.createPoi,
+  ROUTES.admin.pois,
 ]);
 
 export function isAdministratorOnlyPathname(pathname: string): boolean {
@@ -142,16 +142,16 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
           onChange={(event) => setPassword(event.target.value)}
         />
         <div className="flex justify-end">
-          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#006b5f] hover:underline">
+          <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#174B4A] hover:text-[#103B39] hover:underline">
             {adminStaffEn.login.forgotPassword}
           </Link>
         </div>
-        <ActionButton type="submit" loading={loading} className="w-full">
+        <ActionButton type="submit" variant="forest" loading={loading} className="w-full">
           {adminStaffEn.login.submitButton}
         </ActionButton>
       </form>
       {message ? <div className="mt-6"><FeedbackAlert tone="error">{message}</FeedbackAlert></div> : null}
-      <p className="mt-6 rounded-lg bg-[#f2f4f7] px-3 py-2 text-center text-[11px] leading-relaxed text-[#59616b]">
+      <p className="mt-6 rounded-lg border border-[#E1E8E4] bg-[#F1F4F2] px-3 py-2 text-center text-[11px] leading-relaxed text-[#103B39]">
         {adminStaffEn.login.footerNote}
       </p>
     </div>

@@ -54,7 +54,6 @@ export function CheckoutResultView() {
   const [retrying, setRetrying] = useState<boolean>(false);
   const [statusDto, setStatusDto] = useState<BookingPaymentStatusDto | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [secondsToHome, setSecondsToHome] = useState<number>(5);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -103,27 +102,6 @@ export function CheckoutResultView() {
       isMounted = false;
     };
   }, [bookingId, gatewayReportedSuccess, wasCancelledAtGateway]);
-
-  // Give the traveler a short, explicit confirmation before returning home.
-  // The backend remains authoritative: query parameters can never trigger this.
-  useEffect(() => {
-    const isPaid =
-      statusDto?.bookingStatus === 'Confirmed' || statusDto?.paymentStatus === 'Paid';
-    if (!isPaid) return;
-
-    const timer = window.setInterval(() => {
-      setSecondsToHome((previous) => {
-        if (previous <= 1) {
-          window.clearInterval(timer);
-          router.replace(ROUTES.home);
-          return 0;
-        }
-        return previous - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [router, statusDto?.bookingStatus, statusDto?.paymentStatus]);
 
   const handlePayAgain = async () => {
     if (!bookingId || retrying) return;
@@ -179,7 +157,7 @@ export function CheckoutResultView() {
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-3 border-[#007d6e] border-t-transparent"
+            className="h-10 w-10 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
             aria-hidden="true"
           />
           <p className="text-xs font-semibold text-slate-500">
@@ -211,7 +189,7 @@ export function CheckoutResultView() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="rounded-xl bg-[#007d6e] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+              className="rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#174B4A] transition"
             >
               Thử tải lại
             </button>
@@ -278,18 +256,22 @@ export function CheckoutResultView() {
               </div>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                href={ROUTES.bookingTicket(bookingId)}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-[#103B39] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#174B4A] transition text-center"
+              >
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">qr_code_2</span>
+                <span>Xem vé điện tử</span>
+              </Link>
               <Link
                 href={ROUTES.home}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#006b5f] transition text-center"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition text-center"
               >
-                <span className="material-symbols-outlined text-sm">home</span>
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">home</span>
                 <span>Về trang chủ</span>
               </Link>
             </div>
-            <p className="mt-4 text-center text-xs font-medium text-slate-500">
-              Tự động trở về trang chủ sau {secondsToHome} giây.
-            </p>
           </div>
         </div>
       </div>
@@ -321,7 +303,7 @@ export function CheckoutResultView() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 href={ROUTES.tours}
-                className="rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white hover:bg-[#006b5f] transition"
+                className="rounded-2xl bg-[#103B39] px-6 py-3.5 text-xs font-bold text-white hover:bg-[#174B4A] transition"
               >
                 Khám phá các tour khác
               </Link>
@@ -346,7 +328,7 @@ export function CheckoutResultView() {
           className={`p-8 text-white text-center ${
             isCancelledTx
               ? 'bg-gradient-to-r from-amber-600 to-amber-700'
-              : 'bg-gradient-to-r from-teal-700 to-[#007d6e]'
+              : 'bg-gradient-to-r from-teal-700 to-[#103B39]'
           }`}
         >
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
@@ -387,7 +369,7 @@ export function CheckoutResultView() {
             ) : null}
             <div className="pt-3 border-t border-slate-200/60 flex justify-between items-baseline">
               <span className="text-sm font-semibold text-slate-700">Số tiền cần thanh toán:</span>
-              <span className="text-2xl font-black text-[#007d6e]">
+              <span className="text-2xl font-black text-[#103B39]">
                 {formatCurrency(amount)}
               </span>
             </div>
@@ -398,7 +380,7 @@ export function CheckoutResultView() {
               type="button"
               disabled={retrying}
               onClick={handlePayAgain}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#007d6e] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#006b5f] disabled:opacity-50 transition"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#103B39] px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#174B4A] disabled:opacity-50 transition"
             >
               <span className="material-symbols-outlined text-sm">payment</span>
               <span>{retrying ? 'Đang tạo liên kết…' : 'Tiến hành thanh toán ngay'}</span>

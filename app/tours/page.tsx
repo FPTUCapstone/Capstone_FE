@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { ExploreToursPage } from '@/features/public/tours/components/ExploreToursPage';
 import { TourListSkeleton } from '@/features/public/tours/components/TourStates';
 import { PageTransition } from '@/components/navigation/PageTransition';
+import { isDevTourSearchEnabled } from '@/features/public/tours/services/devTourProxy';
 
 export const metadata: Metadata = {
   title: 'Khám phá tour bản địa | TripMate',
@@ -25,7 +26,7 @@ export default function ToursPage() {
           </main>
         }
       >
-        <ExploreToursPage />
+        <ExploreToursPage devSearchEnabled={isDevTourSearchEnabled()} />
       </Suspense>
     </PageTransition>
   );

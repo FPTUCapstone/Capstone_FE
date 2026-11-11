@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { tripReviewEn } from '@/features/trips/resources/en';
+import { tripReviewEn } from '@/features/trips/legacyReviewContext';
 import type { PoiReviewFeedback } from '../types/review';
 
 interface PoiQuickFeedbackProps {
@@ -35,8 +35,8 @@ export function PoiQuickFeedback({ stops, feedbacks, onChange }: PoiQuickFeedbac
     <section aria-labelledby="poi-feedback-title" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
-          <h3 id="poi-feedback-title" className="text-sm font-extrabold text-[#00152A] flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px] text-[#006B5F]" aria-hidden="true">
+          <h3 id="poi-feedback-title" className="text-sm font-extrabold text-[#1C2928] flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[18px] text-[#174B4A]" aria-hidden="true">
               location_on
             </span>
             {tripReviewEn.tripReview.poiFeedbackTitle}

@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CancelBookingDialog } from './CancelBookingDialog';
-import { INITIAL_DEMO_BOOKINGS } from '../data/operatorBookingDemoFixtures';
+import { INITIAL_DEMO_BOOKINGS, toDemoDetailView } from '../data/operatorBookingDemoFixtures';
 import { bookingEn } from '../resources/en';
 import type { CancelBookingPayload } from '../types/bookingLifecycle';
 
-const sampleBooking = INITIAL_DEMO_BOOKINGS[0]; // BK-20260919-0141
+const sampleBooking = toDemoDetailView(INITIAL_DEMO_BOOKINGS[0]); // BK-20260919-0141
 
 function TestHarness({
   onConfirm = vi.fn(),
@@ -37,6 +37,14 @@ afterEach(() => {
 });
 
 describe('CancelBookingDialog (UC-41 Accessibility & Behavior)', () => {
+  it('summarises the booking from the BE-shaped detail (tour, booker, participants, paid amount)', () => {
+    render(<TestHarness />);
+
+    expect(screen.getByText('Ba Na Hills full-day tour')).toBeDefined();
+    expect(screen.getByText(/Nguyễn Văn An \(0901234567\)/)).toBeDefined();
+    expect(screen.getByText(/5 passengers/)).toBeDefined();
+  });
+
   it('renders modal dialog with aria-modal="true" and accessible title/description in English', () => {
     render(<TestHarness />);
 

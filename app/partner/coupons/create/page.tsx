@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { PartnerShell } from '@/components/layout/PartnerShell';
-import { PartnerRouteGuard } from '@/features/auth/routing/PartnerRouteGuard';
+import { PartnerRouteGuard } from '@/features/operator/access/PartnerRouteGuard';
 import { CreateCouponForm } from '@/features/operator/coupons/components/CreateCouponForm';
 
 export const metadata: Metadata = { title: 'Create coupon' };

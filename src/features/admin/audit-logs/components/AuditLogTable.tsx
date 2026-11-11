@@ -55,10 +55,10 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
   };
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-[#314863] bg-[#102a43] shadow-lg">
+    <div className="w-full overflow-hidden rounded-xl border border-[#5B6E69] bg-[#103B39] shadow-lg">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1220px] table-fixed text-left text-xs text-[#d1e4ff]">
-          <thead className="border-b border-[#314863] bg-[#00152a]/80 text-[11px] font-bold uppercase tracking-wider text-[#9edbd2]">
+          <thead className="border-b border-[#5B6E69] bg-[#103B39]/80 text-[11px] font-bold uppercase tracking-wider text-[#9edbd2]">
             <tr>
               <th scope="col" className="w-[170px] px-4 py-3.5">
                 Timestamp (UTC+7)
@@ -89,20 +89,20 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#314863]/50">
+          <tbody className="divide-y divide-[#5B6E69]/50">
             {isLoading ? (
               // Skeleton Loading State
               Array.from({ length: 5 }).map((_, idx) => (
                 <tr key={idx} className="animate-pulse">
-                  <td className="px-4 py-4"><div className="h-3 w-28 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-3 w-36 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-3 w-16 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-3 w-32 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-3 w-20 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-3 w-12 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#314863]/60"></div></td>
-                  <td className="px-4 py-4"><div className="h-8 w-20 rounded bg-[#314863]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-28 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-36 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-16 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-32 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-20 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-12 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-3 w-24 rounded bg-[#5B6E69]/60"></div></td>
+                  <td className="px-4 py-4"><div className="h-8 w-20 rounded bg-[#5B6E69]/60"></div></td>
                 </tr>
               ))
             ) : items.length === 0 ? (
@@ -125,7 +125,7 @@ export function AuditLogTable({ items, isLoading, onViewDetail }: AuditLogTableP
             ) : (
               // Data Rows
               items.map((log) => (
-                <tr key={log.id} className="transition-colors hover:bg-[#00152a]/40">
+                <tr key={log.id} className="transition-colors hover:bg-[#103B39]/40">
                   <td className="whitespace-nowrap px-4 py-3 font-mono text-slate-300">
                     {formatTimestamp(log.createdAtLocal, log.createdAtUtc)}
                   </td>
