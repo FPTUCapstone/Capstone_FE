@@ -264,6 +264,47 @@ export async function getOperatorBookingById(
  * - If verified payment exists, creates separate refund record (BR-106, BR-107, BR-76)
  * - Original payment transaction is IMMUTABLE (BR-77)
  */
+const CANCEL_STATUS_MESSAGE: Record<number, 'MSG126' | 'MSG128' | 'MSG133' | 'MSG127'> = {
+  403: 'MSG126',
+  404: 'MSG128',
+  409: 'MSG133',
+};
+
+async function cancelBookingLive(
+  bookingId: string,
+  payload: CancelBookingPayload
+): Promise<CancelBookingResult> {
+  const reasonDetail = payload.reasonDetail?.trim() ?? '';
+  if (!reasonDetail) {
+    return { success: false, messageCode: 'MSG123', message: OPERATOR_BOOKING_MESSAGES.MSG123 };
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`/api/v1/bookings/${encodeURIComponent(bookingId)}/cancellation`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+      body: JSON.stringify({ reasonCategory: payload.reasonType, reasonDetail }),
+    });
+  } catch {
+    return { success: false, messageCode: 'MSG127', message: OPERATOR_BOOKING_MESSAGES.MSG127 };
+  }
+
+  if (response.ok) {
+    return { success: true, messageCode: 'BOOKING_CANCELLED', message: 'Booking cancelled.' };
+  }
+
+  const body: unknown = await response.json().catch(() => null);
+  const errorCode =
+    body && typeof body === 'object' && 'errorCode' in body ? (body as { errorCode?: unknown }).errorCode : null;
+  const code =
+    errorCode === 'booking.cancellation.reason_required'
+      ? 'MSG123'
+      : (CANCEL_STATUS_MESSAGE[response.status] ?? 'MSG127');
+  return { success: false, messageCode: code, message: OPERATOR_BOOKING_MESSAGES[code] };
+}
+
 export async function cancelCustomerBooking(
   bookingId: string,
   payload: CancelBookingPayload,
@@ -271,13 +312,7 @@ export async function cancelCustomerBooking(
 ): Promise<CancelBookingResult> {
   const isDemoActive = Boolean(options.isDemo && isBookingDemoAllowedInCurrentEnv());
 
-  if (!isDemoActive) {
-    return {
-      success: false,
-      messageCode: 'PENDING_BE_INTEGRATION',
-      message: OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION,
-    };
-  }
+  if (!isDemoActive) return cancelBookingLive(bookingId, payload);
 
   // BR-105 fail-closed when actor identity is missing
   if (!isValidDemoActorUserId(options.demoActorUserId)) {
