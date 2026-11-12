@@ -83,19 +83,14 @@ export async function retryFailedPayoutBatch(batchId: number, signal?: AbortSign
   await request(`/api/admin/payout-settlements/${batchId}/retry`, { method: 'POST', signal });
 }
 
-export async function carryOverFailedPayoutBatch(batchId: number, signal?: AbortSignal): Promise<void> {
-  await request(`/api/admin/payout-settlements/${batchId}/carry-over`, { method: 'POST', signal });
-}
-
-export async function recordManualPayoutSettlement(
-  batchId: number,
-  transferReference: string,
-  signal?: AbortSignal,
-): Promise<void> {
-  await request(`/api/admin/payout-settlements/${batchId}/manual-settlement`, {
+/** UC-73 [Mark as Resolved] (v2): closes a SettlementFailed batch without moving money. The
+ * backend's acknowledgement is discarded for the same reason as `retryFailedPayoutBatch` above —
+ * the caller re-fetches the detail to learn the committed status. */
+export async function markPayoutBatchResolved(batchId: number, reason: string, signal?: AbortSignal): Promise<void> {
+  await request(`/api/admin/payout-settlements/${batchId}/resolve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ transferReference }),
+    body: JSON.stringify({ reason }),
     signal,
   });
 }
