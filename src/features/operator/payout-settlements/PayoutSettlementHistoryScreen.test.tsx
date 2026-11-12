@@ -26,7 +26,7 @@ const ownRow = {
   bookingId: 55,
   tourOperatorUserId: 7,
   runDate: '2026-11-08',
-  kind: 'Main' as const,
+  kind: 'Advance' as const,
   payoutAmount: 1_800_000,
   status: 'Settled' as const,
   transferReference: 'SIM-TRX-001',

@@ -1,9 +1,79 @@
 # DAILY-PAYOUT-TRANSFER — Web Implementation Plan
 
-Spec: `specs/DAILY-PAYOUT-TRANSFER-fe-spec.md` (draft; open questions 1–5 decided, 6–7 pending
-Lead/PO approval; updated for SRS v12's Awaiting Window status). **Do not start Task 3 until the
-spec is approved**, per CLAUDE.md/AGENTS.md — Tasks 1/2 below predate the v12 update and are
-already done.
+Spec: `specs/DAILY-PAYOUT-TRANSFER-fe-spec.md` (v2). Tasks 0–9 below are the v1 history (done,
+against the old v3 backend contract). **Tasks 10–14 are the v2 delta**, bringing this branch up
+to the v7 backend contract (`Capstone_BE-fix-daily-payout`, branch `fix/linhnv-daily-payout-transfer`):
+Kind `Main`/`Retained` → `Advance`/`Final`; status `Carried Over` → `Resolved`; UC-73 actions
+`Retry`/`Carry Over`/`Record Manual Transfer` → `Retry Transfer` (now synchronous) /
+`Mark as Resolved`. Developer-approved (spec v2 change log + the one scope question — Staff
+unlock-TO UI — answered "out of scope for now").
+
+## v2 delta — bring up to backend spec v7 (Tasks 10–14)
+
+### Task 10 — Kind/Status/validator (`payoutSettlements.ts`, admin + operator)
+
+- `PAYOUT_SETTLEMENT_KINDS`: `['Main', 'Retained']` → `['Advance', 'Final']` (both files).
+- `PAYOUT_SETTLEMENT_STATUSES`: remove `'Carried Over'`, add `'Resolved'` (both files).
+- Admin file: rename `validateManualTransferReference` → `validateResolutionReason` (identical
+  blank/whitespace-after-trim rule; doc comment now cites `daily_payout.resolution_reason_required`
+  instead of `daily_payout.manual_reference_required`). Operator file has no such validator (read
+  -only) — no change there beyond the two constants.
+- Tests (red first): parser accepts `'Advance'`/`'Final'`/`'Resolved'`, rejects `'Main'`/
+  `'Retained'`/`'Carried Over'`; `validateResolutionReason` boundaries (empty, whitespace-only,
+  trimmed value kept) — same cases the old validator's tests already cover, renamed.
+
+### Task 11 — Service (`payoutSettlementsService.ts`, admin only)
+
+- Remove `carryOverFailedPayoutBatch`, `recordManualPayoutSettlement`.
+- Add `markPayoutBatchResolved(batchId, reason, signal)`: `POST /api/admin/payout-settlements/{id}/resolve`,
+  body `{ reason }`, same error-mapping discipline as the removed functions (malformed body never
+  success).
+- `retryFailedPayoutBatch` unchanged in signature/call shape — only Task 13's dialog copy
+  reflects its new synchronous behavior, not this function.
+- Tests: `markPayoutBatchResolved` sends exactly `{ reason }`; 400/403/404/409/500/network mapped;
+  old carry-over/manual-settlement tests removed (functions no longer exist).
+
+### Task 12 — BFF proxy + routes
+
+- `payoutSettlementsProxy.ts`: `PayoutBatchAction` → `'retry' | 'resolve'`. The action-body
+  allow-list for `'resolve'` forwards only `reason` (string, else `null` — backend's own validator
+  rejects blank, 400), replacing the `'manual-settlement'` branch's `transferReference` handling.
+- Delete `app/api/admin/payout-settlements/[batchId]/carry-over/route.ts` and
+  `.../manual-settlement/route.ts`. Add `.../resolve/route.ts` (same 6-line shape as `retry/route.ts`,
+  calling `proxyPayoutBatchAction(request, batchId, 'resolve')`).
+- Tests: resolve route forwards only `reason` from an extra-fields body; cross-origin → 403 without
+  calling the backend; invalid `batchId` → 400; the two removed routes' tests removed; `retry`
+  route's existing tests unchanged (same action name, same forwarding).
+
+### Task 13 — Screen + dialogs (`FailedPayoutSettlementScreen.tsx`)
+
+- Delete `ManualSettlementDialog.tsx` (and its test); add `MarkAsResolvedDialog.tsx` (and test) —
+  same shape (one required text field, `useAccessibleDecisionDialog`, double-submit guard via
+  `inFlight` ref), field renamed Transfer Reference → **Reason**, uses
+  `validateResolutionReason`, calls the passed-in `onConfirm(reason)`. Title/body copy: "Mark as
+  Resolved" / "Enter the reason this settlement is being closed without a transfer. The amount is
+  not recalculated."
+- `ConfirmActionDialog` usage for `[Carry Over]` removed (no replacement dialog needed —
+  `[Retry Transfer]` keeps using `ConfirmActionDialog`, just with new copy below).
+- `FailedPayoutSettlementScreen.tsx`: `OpenDialog` union `'retry' | 'carryOver' | 'manualSettlement' | null`
+  → `'retry' | 'markResolved' | null`. Two buttons instead of three: `[Retry Transfer]`,
+  `[Mark as Resolved]`. Retry dialog body copy updated: "The system resends the transfer now. The
+  result — settled, or failed again — is reflected immediately." (replaces the old "not
+  immediately" wording, v2 change 3). Resolved dialog wired to `markPayoutBatchResolved`.
+- Tests: two buttons only (Carry Over button gone); Mark as Resolved blocks on blank reason with
+  the typed value kept; Retry dialog's updated copy; both actions still only visible while
+  `status === 'SettlementFailed'`, both re-fetch on success (U03 race test kept, same mechanism).
+
+### Task 14 — Verification
+
+- `npm run lint && npm run typecheck && npm test && npm run build`, all green. No leftover
+  reference to `Main`/`Retained`/`Carried Over`/`carry-over`/`manual-settlement`/
+  `ManualSettlementDialog`/`validateManualTransferReference` anywhere under
+  `src/features/{admin,operator}/payout-settlements` or `app/api/{admin,operator}/payout-settlements`.
+- Manual check against the running `Capstone_BE-fix-daily-payout` API (already up on
+  `localhost:5022` this session): list screen shows `Advance`/`Final` kind and a `Resolved` badge
+  where applicable; detail screen's two buttons work against the real backend.
+
 
 ## v12 update — Awaiting Window status (done)
 

@@ -11,7 +11,7 @@ import {
   parsePayoutSettlementsSearch,
   PAYOUT_SETTLEMENT_STATUSES,
   serializePayoutSettlementsSearch,
-  validateManualTransferReference,
+  validateResolutionReason,
   validRunDateRange,
 } from './payoutSettlements';
 
@@ -21,7 +21,7 @@ const listItem = {
   bookingId: 55,
   tourOperatorUserId: 7,
   runDate: '2026-11-08',
-  kind: 'Main',
+  kind: 'Advance',
   payoutAmount: 1_800_000,
   status: 'Settled',
   transferReference: 'SIM-TRX-001',
@@ -50,15 +50,23 @@ describe('parsePayoutSettlementListItem', () => {
     expect(parsePayoutSettlementListItem({ ...listItem, transferReference: null }).transferReference).toBeNull();
   });
 
-  it('accepts every backend status, including "Carried Over" and "Awaiting Window" with a space', () => {
+  it('accepts every backend status, including "Resolved" and "Awaiting Window" with a space', () => {
     expect(PAYOUT_SETTLEMENT_STATUSES).toContain('Awaiting Window');
+    expect(PAYOUT_SETTLEMENT_STATUSES).toContain('Resolved');
+    expect(PAYOUT_SETTLEMENT_STATUSES).not.toContain('Carried Over');
     for (const status of PAYOUT_SETTLEMENT_STATUSES) {
       expect(parsePayoutSettlementListItem({ ...listItem, status }).status).toBe(status);
     }
   });
 
   it('accepts both settlement kinds', () => {
-    expect(parsePayoutSettlementListItem({ ...listItem, kind: 'Retained' }).kind).toBe('Retained');
+    expect(parsePayoutSettlementListItem({ ...listItem, kind: 'Final' }).kind).toBe('Final');
+  });
+
+  it('rejects the old pre-v7 kind and status values', () => {
+    expect(() => parsePayoutSettlementListItem({ ...listItem, kind: 'Main' })).toThrow();
+    expect(() => parsePayoutSettlementListItem({ ...listItem, kind: 'Retained' })).toThrow();
+    expect(() => parsePayoutSettlementListItem({ ...listItem, status: 'Carried Over' })).toThrow();
   });
 
   // An "Awaiting Window" row (UC-72, BE Task 10A) is synthesized for a booking with no
@@ -141,9 +149,12 @@ describe('parseFailedPayoutBatchDetail', () => {
   });
 });
 
-describe('validateManualTransferReference', () => {
-  it('accepts a non-blank reference and trims it', () => {
-    expect(validateManualTransferReference('  SIM-TRX-002  ')).toEqual({ ok: true, value: 'SIM-TRX-002' });
+describe('validateResolutionReason', () => {
+  it('accepts a non-blank reason and trims it', () => {
+    expect(validateResolutionReason('  Operator confirmed receipt out of band  ')).toEqual({
+      ok: true,
+      value: 'Operator confirmed receipt out of band',
+    });
   });
 
   it.each([
@@ -153,7 +164,7 @@ describe('validateManualTransferReference', () => {
     ['null', null],
     ['undefined', undefined],
   ])('rejects %s', (_label, value) => {
-    expect(validateManualTransferReference(value)).toEqual({ ok: false });
+    expect(validateResolutionReason(value)).toEqual({ ok: false });
   });
 });
 

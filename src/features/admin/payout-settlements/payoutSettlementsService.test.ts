@@ -2,10 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   PayoutSettlementsError,
-  carryOverFailedPayoutBatch,
   fetchFailedPayoutBatchDetail,
   fetchPayoutSettlements,
-  recordManualPayoutSettlement,
+  markPayoutBatchResolved,
   retryFailedPayoutBatch,
 } from './payoutSettlementsService';
 
@@ -21,7 +20,7 @@ function htmlResponse(status = 502): Response {
 
 const listItem = {
   settlementId: 1, batchId: 42, bookingId: 2, tourOperatorUserId: 3, runDate: '2026-11-08',
-  kind: 'Main', payoutAmount: 100_000, status: 'Settled', transferReference: 'SIM-1',
+  kind: 'Advance', payoutAmount: 100_000, status: 'Settled', transferReference: 'SIM-1',
 };
 const listResponse = { pageNumber: 1, pageSize: 20, totalCount: 1, items: [listItem] };
 
@@ -139,22 +138,25 @@ describe('Screen 2 actions', () => {
     expect(init.body).toBeUndefined();
   });
 
-  it('carryOverFailedPayoutBatch posts to the carry-over route', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ batchId: 42, status: 'Carried Over', updatedAtUtc: '2026-11-08T03:00:00Z' }));
+  it('markPayoutBatchResolved sends only reason in the body to the resolve route', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ batchId: 42, status: 'Resolved', updatedAtUtc: '2026-11-08T03:00:00Z' }));
 
-    await carryOverFailedPayoutBatch(42);
-
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/admin/payout-settlements/42/carry-over');
-  });
-
-  it('recordManualPayoutSettlement sends only transferReference in the body', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ batchId: 42, status: 'Settled', updatedAtUtc: '2026-11-08T03:00:00Z' }));
-
-    await recordManualPayoutSettlement(42, 'SIM-TRX-9');
+    await markPayoutBatchResolved(42, 'Operator confirmed receipt out of band');
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe('/api/admin/payout-settlements/42/manual-settlement');
-    expect(JSON.parse(init.body)).toEqual({ transferReference: 'SIM-TRX-9' });
+    expect(url).toBe('/api/admin/payout-settlements/42/resolve');
+    expect(JSON.parse(init.body)).toEqual({ reason: 'Operator confirmed receipt out of band' });
+  });
+
+  it('maps a blank-reason validation response on markPayoutBatchResolved to PayoutSettlementsError', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ title: 'A reason is required.', errorCode: 'daily_payout.resolution_reason_required' }, 400),
+    );
+
+    const error = await markPayoutBatchResolved(42, '').catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(PayoutSettlementsError);
+    expect((error as PayoutSettlementsError).errorCode).toBe('daily_payout.resolution_reason_required');
   });
 
   it('maps a conflict/validation response on an action to PayoutSettlementsError with its errorCode', async () => {

@@ -6,24 +6,24 @@ import { useRouter } from 'next/navigation';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
-import { ManualSettlementDialog } from './ManualSettlementDialog';
+import { MarkAsResolvedDialog } from './MarkAsResolvedDialog';
 import { formatRunDate, formatVietnamDateTime, formatVnd, type FailedPayoutBatchDetail } from './payoutSettlements';
 import {
-  carryOverFailedPayoutBatch,
   fetchFailedPayoutBatchDetail,
+  markPayoutBatchResolved,
   PayoutSettlementsError,
-  recordManualPayoutSettlement,
   retryFailedPayoutBatch,
 } from './payoutSettlementsService';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'forbidden' | 'unavailable';
-type OpenDialog = 'retry' | 'carryOver' | 'manualSettlement' | null;
+type OpenDialog = 'retry' | 'markResolved' | null;
 
-/** UC-73 (SRS §3.9.9.2): detail of a failed payout batch, plus its three mutually-exclusive
- * actions (Task 6). Every action re-fetches the detail on success rather than assuming the new
- * status locally — the same `reloadToken` mechanism the "Retry" button on the unavailable state
- * already uses, so a stale in-flight fetch from an earlier reload is aborted by its own effect
- * cleanup and never overwrites a newer reload's result (U03). */
+/** UC-73 (SRS rev10-6, 3.10.6): detail of a failed payout batch, plus its two mutually-exclusive
+ * actions (v2 — Carry Over and Record Manual Transfer were removed with the backend actions,
+ * Task 13). Every action re-fetches the detail on success rather than assuming the new status
+ * locally — the same `reloadToken` mechanism the "Retry" button on the unavailable state already
+ * uses, so a stale in-flight fetch from an earlier reload is aborted by its own effect cleanup
+ * and never overwrites a newer reload's result (U03). */
 export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
   const { replace } = useRouter();
   const [detail, setDetail] = useState<FailedPayoutBatchDetail | null>(null);
@@ -116,11 +116,8 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
               <button type="button" onClick={() => setOpenDialog('retry')} className={actionButton}>
                 Retry Transfer
               </button>
-              <button type="button" onClick={() => setOpenDialog('carryOver')} className={actionButton}>
-                Carry Over
-              </button>
-              <button type="button" onClick={() => setOpenDialog('manualSettlement')} className={actionButton}>
-                Record Manual Transfer
+              <button type="button" onClick={() => setOpenDialog('markResolved')} className={actionButton}>
+                Mark as Resolved
               </button>
             </div>
           ) : null}
@@ -155,24 +152,15 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
       <ConfirmActionDialog
         isOpen={openDialog === 'retry'}
         title="Retry Transfer"
-        body="The batch returns to Processing. The resend itself happens on the backend's own retry schedule, not immediately."
+        body="The system resends the transfer now. The result — settled, or failed again — is reflected immediately."
         confirmLabel="Retry Transfer"
         onConfirm={() => retryFailedPayoutBatch(batchId)}
         onClose={() => setOpenDialog(null)}
         onSuccess={reload}
       />
-      <ConfirmActionDialog
-        isOpen={openDialog === 'carryOver'}
-        title="Carry Over"
-        body="This amount moves to the Tour Operator's next scheduled run instead of retrying this batch."
-        confirmLabel="Carry Over"
-        onConfirm={() => carryOverFailedPayoutBatch(batchId)}
-        onClose={() => setOpenDialog(null)}
-        onSuccess={reload}
-      />
-      <ManualSettlementDialog
-        isOpen={openDialog === 'manualSettlement'}
-        onConfirm={(transferReference) => recordManualPayoutSettlement(batchId, transferReference)}
+      <MarkAsResolvedDialog
+        isOpen={openDialog === 'markResolved'}
+        onConfirm={(reason) => markPayoutBatchResolved(batchId, reason)}
         onClose={() => setOpenDialog(null)}
         onSuccess={reload}
       />

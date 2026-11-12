@@ -3,20 +3,21 @@
 // Duplicated rather than imported: this repo's admin and operator feature slices do not import
 // each other (same reason each keeps its own small format/error-code module instead of a shared
 // one — see the DAILY-PAYOUT-TRANSFER FE spec's Behaviour rules).
-// 'Awaiting Window' (SRS v12, BR-141): a paid booking is held 24h after payment confirmation
-// before it is eligible for any run. No PayoutSettlement row exists for it yet — the backend
-// synthesizes this status for UC-72 (DAILY-PAYOUT-TRANSFER-be-plan Task 10A, shipped). This
-// operator history endpoint (PD-13) does not emit it itself, but shares the admin side's DTO
-// shape, so the parser below still has to accept a null settlementId/runDate.
+// 'Awaiting Window' (BR-141): a paid booking is held 24h after payment confirmation before it
+// is eligible for any run. No PayoutSettlement row exists for it yet — the backend synthesizes
+// this status for UC-72. This operator history endpoint (PD-13) does not emit it itself, but
+// shares the admin side's DTO shape, so the parser below still has to accept a null
+// settlementId/runDate. 'Resolved' (v2, backend spec v7) replaces the old 'Carried Over' status.
 export const PAYOUT_SETTLEMENT_STATUSES = [
   'Awaiting Window',
   'Scheduled',
   'Processing',
   'Settled',
   'SettlementFailed',
-  'Carried Over',
+  'Resolved',
 ] as const;
-export const PAYOUT_SETTLEMENT_KINDS = ['Main', 'Retained'] as const;
+// v2 (backend spec v7, BR-142/BR-177): Advance/Final replace the old 'Main'/'Retained' kinds.
+export const PAYOUT_SETTLEMENT_KINDS = ['Advance', 'Final'] as const;
 
 export type PayoutSettlementStatus = (typeof PAYOUT_SETTLEMENT_STATUSES)[number];
 export type PayoutSettlementKind = (typeof PAYOUT_SETTLEMENT_KINDS)[number];

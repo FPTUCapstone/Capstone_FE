@@ -88,11 +88,12 @@ export async function proxyFailedPayoutBatchDetail(_request: Request, batchId: s
   return forward(`/api/v1/admin/payout-settlements/${batchId}`, session.token, { method: 'GET' });
 }
 
-export type PayoutBatchAction = 'retry' | 'carry-over' | 'manual-settlement';
+export type PayoutBatchAction = 'retry' | 'resolve';
 
-/** UC-73's three mutually-exclusive actions on a failed batch. Administrator only; each is a
- * same-origin POST. `manual-settlement` forwards only `transferReference` from the request
- * body — every other field, including a client-supplied `batchId` or `status`, is dropped. */
+/** UC-73's two mutually-exclusive actions on a failed batch (v2: `carry-over` and
+ * `manual-settlement` removed, `resolve` added). Administrator only; each is a same-origin
+ * POST. `resolve` forwards only `reason` from the request body — every other field, including a
+ * client-supplied `batchId` or `status`, is dropped. */
 export async function proxyPayoutBatchAction(request: Request, batchId: string, action: PayoutBatchAction): Promise<Response> {
   if (parseBatchId(batchId) === null) return jsonNoStore({ title: 'A valid payout batch ID is required.' }, 400);
   if (!isSameOriginRequest(request)) return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
@@ -100,18 +101,16 @@ export async function proxyPayoutBatchAction(request: Request, batchId: string, 
   if (!session.ok) return session.response;
 
   let body: string | undefined;
-  if (action === 'manual-settlement') {
+  if (action === 'resolve') {
     let parsed: unknown;
     try {
       parsed = await request.json();
     } catch {
       return jsonNoStore({ title: 'Invalid JSON.' }, 400);
     }
-    const transferReference =
-      typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>).transferReference
-        : undefined;
-    body = JSON.stringify({ transferReference: typeof transferReference === 'string' ? transferReference : null });
+    const reason =
+      typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? (parsed as Record<string, unknown>).reason : undefined;
+    body = JSON.stringify({ reason: typeof reason === 'string' ? reason : null });
   }
 
   return forward(`/api/v1/admin/payout-settlements/${batchId}/${action}`, session.token, { method: 'POST', body });
