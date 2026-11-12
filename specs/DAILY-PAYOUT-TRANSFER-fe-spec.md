@@ -298,7 +298,7 @@ MSG codes, or from a project-approved interim catalogue entry if that is faster 
   `reason`).
 - Race (U03): a stale detail response arriving after an action does not overwrite a newer status
   already rendered from that action's own re-fetch.
-- Double-submit (U05): each of the three Screen 2 actions sends exactly one request when its
+- Double-submit (U05): each of the two Screen 2 actions sends exactly one request when its
   button is double-clicked.
 - Direct navigation to each route: missing/expired/tampered session → sign-in with the right
   `returnUrl`; wrong role → the matching denial view, with no settlement data fetched beforehand.
