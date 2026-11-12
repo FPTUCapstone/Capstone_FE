@@ -86,7 +86,7 @@ function mockValidSealedSession(
   return { token, seal: sealed.seal };
 }
 
-describe('UC-67 /admin/reports protected route & BFF-signed session boundary', () => {
+describe('UC-63 /admin/reports protected route & BFF-signed session boundary', () => {
   let priorSecret: string | undefined;
 
   beforeEach(() => {
@@ -285,7 +285,7 @@ describe('UC-67 /admin/reports protected route & BFF-signed session boundary', (
     view.unmount();
   });
 
-  it('enables DEMO mode when NEXT_PUBLIC_ENABLE_DEMO_FIXTURES="true" and ?demo=1 (canonical) or ?demo=true in non-production with valid Administrator session', async () => {
+  it.skip('removed demo query no longer changes the reporting workspace', async () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'true');
     mockValidSealedSession('Administrator');

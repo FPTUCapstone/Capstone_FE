@@ -1,50 +1,48 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { ROUTES } from '@/lib/routes';
 
 import {
   canAccessStatisticalReports,
-  isStatisticalDemoAllowedInEnv,
 } from '../guards/statisticalReportAuth';
 import { statisticalReportsEn } from '../resources/en';
 import {
+  CANONICAL_BOOKING_TYPE_OPTIONS,
   DEFAULT_DRAFT_CRITERIA,
   areCriteriaEqual,
-  buildDemoExportArtifact,
-  findDemoPeriodFixture,
-  findProductionPeriodOption,
+  fetchProductionReportingDestinations,
+  fetchProductionReportingOperators,
+  fetchProductionReportingPeriods,
+  fetchProductionStatisticalReport,
   formatVndCurrency,
-  generateDemoStatisticalReport,
-  getDemoPeriodFixturesByGranularity,
-  getFilterOptionsByMode,
-  getPeriodsByGranularity,
-  getProductionPeriodsByGranularity,
-  triggerBrowserCsvDownload,
+  productionExportUrl,
 } from '../services/statisticalReportService';
 import type {
   AppliedStatisticalReportCriteria,
   BookingTypeFilter,
-  DemoExportArtifact,
   ExportFormat,
   GeneratedStatisticalReport,
   PeriodGranularity,
+  StatisticalFilterOption,
   StatisticalReportCriteria,
   StatisticalReportType,
   StatisticalWorkspaceMode,
+  ProductionReportingPeriodOption,
 } from '../types/statisticalReports';
 
 export interface StatisticalReportsViewProps {
   readonly actorRole?: string | null;
+  /** Retained temporarily so older callers do not break; reports always use backend data. */
   readonly initialMode?: StatisticalWorkspaceMode;
 }
 
 type ResultLifecycleState =
   | 'IDLE'
-  | 'PENDING_BE_INTEGRATION'
+  | 'LOADING'
   | 'NO_DATA'
   | 'GENERATION_ERROR'
   | 'GENERATED';
@@ -63,38 +61,20 @@ const GRANULARITY_KEYS: readonly PeriodGranularity[] = [
   'CLOSED_YEAR',
 ];
 
-const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['CSV', 'EXCEL', 'PDF'];
+const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['CSV', 'EXCEL'];
 
 export function StatisticalReportsView({
   actorRole,
-  initialMode = 'PRODUCTION',
 }: StatisticalReportsViewProps) {
   const copy = statisticalReportsEn;
   const effectiveRole = actorRole ?? null;
-  const effectiveMode: StatisticalWorkspaceMode = isStatisticalDemoAllowedInEnv()
-    ? initialMode
-    : 'PRODUCTION';
 
   const [draftCriteria, setDraftCriteria] =
     useState<StatisticalReportCriteria>(DEFAULT_DRAFT_CRITERIA);
   const [appliedCriteria, setAppliedCriteria] =
     useState<AppliedStatisticalReportCriteria | null>(null);
-  const [resultState, setResultState] = useState<ResultLifecycleState>(() => {
-    if (effectiveMode === 'PRODUCTION') return 'PENDING_BE_INTEGRATION';
-    return 'GENERATED';
-  });
-  const [generatedReport, setGeneratedReport] = useState<GeneratedStatisticalReport | null>(() => {
-    if (effectiveMode === 'PRODUCTION') return null;
-    const initialApplied: AppliedStatisticalReportCriteria = {
-      reportType: 'PLATFORM_REVENUE',
-      periodGranularity: 'CLOSED_MONTH',
-      periodKey: '2026-09',
-      operatorId: 'ALL',
-      destinationId: 'ALL',
-      bookingType: 'ALL',
-    };
-    return generateDemoStatisticalReport(initialApplied);
-  });
+  const [resultState, setResultState] = useState<ResultLifecycleState>('IDLE');
+  const [generatedReport, setGeneratedReport] = useState<GeneratedStatisticalReport | null>(null);
 
   const resolvedAppliedCriteria: AppliedStatisticalReportCriteria | null =
     appliedCriteria ?? (generatedReport ? generatedReport.criteria : null);
@@ -103,14 +83,47 @@ export function StatisticalReportsView({
     reportType?: string;
     periodKey?: string;
   }>({});
-  const [simulateGenerationError, setSimulateGenerationError] = useState(false);
-  const [simulateExportError, setSimulateExportError] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('CSV');
   const [exportStatus, setExportStatus] = useState<'IDLE' | 'READY' | 'PREVIEW_ONLY' | 'ERROR'>(
     'IDLE',
   );
-  const [exportedArtifact, setExportedArtifact] = useState<DemoExportArtifact | null>(null);
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>('');
+  const [productionPeriods, setProductionPeriods] = useState<readonly ProductionReportingPeriodOption[]>([]);
+  const [productionOperators, setProductionOperators] = useState<readonly StatisticalFilterOption[]>([]);
+  const [productionDestinations, setProductionDestinations] = useState<readonly StatisticalFilterOption[]>([]);
+  const [productionFilterLoadError, setProductionFilterLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchProductionReportingPeriods(controller.signal)
+      .then((periods) => {
+        setProductionPeriods(periods);
+        setDraftCriteria((current) => {
+          const currentPeriodIsAvailable = periods.some((period) => period.key === current.periodKey && period.granularity === current.periodGranularity);
+          if (currentPeriodIsAvailable) return current;
+          const first = periods.find((period) => period.granularity === current.periodGranularity) ?? periods[0];
+          return first ? { ...current, periodGranularity: first.granularity, periodKey: first.key } : current;
+        });
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setLiveAnnouncement(error instanceof Error ? error.message : 'Unable to load closed reporting periods.');
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const reportFilterLoadFailure = () => {
+      if (!controller.signal.aborted) setProductionFilterLoadError(statisticalReportsEn.filters.loadErrorMessage);
+    };
+    void fetchProductionReportingOperators(controller.signal)
+      .then(setProductionOperators)
+      .catch(reportFilterLoadFailure);
+    void fetchProductionReportingDestinations(controller.signal)
+      .then(setProductionDestinations)
+      .catch(reportFilterLoadFailure);
+    return () => controller.abort();
+  }, []);
 
   if (!canAccessStatisticalReports(effectiveRole)) {
     return (
@@ -167,35 +180,27 @@ export function StatisticalReportsView({
     );
   }
 
-  const availablePeriods = getPeriodsByGranularity(
-    draftCriteria.periodGranularity,
-    effectiveMode,
+  const availablePeriods = productionPeriods.filter(
+    (period) => period.granularity === draftCriteria.periodGranularity,
   );
-  const activeFilterOptions = getFilterOptionsByMode(effectiveMode);
+  const activeFilterOptions = {
+    operators: [{ id: 'ALL', label: copy.filters.allOperatorsLabel }, ...productionOperators],
+    destinations: [{ id: 'ALL', label: copy.filters.allDestinationsLabel }, ...productionDestinations],
+    bookingTypes: CANONICAL_BOOKING_TYPE_OPTIONS,
+  };
   const isDraftDirty =
     resolvedAppliedCriteria !== null && !areCriteriaEqual(draftCriteria, resolvedAppliedCriteria);
 
   function handleGranularityChange(nextGranularity: PeriodGranularity) {
-    if (effectiveMode === 'PRODUCTION') {
-      const productionPeriods = getProductionPeriodsByGranularity(nextGranularity);
-      setDraftCriteria((prev) => ({
-        ...prev,
-        periodGranularity: nextGranularity,
-        periodKey: productionPeriods[0]?.key ?? '',
-      }));
-      return;
-    }
-
-    const demoPeriods = getDemoPeriodFixturesByGranularity(nextGranularity);
-    const firstClosed = demoPeriods.find((p) => p.isClosed);
+    const periodsForGranularity = productionPeriods.filter((period) => period.granularity === nextGranularity);
     setDraftCriteria((prev) => ({
       ...prev,
       periodGranularity: nextGranularity,
-      periodKey: firstClosed?.key ?? '',
+      periodKey: periodsForGranularity[0]?.key ?? '',
     }));
   }
 
-  function executeGenerateReport() {
+  async function executeGenerateReport() {
     const nextErrors: { reportType?: string; periodKey?: string } = {};
     if (!draftCriteria.reportType) {
       nextErrors.reportType = copy.validation.requiredField;
@@ -214,66 +219,32 @@ export function StatisticalReportsView({
       reportType: draftCriteria.reportType as StatisticalReportType,
       periodGranularity: draftCriteria.periodGranularity,
       periodKey: draftCriteria.periodKey,
-      operatorId: effectiveMode === 'PRODUCTION' ? 'ALL' : draftCriteria.operatorId,
-      destinationId: effectiveMode === 'PRODUCTION' ? 'ALL' : draftCriteria.destinationId,
+      operatorId: draftCriteria.operatorId,
+      destinationId: draftCriteria.destinationId,
       bookingType: draftCriteria.bookingType,
     };
 
-    if (effectiveMode === 'PRODUCTION') {
-      const requestedProductionPeriod = findProductionPeriodOption(draftCriteria.periodKey);
-      if (!requestedProductionPeriod) {
-        setFieldErrors({ periodKey: copy.validation.requiredField });
-        setLiveAnnouncement(copy.validation.requiredField);
-        return;
-      }
-
-      setFieldErrors({});
-      setExportStatus('IDLE');
-      setExportedArtifact(null);
-      setAppliedCriteria(nextApplied);
-      setGeneratedReport(null);
-      setResultState('PENDING_BE_INTEGRATION');
-      setLiveAnnouncement(copy.states.pendingBackendTitle);
-      return;
-    }
-
-    const selectedDemoPeriod = findDemoPeriodFixture(draftCriteria.periodKey);
-    if (!selectedDemoPeriod || !selectedDemoPeriod.isClosed) {
-      setFieldErrors({ periodKey: copy.validation.openPeriodRejected });
-      setLiveAnnouncement(copy.validation.openPeriodRejected);
-      return;
-    }
-
     setFieldErrors({});
     setExportStatus('IDLE');
-    setExportedArtifact(null);
-
-    if (simulateGenerationError) {
-      setResultState('GENERATION_ERROR');
-      setLiveAnnouncement(copy.states.generationErrorMessage);
-      return;
-    }
-
-    const demoReport = generateDemoStatisticalReport(nextApplied);
     setAppliedCriteria(nextApplied);
-
-    if (!demoReport || demoReport.breakdownRows.length === 0) {
-      setGeneratedReport(demoReport);
-      setResultState('NO_DATA');
-      setLiveAnnouncement(copy.states.noDataMessage);
-      return;
+    setGeneratedReport(null);
+    setResultState('LOADING');
+    setLiveAnnouncement('Generating the closed-period report.');
+    try {
+      const report = await fetchProductionStatisticalReport(nextApplied);
+      const hasData = report.breakdownRows.length > 0 && report.hasData !== false;
+      setGeneratedReport(report);
+      setResultState(hasData ? 'GENERATED' : 'NO_DATA');
+      setLiveAnnouncement(hasData ? 'Statistical report generated.' : copy.states.noDataMessage);
+    } catch (error) {
+      setResultState('GENERATION_ERROR');
+      setLiveAnnouncement(error instanceof Error ? error.message : copy.states.generationErrorMessage);
     }
-
-    setGeneratedReport(demoReport);
-    setResultState('GENERATED');
-    setLiveAnnouncement(
-      `${copy.results.appliedHeaderTitle}: ${copy.reportTypes[nextApplied.reportType].label} (${selectedDemoPeriod.label})`,
-    );
   }
 
   function handleGenerateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    executeGenerateReport();
+    void executeGenerateReport();
   }
 
   function handleCancelCriteriaChanges() {
@@ -288,48 +259,23 @@ export function StatisticalReportsView({
   }
 
   function handleExportReport() {
-    if (effectiveMode === 'PRODUCTION' || resultState !== 'GENERATED' || !generatedReport) {
+    if (resultState !== 'GENERATED' || !generatedReport) {
       return;
     }
 
-    if (simulateExportError) {
-      setExportStatus('ERROR');
-      setExportedArtifact(null);
-      setLiveAnnouncement(copy.exportPanel.exportErrorMessage);
-      return;
-    }
-
-    const artifact = buildDemoExportArtifact(generatedReport, exportFormat);
-    if (!artifact.isDownloadable) {
-      setExportedArtifact(artifact);
-      setExportStatus('PREVIEW_ONLY');
-      setLiveAnnouncement(copy.exportPanel.previewOnlyMessage);
-      return;
-    }
-
-    const downloaded = triggerBrowserCsvDownload(artifact);
-    if (!downloaded) {
-      setExportStatus('ERROR');
-      setExportedArtifact(null);
-      setLiveAnnouncement(copy.exportPanel.exportErrorMessage);
-      return;
-    }
-
-    setExportedArtifact(artifact);
+    const format = exportFormat === 'EXCEL' ? 'EXCEL' : 'CSV';
+    window.location.assign(productionExportUrl(generatedReport.criteria, format));
     setExportStatus('READY');
-    setLiveAnnouncement(`${copy.exportPanel.exportSuccessMessage} (${artifact.fileName})`);
+    setLiveAnnouncement(copy.exportPanel.exportSuccessMessage);
   }
 
   const canExport =
-    effectiveMode === 'DEMO' &&
     resultState === 'GENERATED' &&
     generatedReport !== null &&
     generatedReport.breakdownRows.length > 0;
 
   const exportDisabledExplanation =
-    effectiveMode === 'PRODUCTION'
-      ? copy.exportPanel.disabledProductionReason
-      : copy.exportPanel.disabledNoGeneratedReportReason;
+    copy.exportPanel.disabledNoGeneratedReportReason;
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] pb-20 text-[#1C2928]">
@@ -339,7 +285,7 @@ export function StatisticalReportsView({
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:px-8 md:py-10">
         {/* Top Page Header */}
-        <header className="mb-6 rounded-2xl border border-[#5B6E69] bg-[#103B39] p-6 text-white shadow-md sm:p-8">
+        <header className="mb-4 rounded-2xl border border-[#5B6E69] bg-[#103B39] px-5 py-4 text-white shadow-md sm:px-6 sm:py-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#71f8e4] uppercase">
@@ -365,38 +311,6 @@ export function StatisticalReportsView({
           </div>
         </header>
 
-        {/* Read-Only Data Source Status Banner (No User-Facing Production->Demo Toggle) */}
-        <section
-          aria-label={copy.modeBanner.groupAriaLabel}
-          className="mb-8 rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-xs sm:p-5"
-        >
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-            <h2 className="text-sm font-extrabold tracking-tight text-[#1C2928]">
-              {effectiveMode === 'PRODUCTION'
-                ? copy.modeBanner.productionModeHeading
-                : copy.modeBanner.demoModeHeading}
-            </h2>
-
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
-                effectiveMode === 'PRODUCTION'
-                  ? 'border border-amber-300 bg-amber-50 text-amber-900'
-                  : 'border border-teal-300 bg-teal-50 text-teal-900'
-              }`}
-            >
-              {effectiveMode === 'PRODUCTION'
-                ? copy.modeBanner.productionBadge
-                : copy.modeBanner.demoBadge}
-            </span>
-          </div>
-
-          <p className="mt-2.5 text-xs leading-relaxed text-[#5B6E69]">
-            {effectiveMode === 'PRODUCTION'
-              ? copy.modeBanner.productionNotice
-              : copy.modeBanner.demoNotice}
-          </p>
-        </section>
-
         {/* Criteria Form Panel */}
         <section
           aria-labelledby="statistical-criteria-heading"
@@ -414,91 +328,51 @@ export function StatisticalReportsView({
             </p>
           </div>
 
-          <form noValidate onSubmit={handleGenerateSubmit} className="space-y-6">
-            {/* Report Type Selection (Keyboard Accessible Radio Cards + Select) */}
-            <fieldset className="space-y-3">
-              <legend className="text-sm font-bold text-[#1C2928]">
+          <form noValidate onSubmit={handleGenerateSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+            {/* Single report-type selector */}
+            <div className="space-y-2">
+              <label htmlFor="report-type-select" className="block text-sm font-bold text-[#1C2928]">
                 {copy.criteriaForm.reportTypeLegend}
-              </legend>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                {REPORT_TYPE_KEYS.map((typeKey) => {
-                  const typeCopy = copy.reportTypes[typeKey];
-                  const isSelected = draftCriteria.reportType === typeKey;
-                  return (
-                    <label
-                      key={typeKey}
-                      className={`flex cursor-pointer flex-col justify-between rounded-xl border p-3.5 transition focus-within:ring-2 focus-within:ring-[#174B4A] ${
-                        isSelected
-                          ? 'border-[#174B4A] bg-[#f0fdf9]'
-                          : 'border-[#DCE2DD] bg-white hover:border-[#94a3b8]'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <input
-                          type="radio"
-                          name="reportTypeRadio"
-                          value={typeKey}
-                          checked={isSelected}
-                          onChange={() => {
-                            setDraftCriteria((prev) => ({ ...prev, reportType: typeKey }));
-                            setFieldErrors((prev) => ({ ...prev, reportType: undefined }));
-                          }}
-                          className="mt-1 h-4 w-4 accent-[#174B4A]"
-                        />
-                        <div>
-                          <span className="block text-xs font-bold text-[#1C2928] sm:text-sm">
-                            {typeCopy.label}
-                          </span>
-                          <span className="mt-1 block text-[11px] leading-snug text-[#5B6E69]">
-                            {typeCopy.description}
-                          </span>
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-
-              <div className="max-w-md pt-1">
-                <label
-                  htmlFor="report-type-select"
-                  className="mb-1 block text-xs font-semibold text-[#5B6E69]"
-                >
-                  {copy.criteriaForm.reportTypeSelectLabel}
-                </label>
-                <select
-                  id="report-type-select"
-                  value={draftCriteria.reportType}
-                  onChange={(e) => {
-                    setDraftCriteria((prev) => ({
-                      ...prev,
-                      reportType: e.target.value as StatisticalReportType | '',
-                    }));
-                    setFieldErrors((prev) => ({ ...prev, reportType: undefined }));
-                  }}
-                  aria-invalid={Boolean(fieldErrors.reportType)}
-                  aria-describedby={fieldErrors.reportType ? 'report-type-error' : undefined}
-                  className="w-full rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2.5 text-sm text-[#1C2928] focus:border-[#174B4A] focus:outline-none"
-                >
-                  <option value="">{copy.criteriaForm.reportTypePlaceholder}</option>
-                  {REPORT_TYPE_KEYS.map((typeKey) => (
-                    <option key={typeKey} value={typeKey}>
-                      {copy.reportTypes[typeKey].label}
-                    </option>
-                  ))}
-                </select>
-                {fieldErrors.reportType ? (
-                  <p
-                    id="report-type-error"
-                    role="alert"
-                    className="mt-1.5 text-xs font-semibold text-rose-700"
-                  >
-                    {fieldErrors.reportType}
-                  </p>
-                ) : null}
-              </div>
-            </fieldset>
+              </label>
+              <select
+                id="report-type-select"
+                value={draftCriteria.reportType}
+                onChange={(e) => {
+                  setDraftCriteria((prev) => ({
+                    ...prev,
+                    reportType: e.target.value as StatisticalReportType | '',
+                  }));
+                  setFieldErrors((prev) => ({ ...prev, reportType: undefined }));
+                }}
+                aria-invalid={Boolean(fieldErrors.reportType)}
+                aria-describedby={
+                  fieldErrors.reportType
+                    ? 'report-type-error'
+                    : draftCriteria.reportType
+                      ? 'report-type-description'
+                      : undefined
+                }
+                className="w-full rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2.5 text-sm text-[#1C2928] focus:border-[#174B4A] focus:outline-none"
+              >
+                <option value="">{copy.criteriaForm.reportTypePlaceholder}</option>
+                {REPORT_TYPE_KEYS.map((typeKey) => (
+                  <option key={typeKey} value={typeKey}>
+                    {copy.reportTypes[typeKey].label}
+                  </option>
+                ))}
+              </select>
+              {draftCriteria.reportType ? (
+                <p id="report-type-description" className="text-xs leading-relaxed text-[#5B6E69]">
+                  {copy.reportTypes[draftCriteria.reportType].description}
+                </p>
+              ) : null}
+              {fieldErrors.reportType ? (
+                <p id="report-type-error" role="alert" className="text-xs font-semibold text-rose-700">
+                  {fieldErrors.reportType}
+                </p>
+              ) : null}
+            </div>
 
             {/* Period Selection (Closed Month / Closed Quarter / Closed Year) */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -564,13 +438,14 @@ export function StatisticalReportsView({
                 ) : null}
               </div>
             </div>
+            </div>
 
-            {/* Optional Filters (PRODUCTION_FILTER_OPTIONS vs DEMO_FILTER_FIXTURES) */}
-            <fieldset className="rounded-xl border border-[#eaecf0] bg-[#f8fafc] p-4">
-              <legend className="px-1 text-xs font-bold tracking-wider text-[#5B6E69] uppercase">
+            {/* Optional filters supplied by the production reporting API (collapsed by default). */}
+            <details className="rounded-xl border border-[#eaecf0] bg-[#f8fafc] p-4">
+              <summary className="cursor-pointer text-xs font-bold tracking-wider text-[#5B6E69] uppercase">
                 {copy.criteriaForm.optionalFiltersHeading}
-              </legend>
-              <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              </summary>
+              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label
                     htmlFor="filter-operator-select"
@@ -643,41 +518,12 @@ export function StatisticalReportsView({
                   </select>
                 </div>
               </div>
-              {effectiveMode === 'PRODUCTION' ? (
-                <p className="mt-3 text-xs text-[#5B6E69]">
-                  {copy.filters.productionDynamicFiltersNotice}
+              {productionFilterLoadError ? (
+                <p role="status" className="mt-3 text-xs font-semibold text-rose-700">
+                  {productionFilterLoadError}
                 </p>
               ) : null}
-            </fieldset>
-
-            {/* Demo Failure Simulation Controls (Non-Production Demo Only) */}
-            {effectiveMode === 'DEMO' ? (
-              <fieldset className="rounded-xl border border-dashed border-[#DCE2DD] bg-[#fcfcfd] p-3.5">
-                <legend className="px-1 text-xs font-bold text-[#5B6E69]">
-                  {copy.criteriaForm.simulationHeading}
-                </legend>
-                <div className="flex flex-wrap gap-6 pt-1">
-                  <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-[#5B6E69]">
-                    <input
-                      type="checkbox"
-                      checked={simulateGenerationError}
-                      onChange={(e) => setSimulateGenerationError(e.target.checked)}
-                      className="h-4 w-4 accent-[#174B4A]"
-                    />
-                    <span>{copy.criteriaForm.simulateGenerationErrorLabel}</span>
-                  </label>
-                  <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-[#5B6E69]">
-                    <input
-                      type="checkbox"
-                      checked={simulateExportError}
-                      onChange={(e) => setSimulateExportError(e.target.checked)}
-                      className="h-4 w-4 accent-[#174B4A]"
-                    />
-                    <span>{copy.criteriaForm.simulateExportErrorLabel}</span>
-                  </label>
-                </div>
-              </fieldset>
-            ) : null}
+            </details>
 
             {/* Draft vs Applied Notice */}
             {isDraftDirty ? (
@@ -706,326 +552,6 @@ export function StatisticalReportsView({
               </button>
             </div>
           </form>
-        </section>
-
-        {/* Result Area */}
-        <section aria-labelledby="statistical-results-heading" className="mb-8">
-          <h2 id="statistical-results-heading" className="sr-only">
-            {copy.results.appliedHeaderTitle}
-          </h2>
-
-          {/* Production Mode: PENDING_BE_INTEGRATION */}
-          {effectiveMode === 'PRODUCTION' || resultState === 'PENDING_BE_INTEGRATION' ? (
-            <div
-              role="region"
-              aria-label={copy.states.pendingBackendTitle}
-              className="rounded-2xl border border-amber-300 bg-amber-50/70 p-6 sm:p-8"
-            >
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="h-4 w-4 shrink-0"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{copy.modeBanner.productionBadge}</span>
-              </div>
-              <h3 className="text-lg font-extrabold text-[#1C2928]">
-                {copy.states.pendingBackendTitle}
-              </h3>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
-                {copy.states.pendingBackendDescription}
-              </p>
-              {resolvedAppliedCriteria ? (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4 text-xs text-[#5B6E69]">
-                  <span className="font-bold">{copy.results.appliedCriteriaSummaryLabel}: </span>
-                  <span>
-                    {copy.reportTypes[resolvedAppliedCriteria.reportType].label} •{' '}
-                    {copy.results.appliedPeriodPrefix} {resolvedAppliedCriteria.periodKey} •{' '}
-                    {copy.results.appliedOperatorPrefix} {resolvedAppliedCriteria.operatorId} •{' '}
-                    {copy.results.appliedDestinationPrefix}{' '}
-                    {resolvedAppliedCriteria.destinationId} •{' '}
-                    {copy.results.appliedBookingTypePrefix}{' '}
-                    {resolvedAppliedCriteria.bookingType}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {/* Generation Error State (4.a2) */}
-          {effectiveMode === 'DEMO' && resultState === 'GENERATION_ERROR' ? (
-            <div
-              role="alert"
-              className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900 sm:p-8"
-            >
-              <h3 className="text-lg font-extrabold">{copy.states.generationErrorTitle}</h3>
-              <p className="mt-2 text-sm leading-relaxed">{copy.states.generationErrorMessage}</p>
-              <button
-                type="button"
-                onClick={executeGenerateReport}
-                className="mt-4 inline-flex items-center justify-center rounded-xl bg-rose-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-800"
-              >
-                {copy.states.retryGenerateButton}
-              </button>
-            </div>
-          ) : null}
-
-          {/* No Data State (4.a1) */}
-          {effectiveMode === 'DEMO' && resultState === 'NO_DATA' ? (
-            <div
-              role="status"
-              className="rounded-2xl border border-[#DCE2DD] bg-white p-6 text-center sm:p-8"
-            >
-              <h3 className="text-lg font-extrabold text-[#1C2928]">{copy.states.noDataTitle}</h3>
-              <p className="mt-2 text-sm font-semibold text-[#5B6E69]">
-                {copy.states.noDataMessage}
-              </p>
-              <p className="mt-1 text-xs text-[#5B6E69]">{copy.states.noDataDescription}</p>
-            </div>
-          ) : null}
-
-          {/* Generated Report Result (Summary Figures + Revenue Formula + SVG Chart + Accessible Table) */}
-          {effectiveMode === 'DEMO' &&
-          resultState === 'GENERATED' &&
-          generatedReport &&
-          generatedReport.breakdownRows.length > 0 ? (
-            <div className="space-y-6">
-              {/* Applied Criteria Metadata Banner */}
-              <div className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eaecf0] pb-4">
-                  <div>
-                    <span className="text-xs font-bold tracking-wider text-[#174B4A] uppercase">
-                      {copy.results.appliedHeaderTitle}
-                    </span>
-                    <h3 className="mt-0.5 text-xl font-extrabold text-[#1C2928]">
-                      {copy.reportTypes[generatedReport.criteria.reportType].label}
-                    </h3>
-                  </div>
-                  <span className="rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-bold text-teal-900">
-                    {copy.results.demoWatermarkBadge}
-                  </span>
-                </div>
-
-                <dl className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
-                  <div>
-                    <dt className="font-semibold text-[#5B6E69]">
-                      {copy.results.appliedCriteriaSummaryLabel}
-                    </dt>
-                    <dd className="mt-0.5 font-bold text-[#1C2928]">
-                      {copy.reportTypes[generatedReport.criteria.reportType].label} (
-                      {copy.granularities[generatedReport.criteria.periodGranularity]})
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold text-[#5B6E69]">
-                      {copy.results.periodWindowLabel}
-                    </dt>
-                    <dd className="mt-0.5 font-bold text-[#1C2928]">
-                      {generatedReport.period.startDateDisplay} –{' '}
-                      {generatedReport.period.endDateDisplay} ({generatedReport.period.key})
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold text-[#5B6E69]">
-                      {copy.results.generatedTimestampLabel}
-                    </dt>
-                    <dd className="mt-0.5 font-bold text-[#1C2928]">
-                      {generatedReport.generatedAtDisplay}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-
-              {/* Summary KPI Cards */}
-              <div
-                role="region"
-                aria-label={copy.results.summarySectionTitle}
-                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-              >
-                {generatedReport.summaryMetrics.map((metric) => (
-                  <article
-                    key={metric.id}
-                    className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs"
-                  >
-                    <p className="text-xs font-bold tracking-wide text-[#5B6E69] uppercase">
-                      {metric.label}
-                    </p>
-                    <p className="mt-2 font-mono text-xl font-extrabold text-[#1C2928] sm:text-2xl">
-                      {metric.formattedValue}
-                    </p>
-                    <p className="mt-1.5 text-xs text-[#667085]">{metric.contextNote}</p>
-                  </article>
-                ))}
-              </div>
-
-              {/* Platform Revenue Formula Breakdown (Only for PLATFORM_REVENUE) */}
-              {generatedReport.revenueBreakdown ? (
-                <section
-                  aria-label={copy.results.revenueFormulaTitle}
-                  className="rounded-2xl border border-[#bae6fd] bg-[#f0f9ff] p-5"
-                >
-                  <h4 className="text-sm font-extrabold text-[#1C2928]">
-                    {copy.results.revenueFormulaTitle}
-                  </h4>
-                  <p className="mt-1 text-xs text-[#5B6E69]">
-                    {copy.results.revenueFormulaNote}
-                  </p>
-                  <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
-                      <dt className="text-xs font-semibold text-[#5B6E69]">
-                        {copy.results.confirmedGrossLabel}
-                      </dt>
-                      <dd className="mt-1 font-mono text-sm font-bold text-[#1C2928]">
-                        {formatVndCurrency(
-                          generatedReport.revenueBreakdown.confirmedBookingsGrossVnd,
-                        )}
-                      </dd>
-                    </div>
-                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
-                      <dt className="text-xs font-semibold text-[#5B6E69]">
-                        {copy.results.completedGrossLabel}
-                      </dt>
-                      <dd className="mt-1 font-mono text-sm font-bold text-[#1C2928]">
-                        {formatVndCurrency(
-                          generatedReport.revenueBreakdown.completedBookingsGrossVnd,
-                        )}
-                      </dd>
-                    </div>
-                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
-                      <dt className="text-xs font-semibold text-[#5B6E69]">
-                        {copy.results.recordedRefundsLabel}
-                      </dt>
-                      <dd className="mt-1 font-mono text-sm font-bold text-rose-700">
-                        -{formatVndCurrency(generatedReport.revenueBreakdown.recordedRefundsVnd)}
-                      </dd>
-                    </div>
-                    <div className="rounded-xl bg-[#103B39] p-3.5 text-white">
-                      <dt className="text-xs font-semibold text-[#71f8e4]">
-                        {copy.results.netPlatformRevenueLabel}
-                      </dt>
-                      <dd className="mt-1 font-mono text-sm font-extrabold text-white">
-                        {formatVndCurrency(generatedReport.revenueBreakdown.netPlatformRevenueVnd)}
-                      </dd>
-                    </div>
-                  </dl>
-                </section>
-              ) : null}
-
-              {/* Accessible Visual Chart + Tabular Data Fallback */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                {/* Lightweight Accessible SVG / Proportional Bar Chart */}
-                <section
-                  aria-label={copy.results.chartSectionTitle}
-                  className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs lg:col-span-5"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <h4 className="text-base font-extrabold text-[#1C2928]">
-                      {copy.results.chartSectionTitle}
-                    </h4>
-                    <span className="text-xs font-semibold text-[#5B6E69]">
-                      {generatedReport.chartUnitLabel}
-                    </span>
-                  </div>
-
-                  <svg
-                    role="img"
-                    aria-label={copy.results.chartSvgAriaLabel}
-                    viewBox="0 0 400 180"
-                    className="mb-4 h-40 w-full rounded-xl bg-[#f8fafc] p-3"
-                  >
-                    <title>{copy.results.chartSvgAriaLabel}</title>
-                    {generatedReport.chartPoints.map((point, index) => {
-                      const y = 18 + index * 46;
-                      const barWidth = Math.max(12, Math.round((point.sharePercent / 100) * 260));
-                      return (
-                        <g key={point.id}>
-                          <text x="8" y={y + 12} fontSize="11" fill="#1C2928" fontWeight="bold">
-                            {point.label} ({point.sharePercent}%)
-                          </text>
-                          <rect
-                            x="8"
-                            y={y + 18}
-                            width={barWidth}
-                            height="14"
-                            rx="4"
-                            fill="#174B4A"
-                          />
-                        </g>
-                      );
-                    })}
-                  </svg>
-
-                  <ul className="space-y-2.5 text-xs">
-                    {generatedReport.chartPoints.map((point) => (
-                      <li
-                        key={point.id}
-                        className="flex items-center justify-between rounded-lg bg-[#f8fafc] px-3 py-2"
-                      >
-                        <span className="font-semibold text-[#1C2928]">{point.label}</span>
-                        <span className="font-mono font-bold text-[#174B4A]">
-                          {point.formattedPrimaryValue} ({point.sharePercent}%{' '}
-                          {copy.results.shareOfTotalSuffix})
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-
-                {/* Accessible Tabular Fallback */}
-                <section
-                  aria-label={copy.results.tableFallbackTitle}
-                  className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs lg:col-span-7"
-                >
-                  <h4 className="mb-4 text-base font-extrabold text-[#1C2928]">
-                    {copy.results.tableFallbackTitle}
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left text-xs sm:text-sm">
-                      <caption className="sr-only">
-                        {copy.results.tableCaptionPrefix}{' '}
-                        {copy.reportTypes[generatedReport.criteria.reportType].label} (
-                        {generatedReport.period.key})
-                      </caption>
-                      <thead>
-                        <tr className="border-b border-[#DCE2DD] bg-[#f8fafc] text-[#5B6E69]">
-                          {generatedReport.tableHeaders.map((header) => (
-                            <th key={header} scope="col" className="px-3.5 py-2.5 font-bold">
-                              {header}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#eaecf0]">
-                        {generatedReport.breakdownRows.map((row) => (
-                          <tr key={row.id} className="hover:bg-[#f8fafc]">
-                            <td className="px-3.5 py-3 font-semibold text-[#1C2928]">
-                              {row.segmentLabel}
-                            </td>
-                            <td className="px-3.5 py-3 font-mono text-[#1e293b]">
-                              {row.primaryMetricLabel}
-                            </td>
-                            <td className="px-3.5 py-3 font-mono text-[#1e293b]">
-                              {row.secondaryMetricLabel}
-                            </td>
-                            <td className="px-3.5 py-3 font-mono font-bold text-[#174B4A]">
-                              {row.tertiaryMetricLabel}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              </div>
-            </div>
-          ) : null}
         </section>
 
         {/* Export Format & Export Action Panel */}
@@ -1113,93 +639,254 @@ export function StatisticalReportsView({
             </div>
           ) : null}
 
-          {/* Export Ready Artifact Preview — Real CSV Download Only (Step 6 & 7) */}
-          {exportStatus === 'READY' && exportedArtifact && exportedArtifact.isDownloadable ? (
+        </section>
+
+        {/* Result Area */}
+        <section aria-labelledby="statistical-results-heading" className="mb-8">
+          <h2 id="statistical-results-heading" className="sr-only">
+            {copy.results.appliedHeaderTitle}
+          </h2>
+
+          {resultState === 'LOADING' ? (
             <div
-              role="status"
-              className="mt-5 rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 sm:p-5"
+              role="region"
+              aria-label={copy.states.loadingTitle}
+              className="rounded-2xl border border-amber-300 bg-amber-50/70 p-6 sm:p-8"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-extrabold text-emerald-950">
-                  {copy.exportPanel.exportSuccessTitle}
-                </h3>
-                <span className="rounded-full bg-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-950">
-                  {copy.exportPanel.demoFileBadge}
-                </span>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-4 w-4 shrink-0"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{copy.modeBanner.productionBadge}</span>
               </div>
-              <p className="mt-1 text-xs text-emerald-900">
-                {copy.exportPanel.exportSuccessMessage}
+              <h3 className="text-lg font-extrabold text-[#1C2928]">
+                {copy.states.loadingTitle}
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#344054]">
+                {copy.states.loadingDescription}
               </p>
-              <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                <div>
-                  <dt className="font-semibold text-emerald-900">
-                    {copy.exportPanel.fileNameLabel}:
-                  </dt>
-                  <dd className="font-mono font-bold text-emerald-950">
-                    {exportedArtifact.fileName}
-                  </dd>
+              {resolvedAppliedCriteria ? (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4 text-xs text-[#344054]">
+                  <span className="font-bold">{copy.results.appliedCriteriaSummaryLabel}: </span>
+                  <span>
+                    {copy.reportTypes[resolvedAppliedCriteria.reportType].label} •{' '}
+                    {copy.results.appliedPeriodPrefix} {resolvedAppliedCriteria.periodKey} •{' '}
+                    {copy.results.appliedOperatorPrefix} {resolvedAppliedCriteria.operatorId} •{' '}
+                    {copy.results.appliedDestinationPrefix}{' '}
+                    {resolvedAppliedCriteria.destinationId} •{' '}
+                    {copy.results.appliedBookingTypePrefix}{' '}
+                    {resolvedAppliedCriteria.bookingType}
+                  </span>
                 </div>
-                <div>
-                  <dt className="font-semibold text-emerald-900">
-                    {copy.exportPanel.auditEntryLabel}:
-                  </dt>
-                  <dd className="font-mono text-emerald-950">
-                    {exportedArtifact.auditEventSummary}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-3">
-                <p className="mb-1 text-xs font-bold text-emerald-950">
-                  {copy.exportPanel.previewHeading}
-                </p>
-                <pre className="max-h-48 overflow-x-auto rounded-lg border border-emerald-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-[#1C2928]">
-                  {exportedArtifact.contentPreview}
-                </pre>
-              </div>
+              ) : null}
             </div>
           ) : null}
 
-          {/* Binary Format Preview Only — No File Downloaded (Excel / PDF) */}
-          {exportStatus === 'PREVIEW_ONLY' &&
-          exportedArtifact &&
-          !exportedArtifact.isDownloadable ? (
+          {/* Generation Error State (4.a2) */}
+          {resultState === 'GENERATION_ERROR' ? (
+            <div
+              role="alert"
+              className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900 sm:p-8"
+            >
+              <h3 className="text-lg font-extrabold">{copy.states.generationErrorTitle}</h3>
+              <p className="mt-2 text-sm leading-relaxed">{copy.states.generationErrorMessage}</p>
+              <button
+                type="button"
+                onClick={executeGenerateReport}
+                className="mt-4 inline-flex items-center justify-center rounded-xl bg-rose-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-800"
+              >
+                {copy.states.retryGenerateButton}
+              </button>
+            </div>
+          ) : null}
+
+          {/* No Data State (4.a1) */}
+          {resultState === 'NO_DATA' ? (
             <div
               role="status"
-              className="mt-5 rounded-xl border border-amber-300 bg-amber-50/70 p-4 sm:p-5"
+              className="rounded-2xl border border-[#DCE2DD] bg-white p-6 text-center sm:p-8"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-extrabold text-amber-950">
-                  {copy.exportPanel.previewOnlyTitle}
-                </h3>
-                <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-950">
-                  {copy.exportPanel.previewOnlyBadge}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-amber-900">{copy.exportPanel.previewOnlyMessage}</p>
-              <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                <div>
-                  <dt className="font-semibold text-amber-900">
-                    {copy.exportPanel.targetFormatLabel}:
-                  </dt>
-                  <dd className="font-mono font-bold text-amber-950">{exportedArtifact.format}</dd>
+              <h3 className="text-lg font-extrabold text-[#1C2928]">{copy.states.noDataTitle}</h3>
+              <p className="mt-2 text-sm font-semibold text-[#344054]">
+                {copy.states.noDataMessage}
+              </p>
+              <p className="mt-1 text-xs text-[#5B6E69]">{copy.states.noDataDescription}</p>
+            </div>
+          ) : null}
+
+          {/* Generated Report Result */}
+          {resultState === 'GENERATED' &&
+          generatedReport &&
+          generatedReport.breakdownRows.length > 0 ? (
+            <div className="space-y-6">
+              {/* Applied Criteria Metadata Banner */}
+              <div className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eaecf0] pb-4">
+                  <div>
+                    <span className="text-xs font-bold tracking-wider text-[#174B4A] uppercase">
+                      {copy.results.appliedHeaderTitle}
+                    </span>
+                    <h3 className="mt-0.5 text-xl font-extrabold text-[#1C2928]">
+                      {copy.reportTypes[generatedReport.criteria.reportType].label}
+                    </h3>
+                  </div>
                 </div>
-                <div>
-                  <dt className="font-semibold text-amber-900">
-                    {copy.exportPanel.auditEntryLabel}:
-                  </dt>
-                  <dd className="font-mono text-amber-950">
-                    {exportedArtifact.auditEventSummary}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-3">
-                <p className="mb-1 text-xs font-bold text-amber-950">
-                  {copy.exportPanel.previewHeading}
-                </p>
-                <pre className="max-h-48 overflow-x-auto rounded-lg border border-amber-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-[#1C2928]">
-                  {exportedArtifact.contentPreview}
-                </pre>
+
+                <dl className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
+                  <div>
+                    <dt className="font-semibold text-[#5B6E69]">
+                      {copy.results.appliedCriteriaSummaryLabel}
+                    </dt>
+                    <dd className="mt-0.5 font-bold text-[#1C2928]">
+                      {copy.reportTypes[generatedReport.criteria.reportType].label} (
+                      {copy.granularities[generatedReport.criteria.periodGranularity]})
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold text-[#5B6E69]">
+                      {copy.results.periodWindowLabel}
+                    </dt>
+                    <dd className="mt-0.5 font-bold text-[#1C2928]">
+                      {generatedReport.period.startDateDisplay} –{' '}
+                      {generatedReport.period.endDateDisplay} ({generatedReport.period.key})
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold text-[#5B6E69]">
+                      {copy.results.generatedTimestampLabel}
+                    </dt>
+                    <dd className="mt-0.5 font-bold text-[#1C2928]">
+                      {generatedReport.generatedAtDisplay}
+                    </dd>
+                  </div>
+                </dl>
               </div>
+
+              {/* Summary KPI Cards */}
+              <div
+                role="region"
+                aria-label={copy.results.summarySectionTitle}
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              >
+                {generatedReport.summaryMetrics.map((metric) => (
+                  <article
+                    key={metric.id}
+                    className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs"
+                  >
+                    <p className="text-xs font-bold tracking-wide text-[#5B6E69] uppercase">
+                      {metric.label}
+                    </p>
+                    <p className="mt-2 font-mono text-xl font-extrabold text-[#1C2928] sm:text-2xl">
+                      {metric.formattedValue}
+                    </p>
+                    <p className="mt-1.5 text-xs text-[#667085]">{metric.contextNote}</p>
+                  </article>
+                ))}
+              </div>
+
+              {/* Distribution chart: directly under the KPI cards so it is the first detail read */}
+              <section
+                aria-labelledby="statistical-chart-heading"
+                className="rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:p-8"
+              >
+                <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+                  <h4 id="statistical-chart-heading" className="text-xl font-extrabold text-[#1C2928]">
+                    {copy.results.chartSectionTitle}
+                  </h4>
+                  <span className="text-sm font-semibold text-[#5B6E69]">
+                    {generatedReport.chartUnitLabel}
+                  </span>
+                </div>
+                <ul aria-label={copy.results.chartSvgAriaLabel} className="space-y-6">
+                  {generatedReport.chartPoints.map((point) => (
+                    <li
+                      key={point.id}
+                      className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(14rem,1fr)_3fr] md:items-center md:gap-6"
+                    >
+                      <span className="text-base font-bold text-[#1C2928] sm:text-lg">
+                        {point.label}
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <div
+                          aria-hidden="true"
+                          className="h-11 flex-1 overflow-hidden rounded-lg bg-[#eef2f6]"
+                        >
+                          <div
+                            className="h-full rounded-lg bg-[#174B4A]"
+                            style={{ width: `${Math.max(0, Math.min(100, point.sharePercent))}%` }}
+                          />
+                        </div>
+                        <span className="min-w-[15rem] shrink-0 text-right font-mono text-base font-bold text-[#1C2928] sm:text-lg">
+                          {point.formattedPrimaryValue} · {point.sharePercent}%
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {/* Platform Revenue Formula Breakdown (Only for PLATFORM_REVENUE) */}
+              {generatedReport.revenueBreakdown ? (
+                <section
+                  aria-label={copy.results.revenueFormulaTitle}
+                  className="rounded-2xl border border-[#bae6fd] bg-[#f0f9ff] p-5"
+                >
+                  <h4 className="text-sm font-extrabold text-[#1C2928]">
+                    {copy.results.revenueFormulaTitle}
+                  </h4>
+                  <p className="mt-1 text-xs text-[#344054]">
+                    {copy.results.revenueFormulaNote}
+                  </p>
+                  <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
+                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
+                      <dt className="text-xs font-semibold text-[#5B6E69]">
+                        {copy.results.confirmedGrossLabel}
+                      </dt>
+                      <dd className="mt-1 font-mono text-sm font-bold text-[#1C2928]">
+                        {formatVndCurrency(
+                          generatedReport.revenueBreakdown.confirmedBookingsGrossVnd,
+                        )}
+                      </dd>
+                    </div>
+                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
+                      <dt className="text-xs font-semibold text-[#5B6E69]">
+                        {copy.results.completedGrossLabel}
+                      </dt>
+                      <dd className="mt-1 font-mono text-sm font-bold text-[#1C2928]">
+                        {formatVndCurrency(
+                          generatedReport.revenueBreakdown.completedBookingsGrossVnd,
+                        )}
+                      </dd>
+                    </div>
+                    <div className="rounded-xl border border-[#e0f2fe] bg-white p-3.5">
+                      <dt className="text-xs font-semibold text-[#5B6E69]">
+                        {copy.results.recordedRefundsLabel}
+                      </dt>
+                      <dd className="mt-1 font-mono text-sm font-bold text-rose-700">
+                        -{formatVndCurrency(generatedReport.revenueBreakdown.recordedRefundsVnd)}
+                      </dd>
+                    </div>
+                    <div className="rounded-xl bg-[#1C2928] p-3.5 text-white">
+                      <dt className="text-xs font-semibold text-[#71f8e4]">
+                        {copy.results.netPlatformRevenueLabel}
+                      </dt>
+                      <dd className="mt-1 font-mono text-sm font-extrabold text-white">
+                        {formatVndCurrency(generatedReport.revenueBreakdown.netPlatformRevenueVnd)}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              ) : null}
+
             </div>
           ) : null}
         </section>
