@@ -6,8 +6,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 vi.mock('./payoutSettlementsService', () => ({
   fetchFailedPayoutBatchDetail: vi.fn(),
   retryFailedPayoutBatch: vi.fn(),
-  carryOverFailedPayoutBatch: vi.fn(),
-  recordManualPayoutSettlement: vi.fn(),
+  markPayoutBatchResolved: vi.fn(),
   PayoutSettlementsError: class extends Error {
     constructor(public status: number, public errorCode?: string, title?: string) {
       super(title);
@@ -16,10 +15,9 @@ vi.mock('./payoutSettlementsService', () => ({
 }));
 
 import {
-  carryOverFailedPayoutBatch,
   fetchFailedPayoutBatchDetail,
+  markPayoutBatchResolved,
   PayoutSettlementsError,
-  recordManualPayoutSettlement,
   retryFailedPayoutBatch,
 } from './payoutSettlementsService';
 import { FailedPayoutSettlementScreen } from './FailedPayoutSettlementScreen';
@@ -42,8 +40,7 @@ describe('FailedPayoutSettlementScreen', () => {
     replace.mockClear();
     vi.mocked(fetchFailedPayoutBatchDetail).mockReset().mockResolvedValue(detail);
     vi.mocked(retryFailedPayoutBatch).mockReset().mockResolvedValue(undefined);
-    vi.mocked(carryOverFailedPayoutBatch).mockReset().mockResolvedValue(undefined);
-    vi.mocked(recordManualPayoutSettlement).mockReset().mockResolvedValue(undefined);
+    vi.mocked(markPayoutBatchResolved).mockReset().mockResolvedValue(undefined);
   });
 
   it('shows the header fields and every attempt row in order', async () => {
@@ -99,12 +96,11 @@ describe('FailedPayoutSettlementScreen', () => {
     expect(fetchFailedPayoutBatchDetail).toHaveBeenCalledTimes(2);
   });
 
-  it('shows all three actions only while status is SettlementFailed', async () => {
+  it('shows both actions only while status is SettlementFailed', async () => {
     render(<FailedPayoutSettlementScreen batchId={42} />);
     await screen.findByRole('table');
     expect(screen.getByRole('button', { name: 'Retry Transfer' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Carry Over' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Record Manual Transfer' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Mark as Resolved' })).toBeTruthy();
   });
 
   it('hides every action once a status other than SettlementFailed is loaded', async () => {
@@ -112,8 +108,7 @@ describe('FailedPayoutSettlementScreen', () => {
     render(<FailedPayoutSettlementScreen batchId={42} />);
     await screen.findByRole('table');
     expect(screen.queryByRole('button', { name: 'Retry Transfer' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Carry Over' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Record Manual Transfer' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark as Resolved' })).toBeNull();
   });
 
   it('Retry Transfer: confirming calls the service, closes the dialog, and shows the re-fetched status (never assumed locally)', async () => {
@@ -121,35 +116,24 @@ describe('FailedPayoutSettlementScreen', () => {
     await screen.findByRole('table');
     fireEvent.click(screen.getByRole('button', { name: 'Retry Transfer' }));
     const dialog = within(screen.getByRole('dialog'));
-    vi.mocked(fetchFailedPayoutBatchDetail).mockResolvedValueOnce({ ...detail, status: 'Processing' as const });
+    vi.mocked(fetchFailedPayoutBatchDetail).mockResolvedValueOnce({ ...detail, status: 'Settled' as const });
     fireEvent.click(dialog.getByRole('button', { name: 'Retry Transfer' }));
     await waitFor(() => expect(retryFailedPayoutBatch).toHaveBeenCalledWith(42));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(await screen.findByText('Processing')).toBeTruthy();
+    expect(await screen.findByText('Settled')).toBeTruthy();
     expect(fetchFailedPayoutBatchDetail).toHaveBeenCalledTimes(2);
   });
 
-  it('Carry Over: confirming calls the service and shows the re-fetched status', async () => {
+  it('Mark as Resolved: confirming with a reason calls the service and shows the re-fetched status', async () => {
     render(<FailedPayoutSettlementScreen batchId={42} />);
     await screen.findByRole('table');
-    fireEvent.click(screen.getByRole('button', { name: 'Carry Over' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as Resolved' }));
     const dialog = within(screen.getByRole('dialog'));
-    vi.mocked(fetchFailedPayoutBatchDetail).mockResolvedValueOnce({ ...detail, status: 'Carried Over' as const });
-    fireEvent.click(dialog.getByRole('button', { name: 'Carry Over' }));
-    await waitFor(() => expect(carryOverFailedPayoutBatch).toHaveBeenCalledWith(42));
-    expect(await screen.findByText('Carried Over')).toBeTruthy();
-  });
-
-  it('Record Manual Transfer: confirming with a reference calls the service and shows the re-fetched status', async () => {
-    render(<FailedPayoutSettlementScreen batchId={42} />);
-    await screen.findByRole('table');
-    fireEvent.click(screen.getByRole('button', { name: 'Record Manual Transfer' }));
-    const dialog = within(screen.getByRole('dialog'));
-    fireEvent.change(dialog.getByLabelText('Transfer Reference'), { target: { value: 'SIM-TRX-005' } });
-    vi.mocked(fetchFailedPayoutBatchDetail).mockResolvedValueOnce({ ...detail, status: 'Settled' as const });
-    fireEvent.click(dialog.getByRole('button', { name: 'Record Transfer' }));
-    await waitFor(() => expect(recordManualPayoutSettlement).toHaveBeenCalledWith(42, 'SIM-TRX-005'));
-    expect(await screen.findByText('Settled')).toBeTruthy();
+    fireEvent.change(dialog.getByLabelText('Reason'), { target: { value: 'Operator confirmed receipt out of band' } });
+    vi.mocked(fetchFailedPayoutBatchDetail).mockResolvedValueOnce({ ...detail, status: 'Resolved' as const });
+    fireEvent.click(dialog.getByRole('button', { name: 'Mark as Resolved' }));
+    await waitFor(() => expect(markPayoutBatchResolved).toHaveBeenCalledWith(42, 'Operator confirmed receipt out of band'));
+    expect(await screen.findByText('Resolved')).toBeTruthy();
   });
 
   // U03: an earlier reload's response, resolving after a later reload already committed its own
@@ -160,7 +144,7 @@ describe('FailedPayoutSettlementScreen', () => {
     vi.mocked(fetchFailedPayoutBatchDetail).mockImplementationOnce(
       () => new Promise((resolve) => { resolveSecondFetch = resolve; }),
     );
-    vi.mocked(fetchFailedPayoutBatchDetail).mockResolvedValueOnce({ ...detail, status: 'Carried Over' as const });
+    vi.mocked(fetchFailedPayoutBatchDetail).mockResolvedValueOnce({ ...detail, status: 'Resolved' as const });
 
     render(<FailedPayoutSettlementScreen batchId={42} />);
     await screen.findByRole('table');
@@ -171,15 +155,16 @@ describe('FailedPayoutSettlementScreen', () => {
     await waitFor(() => expect(retryFailedPayoutBatch).toHaveBeenCalledTimes(1));
 
     // The stale detail is still showing (2nd fetch hasn't resolved), so the actions are still
-    // visible — a second action (Carry Over) fires a 3rd fetch that resolves immediately.
-    fireEvent.click(screen.getByRole('button', { name: 'Carry Over' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Carry Over' }));
-    expect(await screen.findByText('Carried Over')).toBeTruthy();
+    // visible — a second action (Mark as Resolved) fires a 3rd fetch that resolves immediately.
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as Resolved' }));
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Reason'), { target: { value: 'Resolved manually' } });
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mark as Resolved' }));
+    expect(await screen.findByText('Resolved')).toBeTruthy();
 
     // The stale 2nd fetch now resolves late — it must not revert the screen.
     resolveSecondFetch({ ...detail, status: 'SettlementFailed' });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(screen.getByText('Carried Over')).toBeTruthy();
+    expect(screen.getByText('Resolved')).toBeTruthy();
     expect(screen.queryByText('SettlementFailed')).toBeNull();
   });
 });

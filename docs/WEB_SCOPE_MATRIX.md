@@ -153,7 +153,7 @@ Interaction Type describes the interaction shape supported by Current R3. It is 
 | UC-64 | View Payout Details | Administrator | ADMIN_WEB_ONLY | Yes | Payout detail | R3 §§2.1 and 3.9.9.2; Table 4.1. |
 | UC-65 | Confirm Payout Settlement | Administrator | ADMIN_WEB_ONLY | Yes | Detail-screen action plus dialog | Register §3.3 OBJ6; R3 §§2.1 and 3.9.9.3; Table 4.1. No dedicated route is implied. |
 | UC-66 | Update Landing Page Content | Administrator | ADMIN_WEB_ONLY | Yes | Content-management screen | Register §3.3 OBJ6; R3 §§2.1 and 3.9.10; Table 4.1. The published Landing Page remains an unnumbered `PUBLIC_WEB` surface. |
-| UC-67 | Export Statistical Reports | Administrator | ADMIN_WEB_ONLY | Yes | Report filters plus export action | Register §3.3 OBJ6; R3 §§2.1 and 3.9.11; Table 4.1. No separate export route is implied. |
+| UC-63 | Export Statistical Reports | Administrator | ADMIN_WEB_ONLY | Yes | Report filters plus export action | Register §3.3 OBJ6; R3 §§2.1 and 3.9.11; Table 4.1. No separate export route is implied. |
 | UC-68 | View Audit Logs | Administrator | ADMIN_WEB_ONLY | Yes | Audit list/filter | R3 §§2.1 and 3.9.12.1; Table 4.1. |
 | UC-69 | View Audit Log Details | Administrator | ADMIN_WEB_ONLY | Yes | Audit detail | R3 §§2.1 and 3.9.12.2; Table 4.1. |
 | UC-70 | Handle Emergency Tour Cancellation | Traveler / Tour Operator | NON_SCREEN | No standalone route | Automated cancellation cascade with embedded status; declaration UI is conflicted | `SRS_CONFLICT` and `BLOCKED_BY_SRS_CONFLICT`: R3 Table 3 and §3.1.4 say automatic/weather-triggered; §3.10.1 instead adds System/Admin roles and Operator/Admin declaration screens. Do not create a new Web route until R3 is corrected or split. |

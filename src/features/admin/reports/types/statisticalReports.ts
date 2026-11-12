@@ -9,7 +9,7 @@ export type PeriodGranularity = 'CLOSED_MONTH' | 'CLOSED_QUARTER' | 'CLOSED_YEAR
 
 export type BookingTypeFilter = 'ALL' | 'TOUR_PACKAGE' | 'COMMERCIAL_SERVICE';
 
-export type ExportFormat = 'EXCEL' | 'CSV' | 'PDF';
+export type ExportFormat = 'EXCEL' | 'CSV';
 
 export type StatisticalWorkspaceMode = 'PRODUCTION' | 'DEMO';
 
@@ -102,6 +102,13 @@ export interface GeneratedStatisticalReport {
   readonly chartPoints: readonly StatisticalChartPoint[];
   readonly tableHeaders: readonly [string, string, string, string];
   readonly breakdownRows: readonly StatisticalBreakdownRow[];
+  /**
+   * False when every summary metric and breakdown value is zero (no underlying records for this
+   * report/period/filter combination). The backend always returns a fixed set of summary metrics
+   * and breakdown rows, so `breakdownRows.length` alone can never detect this — only present for
+   * production reports; demo fixtures are always non-empty by construction.
+   */
+  readonly hasData?: boolean;
 }
 
 export interface DemoExportArtifact {
