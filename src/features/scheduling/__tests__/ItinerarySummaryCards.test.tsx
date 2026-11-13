@@ -43,6 +43,38 @@ const itinerary: ItineraryDetailDto = {
   ],
 };
 
+// ADR-002 (G3): the algorithm card shows where the schedule came from instead of always "optimised".
+describe('ItinerarySummaryCards schedule source', () => {
+  it('names the schedule source from the backend provenance', () => {
+    render(
+      <ItinerarySummaryCards
+        itinerary={{
+          ...itinerary,
+          provenance: {
+            solverOutcome: 'csp',
+            solverKind: 'Csp',
+            objectiveMode: 'Lexicographic',
+            searchCompleted: false,
+            timeOfDayRefined: false,
+          },
+        }}
+      />,
+    );
+
+    const card = screen.getByTestId('schedule-source');
+    expect(card.textContent).toContain('Lịch tốt nhất CSP tìm được');
+    expect(card.textContent).not.toContain('Tối ưu hoàn tất');
+  });
+
+  it('claims nothing when the itinerary has no provenance', () => {
+    render(<ItinerarySummaryCards itinerary={itinerary} />);
+
+    const card = screen.getByTestId('schedule-source');
+    expect(card.textContent).toContain('Chưa ghi nhận');
+    expect(card.textContent).not.toContain('Tối ưu');
+  });
+});
+
 describe('ItinerarySummaryCards cost split (D11-7)', () => {
   it('splits the expected cost into tickets, food and total', () => {
     render(<ItinerarySummaryCards itinerary={itinerary} />);

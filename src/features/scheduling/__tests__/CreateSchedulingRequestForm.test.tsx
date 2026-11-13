@@ -295,12 +295,15 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(dateInput.min).toBe('2026-10-01');
     });
 
-    it('CASE FE-7: immediately re-validates right before network POST and blocks if start time elapsed', async () => {
+    // ADR-002 (G3): the form used to wait 1.4 s on scripted "CSP" steps before posting. It now posts
+    // right after validation, so a start time cannot elapse in between.
+    it('CASE FE-7: posts right after validation, with no scripted delay', async () => {
       vi.useFakeTimers();
-      // Initially: 2026-10-01 19:29:59 Vietnam (future by 1 second for 19:30)
       vi.setSystemTime(new Date('2026-10-01T12:29:59.000Z'));
 
-      const createSpy = vi.spyOn(schedulingApi, 'createSchedulingRequest');
+      const createSpy = vi
+        .spyOn(schedulingApi, 'createSchedulingRequest')
+        .mockResolvedValueOnce(mockSuccessResponse);
 
       render(<CreateSchedulingRequestForm />);
       await chooseStartAndArea();
@@ -316,14 +319,9 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
       fireEvent.click(submitBtn);
 
-      // Advance timers by 2 seconds during the 1.4s progression so clock becomes 19:30:01
-      await vi.advanceTimersByTimeAsync(2000);
+      await vi.advanceTimersByTimeAsync(0);
 
-      // Pre-request check caught the elapsed time
-      expect(createSpy).not.toHaveBeenCalled();
-      expect(
-        screen.getByText(/Thời gian bắt đầu đã trôi qua trong quá trình khởi tạo/i),
-      ).toBeDefined();
+      expect(createSpy).toHaveBeenCalledTimes(1);
     });
 
     it('CASE FE-8: sends verified startAt and timeZoneId Asia/Ho_Chi_Minh in payload', async () => {
@@ -498,8 +496,9 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
       await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
 
-      // Check quantified error message and 1-click button
-      expect(await screen.findByText(/Không thể xếp lịch: Các điểm bắt buộc cần tối thiểu/)).toBeDefined();
+      // ADR-002 (G3): the backend reason is shown as is; the client no longer invents a time shortfall.
+      expect(await screen.findByText(/The mandatory locations cannot fit within the selected time\./)).toBeDefined();
+      expect(screen.queryByText(/Không thể xếp lịch: Các điểm bắt buộc cần tối thiểu/)).toBeNull();
       const fixBtn = screen.getByRole('button', { name: /Tăng thời lượng lên \d+ giờ và thử lại/i });
       expect(fixBtn).toBeDefined();
 
@@ -909,9 +908,12 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
     fireEvent.click(submitBtn);
 
+    // ADR-002 (G3): no scripted progress steps before the request; the heading says what really runs.
     await waitFor(() => {
-      expect(screen.getByText(/Đang khởi tạo lịch trình tối ưu với thuật toán CSP/i)).toBeDefined();
+      expect(screen.getByText(/Đang xếp lịch trình bằng thuật toán CSP/i)).toBeDefined();
     });
+    expect(screen.queryByText(/Chạy thuật toán thỏa mãn ràng buộc CSP/i)).toBeNull();
+    expect(screen.queryByText(/Tính toán ma trận thời gian/i)).toBeNull();
 
     await waitFor(
       () => {
