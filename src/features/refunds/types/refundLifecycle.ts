@@ -126,6 +126,61 @@ export function parseRefundListResponse(value: unknown): RefundListResponse {
   };
 }
 
+/** Tour Operator's own refund requests (`GET /api/v1/operator/refunds`): one row of the list
+ * that leads to Screen 1. `operatorReturnShare` is null until the refund is confirmed. */
+export type OperatorRefundListItem = {
+  refundId: number;
+  bookingId: number;
+  bookingCode: string;
+  amount: number;
+  status: RefundStatus;
+  operatorReturnShare: number | null;
+  returnDeadlineAtUtc: string | null;
+  requestedAtUtc: string;
+};
+
+export type OperatorRefundListResponse = {
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  items: OperatorRefundListItem[];
+};
+
+function parseOperatorRefundListItem(value: unknown): OperatorRefundListItem {
+  if (
+    !isRecord(value) ||
+    !isSafeInteger(value.refundId) ||
+    !isSafeInteger(value.bookingId) ||
+    typeof value.bookingCode !== 'string' ||
+    !isMoney(value.amount) ||
+    !isStatus(value.status) ||
+    !(value.operatorReturnShare === null || isMoney(value.operatorReturnShare)) ||
+    !isNullableString(value.returnDeadlineAtUtc) ||
+    typeof value.requestedAtUtc !== 'string'
+  ) {
+    throw new Error('Invalid operator refund list item.');
+  }
+  return value as OperatorRefundListItem;
+}
+
+export function parseOperatorRefundListResponse(value: unknown): OperatorRefundListResponse {
+  if (
+    !isRecord(value) ||
+    !isSafeInteger(value.pageNumber) ||
+    !isSafeInteger(value.pageSize) ||
+    !isNonNegativeInteger(value.totalCount) ||
+    !Array.isArray(value.items)
+  ) {
+    throw new Error('Invalid operator refund list response.');
+  }
+  return {
+    pageNumber: value.pageNumber,
+    pageSize: value.pageSize,
+    totalCount: value.totalCount,
+    items: value.items.map(parseOperatorRefundListItem),
+  };
+}
+
 /** UC-42 [Confirm Return] (MSG172, `refund.return_reference_required`): non-blank after trim,
  * same shape as `validateResolutionReason`. */
 export function validateReturnReference(value: unknown): { ok: true; value: string } | { ok: false } {

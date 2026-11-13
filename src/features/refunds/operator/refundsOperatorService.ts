@@ -1,4 +1,9 @@
-import { parseRefundDetail, type RefundDetail } from '../types/refundLifecycle';
+import {
+  parseOperatorRefundListResponse,
+  parseRefundDetail,
+  type OperatorRefundListResponse,
+  type RefundDetail,
+} from '../types/refundLifecycle';
 
 /** Thrown on a non-ok response or a network/abort failure; `status` is 0 for a network-level
  * failure (no HTTP response at all). Kept as its own class (not shared with the admin side's
@@ -36,6 +41,17 @@ async function request(path: string, init: RequestInit): Promise<unknown> {
     throw new RefundsOperatorError(response.status, problem.errorCode, problem.title);
   }
   return body;
+}
+
+/** The signed-in Tour Operator's own refund requests, newest first. */
+export async function fetchOperatorRefunds(
+  pageNumber: number,
+  pageSize: number,
+  signal?: AbortSignal,
+): Promise<OperatorRefundListResponse> {
+  const query = new URLSearchParams({ pageNumber: String(pageNumber), pageSize: String(pageSize) });
+  const body = await request(`/api/operator/refunds?${query}`, { method: 'GET', signal, cache: 'no-store' });
+  return parseOperatorRefundListResponse(body);
 }
 
 /** Malformed bodies are never treated as success: a 200 whose body does not match the strict

@@ -334,6 +334,13 @@ export function OperatorBookingListView({
             <span>{bookingEn.header.toursLink}</span>
           </Link>
           <Link
+            href={ROUTES.partner.refunds}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
+          >
+            <span className="material-symbols-outlined text-[18px]">currency_exchange</span>
+            <span>{bookingEn.header.refundsLink}</span>
+          </Link>
+          <Link
             href={ROUTES.partner.dashboard}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
           >

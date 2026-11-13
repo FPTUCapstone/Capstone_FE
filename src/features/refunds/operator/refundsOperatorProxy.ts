@@ -49,6 +49,23 @@ async function forward(backendPath: string, token: string, init: { method: strin
   }
 }
 
+const LIST_QUERY_FIELDS = ['status', 'pageNumber', 'pageSize'] as const;
+
+/** `GET /api/v1/operator/refunds`: the signed-in Tour Operator's own refund requests. Only the
+ * known query fields are forwarded; the backend scopes the result to the operator itself. */
+export async function proxyOperatorRefundsList(request: Request): Promise<Response> {
+  const session = await requireOperatorToken(request);
+  if (!session.ok) return session.response;
+
+  const incoming = new URL(request.url).searchParams;
+  const query = new URLSearchParams();
+  for (const key of LIST_QUERY_FIELDS) {
+    const value = incoming.get(key);
+    if (value !== null) query.append(key, value);
+  }
+  return forward(`/api/v1/operator/refunds?${query}`, session.token, { method: 'GET' });
+}
+
 /** UC-42 screen 90: `GET /api/v1/operator/refunds/{refundId}`. Tour Operator only. */
 export async function proxyOperatorRefundDetail(request: Request, refundId: string): Promise<Response> {
   if (!REFUND_ID_PATTERN.test(refundId)) return failure('INVALID_REFUND_ID', 400);

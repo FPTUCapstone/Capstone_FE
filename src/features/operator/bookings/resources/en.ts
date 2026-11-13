@@ -12,6 +12,7 @@ export const bookingEn = {
     useCaseTag: 'UC-40',
     subtitle: 'Monitor and look up bookings for tour packages under your management.',
     toursLink: 'Tours',
+    refundsLink: 'Refund requests',
     dashboardLink: 'Dashboard',
   },
   notices: {
