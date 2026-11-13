@@ -43,11 +43,19 @@ function safeProblem(value: unknown, fallback: string): { title: string; errorCo
   return errorCode ? { title, errorCode } : { title };
 }
 
-async function forward(backendPath: string, token: string, init: { method: string; body?: string }): Promise<Response> {
+async function forward(
+  backendPath: string,
+  token: string,
+  init: { method: string; body?: string; headers?: Record<string, string> },
+): Promise<Response> {
   try {
     const upstream = await fetchBackend(backendPath, {
       method: init.method,
-      headers: init.body !== undefined ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...init.headers,
+      },
       body: init.body,
     });
     if (upstream.status >= 500) return jsonNoStore({ title: 'The refund service is temporarily unavailable.' }, 503);
@@ -98,8 +106,8 @@ export async function proxyAdminRefundReturnReceived(request: Request, refundId:
 }
 
 /** Screen 3's manual-completion flow: `POST /api/v1/admin/refunds/{refundId}/resolve`.
- * Administrator only. Forwards only `gatewayReference`, per the existing `CompleteManualRefund`
- * contract the spec's API table reuses. */
+ * Administrator only. Forwards only `gatewayReference`, as the backend's `Complete` action; the
+ * backend requires an `Idempotency-Key` for it, generated here per submission. */
 export async function proxyAdminRefundResolve(request: Request, refundId: string): Promise<Response> {
   if (!isValidRefundId(refundId)) return jsonNoStore({ title: 'A valid refund ID is required.' }, 400);
   if (!isSameOriginRequest(request)) return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
@@ -116,7 +124,14 @@ export async function proxyAdminRefundResolve(request: Request, refundId: string
     typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>).gatewayReference
       : undefined;
-  const body = JSON.stringify({ gatewayReference: typeof gatewayReference === 'string' ? gatewayReference : null });
+  const body = JSON.stringify({
+    action: 'Complete',
+    gatewayReference: typeof gatewayReference === 'string' ? gatewayReference : null,
+  });
 
-  return forward(`/api/v1/admin/refunds/${refundId}/resolve`, session.token, { method: 'POST', body });
+  return forward(`/api/v1/admin/refunds/${refundId}/resolve`, session.token, {
+    method: 'POST',
+    body,
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
 }
