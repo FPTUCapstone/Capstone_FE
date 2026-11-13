@@ -9,7 +9,6 @@ import {
   getOperatorBookingById,
   getOperatorBookingTourOptions,
   getOperatorBookings,
-  initiateBookingRefund,
 } from '../services/operatorBookingService';
 import { isBookingDemoAllowedInCurrentEnv } from '../data/operatorBookingDemoFixtures';
 import {
@@ -22,12 +21,10 @@ import {
   type BookingStatus,
   type BookingTourOptionsResult,
   type CancelBookingPayload,
-  type InitiateRefundPayload,
 } from '../types/bookingLifecycle';
 import { BookingStatusBadge, CheckInStatusBadge } from './OperatorBookingStatusBadge';
 import { BookingDetailPanel, type BookingDetailLoadState } from './BookingDetailPanel';
 import { CancelBookingDialog } from './CancelBookingDialog';
-import { InitiateRefundDialog } from './InitiateRefundDialog';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
 import { buildBookingListUrl, withBookingDemoMode } from '../routes';
 import { bookingEn } from '../resources/en';
@@ -112,10 +109,6 @@ export function OperatorBookingListView({
   const [cancelTargetBooking, setCancelTargetBooking] = useState<BookingDetailView | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState<boolean>(false);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
-
-  // Refund dialog state
-  const [refundTargetBooking, setRefundTargetBooking] = useState<BookingDetailView | null>(null);
-  const [refundDialogOpen, setRefundDialogOpen] = useState<boolean>(false);
 
   // Helper to sync URL search params on query changes (CR-01 context preservation)
   const syncUrlParams = (newPage: number, filters: FilterFormState) => {
@@ -269,12 +262,6 @@ export function OperatorBookingListView({
     setCancelDialogOpen(true);
   };
 
-  // Open Refund dialog from detail or row
-  const handleOpenRefundDialog = (booking: BookingDetailView) => {
-    setRefundTargetBooking(booking);
-    setRefundDialogOpen(true);
-  };
-
   // Submit cancel booking (UC-41)
   const handleConfirmCancel = async (payload: CancelBookingPayload) => {
     if (!cancelTargetBooking) return;
@@ -286,38 +273,16 @@ export function OperatorBookingListView({
       });
 
       if (res.success) {
-        setFeedback({ type: 'success', message: res.message });
+        // UC-42: the refund (if any) now goes through the Confirm Booking Refund screen, not an
+        // inline dialog here. The backend does not yet return a refundId on this response, so a
+        // direct link cannot be built from here (BE spec Q-FE2 gap, out of this screen's control).
+        const message = res.refundFollowUpRequired
+          ? `${res.message} A refund request has been created and sent to you for confirmation.`
+          : res.message;
+        setFeedback({ type: 'success', message });
         setCancelDialogOpen(false);
         if (selectedBooking?.bookingId === cancelTargetBooking.bookingId && res.booking) {
           setSelectedBooking(res.booking);
-        }
-        setMutationRefreshVersion((v) => v + 1);
-      } else {
-        setFeedback({ type: 'error', message: res.message });
-      }
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Submit initiate refund (UC-42)
-  const handleConfirmRefund = async (payload: InitiateRefundPayload) => {
-    if (!refundTargetBooking) return;
-    setActionLoading(true);
-    try {
-      const res = await initiateBookingRefund(refundTargetBooking.bookingId, payload, {
-        isDemo: isDemoPermitted,
-        demoActorUserId: resolvedDemoActorUserId,
-      });
-
-      if (res.success) {
-        setFeedback({ type: 'success', message: res.message });
-        setRefundDialogOpen(false);
-        if (selectedBooking?.bookingId === refundTargetBooking.bookingId && res.refund) {
-          setSelectedBooking({
-            ...selectedBooking,
-            refund: res.refund,
-          });
         }
         setMutationRefreshVersion((v) => v + 1);
       } else {
@@ -772,7 +737,6 @@ export function OperatorBookingListView({
         isDemo={isDemoPermitted}
         onClose={handleCloseDetail}
         onOpenCancelDialog={(b) => handleOpenCancelDialog(b)}
-        onOpenRefundDialog={(b) => handleOpenRefundDialog(b)}
       />
 
       {/* Cancel Booking Dialog (UC-41) */}
@@ -782,15 +746,6 @@ export function OperatorBookingListView({
         loading={actionLoading}
         onClose={() => setCancelDialogOpen(false)}
         onConfirm={handleConfirmCancel}
-      />
-
-      {/* Initiate Refund Dialog (UC-42) */}
-      <InitiateRefundDialog
-        open={refundDialogOpen}
-        booking={refundTargetBooking}
-        loading={actionLoading}
-        onClose={() => setRefundDialogOpen(false)}
-        onConfirm={handleConfirmRefund}
       />
     </div>
   );

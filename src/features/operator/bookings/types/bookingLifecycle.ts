@@ -260,13 +260,3 @@ export interface CancelBookingResult {
   refundFollowUpRequired?: boolean;
 }
 
-export interface InitiateRefundPayload {
-  notes?: string;
-}
-
-export interface InitiateRefundResult {
-  success: boolean;
-  messageCode: string;
-  message: string;
-  refund?: BookingRefundDto;
-}

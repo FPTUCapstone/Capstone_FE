@@ -21,7 +21,6 @@ interface BookingDetailPanelProps {
   isDemo?: boolean;
   onClose: () => void;
   onOpenCancelDialog: (booking: BookingDetailView) => void;
-  onOpenRefundDialog: (booking: BookingDetailView) => void;
 }
 
 export function BookingDetailPanel({
@@ -34,7 +33,6 @@ export function BookingDetailPanel({
   isDemo = false,
   onClose,
   onOpenCancelDialog,
-  onOpenRefundDialog,
 }: BookingDetailPanelProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
@@ -128,13 +126,6 @@ export function BookingDetailPanel({
   // mirrors UC-41; the browser does not recompute it. Both actions stay locked outside demo mode
   // until their UC-41/UC-42 integration.
   const isCancellable = isDemo && booking !== null && booking.canCancel;
-
-  const isRefundable =
-    isDemo &&
-    booking !== null &&
-    booking.paidAmount > 0 &&
-    booking.payment?.status === 'Success' &&
-    !booking.refund;
 
   const cancelBlockedTooltip =
     booking?.cancelBlockedReason === 'CheckedIn'
@@ -482,24 +473,6 @@ export function BookingDetailPanel({
             >
               <span className="material-symbols-outlined text-[16px]">cancel</span>
               <span>{bookingEn.detail.cancelBookingBtn}</span>
-            </button>
-
-            {/* Initiate refund action (UC-42) */}
-            <button
-              type="button"
-              onClick={() => booking && onOpenRefundDialog(booking)}
-              disabled={!isRefundable}
-              title={
-                !isDemo
-                  ? bookingEn.detail.productionLockedTooltip
-                  : !isRefundable
-                  ? bookingEn.detail.notRefundableTooltip
-                  : bookingEn.detail.refundBtn
-              }
-              className="w-full sm:w-auto justify-center rounded-xl bg-[#174B4A] px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-[16px]">currency_exchange</span>
-              <span>{bookingEn.detail.refundBtn}</span>
             </button>
           </div>
         </div>
