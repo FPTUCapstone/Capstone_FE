@@ -28,6 +28,7 @@ export const ROUTES = {
     revenue: '/partner/revenue',
     payouts: '/partner/payouts',
     payoutSettlements: '/partner/payout-settlements',
+    refundDetail: (refundId: string | number) => `/partner/refunds/${encodeURIComponent(refundId)}`,
     weatherSafetyReviews: '/partner/weather-safety-reviews',
     weatherSafetyReview: (id: string | number) => `/partner/weather-safety-reviews/${id}`,
   },
@@ -68,5 +69,7 @@ export const ROUTES = {
     payoutSettlements: '/admin/payout-settlements',
     payoutSettlementDetail: (batchId: string | number) =>
       `/admin/payout-settlements/${encodeURIComponent(batchId)}`,
+    refundReconciliation: '/admin/refund-reconciliation',
+    escalatedRefunds: '/admin/refunds/escalated',
   },
 } as const;
