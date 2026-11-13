@@ -2,9 +2,9 @@
 
 ## A. Document overview and source baseline
 
-Version 2.0 · Updated 13 November 2026 (Asia/Ho_Chi_Minh). This document records the original SRS requirements, FE source evidence and unresolved approval gates. It authorizes no new feature, permission, financial operation or requirement change.
+Version 2.1 · Updated 13 November 2026 (Asia/Ho_Chi_Minh). This document records the original SRS requirements, FE source evidence and unresolved approval gates. It authorizes no new feature, permission, financial operation or requirement change.
 
-Canonical filename: **Report3_Software-Requirement-Specification.docx**, original non-V2. [Official working copy](https://docs.google.com/document/d/1VwPkqRyC6ZlbXBQC0ztdektt0vAyE3qt/edit). Fresh text and DOCX exports from that exact document ID were successfully accessed (HTTP 200) on 13 November 2026. DOCX export SHA-256: `093D69D721831608F462DE0AC450E4BBF3A8A96477B991622FDEAD1EFA3D25BA`. This identifies inspected export bytes, not a durable Google revision ID.
+Canonical filename: **Report3_Software-Requirement-Specification.docx**, original non-V2. [Official working copy](https://docs.google.com/document/d/1VwPkqRyC6ZlbXBQC0ztdektt0vAyE3qt/edit). Fresh text and DOCX exports from that exact document ID were successfully accessed (HTTP 200) on 13 November 2026. DOCX export SHA-256: `093D69D721831608F462DE0AC450E4BBF3A8A96477B991622FDEAD1EFA3D25BA`. This identifies the inspected export bytes. The refreshed official text export matched the original audit export byte for byte (SHA-256 `02F1839D5D6476676C773633F157433825DC125B470033F9089D07808F58619A`). The review covered §§1, 2.1, 2.2.2, 3.1.2–3.1.5, 3.2–3.10, 5.1 and the application message list.
 
 FE baseline: latest fetched `origin/develop` **`1f2ed13f9a40def98709736199d81e4afd23b52b`**. Local `develop` was `bbaa047ed385577df0a27c1f9c6dd1c260c84e46` and was not used as the audit baseline. The original checkout and its five modified itinerary files were preserved; this work uses an isolated worktree.
 
@@ -164,7 +164,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-06; **§3.2.6 Reset Password**.
 - **Primary actor:** Traveler / Tour Operator / Service Provider / Staff / Administrator (not yet authenticated). **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler, Tour Operator, Staff, Administrator. **Catalog actors:** Traveler / Tour Operator / Service Provider / Staff / Administrator (not yet authenticated).
 - **Purpose:** Allows a registered user who cannot recall the account password to set a new password through a single-use reset code delivered to the registered email address. **Trigger:** The function is triggered when a registered user selects Forgot Password on the Sign In screen, submits the registered email address and then submits the received reset code together with a new password.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Traveler / Tour Operator shared; Provider Web workspace with GAP-01. **Mobile:** Traveler / Tour Operator only. **Admin Web:** Staff / Administrator internal workspace only. **Basis:** §3.2.6 Interface: Forgot Password, Enter Reset Code and Set New Password screens on the Flutter mobile application and the responsive Next.js web application.; §2.2.2 UC-06; §1 / §2.1 actor workspace restrictions. Staff/Administrator ADMIN_WEB_ONLY; Service Provider WEB_ONLY as actor workspace, detailed auth unresolved GAP-01.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Traveler / Tour Operator shared; Provider Web workspace with GAP-01. **Mobile:** Traveler / Tour Operator only. **Admin Web:** Staff / Administrator internal workspace only. **Basis:** §3.2.6 Interface: Forgot Password, Enter Reset Code and Set New Password screens on the Flutter mobile application and the responsive Next.js web application; §2.2.2 UC-06; §1 / §2.1 actor workspace restrictions. Staff/Administrator ADMIN_WEB_ONLY; Service Provider WEB_ONLY as actor workspace, detailed auth unresolved GAP-01.
 - **Screens:** [#3](#screen-3), [#45](#screen-45). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.2.6; Traveler, Tour Operator, Staff, Administrator. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-02, BR-03, BR-14, BR-15 **MSG:** MSG01, MSG02, MSG03, MSG04, MSG14, MSG15, MSG16, MSG127
@@ -178,7 +178,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-07; **§3.2.7 Change Password**.
 - **Primary actor:** Traveler / Tour Operator / Service Provider / Staff / Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler, Tour Operator, Staff, Administrator. **Catalog actors:** Traveler / Tour Operator / Service Provider / Staff / Administrator.
 - **Purpose:** Allows an authenticated user to replace the account password while proving ownership of the account through the current password. **Trigger:** The function is triggered when an authenticated user opens the Change Password screen, enters the current password and a new password, and submits the form.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Traveler / Tour Operator shared; Provider Web workspace with GAP-01. **Mobile:** Traveler / Tour Operator only. **Admin Web:** Staff / Administrator internal workspace only. **Basis:** §3.2.7 Interface: Change Password screen in the account settings area of the Flutter mobile application and the responsive Next.js web application.; §2.2.2 UC-07; §1 / §2.1 actor workspace restrictions. Staff/Administrator ADMIN_WEB_ONLY; Service Provider WEB_ONLY as actor workspace, detailed auth unresolved GAP-01.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Traveler / Tour Operator shared; Provider Web workspace with GAP-01. **Mobile:** Traveler / Tour Operator only. **Admin Web:** Staff / Administrator internal workspace only. **Basis:** §3.2.7 Interface: Change Password screen in the account settings area of the Flutter mobile application and the responsive Next.js web application; §2.2.2 UC-07; §1 / §2.1 actor workspace restrictions. Staff/Administrator ADMIN_WEB_ONLY; Service Provider WEB_ONLY as actor workspace, detailed auth unresolved GAP-01.
 - **Screens:** [#4](#screen-4), [#46](#screen-46). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.2.7; Traveler, Tour Operator, Staff, Administrator. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-02, BR-03, BR-15 **MSG:** MSG01, MSG03, MSG04, MSG17, MSG18, MSG127, MSG181
@@ -192,7 +192,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-08; **§3.2.8 Update Traveler Profile**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows a Traveler to view and maintain the personal profile information used by the booking, group and review functions of the system. **Trigger:** The function is triggered when an authenticated Traveler opens the Profile screen, selects Edit Profile, modifies the profile information and submits the form.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.2.8 Interface: Profile and Edit Profile screens on the Flutter mobile application and the responsive Next.js web application.; §2.2.2 UC-08; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.2.8 Interface: Profile and Edit Profile screens on the Flutter mobile application and the responsive Next.js web application; §2.2.2 UC-08; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#48](#screen-48). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.2.8; Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-01, BR-16, BR-17, BR-18 **MSG:** MSG01, MSG19, MSG20, MSG127, MSG179, MSG180
@@ -248,7 +248,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-12; **§3.3.3 Explore Points of Interest**.
 - **Primary actor:** Guest / Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Guest, Traveler. **Catalog actors:** Guest / Traveler.
 - **Purpose:** Allows a Traveler to browse, search and inspect the points of interest of the centralized catalogue, so that a destination can be explored before or during a trip. **Trigger:** The function is triggered when a Traveler opens the Explore section, submits supported point of interest search or filter criteria, or selects a point of interest from a list, a map or an itinerary item.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.3.3 Interface: Explore Points of Interest list and map screens and the Point of Interest Details screen on the Flutter mobile application and the responsive Next.js web application.; §2.2.2 UC-12; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.3.3 Interface: Explore Points of Interest list and map screens and the Point of Interest Details screen on the Flutter mobile application and the responsive Next.js web application; §2.2.2 UC-12; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#53](#screen-53), [#54](#screen-54). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.3.3; Guest, Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-24, BR-34, BR-180 **MSG:** MSG33, MSG34, MSG46, MSG126, MSG127
@@ -276,7 +276,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-14; **§3.3.5 Receive Real-Time Alerts**.
 - **Primary actor:** System. **Supporting/context:** Traveler (alert recipient); weather/location/event inputs. **Catalog actors:** Traveler.
 - **Purpose:** Allows a Traveler to be informed about weather conditions, traffic conditions, point of interest closures and safety notices that affect the current itinerary, so that the trip can be adjusted in time. **Trigger:** The function is triggered when the system detects a condition relevant to an Active itinerary or to the current position of a Traveler, and delivers the corresponding alert to the mobile application.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.3.5 Interface: Push notification, in-application alert banner on the Navigation screen and the Alerts list on the Flutter mobile application.; §2.2.2 UC-14; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.3.5 Interface: Push notification, in-application alert banner on the Navigation screen and the Alerts list on the Flutter mobile application; §2.2.2 UC-14; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#56](#screen-56). System result/observation surfaces only; not a standalone screen grant. **Interaction:** System event/background processing; embedded result surfaces.
 - **Authorization:** Role and data restrictions in 3.3.5; Traveler, System. System processing has no independent human page grant. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-29, BR-30, BR-31, BR-32 **MSG:** MSG38, MSG39, MSG40, MSG41, MSG128
@@ -318,7 +318,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-17; **§3.4.1 Create Travel Group**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows an authenticated Traveler to create a shared travel group associated with one existing and accessible TripMate itinerary. The creating Traveler becomes the sole Group Host. **Trigger:** The function is triggered when an authenticated Traveler with the Traveler role selects Create Travel Group for an eligible TripMate itinerary.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.1 Interface: Create a Travel Group screen on the Flutter mobile application.; §2.2.2 UC-17; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.1 Interface: Create a Travel Group screen on the Flutter mobile application; §2.2.2 UC-17; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#58](#screen-58), [#59](#screen-59). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.4.1; Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-41, BR-42, BR-48 **MSG:** MSG01, MSG54, MSG126, MSG127
@@ -332,7 +332,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-18; **§3.4.2 Invite Group Members**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler acting as Group Host. **Catalog actors:** Traveler.
 - **Purpose:** Allows the Group Host to generate and share an invitation code or a QR invitation that eligible Travelers can use to join the travel group. **Trigger:** The function is triggered when the Group Host selects Invite Members from an existing travel group.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.2 Interface: Invite Group Members screen on the Flutter mobile application.; §2.2.2 UC-18; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.2 Interface: Invite Group Members screen on the Flutter mobile application; §2.2.2 UC-18; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#60](#screen-60), [#61](#screen-61). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.4.2; Traveler acting as Group Host. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-43, BR-44, BR-46 **MSG:** MSG55, MSG126, MSG127
@@ -346,7 +346,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-19; **§3.4.3 View Group Members**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows an active group member to view the permitted membership information of the selected travel group. **Trigger:** The function is triggered when an active group member opens the Members section of a travel group.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.3 Interface: Travel Group Details & Members screen on the Flutter mobile application.; §2.2.2 UC-19; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.3 Interface: Travel Group Details & Members screen on the Flutter mobile application; §2.2.2 UC-19; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#60](#screen-60). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.4.3; Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-48, BR-49, BR-51 **MSG:** MSG126, MSG127, MSG128
@@ -360,7 +360,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-20; **§3.4.4 Remove Group Member**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler acting as Group Host. **Catalog actors:** Traveler.
 - **Purpose:** Allows the Group Host to remove an active member from the group. **Trigger:** The function is triggered when the Group Host selects an active member and chooses Remove Member.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.4 Interface: Travel Group Details & Members screen and the Remove Group Member confirmation dialog on the Flutter mobile application.; §2.2.2 UC-20; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.4 Interface: Travel Group Details & Members screen and the Remove Group Member confirmation dialog on the Flutter mobile application; §2.2.2 UC-20; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#60](#screen-60), [#62](#screen-62). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Role and data restrictions in 3.4.4; Traveler acting as Group Host. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-45, BR-48, BR-51 **MSG:** MSG59, MSG60, MSG126, MSG127
@@ -374,7 +374,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-21; **§3.4.5 Leave Travel Group**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows an active Traveler to voluntarily leave a travel group while preserving a valid Group Host state. **Trigger:** The function is triggered when an active group member selects Leave Group.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.5 Interface: Leave Travel Group confirmation screen on the Flutter mobile application.; §2.2.2 UC-21; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.5 Interface: Leave Travel Group confirmation screen on the Flutter mobile application; §2.2.2 UC-21; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#60](#screen-60), [#63](#screen-63). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Role and data restrictions in 3.4.5; Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-48, BR-49, BR-51 **MSG:** MSG61, MSG127, MSG129, MSG130
@@ -388,7 +388,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-22; **§3.4.6 Configure Group Location Sharing**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows an active group member to explicitly enable or disable the sharing of the personal GPS location with the permitted members of the same group. **Trigger:** The function is triggered when an active group member changes the Location Sharing setting.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.6 Interface: Group Location Sharing Settings screen on the Flutter mobile application.; §2.2.2 UC-22; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.4.6 Interface: Group Location Sharing Settings screen on the Flutter mobile application; §2.2.2 UC-22; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#64](#screen-64). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.4.6; Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-50, BR-51 **MSG:** MSG46, MSG62, MSG63, MSG127
@@ -416,7 +416,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-24; **§3.5.1 Search Tours**.
 - **Primary actor:** Guest / Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler, Guest. **Catalog actors:** Guest / Traveler.
 - **Purpose:** Allows a user to find published tour packages by keyword and by filter criteria before deciding to view the details or to book. **Trigger:** The function is triggered when a Traveler or a Guest submits a search keyword or applies a filter on the Tour Search screen.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.1 Interface: Tour Search screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-24; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.1 Interface: Tour Search screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-24; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#66](#screen-66). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: None. The function is available to a Guest; the authentication is required only to book. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-52, BR-53, BR-54, BR-55, BR-56 **MSG:** MSG29, MSG64, MSG127
@@ -430,7 +430,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-25; **§3.5.2 Receive Tour Recommendations**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Presents the tour packages that the matching algorithm of TripMate evaluates as highly relevant to the travel preferences, the planning criteria and the trip history of the Traveler. **Trigger:** The function is triggered when a Traveler opens the Tour Recommendations screen, or when the recommendation list is refreshed after the travel preferences or the planning criteria have been changed.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.2 Interface: Tour Recommendations screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-25; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.2 Interface: Tour Recommendations screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-25; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#67](#screen-67). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The Traveler must be signed in with an Active account. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-20, BR-56, BR-57, BR-58, BR-60 **MSG:** MSG64, MSG68, MSG127, MSG183
@@ -444,7 +444,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-26; **§3.5.3 View Tour Details**.
 - **Primary actor:** Guest / Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler, Guest. **Catalog actors:** Guest / Traveler.
 - **Purpose:** Presents the complete information of a tour package, including its itinerary, its inclusions, its cancellation policy, its available departure schedules and its reviews, so that the user can decide whether to book it. **Trigger:** The function is triggered when a Traveler or a Guest selects a tour package from the search result list, from the recommendation list or from a shared tour link.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.3 Interface: Tour Detail screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-26; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.3 Interface: Tour Detail screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-26; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#68](#screen-68). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: None for viewing. The authentication is required when [Book Now] is selected. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-54, BR-56, BR-59, BR-60, BR-96 **MSG:** MSG65, MSG127, MSG128
@@ -458,7 +458,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-27; **§3.5.4 Book Tour**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows a Traveler to create a booking for a selected departure schedule of a tour package by entering the participant information, optionally applying a voucher, and confirming the total amount computed by TripMate. **Trigger:** The function is triggered when a signed-in Traveler selects [Book Now] for a departure schedule of an available tour package.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.4 Interface: Tour Booking screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-27; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.4 Interface: Tour Booking screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-27; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#69](#screen-69). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The Traveler must be signed in with an Active account. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-61, BR-62, BR-63, BR-64, BR-65, BR-66, BR-67, BR-68, BR-97, BR-98, BR-99, BR-100, BR-135, BR-154, BR-156 **MSG:** MSG01, MSG65, MSG77, MSG78, MSG79, MSG100, MSG101, MSG102, MSG103, MSG126, MSG127, MSG169, MSG196
@@ -486,7 +486,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-29; **§3.5.6 View QR E-ticket**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Presents the QR e-ticket of a confirmed booking so that the Traveler can be checked in by the owning Tour Operator on the departure date. **Trigger:** The function is triggered when a Traveler opens the e-ticket of a confirmed booking from the Booking Confirmation screen or from the Trip History screen.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.6 Interface: QR E-ticket screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-29; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.5.6 Interface: QR E-ticket screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-29; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#71](#screen-71), [#72](#screen-72). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The Traveler must be signed in with an Active account and must be the owner of the booking. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-82, BR-83, BR-84, BR-85, BR-86, BR-90 **MSG:** MSG74, MSG93, MSG95, MSG98, MSG99, MSG126, MSG127, MSG187
@@ -528,7 +528,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-32; **§3.7.1 View Trip History**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Presents the past and the upcoming trips of the Traveler, including the tour bookings, the commercial service bookings and the self-planned itineraries, together with the actions that remain available for each of them. **Trigger:** The function is triggered when a Traveler opens the Trip History screen from the main navigation or from the profile.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.7.1 Interface: Trip History screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-32; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.7.1 Interface: Trip History screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-32; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#76](#screen-76). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The Traveler must be signed in with an Active account. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-52, BR-90, BR-91, BR-92 **MSG:** MSG29, MSG52, MSG127, MSG128
@@ -542,7 +542,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-33; **§3.7.2 Submit Trip Review**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows a Traveler to submit a rating and a written review for a completed trip, and updates the aggregate rating of the reviewed tour package or point of interest. **Trigger:** The function is triggered when a Traveler selects [Write Review] for a completed trip that has not been reviewed yet.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.7.2 Interface: Submit Trip Review screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-33; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.7.2 Interface: Submit Trip Review screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-33; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#77](#screen-77). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The Traveler must be signed in with an Active account and must be the owner of the reviewed booking. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-16, BR-91, BR-92, BR-93, BR-94, BR-95, BR-96 **MSG:** MSG01, MSG19, MSG50, MSG51, MSG52, MSG53, MSG66, MSG67, MSG126, MSG127
@@ -556,7 +556,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-34; **§3.8.1 Update Tour Operator Profile**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Allows an approved Tour Operator to maintain the business information that is presented to the Travelers on the tour detail pages. **Trigger:** The function is triggered when a Tour Operator opens the Operator Profile screen and saves a change.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.1 Interface: Operator Profile screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-34; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.1 Interface: Operator Profile screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-34; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#79](#screen-79). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and an approved application. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-07, BR-08, BR-16, BR-17 **MSG:** MSG01, MSG02, MSG19, MSG121, MSG126, MSG127
@@ -570,7 +570,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-35; **§3.8.2.1 Create Tour Package**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Allows a Tour Operator to create a new tour package as a draft, including its itinerary, its departure schedules, its pricing and its cancellation policy. **Trigger:** The function is triggered when a Tour Operator selects [Create Tour Package] in the Tour Package Management screen.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.2.1 Interface: Create Tour Package screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-35; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.2.1 Interface: Create Tour Package screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-35; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#80](#screen-80), [#81](#screen-81). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and an approved application. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-22, BR-56, BR-79, BR-101, BR-102 **MSG:** MSG01, MSG19, MSG29, MSG108, MSG126, MSG127, MSG143
@@ -584,7 +584,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-36; **§3.8.2.2 Update Tour Package**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Allows a Tour Operator to modify an owned tour package, either directly while it is a draft or a rejected package, or through a new draft version when it is already approved and published. **Trigger:** The function is triggered when a Tour Operator opens one of the owned tour packages for editing and saves a change.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.2.2 Interface: Update Tour Package screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-36; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.2.2 Interface: Update Tour Package screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-36; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#80](#screen-80), [#82](#screen-82). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and must be the owner of the tour package. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-22, BR-61, BR-101, BR-102, BR-103 **MSG:** MSG01, MSG29, MSG109, MSG110, MSG122, MSG126, MSG127, MSG143
@@ -598,7 +598,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-37; **§3.8.2.3 Submit Tour Package for Approval**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Submits a completed tour package to the Administrator for the moderation that decides whether the tour package may be published to the Travelers. **Trigger:** The function is triggered when a Tour Operator selects [Submit for Approval] on an owned tour package whose status is Draft or Rejected.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.2.3 Interface: Tour Package Management screen and the submission confirmation dialog on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-37; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.2.3 Interface: Tour Package Management screen and the submission confirmation dialog on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-37; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#80](#screen-80), [#83](#screen-83). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and must be the owner of the tour package. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-56, BR-101, BR-102, BR-103, BR-185 **MSG:** MSG01, MSG110, MSG111, MSG122, MSG126, MSG127
@@ -612,7 +612,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-38; **§3.8.3.1 Create Coupon**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Allows a Tour Operator to issue a discount coupon that the Travelers may apply to the bookings of the owned tour packages. **Trigger:** The function is triggered when a Tour Operator selects [Create Coupon] in the Coupon Management screen.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.3.1 Interface: Create Coupon screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-38; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.3.1 Interface: Create Coupon screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-38; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#84](#screen-84), [#85](#screen-85). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and an approved application. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-97, BR-98, BR-100, BR-102, BR-184 **MSG:** MSG01, MSG29, MSG112, MSG113, MSG126, MSG127, MSG143
@@ -626,7 +626,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-39; **§3.8.3.2 Update Coupon**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Allows a Tour Operator to change the conditions of an owned coupon or to deactivate it, without affecting the bookings on which the coupon has already been applied. **Trigger:** The function is triggered when a Tour Operator opens an owned coupon for editing and saves a change, or deactivates it.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.3.2 Interface: Update Coupon screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-39; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.3.2 Interface: Update Coupon screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-39; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#84](#screen-84), [#86](#screen-86). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and must be the owner of the coupon. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-97, BR-98, BR-100, BR-102, BR-178 **MSG:** MSG01, MSG29, MSG114, MSG126, MSG127, MSG143
@@ -640,7 +640,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-40; **§3.8.4.1 View Customer Bookings**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Presents the bookings placed on the tour packages owned by the signed-in Tour Operator, so that the operator can prepare the departures and handle the customer requests. **Trigger:** The function is triggered when a Tour Operator opens the Customer Bookings screen or applies a filter on it.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.4.1 Interface: Customer Bookings screen on the Flutter mobile application and on the Next.js responsive web application.; §2.2.2 UC-40; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.4.1 Interface: Customer Bookings screen on the Flutter mobile application and on the Next.js responsive web application; §2.2.2 UC-40; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#87](#screen-87), [#88](#screen-88). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and an approved application. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-52, BR-77, BR-105 **MSG:** MSG29, MSG126, MSG127, MSG128
@@ -696,7 +696,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-44; **§3.8.5.1 View Revenue Report**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Presents the revenue earned by the signed-in Tour Operator over a selected period, broken down by the tour package and by the period, together with the commission and the net amount. **Trigger:** The function is triggered when a Tour Operator opens the Revenue Report screen or applies a filter on it.
-- **Platform:** `CONFLICT_REQUIRES_APPROVAL`. **Web:** Next.js interface described. **Mobile:** Conflicting ownership; Owner decision required. **Admin Web:** No. **Basis:** §3.8.5.1 Interface: Revenue Report screen on the Next.js responsive web application.; §2.2.2 UC-44; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `CONFLICT_REQUIRES_APPROVAL`. **Web:** Next.js interface described. **Mobile:** Conflicting ownership; Owner decision required. **Admin Web:** No. **Basis:** §3.8.5.1 Interface: Revenue Report screen on the Next.js responsive web application; §2.2.2 UC-44; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#92](#screen-92). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and an approved application. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-105, BR-109, BR-140, BR-173 **MSG:** MSG29, MSG115, MSG126, MSG127, MSG128
@@ -710,7 +710,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-45; **§3.8.5.2 Export Revenue Report**.
 - **Primary actor:** Tour Operator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Tour Operator. **Catalog actors:** Tour Operator.
 - **Purpose:** Produces a downloadable file of the revenue report that reflects exactly the filters applied on the screen, for the accounting and the reconciliation of the Tour Operator. **Trigger:** The function is triggered when a Tour Operator selects [Export Report] on the Revenue Report screen.
-- **Platform:** `CONFLICT_REQUIRES_APPROVAL`. **Web:** Next.js interface described. **Mobile:** Conflicting ownership; Owner decision required. **Admin Web:** No. **Basis:** §3.8.5.2 Interface: Export Report dialog on the Next.js responsive web application.; §2.2.2 UC-45; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `CONFLICT_REQUIRES_APPROVAL`. **Web:** Next.js interface described. **Mobile:** Conflicting ownership; Owner decision required. **Admin Web:** No. **Basis:** §3.8.5.2 Interface: Export Report dialog on the Next.js responsive web application; §2.2.2 UC-45; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#93](#screen-93). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Export action/dialog.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Tour Operator role and an approved application. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-105, BR-109, BR-110 **MSG:** MSG01, MSG106, MSG116, MSG117, MSG128
@@ -724,12 +724,12 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-46; **§3.9.1.1 View User Accounts**.
 - **Primary actor:** Staff/ Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff or Administrator role. **Catalog actors:** Staff/ Administrator.
 - **Purpose:** Presents the accounts registered on the platform with their role and their status, so that Staff or Administrator can review them and take the moderation actions. **Trigger:** The function is triggered when a Staff member or an Administrator opens the User Account Management screen or applies a filter on it.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.1 Interface: User Account Management screen on the Next.js web administration application.; §2.2.2 UC-46; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.1 Interface: User Account Management screen on the Next.js web administration application; §2.2.2 UC-46; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#6](#screen-6), [#7](#screen-7). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
-- **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff or Administrator role . Table 5 and CR-10/11/15 apply; page access does not grant every action.
+- **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff or Administrator role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-03, BR-52, BR-115, BR-168, BR-182 **MSG:** MSG29, MSG126, MSG127, MSG128
 - **FE evidence:** [FE-20](#fe-20). **Implementation:** `MISMATCH`; backend/Mobile outcomes NOT_VERIFIED.
-- **Conflict / notes:** No additional conflict identified in this extraction; approval provenance is not established merely by SRS presence. **Approval:** `NOT_EVIDENCED`. Owner gates in §H remain unresolved.
+- **Conflict / notes:** Screen #6 lists Traveler and Tour Operator accounts for Staff. BR-168 also includes Service Provider accounts. See [GAP-07](#gap-07). **Approval:** `PENDING_APPROVAL` for the conflicting target scope.
 
 <a id="uc-47"></a>
 
@@ -737,13 +737,13 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 
 - **Source:** §2.2.2 UC-47; **§3.9.1.2 Lock User Account**.
 - **Primary actor:** Staff/ Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff (Traveler and Tour Operator accounts only); Administrator (Staff accounts only), as set out in BR-168. **Catalog actors:** Staff/ Administrator.
-- **Purpose:** Allows a Staff or Administrator account to lock, within the scope of BR-168, an account that violates the platform policy, which prevents any further sign in and terminates the active sessions of that account. **Trigger:** The function is triggered when ana Staff member or an Administrator selects [Lock Account] on an account in the User Account Management screen.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.2 Interface: Lock Account dialog on the Next.js web administration application.; §2.2.2 UC-47; §1 / §2.1 actor workspace restrictions.
+- **Purpose:** Allows a Staff or Administrator account to lock, within the scope of BR-168, an account that violates the platform policy, which prevents any further sign in and terminates the active sessions of that account. **Trigger:** The function is triggered when a Staff member or an Administrator selects [Lock Account] on an account in the User Account Management screen.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.2 Interface: Lock Account dialog on the Next.js web administration application; §2.2.2 UC-47; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#7](#screen-7), [#8](#screen-8). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff or Administrator role. BR-168: A Staff account may view, lock and unlock Traveler, Tour Operator and Service Provider accounts only. An Administrator account may view, lock and unlock Staff accounts only. Locking changes only the access status, not the role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-168, BR-169, BR-175, BR-176, BR-189 **MSG:** MSG123, MSG126, MSG127, MSG133, MSG189
 - **FE evidence:** [FE-20](#fe-20). **Implementation:** `MISMATCH`; backend/Mobile outcomes NOT_VERIFIED.
-- **Conflict / notes:** No additional conflict identified in this extraction; approval provenance is not established merely by SRS presence. **Approval:** `NOT_EVIDENCED`. Owner gates in §H remain unresolved.
+- **Conflict / notes:** The §3.9.1.2 actor line limits Staff to Traveler and Tour Operator accounts. BR-168 also includes Service Provider accounts. See [GAP-07](#gap-07). **Approval:** `PENDING_APPROVAL` for the conflicting target scope.
 
 <a id="uc-48"></a>
 
@@ -752,12 +752,12 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-48; **§3.9.1.3 Unlock User Account**.
 - **Primary actor:** Staff/ Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff (Traveler and Tour Operator accounts only); Administrator (Staff accounts only), as set out in BR-168. **Catalog actors:** Staff/ Administrator.
 - **Purpose:** Allows Staff or Administrator to restore the access of a locked account after the reason of the lock has been resolved. **Trigger:** The function is triggered when an Administrator selects [Unlock Account] on a locked account.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.3 Interface: Unlock Account dialog on the Next.js web administration application.; §2.2.2 UC-48; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.3 Interface: Unlock Account dialog on the Next.js web administration application; §2.2.2 UC-48; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#7](#screen-7), [#9](#screen-9). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff or Administrator role. BR-168: A Staff account may view, lock and unlock Traveler, Tour Operator and Service Provider accounts only. An Administrator account may view, lock and unlock Staff accounts only. Locking changes only the access status, not the role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-168, BR-170, BR-171, BR-176, BR-189, BR-200 **MSG:** MSG123, MSG126, MSG127, MSG133, MSG190, MSG199
 - **FE evidence:** [FE-20](#fe-20). **Implementation:** `MISMATCH`; backend/Mobile outcomes NOT_VERIFIED.
-- **Conflict / notes:** §3.9.1.3/BR-168 permits Staff unlock Traveler/Tour Operator; BR-200 additionally requires Staff unlock Service Provider after overdue statements paid. Scope conflict requires Owner confirmation. **Approval:** `PENDING_APPROVAL`. Owner gates in §H remain unresolved.
+- **Conflict / notes:** The §3.9.1.3 trigger names Administrator and the actor line also includes Staff. Its actor line excludes Service Provider targets, while BR-168 includes them and BR-200 describes unlocking after overdue statements are paid. See [GAP-07](#gap-07). **Approval:** `PENDING_APPROVAL` for the conflicting target scope.
 
 <a id="uc-49"></a>
 
@@ -766,7 +766,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-49; **§3.9.2.1 Approve Tour Operator Application**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Grants the Tour Operator role to an applicant whose business documents have been verified, which opens the operator workspace for that account. **Trigger:** The function is triggered when a Staff selects [Approve] on a Tour Operator application whose status is Pending Approval.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.2.1 Interface: Tour Operator Application Review screen on the Next.js web administration application.; §2.2.2 UC-49; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.2.1 Interface: Tour Operator Application Review screen on the Next.js web administration application; §2.2.2 UC-49; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#10](#screen-10), [#11](#screen-11). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-07, BR-08, BR-115, BR-118, BR-130 **MSG:** MSG22, MSG26, MSG124, MSG126, MSG127, MSG133
@@ -780,7 +780,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-50; **§3.9.2.2 Reject Tour Operator Application**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Rejects a Tour Operator application with a reason that is communicated to the applicant, so that the applicant may correct the submission and resubmit it. **Trigger:** The function is triggered when a Staff member selects [Reject] on a Tour Operator application whose status is Pending Approval.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.2.2 Interface: Tour Operator Application Review screen on the Next.js web administration application.; §2.2.2 UC-50; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.2.2 Interface: Tour Operator Application Review screen on the Next.js web administration application; §2.2.2 UC-50; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#10](#screen-10), [#11](#screen-11), [#12](#screen-12). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-09, BR-115, BR-118, BR-119, BR-130 **MSG:** MSG123, MSG126, MSG127, MSG133, MSG188
@@ -794,7 +794,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-51; **§3.9.3.1 Create Point of Interest**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff member to add a point of interest to the master data, so that it becomes available to the itinerary planning, to the exploration and, for the commercial categories, to the service booking. **Trigger:** The function is triggered when a Staff member selects [Create Point of Interest] in the Point of Interest Management screen.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.3.1 Interface: Create Point of Interest screen on the Next.js web administration application.; §2.2.2 UC-51; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.3.1 Interface: Create Point of Interest screen on the Next.js web administration application; §2.2.2 UC-51; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#16](#screen-16), [#17](#screen-17). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-24, BR-87, BR-115, BR-120, BR-130 **MSG:** MSG01, MSG19, MSG126, MSG127, MSG138, MSG143, MSG191
@@ -808,7 +808,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-52; **§3.9.3.2 Update Point of Interest**.
 - **Primary actor:** Staff/ Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator/ Staff. **Catalog actors:** Staff/ Administrator.
 - **Purpose:** Allows an Administrator or a Staff to correct or to enrich the master data of a point of interest, including its coordinates, its opening hours and its commercial information. **Trigger:** The function is triggered when an Administrator or a Staff opens an existing point of interest for editing and saves a change.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.3.2 Interface: Update Point of Interest screen on the Next.js web administration application.; §2.2.2 UC-52; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.3.2 Interface: Update Point of Interest screen on the Next.js web administration application; §2.2.2 UC-52; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#16](#screen-16), [#18](#screen-18). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Administrator or Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-87, BR-115, BR-120, BR-121, BR-130 **MSG:** MSG01, MSG126, MSG127, MSG143, MSG192, MSG194
@@ -822,7 +822,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-53; **§3.9.3.3 Remove Point of Interest**.
 - **Primary actor:** Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator. **Catalog actors:** Administrator.
 - **Purpose:** Withdraws a point of interest from new use on the platform by setting it to the status Inactive, so that the existing itineraries, routes, bookings and the audit trail remain consistent. **Trigger:** The function is triggered when an Administrator selects the removal action on a point of interest in the Point of Interest Management screen.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.3.3 Interface: Remove Point of Interest dialog on the Next.js web administration application.; §2.2.2 UC-53; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.3.3 Interface: Remove Point of Interest dialog on the Next.js web administration application; §2.2.2 UC-53; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#16](#screen-16), [#19](#screen-19). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Administrator role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-24, BR-115, BR-121, BR-122, BR-130 **MSG:** MSG123, MSG126, MSG127, MSG193, MSG194
@@ -836,7 +836,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-54; **§3.9.4.1 Create Route**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff to define a route between two points of interest with its distance, its estimated travel time and its transport mode, so that the itinerary planning can use it. **Trigger:** The function is triggered when a Staff selects [Create Route] in the Route Management screen.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.4.1 Interface: Create Route screen on the Next.js web administration application.; §2.2.2 UC-54; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.4.1 Interface: Create Route screen on the Next.js web administration application; §2.2.2 UC-54; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#20](#screen-20), [#21](#screen-21). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-24, BR-35, BR-115, BR-122, BR-130 **MSG:** MSG01, MSG126, MSG127, MSG139, MSG141, MSG143
@@ -850,7 +850,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-55; **§3.9.4.2 Update Route**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff to correct the attributes of a route or to deactivate a route that is no longer usable, including a route flagged for the review because one of its endpoints has been deactivated. **Trigger:** The function is triggered when a Staff opens an existing route for editing and saves a change, or deactivates it.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.4.2 Interface: Update Route screen on the Next.js web administration application.; §2.2.2 UC-55; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.4.2 Interface: Update Route screen on the Next.js web administration application; §2.2.2 UC-55; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#20](#screen-20), [#22](#screen-22). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-24, BR-27, BR-115, BR-122, BR-130 **MSG:** MSG01, MSG126, MSG127, MSG140, MSG141, MSG143
@@ -864,7 +864,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-56; **§3.9.5 Configure Algorithm Parameters**.
 - **Primary actor:** Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator. **Catalog actors:** Administrator.
 - **Purpose:** Allows an Administrator to tune the parameters of the itinerary scheduling algorithm and of the tour matching algorithm within the allowed ranges, without a deployment. **Trigger:** The function is triggered when an Administrator saves a change on the Algorithm Parameter Configuration screen.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.5 Interface: Algorithm Parameter Configuration screen on the Next.js web administration application.; §2.2.2 UC-56; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.5 Interface: Algorithm Parameter Configuration screen on the Next.js web administration application; §2.2.2 UC-56; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#23](#screen-23). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Administrator role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-26, BR-58, BR-115, BR-123, BR-130 **MSG:** MSG01, MSG126, MSG127, MSG142, MSG143
@@ -892,7 +892,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-58; **§3.9.6.2 View Active Trip Details**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff to inspect the progress, the itinerary and the raised alerts of one trip that is in progress, so that a support decision can be taken with the complete context. **Trigger:** The function is triggered when a Staff selects a trip from the Active Trip Monitoring list.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.6.2 Interface: Active Trip Details screen on the Next.js web administration application.; §2.2.2 UC-58; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.6.2 Interface: Active Trip Details screen on the Next.js web administration application; §2.2.2 UC-58; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#25](#screen-25). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-26, BR-32, BR-50, BR-51, BR-115, BR-124, BR-130 **MSG:** MSG32, MSG116, MSG117, MSG126, MSG127, MSG128
@@ -906,7 +906,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-59; **§3.9.7.1 Approve Tour Post**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff to publish a tour package submitted by a Tour Operator after the mandatory review checklist has been verified, so that only reviewed tours become discoverable by Travelers. **Trigger:** The function is triggered when a Staff confirms the approval of a tour package that is in the Pending Approval status.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.7.1 Interface: Tour Post Moderation screen and Tour Package Review screen on the Next.js web administration application.; §2.2.2 UC-59; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.7.1 Interface: Tour Post Moderation screen and Tour Package Review screen on the Next.js web administration application; §2.2.2 UC-59; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#13](#screen-13), [#14](#screen-14). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-56, BR-103, BR-104, BR-115, BR-118, BR-125, BR-130 **MSG:** MSG01, MSG126, MSG127, MSG128, MSG133, MSG144
@@ -920,7 +920,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-60; **§3.9.7.2 Reject Tour Post**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff to reject a submitted tour package that does not pass the review, with a reason that the owning Tour Operator can act upon. **Trigger:** The function is triggered when a Staff confirms the rejection of a tour package that is in the Pending Approval status.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.7.2 Interface: Tour Package Review screen on the Next.js web administration application.; §2.2.2 UC-60; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.7.2 Interface: Tour Package Review screen on the Next.js web administration application; §2.2.2 UC-60; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#13](#screen-13), [#14](#screen-14), [#15](#screen-15). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-56, BR-104, BR-115, BR-118, BR-119, BR-130 **MSG:** MSG123, MSG126, MSG127, MSG133, MSG195
@@ -934,7 +934,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-61; **§3.9.8 View Platform Bookings**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff to monitor every booking created on the platform across all Tour Operators, so that a payment anomaly, a refund backlog or an abusive booking pattern can be detected. **Trigger:** The function is triggered when a Staff opens the Platform Booking Monitoring screen in the web administration application.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.8 Interface: Platform Booking Monitoring screen on the Next.js web administration application.; §2.2.2 UC-61; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.8 Interface: Platform Booking Monitoring screen on the Next.js web administration application; §2.2.2 UC-61; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#26](#screen-26), [#27](#screen-27). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-52, BR-71, BR-77, BR-79, BR-115, BR-126, BR-130 **MSG:** MSG29, MSG126, MSG127, MSG128
@@ -948,7 +948,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-62; **§3.9.10 Update Landing Page Content**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows an Staff to maintain the content of the public landing page of the web application, including the featured destinations and the promotional banners, without a deployment. **Trigger:** The function is triggered when a Staff publishes a change of the public landing page content.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.10 Interface: Landing Page Content Management screen on the Next.js web administration application.; §2.2.2 UC-62; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.10 Interface: Landing Page Content Management screen on the Next.js web administration application; §2.2.2 UC-62; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#1](#screen-1), [#30](#screen-30). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-16, BR-27, BR-56, BR-115, BR-128, BR-130 **MSG:** MSG01, MSG19, MSG29, MSG65, MSG126, MSG127, MSG129, MSG148
@@ -962,7 +962,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-63; **§3.9.11 Export Statistical Reports**.
 - **Primary actor:** Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator. **Catalog actors:** Administrator.
 - **Purpose:** Allows an Administrator to generate and download the aggregated platform statistics of a closed period, so that the business performance can be reported outside the application. **Trigger:** The function is triggered when an Administrator requests the export of a platform statistical report.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.11 Interface: Platform Statistics screen on the Next.js web administration application.; §2.2.2 UC-63; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.11 Interface: Platform Statistics screen on the Next.js web administration application; §2.2.2 UC-63; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#31](#screen-31), [#36](#screen-36), [#37](#screen-37). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Export action/dialog.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Administrator role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-79, BR-109, BR-110, BR-115, BR-129, BR-130 **MSG:** MSG01, MSG117, MSG126, MSG127, MSG128, MSG149, MSG184
@@ -976,7 +976,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-64; **§3.9.12.1 View Audit Logs**.
 - **Primary actor:** Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator. **Catalog actors:** Administrator.
 - **Purpose:** Allows an Administrator to search the recorded administrative and financial events of the platform, so that an action can be traced back to the account that performed it. **Trigger:** The function is triggered when an Administrator opens the Audit Log screen in the web administration application.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.12.1 Interface: Audit Log screen on the Next.js web administration application.; §2.2.2 UC-64; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.12.1 Interface: Audit Log screen on the Next.js web administration application; §2.2.2 UC-64; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#32](#screen-32). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Administrator role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-03, BR-52, BR-110, BR-115, BR-130 **MSG:** MSG29, MSG116, MSG117, MSG126, MSG127, MSG128
@@ -990,7 +990,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-65; **§3.9.12.2 View Audit Log Details**.
 - **Primary actor:** Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator. **Catalog actors:** Administrator.
 - **Purpose:** Allows an Administrator to inspect the complete recorded content of one audit log entry, including the previous and the new values of the affected entity. **Trigger:** The function is triggered when an Administrator selects an entry from the Audit Log list.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.12.2 Interface: Audit Log Details screen on the Next.js web administration application.; §2.2.2 UC-65; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.12.2 Interface: Audit Log Details screen on the Next.js web administration application; §2.2.2 UC-65; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#33](#screen-33). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Administrator role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-03, BR-115, BR-130, BR-190 **MSG:** MSG126, MSG127, MSG128, MSG150
@@ -1032,7 +1032,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-68; **§3.8.6.1 Submit Post-Trip Complaint**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows the Traveler to submit a complaint about a booking, with supporting evidence. **Trigger:** The function is triggered when a Traveler selects [Submit Complaint] on the booking detail of a tour booking whose tour has ended.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.6.1 Interface: Complaint Form in the Next.js responsive web application and in the Flutter mobile application.; §2.2.2 UC-68; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.6.1 Interface: Complaint Form in the Next.js responsive web application and in the Flutter mobile application; §2.2.2 UC-68; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#95](#screen-95). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.8.6.1; Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-147, BR-148, BR-149, BR-151 **MSG:** MSG127, MSG157, MSG158, MSG159, MSG160, MSG161
@@ -1060,7 +1060,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-70; **§3.10.3 Synchronize Offline Trip Data**.
 - **Primary actor:** System. **Supporting/context:** Traveler (device owner); backend sync service. **Catalog actors:** Traveler.
 - **Purpose:** Uploads the trip data captured offline, namely the activity completion states, the visited points of interest, the recorded notes and the captured photographs, and resolves every conflict against the server record so that the trip history remains consistent. **Trigger:** The function is triggered when the mobile application regains network connectivity and detects local trip data that was captured while the device was offline.
-- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.10.3 Interface: Synchronisation banner and Synchronisation Result screen on the Flutter mobile application.; §2.2.2 UC-70; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `MOBILE_ONLY`. **Web:** No Web equivalent. **Mobile:** Required Android capability. **Admin Web:** No equivalent execution action. **Basis:** §3.10.3 Interface: Synchronisation banner and Synchronisation Result screen on the Flutter mobile application; §2.2.2 UC-70; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#52](#screen-52). System result/observation surfaces only; not a standalone screen grant. **Interaction:** System event/background processing; embedded result surfaces.
 - **Authorization:** Credentials required: The Traveler must be signed in on the device with a valid session; an expired session is refreshed before the upload and the local data is retained until the refresh succeeds. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-26, BR-37, BR-38, BR-39, BR-40, BR-165, BR-166 **MSG:** MSG32, MSG106, MSG127, MSG128, MSG154, MSG155, MSG156
@@ -1088,7 +1088,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-72; **§3.9.9.1 View Payout Records**.
 - **Primary actor:** Staff/ Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff; Administrator. **Catalog actors:** Staff/ Administrator.
 - **Purpose:** Displays each booking’s settlement with its scheduled transfer time, amount, status and transfer reference. Read-only. **Trigger:** The function is triggered when a Staff member or an Administrator opens the Settlement Records List or applies a filter on it.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.9.1 Interface: Settlement Records List on the Next.js web administration application.; §2.2.2 UC-72; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.9.1 Interface: Settlement Records List on the Next.js web administration application; §2.2.2 UC-72; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#28](#screen-28). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Credentials required: The user must be signed in with an Active account holding the Staff role or the Administrator role. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-52, BR-79, BR-115, BR-146 **MSG:** MSG126, MSG127, MSG128
@@ -1102,7 +1102,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-73; **§3.10.6 Review Failed Payout Settlement**.
 - **Primary actor:** Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator. **Catalog actors:** Administrator.
 - **Purpose:** Allows the Administrator to review a failed settlement and decide how to handle it. The amount is not recalculated. **Trigger:** The function is triggered when an Administrator opens a settlement in SettlementFailed status.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.10.6 Interface: Failed Payout Settlement Details (screen 29) on the Next.js web administration application.; §2.2.2 UC-73; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.10.6 Interface: Failed Payout Settlement Details (screen 29) on the Next.js web administration application; §2.2.2 UC-73; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#29](#screen-29). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.10.6; Administrator. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-145, BR-146, BR-172 **MSG:** MSG126, MSG176, MSG177, MSG178
@@ -1130,7 +1130,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-75; **§3.8.6.3 Respond to Partial Refund Proposal**.
 - **Primary actor:** Traveler. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Traveler. **Catalog actors:** Traveler.
 - **Purpose:** Allows the Traveler to accept or decline a partial refund proposal. **Trigger:** The function is triggered when a Traveler opens a complaint with the status Awaiting Traveler Response.
-- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.6.3 Interface: Partial Refund Proposal screen in the web application and in the mobile application.; §2.2.2 UC-75; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `WEB_AND_MOBILE`. **Web:** Shared public/authenticated role capability. **Mobile:** Shared Android capability. **Admin Web:** No, except explicitly assigned internal variants. **Basis:** §3.8.6.3 Interface: Partial Refund Proposal screen in the web application and in the mobile application; §2.2.2 UC-75; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#97](#screen-97). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.8.6.3; Traveler. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-143, BR-153 **MSG:** MSG126, MSG127, MSG165
@@ -1144,7 +1144,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-76; **§3.9.1.4 Create Staff Account**.
 - **Primary actor:** Administrator. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Administrator. **Catalog actors:** Administrator.
 - **Purpose:** Allows an Administrator to create a Staff account without self-registration. **Trigger:** The function is triggered when an Administrator selects [Create Staff Account] on the User Account Management screen.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.4 Interface: Create Staff Account screen (screen 35) on the Next.js web administration application.; §2.2.2 UC-76; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.4 Interface: Create Staff Account screen (screen 35) on the Next.js web administration application; §2.2.2 UC-76; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#35](#screen-35). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.9.1.4; Administrator. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-03, BR-174, BR-191 **MSG:** MSG01, MSG05, MSG126, MSG127, MSG143, MSG200
@@ -1158,7 +1158,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-77; **§3.9.1.5 Create Service Provider Account**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Allows a Staff member to create a Service Provider account without self-registration. **Trigger:** The function is triggered when a Staff member selects [Create Service Provider Account] on the User Account Management screen.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.5 Interface: Create Service Provider Account screen (screen 102) on the Next.js web administration application.; §2.2.2 UC-77; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.9.1.5 Interface: Create Service Provider Account screen (screen 102) on the Next.js web administration application; §2.2.2 UC-77; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#102](#screen-102). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Screen/form or list/detail interaction.
 - **Authorization:** Role and data restrictions in 3.9.1.5; Staff. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-03, BR-174, BR-192 **MSG:** MSG01, MSG05, MSG34, MSG126, MSG127, MSG143, MSG201, MSG202
@@ -1242,7 +1242,7 @@ Each anchored record is one catalog UC. Catalog actors and initiating actors are
 - **Source:** §2.2.2 UC-83; **§3.6.7 Confirm Commission Receipt**.
 - **Primary actor:** Staff. **Supporting/context:** None explicitly assigned in catalog; detailed Actors / Roles: Staff. **Catalog actors:** Staff.
 - **Purpose:** Records that the commission of a statement has been received by TripMate. **Trigger:** The function is triggered when a Staff member opens the Commission Reconciliation screen during bank reconciliation.
-- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.6.7 Interface: Commission Reconciliation screen (screen 106) on the Next.js web administration application.; §2.2.2 UC-83; §1 / §2.1 actor workspace restrictions.
+- **Platform:** `ADMIN_WEB_ONLY`. **Web:** No public/partner workspace. **Mobile:** No. **Admin Web:** Assigned Staff or Administrator only. **Basis:** §3.6.7 Interface: Commission Reconciliation screen (screen 106) on the Next.js web administration application; §2.2.2 UC-83; §1 / §2.1 actor workspace restrictions.
 - **Screens:** [#106](#screen-106). Mapping by named detailed interface and matching screen inventory; adjacent list/detail/dialog surfaces are supporting mappings, not independent UCs. **Interaction:** Confirmation/action within existing screen.
 - **Authorization:** Role and data restrictions in 3.6.7; Staff. Table 5 and CR-10/11/15 apply; page access does not grant every action.
 - **BR:** BR-174, BR-199, BR-200 **MSG:** MSG126, MSG127, MSG133, MSG209
@@ -2912,7 +2912,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** No matching production route.
 - **Components/services:** No matching production surface found in the audited route/feature inventory.
 - **Guards:** No matching production surface found in the audited route/feature inventory.
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** Mobile functions; no corresponding production Web route. Mobile repository deliberately not audited. Not a missing Web implementation.
 
 <a id="fe-08"></a>
@@ -2945,7 +2945,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** No matching production route.
 - **Components/services:** No matching production surface found in the audited route/feature inventory.
 - **Guards:** No matching production surface found in the audited route/feature inventory.
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** Traveler commercial-services route absent; platform ownership must be resolved from SRS, not Provider-side functions. Mobile backend behavior NOT_VERIFIED.
 
 <a id="fe-11"></a>
@@ -2967,7 +2967,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** `/partner/profile` ([`app/partner/profile/page.tsx`](../app/partner/profile/page.tsx))
 - **Components/services:** [`src/features/operator/profile/components/OperatorProfilePage.tsx`](../src/features/operator/profile/components/OperatorProfilePage.tsx), [`src/features/operator/profile/components/OperatorProfileView.tsx`](../src/features/operator/profile/components/OperatorProfileView.tsx), [`src/features/operator/profile/services/operatorProfileService.ts`](../src/features/operator/profile/services/operatorProfileService.ts)
 - **Guards:** [`src/features/operator/access/PartnerRouteGuard.tsx`](../src/features/operator/access/PartnerRouteGuard.tsx)
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** Profile surface present; server legal-field validation NOT_VERIFIED.
 
 <a id="fe-13"></a>
@@ -3033,7 +3033,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** No matching production route.
 - **Components/services:** No matching production surface found in the audited route/feature inventory.
 - **Guards:** No matching production surface found in the audited route/feature inventory.
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** Mobile scanner has no Web route. Mobile behavior NOT_VERIFIED; ticket display does not implement scanning.
 
 <a id="fe-19"></a>
@@ -3055,7 +3055,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** `/admin/users` ([`app/admin/(console)/users/page.tsx`](../app/admin/%28console%29/users/page.tsx)), `/admin/users/[userId]` ([`app/admin/(console)/users/[userId]/page.tsx`](../app/admin/%28console%29/users/[userId]/page.tsx))
 - **Components/services:** [`src/features/admin/user-accounts/components/UserAccountDirectoryUnavailableView.tsx`](../src/features/admin/user-accounts/components/UserAccountDirectoryUnavailableView.tsx), [`src/features/admin/user-accounts/components/UserAccountDetailUnavailableView.tsx`](../src/features/admin/user-accounts/components/UserAccountDetailUnavailableView.tsx)
 - **Guards:** [`app/admin/(console)/users/page.tsx`](../app/admin/%28console%29/users/page.tsx), [`app/admin/(console)/users/[userId]/page.tsx`](../app/admin/%28console%29/users/[userId]/page.tsx)
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** [Directory page tests](../app/admin/%28console%29/users/page.test.tsx#L140) check that Administrator renders a view without a redirect and that Staff receives AdminAccessDeniedView. UserAccountsPage identifies the Administrator view as the unavailable shell.
 - **Finding / limits:** Staff is denied (:26/:31), violating Staff-managed Traveler/Operator scope; Admin only Staff scope not implemented. Directory/lock/unlock are explicitly unavailable placeholders.
 
 <a id="fe-21"></a>
@@ -3099,7 +3099,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** `/admin/routes` ([`app/admin/(console)/routes/page.tsx`](../app/admin/%28console%29/routes/page.tsx)), `/admin/routes/create` ([`app/admin/(console)/routes/create/page.tsx`](../app/admin/%28console%29/routes/create/page.tsx))
 - **Components/services:** [`src/features/admin/routes/components/CreateRouteUnavailableView.tsx`](../src/features/admin/routes/components/CreateRouteUnavailableView.tsx), [`src/features/admin/routes/resources/en.ts`](../src/features/admin/routes/resources/en.ts)
 - **Guards:** [`app/admin/(console)/routes/page.tsx`](../app/admin/%28console%29/routes/page.tsx), [`app/admin/(console)/routes/create/page.tsx`](../app/admin/%28console%29/routes/create/page.tsx)
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** [Route directory](../app/admin/%28console%29/routes/page.test.tsx#L136) and [create route](../app/admin/%28console%29/routes/create/page.test.tsx#L136) tests cover current route access for Administrator and denial for Staff.
 - **Finding / limits:** Pages deny Staff :26 while SRS assigns Staff. Disabled placeholder controls; route create/update integration absent.
 
 <a id="fe-25"></a>
@@ -3132,7 +3132,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** `/admin/tours/reviews` ([`app/admin/(console)/tours/reviews/page.tsx`](../app/admin/%28console%29/tours/reviews/page.tsx)), `/admin/tours/reviews/[id]` ([`app/admin/(console)/tours/reviews/[id]/page.tsx`](../app/admin/%28console%29/tours/reviews/[id]/page.tsx))
 - **Components/services:** [`src/features/admin/tour-reviews/TourReviewDecisionPanel.tsx`](../src/features/admin/tour-reviews/TourReviewDecisionPanel.tsx), [`src/features/admin/tour-reviews/services/tourModerationService.ts`](../src/features/admin/tour-reviews/services/tourModerationService.ts)
 - **Guards:** [`app/admin/(console)/tours/reviews/page.tsx`](../app/admin/%28console%29/tours/reviews/page.tsx), [`app/admin/(console)/tours/reviews/[id]/page.tsx`](../app/admin/%28console%29/tours/reviews/[id]/page.tsx)
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** [Tour moderation tests](../src/features/admin/tour-reviews/TourModeration.test.tsx#L50) check that production renders neither fixture rows nor decision actions. Demo tests separately exercise approval confirmation and rejection reason validation.
 - **Finding / limits:** Pages deny Staff :28/:32 contrary to SRS. Production service :18-23/:48-49 returns NO_BACKEND. Demo only.
 
 <a id="fe-28"></a>
@@ -3198,7 +3198,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** No matching production route.
 - **Components/services:** No matching production surface found in the audited route/feature inventory.
 - **Guards:** No matching production surface found in the audited route/feature inventory.
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** System/background/Mobile use cases; no standalone Web page required. Backend jobs, gateway retries, settlement schedules, commission generation NOT_VERIFIED from FE.
 
 <a id="fe-34"></a>
@@ -3209,7 +3209,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** No matching production route.
 - **Components/services:** No matching production surface found in the audited route/feature inventory.
 - **Guards:** No matching production surface found in the audited route/feature inventory.
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** No formal complaint/evidence/reply/partial-proposal route or feature module found. Trip reviews are not complaints.
 
 <a id="fe-35"></a>
@@ -3242,7 +3242,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** No matching production route.
 - **Components/services:** [`src/features/auth/session/authSession.ts`](../src/features/auth/session/authSession.ts)
 - **Guards:** No matching production surface found in the audited route/feature inventory.
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** No create Staff/Provider form or dedicated Provider workspace feature. Provider AuthRole absent. Screens35/102-104 capability missing; older unavailable user-account page does not implement onboarding.
 
 <a id="fe-38"></a>
@@ -3253,7 +3253,7 @@ All paths below were inspected at `1f2ed13f9a40def98709736199d81e4afd23b52b`. So
 - **Routes/pages:** No matching production route.
 - **Components/services:** [`src/features/auth/session/authSession.ts`](../src/features/auth/session/authSession.ts)
 - **Guards:** No matching production surface found in the audited route/feature inventory.
-- **Tests:** No matching production surface found in the audited route/feature inventory.
+- **Tests:** No relevant automated test cited.
 - **Finding / limits:** No commission statement payment/report-transfer or Staff receipt reconciliation route. Provider role missing. Screens105/106 missing. UC81 system generation separate.
 
 <a id="fe-39"></a>
@@ -3276,6 +3276,8 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 ## H. Requirement gap and conflict register
 
 
+<a id="gap-01"></a>
+
 ### GAP-01
 
 - **Affected:** UC-04–07; #39/40/45/46. **Exact SRS:** §2.2.2; §§3.2.4–3.2.7; §3.1.3.
@@ -3283,7 +3285,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** AuthRole/parseWebAuthContext excludes Provider. See linked UC evidence in §C/G.
 - **Web impact:** Existing account flows cannot be claimed complete for Provider.
 - **Clarification / owner:** Owner confirms authentication, reset, password change/forced first change and grants.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-02"></a>
 
 ### GAP-02
 
@@ -3292,7 +3296,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** No Provider/commission module found. See linked UC evidence in §C/G.
 - **Web impact:** Retain dedicated workspaces and original IDs; heading cannot reallocate them.
 - **Clarification / owner:** Owner/BA confirms heading and cross-workspace inventory without renumbering.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-03"></a>
 
 ### GAP-03
 
@@ -3301,7 +3307,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** Separate admin/partner settlement routes exist. See linked UC evidence in §C/G.
 - **Web impact:** Do not grant Operator UC72 or Staff failed-settlement actions.
 - **Clarification / owner:** Owner/BA confirms explicit history UC traceability; retain observer mapping.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-04"></a>
 
 ### GAP-04
 
@@ -3310,7 +3318,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** No commission implementation. See linked UC evidence in §C/G.
 - **Web impact:** UC81 NON_SCREEN; only existing observer surfaces.
 - **Clarification / owner:** Owner confirms statement rules/evidence; no Generate page invented.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-05"></a>
 
 ### GAP-05
 
@@ -3319,7 +3329,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** Provider workspace and Staff commission receipt absent. See linked UC evidence in §C/G.
 - **Web impact:** No invented gateway action or Paid status from Provider report.
 - **Clarification / owner:** Owner confirms actual amount, 10% rate, 3-day default, monthly/7-day deadline, 15-day lock; finance confirms reconciliation.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-06"></a>
 
 ### GAP-06
 
@@ -3328,16 +3340,20 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** Web revenue/cancellation exist; QR display is not scanner. See linked UC evidence in §C/G.
 - **Web impact:** UC44/45 CONFLICT_REQUIRES_APPROVAL; Provider Web workspace adds no Traveler Web commercial booking.
 - **Clarification / owner:** Owner supplies decision evidence and resolves revenue/export allocation; keep per-actor exception.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-07"></a>
 
 ### GAP-07
 
-- **Affected:** UC-46/48/77/82; #6/9/102/105. **Exact SRS:** §§3.9.1.1/3.9.1.3/3.9.1.5/3.10.7; BR-168/192/200.
-- **Conflict/missing information:** UC77 puts Provider in list; BR200 requires Staff unlock Provider; BR168 limits Staff targets Traveler/Operator and Admin targets Staff.
-- **Implementation evidence:** Directory unavailable, Staff denied, Provider role absent. See linked UC evidence in §C/G.
+- **Affected:** [UC-46](#uc-46), [UC-47](#uc-47), [UC-48](#uc-48), [UC-77](#uc-77) and [UC-82](#uc-82), including Screens [#6](#screen-6)–[#9](#screen-9), [#102](#screen-102) and [#105](#screen-105) on Web. **Exact SRS:** §2.2.2, §3.1.2.1 Screens #6, #8 and #9, §§3.9.1.1–3.9.1.3, §3.9.1.5, §3.10.7 and §5.1 BR-168, BR-192 and BR-200.
+- **Conflict/missing information:** Screen #6 and the lock/unlock actor lines limit Staff targets to Traveler and Tour Operator. BR-168 includes Service Provider for view, lock and unlock. UC-77 expects newly created providers in the account list and BR-200 describes Staff unlock after overdue payment. The UC-48 trigger also names only Administrator. Administrator target scope remains Staff accounts.
+- **Implementation evidence:** [FE-20](#fe-20) shows the unavailable directory and Staff denial. [FE-03](#fe-03) shows the session role list excludes Service Provider.
 - **Web impact:** Provider governance cannot be silently added or assigned to Admin.
-- **Clarification / owner:** Owner aligns account-target list/unlock and first-password rules.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Clarification / owner:** Owner aligns account visibility, lock and unlock target roles, the UC-48 trigger and first-password rules.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-08"></a>
 
 ### GAP-08
 
@@ -3346,7 +3362,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** Approval proxy and tour-review pages deny Staff; production moderation returns NO_BACKEND. See linked UC evidence in §C/G.
 - **Web impact:** Staff review requirements mismatch; stale refs do not justify Admin rights.
 - **Clarification / owner:** Owner/BA confirms traceability; FE owner needs separately authorized RBAC/moderation work.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-09"></a>
 
 ### GAP-09
 
@@ -3355,7 +3373,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** Live UC42 returns PENDING_BE_INTEGRATION; finance contracts not verified against new formulas. See linked UC evidence in §C/G.
 - **Web impact:** No policy approval or authoritative FE financial computation from this document.
 - **Clarification / owner:** Owner supplies traceable decisions; finance/backend confirms contracts. Pending rules remain gated.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-10"></a>
 
 ### GAP-10
 
@@ -3364,7 +3384,9 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** Concrete source evidence in §G. See linked UC evidence in §C/G.
 - **Web impact:** Menu visibility cannot establish action/data enforcement.
 - **Clarification / owner:** FE owner scopes separate corrections; Owner approval required for permission expansion, not documenting mismatch.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
+
+<a id="gap-11"></a>
 
 ### GAP-11
 
@@ -3373,7 +3395,7 @@ Finance: current revenue export and beneficiary bank-save actions exist; no univ
 - **Implementation evidence:** FE does not verify background job cadence or queue execution. See linked UC evidence in §C/G.
 - **Web impact:** Preserve exact source references; definition traceability check fails for BR-114/117. Do not invent their appendix definitions.
 - **Clarification / owner:** Owner/BA confirms definitions and approves source correction separately.
-- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision/evidence required before changing requirements. This PR approves or resolves none of these changes.
+- **Approval requirement / resolution:** `PENDING_APPROVAL`; OPEN. Owner decision or evidence is required to change the requirement. The open requirement is recorded for traceability.
 
 ## I. Summary, historical comparison and validation
 
@@ -3512,4 +3534,4 @@ No current SRS ID was removed or renumbered. Old UC46 payout request is now View
 - **FAIL (source consistency, retained):** BR-definition traceability for BR-114/117: source Table6 cites them but §5.1 has no definition rows. Documented GAP-11; source left unchanged. Requirement consistency remains unresolved for GAP-01–11; documenting the failures is not claiming source approval.
 - **PASS:** `npm install`; `npm test` (93 Node tests passed; 340 Vitest files passed, 3,713 tests passed, five existing tests skipped); `npm run lint`; `npm run typecheck`; `npm run build`. jsdom navigation-not-implemented warnings occurred; exit code was 0. Existing npm audit reports 17 dependency findings (7 moderate, 10 high); no audit fix/dependency changes made.
 - **SKIPPED:** configured Markdown lint/format and external-link crawler: none configured; structural/local-link checks substituted. Browser/viewport/accessibility manual QA not run for this documentation-only change. Backend/Mobile/deployment/financial execution remain NOT_VERIFIED. Existing test skips unchanged.
-- **Scope:** only `docs/WEB_SCOPE_MATRIX.md` changed. No Capstone_Docs, Jira, SRS, application/API, Mobile, database, environment or deployment changes. Draft PR only; no merge or deployment.
+- **Scope:** only `docs/WEB_SCOPE_MATRIX.md` changed. No Capstone_Docs, Jira, SRS, application/API, Mobile, database, environment or deployment changes. PR #155 contains the documentation update.
