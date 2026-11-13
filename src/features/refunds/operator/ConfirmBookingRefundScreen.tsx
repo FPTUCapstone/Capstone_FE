@@ -60,9 +60,9 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
       if (error.errorCode === 'refund.request_not_pending') return 'This refund request is no longer pending your confirmation.';
       if (error.errorCode === 'refund.operator_not_owner') return 'You do not have permission to access this function.';
       if (error.errorCode === 'refund.return_reference_required') return 'A bank transfer reference is required.';
-      if (error.errorCode === 'refund.payment_not_verified') {
-        return 'This refund is being reconciled by our team; no action is needed from you right now.';
-      }
+      // NOTE: refund.payment_not_verified is never returned by UC-42 — the domain guarantees that
+      // PendingOperatorConfirmation refunds are always created from a verified payment (UC-41 §3.8.4.2
+      // step 6 / BR-143). Unverified payments go straight to Reconciliation and never reach this screen.
     }
     return 'The request could not be completed. Please try again.';
   }

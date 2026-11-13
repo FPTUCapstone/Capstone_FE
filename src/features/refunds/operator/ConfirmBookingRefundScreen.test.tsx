@@ -119,17 +119,18 @@ describe('ConfirmBookingRefundScreen', () => {
     expect(screen.getAllByText('FT-998877').length).toBeGreaterThan(0);
   });
 
-  it('shows the MSG136 reconciliation state and hides [Confirm Refund] once the refund has moved there', async () => {
+  it('falls back to the generic retry message for an unrecognised error code', async () => {
+    // refund.payment_not_verified was removed: UC-42 domain guarantees PendingOperatorConfirmation
+    // refunds always come from a verified payment (UC-41 BR-143); unverified → Reconciliation directly.
+    // Any unknown 4xx code (past or future) must degrade gracefully to the generic message.
     render(<ConfirmBookingRefundScreen refundId={501} />);
     await screen.findByRole('button', { name: 'Confirm Refund' });
     vi.mocked(confirmOperatorRefund).mockRejectedValueOnce(
-      new RefundsOperatorError(409, 'refund.payment_not_verified', 'Reconciliation required.'),
+      new RefundsOperatorError(409, 'refund.unknown_future_code', 'Some future error.'),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Refund' }));
-    expect(await screen.findByText(/being reconciled by our team/i)).toBeTruthy();
+    expect(await screen.findByText(/could not be completed/i)).toBeTruthy();
     expect(screen.getByText('PendingOperatorConfirmation')).toBeTruthy(); // local status unchanged, no re-fetch on failure
-
-    vi.mocked(fetchOperatorRefundDetail).mockResolvedValueOnce({ ...pending, status: 'Reconciliation' });
   });
 
   it('maps refund.request_not_pending (409) to the "no longer pending" message', async () => {
