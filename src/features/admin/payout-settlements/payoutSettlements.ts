@@ -1,15 +1,18 @@
-// 'Awaiting Window' (SRS v12, BR-141): a paid booking is held 24h after payment confirmation
-// before it is eligible for any run. No PayoutSettlement row exists for it yet — the backend
-// synthesizes this status for UC-72 (not shipped yet; see DAILY-PAYOUT-TRANSFER-be-plan Task 10A).
+// 'Awaiting Window' (BR-141): a paid booking is held 24h after payment confirmation before it
+// is eligible for any run. No PayoutSettlement row exists for it yet — the backend synthesizes
+// this status for UC-72. 'Resolved' (v2, backend spec v7, UC-73 [Mark as Resolved]) replaces the
+// old 'Carried Over' status, which no longer exists on the backend.
 export const PAYOUT_SETTLEMENT_STATUSES = [
   'Awaiting Window',
   'Scheduled',
   'Processing',
   'Settled',
   'SettlementFailed',
-  'Carried Over',
+  'Resolved',
 ] as const;
-export const PAYOUT_SETTLEMENT_KINDS = ['Main', 'Retained'] as const;
+// v2 (backend spec v7, BR-142/BR-177): Advance (70% after the Awaiting Window) and Final (20%
+// after the tour ends) replace the old 'Main'/'Retained' kinds.
+export const PAYOUT_SETTLEMENT_KINDS = ['Advance', 'Final'] as const;
 export const PAYOUT_SETTLEMENT_ATTEMPT_OUTCOMES = ['Sent', 'Succeeded', 'Failed', 'Timeout', 'Rejected'] as const;
 
 export type PayoutSettlementStatus = (typeof PAYOUT_SETTLEMENT_STATUSES)[number];
@@ -141,8 +144,8 @@ export function parseFailedPayoutBatchDetail(value: unknown): FailedPayoutBatchD
   };
 }
 
-/** Non-blank after trim (backend: `daily_payout.manual_reference_required`). */
-export function validateManualTransferReference(value: unknown): { ok: true; value: string } | { ok: false } {
+/** UC-73 [Mark as Resolved]: non-blank after trim (backend: `daily_payout.resolution_reason_required`, MSG178). */
+export function validateResolutionReason(value: unknown): { ok: true; value: string } | { ok: false } {
   if (typeof value !== 'string') return { ok: false };
   const trimmed = value.trim();
   return trimmed ? { ok: true, value: trimmed } : { ok: false };

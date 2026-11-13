@@ -5,10 +5,10 @@ import { useRef, useState } from 'react';
 import { useAccessibleDecisionDialog } from '@/features/admin/tour-operator-applications/components/useAccessibleDecisionDialog';
 
 /**
- * UC-73 Screen 2: a no-input confirm dialog shared by the Retry Transfer and Carry Over actions
- * — same shape, only the copy and the service call differ. The caller owns closing the dialog
- * and re-fetching the detail on success (never assume the new status locally, per spec); this
- * component only runs `onConfirm` and reports the outcome.
+ * UC-73 Screen 2: a no-input confirm dialog, currently used only by Retry Transfer (v2: Carry
+ * Over, the other former user of this shape, was removed with the backend action). The caller
+ * owns closing the dialog and re-fetching the detail on success (never assume the new status
+ * locally, per spec); this component only runs `onConfirm` and reports the outcome.
  */
 export function ConfirmActionDialog({
   isOpen,

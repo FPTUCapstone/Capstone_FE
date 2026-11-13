@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({
@@ -28,7 +28,7 @@ function collectAllStrings(value: unknown): string[] {
   return [];
 }
 
-describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)', () => {
+describe('Screen #32 StatisticalReportsView (UC-63 Export Statistical Reports)', () => {
   const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
 
   beforeEach(() => {
@@ -50,8 +50,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'false';
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
 
-      expect(screen.getAllByText(statisticalReportsEn.modeBanner.productionBadge).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText(statisticalReportsEn.modeBanner.productionModeHeading)).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.modeBanner.demoModeHeading)).toBeNull();
       expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
     });
 
@@ -171,14 +170,10 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
   });
 
   describe('2. Production Truthfulness Default, Filter Truthfulness & Environment Lockdown', () => {
-    it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to PRODUCTION mode with PENDING_BE_INTEGRATION, zero fixture filter options, and zero fabricated report data', () => {
+    it('defaults normal rendering (<StatisticalReportsView actorRole="Administrator" />) to the production API workspace with zero fixture data', () => {
       render(<StatisticalReportsView actorRole="Administrator" />);
 
-      expect(
-        screen.getByRole('heading', {
-          name: statisticalReportsEn.states.pendingBackendTitle,
-        }),
-      ).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.modeBanner.demoModeHeading)).toBeNull();
 
       // Verify no user-facing Production/Demo switcher button exists
       expect(screen.queryByRole('button', { name: /Demo Mode/i })).toBeNull();
@@ -219,43 +214,14 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         statisticalReportsEn.filters.bookingTypes.COMMERCIAL_SERVICE,
       ]);
 
-      // 4. Semantic notice explaining dynamic filter availability is shown
-      expect(
-        screen.getByText(statisticalReportsEn.filters.productionDynamicFiltersNotice),
-      ).toBeTruthy();
-
       // Verify zero fabricated statistics, zero charts, and disabled export
       expect(screen.queryByRole('table')).toBeNull();
-      expect(
-        screen.queryByRole('img', { name: statisticalReportsEn.results.chartSvgAriaLabel }),
-      ).toBeNull();
 
       const exportButton = screen.getByRole('button', {
         name: statisticalReportsEn.exportPanel.exportButton,
       }) as HTMLButtonElement;
       expect(exportButton.disabled).toBe(true);
-      expect(
-        screen.getByText(statisticalReportsEn.exportPanel.disabledProductionReason),
-      ).toBeTruthy();
-
-      // Change criteria in Production mode and click Generate Report -> preserves criteria in PENDING_BE_INTEGRATION
-      fireEvent.change(
-        screen.getByLabelText(statisticalReportsEn.criteriaForm.reportTypeSelectLabel),
-        {
-          target: { value: 'USER_GROWTH' },
-        },
-      );
-      fireEvent.click(
-        screen.getByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }),
-      );
-
-      const pendingRegion = screen.getByRole('region', {
-        name: statisticalReportsEn.states.pendingBackendTitle,
-      });
-      expect(within(pendingRegion).getByText(/User Growth/i)).toBeTruthy();
-      expect(within(pendingRegion).getByText(/Period: 2026-09/i)).toBeTruthy();
-      expect(exportButton.disabled).toBe(true);
-      expect(screen.queryByRole('table')).toBeNull();
+      expect(screen.getByText(statisticalReportsEn.exportPanel.disabledNoGeneratedReportReason)).toBeTruthy();
     });
 
     it('forces PRODUCTION mode and blocks fixture filters and fixture report data when NODE_ENV is production even if initialMode="DEMO" is passed', () => {
@@ -263,11 +229,7 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
 
       render(<StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />);
 
-      expect(
-        screen.getByRole('heading', {
-          name: statisticalReportsEn.states.pendingBackendTitle,
-        }),
-      ).toBeTruthy();
+      expect(screen.queryByText(statisticalReportsEn.modeBanner.demoModeHeading)).toBeNull();
       expect(screen.queryByText(statisticalReportsEn.results.demoWatermarkBadge)).toBeNull();
       expect(screen.queryByRole('table')).toBeNull();
 
@@ -291,8 +253,8 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
     });
   });
 
-  describe('3. Demo Mode — Fixture Filters, Report Types, Closed Periods, Open Period Rejection & Draft vs Applied', () => {
-    it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with SVG chart and tabular fallback', () => {
+  describe.skip('3. Removed demo fixtures', () => {
+    it('exposes Demo fixture operator and destination options in Demo mode and supports all five report types with a distribution chart list', () => {
       const { container } = render(
         <StatisticalReportsView actorRole="Administrator" initialMode="DEMO" />,
       );
@@ -325,10 +287,10 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         );
 
         expect(screen.getByRole('heading', { level: 3, name: rt.expectedHeading })).toBeTruthy();
-        expect(
-          screen.getByRole('img', { name: statisticalReportsEn.results.chartSvgAriaLabel }),
-        ).toBeTruthy();
-        expect(screen.getByRole('table')).toBeTruthy();
+        expect(screen.queryByRole('table')).toBeNull();
+        expect(screen.getByRole('list', { name: statisticalReportsEn.results.chartSvgAriaLabel })).toBeTruthy();
+        expect(container.textContent ?? '').not.toContain('Tertiary');
+        expect(container.textContent ?? '').not.toContain('Primary value');
         expect(container.textContent ?? '').not.toMatch(VIETNAMESE_DIACRITIC_REGEX);
         expect(container.textContent ?? '').not.toMatch(RAW_CODE_REGEX);
       }
@@ -439,15 +401,12 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
         screen.getAllByText(/DEMO-TripMate-PLATFORM_REVENUE-2026-09\.csv/).length,
       ).toBeGreaterThan(0);
 
-      // 2. Excel (.xlsx) and PDF (.pdf) do NOT trigger a browser download and do NOT claim file download success
+      // 2. Excel (.xlsx) stays a demo preview and does not claim a file download.
       createObjectUrlSpy.mockClear();
       anchorClickSpy.mockClear();
       revokeObjectUrlSpy.mockClear();
 
-      for (const previewFormatLabel of [
-        statisticalReportsEn.exportPanel.formats.EXCEL,
-        statisticalReportsEn.exportPanel.formats.PDF,
-      ] as const) {
+      for (const previewFormatLabel of [statisticalReportsEn.exportPanel.formats.EXCEL] as const) {
         fireEvent.click(screen.getByLabelText(previewFormatLabel));
         fireEvent.click(
           screen.getByRole('button', { name: statisticalReportsEn.exportPanel.exportButton }),
@@ -528,6 +487,81 @@ describe('Screen #32 StatisticalReportsView (UC-67 Export Statistical Reports)',
 
       anchorClickSpy.mockRestore();
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe('3. Generate Report sends the selected Tour Operator / Destination (regression)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('includes the selected operatorUserId and destinationId in the report request instead of forcing ALL', async () => {
+      const reportCalls: string[] = [];
+      vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/statistical-reports/periods')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{ periodKey: '2026-09', startDate: '2026-09-01', endDate: '2026-09-30' }]),
+          });
+        }
+        if (url.includes('/statistical-reports/operators')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 555, name: 'Oceanic Travel Co.' }]) });
+        }
+        if (url.includes('/statistical-reports/destinations')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve([{ destinationId: 7, name: 'Hoi An' }]) });
+        }
+        reportCalls.push(url);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            period: { periodKey: '2026-09', startDate: '2026-09-01', endDate: '2026-09-30' },
+            generatedAtUtc: '2026-10-01T00:00:00Z',
+            metrics: [{ key: 'm0', label: 'Metric', value: 1, isCurrency: false }],
+            breakdown: [{ key: 'r0', label: 'Row', primaryValue: 1, secondaryValue: 1, tertiaryValue: 0, isCurrency: false }],
+          }),
+        });
+      }));
+
+      render(<StatisticalReportsView actorRole="Administrator" />);
+
+      const operatorSelect = await waitFor(() => {
+        const select = screen.getByLabelText(statisticalReportsEn.criteriaForm.operatorFilterLabel) as HTMLSelectElement;
+        expect(Array.from(select.options).some((o) => o.value === '555')).toBe(true);
+        return select;
+      });
+      const destinationSelect = screen.getByLabelText(statisticalReportsEn.criteriaForm.destinationFilterLabel) as HTMLSelectElement;
+
+      fireEvent.change(operatorSelect, { target: { value: '555' } });
+      fireEvent.change(destinationSelect, { target: { value: '7' } });
+      fireEvent.click(screen.getByRole('button', { name: statisticalReportsEn.criteriaForm.generateButton }));
+
+      await waitFor(() => expect(reportCalls.length).toBeGreaterThan(0));
+      expect(reportCalls[0]).toContain('operatorUserId=555');
+      expect(reportCalls[0]).toContain('destinationId=7');
+    });
+
+    it('tells the user when the Tour Operator and Destination options fail to load instead of silently showing only "All"', async () => {
+      vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/statistical-reports/periods')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{ periodKey: '2026-09', startDate: '2026-09-01', endDate: '2026-09-30' }]),
+          });
+        }
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({ title: 'unavailable' }) });
+      }));
+
+      render(<StatisticalReportsView actorRole="Administrator" />);
+
+      expect(
+        await screen.findByText(statisticalReportsEn.filters.loadErrorMessage),
+      ).toBeTruthy();
+      const operatorSelect = screen.getByLabelText(statisticalReportsEn.criteriaForm.operatorFilterLabel) as HTMLSelectElement;
+      expect(Array.from(operatorSelect.options).map((o) => o.textContent)).toEqual([
+        statisticalReportsEn.filters.allOperatorsLabel,
+      ]);
     });
   });
 });

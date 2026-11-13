@@ -137,7 +137,7 @@ describe('proxyPayoutBatchAction', () => {
 
   it('rejects Staff for every action', async () => {
     mockSession('Staff');
-    for (const action of ['retry', 'carry-over', 'manual-settlement'] as const) {
+    for (const action of ['retry', 'resolve'] as const) {
       const response = await proxyPayoutBatchAction(request(`/api/admin/payout-settlements/42/${action}`, { method: 'POST' }), '42', action);
       expect(response.status).toBe(403);
     }
@@ -146,7 +146,7 @@ describe('proxyPayoutBatchAction', () => {
 
   it('retries with no body', async () => {
     mockSession('Administrator');
-    fetchBackendMock.mockResolvedValue(Response.json({ batchId: 42, status: 'Processing' }));
+    fetchBackendMock.mockResolvedValue(Response.json({ batchId: 42, status: 'Settled' }));
     const response = await proxyPayoutBatchAction(request('/api/admin/payout-settlements/42/retry', { method: 'POST' }), '42', 'retry');
     expect(response.status).toBe(200);
     const [path, init] = fetchBackendMock.mock.calls[0];
@@ -154,40 +154,32 @@ describe('proxyPayoutBatchAction', () => {
     expect(init.body).toBeUndefined();
   });
 
-  it('carries over with no body', async () => {
+  it('strips unknown body fields for resolve, forwarding only reason', async () => {
     mockSession('Administrator');
-    fetchBackendMock.mockResolvedValue(Response.json({ batchId: 42, status: 'Carried Over' }));
-    const response = await proxyPayoutBatchAction(request('/api/admin/payout-settlements/42/carry-over', { method: 'POST' }), '42', 'carry-over');
-    expect(response.status).toBe(200);
-    expect(fetchBackendMock.mock.calls[0][0]).toBe('/api/v1/admin/payout-settlements/42/carry-over');
-  });
-
-  it('strips unknown body fields for manual-settlement, forwarding only transferReference', async () => {
-    mockSession('Administrator');
-    fetchBackendMock.mockResolvedValue(Response.json({ batchId: 42, status: 'Settled' }));
+    fetchBackendMock.mockResolvedValue(Response.json({ batchId: 42, status: 'Resolved' }));
     const response = await proxyPayoutBatchAction(
-      request('/api/admin/payout-settlements/42/manual-settlement', {
+      request('/api/admin/payout-settlements/42/resolve', {
         method: 'POST',
-        body: JSON.stringify({ transferReference: 'SIM-TRX-001', batchId: 999, status: 'Settled' }),
+        body: JSON.stringify({ reason: 'Operator confirmed receipt out of band', batchId: 999, status: 'Resolved' }),
       }),
       '42',
-      'manual-settlement',
+      'resolve',
     );
     expect(response.status).toBe(200);
     const [path, init] = fetchBackendMock.mock.calls[0];
-    expect(path).toBe('/api/v1/admin/payout-settlements/42/manual-settlement');
-    expect(JSON.parse(init.body)).toEqual({ transferReference: 'SIM-TRX-001' });
+    expect(path).toBe('/api/v1/admin/payout-settlements/42/resolve');
+    expect(JSON.parse(init.body)).toEqual({ reason: 'Operator confirmed receipt out of band' });
   });
 
-  it('passes through a validation failure for a blank manual-settlement reference', async () => {
+  it('passes through a validation failure for a blank resolve reason', async () => {
     mockSession('Administrator');
     fetchBackendMock.mockResolvedValue(
-      Response.json({ title: 'A transfer reference is required.', errorCode: 'daily_payout.manual_reference_required' }, { status: 400 }),
+      Response.json({ title: 'A reason is required.', errorCode: 'daily_payout.resolution_reason_required' }, { status: 400 }),
     );
     const response = await proxyPayoutBatchAction(
-      request('/api/admin/payout-settlements/42/manual-settlement', { method: 'POST', body: JSON.stringify({ transferReference: '   ' }) }),
+      request('/api/admin/payout-settlements/42/resolve', { method: 'POST', body: JSON.stringify({ reason: '   ' }) }),
       '42',
-      'manual-settlement',
+      'resolve',
     );
     expect(response.status).toBe(400);
   });

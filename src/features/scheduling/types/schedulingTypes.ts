@@ -70,6 +70,32 @@ export interface SchedulingItemDto {
   costKind?: CostKind;
 }
 
+/**
+ * ADR-002 (G2): how the backend produced the schedule. Missing or null for itineraries saved before
+ * provenance existed. `solverKind` is `Csp`, `CspFallback`, `Heuristic` or `MiniRouting`, and null for
+ * the traveler's own order (`solverOutcome = 'manual_order'`).
+ */
+export interface SchedulingProvenanceDto {
+  solverOutcome: string;
+  solverKind: string | null;
+  objectiveMode: string | null;
+  /** True when the CSP explored every option; null when the CSP did not run. */
+  searchCompleted: boolean | null;
+  /** True when the order was changed for the time of day after the solver. */
+  timeOfDayRefined: boolean;
+}
+
+export function isValidSchedulingProvenance(value: unknown): value is SchedulingProvenanceDto {
+  if (!isRecord(value)) return false;
+  return (
+    isString(value.solverOutcome) &&
+    isOptional(value.solverKind, isString) &&
+    isOptional(value.objectiveMode, isString) &&
+    isOptional(value.searchCompleted, isBoolean) &&
+    isBoolean(value.timeOfDayRefined)
+  );
+}
+
 export interface SchedulingResponseDto {
   schedulingRequestId: number;
   itineraryId: number;
@@ -79,6 +105,7 @@ export interface SchedulingResponseDto {
   totalDurationMinutes: number;
   items: SchedulingItemDto[];
   isDemoFixture?: boolean;
+  provenance?: SchedulingProvenanceDto | null;
 }
 
 export interface SchedulingFormValues {
@@ -192,6 +219,7 @@ export interface ItineraryDetailDto {
   endLocation?: ItineraryLocationDto | null;
   /** Budget per person of the scheduling request; null = no budget given (§3.1). */
   budgetVnd?: number | null;
+  provenance?: SchedulingProvenanceDto | null;
 }
 
 const isTransportMode = isOneOf(TRANSPORT_MODES);
@@ -254,7 +282,8 @@ export function isValidItineraryDetailDto(data: unknown): data is ItineraryDetai
     !isOptional(candidate.transportMode, isTransportMode) ||
     !isOptional(candidate.startLocation, isLocation) ||
     !isOptional(candidate.endLocation, isLocation) ||
-    !isOptional(candidate.budgetVnd, isNumber)
+    !isOptional(candidate.budgetVnd, isNumber) ||
+    !isOptional(candidate.provenance, isValidSchedulingProvenance)
   ) {
     return false;
   }
@@ -311,6 +340,9 @@ export function isValidSchedulingResponseDto(data: unknown): data is SchedulingR
     return false;
   }
   if (candidate.isDemoFixture !== undefined && typeof candidate.isDemoFixture !== 'boolean') {
+    return false;
+  }
+  if (!isOptional(candidate.provenance, isValidSchedulingProvenance)) {
     return false;
   }
   for (const item of candidate.items) {

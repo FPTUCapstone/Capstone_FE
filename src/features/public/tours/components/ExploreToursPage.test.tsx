@@ -268,4 +268,23 @@ describe('ExploreToursPage', () => {
 
     expect(push).toHaveBeenCalledWith('/tours');
   });
+
+  it('clears an unsubmitted draft while preserving keyword when the URL is unchanged', async () => {
+    currentSearch = 'keyword=bi%E1%BB%83n';
+    render(<ExploreToursPage />);
+    await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
+
+    const keyword = screen.getByLabelText('Từ khóa') as HTMLInputElement;
+    const minPrice = screen.getByLabelText('Giá tối thiểu') as HTMLInputElement;
+    const destination = screen.getByLabelText('Điểm đến / Khu vực') as HTMLInputElement;
+    fireEvent.change(minPrice, { target: { value: '100000' } });
+    fireEvent.change(destination, { target: { value: 'Huế' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Xóa bộ lọc/i }));
+
+    expect(keyword.value).toBe('biển');
+    expect(minPrice.value).toBe('');
+    expect(destination.value).toBe('');
+    expect(push).not.toHaveBeenCalled();
+  });
 });

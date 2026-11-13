@@ -25,7 +25,7 @@ It covers:
 
 > [!NOTE]
 > - **UC-69 Scope Separation:** Deep detail modal/panel (`BeforeData`, `AfterData`, `Reason`) and its View Detail action are owned by **UC-69** (Screen #34). UC-68 does not render an inactive action before that integration exists.
-> - **UC-67 Scope Separation:** Exporting audit logs / report generation is owned by **UC-67**.
+> - **UC-63 Scope Separation:** Exporting audit logs / report generation is owned by **UC-63**.
 
 ---
 
