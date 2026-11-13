@@ -77,6 +77,36 @@ describe("RefundProgressPage", () => {
     ).toBeDefined();
   });
 
+  it.each([
+    ["PendingOperatorConfirmation", "Refund requested"],
+    ["AwaitingPartnerReturn", "Refund requested"],
+    ["ReturnReported", "Refund requested"],
+    ["ReturnReceived", "Processing refund"],
+    ["Reconciliation", "Under review"],
+    ["Escalated", "Needs attention"],
+  ])("maps the new UC-42/UC-67 status %s to a defined label (%s)", async (status, label) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            bookingId: 42,
+            bookingCode: "BK-20261022-00042",
+            refundAmount: 500000,
+            status,
+            attemptCount: 0,
+            requestedAtUtc: "2026-10-22T01:00:00Z",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    render(<RefundProgressPage bookingId="42" />);
+
+    expect(await screen.findByText(label)).toBeDefined();
+  });
+
   it("returns to sign-in when the BFF reports an expired session", async () => {
     vi.stubGlobal(
       "fetch",
