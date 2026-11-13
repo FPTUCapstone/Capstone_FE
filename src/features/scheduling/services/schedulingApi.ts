@@ -19,6 +19,7 @@ import {
   isStopInfeasibleReason,
   ItineraryStopInput,
   ItinerarySuggestionsDto,
+  RemovedStopInput,
   StopInfeasibleDetails,
   SuggestionQuery,
 } from '../types/schedulingTypes';
@@ -699,19 +700,20 @@ function parseStopInfeasibleDetails(payload: Record<string, unknown>): StopInfea
 
 /**
  * Review 2 (§3.4): one mutation for add / replace / remove / reorder / per-leg transport. Sends the full
- * ordered list of visit stops; returns the new version.
+ * ordered list of visit stops; returns the new version. A removal also says why (UC-10 feedback, §3.1):
+ * `removedStops` is left out of the body when not given.
  */
 export function updateItineraryStops(
   itineraryId: number,
   stops: ItineraryStopInput[],
-  options?: ItineraryMutationOptions,
+  options?: ItineraryMutationOptions & { removedStops?: RemovedStopInput[] },
 ): Promise<ItineraryDetailDto> {
   return mutateItinerary(
     itineraryId,
     '/items',
     'PUT',
     { ...options, idempotencyKey: options?.idempotencyKey ?? generateIdempotencyKey() },
-    { stops },
+    { stops, removedStops: options?.removedStops },
   );
 }
 

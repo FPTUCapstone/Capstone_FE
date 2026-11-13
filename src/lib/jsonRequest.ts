@@ -12,7 +12,7 @@ export interface JsonResponse {
 }
 
 export interface JsonRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   accessToken?: string | null;
   signal?: AbortSignal;
   /** Serialized as JSON when present. */

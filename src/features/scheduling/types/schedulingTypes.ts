@@ -24,6 +24,15 @@ export interface ItineraryStopInput {
   transportModeToNext?: LegTransportMode;
 }
 
+/** Why the traveler removed a stop (UC-10 feedback, D10). Only `NotInterested` counts as a dislike. */
+export type StopRemovalReason = 'NotInterested' | 'NoTime' | 'AlreadyVisited';
+
+/** One removed visit with its reason, sent next to `stops` on PUT /itineraries/{id}/items (`removedStops`). */
+export interface RemovedStopInput {
+  poiId: number;
+  reason: StopRemovalReason;
+}
+
 export const LEG_TRANSPORT_MODES: readonly LegTransportMode[] = ['Walking', 'Motorbike', 'Car'];
 export const TRANSPORT_MODES: readonly TransportMode[] = ['Walking', 'Motorbike', 'Car', 'PublicTransit'];
 

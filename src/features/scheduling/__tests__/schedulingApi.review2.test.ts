@@ -52,6 +52,25 @@ describe('Review 2 itinerary API', () => {
       );
     });
 
+    it('sends the reason of a removed stop next to the stops (UC-10 feedback, §3.1)', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({ status: 200, json: async () => detail });
+
+      const result = await updateItineraryStops(789, [{ poiId: 12, transportModeToNext: 'Car' }, { poiId: 15 }], {
+        idempotencyKey: 'op-key',
+        removedStops: [{ poiId: 34, reason: 'NotInterested' }],
+      });
+
+      expect(result.version).toBe(2);
+      const [url, init] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit];
+      expect(url).toContain('/itineraries/789/items');
+      expect(init.method).toBe('PUT');
+      expect((init.headers as Record<string, string>)['Idempotency-Key']).toBe('op-key');
+      expect(JSON.parse(init.body as string)).toEqual({
+        stops: [{ poiId: 12, transportModeToNext: 'Car' }, { poiId: 15 }],
+        removedStops: [{ poiId: 34, reason: 'NotInterested' }],
+      });
+    });
+
     it('generates an idempotency key when none is given', async () => {
       global.fetch = vi.fn().mockResolvedValueOnce({ status: 200, json: async () => detail });
 
