@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { formatVnd, validateReturnReference, type RefundListItem, type RefundListResponse } from '../types/refundLifecycle';
-import { fetchEscalatedRefunds, resolveEscalatedRefund, RefundsAdminError } from './refundsAdminService';
+import { fetchEscalatedRefunds, resolveEscalatedRefund, rejectEscalatedRefund, RefundsAdminError } from './refundsAdminService';
 
 type LoadState = 'loading' | 'ready' | 'forbidden' | 'unavailable';
 
@@ -146,60 +146,147 @@ function RefundRow({
   );
 }
 
-/** The existing `CompleteManualRefund` flow (spec Screen 3): a gateway reference resolves the
- * refund manually. No dedicated detail route exists yet for this list, so the action is inline
- * on the row rather than a separate page. */
+/** The `resolve` endpoint flow: Administrator settles with a gateway reference or rejects with a reason. */
 function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResolved: () => void }) {
+  const [action, setAction] = useState<'complete' | 'reject'>('complete');
   const [gatewayReference, setGatewayReference] = useState('');
+  const [reason, setReason] = useState('');
   const [invalid, setInvalid] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const validated = validateReturnReference(gatewayReference);
-    if (!validated.ok) {
-      setInvalid(true);
-      return;
-    }
-    setInvalid(false);
-    setSubmitting(true);
-    setError(null);
-    try {
-      await resolveEscalatedRefund(refundId, validated.value);
-      onResolved();
-    } catch (err) {
-      setError(err instanceof RefundsAdminError ? err.message : 'The request could not be completed.');
-    } finally {
-      setSubmitting(false);
+    if (action === 'complete') {
+      const validated = validateReturnReference(gatewayReference);
+      if (!validated.ok) {
+        setInvalid(true);
+        return;
+      }
+      setInvalid(false);
+      setSubmitting(true);
+      setError(null);
+      try {
+        await resolveEscalatedRefund(refundId, validated.value);
+        onResolved();
+      } catch (err) {
+        setError(err instanceof RefundsAdminError ? err.message : 'The request could not be completed.');
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      const trimmed = reason.trim();
+      if (!trimmed || trimmed.length > 500) {
+        setInvalid(true);
+        return;
+      }
+      setInvalid(false);
+      setSubmitting(true);
+      setError(null);
+      try {
+        await rejectEscalatedRefund(refundId, trimmed);
+        onResolved();
+      } catch (err) {
+        setError(err instanceof RefundsAdminError ? err.message : 'The request could not be completed.');
+      } finally {
+        setSubmitting(false);
+      }
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-wrap items-end gap-3">
-      <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">
-        Gateway Reference
-        <input
-          type="text"
-          value={gatewayReference}
-          aria-invalid={invalid}
-          onChange={(event) => {
-            setGatewayReference(event.target.value);
-            if (invalid) setInvalid(false);
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setAction('complete');
+            setInvalid(false);
+            setError(null);
           }}
-          className="mt-1 block w-64 rounded-xl border border-[#bcccdc] bg-white px-3 py-2 text-sm text-[#102a43] outline-none focus-visible:border-[#006b5f] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40"
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-xl bg-[#006b5f] px-4 py-2 text-sm font-bold text-white hover:bg-[#005048] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {submitting ? 'Resolving…' : 'Resolve'}
-      </button>
-      {invalid ? <p role="alert" className="text-xs font-semibold text-[#8c1030]">A gateway reference is required.</p> : null}
-      {error ? <p role="alert" className="text-xs font-semibold text-[#8c1030]">{error}</p> : null}
-    </form>
+          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            action === 'complete'
+              ? 'bg-[#006b5f] text-white'
+              : 'border border-[#bcccdc] bg-white text-[#334e68] hover:bg-[#f0f4f8]'
+          }`}
+        >
+          Complete Refund
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAction('reject');
+            setInvalid(false);
+            setError(null);
+          }}
+          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            action === 'reject'
+              ? 'bg-[#8c1030] text-white'
+              : 'border border-[#bcccdc] bg-white text-[#334e68] hover:bg-[#f0f4f8]'
+          }`}
+        >
+          Reject Refund
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} noValidate className="flex flex-wrap items-end gap-3">
+        {action === 'complete' ? (
+          <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">
+            Gateway Reference
+            <input
+              type="text"
+              value={gatewayReference}
+              aria-invalid={invalid}
+              onChange={(event) => {
+                setGatewayReference(event.target.value);
+                if (invalid) setInvalid(false);
+              }}
+              className="mt-1 block w-64 rounded-xl border border-[#bcccdc] bg-white px-3 py-2 text-sm text-[#102a43] outline-none focus-visible:border-[#006b5f] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40"
+            />
+          </label>
+        ) : (
+          <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">
+            Rejection Reason
+            <input
+              type="text"
+              value={reason}
+              aria-invalid={invalid}
+              placeholder="Reason for rejecting refund..."
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (invalid) setInvalid(false);
+              }}
+              className="mt-1 block w-80 rounded-xl border border-[#bcccdc] bg-white px-3 py-2 text-sm text-[#102a43] outline-none focus-visible:border-[#8c1030] focus-visible:ring-2 focus-visible:ring-[#8c1030]/20"
+            />
+          </label>
+        )}
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`rounded-xl px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 ${
+            action === 'complete' ? 'bg-[#006b5f] hover:bg-[#005048]' : 'bg-[#8c1030] hover:bg-[#6c0b24]'
+          }`}
+        >
+          {submitting
+            ? action === 'complete'
+              ? 'Resolving…'
+              : 'Rejecting…'
+            : action === 'complete'
+              ? 'Resolve'
+              : 'Reject Refund'}
+        </button>
+
+        {invalid ? (
+          <p role="alert" className="text-xs font-semibold text-[#8c1030]">
+            {action === 'complete'
+              ? 'A gateway reference is required.'
+              : 'A reason is required to reject a refund.'}
+          </p>
+        ) : null}
+        {error ? <p role="alert" className="text-xs font-semibold text-[#8c1030]">{error}</p> : null}
+      </form>
+    </div>
   );
 }
 

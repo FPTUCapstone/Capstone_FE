@@ -5,6 +5,7 @@ import {
   fetchReturnReportedRefunds,
   markRefundReturnReceived,
   resolveEscalatedRefund,
+  rejectEscalatedRefund,
 } from './refundsAdminService';
 
 const fetchMock = vi.fn();
@@ -71,5 +72,15 @@ describe('resolveEscalatedRefund', () => {
     const [path, init] = fetchMock.mock.calls[0];
     expect(path).toBe('/api/admin/refunds/501/resolve');
     expect(JSON.parse(init.body)).toEqual({ gatewayReference: 'GW-1' });
+  });
+});
+
+describe('rejectEscalatedRefund', () => {
+  it('posts the rejection reason with Reject action', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ status: 'Rejected' }));
+    await rejectEscalatedRefund(501, 'Payment mismatch.');
+    const [path, init] = fetchMock.mock.calls[0];
+    expect(path).toBe('/api/admin/refunds/501/resolve');
+    expect(JSON.parse(init.body)).toEqual({ action: 'Reject', reason: 'Payment mismatch.' });
   });
 });

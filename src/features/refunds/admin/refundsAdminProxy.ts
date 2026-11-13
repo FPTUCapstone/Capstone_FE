@@ -106,8 +106,8 @@ export async function proxyAdminRefundReturnReceived(request: Request, refundId:
 }
 
 /** Screen 3's manual-completion flow: `POST /api/v1/admin/refunds/{refundId}/resolve`.
- * Administrator only. Forwards only `gatewayReference`, as the backend's `Complete` action; the
- * backend requires an `Idempotency-Key` for it, generated here per submission. */
+ * Administrator only. Forwards `action` (Complete or Reject), `gatewayReference` (for Complete)
+ * or `reason` (for Reject). Complete requires an Idempotency-Key. */
 export async function proxyAdminRefundResolve(request: Request, refundId: string): Promise<Response> {
   if (!isValidRefundId(refundId)) return jsonNoStore({ title: 'A valid refund ID is required.' }, 400);
   if (!isSameOriginRequest(request)) return jsonNoStore({ title: 'Request origin is not allowed.' }, 403);
@@ -120,18 +120,22 @@ export async function proxyAdminRefundResolve(request: Request, refundId: string
   } catch {
     return jsonNoStore({ title: 'Invalid JSON.' }, 400);
   }
-  const gatewayReference =
+  const record =
     typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>).gatewayReference
-      : undefined;
-  const body = JSON.stringify({
-    action: 'Complete',
-    gatewayReference: typeof gatewayReference === 'string' ? gatewayReference : null,
-  });
+      ? (parsed as Record<string, unknown>)
+      : {};
+  const isReject = record.action === 'Reject';
+  const gatewayReference =
+    typeof record.gatewayReference === 'string' ? record.gatewayReference : null;
+  const reason = typeof record.reason === 'string' ? record.reason : null;
+
+  const payload = isReject
+    ? { action: 'Reject', reason }
+    : { action: 'Complete', gatewayReference };
 
   return forward(`/api/v1/admin/refunds/${refundId}/resolve`, session.token, {
     method: 'POST',
-    body,
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    body: JSON.stringify(payload),
+    headers: isReject ? {} : { 'Idempotency-Key': crypto.randomUUID() },
   });
 }

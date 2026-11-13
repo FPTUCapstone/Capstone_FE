@@ -6,6 +6,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 vi.mock('./refundsAdminService', () => ({
   fetchEscalatedRefunds: vi.fn(),
   resolveEscalatedRefund: vi.fn(),
+  rejectEscalatedRefund: vi.fn(),
   RefundsAdminError: class extends Error {
     constructor(public status: number, public errorCode?: string, title?: string) {
       super(title);
@@ -13,7 +14,7 @@ vi.mock('./refundsAdminService', () => ({
   },
 }));
 
-import { fetchEscalatedRefunds, resolveEscalatedRefund, RefundsAdminError } from './refundsAdminService';
+import { fetchEscalatedRefunds, resolveEscalatedRefund, rejectEscalatedRefund, RefundsAdminError } from './refundsAdminService';
 import { EscalatedRefundsMonitorScreen } from './EscalatedRefundsMonitorScreen';
 
 const escalatedItem = {
@@ -89,6 +90,30 @@ describe('EscalatedRefundsMonitorScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resolve' }));
     expect(await screen.findByText('A gateway reference is required.')).toBeTruthy();
     expect(resolveEscalatedRefund).not.toHaveBeenCalled();
+  });
+
+  it('rejects the refund with a reason and re-fetches', async () => {
+    vi.mocked(rejectEscalatedRefund).mockResolvedValue(undefined);
+    render(<EscalatedRefundsMonitorScreen />);
+    const viewDetailsButtons = await screen.findAllByRole('button', { name: 'View Details' });
+    fireEvent.click(viewDetailsButtons[0]);
+    // Switch to reject mode
+    fireEvent.click(screen.getByRole('button', { name: 'Reject Refund' }));
+    fireEvent.change(screen.getByLabelText('Rejection Reason'), { target: { value: 'Payment mismatch verified invalid.' } });
+    vi.mocked(fetchEscalatedRefunds).mockResolvedValueOnce({ pageNumber: 1, pageSize: 20, totalCount: 1, items: [reconciliationItem] });
+    // Click submit reject button
+    fireEvent.click(screen.getAllByRole('button', { name: 'Reject Refund' })[1]);
+    await waitFor(() => expect(rejectEscalatedRefund).toHaveBeenCalledWith(501, 'Payment mismatch verified invalid.'));
+  });
+
+  it('blocks a blank rejection reason client-side', async () => {
+    render(<EscalatedRefundsMonitorScreen />);
+    const viewDetailsButtons = await screen.findAllByRole('button', { name: 'View Details' });
+    fireEvent.click(viewDetailsButtons[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Reject Refund' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Reject Refund' })[1]);
+    expect(await screen.findByText('A reason is required to reject a refund.')).toBeTruthy();
+    expect(rejectEscalatedRefund).not.toHaveBeenCalled();
   });
 
   it('shows a forbidden message on a 403', async () => {

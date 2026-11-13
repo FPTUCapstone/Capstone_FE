@@ -76,3 +76,13 @@ export async function resolveEscalatedRefund(refundId: number, gatewayReference:
     signal,
   });
 }
+
+/** Screen 3's rejection flow: Administrator closes an escalated or reconciliation refund without paying. */
+export async function rejectEscalatedRefund(refundId: number, reason: string, signal?: AbortSignal): Promise<void> {
+  await request(`/api/admin/refunds/${refundId}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'Reject', reason }),
+    signal,
+  });
+}

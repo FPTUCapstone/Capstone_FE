@@ -142,4 +142,20 @@ describe('proxyAdminRefundResolve', () => {
     expect(JSON.parse(init.body)).toEqual({ action: 'Complete', gatewayReference: 'GW-1' });
     expect(init.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
   });
+
+  it('forwards action Reject with reason and no idempotency key', async () => {
+    mockSession('Administrator');
+    fetchBackendMock.mockResolvedValue(Response.json({ status: 'Rejected' }));
+    await proxyAdminRefundResolve(
+      request('/api/admin/refunds/501/resolve', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'Reject', reason: 'Invalid payment proof' }),
+      }),
+      '501',
+    );
+    const [path, init] = fetchBackendMock.mock.calls[0];
+    expect(path).toBe('/api/v1/admin/refunds/501/resolve');
+    expect(JSON.parse(init.body)).toEqual({ action: 'Reject', reason: 'Invalid payment proof' });
+    expect(init.headers['Idempotency-Key']).toBeUndefined();
+  });
 });
