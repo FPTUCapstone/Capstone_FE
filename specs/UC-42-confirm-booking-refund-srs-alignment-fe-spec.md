@@ -2,12 +2,25 @@
 
 ## Status
 
-**Draft — pending Lead/PO approval for Q-FE1 (screen layout).** Backend contract: BE spec
+**APPROVED (developer sign-off 13/11/2026, Nguyễn Văn Linh).** Q-FE1 (the proposed screen layout
+for screens 90/100/101) and Q-FE3 (listing `Escalated` and `Reconciliation` together on screen 101)
+are both approved as written in this spec — Task 1 of the plan is unblocked. Q-FE2 (new BE read
+endpoints not yet in the BE spec's §3.3) remains open and still blocks Task 2 (BFF proxies) until
+the BE spec adds them. Backend contract: BE spec
 `specs/UC-42-confirm-booking-refund-srs-alignment-be-spec.md` v1.1 and plan
 `plans/UC-42-confirm-booking-refund-srs-alignment-be-plan.md`, on `Capstone_BE-confirm-booking-refund`
 branch `fix/linhnv-confirm-booking-refund` (worktree `D:\study\Project-Capstone\Capstone_BE-confirm-booking-refund`).
 Owner decisions Q1–Q4 are already closed there; this FE spec treats them as fixed and does not
 re-litigate them.
+
+**Owner decision 13/11/2026 (Nguyễn Văn Linh) — UC-42/screen 90 is web-only:** SRS 3.8.4.3 lists
+the Confirm Booking Refund screen on both the Flutter mobile application and the Next.js web
+application (no web-only exception is written for it, unlike UC-41/screen 89). This spec closes
+that open point by deciding UC-42 ships on the Next.js web application only — `Capstone_Mobile`
+does **not** get an equivalent screen for this feature. This is the same kind of platform
+exception already made for UC-41 on 10/11/2026 (recorded in the SRS revision history); SRS
+3.8.4.3's Interface line needs the matching "...on the Next.js web application only" correction in
+a future SRS revision, tracked as a documentation follow-up, not a blocker for this FE spec.
 
 SRS source: `SRS_rev10 (5).docx` (12/11/2026), §3.8.4.2 (UC-41), §3.8.4.3 (UC-42, screen 90),
 §3.9.1.x-style Staff reconciliation screen (screen 100), §3.10.2 (UC-67), plus the owner decisions
@@ -109,8 +122,10 @@ the content is:
   Return]` (visible while `AwaitingPartnerReturn` and share > 0), `[Back]`.
 
 Behavior:
-- `[Confirm Refund]` calls the confirm proxy. On success, re-fetch the detail (never assume the
-  new status locally — same pattern as the daily-payout-transfer screens' `reloadToken`).
+- `[Confirm Refund]` calls the confirm proxy. On success, show the MSG173 success toast ("The
+  confirmation is submitted successfully" per SRS 3.8.4.3's Validation line) and re-fetch the
+  detail (never assume the new status locally — same pattern as the daily-payout-transfer
+  screens' `reloadToken`).
   - If the refetched detail's Tour Operator Share is 0, the status will already have moved past
     `AwaitingPartnerReturn` straight to settled (BE spec §2.2: "4.b1" skips the return steps) — the
     screen shows a completed/read-only state, no Return area.
@@ -126,7 +141,16 @@ Behavior:
 - Error mapping: `refund.request_not_pending` (409, MSG171) → "This refund request is no longer
   pending your confirmation."; `refund.operator_not_owner` (403, MSG126) → generic forbidden view;
   `refund.return_reference_required` (400, MSG172) → inline field error; `refund.status_persist_failed`
-  (500, MSG127) → generic retry banner.
+  (500, MSG127) → generic retry banner; `refund.payment_not_verified` (409, MSG136) → "This refund
+  is being reconciled by our team; no action is needed from you right now." with `[Confirm Refund]`
+  hidden (the refund has moved to `Reconciliation`, not `PendingOperatorConfirmation` anymore).
+  This covers SRS 3.8.4.3's own Validation line *"The original transaction is not verified, or the
+  refund amount does not match the verified paid amount → MSG136"* (abnormal case 2.a1) — missing
+  from the BE spec's §3.2 error-code list (only `request_not_pending`/`operator_not_owner`/
+  `return_reference_required`/`status_persist_failed` are listed there); `refund.payment_not_verified`
+  needs adding to the BE spec and to the shared message catalogue the same way Task 8 of the
+  daily-payout-transfer plan wired MSG157, since MSG136 itself is an existing SRS code (reused from
+  UC-41) but has no stable error-code slug yet for this UC-42 confirmation-time check.
 
 ## Screen 2 — Refund Return Reconciliation (Staff, screen 100)
 
@@ -205,11 +229,13 @@ and keyboard-operable action buttons — same bar as `FailedPayoutSettlementScre
 ## Message codes
 
 Reuses SRS message codes already defined for this feature (per BE spec): MSG126 (ownership
-denied), MSG127 (persistence failure), MSG171 (not pending), MSG172 (reference required), MSG173
-(confirmation submitted — success toast), MSG178-style pattern for any other validation. No new
-MSG codes are invented client-side; if the backend introduces one not yet catalogued, this spec's
-Task for message wiring (see plan) adds it to the shared catalogue the same way the daily-payout
-feature's Task 8 did.
+denied), MSG127 (persistence failure), MSG136 (original transaction not verified / amount
+mismatch — reused from UC-41, see Screen 1's error mapping above), MSG171 (not pending), MSG172
+(reference required), MSG173 (confirmation submitted — success toast). No new MSG *numbers* are
+invented client-side; `refund.payment_not_verified` is a new error-code *slug* for an existing
+MSG136, not a new message — it still needs adding to the shared catalogue (same mechanism as the
+daily-payout feature's Task 8, e.g. `database/migrations/..._add_refund_payment_not_verified.sql`
+if the catalogue is DB-backed) before Task 2 (BFF proxies) can map it.
 
 ## Acceptance criteria
 
@@ -256,18 +282,23 @@ identical to a real one).
 
 ## Open questions
 
-- **Q-FE1 (screen layout, blocks implementation of Screens 1-3's exact visual design):** SRS marks
-  3.8.4.3's own layout `[TBD - Screen layout will be added after the Functional Specification is
-  approved]`, and screens 100/101 have no SRS screen-layout section at all (they're referenced only
-  in prose). This spec proposes a layout for all three directly from SRS's own enumerated
-  "Screen Layout" field/button lists (Booking summary / Refund details / Return area / buttons for
-  screen 90; list + row action for 100; list + detail link for 101, following this repo's existing
-  admin list/detail pattern) so implementation isn't blocked, but — per this repo's CLAUDE.md
-  ("Screens for many use cases already exist in this repo... do not assume a use case is
-  unimplemented or invent a new screen without an approved task") — needs explicit developer
-  sign-off before Task 1 of the plan starts, since SRS itself left the layout open.
-- **Q-FE2 (new BE read endpoints):** this spec's detail/list reads (`GET` rows in the API contract
-  table) aren't yet enumerated in the BE spec's §3.3, which lists only the four mutating routes.
-  Needs a one-line addition to the BE spec (or a note that they reuse an existing/broader admin
-  refunds query) before Task 2 of the plan (BFF proxies) can be implemented against a real
-  contract rather than an assumed shape.
+- **Q-FE1 (screen layout) — RESOLVED, approved 13/11/2026.** SRS marks 3.8.4.3's own layout
+  `[TBD - Screen layout will be added after the Functional Specification is approved]`, and screens
+  100/101 have no SRS screen-layout section at all (they're referenced only in prose). The layout
+  this spec proposed for all three — directly from SRS's own enumerated "Screen Layout"
+  field/button lists (Booking summary / Refund details / Return area / buttons for screen 90; list
+  + row action for 100; list + detail link for 101, following this repo's existing admin
+  list/detail pattern) — is approved as the working layout; Task 1 of the plan may proceed.
+- **Q-FE3 (screen 101 scope — Escalated vs. Reconciliation) — RESOLVED, approved 13/11/2026.**
+  SRS's own screen catalogue (Table 3, row 101) and 3.10.2's Figure 99 describe the Escalated
+  Refunds Monitor as listing refunds whose *retries are exhausted* (`Escalated`, BR-161) only;
+  neither place mentions `Reconciliation` refunds (the UC-41 6.b1 / UC-67 5.a1/6.a1 amount-mismatch
+  or unverifiable-signature cases) as belonging to screen 101. Approved to list both statuses on
+  one screen/API as this spec's Screen 3 proposed (mirroring the BE spec's single
+  `GET .../admin/refunds?status=Escalated,Reconciliation` endpoint), since there is no other
+  SRS-named screen for `Reconciliation`.
+- **Q-FE2 (new BE read endpoints) — still open.** This spec's detail/list reads (`GET` rows in the
+  API contract table) aren't yet enumerated in the BE spec's §3.3, which lists only the four
+  mutating routes. Needs a one-line addition to the BE spec (or a note that they reuse an
+  existing/broader admin refunds query) before Task 2 of the plan (BFF proxies) can be implemented
+  against a real contract rather than an assumed shape. This is the only remaining blocker.
