@@ -38,7 +38,7 @@ export function safeSourcePath(url: string): string | null {
 
 /** Only existing resource destinations and booking handoff arguments are actionable. */
 export function safeActionPath(url: string): string | null {
-  if (['/tours', '/itineraries', '/partner/bookings'].includes(url)) return url;
+  if (['/tours', '/itineraries', '/partner/bookings', '/plan', '/pois', '/account/profile', '/account/preferences', '/account/security'].includes(url)) return url;
   const match = /^(\/tours\/([0-9]+)(\/book)?|\/itinerary\/([0-9]+)|\/bookings\/([0-9]+)\/(?:refund|ticket|pay)|\/account\/trips)(?:\?([A-Za-z0-9=&]+))?$/.exec(url);
   if (!match) return null;
   const resourceId = match[2] ?? match[4] ?? match[5];

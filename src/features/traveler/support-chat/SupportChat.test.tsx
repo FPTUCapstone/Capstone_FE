@@ -34,6 +34,21 @@ beforeEach(() => {
 });
 
 describe('SupportChat', () => {
+  it('opens the planner action requested from a tour page', async () => {
+    route.pathname = '/tours/101';
+    vi.mocked(sendSupportMessage).mockResolvedValue({
+      answer: 'Bạn có thể lập lịch trình tại đây.', sources: [],
+      actions: [{ type: 'navigate', label: 'Lập lịch trình', url: '/plan' }],
+    });
+    render(<SupportChat />); openChat(); send('Dẫn tôi tới trang lập tình trình');
+    const link = await screen.findByRole('link', { name: 'Lập lịch trình' });
+    expect(link.getAttribute('href')).toBe('/plan');
+    expect(screen.queryByRole('link', { name: 'Xem tour và lịch khởi hành' })).toBeNull();
+    link.addEventListener('click', event => event.preventDefault());
+    fireEvent.click(link);
+    expect(screen.queryByRole('log')).toBeNull();
+  });
+
   it('keeps a complete Unicode character when bounding assistant history', async () => {
     const answer = `${'a'.repeat(1999)}🌴 more`;
     vi.mocked(sendSupportMessage).mockResolvedValue({ answer, sources: [] });
