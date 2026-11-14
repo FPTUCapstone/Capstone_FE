@@ -63,11 +63,11 @@ export function TourEmptyState({ onResetFilters, hasFilters }: TourEmptyStatePro
   );
 }
 
-export function TourListSkeleton() {
+export function TourListSkeleton({ label = 'Đang tải danh sách tour...' }: { label?: string } = {}) {
   return (
     <div
       role="status"
-      aria-label="Đang tải danh sách tour..."
+      aria-label={label}
       className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
     >
       {Array.from({ length: 8 }).map((_, index) => (
@@ -91,7 +91,7 @@ export function TourListSkeleton() {
           </div>
         </div>
       ))}
-      <span className="sr-only">Đang tải danh sách tour...</span>
+      <span className="sr-only">{label}</span>
     </div>
   );
 }
