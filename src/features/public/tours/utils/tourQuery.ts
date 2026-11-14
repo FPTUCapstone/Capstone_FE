@@ -120,23 +120,24 @@ export function sanitizeProxyQuery(incomingQuery: URLSearchParams): URLSearchPar
 export function validateTourFilters(state: TourSearchState): {
   isValid: boolean;
   errorMessage?: string;
+  errorField?: string;
 } {
   if ((state.keyword?.length ?? 0) > 300) {
     return {
       isValid: false,
-      errorMessage: 'Từ khóa không được vượt quá 300 ký tự.',
+      errorField: 'keyword', errorMessage: 'Từ khóa không được vượt quá 300 ký tự.',
     };
   }
 
   if (state.destination.length > 300) {
     return {
       isValid: false,
-      errorMessage: 'Tên điểm đến không được vượt quá 300 ký tự.',
+      errorField: 'destination', errorMessage: 'Tên điểm đến không được vượt quá 300 ký tự.',
     };
   }
 
   if (state.departureDate && (state.startDate || state.endDate)) {
-    return { isValid: false, errorMessage: 'Ngày chính xác không thể dùng cùng khoảng ngày.' };
+    return { isValid: false, errorField: 'end', errorMessage: 'Ngày chính xác không thể dùng cùng khoảng ngày.' };
   }
 
   // Price range validation (BR-53: minPrice <= maxPrice)
@@ -145,7 +146,7 @@ export function validateTourFilters(state: TourSearchState): {
     if (!/^\d+$/.test(state.minPrice) || !Number.isSafeInteger(min) || min > MAX_WHOLE_VND_PRICE) {
       return {
         isValid: false,
-        errorMessage: 'Giá tối thiểu phải là số nguyên từ 0 đến 9.999.999.999 VNĐ.',
+        errorField: 'min', errorMessage: 'Giá tối thiểu phải là số nguyên từ 0 đến 9.999.999.999 VNĐ.',
       };
     }
   }
@@ -155,7 +156,7 @@ export function validateTourFilters(state: TourSearchState): {
     if (!/^\d+$/.test(state.maxPrice) || !Number.isSafeInteger(max) || max > MAX_WHOLE_VND_PRICE) {
       return {
         isValid: false,
-        errorMessage: 'Giá tối đa phải là số nguyên từ 0 đến 9.999.999.999 VNĐ.',
+        errorField: 'max', errorMessage: 'Giá tối đa phải là số nguyên từ 0 đến 9.999.999.999 VNĐ.',
       };
     }
   }
@@ -167,7 +168,7 @@ export function validateTourFilters(state: TourSearchState): {
       // MSG29: "The minimum value cannot be greater than the maximum value."
       return {
         isValid: false,
-        errorMessage: 'Khoảng giá không hợp lệ. Giá tối thiểu không được lớn hơn giá tối đa.',
+        errorField: 'min', errorMessage: 'Khoảng giá không hợp lệ. Giá tối thiểu không được lớn hơn giá tối đa.',
       };
     }
   }
@@ -178,27 +179,27 @@ export function validateTourFilters(state: TourSearchState): {
     if (!dateRegex.test(state.departureDate)) {
       return {
         isValid: false,
-        errorMessage: 'Ngày khởi hành phải đúng định dạng YYYY-MM-DD.',
+        errorField: 'end', errorMessage: 'Ngày khởi hành phải đúng định dạng YYYY-MM-DD.',
       };
     }
   }
 
-  for (const value of [state.startDate, state.endDate].filter(Boolean) as string[]) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return { isValid: false, errorMessage: 'Khoảng ngày phải đúng định dạng YYYY-MM-DD.' };
+  for (const [field, value] of [['start', state.startDate], ['end', state.endDate]] as const) {
+    if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return { isValid: false, errorField: field, errorMessage: 'Khoảng ngày phải đúng định dạng YYYY-MM-DD.' };
     }
   }
   if (state.startDate && state.endDate && state.startDate > state.endDate) {
-    return { isValid: false, errorMessage: 'Ngày bắt đầu không được sau ngày kết thúc (MSG158).' };
+    return { isValid: false, errorField: 'end', errorMessage: 'Ngày bắt đầu không được sau ngày kết thúc (MSG158).' };
   }
   if (state.durationDays && (!/^\d+$/.test(state.durationDays) || Number(state.durationDays) < 1)) {
-    return { isValid: false, errorMessage: 'Thời lượng phải là số ngày nguyên dương.' };
+    return { isValid: false, errorField: 'duration', errorMessage: 'Thời lượng phải là số ngày nguyên dương.' };
   }
   if (state.minimumRating && (!Number.isFinite(Number(state.minimumRating)) || Number(state.minimumRating) < 1 || Number(state.minimumRating) > 5)) {
-    return { isValid: false, errorMessage: 'Đánh giá tối thiểu phải từ 1 đến 5.' };
+    return { isValid: false, errorField: 'rating', errorMessage: 'Đánh giá tối thiểu phải từ 1 đến 5.' };
   }
   if (state.sort && !['relevance', 'priceAsc', 'priceDesc', 'rating', 'departureDate'].includes(state.sort)) {
-    return { isValid: false, errorMessage: 'Cách sắp xếp không hợp lệ.' };
+    return { isValid: false, errorField: 'sort', errorMessage: 'Cách sắp xếp không hợp lệ.' };
   }
 
   return { isValid: true };

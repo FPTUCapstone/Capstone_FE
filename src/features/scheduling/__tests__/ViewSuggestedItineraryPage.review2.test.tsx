@@ -286,24 +286,46 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
     };
     removeMandatory();
     expect(confirm).toHaveBeenCalledWith('Đây là điểm bạn đã chọn, chắc chắn bỏ?');
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(update).not.toHaveBeenCalled();
 
+    // Confirmed: the reason picker follows (UC-10 feedback, D10), and the stop goes once a reason is picked.
     removeMandatory();
+    expect(update).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Vì sao bạn bỏ điểm này?' })).getByRole('button', {
+        name: 'Không thích',
+      }),
+    );
     await waitFor(() =>
-      expect(update).toHaveBeenCalledWith(789, [{ poiId: 88, transportModeToNext: 'Motorbike' }, { poiId: 35 }]),
+      expect(update).toHaveBeenCalledWith(
+        789,
+        [{ poiId: 88, transportModeToNext: 'Motorbike' }, { poiId: 35 }],
+        { removedStops: [{ poiId: 12, reason: 'NotInterested' }] },
+      ),
     );
   });
 
-  it('removes an ordinary stop without asking', async () => {
+  it('removes an ordinary stop without the "stop you chose" confirmation', async () => {
     const confirm = vi.spyOn(window, 'confirm');
     const update = vi.spyOn(schedulingApi, 'updateItineraryStops').mockResolvedValue({ ...itinerary, version: 2 });
     await renderLoaded();
 
     fireEvent.click(screen.getByRole('button', { name: 'Thao tác với Bãi biển Non Nước' }));
     fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Bỏ khỏi lịch' }));
+    // One more click since UC-10 feedback (D10): the reason picker.
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Vì sao bạn bỏ điểm này?' })).getByRole('button', {
+        name: 'Đã đi rồi',
+      }),
+    );
 
     await waitFor(() =>
-      expect(update).toHaveBeenCalledWith(789, [{ poiId: 12, transportModeToNext: 'Motorbike' }, { poiId: 88 }]),
+      expect(update).toHaveBeenCalledWith(
+        789,
+        [{ poiId: 12, transportModeToNext: 'Motorbike' }, { poiId: 88 }],
+        { removedStops: [{ poiId: 35, reason: 'AlreadyVisited' }] },
+      ),
     );
     expect(confirm).not.toHaveBeenCalled();
   });
@@ -566,6 +588,118 @@ describe('ViewSuggestedItineraryPage — review fixes (findings 1, 4, 5)', () =>
 
     expect(confirm).toHaveBeenCalledWith('Đây là điểm bạn đã chọn, chắc chắn bỏ?');
     expect(suggestions).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('ViewSuggestedItineraryPage — removal reason (UC-10 feedback, D10, D14)', () => {
+  const REASON_TITLE = 'Vì sao bạn bỏ điểm này?';
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function openReasonDialog(stopName: string) {
+    fireEvent.click(screen.getByRole('button', { name: `Thao tác với ${stopName}` }));
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Bỏ khỏi lịch' }));
+    return screen.getByRole('dialog', { name: REASON_TITLE });
+  }
+
+  it('asks why with three reasons before anything is removed', async () => {
+    const update = vi.spyOn(schedulingApi, 'updateItineraryStops');
+    await renderLoaded();
+
+    const dialog = openReasonDialog('Ngũ Hành Sơn');
+
+    expect(within(dialog).getByRole('heading', { name: REASON_TITLE })).toBeDefined();
+    expect(within(dialog).getByText('Ngũ Hành Sơn')).toBeDefined();
+    expect(
+      within(dialog)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Đóng', 'Không thích', 'Không đủ thời gian', 'Đã đi rồi']);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['Không thích', 'NotInterested'],
+    ['Không đủ thời gian', 'NoTime'],
+    ['Đã đi rồi', 'AlreadyVisited'],
+  ])('removes the stop and sends the reason of "%s" as %s', async (label, reason) => {
+    const update = vi.spyOn(schedulingApi, 'updateItineraryStops').mockResolvedValue({ ...itinerary, version: 2 });
+    await renderLoaded();
+
+    fireEvent.click(within(openReasonDialog('Ngũ Hành Sơn')).getByRole('button', { name: label }));
+
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith(
+        789,
+        [{ poiId: 12, transportModeToNext: 'Motorbike' }, { poiId: 35 }],
+        { removedStops: [{ poiId: 88, reason }] },
+      ),
+    );
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await screen.findByRole('button', { name: 'Hoàn tác' })).toBeDefined();
+  });
+
+  it.each([
+    ['the close button', () => fireEvent.click(screen.getByRole('button', { name: 'Đóng' }))],
+    ['Escape', () => fireEvent.keyDown(document, { key: 'Escape' })],
+    ['a click on the backdrop', () => fireEvent.mouseDown(screen.getByRole('dialog').parentElement!)],
+  ])('removes nothing and sends nothing when the dialog is closed with %s', async (_name, close) => {
+    const update = vi.spyOn(schedulingApi, 'updateItineraryStops');
+    await renderLoaded();
+    openReasonDialog('Ngũ Hành Sơn');
+
+    close();
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(update).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Thao tác với Ngũ Hành Sơn' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Hoàn tác' })).toBeNull();
+  });
+
+  it('stays open when the traveler clicks inside the dialog', async () => {
+    await renderLoaded();
+    const dialog = openReasonDialog('Ngũ Hành Sơn');
+
+    fireEvent.mouseDown(within(dialog).getByRole('heading', { name: REASON_TITLE }));
+
+    expect(screen.getByRole('dialog', { name: REASON_TITLE })).toBeDefined();
+  });
+
+  it('undoes a removal by re-sending the previous stops, without removedStops', async () => {
+    const update = vi
+      .spyOn(schedulingApi, 'updateItineraryStops')
+      .mockResolvedValueOnce({ ...itinerary, version: 2, items: [itinerary.items[0], itinerary.items[2]] })
+      .mockResolvedValueOnce({ ...itinerary, version: 3 });
+    await renderLoaded();
+
+    fireEvent.click(within(openReasonDialog('Ngũ Hành Sơn')).getByRole('button', { name: 'Không đủ thời gian' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tác' }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+    expect(update.mock.calls[1]).toEqual([
+      789,
+      [
+        { poiId: 12, transportModeToNext: 'Motorbike' },
+        { poiId: 88, transportModeToNext: 'Motorbike' },
+        { poiId: 35 },
+      ],
+    ]);
+  });
+
+  it('keeps the stop and reports the error when the removal is refused', async () => {
+    vi.spyOn(schedulingApi, 'updateItineraryStops').mockRejectedValueOnce(
+      new schedulingApi.ItineraryHttpError(400, 'Không thể cập nhật lịch trình. Vui lòng thử lại sau.', 'itinerary.mutation_failed'),
+    );
+    await renderLoaded();
+
+    fireEvent.click(within(openReasonDialog('Ngũ Hành Sơn')).getByRole('button', { name: 'Không thích' }));
+
+    expect(await screen.findByText('Không thể cập nhật lịch trình. Vui lòng thử lại sau.')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Thao tác với Ngũ Hành Sơn' })).toBeDefined();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

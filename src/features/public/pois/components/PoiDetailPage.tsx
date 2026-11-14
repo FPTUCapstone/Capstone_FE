@@ -9,6 +9,7 @@ import { PoiApiError, type PoiDetail } from '../types/poi';
 import { formatDuration, formatReviewCount } from '../utils/poiPresentation';
 import { PoiImage } from './PoiImage';
 import { PoiDetailMapboxView } from './PoiDetailMapboxView';
+import { PoiFavoriteButton } from './PoiFavoriteButton';
 import { formatPriceLabel } from '@/lib/priceLabel';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { TripadvisorReviews } from './TripadvisorReviews';
@@ -44,7 +45,7 @@ function DetailLoading() {
 
 export function PoiDetailPage({ id }: PoiDetailPageProps) {
   const router = useRouter();
-  // Tripadvisor reviews are for signed-in Travelers only (Review 2, §3.6).
+  // Tripadvisor reviews (Review 2, §3.6) and the favorite heart (UC-10 feedback, D12) are for signed-in Travelers only.
   const { status: sessionStatus, context: sessionContext } = useWebSession();
   const isTraveler = sessionStatus === 'authenticated' && sessionContext?.role === 'Traveler';
   const validId = /^\d+$/.test(id) && Number(id) > 0;
@@ -158,7 +159,10 @@ export function PoiDetailPage({ id }: PoiDetailPageProps) {
           </div>
           <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
             <div className="max-w-4xl">
-              <h1 className="text-4xl font-black leading-tight tracking-[-.04em] text-[#1C2928] sm:text-5xl">{detail.name}</h1>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <h1 className="text-4xl font-black leading-tight tracking-[-.04em] text-[#1C2928] sm:text-5xl">{detail.name}</h1>
+                {isTraveler ? <PoiFavoriteButton key={detail.id} poiId={detail.id} /> : null}
+              </div>
               <p className="mt-4 text-base leading-relaxed text-[#536169] sm:text-lg">{detail.address ?? 'Địa chỉ đang được cập nhật'}</p>
             </div>
             <div className="flex w-fit items-center gap-3 rounded-2xl bg-[#f0f4f5] px-4 py-3">

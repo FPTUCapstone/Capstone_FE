@@ -8,10 +8,14 @@ import type {
   PagedToursResponseDto,
   TourDetailDto,
   TourRecommendationDto,
+  TourRecommendationCriteriaDto,
+  TourRecommendationsResponseDto,
   TourCategoryDto,
   TourSearchItemDto,
 } from '../types/tour';
 import { TourApiError } from '../types/tour';
+import { AuthStorage } from '@/features/auth/session/authSession';
+import { getApiBase } from '@/lib/apiBase';
 import { publicTourSearchVi } from '../resources/vi';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -176,36 +180,159 @@ export function isTourDemoAllowedInCurrentEnv(): boolean {
   );
 }
 
-/**
- * UC-25: Receive Tour Recommendations
- * Status: PENDING_BE_INTEGRATION
- *
- * Backend endpoint does not exist yet in Capstone_BE.
- * In production mode: returns empty array indicating pending integration.
- * In explicit demo opt-in mode (non-production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + allowDemo=true):
- * returns DEMO_RECOMMENDED_TOURS.
- */
+export interface RefreshTourRecommendationsCriteria {
+  destination?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  minBudget?: number | null;
+  maxBudget?: number | null;
+}
+
+function parseRecommendationCriteria(value: unknown): TourRecommendationCriteriaDto | null {
+  if (value === null) return null;
+  if (!isRecord(value)
+    || !isOptionalNullableString(value.destination)
+    || !isOptionalNullableString(value.startDate)
+    || !isOptionalNullableString(value.endDate)
+    || (value.minBudget !== undefined && !isNullableNumber(value.minBudget))
+    || (value.maxBudget !== undefined && !isNullableNumber(value.maxBudget))) {
+    throw new TourApiError('Dữ liệu tiêu chí gợi ý không hợp lệ.', 0);
+  }
+  return {
+    destination: typeof value.destination === 'string' ? value.destination : null,
+    startDate: typeof value.startDate === 'string' ? value.startDate : null,
+    endDate: typeof value.endDate === 'string' ? value.endDate : null,
+    minBudget: typeof value.minBudget === 'number' ? value.minBudget : null,
+    maxBudget: typeof value.maxBudget === 'number' ? value.maxBudget : null,
+  };
+}
+
+export function parseTourRecommendations(value: unknown): TourRecommendationsResponseDto {
+  if (!isRecord(value)
+    || typeof value.page !== 'number'
+    || typeof value.pageSize !== 'number'
+    || typeof value.totalCount !== 'number'
+    || typeof value.totalPages !== 'number'
+    || typeof value.asOfUtc !== 'string'
+    || !Array.isArray(value.items)) {
+    throw new TourApiError('Dữ liệu gợi ý tour không hợp lệ.', 0);
+  }
+  const items = value.items.map((raw): TourRecommendationDto => {
+    if (!isRecord(raw)
+      || typeof raw.matchingScore !== 'number'
+      || !Array.isArray(raw.matchingReasons)
+      || raw.matchingReasons.some((reason) => typeof reason !== 'string')) {
+      throw new TourApiError('Dữ liệu gợi ý tour không hợp lệ.', 0);
+    }
+    const tour = parseTourSearchItem(raw.tour);
+    if (raw.matchingScore <= 80
+      || raw.matchingScore > 100
+      || tour.availabilityStatus.toLowerCase() !== 'available'
+      || tour.representativeScheduleId === null
+      || (tour.remainingSlots ?? 0) <= 0) {
+      throw new TourApiError('Dữ liệu gợi ý tour không hợp lệ.', 0);
+    }
+    return {
+      tour,
+      matchingScore: raw.matchingScore,
+      matchingReasons: raw.matchingReasons as string[],
+    };
+  });
+  return {
+    page: value.page,
+    pageSize: value.pageSize,
+    totalCount: value.totalCount,
+    totalPages: value.totalPages,
+    asOfUtc: value.asOfUtc,
+    criteria: parseRecommendationCriteria(value.criteria),
+    items,
+    isDemo: false,
+  };
+}
+
+async function requestRecommendations(
+  method: 'GET' | 'POST',
+  page: number,
+  criteria: RefreshTourRecommendationsCriteria | undefined,
+  signal?: AbortSignal,
+): Promise<TourRecommendationsResponseDto> {
+  const token = AuthStorage.getAccessToken();
+  if (!token) throw new TourApiError('Phiên đăng nhập đã hết hạn.', 401);
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBase()}/tour-recommendations${method === 'GET' ? `?page=${page}` : '/refresh'}`, {
+      method,
+      signal,
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: method === 'POST' ? JSON.stringify({
+        destination: criteria?.destination || null,
+        startDate: criteria?.startDate || null,
+        endDate: criteria?.endDate || null,
+        minBudget: criteria?.minBudget ?? null,
+        maxBudget: criteria?.maxBudget ?? null,
+      }) : undefined,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    throw new TourApiError('Không thể tải gợi ý tour (MSG127).', 0);
+  }
+  const body = await readResponse(response);
+  if (!response.ok) {
+    const problem = asProblem(body);
+    throw new TourApiError(
+      problem?.errorCode === 'tour_recommendation.interest_tags_required'
+        ? 'Bạn cần thiết lập ít nhất một sở thích du lịch.'
+        : 'Không thể tải gợi ý tour (MSG127).',
+      response.status,
+      problem,
+    );
+  }
+  return parseTourRecommendations(body);
+}
+
+let initialRefresh: Promise<TourRecommendationsResponseDto> | null = null;
+
+/** GET latest; only a missing snapshot (criteria=null) triggers one deduplicated POST refresh. */
 export async function getTourRecommendations(options?: {
   signal?: AbortSignal;
   allowDemo?: boolean;
-}): Promise<{ items: TourRecommendationDto[]; isPendingBe: boolean; isDemo: boolean }> {
+  page?: number;
+  initialCriteria?: RefreshTourRecommendationsCriteria;
+}): Promise<TourRecommendationsResponseDto> {
   const demoAllowed = options?.allowDemo === true && isTourDemoAllowedInCurrentEnv();
 
   if (demoAllowed) {
     return {
+      page: 1,
+      pageSize: 20,
+      totalCount: DEMO_RECOMMENDED_TOURS.length,
+      totalPages: 1,
+      asOfUtc: new Date(0).toISOString(),
+      criteria: null,
       items: DEMO_RECOMMENDED_TOURS,
-      isPendingBe: false,
       isDemo: true,
     };
   }
+  const page = options?.page ?? 1;
+  const latest = await requestRecommendations('GET', page, undefined, options?.signal);
+  if (latest.criteria !== null || page !== 1) return latest;
+  initialRefresh ??= requestRecommendations('POST', 1, options?.initialCriteria, options?.signal)
+    .finally(() => { initialRefresh = null; });
+  return initialRefresh;
+}
 
-  // Real production path: Backend recommendation API is not yet provisioned.
-  // We do NOT call a phantom endpoint or fake a success response.
-  return {
-    items: [],
-    isPendingBe: true,
-    isDemo: false,
-  };
+export function refreshTourRecommendations(
+  criteria: RefreshTourRecommendationsCriteria,
+  signal?: AbortSignal,
+): Promise<TourRecommendationsResponseDto> {
+  initialRefresh ??= requestRecommendations('POST', 1, criteria, signal)
+    .finally(() => { initialRefresh = null; });
+  return initialRefresh;
 }
 
 /** Tour ids are 64-bit integers; anything else cannot exist, so it never reaches the network. */

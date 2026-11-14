@@ -7,6 +7,7 @@ import {
 } from '@/components/navigation/PublicNavigation';
 import { isPublicNavigationRoute } from '@/lib/routes/publicRoutePredicate';
 import { useSafePathname } from '@/lib/routes/useSafePathname';
+import { SupportChat } from '@/features/traveler/support-chat/SupportChat';
 
 interface PersistentPublicLayoutProps {
   children: ReactNode;
@@ -34,6 +35,7 @@ export function PersistentPublicLayout({ children }: PersistentPublicLayoutProps
       <PersistentHeaderContext.Provider value={showHeader}>
         {children}
       </PersistentHeaderContext.Provider>
+      {(showHeader || pathname === '/partner' || pathname?.startsWith('/partner/')) ? <SupportChat /> : null}
     </>
   );
 }

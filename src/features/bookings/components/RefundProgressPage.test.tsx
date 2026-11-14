@@ -1,8 +1,11 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RefundProgressPage } from "./RefundProgressPage";
+import { openSupportChat } from "@/features/traveler/support-chat/supportChatEvents";
+
+vi.mock("@/features/traveler/support-chat/supportChatEvents", () => ({ openSupportChat: vi.fn() }));
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -58,6 +61,8 @@ describe("RefundProgressPage", () => {
     );
     expect(screen.getByText("BK-20261022-00042")).toBeDefined();
     expect(screen.getByText(/500[.,]000/)).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Ask about this refund' }));
+    expect(openSupportChat).toHaveBeenCalledWith({ kind: 'refund', id: '42' });
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/bookings/42/refund",
       expect.objectContaining({ cache: "no-store" }),

@@ -15,6 +15,9 @@ import type { BookingDto, BookingParticipantRequestDto, BookingQuoteDto, Partici
 interface TourBookingViewProps {
   tour: TourDetailDto;
   initialScheduleId?: string;
+  initialAdultCount?: number;
+  initialChildCount?: number;
+  initialInfantCount?: number;
   isDemo?: boolean;
   userContext: WebAuthContext | null;
   /** Loaded from the Traveler profile; it is intentionally separate from the auth session. */
@@ -55,6 +58,9 @@ function isBookableSchedule(schedule: TourScheduleDto): boolean {
 export function TourBookingView({
   tour,
   initialScheduleId,
+  initialAdultCount,
+  initialChildCount,
+  initialInfantCount,
   isDemo = false,
   userContext,
   profilePhone,
@@ -85,9 +91,9 @@ export function TourBookingView({
   const [selectedSchedule, setSelectedSchedule] = useState<TourScheduleDto | null>(defaultSchedule);
 
   // Traveler Counts
-  const [adultCount, setAdultCount] = useState<number>(2);
-  const [childCount, setChildCount] = useState<number>(1);
-  const [infantCount, setInfantCount] = useState<number>(0);
+  const [adultCount, setAdultCount] = useState<number>(() => initialAdultCount ?? 2);
+  const [childCount, setChildCount] = useState<number>(() => initialChildCount ?? (initialAdultCount === undefined ? 1 : 0));
+  const [infantCount, setInfantCount] = useState<number>(() => initialInfantCount ?? 0);
 
   // Lead Traveler Info (prefill from userContext or demo)
   const [leadName, setLeadName] = useState<string>(

@@ -1,4 +1,4 @@
-export type AuthRole = 'Traveler' | 'TourOperator' | 'Administrator' | 'Staff';
+export type AuthRole = 'Traveler' | 'TourOperator' | 'Administrator' | 'Staff' | 'ServiceProvider';
 export type AdministrationRole = 'Administrator' | 'Staff';
 export type ApplicationStatus = 'Approved' | 'PendingApproval' | 'Rejected';
 
@@ -12,6 +12,10 @@ export function isAdministrator(role: unknown): role is 'Administrator' {
 
 export function isStaff(role: unknown): role is 'Staff' {
   return role === 'Staff';
+}
+
+export function isServiceProvider(role: unknown): role is 'ServiceProvider' {
+  return role === 'ServiceProvider';
 }
 
 export interface WebAuthContext {
@@ -35,7 +39,7 @@ export function parseWebAuthContext(value: unknown): WebAuthContext {
   const expiry = typeof data.accessTokenExpiresAtUtc === 'string' ? data.accessTokenExpiresAtUtc : '';
   if (!Number.isSafeInteger(data.userId) || (data.userId as number) <= 0 ||
       typeof data.email !== 'string' || !data.email.trim() || typeof data.fullName !== 'string' ||
-      !['Traveler', 'TourOperator', 'Administrator', 'Staff'].includes(data.role as string) || data.status !== 'Active' ||
+      !['Traveler', 'TourOperator', 'Administrator', 'Staff', 'ServiceProvider'].includes(data.role as string) || data.status !== 'Active' ||
       typeof data.accessToken !== 'string' || !data.accessToken.trim() || 'refreshToken' in data ||
       !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|\+00:00)$/.test(expiry) ||
       !Number.isFinite(Date.parse(expiry)) || Date.parse(expiry) <= Date.now()) throw new InvalidAuthContextError();

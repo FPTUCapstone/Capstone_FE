@@ -33,6 +33,12 @@ export const ROUTES = {
     weatherSafetyReviews: '/partner/weather-safety-reviews',
     weatherSafetyReview: (id: string | number) => `/partner/weather-safety-reviews/${id}`,
   },
+  provider: {
+    dashboard: '/provider/bookings',
+    bookings: '/provider/bookings',
+    bookingDetail: (id: string | number) => `/provider/bookings/${encodeURIComponent(id)}`,
+    statements: '/provider/statements',
+  },
   account: {
     profile: '/account/profile',
     preferences: '/account/preferences',
@@ -66,6 +72,8 @@ export const ROUTES = {
     routesList: '/admin/routes',
     routeCreate: '/admin/routes/create',
     pois: '/admin/catalogue/points-of-interest',
+    createServiceProvider: '/admin/service-providers/create',
+    commissionReconciliation: '/admin/commercial-settlements/reconciliation',
     landingContent: '/admin/landing-content',
     payoutSettlements: '/admin/payout-settlements',
     payoutSettlementDetail: (batchId: string | number) =>

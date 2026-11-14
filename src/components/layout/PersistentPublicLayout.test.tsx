@@ -5,6 +5,10 @@ import { PersistentPublicLayout } from './PersistentPublicLayout';
 
 let mockPathname = '/';
 
+vi.mock('@/features/traveler/support-chat/SupportChat', () => ({
+  SupportChat: () => <aside aria-label="Support chat entry point" />,
+}));
+
 vi.mock('next/navigation', () => ({
   usePathname: () => mockPathname,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -21,6 +25,18 @@ vi.mock('@/components/navigation/PublicNavigation', () => ({
 describe('PersistentPublicLayout', () => {
   beforeEach(() => {
     mockPathname = '/';
+  });
+
+  it.each(['/account/trips', '/partner/bookings', '/partner'])('mounts the shared support entry point on %s', (pathname) => {
+    mockPathname = pathname;
+    render(<PersistentPublicLayout><div>Content</div></PersistentPublicLayout>);
+    expect(screen.getByLabelText('Support chat entry point')).toBeDefined();
+  });
+
+  it.each(['/sign-in', '/admin', '/admin/users'])('keeps support entry point off %s', (pathname) => {
+    mockPathname = pathname;
+    render(<PersistentPublicLayout><div>Content</div></PersistentPublicLayout>);
+    expect(screen.queryByLabelText('Support chat entry point')).toBeNull();
   });
 
   it('renders persistent PublicNavigation on root homepage', () => {
