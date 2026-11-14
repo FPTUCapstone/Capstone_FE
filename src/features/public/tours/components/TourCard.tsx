@@ -13,6 +13,9 @@ interface TourCardProps {
 }
 
 export interface TourCardCopy {
+  formatDeparture?: (value: string | null) => string;
+  rating?: string;
+  ratingUnknown?: string;
   soldOut: string;
   availableSlots: (count: number) => string;
   available: string;
@@ -177,11 +180,11 @@ export function TourCard({ tour, searchContextQuery, aggregateRating, copy = leg
           <span className="material-symbols-outlined text-sm text-teal-600">calendar_month</span>
           <span>{copy.departure} </span>
           <span className="font-semibold text-slate-800">
-            {formatDateDisplay(tour.departureAtUtc)}
+            {copy.formatDeparture ? copy.formatDeparture(tour.departureAtUtc) : formatDateDisplay(tour.departureAtUtc)}
           </span>
         </div>
 
-        {aggregateRating !== undefined && <p className="mb-3 text-sm text-slate-600">{aggregateRating === null ? devTourSearchCopy.ratingUnknown : `${devTourSearchCopy.rating}: ${aggregateRating.toFixed(1)} / 5`}</p>}
+        {aggregateRating !== undefined && <p className="mb-3 text-sm text-slate-600">{aggregateRating === null ? (copy.ratingUnknown ?? devTourSearchCopy.ratingUnknown) : `${copy.rating ?? devTourSearchCopy.rating}: ${aggregateRating.toFixed(1)} / 5`}</p>}
 
         {/* Price & CTA */}
         <div className="mt-auto flex items-end justify-between border-t border-slate-100 pt-3">

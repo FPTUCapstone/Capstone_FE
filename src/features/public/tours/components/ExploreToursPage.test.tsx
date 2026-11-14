@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getTourCategories, getTourRecommendations, refreshTourRecommendations, searchTours } from '../services/tourApi';
@@ -76,6 +76,7 @@ describe('ExploreToursPage', () => {
   const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
 
   beforeEach(() => {
+    localStorage.setItem('tripmate.uc24.locale', 'vi');
     push.mockClear();
     currentSearch = '';
     vi.mocked(searchTours).mockReset();
@@ -104,6 +105,7 @@ describe('ExploreToursPage', () => {
   });
 
   afterEach(() => {
+    localStorage.removeItem('tripmate.uc24.locale');
     setNodeEnv(originalNodeEnv);
     if (originalDemoFlag === undefined) {
       delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
@@ -114,7 +116,7 @@ describe('ExploreToursPage', () => {
 
   it('renders page layout, navigation, filters, and results', async () => {
     render(<ExploreToursPage />);
-    expect(screen.getByText(/Tour Trải Nghiệm/)).toBeTruthy();
+    expect(await screen.findByText(/Tour Trải Nghiệm/)).toBeTruthy();
     expect(screen.getByLabelText('Bộ lọc tìm kiếm tour')).toBeTruthy();
 
     await waitFor(() => {
@@ -168,8 +170,7 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Không tìm thấy tour phù hợp')).toBeTruthy();
-      expect(screen.getAllByText(/MSG64/).length).toBeGreaterThan(0);
+      expect(screen.getByText('Không tìm thấy gói tour phù hợp với điểm đến và ngày của bạn.')).toBeTruthy();
     });
   });
 
@@ -181,8 +182,20 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Lỗi kết nối máy chủ tour.').length).toBeGreaterThan(0);
+      expect(screen.getByText(/TripMate tạm thời không thể xử lý yêu cầu/)).toBeTruthy();
+      expect(screen.queryByText('Lỗi kết nối máy chủ tour.')).toBeNull();
     });
+  });
+
+  it('persists English without dispatching a search or resetting the draft', async () => {
+    render(<ExploreToursPage />);
+    const input = await screen.findByLabelText('Từ khóa');
+    fireEvent.change(input, { target: { value: 'Huế' } });
+    const calls = vi.mocked(searchTours).mock.calls.length;
+    fireEvent.change(screen.getByLabelText('Ngôn ngữ tìm kiếm'), { target: { value: 'en' } });
+    expect((screen.getByLabelText('Keyword') as HTMLInputElement).value).toBe('Huế');
+    expect(localStorage.getItem('tripmate.uc24.locale')).toBe('en');
+    expect(searchTours).toHaveBeenCalledTimes(calls);
   });
 
   it('maps missing interest tags to MSG183 with Travel Preferences', async () => {
@@ -207,6 +220,59 @@ describe('ExploreToursPage', () => {
       ).toBeTruthy();
     });
   });
+
+  it('keeps bilingual Search results when Recommendations refresh and change page', async () => {
+    currentSearch = 'keyword=Hue&destination=Hu%E1%BA%BF&startDate=2026-12-10&minPrice=500000';
+    const originalUrl = window.location.href;
+    const recommendation = { tour: { ...mockToursResponse.items[0], title: 'Recommended tour' }, matchingScore: 92, matchingReasons: [] };
+    const recommendationPage = {
+      page: 1, pageSize: 20, totalCount: 21, totalPages: 2,
+      asOfUtc: '2026-10-01T00:00:00Z', criteria: null,
+      items: [recommendation], isDemo: false,
+    };
+    vi.mocked(refreshTourRecommendations).mockResolvedValue(recommendationPage);
+    vi.mocked(getTourRecommendations).mockResolvedValueOnce(recommendationPage).mockResolvedValueOnce({
+      ...recommendationPage, page: 2,
+      items: [{ ...recommendation, tour: { ...recommendation.tour, title: 'Next recommended tour' } }],
+    });
+
+    try {
+      const { rerender } = render(<ExploreToursPage />);
+      const recommendations = within(screen.getByRole('region', { name: 'Gợi ý tour cá nhân hóa' }));
+      await recommendations.findByText('Recommended tour');
+      await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
+      expect(getTourRecommendations).toHaveBeenCalledWith(expect.objectContaining({
+        allowDemo: false,
+        initialCriteria: { destination: 'Huế', startDate: '2026-12-10', endDate: null, minBudget: 500000, maxBudget: null },
+      }));
+
+      const searches = vi.mocked(searchTours).mock.calls.length;
+      fireEvent.change(screen.getByLabelText('Ngôn ngữ tìm kiếm'), { target: { value: 'en' } });
+      expect((screen.getByLabelText('Keyword') as HTMLInputElement).value).toBe('Hue');
+      expect(recommendations.getByText('Recommended tour')).toBeTruthy();
+      expect(getTourRecommendations).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(recommendations.getByRole('button', { name: /Làm mới/ }));
+      await waitFor(() => expect(refreshTourRecommendations).toHaveBeenCalledWith({
+        destination: 'Huế', startDate: '2026-12-10', endDate: null, minBudget: 500000, maxBudget: null,
+      }));
+      await waitFor(() => expect((recommendations.getByRole('button', { name: 'Trang sau' }) as HTMLButtonElement).disabled).toBe(false));
+      fireEvent.click(recommendations.getByRole('button', { name: 'Trang sau' }));
+      await recommendations.findByText('Next recommended tour');
+      expect(getTourRecommendations).toHaveBeenLastCalledWith({ page: 2, allowDemo: false });
+      fireEvent.change(screen.getByLabelText('Keyword'), { target: { value: 'Unsubmitted draft' } });
+      currentSearch += '&recommendationPage=2';
+      rerender(<ExploreToursPage />);
+      expect((screen.getByLabelText('Keyword') as HTMLInputElement).value).toBe('Unsubmitted draft');
+      const detailLink = screen.getByRole('link', { name: 'Hành Trình Di Sản Phố Cổ Hội An' });
+      expect(detailLink.getAttribute('href')).toContain('recommendationPage=2');
+      expect(screen.getByText('Hành Trình Di Sản Phố Cổ Hội An')).toBeTruthy();
+      expect(searchTours).toHaveBeenCalledTimes(searches);
+    } finally {
+      window.history.replaceState(null, '', originalUrl);
+    }
+  });
+
 
   describe('demo fixture environment lockdown (Blocker 2)', () => {
     it('DEMO-1: NODE_ENV=production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + ?demo=1 -> NO fixture', async () => {
