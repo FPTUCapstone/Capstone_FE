@@ -132,9 +132,6 @@ export function ItineraryTimeline({
         <h2 className="text-base font-bold text-slate-900 sm:text-lg">
           Lộ trình tham quan chi tiết ({items.length} điểm dừng)
         </h2>
-        <span className="text-xs text-slate-500">
-          Sắp xếp tối ưu bởi thuật toán CSP
-        </span>
       </div>
 
       {hasMotorbikeLeg && (

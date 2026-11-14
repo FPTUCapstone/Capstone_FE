@@ -29,9 +29,11 @@ import {
 } from '../types/schedulingTypes';
 import { handOffEdit, LastItineraryEdit, takeEditHandoff } from '../utils/itineraryEditHandoff';
 import {
+  describeProvenance,
   describeStopInfeasible,
   diffArrivalMinutes,
   formatMinutes,
+  PROVENANCE_BADGE_CLASS,
   stopDisplayName,
 } from '../utils/itineraryPresentation';
 import {
@@ -160,6 +162,9 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
     highlightedItemId !== null && itineraryItems
       ? itineraryItems.find((item) => item.itemId === highlightedItemId) ?? null
       : null;
+
+  // ADR-002 (G3): where the schedule came from; null for itineraries saved before provenance existed.
+  const scheduleSource = describeProvenance(itinerary?.provenance);
 
   const destinationLabel = useMemo(() => {
     if (itinerary?.startLocation?.address) {
@@ -552,16 +557,39 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                 </div>
               )}
 
+              {/* SRS MSG35: the CSP did not finish in time and the fast heuristic produced this plan. */}
+              {scheduleSource?.notice && (
+                <div
+                  data-testid="schedule-source-notice"
+                  role="status"
+                  className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs font-medium text-amber-900 shadow-2xs"
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                    <span className="material-symbols-outlined text-sm">bolt</span>
+                    <span>{scheduleSource.label}</span>
+                  </div>
+                  <p className="mt-1">{scheduleSource.notice}</p>
+                </div>
+              )}
+
               {/* Journey Header Card */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-7">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2.5">
                     {/* Meta Status Badges */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-3 py-0.5 text-xs font-bold text-[#103B39]">
-                        <span className="material-symbols-outlined text-xs">verified</span>
-                        Tối ưu bởi Thuật toán CSP
-                      </span>
+                      {scheduleSource && (
+                        <span
+                          data-testid="schedule-source-badge"
+                          title={scheduleSource.detail}
+                          className={`inline-flex items-center gap-1 rounded-full border px-3 py-0.5 text-xs font-bold ${PROVENANCE_BADGE_CLASS[scheduleSource.tone]}`}
+                        >
+                          <span className="material-symbols-outlined text-xs">
+                            {scheduleSource.tone === 'optimal' ? 'verified' : 'info'}
+                          </span>
+                          {scheduleSource.label}
+                        </span>
+                      )}
                       <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                         Mã: #{itinerary.itineraryId}
                       </span>

@@ -243,10 +243,41 @@ describe('tourApi service', () => {
     it('handles network failure with a safe TourApiError', async () => {
       globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
-      await expect(searchTours(new URLSearchParams())).rejects.toThrow(
-        'Không thể kết nối máy chủ tour.',
+      const failure = await searchTours(new URLSearchParams()).catch((error: unknown) => error);
+
+      expect(failure).toBeInstanceOf(TourApiError);
+      expect((failure as TourApiError).message).toBe(
+        'TripMate tạm thời không thể xử lý yêu cầu của bạn. Vui lòng kiểm tra kết nối và thử lại.',
       );
+      expect((failure as TourApiError).message).not.toContain('Failed to fetch');
     });
+
+    it.each([500, 502, 503])(
+      'maps a %i ProblemDetails response to MSG127 without exposing its title',
+      async (status) => {
+        globalThis.fetch = vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({
+            status,
+            title: 'An unexpected error occurred.',
+            detail: 'private provider detail',
+            errorCode: 'MSG127',
+          }), {
+            status,
+            headers: { 'Content-Type': 'application/problem+json' },
+          }),
+        );
+
+        const failure = await searchTours(new URLSearchParams()).catch((error: unknown) => error);
+
+        expect(failure).toBeInstanceOf(TourApiError);
+        expect((failure as TourApiError).status).toBe(status);
+        expect((failure as TourApiError).message).toBe(
+          'TripMate tạm thời không thể xử lý yêu cầu của bạn. Vui lòng kiểm tra kết nối và thử lại.',
+        );
+        expect((failure as TourApiError).message).not.toContain('unexpected');
+        expect((failure as TourApiError).message).not.toContain('provider');
+      },
+    );
   });
 
   describe('isTourDemoAllowedInCurrentEnv (Demo Gate Policy)', () => {

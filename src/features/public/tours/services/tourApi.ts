@@ -12,6 +12,7 @@ import type {
   TourSearchItemDto,
 } from '../types/tour';
 import { TourApiError } from '../types/tour';
+import { publicTourSearchVi } from '../resources/vi';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -136,8 +137,20 @@ export async function searchTours(
 ): Promise<PagedToursResponseDto> {
   const queryString = query.toString();
   const endpoint = queryString ? `/api/tours?${queryString}` : '/api/tours';
-  const raw = await requestJson(endpoint, signal);
-  return parsePagedTours(raw);
+  try {
+    const raw = await requestJson(endpoint, signal);
+    return parsePagedTours(raw);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    if (error instanceof TourApiError && (error.status === 0 || error.status >= 500)) {
+      throw new TourApiError(
+        publicTourSearchVi.systemError,
+        error.status,
+        error.problem,
+      );
+    }
+    throw error;
+  }
 }
 
 export async function getTourCategories(signal?: AbortSignal): Promise<TourCategoryDto[]> {

@@ -13,6 +13,7 @@ import { TourEditorialHero } from './TourEditorialHero';
 import { TourPagination } from './TourPagination';
 import { TourRecommendationsSection } from './TourRecommendationsSection';
 import { TourEmptyState, TourErrorState, TourListSkeleton } from './TourStates';
+import { publicTourSearchVi } from '../resources/vi';
 
 type CurrentResult = { key: string } & ({ status: 'success'; data: PagedToursResponseDto } | { status: 'error'; message: string });
 type DisplayedResult = { query: string; filters: TourSearchState; data: PagedToursResponseDto };
@@ -47,7 +48,7 @@ function PublicExploreToursPage() {
       setDisplayed({ query: toPublicUrlParams(filters).toString(), filters: { ...filters }, data });
     }).catch((error: unknown) => {
       if (!active || (error instanceof Error && error.name === 'AbortError')) return;
-      setResult({ key: cycle, status: 'error', message: error instanceof Error ? error.message : 'Không thể kết nối máy chủ tour (MSG127).' });
+      setResult({ key: cycle, status: 'error', message: error instanceof Error ? error.message : publicTourSearchVi.systemError });
     });
     return () => { active = false; controller.abort(); };
   }, [cycle, filters, validation.isValid]);
@@ -69,9 +70,9 @@ function PublicExploreToursPage() {
     if (query !== queryKey) router.push(query ? `/tours?${query}` : '/tours');
   }
 
-  function clearFilters() {
+  function clearFilters(next?: TourSearchState) {
     const keyword = (filters.keyword ?? '').trim();
-    navigate({ destination: '', departureDate: '', minPrice: '', maxPrice: '', keyword, startDate: '', endDate: '', durationDays: '', category: '', minimumRating: '', sort: '', page: 1, pageSize: 20 });
+    navigate(next ?? { destination: '', departureDate: '', minPrice: '', maxPrice: '', keyword, startDate: '', endDate: '', durationDays: '', category: '', minimumRating: '', sort: '', page: 1, pageSize: 20 });
   }
 
   const loading = validation.isValid && !current;

@@ -265,6 +265,57 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
     });
   });
 
+  // ADR-002 (G3): the header claims a CSP optimum only when the backend says the CSP proved it.
+  describe('TRUTH: schedule provenance', () => {
+    it('shows the CSP optimum badge only for a completed CSP search', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
+        ...mockItinerary,
+        provenance: {
+          solverOutcome: 'csp',
+          solverKind: 'Csp',
+          objectiveMode: 'Lexicographic',
+          searchCompleted: true,
+          timeOfDayRefined: false,
+        },
+      });
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      expect(await screen.findByTestId('schedule-source-badge')).toBeDefined();
+      expect(screen.getByTestId('schedule-source-badge').textContent).toContain('Tối ưu bởi Thuật toán CSP');
+      expect(screen.queryByTestId('schedule-source-notice')).toBeNull();
+    });
+
+    it('shows the MSG35 notice and no CSP optimum claim for a heuristic fallback', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce({
+        ...mockItinerary,
+        provenance: {
+          solverOutcome: 'heuristic_fallback_csp_time_limit',
+          solverKind: 'CspFallback',
+          objectiveMode: 'Lexicographic',
+          searchCompleted: false,
+          timeOfDayRefined: false,
+        },
+      });
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      expect((await screen.findByTestId('schedule-source-notice')).textContent).toContain('heuristic nhanh');
+      expect(screen.queryByText(/Tối ưu bởi Thuật toán CSP/)).toBeNull();
+      expect(screen.queryByText(/Sắp xếp tối ưu bởi thuật toán CSP/)).toBeNull();
+    });
+
+    it('claims nothing for an itinerary saved before provenance existed', async () => {
+      vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
+
+      render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+      await screen.findByText('Lịch trình khám phá Đà Nẵng (8 giờ)');
+      expect(screen.queryByTestId('schedule-source-badge')).toBeNull();
+      expect(screen.queryByText(/Tối ưu bởi Thuật toán CSP/)).toBeNull();
+    });
+  });
+
   describe('TRUTH: truthful rendering & actions', () => {
     it('renders owner-only mutation controls and never exposes them to read-only members', async () => {
       vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItinerary);
@@ -406,11 +457,13 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
 
       render(<ViewSuggestedItineraryPage itineraryId="789" />);
 
+      // ADR-002 (G3): without provenance the card stays neutral instead of claiming an optimum.
       await waitFor(() => {
-        expect(screen.getByText('Đã tạo lịch trình')).toBeDefined();
+        expect(screen.getByText('Lịch tạo trước khi TripMate ghi nguồn gốc')).toBeDefined();
       });
 
       expect(screen.queryByText('Khớp sở thích cá nhân')).toBeNull();
+      expect(screen.queryByText('Tối ưu hoàn tất')).toBeNull();
     });
 
     it('TRUTH-5: renders version and read-only badge when canManage is false', async () => {

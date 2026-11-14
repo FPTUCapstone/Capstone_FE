@@ -7,11 +7,118 @@ import { formatVnd } from '@/lib/priceLabel';
 
 import type {
   ItinerarySuggestionDto,
+  SchedulingProvenanceDto,
   StopInfeasibleDetails,
   StopInfeasibleReason,
   ItineraryDetailItemDto,
   TransportMode,
 } from '../types/schedulingTypes';
+
+/** SRS MSG35: the CSP did not finish in time, so the plan comes from the fast heuristic. */
+export const CSP_FALLBACK_NOTICE =
+  'Lịch trình được tạo bằng chế độ heuristic nhanh do bài toán quá phức tạp để thuật toán CSP hoàn tất kịp thời.';
+
+export type ProvenanceTone = 'optimal' | 'best' | 'fallback' | 'manual' | 'heuristic';
+
+export interface ProvenancePresentation {
+  /** Short badge text. */
+  label: string;
+  /** One line explaining the label. */
+  detail: string;
+  tone: ProvenanceTone;
+  /** A notice the traveler must see (MSG35), or null. */
+  notice: string | null;
+}
+
+/**
+ * ADR-002 (G3): the only place that turns the backend provenance into UI text. "Optimal by CSP" is
+ * claimed only when the CSP explored every option and its order was kept. Returns null for itineraries
+ * saved before provenance existed, so nothing is claimed for them.
+ */
+export function describeProvenance(
+  provenance: SchedulingProvenanceDto | null | undefined,
+): ProvenancePresentation | null {
+  if (!provenance) return null;
+  if (provenance.solverOutcome === 'manual_order') {
+    return {
+      label: 'Thứ tự do bạn sắp xếp',
+      detail: 'Lịch theo thứ tự bạn đã chỉnh',
+      tone: 'manual',
+      notice: null,
+    };
+  }
+  if (provenance.solverKind === 'CspFallback') {
+    return {
+      label: 'Chế độ heuristic nhanh',
+      detail: 'Thuật toán CSP không hoàn tất kịp thời',
+      tone: 'fallback',
+      notice: CSP_FALLBACK_NOTICE,
+    };
+  }
+  if (provenance.solverKind === 'Csp') {
+    if (provenance.searchCompleted !== true) {
+      return {
+        label: 'Lịch tốt nhất CSP tìm được',
+        detail: 'Nhiều lựa chọn nên CSP dừng ở giới hạn tìm kiếm; chưa chứng minh là tối ưu',
+        tone: 'best',
+        notice: null,
+      };
+    }
+    if (provenance.timeOfDayRefined) {
+      return {
+        label: 'Xếp bởi Thuật toán CSP',
+        detail: 'Thứ tự đã được chỉnh theo giờ trong ngày',
+        tone: 'best',
+        notice: null,
+      };
+    }
+    return {
+      label: 'Tối ưu bởi Thuật toán CSP',
+      detail: 'CSP đã xét hết các phương án',
+      tone: 'optimal',
+      notice: null,
+    };
+  }
+  return {
+    label: 'Xếp bởi thuật toán heuristic',
+    detail: 'Lịch không do thuật toán CSP chọn',
+    tone: 'heuristic',
+    notice: null,
+  };
+}
+
+/** Badge colours per provenance tone; only a proven optimum uses the brand "verified" teal. */
+export const PROVENANCE_BADGE_CLASS: Record<ProvenanceTone, string> = {
+  optimal: 'border-teal-200 bg-teal-50 text-[#103B39]',
+  best: 'border-sky-200 bg-sky-50 text-sky-900',
+  fallback: 'border-amber-300 bg-amber-50 text-amber-900',
+  manual: 'border-slate-200 bg-slate-50 text-slate-700',
+  heuristic: 'border-slate-200 bg-slate-50 text-slate-700',
+};
+
+/** Success message after creating an itinerary: MSG35 for a fallback, an optimum claim only when proven. */
+export function creationSuccessMessage(provenance: SchedulingProvenanceDto | null | undefined): {
+  messageCode: string;
+  message: string;
+} {
+  const view = describeProvenance(provenance);
+  if (view?.tone === 'fallback') {
+    return { messageCode: 'MSG35', message: CSP_FALLBACK_NOTICE };
+  }
+  if (view?.tone === 'optimal') {
+    return {
+      messageCode: 'MSG30',
+      message: 'Khởi tạo lịch trình thành công! Thuật toán CSP đã tìm ra phương án tối ưu.',
+    };
+  }
+  if (view?.tone === 'best') {
+    return {
+      messageCode: 'MSG30',
+      message: 'Khởi tạo lịch trình thành công! Thuật toán CSP đã chọn phương án tốt nhất tìm được.',
+    };
+  }
+  return { messageCode: 'MSG30', message: 'Khởi tạo lịch trình thành công!' };
+}
 
 /** The one way a stop is named in the UI: its place name, or its position for an unnamed stop. */
 export function stopDisplayName(item: Pick<ItineraryDetailItemDto, 'poiName' | 'sequenceNo'>): string {

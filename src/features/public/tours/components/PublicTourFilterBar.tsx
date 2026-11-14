@@ -10,7 +10,7 @@ interface Props {
   categories: TourCategoryDto[];
   loading: boolean;
   onApply: (state: TourSearchState) => void;
-  onReset: () => void;
+  onReset: (state: TourSearchState) => void;
 }
 
 const control = 'mt-1 block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-lightTeal';
@@ -28,6 +28,27 @@ export function PublicTourFilterBar({ filters, categories, loading, onApply, onR
   }
 
   const update = (key: keyof TourSearchState, value: string) => setDraft({ ...draft, [key]: value });
+
+  function reset() {
+    const next: TourSearchState = {
+      destination: '',
+      departureDate: '',
+      minPrice: '',
+      maxPrice: '',
+      keyword: (draft.keyword ?? '').trim(),
+      startDate: '',
+      endDate: '',
+      durationDays: '',
+      category: '',
+      minimumRating: '',
+      sort: '',
+      page: 1,
+      pageSize: 20,
+    };
+    setDraft(next);
+    setError(null);
+    onReset(next);
+  }
 
   return (
     <form onSubmit={submit} noValidate aria-label="Bộ lọc tìm kiếm tour" className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-xs">
@@ -73,7 +94,7 @@ export function PublicTourFilterBar({ filters, categories, loading, onApply, onR
       {error && <p role="alert" className="mt-4 text-sm font-semibold text-red-700">{error}</p>}
       <div className="mt-5 flex flex-wrap gap-3">
         <button type="submit" disabled={loading} className="min-h-11 rounded-xl bg-brand-teal px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-brightTeal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2 disabled:opacity-60">{loading ? 'Đang tìm…' : 'Tìm kiếm tour'}</button>
-        <button type="button" onClick={onReset} className="min-h-11 rounded-xl border border-slate-300 px-5 py-2 text-sm font-bold transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">Xóa bộ lọc</button>
+        <button type="button" onClick={reset} className="min-h-11 rounded-xl border border-slate-300 px-5 py-2 text-sm font-bold transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">Xóa bộ lọc</button>
       </div>
     </form>
   );
