@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getTourCategories, getTourRecommendations, searchTours } from '../services/tourApi';
+import { getTourCategories, getTourRecommendations, refreshTourRecommendations, searchTours } from '../services/tourApi';
 import { ExploreToursPage } from './ExploreToursPage';
 import type { PagedToursResponseDto } from '../types/tour';
 import { TourApiError } from '../types/tour';
@@ -25,6 +25,7 @@ vi.mock('../services/tourApi', async (importOriginal) => {
     searchTours: vi.fn(),
     getTourCategories: vi.fn(),
     getTourRecommendations: vi.fn(),
+    refreshTourRecommendations: vi.fn(),
   };
 });
 
@@ -80,13 +81,25 @@ describe('ExploreToursPage', () => {
     vi.mocked(searchTours).mockReset();
     vi.mocked(getTourCategories).mockReset();
     vi.mocked(getTourRecommendations).mockReset();
+    vi.mocked(refreshTourRecommendations).mockReset();
 
     vi.mocked(searchTours).mockResolvedValue(mockToursResponse);
     vi.mocked(getTourCategories).mockResolvedValue([]);
     vi.mocked(getTourRecommendations).mockResolvedValue({
+      page: 1,
+      pageSize: 20,
+      totalCount: 0,
+      totalPages: 0,
+      asOfUtc: '2026-10-01T00:00:00Z',
+      criteria: { destination: null, startDate: null, endDate: null, minBudget: null, maxBudget: null },
       items: [],
-      isPendingBe: true,
       isDemo: false,
+    });
+    vi.mocked(refreshTourRecommendations).mockResolvedValue({
+      page: 1, pageSize: 20, totalCount: 0, totalPages: 0,
+      asOfUtc: '2026-10-01T00:00:00Z',
+      criteria: { destination: null, startDate: null, endDate: null, minBudget: null, maxBudget: null },
+      items: [], isDemo: false,
     });
   });
 
@@ -156,7 +169,7 @@ describe('ExploreToursPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Không tìm thấy tour phù hợp')).toBeTruthy();
-      expect(screen.getByText(/MSG64/)).toBeTruthy();
+      expect(screen.getAllByText(/MSG64/).length).toBeGreaterThan(0);
     });
   });
 
@@ -172,14 +185,26 @@ describe('ExploreToursPage', () => {
     });
   });
 
-  it('enforces NO PHANTOM API rule on UC-25 recommendations: displays pending status, no fake production data', async () => {
+  it('maps missing interest tags to MSG183 with Travel Preferences', async () => {
+    vi.mocked(getTourRecommendations).mockRejectedValue(new TourApiError(
+      'Interest tags required', 422,
+      { errorCode: 'tour_recommendation.interest_tags_required' },
+    ));
+    const { container } = render(<ExploreToursPage />);
+    await waitFor(() => {
+      const alert = container.querySelector('[data-message-code="MSG183"]');
+      expect(alert?.textContent).toContain('thẻ sở thích');
+      expect(alert?.querySelector('a')?.getAttribute('href')).toBe('/account/preferences');
+    });
+  });
+
+  it('renders the MSG64 empty recommendation state without fake production data', async () => {
     render(<ExploreToursPage />);
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Tính Năng Gợi Ý AI Đang Được Kết Nối/i),
+        screen.getByText(/Không tìm thấy tour phù hợp \(MSG64\)/i),
       ).toBeTruthy();
-      expect(screen.getByText('PENDING_BE_INTEGRATION')).toBeTruthy();
     });
   });
 
@@ -196,7 +221,7 @@ describe('ExploreToursPage', () => {
           expect.objectContaining({ allowDemo: false }),
         );
         expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeNull();
-        expect(screen.getByText('PENDING_BE_INTEGRATION')).toBeTruthy();
+        expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG/)).toBeNull();
       });
     });
 
@@ -236,6 +261,12 @@ describe('ExploreToursPage', () => {
       currentSearch = 'demo=1';
 
       vi.mocked(getTourRecommendations).mockResolvedValue({
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        totalPages: 1,
+        asOfUtc: '2026-10-01T00:00:00Z',
+        criteria: null,
         items: [
           {
             tour: mockToursResponse.items[0],
@@ -243,7 +274,6 @@ describe('ExploreToursPage', () => {
             matchingReasons: ['Phù hợp với sở thích Văn hóa'],
           },
         ],
-        isPendingBe: false,
         isDemo: true,
       });
 

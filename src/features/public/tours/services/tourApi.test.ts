@@ -5,10 +5,12 @@ import {
   getTourRecommendations,
   isTourDemoAllowedInCurrentEnv,
   parsePagedTours,
+  parseTourRecommendations,
   parseTourSearchItem,
   searchTours,
 } from './tourApi';
 import { TourApiError } from '../types/tour';
+import { AuthStorage } from '@/features/auth/session/authSession';
 
 describe('tourApi service', () => {
   const originalFetch = globalThis.fetch;
@@ -314,31 +316,47 @@ describe('tourApi service', () => {
   });
 
   describe('getTourRecommendations (UC-25 Governance & Demo Lockdown)', () => {
-    it('returns empty array with isPendingBe: true in production mode without silent fake data', async () => {
-      const res = await getTourRecommendations();
-      expect(res.isPendingBe).toBe(true);
-      expect(res.isDemo).toBe(false);
-      expect(res.items).toHaveLength(0);
+    const recommendationPage = (criteria: unknown, score = 80.01) => ({
+      page: 1, pageSize: 20, totalCount: criteria === null ? 0 : 1, totalPages: criteria === null ? 0 : 1,
+      asOfUtc: '2026-10-01T00:00:00Z', criteria,
+      items: criteria === null ? [] : [{
+        tour: {
+          tourId: '10', title: 'Hội An', destinations: ['Hội An'], operatorName: 'TripMate',
+          durationDays: 2, basePrice: 800000, currency: 'VND', representativeScheduleId: '20',
+          departureAtUtc: '2026-11-01T00:00:00Z', availabilityStatus: 'available', remainingSlots: 1,
+          thumbnailUrl: null, aggregateRating: null,
+        }, matchingScore: score, matchingReasons: [],
+      }],
     });
 
-    it('DEMO-5: rejects allowDemo: true in production mode and returns pending state (NO fixtures)', async () => {
-      setNodeEnv('production');
-      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    it('GETs latest then POSTs once when no snapshot exists, preserving D7 empty reasons', async () => {
+      vi.spyOn(AuthStorage, 'getAccessToken').mockReturnValue('traveler-token');
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify(recommendationPage(null)), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(recommendationPage({ destination: null, startDate: null, endDate: null, minBudget: null, maxBudget: null })), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      globalThis.fetch = fetchMock;
 
-      const res = await getTourRecommendations({ allowDemo: true });
-      expect(res.isPendingBe).toBe(true);
-      expect(res.isDemo).toBe(false);
-      expect(res.items).toHaveLength(0);
+      const result = await getTourRecommendations();
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'GET' });
+      expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: 'POST' });
+      expect(result.items[0]).toMatchObject({ matchingScore: 80.01, matchingReasons: [] });
     });
 
-    it('returns empty array when allowDemo is true in development but flag is missing or false', async () => {
-      setNodeEnv('development');
-      delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+    it('rejects a nullable or missing matchingReasons contract violation', () => {
+      const body = recommendationPage({ destination: null });
+      (body.items[0] as Record<string, unknown>).matchingReasons = null;
+      expect(() => parseTourRecommendations(body)).toThrow(TourApiError);
+    });
 
-      const res = await getTourRecommendations({ allowDemo: true });
-      expect(res.isPendingBe).toBe(true);
-      expect(res.isDemo).toBe(false);
-      expect(res.items).toHaveLength(0);
+    it('strictly rejects 80.00 and accepts 80.01', () => {
+      expect(() => parseTourRecommendations(
+        recommendationPage({ destination: null }, 80.00),
+      )).toThrow(TourApiError);
+      expect(parseTourRecommendations(
+        recommendationPage({ destination: null }, 80.01),
+      ).items).toHaveLength(1);
     });
 
     it('DEMO-7: returns demo fixtures when non-production, flag is true, and allowDemo is true', async () => {
@@ -346,7 +364,6 @@ describe('tourApi service', () => {
       process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
 
       const res = await getTourRecommendations({ allowDemo: true });
-      expect(res.isPendingBe).toBe(false);
       expect(res.isDemo).toBe(true);
       expect(res.items.length).toBeGreaterThan(0);
       expect(res.items[0].matchingScore).toBeGreaterThanOrEqual(80);

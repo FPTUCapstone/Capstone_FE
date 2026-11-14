@@ -6,17 +6,27 @@ import { formatDateDisplay, formatVndPrice } from '../utils/tourQuery';
 
 interface TourRecommendationsSectionProps {
   recommendations: TourRecommendationDto[];
-  isPendingBe: boolean;
   isDemo: boolean;
+  isLoading?: boolean;
+  errorCode?: string | null;
+  totalCount?: number;
+  page?: number;
+  totalPages?: number;
   onRefresh?: () => void;
+  onPageChange?: (page: number) => void;
   isRefreshing?: boolean;
 }
 
 export function TourRecommendationsSection({
   recommendations,
-  isPendingBe,
   isDemo,
+  isLoading = false,
+  errorCode = null,
+  totalCount = recommendations.length,
+  page = 1,
+  totalPages = 1,
   onRefresh,
+  onPageChange,
   isRefreshing,
 }: TourRecommendationsSectionProps) {
   return (
@@ -47,7 +57,7 @@ export function TourRecommendationsSection({
             <span>Sở thích du lịch</span>
           </Link>
 
-          {isDemo && onRefresh && (
+          {onRefresh && (
             <button
               type="button"
               onClick={onRefresh}
@@ -63,32 +73,43 @@ export function TourRecommendationsSection({
         </div>
       </div>
 
-      {/* Production State: PENDING_BE_INTEGRATION (Strict NO PHANTOM API) */}
-      {isPendingBe && !isDemo && (
+      {isLoading && recommendations.length === 0 && (
         <div className="rounded-2xl border border-teal-100 bg-white/90 p-5 sm:p-6 text-center shadow-xs">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-teal-700">
             <span className="material-symbols-outlined text-2xl">insights</span>
           </div>
-          <h3 className="mb-1 text-sm font-bold text-slate-900">
-            Tính Năng Gợi Ý AI Đang Được Kết Nối
-          </h3>
-          <p className="mx-auto max-w-xl text-xs text-slate-600 leading-relaxed">
-            Thuật toán gợi ý tour tương thích cá nhân hóa hiện đang trong quá trình tích hợp máy chủ Backend
-            <span className="ml-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-              PENDING_BE_INTEGRATION
-            </span>
-            . Bạn có thể cập nhật sở thích trước tại trang cá nhân hoặc tìm kiếm toàn bộ các tour đã công bố bên dưới.
-          </p>
+          <h3 className="mb-1 text-sm font-bold text-slate-900">Đang tải gợi ý phù hợp…</h3>
         </div>
       )}
 
-      {/* Explicit DEMO_ONLY fixture display */}
-      {isDemo && recommendations.length > 0 && (
+      {errorCode === 'tour_recommendation.interest_tags_required' && (
+        <div role="alert" data-message-code="MSG183" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+          Bạn cần thiết lập ít nhất một thẻ sở thích để nhận gợi ý tour.{' '}
+          <Link href="/account/preferences" className="font-bold underline">Mở Travel Preferences</Link>
+        </div>
+      )}
+
+      {errorCode === 'MSG127' && (
+        <div role="alert" className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          Không thể cập nhật gợi ý tour (MSG127). Danh sách gần nhất vẫn được giữ lại.
+        </div>
+      )}
+
+      {!isLoading && !errorCode && recommendations.length === 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center text-sm text-slate-700">
+          Không tìm thấy tour phù hợp (MSG64).{' '}
+          <Link href="/tours" className="font-bold text-teal-700 underline">Mở Tour Search</Link>
+        </div>
+      )}
+
+      {recommendations.length > 0 && (
         <div>
-          <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
+          {isDemo && <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
             <span className="material-symbols-outlined text-sm">science</span>
             <span>CHẾ ĐỘ MÔ PHỎNG (DEMO ONLY) — Minh họa thuật toán đối sánh độ tương thích &gt;80%</span>
-          </div>
+          </div>}
+
+          <p className="mb-3 text-xs text-slate-600">{totalCount} tour phù hợp · trang {page}/{Math.max(totalPages, 1)}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {recommendations.map((rec) => (
@@ -109,7 +130,7 @@ export function TourRecommendationsSection({
                     </div>
                   )}
                   <span className="absolute top-2 left-2 rounded-md bg-teal-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                    Match {rec.matchingScore}%
+                    Match {rec.matchingScore.toFixed(2).replace(/\.00$/, '')}%
                   </span>
                 </div>
 
@@ -117,17 +138,20 @@ export function TourRecommendationsSection({
                   <div>
                     <h4 className="line-clamp-2 text-sm font-bold text-slate-900 mb-1">
                       <Link
-                        href={`/tours/${encodeURIComponent(rec.tour.tourId)}?demo=1`}
+                        href={`/tours/${encodeURIComponent(rec.tour.tourId)}${isDemo ? '?demo=1' : ''}`}
                         className="hover:text-teal-700 transition"
                       >
                         {rec.tour.title}
                       </Link>
                     </h4>
                     <p className="text-[11px] text-slate-500 mb-2">
-                      {rec.tour.operatorName} • {rec.tour.durationDays} ngày • Khởi hành:{' '}
+                      {rec.tour.destinations.join(', ')} • {rec.tour.durationDays} ngày • Khởi hành:{' '}
                       {formatDateDisplay(rec.tour.departureAtUtc)}
                     </p>
-                    <ul className="mb-2 space-y-1">
+                    <p className="mb-2 text-[11px] font-semibold text-slate-600">
+                      Còn {rec.tour.remainingSlots ?? 0} chỗ
+                    </p>
+                    {rec.matchingReasons.length > 0 && <ul className="mb-2 space-y-1">
                       {rec.matchingReasons.map((reason, i) => (
                         <li key={i} className="flex items-start gap-1 text-[11px] text-teal-800">
                           <span className="material-symbols-outlined text-xs text-teal-600 mt-0.5">
@@ -136,7 +160,7 @@ export function TourRecommendationsSection({
                           <span>{reason}</span>
                         </li>
                       ))}
-                    </ul>
+                    </ul>}
                   </div>
 
                   <div className="flex items-center justify-between border-t border-slate-100 pt-2">
@@ -144,7 +168,7 @@ export function TourRecommendationsSection({
                       {formatVndPrice(rec.tour.basePrice)}
                     </span>
                     <Link
-                      href={`/tours/${encodeURIComponent(rec.tour.tourId)}?demo=1`}
+                      href={`/tours/${encodeURIComponent(rec.tour.tourId)}${isDemo ? '?demo=1' : ''}`}
                       className="rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-bold text-teal-700 hover:bg-teal-600 hover:text-white transition"
                     >
                       Xem chi tiết
@@ -154,6 +178,12 @@ export function TourRecommendationsSection({
               </div>
             ))}
           </div>
+          {onPageChange && totalPages > 1 && (
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="rounded-lg border px-3 py-1 text-xs font-bold disabled:opacity-40">Trang trước</button>
+              <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} className="rounded-lg border px-3 py-1 text-xs font-bold disabled:opacity-40">Trang sau</button>
+            </div>
+          )}
         </div>
       )}
     </section>

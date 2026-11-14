@@ -141,6 +141,25 @@ export interface TourRecommendationDto {
   matchingReasons: string[];
 }
 
+export interface TourRecommendationCriteriaDto {
+  destination: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  minBudget: number | null;
+  maxBudget: number | null;
+}
+
+export interface TourRecommendationsResponseDto {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  asOfUtc: string;
+  criteria: TourRecommendationCriteriaDto | null;
+  items: TourRecommendationDto[];
+  isDemo: boolean;
+}
+
 export interface ApiProblem {
   status?: number;
   title?: string;
