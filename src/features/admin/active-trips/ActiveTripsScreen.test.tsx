@@ -23,7 +23,8 @@ const response = {
   summary: { activeTrips: 1, tripsWithOpenAlerts: 0, travelersOnTrip: 2 },
   pageNumber: 1, pageSize: 20, totalCount: 1, totalPages: 1,
   items: [{ tripId: '42', tripCode: 'TRIP-42', tripType: 'SelfPlanned' as const, currentState: 'Exploring' as const,
-    groupOrTraveler: 'Linh Nguyen', destination: null, startedAtUtc: '2026-09-26T01:30:00Z', currentDay: 1, members: 2, openAlerts: 0 }],
+    groupOrTraveler: 'Linh Nguyen', destination: null, startedAtUtc: '2026-09-26T01:30:00Z', currentDay: 1, members: 2, openAlerts: 0,
+    refundReviewRequired: false }],
 };
 
 describe('ActiveTripsScreen', () => {
@@ -37,6 +38,31 @@ describe('ActiveTripsScreen', () => {
     expect(screen.getByText('26/09/2026 08:30')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'View details for TRIP-42' }).getAttribute('href')).toBe('/admin/trips/active/42');
     expect(screen.getByText('View Details')).toBeTruthy();
+  });
+
+  it('marks only trips whose paid booking needs refund review', async () => {
+    vi.mocked(fetchActiveTrips).mockResolvedValue({
+      ...response,
+      summary: { ...response.summary, activeTrips: 2 },
+      totalCount: 2,
+      items: [
+        { ...response.items[0], tripId: '43', tripCode: 'TRIP-43', tripType: 'Tour', currentState: 'Interrupted',
+          refundReviewRequired: true },
+        response.items[0],
+      ],
+    });
+    render(<ActiveTripsScreen />);
+    await screen.findByText('TRIP-42');
+
+    const badges = screen.getAllByText('Refund review needed');
+    expect(badges).toHaveLength(1);
+    expect(badges[0].closest('tr')?.textContent).toContain('TRIP-43');
+  });
+
+  it('does not show the refund review label when no trip needs it', async () => {
+    render(<ActiveTripsScreen />);
+    await screen.findByText('TRIP-42');
+    expect(screen.queryByText('Refund review needed')).toBeNull();
   });
 
   it('does not fetch while the Administrator is typing', async () => {

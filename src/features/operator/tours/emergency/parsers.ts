@@ -106,14 +106,25 @@ export function parseEmergencyTourActionResponse(data: unknown): EmergencyTourAc
     throw new EmergencyTourParseError('committedAtUtc must be a valid ISO date string.');
   }
 
+  const refundsSubmitted = optionalCount(data.refundsSubmitted, 'refundsSubmitted');
+
   return {
     operationId,
     tourScheduleId,
     action: action.trim(),
     scheduleStatus: scheduleStatus.trim(),
     affectedBookingCount,
+    ...(refundsSubmitted === undefined ? {} : { refundsSubmitted }),
     committedAtUtc,
   };
+}
+
+function optionalCount(value: unknown, field: string): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (!Number.isSafeInteger(value) || (value as number) < 0) {
+    throw new EmergencyTourParseError(`${field} must be a non-negative whole number.`);
+  }
+  return value as number;
 }
 
 function optionalText(value: unknown, field: string): string | null {

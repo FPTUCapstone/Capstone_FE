@@ -58,6 +58,7 @@ describe('Operator Emergency API', () => {
       action: 'CancelBeforeDeparture',
       scheduleStatus: 'Cancelled',
       affectedBookingCount: 3,
+      refundsSubmitted: 2,
       committedAtUtc: '2026-11-02T12:00:00Z',
     };
 
@@ -78,6 +79,7 @@ describe('Operator Emergency API', () => {
     const result = await cancelBeforeDeparture(10, 20, payload, '00000000-0000-0000-0000-000000000001');
     expect(result.operationId).toBe(55);
     expect(result.scheduleStatus).toBe('Cancelled');
+    expect(result.refundsSubmitted).toBe(2);
 
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/operator/tours/10/schedules/20/cancel-before-departure'),
@@ -147,6 +149,7 @@ describe('Operator Emergency API', () => {
     const result = await emergencyStopActive(10, 20, payload, '00000000-0000-0000-0000-000000000002');
     expect(result.operationId).toBe(56);
     expect(result.scheduleStatus).toBe('EmergencyStopped');
+    expect(result.refundsSubmitted).toBeUndefined();
 
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/operator/tours/10/schedules/20/emergency-stop'),
