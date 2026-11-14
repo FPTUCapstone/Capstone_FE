@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getTourCategories, getTourRecommendations, searchTours } from '../services/tourApi';
+import { getTourCategories, getTourRecommendations, refreshTourRecommendations, searchTours } from '../services/tourApi';
 import { ExploreToursPage } from './ExploreToursPage';
 import type { PagedToursResponseDto } from '../types/tour';
 import { TourApiError } from '../types/tour';
@@ -25,6 +25,7 @@ vi.mock('../services/tourApi', async (importOriginal) => {
     searchTours: vi.fn(),
     getTourCategories: vi.fn(),
     getTourRecommendations: vi.fn(),
+    refreshTourRecommendations: vi.fn(),
   };
 });
 
@@ -81,13 +82,25 @@ describe('ExploreToursPage', () => {
     vi.mocked(searchTours).mockReset();
     vi.mocked(getTourCategories).mockReset();
     vi.mocked(getTourRecommendations).mockReset();
+    vi.mocked(refreshTourRecommendations).mockReset();
 
     vi.mocked(searchTours).mockResolvedValue(mockToursResponse);
     vi.mocked(getTourCategories).mockResolvedValue([]);
     vi.mocked(getTourRecommendations).mockResolvedValue({
+      page: 1,
+      pageSize: 20,
+      totalCount: 0,
+      totalPages: 0,
+      asOfUtc: '2026-10-01T00:00:00Z',
+      criteria: { destination: null, startDate: null, endDate: null, minBudget: null, maxBudget: null },
       items: [],
-      isPendingBe: true,
       isDemo: false,
+    });
+    vi.mocked(refreshTourRecommendations).mockResolvedValue({
+      page: 1, pageSize: 20, totalCount: 0, totalPages: 0,
+      asOfUtc: '2026-10-01T00:00:00Z',
+      criteria: { destination: null, startDate: null, endDate: null, minBudget: null, maxBudget: null },
+      items: [], isDemo: false,
     });
   });
 
@@ -185,16 +198,81 @@ describe('ExploreToursPage', () => {
     expect(searchTours).toHaveBeenCalledTimes(calls);
   });
 
-  it('enforces NO PHANTOM API rule on UC-25 recommendations: displays pending status, no fake production data', async () => {
+  it('maps missing interest tags to MSG183 with Travel Preferences', async () => {
+    vi.mocked(getTourRecommendations).mockRejectedValue(new TourApiError(
+      'Interest tags required', 422,
+      { errorCode: 'tour_recommendation.interest_tags_required' },
+    ));
+    const { container } = render(<ExploreToursPage />);
+    await waitFor(() => {
+      const alert = container.querySelector('[data-message-code="MSG183"]');
+      expect(alert?.textContent).toContain('thẻ sở thích');
+      expect(alert?.querySelector('a')?.getAttribute('href')).toBe('/account/preferences');
+    });
+  });
+
+  it('renders the MSG64 empty recommendation state without fake production data', async () => {
     render(<ExploreToursPage />);
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Tính Năng Gợi Ý AI Đang Được Kết Nối/i),
+        screen.getByText(/Không tìm thấy tour phù hợp \(MSG64\)/i),
       ).toBeTruthy();
-      expect(screen.getByText('PENDING_BE_INTEGRATION')).toBeTruthy();
     });
   });
+
+  it('keeps bilingual Search results when Recommendations refresh and change page', async () => {
+    currentSearch = 'keyword=Hue&destination=Hu%E1%BA%BF&startDate=2026-12-10&minPrice=500000';
+    const originalUrl = window.location.href;
+    const recommendation = { tour: { ...mockToursResponse.items[0], title: 'Recommended tour' }, matchingScore: 92, matchingReasons: [] };
+    const recommendationPage = {
+      page: 1, pageSize: 20, totalCount: 21, totalPages: 2,
+      asOfUtc: '2026-10-01T00:00:00Z', criteria: null,
+      items: [recommendation], isDemo: false,
+    };
+    vi.mocked(refreshTourRecommendations).mockResolvedValue(recommendationPage);
+    vi.mocked(getTourRecommendations).mockResolvedValueOnce(recommendationPage).mockResolvedValueOnce({
+      ...recommendationPage, page: 2,
+      items: [{ ...recommendation, tour: { ...recommendation.tour, title: 'Next recommended tour' } }],
+    });
+
+    try {
+      const { rerender } = render(<ExploreToursPage />);
+      const recommendations = within(screen.getByRole('region', { name: 'Gợi ý tour cá nhân hóa' }));
+      await recommendations.findByText('Recommended tour');
+      await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
+      expect(getTourRecommendations).toHaveBeenCalledWith(expect.objectContaining({
+        allowDemo: false,
+        initialCriteria: { destination: 'Huế', startDate: '2026-12-10', endDate: null, minBudget: 500000, maxBudget: null },
+      }));
+
+      const searches = vi.mocked(searchTours).mock.calls.length;
+      fireEvent.change(screen.getByLabelText('Ngôn ngữ tìm kiếm'), { target: { value: 'en' } });
+      expect((screen.getByLabelText('Keyword') as HTMLInputElement).value).toBe('Hue');
+      expect(recommendations.getByText('Recommended tour')).toBeTruthy();
+      expect(getTourRecommendations).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(recommendations.getByRole('button', { name: /Làm mới/ }));
+      await waitFor(() => expect(refreshTourRecommendations).toHaveBeenCalledWith({
+        destination: 'Huế', startDate: '2026-12-10', endDate: null, minBudget: 500000, maxBudget: null,
+      }));
+      await waitFor(() => expect((recommendations.getByRole('button', { name: 'Trang sau' }) as HTMLButtonElement).disabled).toBe(false));
+      fireEvent.click(recommendations.getByRole('button', { name: 'Trang sau' }));
+      await recommendations.findByText('Next recommended tour');
+      expect(getTourRecommendations).toHaveBeenLastCalledWith({ page: 2, allowDemo: false });
+      fireEvent.change(screen.getByLabelText('Keyword'), { target: { value: 'Unsubmitted draft' } });
+      currentSearch += '&recommendationPage=2';
+      rerender(<ExploreToursPage />);
+      expect((screen.getByLabelText('Keyword') as HTMLInputElement).value).toBe('Unsubmitted draft');
+      const detailLink = screen.getByRole('link', { name: 'Hành Trình Di Sản Phố Cổ Hội An' });
+      expect(detailLink.getAttribute('href')).toContain('recommendationPage=2');
+      expect(screen.getByText('Hành Trình Di Sản Phố Cổ Hội An')).toBeTruthy();
+      expect(searchTours).toHaveBeenCalledTimes(searches);
+    } finally {
+      window.history.replaceState(null, '', originalUrl);
+    }
+  });
+
 
   describe('demo fixture environment lockdown (Blocker 2)', () => {
     it('DEMO-1: NODE_ENV=production + NEXT_PUBLIC_ENABLE_DEMO_FIXTURES=true + ?demo=1 -> NO fixture', async () => {
@@ -209,7 +287,7 @@ describe('ExploreToursPage', () => {
           expect.objectContaining({ allowDemo: false }),
         );
         expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG \(DEMO ONLY\)/i)).toBeNull();
-        expect(screen.getByText('PENDING_BE_INTEGRATION')).toBeTruthy();
+        expect(screen.queryByText(/CHẾ ĐỘ MÔ PHỎNG/)).toBeNull();
       });
     });
 
@@ -249,6 +327,12 @@ describe('ExploreToursPage', () => {
       currentSearch = 'demo=1';
 
       vi.mocked(getTourRecommendations).mockResolvedValue({
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        totalPages: 1,
+        asOfUtc: '2026-10-01T00:00:00Z',
+        criteria: null,
         items: [
           {
             tour: mockToursResponse.items[0],
@@ -256,7 +340,6 @@ describe('ExploreToursPage', () => {
             matchingReasons: ['Phù hợp với sở thích Văn hóa'],
           },
         ],
-        isPendingBe: false,
         isDemo: true,
       });
 

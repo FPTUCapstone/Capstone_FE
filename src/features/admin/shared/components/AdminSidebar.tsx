@@ -61,6 +61,8 @@ export function AdminSidebar({
       items: [
         { href: ROUTES.admin.tourOperatorApplications, label: 'Operator Applications', icon: 'assignment_ind' },
         { href: ROUTES.admin.tourReviews, label: 'Tour Moderation', icon: 'rate_review' },
+        { href: ROUTES.admin.createServiceProvider, label: 'Create Service Provider', icon: 'person_add' },
+        { href: ROUTES.admin.commissionReconciliation, label: 'Commission Reconciliation', icon: 'account_balance_wallet' },
       ],
     },
     {
@@ -94,6 +96,7 @@ export function AdminSidebar({
       items: [
         { href: ROUTES.admin.users, label: 'User Governance', icon: 'manage_accounts' },
         { href: ROUTES.admin.reports, label: 'Statistical Reports', icon: 'analytics' },
+        { href: ROUTES.admin.commissionReconciliation, label: 'Commission Reconciliation', icon: 'account_balance_wallet' },
       ],
     },
     {
