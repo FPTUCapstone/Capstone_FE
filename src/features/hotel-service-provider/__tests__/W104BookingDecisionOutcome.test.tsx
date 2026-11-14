@@ -24,83 +24,83 @@ describe('Screen W104: Booking Decision & Service Outcome (Service Provider Work
       </ToastProvider>
     );
 
-  it('renders 62/38 split layout, traveler identity and BR-196 direct payment notice', async () => {
+  it('renders 62/38 split layout, traveler identity and direct payment notice without technical metadata', async () => {
     renderComponent('req-001');
 
     await waitFor(() => {
       expect(screen.getAllByText('HBR-20261113-082').length).toBeGreaterThan(0);
     });
 
-    // Check 62/38 sections
-    expect(screen.getByText('Reservation Parameters & Stay Details')).toBeDefined();
-    expect(screen.getByText('Traveler Identity & Special Inquiries')).toBeDefined();
+    // Check 62/38 sections in Vietnamese
+    expect(screen.getByText('Thông tin Đặt phòng & Lưu trú')).toBeDefined();
+    expect(screen.getByText('Thông tin Du khách & Yêu cầu riêng')).toBeDefined();
 
     // Check Traveler Info
     expect(screen.getByText('Nguyễn Văn An')).toBeDefined();
     expect(screen.getByText('0912 345 678')).toBeDefined();
     expect(screen.getByText('an.nguyen@example.com')).toBeDefined();
 
-    // Check BR-196 Mandatory Policy Notice
-    expect(screen.getByText(/Direct Hotel Payment Policy \(BR-196\)/i)).toBeDefined();
+    // Check Direct Payment Policy Notice (no visible BR-196 tag)
+    expect(screen.getByText(/Chính sách thanh toán trực tiếp tại khách sạn/i)).toBeDefined();
     expect(
-      screen.getByText(/The traveler pays the hotel directly upon check-in/i)
+      screen.getByText(/Khách hàng sẽ thanh toán trực tiếp cho khách sạn khi nhận phòng/i)
     ).toBeDefined();
   });
 
-  it('executes Confirm decision flow via CR-05 dialog and shows MSG203', async () => {
+  it('executes Confirm decision flow via dialog and shows MSG203', async () => {
     renderComponent('req-001');
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Confirm Request/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Xác nhận tiếp nhận/i })).toBeDefined();
     });
 
     // Click Confirm button
-    fireEvent.click(screen.getByRole('button', { name: /Confirm Request/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Xác nhận tiếp nhận/i }));
 
     // Confirmation dialog opens
-    expect(screen.getByText(/Confirm Booking Request/i)).toBeDefined();
-    const confirmSubmitBtn = screen.getByRole('button', { name: /Confirm Acceptance/i });
+    expect(screen.getByText(/Xác nhận tiếp nhận yêu cầu đặt phòng/i)).toBeDefined();
+    const confirmSubmitBtn = screen.getByRole('button', { name: /Xác nhận đồng ý/i });
 
     fireEvent.click(confirmSubmitBtn);
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Request confirmed\. The Traveler has been notified\./i)
+        screen.getByText(/Đã xác nhận yêu cầu đặt phòng\. Du khách đã được thông báo\./i)
       ).toBeDefined();
     });
   });
 
-  it('enforces mandatory rejection reason (BR-195) and MSG123 validation', async () => {
+  it('enforces mandatory rejection reason and MSG123 validation', async () => {
     renderComponent('req-002');
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Reject Request/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Từ chối yêu cầu/i })).toBeDefined();
     });
 
     // Open rejection dialog
-    fireEvent.click(screen.getByRole('button', { name: /Reject Request/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Từ chối yêu cầu/i }));
 
-    expect(screen.getByText(/Reject Booking Request/i)).toBeDefined();
-    const declineSubmitBtn = screen.getByRole('button', { name: /Decline Request/i });
+    expect(screen.getByText(/Từ chối yêu cầu đặt phòng/i)).toBeDefined();
+    const declineSubmitBtn = screen.getByRole('button', { name: /Xác nhận từ chối/i });
 
     // Submit empty reason -> triggers MSG123
     fireEvent.click(declineSubmitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Rejection reason cannot be blank/i)).toBeDefined();
+      expect(screen.getByText(/Vui lòng cung cấp lý do từ chối yêu cầu/i)).toBeDefined();
     });
 
     // Fill valid reason
-    const reasonTextarea = screen.getByPlaceholderText(/Enter clear reason for declining/i);
+    const reasonTextarea = screen.getByPlaceholderText(/Nhập lý do từ chối rõ ràng/i);
     fireEvent.change(reasonTextarea, {
-      target: { value: 'Property is fully booked on selected dates.' },
+      target: { value: 'Khách sạn đã hết phòng trong thời gian này.' },
     });
 
     fireEvent.click(declineSubmitBtn);
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Request rejected\. The Traveler has been notified with the reason\./i)
+        screen.getByText(/Đã từ chối yêu cầu đặt phòng\. Du khách đã được thông báo lý do\./i)
       ).toBeDefined();
     });
   });
@@ -110,25 +110,25 @@ describe('Screen W104: Booking Decision & Service Outcome (Service Provider Work
     renderComponent('req-004');
 
     await waitFor(() => {
-      expect(screen.getByText('Record Service Outcome')).toBeDefined();
-      expect(screen.getByRole('button', { name: /Mark Stay Completed/i })).toBeDefined();
-      expect(screen.getByRole('button', { name: /Mark Guest No-Show/i })).toBeDefined();
+      expect(screen.getByText('Ghi nhận Kết quả Lưu trú')).toBeDefined();
+      expect(screen.getByRole('button', { name: /Đánh dấu Hoàn thành Lưu trú/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Đánh dấu Khách Vắng mặt/i })).toBeDefined();
     });
 
     // Verify 10% commission preview
-    expect(screen.getByText(/TripMate Commission Preview/i)).toBeDefined();
+    expect(screen.getByText(/Ước tính hoa hồng nền tảng \(10%\)/i)).toBeDefined();
 
     // Click Mark Completed
-    fireEvent.click(screen.getByRole('button', { name: /Mark Stay Completed/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Đánh dấu Hoàn thành Lưu trú/i }));
 
     // Confirm dialog opens
-    expect(screen.getByText(/Confirm Stay Completion/i)).toBeDefined();
-    const confirmCompletionBtn = screen.getByRole('button', { name: /Confirm Completion/i });
+    expect(screen.getByText(/Xác nhận Khách đã Hoàn thành Lưu trú/i)).toBeDefined();
+    const confirmCompletionBtn = screen.getByRole('button', { name: /Xác nhận hoàn thành/i });
     fireEvent.click(confirmCompletionBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Outcome recorded\./i)).toBeDefined();
-      expect(screen.getByText(/Recorded Operational Outcome/i)).toBeDefined();
+      expect(screen.getByText(/Đã ghi nhận kết quả lưu trú\./i)).toBeDefined();
+      expect(screen.getByText(/Kết quả Vận hành đã Ghi nhận/i)).toBeDefined();
     });
   });
 
@@ -137,9 +137,9 @@ describe('Screen W104: Booking Decision & Service Outcome (Service Provider Work
     renderComponent('req-003');
 
     await waitFor(() => {
-      expect(screen.getByText(/Outcome Recording Locked/i)).toBeDefined();
+      expect(screen.getByText(/Chưa đến thời điểm ghi nhận kết quả/i)).toBeDefined();
       expect(
-        screen.getByText(/Service outcome recording will unlock after the check-in date/i)
+        screen.getByText(/Chức năng ghi nhận kết quả lưu trú sẽ mở sau ngày khách làm thủ tục nhận phòng/i)
       ).toBeDefined();
     });
   });

@@ -3,8 +3,8 @@ import { CreateServiceProviderView } from '@/features/hotel-service-provider/com
 import { ToastProvider } from '@/features/hotel-service-provider/components/common/Toast';
 
 export const metadata: Metadata = {
-  title: 'Create Service Provider Account | TripMate Staff',
-  description: 'Provision verified commercial service provider account and link active commercial POIs (UC-77).',
+  title: 'Tạo tài khoản đối tác dịch vụ | TripMate Staff',
+  description: 'Khởi tạo tài khoản đối tác thương mại và liên kết cơ sở lưu trú vào hệ thống vận hành.',
 };
 
 export default function CreateServiceProviderPage() {

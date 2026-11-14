@@ -31,24 +31,24 @@ describe('Screen W103: Service Booking Requests (Service Provider Workspace, UC-
       </ToastProvider>
     );
 
-  it('renders operational table with all mandatory SRS §3.6.3 columns', async () => {
+  it('renders operational table with all mandatory columns in Vietnamese', async () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('Service Booking Requests')).toBeDefined();
+      expect(screen.getByText('Yêu cầu đặt dịch vụ')).toBeDefined();
     });
 
     // Check mandatory table headers
-    expect(screen.getByText('Request Code')).toBeDefined();
-    expect(screen.getByText('Property / Service')).toBeDefined();
-    expect(screen.getByText('Room Option')).toBeDefined();
-    expect(screen.getByText('Requested Date')).toBeDefined();
-    expect(screen.getByText('Check-in Time')).toBeDefined();
-    expect(screen.getByText('Qty')).toBeDefined();
-    expect(screen.getByText('Traveler Name')).toBeDefined();
-    expect(screen.getByText('Status')).toBeDefined();
-    expect(screen.getByText('Submitted At')).toBeDefined();
-    expect(screen.getByText('Action')).toBeDefined();
+    expect(screen.getByText('Mã yêu cầu')).toBeDefined();
+    expect(screen.getByText('Cơ sở lưu trú')).toBeDefined();
+    expect(screen.getByText('Gói phòng / Dịch vụ')).toBeDefined();
+    expect(screen.getByText('Ngày nhận')).toBeDefined();
+    expect(screen.getByText('Giờ nhận')).toBeDefined();
+    expect(screen.getByText('Số lượng')).toBeDefined();
+    expect(screen.getByText('Du khách')).toBeDefined();
+    expect(screen.getByText('Trạng thái')).toBeDefined();
+    expect(screen.getByText('Thời gian gửi')).toBeDefined();
+    expect(screen.getByText('Thao tác')).toBeDefined();
 
     // Verify representative booking rows exist
     expect(screen.getByText('HBR-20261113-082')).toBeDefined();
@@ -61,12 +61,12 @@ describe('Screen W103: Service Booking Requests (Service Provider Workspace, UC-
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Pending Confirmation requests are prioritized first/i)
+        screen.getByText(/Các yêu cầu ở trạng thái Chờ xác nhận được ưu tiên hiển thị trước/i)
       ).toBeDefined();
     });
   });
 
-  it('enforces search-on-submit behavior (CR-02)', async () => {
+  it('enforces search-on-submit behavior', async () => {
     renderComponent();
 
     await waitFor(() => {
@@ -74,14 +74,14 @@ describe('Screen W103: Service Booking Requests (Service Provider Workspace, UC-
       expect(screen.getByText('HBR-20261113-083')).toBeDefined();
     });
 
-    const searchInput = screen.getByLabelText(/Search/i);
-    fireEvent.change(searchInput, { target: { value: 'Tam' } });
+    const searchInput = screen.getByLabelText(/Tìm kiếm/i);
+    fireEvent.change(searchInput, { target: { value: 'Tâm' } });
 
     // Before submit, both still present
     expect(screen.getByText('HBR-20261113-082')).toBeDefined();
 
     // Click Search button
-    const searchBtn = screen.getByRole('button', { name: /^Search$/i });
+    const searchBtn = screen.getByRole('button', { name: /^Tìm kiếm$/i });
     fireEvent.click(searchBtn);
 
     await waitFor(() => {
@@ -91,35 +91,35 @@ describe('Screen W103: Service Booking Requests (Service Provider Workspace, UC-
     });
   });
 
-  it('displays MSG128 empty state when no requests match filter criteria', async () => {
+  it('displays empty state when no requests match filter criteria', async () => {
     renderComponent();
 
     await waitFor(() => {
       expect(screen.getByText('HBR-20261113-082')).toBeDefined();
     });
 
-    const searchInput = screen.getByLabelText(/Search/i);
+    const searchInput = screen.getByLabelText(/Tìm kiếm/i);
     fireEvent.change(searchInput, { target: { value: 'NONEXISTENT_KEYWORD_XYZ' } });
 
-    const searchBtn = screen.getByRole('button', { name: /^Search$/i });
+    const searchBtn = screen.getByRole('button', { name: /^Tìm kiếm$/i });
     fireEvent.click(searchBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/No Booking Requests Found/i)).toBeDefined();
+      expect(screen.getByText(/Không tìm thấy yêu cầu đặt phòng nào/i)).toBeDefined();
       expect(
-        screen.getByText(/No requests match your current filter parameters/i)
+        screen.getByText(/Không có yêu cầu đặt phòng nào phù hợp với điều kiện tìm kiếm/i)
       ).toBeDefined();
     });
   });
 
-  it('renders pagination details per CR-01', async () => {
+  it('renders pagination details with Vietnamese formatting', async () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText(/Total 10 booking requests on file/i)).toBeDefined();
+      expect(screen.getByText(/10 yêu cầu trên hệ thống/i)).toBeDefined();
       expect(screen.getByText(/1 \/ 1/)).toBeDefined();
-      expect(screen.getByRole('button', { name: /Previous page/i })).toBeDefined();
-      expect(screen.getByRole('button', { name: /Next page/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Trang trước/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Trang sau/i })).toBeDefined();
     });
   });
 });

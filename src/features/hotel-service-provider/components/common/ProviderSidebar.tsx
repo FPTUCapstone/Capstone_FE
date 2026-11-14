@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BrandLogo } from '@/components/brand/BrandLogo';
-import { hotelProviderEn } from '../../resources/en';
+import { hotelProviderVi } from '../../resources/vi';
 import { ROUTES } from '@/lib/routes';
 
 interface ProviderSidebarProps {
@@ -32,12 +32,12 @@ export function ProviderSidebar({
   const navItems: NavItem[] = [
     {
       href: ROUTES.provider?.bookings || '/provider/bookings',
-      label: hotelProviderEn.nav.bookingsTab,
+      label: hotelProviderVi.nav.bookingsTab,
       icon: 'receipt_long',
     },
     {
       href: ROUTES.provider?.statements || '/provider/statements',
-      label: hotelProviderEn.nav.statementsTab,
+      label: hotelProviderVi.nav.statementsTab,
       icon: 'payments',
     },
   ];
@@ -51,7 +51,7 @@ export function ProviderSidebar({
             <div className="flex items-center gap-2">
               <BrandLogo context="partner" inverse />
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#995436] bg-[#3D271E] px-1.5 py-0.5 rounded border border-[#B96D4C]/40">
-                Hotel
+                Lưu trú
               </span>
             </div>
             <p className="mt-1 text-[11px] text-[#8E9E9B] truncate font-medium">
@@ -72,7 +72,7 @@ export function ProviderSidebar({
           type="button"
           onClick={onToggleCollapse}
           className="hidden md:flex items-center justify-center p-1.5 rounded-lg text-[#8E9E9B] hover:text-white hover:bg-[#103B39] transition-colors cursor-pointer"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
         >
           <span className="material-symbols-outlined text-[18px]">
             {collapsed ? 'chevron_right' : 'chevron_left'}
@@ -82,8 +82,12 @@ export function ProviderSidebar({
 
       {/* Navigation Links */}
       <div className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-        <div className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#8E9E9B] ${collapsed ? 'sr-only' : ''}`}>
-          Operations
+        <div
+          className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#8E9E9B] ${
+            collapsed ? 'sr-only' : ''
+          }`}
+        >
+          Vận hành
         </div>
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
@@ -123,7 +127,7 @@ export function ProviderSidebar({
             </span>
           </div>
           <p className="mt-1 text-[10px] text-[#8E9E9B] truncate">
-            188 Cửa Đại, Hội An
+            188 Cửa Đại, Cẩm Châu, Hội An
           </p>
         </div>
       )}
@@ -138,9 +142,7 @@ export function ProviderSidebar({
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
-        <div className="sticky top-0 h-screen">
-          {sidebarContent}
-        </div>
+        <div className="sticky top-0 h-screen">{sidebarContent}</div>
       </aside>
 
       {/* Mobile Drawer Overlay */}

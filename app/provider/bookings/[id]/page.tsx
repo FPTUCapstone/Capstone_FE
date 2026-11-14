@@ -7,8 +7,8 @@ interface BookingDetailPageProps {
 }
 
 export const metadata: Metadata = {
-  title: 'Booking Request Details & Decision | TripMate Partner',
-  description: 'View reservation details, execute decision, and record stay outcome (Screen W104, UC-79, UC-80).',
+  title: 'Chi tiết yêu cầu đặt phòng | TripMate Partner',
+  description: 'Xem thông tin đặt phòng, kiểm tra tình trạng phòng và thực hiện các thao tác vận hành.',
 };
 
 export default async function BookingDetailPage({ params }: BookingDetailPageProps) {
@@ -21,7 +21,7 @@ export default async function BookingDetailPage({ params }: BookingDetailPagePro
           <span className="material-symbols-outlined text-[28px] animate-spin text-[#174B4A] mb-2 block mx-auto">
             progress_activity
           </span>
-          Loading booking details...
+          Đang tải thông tin chi tiết đặt phòng...
         </div>
       }
     >

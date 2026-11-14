@@ -20,8 +20,8 @@ export function ConfirmationDialog({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = 'Xác nhận',
+  cancelLabel = 'Hủy bỏ',
   variant = 'primary',
   isLoading = false,
 }: ConfirmationDialogProps) {
@@ -101,31 +101,33 @@ export function ConfirmationDialog({
               {variant === 'danger' ? 'warning' : 'help'}
             </span>
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h3 id={titleId} className="text-base font-bold text-[#1C2928] leading-tight">
               {title}
             </h3>
-            <div id={descId} className="mt-1.5 text-xs text-[#5B6E69] leading-relaxed">
-              {message}
-            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-[#E8ECE9]">
+        <div id={descId} className="text-xs text-[#5B6E69] leading-relaxed mb-6">
+          {message}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8ECE9]">
           <button
             type="button"
-            disabled={isLoading}
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            disabled={isLoading}
+            className="px-4 py-2 text-xs font-semibold text-[#5B6E69] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer disabled:opacity-50"
           >
             {cancelLabel}
           </button>
+
           <button
             ref={confirmButtonRef}
             type="button"
-            disabled={isLoading}
             onClick={onConfirm}
-            className={`px-4 py-2 text-xs font-semibold text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50 ${
+            disabled={isLoading}
+            className={`px-4 py-2 text-xs font-semibold text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
               variant === 'danger'
                 ? 'bg-[#DC2626] hover:bg-[#B91C1C]'
                 : 'bg-[#174B4A] hover:bg-[#103B39]'
