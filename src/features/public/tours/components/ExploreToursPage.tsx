@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { getTourCategories, getTourRecommendations, isTourDemoAllowedInCurrentEnv, searchTours } from '../services/tourApi';
-import type { PagedToursResponseDto, TourCategoryDto, TourSearchState } from '../types/tour';
+import { getTourCategories, getTourRecommendations, isTourDemoAllowedInCurrentEnv, refreshTourRecommendations, searchTours } from '../services/tourApi';
+import { TourApiError, type PagedToursResponseDto, type TourCategoryDto, type TourRecommendationsResponseDto, type TourSearchState } from '../types/tour';
 import { buildBackendTourQuery, parseTourSearchState, toPublicUrlParams, validateTourFilters } from '../utils/tourQuery';
 import { DevExploreToursPage } from './DevExploreToursPage';
 import { PublicTourFilterBar } from './PublicTourFilterBar';
@@ -17,6 +17,13 @@ import { publicTourSearchVi } from '../resources/vi';
 
 type CurrentResult = { key: string } & ({ status: 'success'; data: PagedToursResponseDto } | { status: 'error'; message: string });
 type DisplayedResult = { query: string; filters: TourSearchState; data: PagedToursResponseDto };
+
+function saveRecommendationPage(page: number) {
+  const url = new URL(window.location.href);
+  if (page > 1) url.searchParams.set('recommendationPage', String(page));
+  else url.searchParams.delete('recommendationPage');
+  window.history.replaceState(null, '', url);
+}
 
 export function ExploreToursPage({ devSearchEnabled = false }: { devSearchEnabled?: boolean }) {
   return devSearchEnabled ? <DevExploreToursPage /> : <PublicExploreToursPage />;
@@ -33,7 +40,9 @@ function PublicExploreToursPage() {
   const [displayed, setDisplayed] = useState<DisplayedResult | null>(null);
   const [categories, setCategories] = useState<TourCategoryDto[]>([]);
   const [categoryError, setCategoryError] = useState(false);
-  const [recommendations, setRecommendations] = useState<Awaited<ReturnType<typeof getTourRecommendations>> | null>(null);
+  const [recommendations, setRecommendations] = useState<TourRecommendationsResponseDto | null>(null);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
   const cycle = `${queryKey}:${version}`;
   const current = result?.key === cycle ? result : null;
 
@@ -61,9 +70,53 @@ function PublicExploreToursPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    getTourRecommendations({ signal: controller.signal, allowDemo: isDemo }).then(setRecommendations).catch(() => setRecommendations({ items: [], isPendingBe: true, isDemo: false }));
+    const savedPage = Number(new URLSearchParams(window.location.search).get('recommendationPage'));
+    getTourRecommendations({
+      ...(Number.isSafeInteger(savedPage) && savedPage > 1 ? { page: savedPage } : {}),
+      signal: controller.signal,
+      allowDemo: isDemo,
+      initialCriteria: recommendationCriteria(filters),
+    }).then((data) => {
+      setRecommendations(data);
+      setRecommendationsError(null);
+    }).catch((error: unknown) => {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      setRecommendationsError(recommendationErrorCode(error));
+    }).finally(() => setRecommendationsLoading(false));
     return () => controller.abort();
+    // Opening the screen reads latest once. Filter changes do not invent an automatic refresh policy.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemo]);
+
+  async function refreshRecommendations() {
+    setRecommendationsLoading(true);
+    try {
+      const data = isDemo
+        ? await getTourRecommendations({ allowDemo: true })
+        : await refreshTourRecommendations(recommendationCriteria(filters));
+      saveRecommendationPage(data.page);
+      setRecommendations(data);
+      setRecommendationsError(null);
+    } catch (error) {
+      setRecommendationsError(recommendationErrorCode(error));
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  }
+
+  async function changeRecommendationPage(page: number) {
+    setRecommendationsLoading(true);
+    try {
+      const data = await getTourRecommendations({ page, allowDemo: isDemo });
+      saveRecommendationPage(data.page);
+      setRecommendations(data);
+      setRecommendationsError(null);
+    } catch (error) {
+      setRecommendationsError(recommendationErrorCode(error));
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  }
 
   function navigate(next: TourSearchState) {
     const query = toPublicUrlParams(next).toString();
@@ -170,12 +223,42 @@ function PublicExploreToursPage() {
         <div className="mt-12">
           <TourRecommendationsSection
             recommendations={recommendations?.items ?? []}
-            isPendingBe={recommendations?.isPendingBe ?? true}
             isDemo={recommendations?.isDemo ?? false}
-            onRefresh={() => setVersion((value) => value + 1)}
+            isLoading={recommendationsLoading}
+            isRefreshing={recommendationsLoading && recommendations !== null}
+            errorCode={recommendationsError}
+            totalCount={recommendations?.totalCount ?? 0}
+            page={recommendations?.page ?? 1}
+            totalPages={recommendations?.totalPages ?? 0}
+            onRefresh={refreshRecommendations}
+            onPageChange={changeRecommendationPage}
           />
         </div>
       </main>
     </div>
   );
+}
+
+function optionalBudget(value: string): number | null {
+  const normalized = value.trim();
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function recommendationCriteria(filters: TourSearchState) {
+  return {
+    destination: filters.destination.trim() || null,
+    startDate: filters.startDate?.trim() || filters.departureDate.trim() || null,
+    endDate: filters.endDate?.trim() || filters.departureDate.trim() || null,
+    minBudget: optionalBudget(filters.minPrice),
+    maxBudget: optionalBudget(filters.maxPrice),
+  };
+}
+
+function recommendationErrorCode(error: unknown): string {
+  return error instanceof TourApiError
+    && error.problem?.errorCode === 'tour_recommendation.interest_tags_required'
+    ? 'tour_recommendation.interest_tags_required'
+    : 'MSG127';
 }
