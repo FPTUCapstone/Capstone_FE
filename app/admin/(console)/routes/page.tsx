@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { RouteDirectoryUnavailableView } from '@/features/admin/routes/components/RouteDirectoryUnavailableView';
+import { RouteDirectoryView } from '@/features/admin/routes/components/RouteDirectoryView';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
-  title: 'Route Master Data (Backend Integration Pending) | TripMate Administration',
-  description: 'Route catalog and governance workspace pending backend contract integration.',
+  title: 'Routes List | TripMate Administration',
+  description: 'Routes available to TripMate itinerary planning and navigation.',
 };
 
 export default async function RoutesPage() {
@@ -23,9 +23,9 @@ export default async function RoutesPage() {
     return redirect('/admin/login?returnUrl=%2Fadmin%2Froutes');
   }
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return <AdminAccessDeniedView requiredRole="Staff" description="You do not have permission to access this function." />;
   }
 
-  return <RouteDirectoryUnavailableView />;
+  return <RouteDirectoryView />;
 }

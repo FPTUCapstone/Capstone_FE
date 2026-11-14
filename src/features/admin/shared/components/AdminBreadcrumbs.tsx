@@ -49,6 +49,7 @@ function useSafePathname(): string {
 export function AdminBreadcrumbs({ role = 'Administrator', className = '' }: AdminBreadcrumbsProps) {
   const pathname = useSafePathname();
   const segments = pathname.split('/').filter(Boolean);
+  const routeWorkspace = segments[0] === 'admin' && segments[1] === 'routes';
 
   const homeHref = role === 'Staff' ? ROUTES.admin.staffDashboard : ROUTES.admin.dashboard;
   const homeLabel = role === 'Staff' ? 'Staff Workspace' : 'Admin Workspace';
@@ -95,7 +96,7 @@ export function AdminBreadcrumbs({ role = 'Administrator', className = '' }: Adm
     <nav aria-label="Breadcrumb" className={`flex items-center text-xs text-[#5B6E69] ${className}`}>
       <ol className="flex items-center gap-1.5 flex-wrap">
         {crumbs.map((crumb, idx) => (
-          <li key={crumb.href + idx} className="inline-flex items-center gap-1.5">
+          <li key={crumb.href + idx} className={`${routeWorkspace && !crumb.isCurrent ? 'hidden lg:inline-flex' : 'inline-flex'} items-center gap-1.5`}>
             {idx > 0 && (
               <span className="material-symbols-outlined text-[12px] text-[#5B6E69]" aria-hidden="true">
                 chevron_right
