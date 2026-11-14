@@ -75,6 +75,7 @@ describe('ExploreToursPage', () => {
   const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
 
   beforeEach(() => {
+    localStorage.setItem('tripmate.uc24.locale', 'vi');
     push.mockClear();
     currentSearch = '';
     vi.mocked(searchTours).mockReset();
@@ -91,6 +92,7 @@ describe('ExploreToursPage', () => {
   });
 
   afterEach(() => {
+    localStorage.removeItem('tripmate.uc24.locale');
     setNodeEnv(originalNodeEnv);
     if (originalDemoFlag === undefined) {
       delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
@@ -101,7 +103,7 @@ describe('ExploreToursPage', () => {
 
   it('renders page layout, navigation, filters, and results', async () => {
     render(<ExploreToursPage />);
-    expect(screen.getByText(/Tour Trải Nghiệm/)).toBeTruthy();
+    expect(await screen.findByText(/Tour Trải Nghiệm/)).toBeTruthy();
     expect(screen.getByLabelText('Bộ lọc tìm kiếm tour')).toBeTruthy();
 
     await waitFor(() => {
@@ -155,8 +157,7 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Không tìm thấy tour phù hợp')).toBeTruthy();
-      expect(screen.getByText(/MSG64/)).toBeTruthy();
+      expect(screen.getByText('Không tìm thấy gói tour phù hợp với điểm đến và ngày của bạn.')).toBeTruthy();
     });
   });
 
@@ -168,8 +169,20 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Lỗi kết nối máy chủ tour.').length).toBeGreaterThan(0);
+      expect(screen.getByText(/TripMate tạm thời không thể xử lý yêu cầu/)).toBeTruthy();
+      expect(screen.queryByText('Lỗi kết nối máy chủ tour.')).toBeNull();
     });
+  });
+
+  it('persists English without dispatching a search or resetting the draft', async () => {
+    render(<ExploreToursPage />);
+    const input = await screen.findByLabelText('Từ khóa');
+    fireEvent.change(input, { target: { value: 'Huế' } });
+    const calls = vi.mocked(searchTours).mock.calls.length;
+    fireEvent.change(screen.getByLabelText('Ngôn ngữ tìm kiếm'), { target: { value: 'en' } });
+    expect((screen.getByLabelText('Keyword') as HTMLInputElement).value).toBe('Huế');
+    expect(localStorage.getItem('tripmate.uc24.locale')).toBe('en');
+    expect(searchTours).toHaveBeenCalledTimes(calls);
   });
 
   it('enforces NO PHANTOM API rule on UC-25 recommendations: displays pending status, no fake production data', async () => {

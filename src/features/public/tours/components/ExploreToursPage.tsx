@@ -12,10 +12,10 @@ import { TourCard } from './TourCard';
 import { TourEditorialHero } from './TourEditorialHero';
 import { TourPagination } from './TourPagination';
 import { TourRecommendationsSection } from './TourRecommendationsSection';
-import { TourEmptyState, TourErrorState, TourListSkeleton } from './TourStates';
-import { publicTourSearchVi } from '../resources/vi';
+import { TourListSkeleton } from './TourStates';
+import { publicSearchCopy, resolveSearchLocale, searchLocaleKey, searchValidationCopy, type SearchLocale } from '../resources/publicSearch';
 
-type CurrentResult = { key: string } & ({ status: 'success'; data: PagedToursResponseDto } | { status: 'error'; message: string });
+type CurrentResult = { key: string } & ({ status: 'success'; data: PagedToursResponseDto } | { status: 'error' });
 type DisplayedResult = { query: string; filters: TourSearchState; data: PagedToursResponseDto };
 
 export function ExploreToursPage({ devSearchEnabled = false }: { devSearchEnabled?: boolean }) {
@@ -23,6 +23,16 @@ export function ExploreToursPage({ devSearchEnabled = false }: { devSearchEnable
 }
 
 function PublicExploreToursPage() {
+  const [locale, setLocale] = useState<SearchLocale>('en');
+  const copy = publicSearchCopy(locale);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      let saved: string | null = null;
+      try { saved = window.localStorage.getItem(searchLocaleKey); } catch { /* storage unavailable */ }
+      setLocale(resolveSearchLocale(saved, navigator.language));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   const router = useRouter();
   const queryKey = useSearchParams().toString();
   const isDemo = new URLSearchParams(queryKey).get('demo') === '1' && isTourDemoAllowedInCurrentEnv();
@@ -48,7 +58,7 @@ function PublicExploreToursPage() {
       setDisplayed({ query: toPublicUrlParams(filters).toString(), filters: { ...filters }, data });
     }).catch((error: unknown) => {
       if (!active || (error instanceof Error && error.name === 'AbortError')) return;
-      setResult({ key: cycle, status: 'error', message: error instanceof Error ? error.message : publicTourSearchVi.systemError });
+      setResult({ key: cycle, status: 'error' });
     });
     return () => { active = false; controller.abort(); };
   }, [cycle, filters, validation.isValid]);
@@ -79,18 +89,30 @@ function PublicExploreToursPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900">
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8" lang="vi">
-        <TourEditorialHero />
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8" lang={locale}>
+        <TourEditorialHero locale={locale} />
+        <label className="mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
+          {copy.language}
+          <select value={locale} className="min-h-11 rounded-xl border border-brand-border px-3 focus-visible:ring-2 focus-visible:ring-brand-teal" onChange={(event) => {
+            const selected = event.target.value === 'vi' ? 'vi' : 'en';
+            setLocale(selected);
+            try { window.localStorage.setItem(searchLocaleKey, selected); } catch { /* storage unavailable */ }
+          }}>
+            <option value="vi" lang="vi">Tiếng Việt</option>
+            <option value="en" lang="en">English</option>
+          </select>
+        </label>
         {categoryError && (
           <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">
-            Không thể tải danh mục.{' '}
+            {copy.categoryError}{' '}
             <button type="button" className="font-bold underline" onClick={() => setVersion((value) => value + 1)}>
-              Thử lại
+              {copy.retry}
             </button>
           </div>
         )}
         <PublicTourFilterBar
           key={queryKey}
+          locale={locale}
           filters={filters}
           categories={categories}
           loading={loading}
@@ -102,49 +124,53 @@ function PublicExploreToursPage() {
           <section aria-labelledby="tour-results-heading" aria-busy={loading} className="lg:col-span-12">
             <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs sm:p-5">
               <h2 id="tour-results-heading" className="text-xl font-black tracking-tight text-[#1C2928] sm:text-2xl">
-                Kết Quả Tìm Kiếm
+                {copy.results}
               </h2>
               {displayed && !loading && (
                 <p role="status" className="mt-0.5 text-xs text-slate-500">
                   {displayed.data.totalCount > 0
-                    ? `Hiển thị ${displayed.data.items.length} trong tổng số ${displayed.data.totalCount} tour phù hợp`
-                    : 'Không có kết quả nào'}
+                    ? copy.count(displayed.data.items.length, displayed.data.totalCount)
+                    : copy.none}
                 </p>
               )}
             </div>
 
-            {!validation.isValid && <p role="alert" className="mb-4 text-red-700">{validation.errorMessage}</p>}
+            {!validation.isValid && validation.errorMessage && <p role="alert" className="mb-4 text-red-700">{searchValidationCopy(validation.errorMessage, locale)}</p>}
             {loading && (
               <>
-                <p role="status" className="mb-3 text-sm">Đang tìm kiếm…</p>
-                {!displayed && <TourListSkeleton />}
+                <p role="status" className="mb-3 text-sm">{copy.loading}</p>
+                {!displayed && <TourListSkeleton label={copy.loading} />}
               </>
             )}
             {current?.status === 'error' && (
               <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
-                <p>{current.message}</p>
+                <p>{copy.systemError}</p>
                 <button type="button" className="mt-2 font-bold underline" onClick={() => setVersion((value) => value + 1)}>
-                  Thử lại
+                  {copy.retry}
                 </button>
               </div>
             )}
             {displayed && (
               <>
                 {(!validation.isValid || loading || current?.status === 'error') && (
-                  <p className="mb-3 text-sm text-slate-600">Đang giữ kết quả thành công gần nhất.</p>
+                  <p className="mb-3 text-sm text-slate-600">{copy.retained}</p>
                 )}
-                <div aria-label="Tiêu chí đang hiển thị" className="mb-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
-                  <strong>Tiêu chí đang hiển thị:</strong> {displayed.filters.keyword || 'mọi từ khóa'} ·{' '}
-                  {displayed.filters.destination || 'mọi điểm đến'} · trang {displayed.filters.page}
+                <div aria-label={copy.shown} className="mb-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                  <strong>{copy.shown}:</strong> {displayed.filters.keyword || copy.anyKeyword} ·{' '}
+                  {displayed.filters.destination || copy.anyDestination} · {copy.pagination.page(displayed.filters.page)}
                 </div>
                 {displayed.data.items.length === 0 ? (
-                  <TourEmptyState onResetFilters={clearFilters} hasFilters />
+                  <div role="status" className="rounded-2xl border border-brand-border bg-white p-6">
+                    <p>{copy.empty}</p>
+                    <button type="button" className="min-h-11 font-bold underline" onClick={() => clearFilters()}>{copy.clear}</button>
+                  </div>
                 ) : (
                   <div data-testid="tours-grid" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3">
                     {displayed.data.items.map((tour) => (
                       <TourCard
                         key={tour.tourId}
                         tour={tour}
+                        copy={copy.card}
                         aggregateRating={tour.aggregateRating ?? null}
                         searchContextQuery={displayed.query}
                       />
@@ -152,22 +178,17 @@ function PublicExploreToursPage() {
                   </div>
                 )}
                 <TourPagination
+                  copy={copy.pagination}
                   page={displayed.data.page}
                   totalPages={displayed.data.totalPages}
                   onPageChange={(page) => navigate({ ...displayed.filters, page })}
                 />
               </>
             )}
-            {!displayed && current?.status === 'error' && (
-              <TourErrorState
-                onRetry={() => setVersion((value) => value + 1)}
-                message={current.message}
-              />
-            )}
           </section>
         </div>
 
-        <div className="mt-12">
+        <div className="mt-12" lang="vi">
           <TourRecommendationsSection
             recommendations={recommendations?.items ?? []}
             isPendingBe={recommendations?.isPendingBe ?? true}
