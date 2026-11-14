@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PoiApiError } from '../types/poi';
 import { fetchPoiDetail } from '../services/poiApi';
+import { getPoiFavorite, PoiFavoriteError, setPoiFavorite } from '../services/poiFavoriteApi';
 import { PoiDetailPage } from './PoiDetailPage';
 
 const back = vi.fn();
@@ -18,6 +19,12 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('../services/poiApi', () => ({
   fetchPoiDetail: vi.fn(),
+}));
+
+vi.mock('../services/poiFavoriteApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../services/poiFavoriteApi')>()),
+  getPoiFavorite: vi.fn(),
+  setPoiFavorite: vi.fn(),
 }));
 
 const session = vi.hoisted(() => ({ role: null as string | null }));
@@ -69,6 +76,8 @@ describe('PoiDetailPage', () => {
     push.mockClear();
     vi.mocked(fetchPoiDetail).mockReset();
     vi.mocked(fetchPoiDetail).mockResolvedValue(mockDetail);
+    vi.mocked(getPoiFavorite).mockReset();
+    vi.mocked(getPoiFavorite).mockResolvedValue({ poiId: 42, isFavorite: false });
   });
 
   it('renders verified detail fields and nullable fallbacks', async () => {
@@ -174,5 +183,148 @@ describe('PoiDetailPage', () => {
     fireEvent.click(copyBtn);
 
     expect(writeText).toHaveBeenCalledWith('16.003890, 108.264170');
+  });
+});
+
+describe('PoiDetailPage favorite heart (UC-10 feedback, D12)', () => {
+  const SAVE_FAILED = 'Chưa lưu được yêu thích. Vui lòng thử lại.';
+
+  beforeEach(() => {
+    session.role = 'Traveler';
+    vi.mocked(fetchPoiDetail).mockReset();
+    vi.mocked(fetchPoiDetail).mockResolvedValue(mockDetail);
+    vi.mocked(getPoiFavorite).mockReset();
+    vi.mocked(getPoiFavorite).mockResolvedValue({ poiId: 42, isFavorite: false });
+    vi.mocked(setPoiFavorite).mockReset();
+  });
+
+  afterEach(() => {
+    session.role = null;
+  });
+
+  async function renderLoaded() {
+    render(<PoiDetailPage id="42" />);
+    await screen.findByRole('heading', { name: 'Ngũ Hành Sơn' });
+  }
+
+  it.each([null, 'TourOperator', 'Admin'])('shows no heart and asks nothing for role %s', async (role) => {
+    session.role = role;
+    await renderLoaded();
+
+    expect(screen.queryByRole('button', { name: /yêu thích/i })).toBeNull();
+    expect(getPoiFavorite).not.toHaveBeenCalled();
+  });
+
+  it('shows the heart off for a place the traveler has not marked', async () => {
+    await renderLoaded();
+
+    const heart = screen.getByRole('button', { name: 'Yêu thích' });
+    expect(heart.getAttribute('aria-pressed')).toBe('false');
+    expect(vi.mocked(getPoiFavorite).mock.calls[0][0]).toBe(42);
+  });
+
+  it('shows the heart on for a place the traveler already marked', async () => {
+    vi.mocked(getPoiFavorite).mockResolvedValue({ poiId: 42, isFavorite: true });
+    await renderLoaded();
+
+    const heart = await screen.findByRole('button', { name: 'Bỏ yêu thích' });
+    expect(heart.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('turns the favorite on before the server answers and keeps it on success', async () => {
+    let answer: (value: { poiId: number; isFavorite: boolean }) => void = () => {};
+    vi.mocked(setPoiFavorite).mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    await renderLoaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yêu thích' }));
+
+    expect(screen.getByRole('button', { name: 'Bỏ yêu thích' }).getAttribute('aria-pressed')).toBe('true');
+    expect(setPoiFavorite).toHaveBeenCalledWith(42, true);
+
+    await act(async () => {
+      answer({ poiId: 42, isFavorite: true });
+    });
+    expect(screen.getByRole('button', { name: 'Bỏ yêu thích' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.queryByText(SAVE_FAILED)).toBeNull();
+  });
+
+  it('ignores another click while the first one is still being saved', async () => {
+    vi.mocked(setPoiFavorite).mockReturnValueOnce(new Promise(() => {}));
+    await renderLoaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yêu thích' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ yêu thích' }));
+
+    expect(setPoiFavorite).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Bỏ yêu thích' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('turns the favorite off', async () => {
+    vi.mocked(getPoiFavorite).mockResolvedValue({ poiId: 42, isFavorite: true });
+    vi.mocked(setPoiFavorite).mockResolvedValueOnce({ poiId: 42, isFavorite: false });
+    await renderLoaded();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Bỏ yêu thích' }));
+
+    expect(screen.getByRole('button', { name: 'Yêu thích' }).getAttribute('aria-pressed')).toBe('false');
+    expect(setPoiFavorite).toHaveBeenCalledWith(42, false);
+    await act(async () => {});
+    expect(screen.getByRole('button', { name: 'Yêu thích' })).toBeTruthy();
+    expect(screen.queryByText(SAVE_FAILED)).toBeNull();
+  });
+
+  it('rolls the heart back and says so when turning it on fails', async () => {
+    vi.mocked(setPoiFavorite).mockRejectedValueOnce(new PoiFavoriteError('server down', 500));
+    await renderLoaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yêu thích' }));
+
+    expect(await screen.findByText(SAVE_FAILED)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Yêu thích' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByRole('button', { name: 'Bỏ yêu thích' })).toBeNull();
+  });
+
+  it('rolls the heart back when turning it off fails, and clears the message on the next try', async () => {
+    vi.mocked(getPoiFavorite).mockResolvedValue({ poiId: 42, isFavorite: true });
+    vi.mocked(setPoiFavorite)
+      .mockRejectedValueOnce(new PoiFavoriteError('unreachable', 0))
+      .mockResolvedValueOnce({ poiId: 42, isFavorite: false });
+    await renderLoaded();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Bỏ yêu thích' }));
+
+    expect(await screen.findByText(SAVE_FAILED)).toBeTruthy();
+    const heart = screen.getByRole('button', { name: 'Bỏ yêu thích' });
+    expect(heart.getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(heart);
+
+    expect(await screen.findByRole('button', { name: 'Yêu thích' })).toBeTruthy();
+    expect(screen.queryByText(SAVE_FAILED)).toBeNull();
+  });
+
+  it('leaves the heart off and the page intact when the state cannot be loaded', async () => {
+    vi.mocked(getPoiFavorite).mockRejectedValue(new PoiFavoriteError('unauthorized', 401));
+    await renderLoaded();
+    await act(async () => {});
+
+    expect(getPoiFavorite).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Yêu thích' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('heading', { name: 'Ngũ Hành Sơn' })).toBeTruthy();
+    expect(screen.queryByText(SAVE_FAILED)).toBeNull();
+  });
+
+  it('does not let a late first load undo what the traveler just chose', async () => {
+    let answerLoad: (value: { poiId: number; isFavorite: boolean }) => void = () => {};
+    vi.mocked(getPoiFavorite).mockReturnValue(new Promise((resolve) => (answerLoad = resolve)));
+    vi.mocked(setPoiFavorite).mockResolvedValueOnce({ poiId: 42, isFavorite: true });
+    await renderLoaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yêu thích' }));
+    await act(async () => {
+      answerLoad({ poiId: 42, isFavorite: false });
+    });
+
+    expect(screen.getByRole('button', { name: 'Bỏ yêu thích' }).getAttribute('aria-pressed')).toBe('true');
   });
 });
