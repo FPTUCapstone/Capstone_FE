@@ -7,6 +7,8 @@ import { useCallback, useEffect, useState } from "react";
 import { PublicNavigation } from "@/components/navigation/PublicNavigation";
 import { useWebSession } from "@/features/auth/session/useWebSession";
 import { ROUTES } from "@/lib/routes";
+import { ActionButton } from "@/components/ui/ActionButton";
+import { openSupportChat } from "@/features/traveler/support-chat/supportChatEvents";
 
 type RefundProgress = {
   bookingId: number;
@@ -191,6 +193,12 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
             Track the refund for booking {bookingId}.
           </p>
           {content}
+          {!loading && !error && progress && sessionStatus === 'authenticated' ? (
+            <ActionButton type="button" variant="outline" className="mt-4"
+              onClick={() => openSupportChat({ kind: 'refund', id: bookingId })}>
+              Ask about this refund
+            </ActionButton>
+          ) : null}
         </section>
       </main>
     </div>

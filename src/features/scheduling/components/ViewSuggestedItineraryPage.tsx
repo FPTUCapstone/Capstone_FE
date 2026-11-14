@@ -24,6 +24,7 @@ import {
   ItineraryDetailItemDto,
   ItineraryStopInput,
   ItinerarySuggestionDto,
+  StopRemovalReason,
   SuggestionQuery,
   vietnamDayKey,
 } from '../types/schedulingTypes';
@@ -51,6 +52,7 @@ import { ROUTE_END_COLOR, ROUTE_LINE_COLOR, ROUTE_START_COLOR, STRAIGHT_LINE_OPA
 import { ItinerarySuggestionsDialog } from './ItinerarySuggestionsDialog';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
 import { ItineraryTimeline } from './ItineraryTimeline';
+import { StopRemovalReasonDialog } from './StopRemovalReasonDialog';
 
 /** How long the Undo toast stays after an edit (Review 2, D11-4). */
 const UNDO_VISIBLE_MS = 8000;
@@ -107,6 +109,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   const undoUntil = lastEdit?.undo?.until ?? null;
   const [suggestionTarget, setSuggestionTarget] = useState<SuggestionTarget | null>(null);
   const [reviewsFor, setReviewsFor] = useState<ItineraryDetailItemDto | null>(null);
+  const [removalFor, setRemovalFor] = useState<ItineraryDetailItemDto | null>(null);
   // Map ↔ timeline synchronization and active marker selection
   const [highlightedItemId, setHighlightedItemId] = useState<number | null>(null);
   const [mapFailed, setMapFailed] = useState(false);
@@ -415,7 +418,22 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
     if (!itinerary || item.poiId === null) return;
     // D4: a stop the traveler chose is removed only after confirmation.
     if (item.isMandatory && !window.confirm(REMOVE_MANDATORY_CONFIRM)) return;
-    applyStops(removeStop(currentStops(itinerary.items), item.poiId));
+    // UC-10 feedback (D10, D14): picking a reason removes the stop; closing the picker removes nothing.
+    setRemovalFor(item);
+  };
+
+  const removeWithReason = (reason: StopRemovalReason) => {
+    const poiId = removalFor?.poiId ?? null;
+    setRemovalFor(null);
+    if (!itinerary || poiId === null) return;
+    const itineraryId = itinerary.itineraryId;
+    const previousStops = currentStops(itinerary.items);
+    const stops = removeStop(previousStops, poiId);
+    // Only a removal sends removedStops: Undo and every other edit keep sending the plain stops list.
+    void applyMutation(
+      () => updateItineraryStops(itineraryId, stops, { removedStops: [{ poiId, reason }] }),
+      { undoTo: previousStops },
+    );
   };
 
   const hasAddedRestaurant = Boolean(
@@ -1137,6 +1155,14 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           poiId={reviewsFor.poiId}
           name={stopDisplayName(reviewsFor)}
           onClose={() => setReviewsFor(null)}
+        />
+      )}
+
+      {removalFor && (
+        <StopRemovalReasonDialog
+          stopName={stopDisplayName(removalFor)}
+          onChoose={removeWithReason}
+          onClose={() => setRemovalFor(null)}
         />
       )}
 

@@ -44,3 +44,8 @@
 - Live UI uses approved BE contract, sends idempotency key and trusts server price/expiry.
 - Accessibility, responsive behavior and API/error tests pass.
 - A manual UAT covers quote, create, idempotent retry, capacity conflict, voucher rejection and handoff to UC-28.
+
+
+## Support-chat handoff follow-up
+
+Added test-first adults URL prefill coverage in TourBookingPage.test.tsx and actual real-quote/edit-retention coverage in TourBookingView.test.tsx. TourBookingPage validates a single integer in 1..50 and passes initialAdultCount to the actual form state initializer. Explicit adult-count handoffs initialize children and infants to zero, with quote and create-request regressions for exactly two adults. User edits survive subsequent same-tour URL and profile renders. A keyed booking content boundary resets state when the tour ID changes. Focused verification is recorded in plans/support-chat-web-plan.md.
