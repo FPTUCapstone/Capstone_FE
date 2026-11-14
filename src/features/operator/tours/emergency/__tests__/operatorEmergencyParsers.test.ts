@@ -51,6 +51,38 @@ describe('Operator Emergency Parsers', () => {
     const parsed = parseEmergencyTourActionResponse(raw);
     expect(parsed.operationId).toBe(99);
     expect(parsed.scheduleStatus).toBe('Cancelled');
+    expect(parsed.refundsSubmitted).toBeUndefined();
+  });
+
+  it('reads the number of refund requests submitted when the Backend sends it', () => {
+    const raw = {
+      operationId: 99,
+      tourScheduleId: 20,
+      action: 'CancelBeforeDeparture',
+      scheduleStatus: 'Cancelled',
+      affectedBookingCount: 7,
+      refundsSubmitted: 4,
+      committedAtUtc: '2026-11-02T12:00:00Z',
+    };
+
+    expect(parseEmergencyTourActionResponse(raw).refundsSubmitted).toBe(4);
+    expect(parseEmergencyTourActionResponse({ ...raw, refundsSubmitted: 0 }).refundsSubmitted).toBe(0);
+    expect(parseEmergencyTourActionResponse({ ...raw, refundsSubmitted: null }).refundsSubmitted).toBeUndefined();
+  });
+
+  it('rejects a refund count that is not a non-negative whole number', () => {
+    const raw = {
+      operationId: 99,
+      tourScheduleId: 20,
+      action: 'CancelBeforeDeparture',
+      scheduleStatus: 'Cancelled',
+      affectedBookingCount: 7,
+      committedAtUtc: '2026-11-02T12:00:00Z',
+    };
+
+    for (const refundsSubmitted of ['4', -1, 1.5]) {
+      expect(() => parseEmergencyTourActionResponse({ ...raw, refundsSubmitted })).toThrow(EmergencyTourParseError);
+    }
   });
 
   it('parses add emergency evidence response', () => {

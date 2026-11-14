@@ -22,7 +22,12 @@ describe('EmergencyConfirmationDialog', () => {
     expect(screen.getByText(/Bạn có chắc chắn muốn hủy lịch khởi hành này\?/i)).toBeDefined();
     expect(screen.getByText(/10 đơn/i)).toBeDefined();
     expect(screen.getByText(/25 hành khách/i)).toBeDefined();
-    expect(screen.getByText(/được xử lý riêng theo chính sách hủy booking áp dụng/i)).toBeDefined();
+    expect(
+      screen.getByText(
+        'Mỗi booking đã thanh toán sẽ được hoàn 100% số tiền đã trả. Booking chưa thanh toán không phát sinh hoàn tiền.'
+      )
+    ).toBeDefined();
+    expect(screen.queryByText(/chính sách hủy booking/i)).toBeNull();
     expect(screen.queryByText(/VND|Quy trình hoàn tiền/i)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Đồng ý hủy/i }));
@@ -30,6 +35,26 @@ describe('EmergencyConfirmationDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Hủy bỏ/i }));
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  it('tells the Operator that TripMate reviews refunds for an emergency stop', () => {
+    render(
+      <EmergencyConfirmationDialog
+        isOpen={true}
+        title="Dừng tour?"
+        actionType="EmergencyStopActive"
+        affectedBookings={3}
+        affectedPassengers={6}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText('Booking đã thanh toán sẽ được TripMate xem xét hoàn phần dịch vụ chưa thực hiện.')
+    ).toBeDefined();
+    expect(screen.queryByText(/hoàn 100%/i)).toBeNull();
+    expect(screen.queryByText(/chính sách hủy booking/i)).toBeNull();
   });
 
   it('renders nothing when isOpen is false', () => {

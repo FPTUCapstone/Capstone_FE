@@ -38,6 +38,29 @@ describe('active trips contract', () => {
     })).toThrow();
   });
 
+  it('reads whether a trip needs refund review and treats a missing flag as not needed', () => {
+    expect(parseActiveTripsResponse(valid).items[0].refundReviewRequired).toBe(false);
+    expect(parseActiveTripsResponse({
+      ...valid,
+      items: [{ ...valid.items[0], currentState: 'Interrupted', refundReviewRequired: true }],
+    }).items[0].refundReviewRequired).toBe(true);
+    expect(parseActiveTripsResponse({
+      ...valid,
+      items: [{ ...valid.items[0], refundReviewRequired: false }],
+    }).items[0].refundReviewRequired).toBe(false);
+    expect(parseActiveTripsResponse({
+      ...valid,
+      items: [{ ...valid.items[0], refundReviewRequired: null }],
+    }).items[0].refundReviewRequired).toBe(false);
+  });
+
+  it('rejects a refund review flag that is not a boolean', () => {
+    expect(() => parseActiveTripsResponse({
+      ...valid,
+      items: [{ ...valid.items[0], refundReviewRequired: 'true' }],
+    })).toThrow();
+  });
+
   it('rejects unsafe IDs and negative counts', () => {
     expect(() => parseActiveTripsResponse({ ...valid, items: [{ ...valid.items[0], tripId: 42 }] })).toThrow();
     expect(() => parseActiveTripsResponse({ ...valid, summary: { ...valid.summary, activeTrips: -1 } })).toThrow();

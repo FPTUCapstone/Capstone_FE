@@ -50,7 +50,8 @@ describe('PaymentHandoffView (UC-28 entry point)', () => {
       render(<PaymentHandoffView bookingId="148" />);
 
       expect(await screen.findByText('Đã dừng vì an toàn')).toBeDefined();
-      expect(screen.getByText(/xử lý riêng theo chính sách hủy booking/i)).toBeDefined();
+      expect(screen.getByText(/phần dịch vụ chưa thực hiện sẽ được TripMate xem xét hoàn tiền/i)).toBeDefined();
+      expect(screen.queryByText(/xử lý riêng theo chính sách hủy booking/i)).toBeNull();
       expect(screen.queryByRole('button', { name: /Thanh toán/i })).toBeNull();
       expect(screen.queryByText(/Chờ thanh toán/i)).toBeNull();
       expect(screen.queryByText(/Giữ chỗ trong/i)).toBeNull();

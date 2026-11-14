@@ -1,4 +1,5 @@
 import React from 'react';
+import { refundNotice } from '../refundMessages';
 
 interface EmergencyConfirmationDialogProps {
   isOpen: boolean;
@@ -9,9 +10,6 @@ interface EmergencyConfirmationDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
-export const PAYMENT_HANDLING_NOTICE =
-  'Việc thanh toán và hoàn tiền được xử lý riêng theo chính sách hủy booking áp dụng.';
 
 export function EmergencyConfirmationDialog({
   isOpen,
@@ -60,7 +58,7 @@ export function EmergencyConfirmationDialog({
               <span className="font-bold text-slate-900">{affectedPassengers} hành khách</span>
             </div>
           </div>
-          <p className="text-[11px] text-slate-500">{PAYMENT_HANDLING_NOTICE}</p>
+          <p className="text-[11px] text-slate-500">{refundNotice(actionType)}</p>
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

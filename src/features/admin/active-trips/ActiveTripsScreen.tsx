@@ -125,7 +125,7 @@ function ActiveTripsContent({ queryKey }: { queryKey: string }) {
             <tbody>{data.items.map((trip) => <tr key={trip.tripId} className="border-t border-[#e6edf5]">
               <td className="px-4 py-3 font-mono font-bold text-[#1C2928]"><Link href={ROUTES.admin.activeTripDetails(trip.tripId)} className="underline decoration-[#9fb3c8] underline-offset-2 hover:text-[#174B4A] hover:decoration-[#174B4A]">{trip.tripCode}</Link></td>
               <td className="px-4 py-3"><Badge>{trip.tripType === 'SelfPlanned' ? 'Self-Planned' : 'Tour'}</Badge></td>
-              <td className="px-4 py-3"><Badge alert={trip.currentState === 'Interrupted'}>{trip.currentState}</Badge></td>
+              <td className="px-4 py-3"><div className="flex flex-wrap gap-1.5"><Badge alert={trip.currentState === 'Interrupted'}>{trip.currentState}</Badge>{trip.refundReviewRequired ? <Badge alert>{ACTIVE_TRIPS_MESSAGES.refundReviewRequired}</Badge> : null}</div></td>
               <td className="px-4 py-3 font-medium">{trip.groupOrTraveler}</td><td className="px-4 py-3">{trip.destination ?? 'Not available'}</td>
               <td className="px-4 py-3 whitespace-nowrap">{formatVietnamDateTime(trip.startedAtUtc)}</td><td className="px-4 py-3">{trip.currentDay ?? 'Not available'}</td>
               <td className="px-4 py-3">{trip.members}</td><td className={`px-4 py-3 font-bold ${trip.openAlerts ? 'text-[#b42318]' : 'text-[#5B6E69]'}`}>{trip.openAlerts}</td>

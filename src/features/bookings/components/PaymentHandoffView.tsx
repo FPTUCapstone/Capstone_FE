@@ -164,7 +164,7 @@ export function PaymentHandoffView({ bookingId, isDemo = false }: PaymentHandoff
           )}
           <p className="text-xs text-slate-600 leading-relaxed mb-6">
             {stopped
-              ? 'Tour này đã dừng vì lý do an toàn nên đơn không cần thanh toán thêm. Việc thanh toán và hoàn tiền được xử lý riêng theo chính sách hủy booking áp dụng.'
+              ? 'Tour này đã dừng vì lý do an toàn nên đơn không cần thanh toán thêm. Nếu bạn đã thanh toán, phần dịch vụ chưa thực hiện sẽ được TripMate xem xét hoàn tiền và thông báo kết quả cho bạn.'
               : 'Đơn đặt tour này không còn chờ thanh toán.'}
           </p>
           <Link

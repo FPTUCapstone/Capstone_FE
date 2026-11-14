@@ -9,6 +9,7 @@ export const ACTIVE_TRIPS_MESSAGES = {
   forbidden: 'You do not have permission to access this function.',
   unavailable: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
   empty: 'No data is available for the selected criteria.',
+  refundReviewRequired: 'Refund review needed',
 } as const;
 
 export function getVietnamTodayDate(now: Date = new Date()): string {
@@ -34,6 +35,8 @@ export type ActiveTripItem = {
   currentDay: number | null;
   members: number;
   openAlerts: number;
+  /** Interrupted by an emergency stop and its paid booking still awaits Admin refund review. */
+  refundReviewRequired: boolean;
 };
 
 export type ActiveTripsResponse = {
@@ -77,10 +80,13 @@ function parseItem(value: unknown): ActiveTripItem {
       typeof value.groupOrTraveler !== 'string' || !isNullableString(value.destination) ||
       !isUtcTimestamp(value.startedAtUtc) ||
       !(value.currentDay === null || isPositiveInteger(value.currentDay)) ||
-      !isNonNegativeInteger(value.members) || !isNonNegativeInteger(value.openAlerts)) {
+      !isNonNegativeInteger(value.members) || !isNonNegativeInteger(value.openAlerts) ||
+      !(value.refundReviewRequired === undefined || value.refundReviewRequired === null ||
+        typeof value.refundReviewRequired === 'boolean')) {
     throw new Error('The active-trip response is invalid.');
   }
-  return value as ActiveTripItem;
+  // Older Backends omit the flag.
+  return { ...(value as Omit<ActiveTripItem, 'refundReviewRequired'>), refundReviewRequired: value.refundReviewRequired === true };
 }
 
 export function parseActiveTripsResponse(value: unknown): ActiveTripsResponse {
