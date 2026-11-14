@@ -21,6 +21,23 @@ describe('activeTripsService', () => {
     );
   });
 
+  it('passes the refund review flag through and defaults it for older payloads', async () => {
+    const item = {
+      tripId: '7', tripCode: 'TRIP-7', tripType: 'Tour', currentState: 'Interrupted',
+      groupOrTraveler: 'Hue Group', destination: 'Hue', startedAtUtc: '2026-09-26T01:30:00Z',
+      currentDay: 2, members: 4, openAlerts: 0,
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({
+      summary: { activeTrips: 2, tripsWithOpenAlerts: 0, travelersOnTrip: 8 },
+      pageNumber: 1, pageSize: 20, totalCount: 2, totalPages: 1,
+      items: [{ ...item, refundReviewRequired: true }, { ...item, tripId: '8', tripCode: 'TRIP-8' }],
+    })));
+
+    const result = await fetchActiveTrips(defaultActiveTripsSearch());
+
+    expect(result.items.map((trip) => trip.refundReviewRequired)).toEqual([true, false]);
+  });
+
   it('retains response status in safe service errors', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ title: 'Denied' }, { status: 403 })));
     await expect(fetchActiveTrips(defaultActiveTripsSearch())).rejects.toMatchObject({ status: 403 });

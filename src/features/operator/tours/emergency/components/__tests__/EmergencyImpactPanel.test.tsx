@@ -40,7 +40,12 @@ describe('EmergencyImpactPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('15')).toBeDefined(); // Paid bookings
       expect(screen.getByText('30')).toBeDefined(); // Affected passengers
-      expect(screen.getByText(/được xử lý riêng theo chính sách hủy booking áp dụng/i)).toBeDefined();
+      expect(
+        screen.getByText(
+          'Mỗi booking đã thanh toán sẽ được hoàn 100% số tiền đã trả. Booking chưa thanh toán không phát sinh hoàn tiền.'
+        )
+      ).toBeDefined();
+      expect(screen.queryByText(/chính sách hủy booking/i)).toBeNull();
       expect(screen.queryByText(/VND|Refund Estimate|UC-71|UC-42|đơn thủ công/i)).toBeNull();
     });
   });
@@ -56,6 +61,21 @@ describe('EmergencyImpactPanel', () => {
 
     const actionBtn = screen.getByRole('button', { name: /Tiến hành dừng khẩn cấp/i });
     expect(actionBtn.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('tells the Operator before an emergency stop that TripMate reviews refunds', async () => {
+    vi.spyOn(api, 'getEmergencyImpact').mockResolvedValueOnce({
+      ...safeImpact,
+      action: 'EmergencyStopActive',
+      scheduleStatus: 'InProgress',
+    });
+
+    render(<EmergencyImpactPanel tourId={200} scheduleId={50} onProceed={vi.fn()} />);
+
+    expect(
+      await screen.findByText('Booking đã thanh toán sẽ được TripMate xem xét hoàn phần dịch vụ chưa thực hiện.')
+    ).toBeDefined();
+    expect(screen.queryByText(/hoàn 100%/i)).toBeNull();
   });
 
   it('calls onProceed with latest impact when proceed button is clicked', async () => {

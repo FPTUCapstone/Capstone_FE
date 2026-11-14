@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { EmergencyTourImpactResponse } from '../types';
 import { getEmergencyImpact } from '../operatorEmergencyApi';
-import { PAYMENT_HANDLING_NOTICE } from './EmergencyConfirmationDialog';
+import { refundNotice } from '../refundMessages';
 import { departureStatusLabel } from '../departureStatusLabel';
 
 interface EmergencyImpactPanelProps {
@@ -93,6 +93,7 @@ export function EmergencyImpactPanel({
   const isStop = impact.action === 'EmergencyStopActive';
   const hasNoAction = !isCancel && !isStop;
   const isBlockedByUnverified = impact.hasUnverifiedSessions;
+  const refundNoticeText = refundNotice(impact.action);
 
   return (
     <div className={`rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-5 ${className}`}>
@@ -167,7 +168,7 @@ export function EmergencyImpactPanel({
           <span className="text-sm font-bold text-slate-800">{impact.unusedTicketCount} vé</span>
         </div>
       </div>
-      <p className="text-[11px] text-slate-500">{PAYMENT_HANDLING_NOTICE}</p>
+      {refundNoticeText && <p className="text-[11px] text-slate-500">{refundNoticeText}</p>}
 
       {/* Suggested Action Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4">

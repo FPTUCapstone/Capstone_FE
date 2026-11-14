@@ -18,6 +18,7 @@ import { EmergencyImpactPanel } from '@/features/operator/tours/emergency/compon
 import { CancelBeforeDepartureForm } from '@/features/operator/tours/emergency/components/CancelBeforeDepartureForm';
 import { EmergencyStopForm } from '@/features/operator/tours/emergency/components/EmergencyStopForm';
 import { EmergencyEvidenceEditor } from '@/features/operator/tours/emergency/components/EmergencyEvidenceEditor';
+import { refundResultMessage } from '@/features/operator/tours/emergency/refundMessages';
 import type {
   EmergencyTourImpactResponse,
   EmergencyTourActionResponse,
@@ -170,6 +171,7 @@ export function WeatherSafetyReviewDetailPage({
   }
 
   const canDecide = review.status !== 'Closed';
+  const refundResult = actionSuccessResult ? refundResultMessage(actionSuccessResult) : null;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -230,6 +232,7 @@ export function WeatherSafetyReviewDetailPage({
             Mã thao tác: <strong>{actionSuccessResult.operationId}</strong> &bull; Đơn hủy/gián đoạn:{' '}
             {actionSuccessResult.affectedBookingCount}
           </p>
+          {refundResult && <p className="text-xs text-[#5B6E69]">{refundResult}</p>}
         </div>
       )}
 

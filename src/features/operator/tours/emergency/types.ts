@@ -50,6 +50,8 @@ export interface EmergencyTourActionResponse {
   readonly action: string;
   readonly scheduleStatus: string;
   readonly affectedBookingCount: number;
+  /** 100% refund requests created by a cancellation (0 for a stop). Older Backends omit it. */
+  readonly refundsSubmitted?: number;
   readonly committedAtUtc: string;
 }
 

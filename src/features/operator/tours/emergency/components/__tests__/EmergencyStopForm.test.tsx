@@ -64,6 +64,9 @@ describe('EmergencyStopForm', () => {
     await waitFor(() => {
       expect(screen.getByText(/Bạn có chắc chắn muốn dừng khẩn cấp tour đang chạy\?/i)).toBeDefined();
     });
+    expect(
+      screen.getByText('Booking đã thanh toán sẽ được TripMate xem xét hoàn phần dịch vụ chưa thực hiện.')
+    ).toBeDefined();
 
     const confirmModalBtn = screen.getByRole('button', { name: /Đồng ý dừng tour/i });
     fireEvent.click(confirmModalBtn);

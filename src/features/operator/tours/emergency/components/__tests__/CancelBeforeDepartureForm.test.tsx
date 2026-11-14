@@ -56,6 +56,7 @@ describe('CancelBeforeDepartureForm', () => {
     await waitFor(() => {
       expect(screen.getByText(/Bạn có chắc chắn muốn hủy lịch khởi hành này\?/i)).toBeDefined();
     });
+    expect(screen.getByText(/Mỗi booking đã thanh toán sẽ được hoàn 100% số tiền đã trả/)).toBeDefined();
 
     const confirmModalBtn = screen.getByRole('button', { name: /Đồng ý hủy/i });
     fireEvent.click(confirmModalBtn);
