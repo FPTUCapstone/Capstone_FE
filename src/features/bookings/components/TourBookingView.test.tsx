@@ -61,6 +61,16 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
     expect(screen.getByText(/Trẻ em/)).toBeTruthy();
   });
 
+  it('allows editing beyond the technical prefill bound when live capacity permits', () => {
+    const tour = { ...DEMO_TOUR_DETAIL_HOI_AN, schedules: DEMO_TOUR_DETAIL_HOI_AN.schedules.map(schedule => ({ ...schedule, remainingSlots: 60 })) };
+    render(<TourBookingView tour={tour} initialScheduleId="9007199254740997"
+      initialAdultCount={50} isDemo={false} userContext={null} />);
+    const increase = screen.getByLabelText('Tăng 1 người lớn');
+    expect(increase.hasAttribute('disabled')).toBe(false);
+    fireEvent.click(increase);
+    expect(increase.parentElement?.querySelector('span')?.textContent).toBe('51');
+  });
+
   it('adjusts traveler count and updates price calculation', async () => {
     render(
       <TourBookingView
@@ -186,6 +196,56 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
           );
         }),
       );
+    });
+
+    it('quotes and creates exactly two adults for an explicit adult-count handoff', async () => {
+      render(<TourBookingView tour={DEMO_TOUR_DETAIL_HOI_AN}
+        initialScheduleId="9007199254740997" initialAdultCount={2} isDemo={false}
+        userContext={TRAVELER_CONTEXT} profilePhone="0905123456" />);
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      const quoteCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/quote'));
+      expect(JSON.parse(quoteCall?.[1]?.body as string).participantCounts).toEqual({ adult: 2, child: 0, infant: 0 });
+      fireEvent.click(screen.getByRole('checkbox'));
+      fireEvent.click(screen.getByRole('button', { name: /Tiếp tục thanh toán/i }));
+      await screen.findByText('BK-20261017-00001');
+      const createCall = vi.mocked(fetch).mock.calls.find(([url]) => !String(url).endsWith('/quote'));
+      const request = JSON.parse(createCall?.[1]?.body as string);
+      expect(request.participants).toHaveLength(2);
+      expect(request.participants.every((participant: { participantType: string }) => participant.participantType === 'Adult')).toBe(true);
+    });
+
+    it('quotes and creates the complete adult and child composition', async () => {
+      render(<TourBookingView tour={DEMO_TOUR_DETAIL_HOI_AN}
+        initialScheduleId="9007199254740997" initialAdultCount={2} initialChildCount={1} initialInfantCount={0}
+        isDemo={false} userContext={TRAVELER_CONTEXT} profilePhone="0905123456" />);
+      await waitFor(() => expect(fetch).toHaveBeenCalled());
+      const quoteCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/quote'));
+      expect(JSON.parse(quoteCall?.[1]?.body as string).participantCounts).toEqual({ adult: 2, child: 1, infant: 0 });
+      fireEvent.click(screen.getByRole('checkbox'));
+      fireEvent.click(screen.getByRole('button', { name: /Tiếp tục thanh toán/i }));
+      await screen.findByText('BK-20261017-00001');
+      const createCall = vi.mocked(fetch).mock.calls.find(([url]) => !String(url).endsWith('/quote'));
+      const participants = JSON.parse(createCall?.[1]?.body as string).participants as { participantType: string }[];
+      expect(participants.map(person => person.participantType)).toEqual(['Adult', 'Adult', 'Child']);
+    });
+
+    it('uses the assisted adult count in real quotes and retains edits when the profile arrives', async () => {
+      const view = render(<TourBookingView tour={DEMO_TOUR_DETAIL_HOI_AN}
+        initialScheduleId="9007199254740997" initialAdultCount={3} isDemo={false} userContext={TRAVELER_CONTEXT} />);
+      await waitFor(() => expect(fetch).toHaveBeenCalled());
+      const quoteCalls = () => vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith('/quote'));
+      await waitFor(() => expect(quoteCalls().length).toBeGreaterThan(0));
+      expect(JSON.parse(quoteCalls()[0][1]?.body as string).participantCounts).toEqual({ adult: 3, child: 0, infant: 0 });
+      const increase = screen.getByLabelText('Tăng 1 người lớn');
+      fireEvent.click(increase);
+      view.rerender(<TourBookingView tour={DEMO_TOUR_DETAIL_HOI_AN}
+        initialScheduleId="9007199254740997" initialAdultCount={5} isDemo={false}
+        userContext={TRAVELER_CONTEXT} profilePhone="0905123456" />);
+      expect(increase.parentElement?.querySelector('span')?.textContent).toBe('4');
+      await waitFor(() => expect(quoteCalls().length).toBeGreaterThan(1));
+      expect(JSON.parse(quoteCalls().at(-1)?.[1]?.body as string).participantCounts.adult).toBe(4);
+      expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
+      expect(vi.mocked(fetch).mock.calls.every(([url]) => String(url).endsWith('/quote'))).toBe(true);
     });
 
     it('marks the required consent checkbox inline when the traveler attempts to submit without accepting', async () => {
