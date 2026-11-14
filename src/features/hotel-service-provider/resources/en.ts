@@ -1,6 +1,6 @@
 /**
  * TripMate Hotel & Commercial Service Provider Workflow — English Resources
- * Strictly compliant with Canonical SRS Report 3 (§5.2 English UI requirement, §5.3 Application Messages).
+ * Clean, production-quality resources with technical metadata removed from user-facing UI.
  */
 
 export const hotelProviderEn = {
@@ -43,7 +43,6 @@ export const hotelProviderEn = {
   },
 
   messages: {
-    // Canonical SRS Application Messages (§5.3)
     MSG01: 'Please fill in all required fields.',
     MSG05: 'An account with this email already exists. Please sign in or use another email.',
     MSG34: 'This point of interest is no longer available.',
@@ -69,7 +68,7 @@ export const hotelProviderEn = {
   },
 
   directPaymentNotice: {
-    title: 'Direct Hotel Payment Policy (BR-196)',
+    title: 'Direct Hotel Payment Policy',
     body: 'The estimated amount is informational only. The traveler pays the hotel directly upon check-in. TripMate collects no traveler funds and processes no booking refunds for this reservation.',
   },
 
@@ -93,60 +92,65 @@ export const hotelProviderEn = {
     pageTitle: 'Create Service Provider Account',
     breadcrumb: 'User Management',
     subtitle: 'Provision verified commercial partner credentials and link active commercial POIs to their operational account.',
+    staffRoleBadge: 'Staff Operations Workspace',
     formSectionBusiness: 'Business & Representative Details',
     businessNameLabel: 'Business / Property Name',
     businessNamePlaceholder: 'e.g. Hoi An Riverside Heritage Resort',
     serviceCategoryLabel: 'Service Category',
     serviceCategoryOptions: {
-      hotel: 'Hotel & Commercial Lodging',
+      hotel: 'Hotel / Hospitality',
       vehicleRental: 'Vehicle Rental',
-      restaurant: 'Restaurant & Dining',
+      restaurant: 'Restaurant / Dining',
     },
     representativeNameLabel: 'Representative Full Name',
-    representativeNamePlaceholder: 'e.g. Tran Thi Lan',
+    representativeNamePlaceholder: 'e.g. Nguyen Van An',
     emailLabel: 'Account Email Address',
-    emailPlaceholder: 'e.g. lan.tran@hoianriverside.vn',
-    emailHelpText: 'A temporary password will be dispatched directly to this email upon creation.',
+    emailPlaceholder: 'partner@example.com',
+    emailHelpText: 'Official credentials and a temporary initial password will be securely dispatched to this email address.',
     phoneLabel: 'Contact Phone Number',
     phonePlaceholder: 'e.g. 0905 123 456',
-    formSectionPoi: 'Linked Commercial Point of Interest (POI)',
+    formSectionPoi: 'Linked Commercial Lodging POI',
     poiSelectionLabel: 'Select Active Commercial POI',
-    poiSelectionHelpText: 'Only Active commercial lodging POIs can be linked. Each property must be verified.',
-    poiPolicyWarning: 'Operational Policy: Under proposed BR-192, a commercial POI may only be linked to at most one Service Provider account.',
+    poiPolicyWarning:
+      'Linking Policy: Each commercial lodging provider must be linked to an active commercial lodging Point of Interest in the system to accept traveler booking requests.',
     submitButton: 'Create Provider Account & Send Credentials',
     cancelButton: 'Cancel',
-    successTitle: 'Account Provisioned Successfully',
-    successModalNote: 'Temporary credentials have been dispatched. The provider must change their password upon first sign-in.',
+    successTitle: 'Service Provider Account Created Successfully',
+    successModalNote:
+      'A temporary password has been automatically generated and sent to the representative email. The provider can log in and reset their password upon first access.',
+    returnToDirectory: 'Return to User Directory',
+    provisionAnother: 'Provision Another Account',
     sidebarGuidanceTitle: 'Operational Provisioning Guidance',
     sidebarGuidanceItems: [
       {
         title: 'Staff Authorization Authority',
-        desc: 'Only authorized TripMate Staff operators may create commercial partner accounts per SRS §3.9.1.5.',
+        desc: 'Staff members are authorized to provision service provider credentials only after verifying business registration licenses and commercial agreements.',
       },
       {
-        title: 'Credential Generation & Security',
-        desc: 'The system automatically generates a cryptographically secure temporary password (BR-03). Passwords are never exposed on screen.',
+        title: 'Commercial POI Linking',
+        desc: 'Ensure the associated Point of Interest is in Active status and not already assigned to another commercial operator.',
       },
       {
-        title: 'First-Login Rotation Policy',
-        desc: 'The partner will be required to change their temporary password immediately upon their first sign-in.',
-      },
-      {
-        title: 'Audit Logging & Compliance',
-        desc: 'Every account creation event is logged immutably with your Staff ID, IP address, and timestamp (BR-174, CR-14).',
+        title: 'Credential Delivery',
+        desc: 'The partner will receive automated instructions to access the TripMate Partner Portal upon creation.',
       },
     ],
+    securityCardTitle: 'Strict Password Privacy',
+    securityCardDesc:
+      'In accordance with strict security governance, passwords are never entered or inspected by Staff. An automated cryptographically secure activation dispatch is delivered directly to the partner email.',
   },
 
   w103: {
     pageTitle: 'Service Booking Requests',
-    subtitle: 'Review, filter, and process incoming hospitality booking requests submitted by TripMate travelers.',
-    searchPlaceholder: 'Search by Request Code, Traveler Name, or Property...',
-    statusFilterLabel: 'Status Filter',
-    startDateLabel: 'From Date',
-    endDateLabel: 'To Date',
+    subtitle: 'Review, verify room availability, and execute timely operational decisions on traveler booking requests.',
+    searchPlaceholder: 'Search by booking code, guest name, phone...',
+    statusFilterLabel: 'Filter by Status',
+    startDateLabel: 'Stay Date From',
+    endDateLabel: 'Stay Date To',
     applyFiltersButton: 'Search',
-    resetFiltersButton: 'Reset',
+    resetFiltersButton: 'Reset Filters',
+    sortNotice:
+      'Pending Confirmation requests are prioritized first to ensure prompt operational response times.',
     tableHeaders: {
       requestCode: 'Request Code',
       service: 'Property / Service',
@@ -159,10 +163,9 @@ export const hotelProviderEn = {
       submittedAt: 'Submitted At',
       action: 'Action',
     },
-    emptyTitle: 'No Booking Requests Found',
-    emptySubtitle: 'No requests match your current filter parameters. Try adjusting the date range or status filter.',
-    sortNotice: 'Pending Confirmation requests are prioritized first, followed by earliest check-in dates.',
-    totalRequestsCount: (count: number) => `Total ${count} booking requests on file`,
+    emptyTitle: 'No Matching Booking Requests Found',
+    emptySubtitle: 'No reservation requests match the current search keyword or filter parameters.',
+    totalRequestsCount: (count: number) => `${count} booking requests on file`,
   },
 
   w104: {
@@ -197,7 +200,7 @@ export const hotelProviderEn = {
       confirmDialogMessage: (code: string) =>
         `Confirm acceptance of booking request ${code}? The traveler will be notified immediately and reservation details will be added to their itinerary schedule.`,
       rejectDialogTitle: 'Reject Booking Request',
-      rejectReasonLabel: 'Rejection Reason (Mandatory per BR-195)',
+      rejectReasonLabel: 'Rejection Reason',
       rejectReasonPlaceholder: 'Enter clear reason for declining this request (e.g. Fully booked on selected date, property under maintenance)...',
       rejectPresets: [
         'Fully booked for the selected date range',
@@ -210,12 +213,12 @@ export const hotelProviderEn = {
     },
     outcomeSection: {
       lockedNotice: (date: string) =>
-        `Service outcome recording will unlock after the check-in date (${date}) has arrived (§3.6.5).`,
+        `Service outcome recording will unlock after the check-in date (${date}) has arrived.`,
       eligiblePrompt: 'Guest check-in date has passed. Please record the actual outcome and total collected amount.',
       actualAmountLabel: 'Actual Amount Collected (VND)',
       actualAmountPlaceholder: 'Enter total amount paid by guest',
       commissionPreviewLabel: 'TripMate Commission Preview (10% standard parameter)',
-      commissionCalculationNote: 'Calculated as 10% of actual collected spend (Proposal BR-198 pending final Owner sign-off).',
+      commissionCalculationNote: 'Calculated as 10% of actual collected spend.',
       markCompletedButton: 'Mark Stay Completed',
       markNoShowButton: 'Mark Guest No-Show',
       completedDialogTitle: 'Confirm Stay Completion',
@@ -260,7 +263,8 @@ export const hotelProviderEn = {
       paymentExplanation:
         'Please wire the commission amount to TripMate’s designated bank account below and submit your transaction reference for staff verification.',
       bankInfoCard: {
-        title: 'TripMate Beneficiary Account (Illustrative Sandbox)',
+        title: 'BENEFICIARY ACCOUNT (DEMO SANDBOX)',
+        warningBadge: 'SIMULATION ONLY — For interface demonstration and testing purposes. Do not transfer real funds.',
         bankName: 'Joint Stock Commercial Bank for Foreign Trade of Vietnam (Vietcombank) - Da Nang Branch',
         accountHolder: 'CONG TY CO PHAN TRIPMATE VIETNAM',
         accountNumber: '0071000888999',
@@ -268,10 +272,10 @@ export const hotelProviderEn = {
       },
       referenceInputLabel: 'Bank Transfer Transaction Reference / Journal Number',
       referencePlaceholder: 'e.g. VCB-20261205-982341',
-      referenceHelp: 'Enter the exact transaction number from your banking receipt (mandatory per §3.6.6).',
+      referenceHelp: 'Enter the exact transaction number from your banking receipt.',
       reportButton: 'Report Wire Payment',
       reportedNotice: (ref: string, at: string) =>
-        `Payment reported with bank reference "${ref}" on ${at}. TripMate Staff will confirm receipt upon bank statement verification (W106).`,
+        `Payment reported with bank reference "${ref}" on ${at}. TripMate Staff will confirm receipt upon bank statement verification.`,
       paidNotice: 'This commission statement has been fully reconciled and confirmed as Paid by TripMate Finance.',
     },
   },
@@ -279,7 +283,8 @@ export const hotelProviderEn = {
   w106: {
     pageTitle: 'Commission Reconciliation',
     breadcrumb: 'Commercial Settlements',
-    subtitle: 'Verify commercial partner commission wire transfers against bank statements and record official receipts (UC-83).',
+    subtitle: 'Verify commercial partner commission wire transfers against bank statements and record official receipts.',
+    staffRoleBadge: 'Staff Financial Reconciliation',
     filters: {
       providerLabel: 'Service Provider',
       periodLabel: 'Statement Period',
@@ -307,7 +312,7 @@ export const hotelProviderEn = {
         `Confirm that the commission amount of ${amount} from ${provider} under bank reference "${ref}" has been verified as credited to TripMate’s bank account?`,
       confirmButton: 'Confirm Receipt & Mark Paid',
       cancelButton: 'Cancel',
-      auditNotice: 'This action records an immutable financial reconciliation audit entry under BR-174 and CR-14.',
+      auditNotice: 'This action records an immutable financial reconciliation audit entry.',
     },
     emptyTitle: 'No Statements Awaiting Reconciliation',
     emptySubtitle: 'No commission statements currently match the selected criteria.',
@@ -323,3 +328,5 @@ export const hotelProviderEn = {
     commissionReconciliation: 'Commission Reconciliation',
   },
 } as const;
+
+export type HotelProviderEnResources = typeof hotelProviderEn;

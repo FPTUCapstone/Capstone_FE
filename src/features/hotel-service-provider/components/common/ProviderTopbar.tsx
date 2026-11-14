@@ -10,13 +10,13 @@ interface ProviderTopbarProps {
 export function ProviderTopbar({ onOpenMobileSidebar }: ProviderTopbarProps) {
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between h-14 px-4 sm:px-6 bg-white/95 border-b border-[#DCE2DD] shadow-xs backdrop-blur-md">
-      {/* Left: Mobile hamburger & breadcrumb or context */}
+      {/* Left: Mobile hamburger & context */}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onOpenMobileSidebar}
           className="p-1.5 rounded-lg text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] md:hidden cursor-pointer"
-          aria-label="Open sidebar menu"
+          aria-label="Mở menu điều hướng"
         >
           <span className="material-symbols-outlined text-[20px]">menu</span>
         </button>
@@ -29,7 +29,7 @@ export function ProviderTopbar({ onOpenMobileSidebar }: ProviderTopbarProps) {
             </span>
           </span>
           <span className="hidden sm:inline-block text-xs text-[#5B6E69] font-medium">
-            (Hotel Operations)
+            (Vận hành Lưu trú)
           </span>
         </div>
       </div>
@@ -40,7 +40,7 @@ export function ProviderTopbar({ onOpenMobileSidebar }: ProviderTopbarProps) {
         <button
           type="button"
           className="p-1.5 text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer relative"
-          aria-label="Notifications"
+          aria-label="Thông báo hệ thống"
         >
           <span className="material-symbols-outlined text-[20px]">notifications</span>
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#B96D4C]" />
@@ -55,7 +55,7 @@ export function ProviderTopbar({ onOpenMobileSidebar }: ProviderTopbarProps) {
           </div>
           <div className="hidden sm:flex flex-col text-left leading-tight">
             <span className="text-xs font-bold text-[#1C2928]">Trần Thị Lan</span>
-            <span className="text-[10px] text-[#5B6E69]">Reception / Partner</span>
+            <span className="text-[10px] text-[#5B6E69]">Lễ tân / Đối tác</span>
           </div>
         </div>
 

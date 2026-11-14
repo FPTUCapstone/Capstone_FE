@@ -8,13 +8,13 @@ import { AccessibleSelect } from '../common/AccessibleSelect';
 import { ProviderBookingService } from '../../services/providerBookingService';
 import type { BookingRequestItem, BookingRequestStatus } from '../../types';
 import { formatDate, formatTime, formatDateTime } from '../../utils/formatters';
-import { hotelProviderEn } from '../../resources/en';
+import { hotelProviderVi } from '../../resources/vi';
 
 export function ServiceBookingRequestsView() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL query state preservation (CR-01)
+  // URL query state preservation
   const rawStatus = searchParams.get('status');
   const initialStatus: BookingRequestStatus | 'All' =
     rawStatus && rawStatus !== 'All' ? (rawStatus as BookingRequestStatus) : 'All';
@@ -43,7 +43,7 @@ export function ServiceBookingRequestsView() {
   });
 
   const [page, setPage] = useState(Number.isFinite(initialPage) && initialPage > 0 ? initialPage : 1);
-  const pageSize = 20; // Mandatory per CR-01
+  const pageSize = 20;
 
   const [requests, setRequests] = useState<BookingRequestItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -68,7 +68,7 @@ export function ServiceBookingRequestsView() {
       })
       .catch(() => {
         if (!active) return;
-        setErrorMessage(hotelProviderEn.messages.MSG127);
+        setErrorMessage(hotelProviderVi.messages.MSG127);
         setIsLoading(false);
       });
 
@@ -91,7 +91,7 @@ export function ServiceBookingRequestsView() {
     router.replace(newUrl, { scroll: false });
   }, [appliedFilters, page, router]);
 
-  // Search on explicit submit only (CR-02)
+  // Search on explicit submit only
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -122,14 +122,42 @@ export function ServiceBookingRequestsView() {
   };
 
   const statusOptions = [
-    { value: 'All', label: 'All Statuses' },
-    { value: 'PendingConfirmation', label: hotelProviderEn.statuses.pendingConfirmation, icon: 'schedule' },
-    { value: 'Confirmed', label: hotelProviderEn.statuses.confirmed, icon: 'check_circle' },
-    { value: 'Completed', label: hotelProviderEn.statuses.completed, icon: 'verified' },
-    { value: 'NoShow', label: hotelProviderEn.statuses.noShow, icon: 'person_off' },
-    { value: 'Rejected', label: hotelProviderEn.statuses.rejected, icon: 'cancel' },
-    { value: 'Cancelled', label: hotelProviderEn.statuses.cancelled, icon: 'block' },
-    { value: 'Expired', label: hotelProviderEn.statuses.expired, icon: 'timer_off' },
+    { value: 'All', label: 'Tất cả trạng thái' },
+    {
+      value: 'PendingConfirmation',
+      label: hotelProviderVi.statuses.pendingConfirmation,
+      icon: 'schedule',
+    },
+    {
+      value: 'Confirmed',
+      label: hotelProviderVi.statuses.confirmed,
+      icon: 'check_circle',
+    },
+    {
+      value: 'Completed',
+      label: hotelProviderVi.statuses.completed,
+      icon: 'verified',
+    },
+    {
+      value: 'NoShow',
+      label: hotelProviderVi.statuses.noShow,
+      icon: 'person_off',
+    },
+    {
+      value: 'Rejected',
+      label: hotelProviderVi.statuses.rejected,
+      icon: 'cancel',
+    },
+    {
+      value: 'Cancelled',
+      label: hotelProviderVi.statuses.cancelled,
+      icon: 'block',
+    },
+    {
+      value: 'Expired',
+      label: hotelProviderVi.statuses.expired,
+      icon: 'timer_off',
+    },
   ];
 
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
@@ -142,27 +170,27 @@ export function ServiceBookingRequestsView() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1C2928] tracking-tight">
-            {hotelProviderEn.w103.pageTitle}
+            {hotelProviderVi.w103.pageTitle}
           </h1>
           <p className="mt-1 text-xs text-[#5B6E69]">
-            {hotelProviderEn.w103.subtitle}
+            {hotelProviderVi.w103.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-[#174B4A] bg-[#E8F7F4] border border-[#B2DFDB] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
             <span className="material-symbols-outlined text-[15px]">inventory</span>
-            <span>{hotelProviderEn.w103.totalRequestsCount(totalCount)}</span>
+            <span>{hotelProviderVi.w103.totalRequestsCount(totalCount)}</span>
           </span>
         </div>
       </div>
 
-      {/* Filter & Search Toolbar (CR-02) */}
+      {/* Filter & Search Toolbar */}
       <div className="bg-white border border-[#DCE2DD] rounded-xl p-4 shadow-xs">
         <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
           {/* Keyword Search */}
           <div className="lg:col-span-4">
             <label htmlFor="w103-search" className="block text-xs font-semibold text-[#1C2928] mb-1">
-              Search
+              {hotelProviderVi.common.search}
             </label>
             <div className="relative">
               <span
@@ -176,8 +204,8 @@ export function ServiceBookingRequestsView() {
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder={hotelProviderEn.w103.searchPlaceholder}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] placeholder-[#8E9E9B] focus:outline-none focus:ring-2 focus:ring-[#174B4A] focus:border-[#174B4A]"
+                placeholder={hotelProviderVi.w103.searchPlaceholder}
+                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] placeholder-[#8E9E9B] focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15 focus:border-[#174B4A] transition-colors"
               />
             </div>
           </div>
@@ -185,7 +213,7 @@ export function ServiceBookingRequestsView() {
           {/* Status Filter */}
           <div className="lg:col-span-3">
             <AccessibleSelect
-              label={hotelProviderEn.w103.statusFilterLabel}
+              label={hotelProviderVi.w103.statusFilterLabel}
               options={statusOptions}
               value={selectedStatus}
               onChange={(val) => setSelectedStatus(val as BookingRequestStatus | 'All')}
@@ -195,28 +223,28 @@ export function ServiceBookingRequestsView() {
           {/* From Date */}
           <div className="lg:col-span-2">
             <label htmlFor="w103-start-date" className="block text-xs font-semibold text-[#1C2928] mb-1">
-              {hotelProviderEn.w103.startDateLabel}
+              {hotelProviderVi.w103.startDateLabel}
             </label>
             <input
               id="w103-start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A] focus:border-[#174B4A]"
+              className="w-full px-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15 focus:border-[#174B4A] transition-colors"
             />
           </div>
 
           {/* To Date */}
           <div className="lg:col-span-2">
             <label htmlFor="w103-end-date" className="block text-xs font-semibold text-[#1C2928] mb-1">
-              {hotelProviderEn.w103.endDateLabel}
+              {hotelProviderVi.w103.endDateLabel}
             </label>
             <input
               id="w103-end-date"
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A] focus:border-[#174B4A]"
+              className="w-full px-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15 focus:border-[#174B4A] transition-colors"
             />
           </div>
 
@@ -227,14 +255,14 @@ export function ServiceBookingRequestsView() {
               className="flex-1 py-2 px-3 text-xs font-semibold text-white bg-[#174B4A] hover:bg-[#103B39] rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
             >
               <span className="material-symbols-outlined text-[15px]" aria-hidden="true">search</span>
-              <span>{hotelProviderEn.w103.applyFiltersButton}</span>
+              <span>{hotelProviderVi.w103.applyFiltersButton}</span>
             </button>
             <button
               type="button"
               onClick={handleReset}
               className="p-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer border border-[#DCE2DD]"
-              title={hotelProviderEn.w103.resetFiltersButton}
-              aria-label={hotelProviderEn.w103.resetFiltersButton}
+              title={hotelProviderVi.w103.resetFiltersButton}
+              aria-label={hotelProviderVi.w103.resetFiltersButton}
             >
               <span className="material-symbols-outlined text-[16px]" aria-hidden="true">refresh</span>
             </button>
@@ -244,10 +272,10 @@ export function ServiceBookingRequestsView() {
 
       {/* Sorting Notice */}
       <div className="flex items-center gap-2 text-[11px] text-[#5B6E69] px-1">
-        <span className="material-symbols-outlined text-[15px] text-[#B96D4C]">
+        <span className="material-symbols-outlined text-[15px] text-[#B96D4C] shrink-0">
           info
         </span>
-        <span>{hotelProviderEn.w103.sortNotice}</span>
+        <span>{hotelProviderVi.w103.sortNotice}</span>
       </div>
 
       {/* Operational Data Table */}
@@ -257,14 +285,14 @@ export function ServiceBookingRequestsView() {
             <span className="material-symbols-outlined text-[28px] animate-spin text-[#174B4A] mb-2 block mx-auto">
               progress_activity
             </span>
-            Loading booking requests...
+            {hotelProviderVi.common.loading}
           </div>
         ) : errorMessage ? (
           <div className="p-12 text-center text-xs text-[#DC2626]">
             <span className="material-symbols-outlined text-[32px] mb-2 block mx-auto">
               error
             </span>
-            <p className="font-semibold text-sm mb-1">Failed to load booking requests</p>
+            <p className="font-semibold text-sm mb-1">Không thể tải danh sách yêu cầu</p>
             <p className="text-[#5B6E69] mb-4">{errorMessage}</p>
             <button
               type="button"
@@ -273,9 +301,9 @@ export function ServiceBookingRequestsView() {
                 setErrorMessage(null);
                 setAppliedFilters((prev) => ({ ...prev }));
               }}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-[#174B4A] rounded-lg"
+              className="px-4 py-1.5 text-xs font-semibold text-white bg-[#174B4A] rounded-lg cursor-pointer"
             >
-              Try Again
+              Thử lại
             </button>
           </div>
         ) : requests.length === 0 ? (
@@ -284,17 +312,17 @@ export function ServiceBookingRequestsView() {
               inbox
             </span>
             <h3 className="font-bold text-sm text-[#1C2928] mb-1">
-              {hotelProviderEn.w103.emptyTitle}
+              {hotelProviderVi.w103.emptyTitle}
             </h3>
             <p className="text-[#5B6E69] max-w-sm mx-auto">
-              {hotelProviderEn.w103.emptySubtitle}
+              {hotelProviderVi.w103.emptySubtitle}
             </p>
             <button
               type="button"
               onClick={handleReset}
               className="mt-4 px-3 py-1.5 text-xs font-semibold text-[#174B4A] bg-[#E8F7F4] border border-[#B2DFDB] rounded-lg hover:bg-[#B2DFDB]/50 cursor-pointer"
             >
-              Reset Filters
+              {hotelProviderVi.w103.resetFiltersButton}
             </button>
           </div>
         ) : (
@@ -302,35 +330,35 @@ export function ServiceBookingRequestsView() {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-[#F7F5EF] border-b border-[#DCE2DD] text-[#5B6E69] font-semibold uppercase tracking-wider text-[11px]">
-                  <th scope="col" className="py-3 px-4 w-[150px]">
-                    {hotelProviderEn.w103.tableHeaders.requestCode}
+                  <th scope="col" className="py-3 px-4 w-[140px] whitespace-nowrap">
+                    {hotelProviderVi.w103.tableHeaders.requestCode}
                   </th>
                   <th scope="col" className="py-3 px-4 min-w-[180px]">
-                    {hotelProviderEn.w103.tableHeaders.service}
-                  </th>
-                  <th scope="col" className="py-3 px-4 min-w-[170px]">
-                    {hotelProviderEn.w103.tableHeaders.option}
-                  </th>
-                  <th scope="col" className="py-3 px-4 w-[110px] whitespace-nowrap">
-                    {hotelProviderEn.w103.tableHeaders.requestedDate}
-                  </th>
-                  <th scope="col" className="py-3 px-4 w-[85px] whitespace-nowrap">
-                    {hotelProviderEn.w103.tableHeaders.requestedTime}
-                  </th>
-                  <th scope="col" className="py-3 px-4 w-[60px] text-center">
-                    {hotelProviderEn.w103.tableHeaders.quantity}
+                    {hotelProviderVi.w103.tableHeaders.service}
                   </th>
                   <th scope="col" className="py-3 px-4 min-w-[160px]">
-                    {hotelProviderEn.w103.tableHeaders.travelerName}
+                    {hotelProviderVi.w103.tableHeaders.option}
                   </th>
-                  <th scope="col" className="py-3 px-4 w-[150px]">
-                    {hotelProviderEn.w103.tableHeaders.status}
+                  <th scope="col" className="py-3 px-4 w-[110px] whitespace-nowrap">
+                    {hotelProviderVi.w103.tableHeaders.requestedDate}
+                  </th>
+                  <th scope="col" className="py-3 px-4 w-[90px] whitespace-nowrap">
+                    {hotelProviderVi.w103.tableHeaders.requestedTime}
+                  </th>
+                  <th scope="col" className="py-3 px-4 w-[65px] text-center">
+                    {hotelProviderVi.w103.tableHeaders.quantity}
+                  </th>
+                  <th scope="col" className="py-3 px-4 min-w-[150px]">
+                    {hotelProviderVi.w103.tableHeaders.travelerName}
+                  </th>
+                  <th scope="col" className="py-3 px-4 w-[145px]">
+                    {hotelProviderVi.w103.tableHeaders.status}
                   </th>
                   <th scope="col" className="py-3 px-4 w-[130px] whitespace-nowrap">
-                    {hotelProviderEn.w103.tableHeaders.submittedAt}
+                    {hotelProviderVi.w103.tableHeaders.submittedAt}
                   </th>
                   <th scope="col" className="py-3 px-4 w-[100px] text-right">
-                    {hotelProviderEn.w103.tableHeaders.action}
+                    {hotelProviderVi.w103.tableHeaders.action}
                   </th>
                 </tr>
               </thead>
@@ -338,7 +366,7 @@ export function ServiceBookingRequestsView() {
                 {requests.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-[#F7F5EF]/60 transition-colors group"
+                    className="hover:bg-[#F7F5EF]/70 transition-colors group"
                   >
                     {/* Request Code */}
                     <td className="py-3 px-4 font-mono font-bold text-[#174B4A] whitespace-nowrap">
@@ -372,7 +400,7 @@ export function ServiceBookingRequestsView() {
 
                     {/* Traveler Name */}
                     <td className="py-3 px-4">
-                      <div className="font-medium text-[#1C2928] truncate max-w-[150px]" title={item.travelerName}>
+                      <div className="font-semibold text-[#1C2928] truncate max-w-[150px]" title={item.travelerName}>
                         {item.travelerName}
                       </div>
                       <div className="text-[10px] font-mono text-[#5B6E69]">
@@ -396,7 +424,7 @@ export function ServiceBookingRequestsView() {
                         href={`/provider/bookings/${item.id}`}
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#174B4A] bg-[#E8F7F4] hover:bg-[#174B4A] hover:text-white rounded-lg transition-colors cursor-pointer"
                       >
-                        <span>{hotelProviderEn.common.viewDetails}</span>
+                        <span>{hotelProviderVi.common.viewDetails}</span>
                         <span className="material-symbols-outlined text-[13px]" aria-hidden="true">arrow_forward</span>
                       </Link>
                     </td>
@@ -407,17 +435,17 @@ export function ServiceBookingRequestsView() {
           </div>
         )}
 
-        {/* Pagination Bar (CR-01) */}
+        {/* Pagination Bar */}
         {!isLoading && requests.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-[#F7F5EF] border-t border-[#DCE2DD] text-xs text-[#5B6E69]">
             <div>
-              {hotelProviderEn.common.pagination.showing}{' '}
+              {hotelProviderVi.common.pagination.showing}{' '}
               <span className="font-bold text-[#1C2928]">{startItem}</span>{' '}
-              {hotelProviderEn.common.pagination.to}{' '}
+              {hotelProviderVi.common.pagination.to}{' '}
               <span className="font-bold text-[#1C2928]">{endItem}</span>{' '}
-              {hotelProviderEn.common.pagination.of}{' '}
+              {hotelProviderVi.common.pagination.of}{' '}
               <span className="font-bold text-[#1C2928]">{totalCount}</span>{' '}
-              {hotelProviderEn.common.pagination.requests}
+              {hotelProviderVi.common.pagination.requests}
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -425,11 +453,11 @@ export function ServiceBookingRequestsView() {
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1"
-                aria-label="Previous page"
+                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1 transition-colors"
+                aria-label="Trang trước"
               >
                 <span className="material-symbols-outlined text-[14px]">chevron_left</span>
-                <span>{hotelProviderEn.common.pagination.previous}</span>
+                <span>{hotelProviderVi.common.pagination.previous}</span>
               </button>
 
               <span className="px-3 py-1 font-semibold text-[#1C2928]">
@@ -440,10 +468,10 @@ export function ServiceBookingRequestsView() {
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1"
-                aria-label="Next page"
+                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1 transition-colors"
+                aria-label="Trang sau"
               >
-                <span>{hotelProviderEn.common.pagination.next}</span>
+                <span>{hotelProviderVi.common.pagination.next}</span>
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               </button>
             </div>

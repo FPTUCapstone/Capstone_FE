@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import { ServiceBookingRequestsView } from '@/features/hotel-service-provider/components/w103/ServiceBookingRequestsView';
 
 export const metadata: Metadata = {
-  title: 'Service Booking Requests | TripMate Partner',
-  description: 'Manage and process traveler booking requests (Screen W103, UC-78).',
+  title: 'Yêu cầu đặt dịch vụ | TripMate Partner',
+  description: 'Tiếp nhận, kiểm tra tình trạng phòng và xử lý các yêu cầu đặt phòng từ du khách.',
 };
 
 export default function ProviderBookingsPage() {
@@ -15,7 +15,7 @@ export default function ProviderBookingsPage() {
           <span className="material-symbols-outlined text-[28px] animate-spin text-[#174B4A] mb-2 block mx-auto">
             progress_activity
           </span>
-          Loading booking requests...
+          Đang tải yêu cầu đặt phòng...
         </div>
       }
     >

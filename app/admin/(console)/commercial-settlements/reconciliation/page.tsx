@@ -3,8 +3,8 @@ import { CommissionReconciliationView } from '@/features/hotel-service-provider/
 import { ToastProvider } from '@/features/hotel-service-provider/components/common/Toast';
 
 export const metadata: Metadata = {
-  title: 'Commission Reconciliation | TripMate Staff',
-  description: 'Audit reported commission payments against bank statements and record official receipt (UC-83).',
+  title: 'Đối soát hoa hồng đối tác | TripMate Staff',
+  description: 'Kiểm tra giao dịch chuyển khoản hoa hồng của đối tác với sao kê ngân hàng và xác nhận thu tiền.',
 };
 
 export default function CommissionReconciliationPage() {
