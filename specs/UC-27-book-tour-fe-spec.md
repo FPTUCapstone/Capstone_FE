@@ -66,3 +66,10 @@ The confirmation dialog must retain keyboard focus, expose an accessible title/d
 - Amounts and expiry come only from Backend responses.
 - Success stops at `PendingPayment`; payment is user-initiated in UC-28.
 - Demo is visibly labelled, explicitly gated, and unavailable in production.
+
+
+## Approved support-chat booking handoff
+
+The existing /tours/{id}/book route accepts optional adults alongside scheduleId. A single decimal integer in 1..50 initializes the adult count in the actual booking form once. The technical bound matches Backend ChatQueryPlanValidator.MaximumPartySize. Invalid, missing and duplicate adults arguments use the existing default. Explicit adult-count handoffs initialize children and infants to zero, so adults=2 quotes and creates exactly two adult participants. Missing prefill uses legacy defaults. Subsequent same-tour URL or profile rerenders preserve user edits. Navigating to a different tour resets booking state. Live schedule capacity, server quotes, terms consent and explicit booking/payment confirmation continue to govern checkout.
+
+Coverage includes route-to-form initialization, malformed and out-of-range values, duplicate arguments, profile rerender edit retention, real quote participant counts and capacity error feedback.

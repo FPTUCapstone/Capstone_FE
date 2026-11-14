@@ -16,6 +16,12 @@ interface TourBookingPageProps {
 }
 
 export function TourBookingPage({ id }: TourBookingPageProps) {
+  const params = useSearchParams();
+  const handoffKey = JSON.stringify([id, ...['scheduleId', 'adults', 'children', 'infants'].map(key => params.getAll(key))]);
+  return <TourBookingContent key={handoffKey} id={id} />;
+}
+
+function TourBookingContent({ id }: TourBookingPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, context } = useWebSession();
@@ -23,6 +29,18 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
   const isDemo =
     searchParams.get('demo') === '1' && isTourDemoAllowedInCurrentEnv();
   const scheduleId = searchParams.get('scheduleId') || undefined;
+  const adultValues = searchParams.getAll('adults');
+  const adults = adultValues.length === 1 ? adultValues[0] : '';
+  // This technical handoff bound matches ChatQueryPlanValidator.MaximumPartySize.
+  const initialAdultCount = /^[0-9]+$/.test(adults) && Number(adults) >= 1 && Number(adults) <= 50
+    ? Number(adults) : undefined;
+  const dependentCounts = ['children', 'infants'].map(key => {
+    const values = searchParams.getAll(key);
+    if (!values.length) return 0;
+    return values.length === 1 && /^[0-9]+$/.test(values[0]) ? Number(values[0]) : NaN;
+  });
+  const validComposition = initialAdultCount !== undefined && dependentCounts.every(count => count >= 0 && count <= 50) &&
+    initialAdultCount + dependentCounts[0] + dependentCounts[1] <= 50;
 
   const [tour, setTour] = useState<TourDetailDto | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -196,6 +214,9 @@ export function TourBookingPage({ id }: TourBookingPageProps) {
         <TourBookingView
           tour={tour}
           initialScheduleId={scheduleId}
+          initialAdultCount={validComposition ? initialAdultCount : undefined}
+          initialChildCount={validComposition ? dependentCounts[0] : undefined}
+          initialInfantCount={validComposition ? dependentCounts[1] : undefined}
           isDemo={isDemo}
           userContext={context}
           profilePhone={profilePhone}
