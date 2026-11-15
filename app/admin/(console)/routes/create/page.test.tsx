@@ -23,6 +23,7 @@ import {
   ADMIN_SESSION_SECRET_ENV,
   createAdminSessionSeal,
 } from '@/lib/server/adminSession';
+vi.mock('@/features/admin/routes/components/CreateRouteView', () => ({ CreateRouteView: () => <h1>Create Route</h1> }));
 import CreateRoutePage from './page';
 
 const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
@@ -133,16 +134,16 @@ describe('CreateRoutePage (/admin/routes/create)', () => {
     expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Froutes%2Fcreate');
   });
 
-  it('renders Create Route page for authenticated Administrator', async () => {
-    mockSealedSession('Administrator');
+  it('renders Create Route page for authenticated Staff', async () => {
+    mockSealedSession('Staff');
 
     render(await CreateRoutePage());
 
     expect(screen.getByRole('heading', { level: 1, name: 'Create Route' })).toBeTruthy();
   });
 
-  it('renders AdminAccessDeniedView for authenticated Staff (BR-115)', async () => {
-    mockSealedSession('Staff');
+  it('renders AdminAccessDeniedView for authenticated Administrator (BR-115)', async () => {
+    mockSealedSession('Administrator');
 
     const view = await CreateRoutePage();
 

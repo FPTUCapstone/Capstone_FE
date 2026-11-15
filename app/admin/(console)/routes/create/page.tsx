@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { CreateRouteUnavailableView } from '@/features/admin/routes/components/CreateRouteUnavailableView';
+import { CreateRouteView } from '@/features/admin/routes/components/CreateRouteView';
 import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
 export const metadata: Metadata = {
-  title: 'Create Route (Backend Integration Pending) | TripMate Administration',
-  description: 'Route creation workspace pending backend contract integration.',
+  title: 'Create Route | TripMate Administration',
+  description: 'Create an Active route between two Active points of interest.',
 };
 
 export default async function CreateRoutePage() {
@@ -23,9 +23,9 @@ export default async function CreateRoutePage() {
     return redirect('/admin/login?returnUrl=%2Fadmin%2Froutes%2Fcreate');
   }
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return <AdminAccessDeniedView requiredRole="Staff" description="You do not have permission to access this function." />;
   }
 
-  return <CreateRouteUnavailableView />;
+  return <CreateRouteView />;
 }
