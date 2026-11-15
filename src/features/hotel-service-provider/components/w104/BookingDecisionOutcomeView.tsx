@@ -24,6 +24,7 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
   const submitting = useRef(false);
+  const activeViewId = useRef<string | null>(null);
 
   const [booking, setBooking] = useState<BookingRequestItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +48,7 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
 
   useEffect(() => {
     let active = true;
+    activeViewId.current = id;
     ProviderBookingService.getBookingRequestById(id)
       .then((data) => {
         if (!active) return;
@@ -68,6 +70,7 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
 
     return () => {
       active = false;
+      activeViewId.current = null;
     };
   }, [id]);
 
@@ -79,6 +82,7 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
       const updated = operation === 'decision'
         ? await ProviderBookingService.submitDecision(booking.id, payload as DecisionPayload)
         : await ProviderBookingService.recordOutcome(booking.id, payload as OutcomePayload);
+      if (activeViewId.current !== id) return;
       setBooking(updated);
       setIsConfirmModalOpen(false);
       setIsRejectModalOpen(false);
@@ -87,16 +91,26 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
       showToast(successMessage, 'success');
       if (operation === 'decision') router.push(ROUTES.provider.bookings);
     } catch (error) {
+      if (activeViewId.current !== id) return;
       showToast(error instanceof WorkflowError ? error.message : hotelProviderEn.messages.MSG127, 'error');
       if (error instanceof WorkflowError && (error.status === 409 || error.code === 'ServiceProviderRequest.InvalidState')) {
-        try { setBooking(await ProviderBookingService.getBookingRequestById(id)); }
-        catch { setErrorMessage(hotelProviderEn.messages.MSG127); }
+        try {
+          const refreshed = await ProviderBookingService.getBookingRequestById(id);
+          if (activeViewId.current !== id) return;
+          setBooking(refreshed);
+        } catch {
+          if (activeViewId.current !== id) return;
+          setErrorMessage(hotelProviderEn.messages.MSG127);
+        }
         setIsConfirmModalOpen(false);
         setIsRejectModalOpen(false);
         setIsCompletedModalOpen(false);
         setIsNoShowModalOpen(false);
       }
-    } finally { submitting.current = false; setIsSubmitting(false); }
+    } finally {
+      submitting.current = false;
+      if (activeViewId.current === id) setIsSubmitting(false);
+    }
   }
 
   const handleConfirmDecision = () => booking && submit('decision', { decision: 'Confirmed', rowVersion: booking.rowVersion }, hotelProviderEn.messages.MSG203);

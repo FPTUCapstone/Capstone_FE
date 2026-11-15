@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { BookingDecisionOutcomeView } from '../components/w104/BookingDecisionOutcomeView';
 
@@ -12,13 +12,26 @@ import { testBooking } from './testBooking';
 
 vi.mock('../services/providerBookingService', () => ({ ProviderBookingService: { getBookingRequestById: vi.fn(), submitDecision: vi.fn(), recordOutcome: vi.fn() } }));
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+const navigation = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 
 const renderView = () => render(<ToastProvider><BookingDecisionOutcomeView id="9" /></ToastProvider>);
 
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking }); });
 
 describe('UC79–80 request decisions and outcomes', () => {
+  it('leaves navigation alone when a pending decision finishes after the view closes', async () => {
+    let complete!: (booking: typeof testBooking) => void;
+    vi.mocked(ProviderBookingService.submitDecision).mockReturnValue(new Promise(resolve => { complete = resolve; }));
+    const view = renderView();
+    fireEvent.click(await screen.findByRole('button', { name: /Confirm Request/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Acceptance/i }));
+    await waitFor(() => expect(ProviderBookingService.submitDecision).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await act(async () => { complete({ ...testBooking, status: 'Confirmed' }); });
+    expect(navigation.push).not.toHaveBeenCalled();
+  });
+
   it.each(['10000000000', '123.456'])('rejects unsupported actual amount %s before sending an outcome', async amount => {
     vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking, status: 'Confirmed' });
     renderView();
