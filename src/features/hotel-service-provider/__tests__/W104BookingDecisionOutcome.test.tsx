@@ -19,6 +19,17 @@ const renderView = () => render(<ToastProvider><BookingDecisionOutcomeView id="9
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking }); });
 
 describe('UC79–80 request decisions and outcomes', () => {
+  it.each(['10000000000', '123.456'])('rejects unsupported actual amount %s before sending an outcome', async amount => {
+    vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking, status: 'Confirmed' });
+    renderView();
+    await screen.findByRole('button', { name: /Mark Service Completed/i });
+    fireEvent.change(screen.getByLabelText(/Actual Amount Collected/i), { target: { value: amount } });
+    fireEvent.click(screen.getByRole('button', { name: /Mark Service Completed/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Completion/i }));
+    expect(ProviderBookingService.recordOutcome).not.toHaveBeenCalled();
+    expect(screen.getByText(/entered value is out of the allowed range/i)).toBeDefined();
+  });
+
   it('closes manual outcomes at the automatic-completion deadline', async () => {
     vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({
       ...testBooking, status: 'Confirmed', autoCompleteAtUtc: '2020-01-04T17:00:00Z',
