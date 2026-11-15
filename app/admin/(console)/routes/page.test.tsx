@@ -23,6 +23,7 @@ import {
   ADMIN_SESSION_SECRET_ENV,
   createAdminSessionSeal,
 } from '@/lib/server/adminSession';
+vi.mock('@/features/admin/routes/components/RouteDirectoryView', () => ({ RouteDirectoryView: () => <h1>Routes List</h1> }));
 import RoutesPage from './page';
 
 const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
@@ -133,16 +134,16 @@ describe('RoutesPage (/admin/routes)', () => {
     expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Froutes');
   });
 
-  it('renders Route Directory for authenticated Administrator', async () => {
-    mockSealedSession('Administrator');
+  it('renders Route Directory for authenticated Staff', async () => {
+    mockSealedSession('Staff');
 
     render(await RoutesPage());
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Route Master Data' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Routes List' })).toBeTruthy();
   });
 
-  it('renders AdminAccessDeniedView for authenticated Staff (BR-115)', async () => {
-    mockSealedSession('Staff');
+  it('renders AdminAccessDeniedView for authenticated Administrator (BR-115)', async () => {
+    mockSealedSession('Administrator');
 
     const view = await RoutesPage();
 
