@@ -8,19 +8,14 @@ import type { BookingDetailView } from '../types/bookingLifecycle';
 
 const cancellableBooking = toDemoDetailView(INITIAL_DEMO_BOOKINGS[0]); // BK-20260919-0141 (Confirmed, paid)
 const checkedInBooking = toDemoDetailView(INITIAL_DEMO_BOOKINGS[1]); // BK-20260912-0148 (CheckedIn)
-const refundedBooking = toDemoDetailView(INITIAL_DEMO_BOOKINGS[4]); // BK-20260820-0110 (Cancelled, already refunded)
 const expiredBooking = toDemoDetailView(INITIAL_DEMO_BOOKINGS[3]); // BK-20260914-0144 (Expired, never paid)
 
 function TestDrawerHarness({
   booking = cancellableBooking,
-  isDemo = true,
   onOpenCancel = vi.fn(),
-  onOpenRefund = vi.fn(),
 }: {
   booking?: BookingDetailView;
-  isDemo?: boolean;
   onOpenCancel?: (b: BookingDetailView) => void;
-  onOpenRefund?: (b: BookingDetailView) => void;
 }) {
   const [open, setOpen] = useState(true);
 
@@ -29,10 +24,8 @@ function TestDrawerHarness({
       <BookingDetailPanel
         open={open}
         booking={booking}
-        isDemo={isDemo}
         onClose={() => setOpen(false)}
         onOpenCancelDialog={onOpenCancel}
-        onOpenRefundDialog={onOpenRefund}
       />
     </div>
   );
@@ -59,7 +52,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
 
   it('enables Cancel button for cancellable demo booking and triggers callback', () => {
     const handleCancel = vi.fn();
-    render(<TestDrawerHarness booking={cancellableBooking} isDemo={true} onOpenCancel={handleCancel} />);
+    render(<TestDrawerHarness booking={cancellableBooking} onOpenCancel={handleCancel} />);
 
     const cancelBtn = screen.getByRole('button', {
       name: /Cancel Booking/i,
@@ -71,7 +64,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
   });
 
   it('disables Cancel button with the CheckedIn tooltip when canCancel is false because the customer checked in (MSG95)', () => {
-    render(<TestDrawerHarness booking={checkedInBooking} isDemo={true} />);
+    render(<TestDrawerHarness booking={checkedInBooking} />);
 
     const cancelBtn = screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement;
     expect(cancelBtn.disabled).toBe(true);
@@ -79,7 +72,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
   });
 
   it('disables Cancel button with the InvalidStatus tooltip for an Expired booking and shows the Expired badge', () => {
-    render(<TestDrawerHarness booking={expiredBooking} isDemo={true} />);
+    render(<TestDrawerHarness booking={expiredBooking} />);
 
     const cancelBtn = screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement;
     expect(cancelBtn.disabled).toBe(true);
@@ -93,7 +86,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
       canCancel: false,
       cancelBlockedReason: 'InvalidStatus',
     };
-    render(<TestDrawerHarness booking={forcedBlocked} isDemo={true} />);
+    render(<TestDrawerHarness booking={forcedBlocked} />);
 
     expect((screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -125,27 +118,14 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
     expect(screen.queryByText(bookingEn.detail.ticketCode + ':')).toBeNull();
   });
 
-  it('disables Refund button when refund already exists (BR-74 idempotency)', () => {
-    render(<TestDrawerHarness booking={refundedBooking} isDemo={true} />);
-
-    const refundBtn = screen.getByRole('button', {
-      name: /Initiate Refund/i,
-    });
-    expect(refundBtn.getAttribute('disabled')).toBeDefined();
-  });
-
-  it('disables all destructive mutation actions in production mode (NO_BACKEND)', () => {
-    render(<TestDrawerHarness booking={cancellableBooking} isDemo={false} />);
+  it('enables cancellation in production when the backend marks the booking cancellable', () => {
+    render(<TestDrawerHarness booking={cancellableBooking} />);
 
     const cancelBtn = screen.getByRole('button', {
       name: /Cancel Booking/i,
     });
-    const refundBtn = screen.getByRole('button', {
-      name: /Initiate Refund/i,
-    });
 
-    expect(cancelBtn.getAttribute('disabled')).toBeDefined();
-    expect(refundBtn.getAttribute('disabled')).toBeDefined();
+    expect((cancelBtn as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('closes drawer on Escape key', () => {
@@ -209,10 +189,8 @@ describe('BookingDetailPanel loading and error states (UC-40 detail endpoint)', 
         booking={null}
         summary={summary}
         loadState="loading"
-        isDemo={false}
         onClose={vi.fn()}
         onOpenCancelDialog={vi.fn()}
-        onOpenRefundDialog={vi.fn()}
         {...props}
       />
     );
@@ -232,11 +210,10 @@ describe('BookingDetailPanel loading and error states (UC-40 detail endpoint)', 
     expect(screen.queryByText('Trần Thị Mai')).toBeNull();
   });
 
-  it('keeps both actions disabled while loading', () => {
-    renderPanel({ isDemo: true });
+  it('keeps the cancel action disabled while loading', () => {
+    renderPanel();
 
     expect((screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: /Initiate Refund/i }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('shows the failure message with a Retry button that calls onRetry, still without detail sections', () => {

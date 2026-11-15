@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import {
   fetchBookingCancellationPreview,
   submitBookingCancellation,
+  type BookingCancellationResponse,
   type BookingCancellationPreview,
 } from '../services/cancellationApi';
 import { cancellationMessages as m } from './cancellationMessages';
@@ -14,7 +15,7 @@ const CONFIRMATION_CODE = 'booking.cancellation.confirmation_required';
 interface BookingCancelDialogProps {
   bookingId: string;
   onClose: () => void;
-  onCancelled: () => void;
+  onCancelled: (result: BookingCancellationResponse) => void;
 }
 
 export function BookingCancelDialog({ bookingId, onClose, onCancelled }: BookingCancelDialogProps) {
@@ -54,7 +55,7 @@ export function BookingCancelDialog({ bookingId, onClose, onCancelled }: Booking
       idempotencyKey,
     );
     setSubmitting(false);
-    if (result.ok) onCancelled();
+    if (result.ok) onCancelled(result.data);
     else setError(m.failed);
   }
 

@@ -19,13 +19,13 @@ export const financeEn = {
   },
 
   revenue: {
-    formulaDecisionStatus: 'SRS_FINANCIAL_FORMULA_DECISION_PENDING',
+    formulaDecisionStatus: 'SETTLED_PAYOUT_MODEL_APPROVED_2026_11_14',
     title: 'Revenue & Analytics',
     subtitle:
-      'Review gross revenue, platform commission, completed refunds, and net earnings for your tour packages.',
+      'Review booking value, projected fees, completed refunds, and payouts already settled to your account.',
     demoNoticeTitle: 'Demo Finance Mode Active',
     demoNoticeDesc:
-      'Financial metrics displayed below are non-authoritative estimates calculated from deterministic demo fixtures for testing. The SRS formula conflict between revenue reporting and payout settlement remains pending Product/BA decision; authoritative production calculations require backend verification.',
+      'Financial metrics displayed below are non-authoritative fixtures for UI testing only. Live reports use the backend settlement ledger and must be used for financial decisions.',
     pendingNoticeTitle: 'Backend Integration Pending',
     refreshBtn: 'Refresh',
     tourFiltersLoading: 'Loading tour filters…',
@@ -50,31 +50,31 @@ export const financeEn = {
     },
 
     summary: {
-      grossRevenue: 'Gross Revenue',
-      grossRevenueHelp: 'Verified booking payments before commission',
-      platformCommission: 'Platform Commission',
-      platformCommissionHelp: 'Platform fee ({rate}% rate)',
-      netAmount: 'Net Amount',
-      netAmountHelp: 'Gross revenue minus commission and refunds',
+      grossRevenue: 'Gross Booking Value',
+      grossRevenueHelp: 'Verified traveler payments held by TripMate',
+      platformCommission: 'Projected Platform Commission',
+      platformCommissionHelp: 'Expected platform fee ({rate}% rate)',
+      netAmount: 'Settled Payout',
+      netAmountHelp: 'Transfers completed to your account, net of confirmed returns',
       totalBookings: 'Total Bookings',
       totalBookingsHelp: 'Confirmed and completed customer bookings',
       totalParticipants: 'Total Participants',
       totalParticipantsHelp: 'Total travelers across eligible bookings',
-      refundedAmount: 'Refunded Amount',
-      refundedAmountHelp: 'Completed customer refunds within this period',
+      refundedAmount: 'Customer Refunds',
+      refundedAmountHelp: 'Amounts paid back to travelers within this period',
     },
 
     settlement: {
       title: 'Settlement Breakdown',
-      subtitle: 'How gross revenue becomes your net payout for this period.',
-      grossRevenue: 'Gross Revenue',
+      subtitle: 'Booking values are informative; settled payout reflects money transferred to you.',
+      grossRevenue: 'Gross Booking Value',
       discountsGiven: 'Discounts Given',
       paymentsReceived: 'Payments Received',
-      refundedAmount: 'Refunded Amount',
+      refundedAmount: 'Customer Refunds',
       netSales: 'Net Sales',
       platformCommission: 'Platform Commission',
-      netPayout: 'Net Payout',
-      formulaHint: 'Payments Received − Refunds − Commission = Net Payout',
+      netPayout: 'Settled Payout',
+      formulaHint: 'Only payout settlements marked Settled, less bank returns confirmed by TripMate, are included.',
     },
 
     chart: {

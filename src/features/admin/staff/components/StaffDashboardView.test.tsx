@@ -60,6 +60,9 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     expect(
       within(activeSection).getByRole('link', { name: /Open Booking Register/i }).getAttribute('href'),
     ).toBe('/admin/bookings');
+    expect(
+      within(activeSection).getByRole('link', { name: /Open Reconciliation Queue/i }).getAttribute('href'),
+    ).toBe('/admin/refund-reconciliation');
     expect(container.innerHTML).not.toContain('/admin/tour-operator-applications/1');
 
     const pendingSection = screen.getByRole('region', {

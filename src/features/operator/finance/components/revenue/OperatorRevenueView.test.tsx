@@ -32,11 +32,11 @@ describe('OperatorRevenueView (Screen #89)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Pins "today" so the default (and Reset) filter range — computed from the real clock,
-    // see OperatorRevenueView's currentMonthRange — lands on October 2026, matching this
+    // see OperatorRevenueView's currentMonthRange — lands on September 2026, matching this
     // suite's existing fixtures and assertions. Fakes only Date, not setTimeout/setInterval,
     // so this component's own polling and testing-library's waitFor still run on real timers.
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
+    vi.setSystemTime(new Date('2026-09-15T00:00:00Z'));
     mockActorUserId = 101;
     process.env = {
       ...originalEnv,
@@ -59,9 +59,9 @@ describe('OperatorRevenueView (Screen #89)', () => {
     expect(screen.getByText(/Demo Finance Mode Active/i)).toBeDefined();
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Gross Revenue/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Gross Booking Value/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Platform Commission/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/Net Amount/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Settled Payout/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Total Bookings/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/Revenue Trend/i)).toBeDefined();
       expect(screen.getByText(/Settlement Breakdown/i)).toBeDefined();
@@ -203,7 +203,7 @@ describe('OperatorRevenueView (Screen #89)', () => {
   });
 
   // Regression: the default/Reset filter range used to be hardcoded to whatever month this
-  // screen was built in (2026-10), so a booking paid in a later month never showed up until
+    // screen was built in, so a booking paid in a later month never showed up until
   // the operator manually changed the date filter. It must track the real clock instead.
   it('defaults the filter range to the current calendar month, not a fixed one', () => {
     vi.setSystemTime(new Date('2026-11-20T00:00:00Z'));
@@ -258,11 +258,11 @@ describe('OperatorRevenueView (Screen #89)', () => {
         /^Updated /
       );
     });
-    // Still the default October 2026 range (pinned "now" in beforeEach) — Refresh must not
+    // Still the default September 2026 range (pinned "now" in beforeEach) — Refresh must not
     // perturb the applied filters.
     expect(
       (screen.getByLabelText(/Start Date/i) as HTMLInputElement).value
-    ).toBe('2026-10-01');
+    ).toBe('2026-09-01');
     void updatedAtBeforeClick;
   });
 

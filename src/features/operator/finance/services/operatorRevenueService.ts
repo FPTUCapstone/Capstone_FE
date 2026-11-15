@@ -1,7 +1,7 @@
 /**
  * Service implementation for Revenue & Analytics (UC-44) and Export (UC-45).
- * Production mode adheres strictly to NO_BACKEND truthfulness (PENDING_BE_INTEGRATION).
- * Demo mode implements deterministic aggregations across owned tours with strict actor isolation (BR-105).
+ * Live mode renders the backend's authoritative accounting and settled-payout values without
+ * recomputing them in the browser. Demo mode is isolated from live accounting and is for UI review only.
  */
 
 import {

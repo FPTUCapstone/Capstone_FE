@@ -172,6 +172,16 @@ export const adminStaffEn = {
         actionLabel: 'Open Booking Register',
       },
       {
+        id: 'refund-return-reconciliation',
+        title: 'Refund Return Reconciliation',
+        category: 'Commercial Operations',
+        description:
+          'Confirm that a Tour Operator’s reported refund return has reached the TripMate bank account.',
+        status: 'available' as const,
+        href: '/admin/refund-reconciliation',
+        actionLabel: 'Open Reconciliation Queue',
+      },
+      {
         id: 'payout-settlement-review',
         title: 'Payout Settlement Review',
         category: 'Commercial Operations',
