@@ -105,7 +105,7 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
   const handleRecordCompleted = () => {
     if (!booking) return;
     const amount = Number(actualAmountInput);
-    if (!Number.isFinite(amount) || amount <= 0) { setActualAmountError(hotelProviderEn.messages.MSG143); return; }
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 9_999_999_999.99 || Math.round(amount * 100) / 100 !== amount) { setActualAmountError(hotelProviderEn.messages.MSG143); return; }
     void submit('outcome', { outcome: 'Completed', actualAmount: amount, rowVersion: booking.rowVersion }, hotelProviderEn.messages.MSG206);
   };
   const handleRecordNoShow = () => booking && submit('outcome', { outcome: 'NoShow', rowVersion: booking.rowVersion }, hotelProviderEn.messages.MSG206);
@@ -325,6 +325,7 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
                         type="number"
                         inputMode="decimal"
                         min="0.01"
+                        max="9999999999.99"
                         step="0.01"
                         aria-invalid={!!actualAmountError}
                         value={actualAmountInput}
