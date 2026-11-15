@@ -49,7 +49,7 @@ export async function proxyLandingContent(request: Request, path: string[] | und
   if (!token) return jsonNoStore(SIGN_IN_REQUIRED, 401);
   const session = verifyAdminSessionFromCookies(cookieStore);
   if (!session) return clearAdminSession(jsonNoStore(SIGN_IN_REQUIRED, 401));
-  if (session.role !== 'Administrator' && session.role !== 'Staff') {
+  if (session.role !== 'Staff') {
     return jsonNoStore({ title: landingContentEn.errors.forbidden }, 403);
   }
 

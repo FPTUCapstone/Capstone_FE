@@ -23,8 +23,8 @@ export default async function RoutesPage() {
     return redirect('/admin/login?returnUrl=%2Fadmin%2Froutes');
   }
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return <AdminAccessDeniedView requiredRole="Staff" />;
   }
 
   return <RouteDirectoryUnavailableView />;

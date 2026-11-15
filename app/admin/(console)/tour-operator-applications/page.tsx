@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { TourOperatorApplicationListView } from '@/features/admin/tour-operator-applications/components/TourOperatorApplicationListView';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import { ROUTES } from '@/lib/routes';
 import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 
@@ -22,6 +23,8 @@ export default async function TourOperatorApplicationsPage() {
   if (!session) {
     return redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.tourOperatorApplications)}`);
   }
+
+  if (session.role !== 'Staff') return <AdminAccessDeniedView requiredRole="Staff" />;
 
   return <TourOperatorApplicationListView />;
 }

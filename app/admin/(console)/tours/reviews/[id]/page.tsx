@@ -29,8 +29,8 @@ export default async function AdminTourReviewPage({ params }: TourReviewPageProp
     return redirect(ROUTES.admin.login);
   }
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return <AdminAccessDeniedView requiredRole="Staff" />;
   }
 
   const { id } = await params;

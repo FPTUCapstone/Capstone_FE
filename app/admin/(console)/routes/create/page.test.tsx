@@ -133,16 +133,16 @@ describe('CreateRoutePage (/admin/routes/create)', () => {
     expect(mocks.redirect).toHaveBeenCalledWith('/admin/login?returnUrl=%2Fadmin%2Froutes%2Fcreate');
   });
 
-  it('renders Create Route page for authenticated Administrator', async () => {
-    mockSealedSession('Administrator');
+  it('renders Create Route page for authenticated Staff', async () => {
+    mockSealedSession('Staff');
 
     render(await CreateRoutePage());
 
     expect(screen.getByRole('heading', { level: 1, name: 'Create Route' })).toBeTruthy();
   });
 
-  it('renders AdminAccessDeniedView for authenticated Staff (BR-115)', async () => {
-    mockSealedSession('Staff');
+  it('renders AdminAccessDeniedView for authenticated Administrator (BR-115)', async () => {
+    mockSealedSession('Administrator');
 
     const view = await CreateRoutePage();
 

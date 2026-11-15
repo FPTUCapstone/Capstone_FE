@@ -1,31 +1,71 @@
-import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { accountDate, accountSession, canManageAccount, fetchAccounts, type AccountPage } from '@/features/admin/user-accounts/server/accounts';
 
-import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
-import { UserAccountDirectoryUnavailableView } from '@/features/admin/user-accounts/components/UserAccountDirectoryUnavailableView';
-import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
+type Filters = { search?: string; role?: string; status?: string; registeredFrom?: string; registeredTo?: string; page?: string };
 
-export const metadata: Metadata = {
-  title: 'User Accounts Directory (Backend Integration Pending) | TripMate Administration',
-  description: 'User account directory and governance workspace pending backend contract integration.',
-};
-
-export default async function UserAccountsPage() {
-  let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
-  try {
-    session = verifyAdminSessionFromCookies(await cookies());
-  } catch {
-    session = null;
+export default async function UserAccountsPage({ searchParams }: { searchParams?: Promise<Filters> } = {}) {
+  const session = await accountSession();
+  if (!session) return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
+  const filters = (await searchParams) ?? {};
+  const query = new URLSearchParams();
+  for (const key of ['search', 'role', 'status', 'registeredFrom', 'registeredTo', 'page'] as const) {
+    const value = filters[key];
+    if (typeof value === 'string' && value) query.set(key, value);
   }
-
-  if (!session) {
-    return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
+  for (const key of ['registeredFrom', 'registeredTo'] as const) {
+    const date = query.get(key);
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      query.set(key, `${date}T${key === 'registeredFrom' ? '00:00:00' : '23:59:59.999'}+07:00`);
+    }
   }
+  const response = await fetchAccounts(session.token, `?${query}`).catch(() => null);
+  if (response?.status === 401) return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
+  const data: AccountPage | null = response?.ok ? await response.json().catch(() => null) : null;
+  const roles = ['Traveler', 'TourOperator', 'ServiceProvider', 'Staff'].filter((role) => canManageAccount(session.role, role));
+  const page = Number(filters.page) || 1;
+  const link = (next: number) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) if (typeof value === 'string' && value) params.set(key, value);
+    params.set('page', String(next));
+    return `/admin/users?${params}`;
+  };
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
-  }
-
-  return <UserAccountDirectoryUnavailableView />;
+  return (
+    <section className="space-y-5">
+      <h1 className="text-2xl font-semibold">User accounts</h1>
+      <form className="flex flex-wrap items-end gap-3">
+        <label>Search <input className="block rounded border p-2" name="search" type="search" defaultValue={filters.search} maxLength={256} /></label>
+        <label>Role <select className="block rounded border p-2" name="role" defaultValue={filters.role ?? ''}>
+          <option value="">All permitted roles</option>
+          {roles.map((role) => <option key={role}>{role}</option>)}
+        </select></label>
+        <label>Status <select className="block rounded border p-2" name="status" defaultValue={filters.status ?? ''}>
+          <option value="">All statuses</option>
+          {['Active', 'Locked', 'Inactive', 'PendingEmailVerification', 'PendingApproval', 'Rejected'].map((status) => <option key={status}>{status}</option>)}
+        </select></label>
+        <label>Registered from <input className="block rounded border p-2" type="date" name="registeredFrom" defaultValue={filters.registeredFrom} /></label>
+        <label>Registered to <input className="block rounded border p-2" type="date" name="registeredTo" defaultValue={filters.registeredTo} /></label>
+        <button className="rounded bg-teal-800 px-4 py-2 text-white">Apply filters</button>
+      </form>
+      {!data ? <p role="alert">{response?.status === 400 ? 'Check the account filters.' : 'User accounts could not be loaded.'}</p> :
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead><tr>{['Name', 'Email', 'Role', 'Status', 'Registered', 'Last sign-in'].map((label) => <th className="p-2" scope="col" key={label}>{label}</th>)}</tr></thead>
+            <tbody>{data.items.filter((account) => canManageAccount(session.role, account.role)).map((account) => (
+              <tr className="border-t" key={account.userId}>
+                <td className="p-2"><Link className="underline" href={`/admin/users/${encodeURIComponent(account.userId)}`}>{account.fullName}</Link></td>
+                <td className="p-2">{account.email ?? '—'}</td><td className="p-2">{account.role}</td><td className="p-2">{account.status}</td>
+                <td className="p-2">{accountDate(account.createdAtUtc)}</td><td className="p-2">{accountDate(account.lastLoginAtUtc)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+          {data.items.length === 0 && <p>No matching accounts.</p>}
+          <nav className="mt-3 flex gap-4" aria-label="Account pages">
+            {page > 1 && <Link href={link(page - 1)}>Previous</Link>}
+            {page < data.totalPages && <Link href={link(page + 1)}>Next</Link>}
+          </nav>
+        </div>}
+    </section>
+  );
 }
