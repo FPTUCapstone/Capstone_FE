@@ -164,7 +164,7 @@ export function ServiceBookingRequestsView() {
       <div className="bg-white border border-[#DCE2DD] rounded-xl p-4 shadow-xs">
         <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
           {/* Keyword Search */}
-          <div className="lg:col-span-4">
+          <div className="min-w-0 lg:col-span-3">
             <label htmlFor="w103-search" className="block text-xs font-semibold text-[#1C2928] mb-1">
               Search
             </label>
@@ -226,10 +226,10 @@ export function ServiceBookingRequestsView() {
           </div>
 
           {/* Buttons */}
-          <div className="lg:col-span-1 flex items-center gap-1.5">
+          <div className="lg:col-span-2 flex items-center gap-1.5">
             <button
               type="submit"
-              className="flex-1 py-2 px-3 text-xs font-semibold text-white bg-[#174B4A] hover:bg-[#103B39] rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
+              className="min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-white bg-[#174B4A] hover:bg-[#103B39] rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
             >
               <span className="material-symbols-outlined text-[15px]" aria-hidden="true">search</span>
               <span>{hotelProviderEn.w103.applyFiltersButton}</span>
@@ -237,7 +237,7 @@ export function ServiceBookingRequestsView() {
             <button
               type="button"
               onClick={handleReset}
-              className="p-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer border border-[#DCE2DD]"
+              className="min-h-11 min-w-11 shrink-0 p-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer border border-[#DCE2DD]"
               title={hotelProviderEn.w103.resetFiltersButton}
               aria-label={hotelProviderEn.w103.resetFiltersButton}
             >
