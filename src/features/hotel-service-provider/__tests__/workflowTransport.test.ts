@@ -11,6 +11,21 @@ const wire = {
 };
 afterEach(() => vi.unstubAllGlobals());
 describe('TM225 real browser transport', () => {
+  it.each([undefined, null, '100000', -1])('rejects invalid detail estimate %s instead of showing a free service', async estimatedAmount => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ success: true, data: { ...wire, estimatedAmount } })));
+    await expect(ProviderBookingService.getBookingRequestById('9')).rejects.toThrow();
+  });
+
+  it('accepts a genuine zero estimate while summary responses may omit amounts', async () => {
+    const summary = { ...wire };
+    delete (summary as Partial<typeof wire>).estimatedAmount;
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json({ success: true, data: { items: [summary], totalCount: 1, pageNumber: 1, pageSize: 20 } }))
+      .mockResolvedValueOnce(Response.json({ success: true, data: { ...wire, estimatedAmount: 0 } })));
+    expect((await ProviderBookingService.fetchBookingRequests()).items).toHaveLength(1);
+    expect((await ProviderBookingService.getBookingRequestById('9')).estimatedAmount).toBe(0);
+  });
+
   it('uses exact list query names and adapts nullable detail fields', async () => {
     const fetcher = vi.fn().mockResolvedValue(Response.json({ success: true, data: { items: [wire], totalCount: 1, pageNumber: 2, pageSize: 20 } }));
     vi.stubGlobal('fetch', fetcher);

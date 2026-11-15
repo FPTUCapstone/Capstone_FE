@@ -33,13 +33,21 @@ function booking(value: unknown): BookingRequestItem {
   };
 }
 
+function detailBooking(value: unknown): BookingRequestItem {
+  const data = record(value);
+  if (typeof data.estimatedAmount !== 'number' || !Number.isFinite(data.estimatedAmount) || data.estimatedAmount < 0) {
+    throw new WorkflowError();
+  }
+  return booking(data);
+}
+
 async function mutate(id: string, operation: 'decision' | 'outcome', payload: DecisionPayload | OutcomePayload): Promise<BookingRequestItem> {
   const body = JSON.stringify(payload);
   const signature = `${id}/${operation}/${body}`;
   const key = pendingKeys.get(signature) ?? crypto.randomUUID();
   pendingKeys.set(signature, key);
   try {
-    const result = booking(await workflowRequest(`${BASE}/${encodeURIComponent(id)}/${operation}`, {
+    const result = detailBooking(await workflowRequest(`${BASE}/${encodeURIComponent(id)}/${operation}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body,
     }));
     pendingKeys.delete(signature);
@@ -66,7 +74,7 @@ export const ProviderBookingService = {
     return { items: data.items.map(booking), totalCount: data.totalCount as number, page: data.pageNumber as number, pageSize: data.pageSize as number };
   },
   async getBookingRequestById(id: string) {
-    return booking(await workflowRequest(`${BASE}/${encodeURIComponent(id)}`));
+    return detailBooking(await workflowRequest(`${BASE}/${encodeURIComponent(id)}`));
   },
   submitDecision: (id: string, payload: DecisionPayload) => mutate(id, 'decision', payload),
   recordOutcome: (id: string, payload: OutcomePayload) => mutate(id, 'outcome', payload),
