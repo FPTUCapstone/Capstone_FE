@@ -21,6 +21,8 @@ const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
   ROUTES.admin.accountSecurity,
   ROUTES.admin.createPoi,
   ROUTES.admin.pois,
+  ROUTES.admin.users,
+  ROUTES.admin.createServiceProvider,
 ]);
 
 export function isAdministratorOnlyPathname(pathname: string): boolean {
@@ -107,7 +109,8 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
           ? 'Staff'
           : 'Administrator';
       setPassword('');
-      router.replace(getSafeAdminReturnUrl(returnUrl, authenticatedRole));
+      router.replace(result && typeof result === 'object' && 'mustChangePassword' in result && result.mustChangePassword === true
+        ? '/admin/first-password' : getSafeAdminReturnUrl(returnUrl, authenticatedRole));
       router.refresh();
     } catch {
       setMessage(adminStaffEn.login.connectionError);

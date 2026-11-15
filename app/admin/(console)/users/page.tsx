@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { accountDate, accountSession, canManageAccount, fetchAccounts, type AccountPage } from '@/features/admin/user-accounts/server/accounts';
+import { ROUTES } from '@/lib/routes';
 
 type Filters = { search?: string; role?: string; status?: string; registeredFrom?: string; registeredTo?: string; page?: string };
 
@@ -33,7 +34,21 @@ export default async function UserAccountsPage({ searchParams }: { searchParams?
 
   return (
     <section className="space-y-5">
-      <h1 className="text-2xl font-semibold">User accounts</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">User accounts</h1>
+        <nav aria-label="Account provisioning" className="flex flex-wrap gap-2">
+          {session.role === 'Administrator' && (
+            <Link className="rounded bg-teal-800 px-4 py-2 text-white" href={ROUTES.admin.createStaff}>
+              Create Staff Account
+            </Link>
+          )}
+          {session.role === 'Staff' && (
+            <Link className="rounded bg-teal-800 px-4 py-2 text-white" href={ROUTES.admin.createServiceProvider}>
+              Create Service Provider Account
+            </Link>
+          )}
+        </nav>
+      </header>
       <form className="flex flex-wrap items-end gap-3">
         <label>Search <input className="block rounded border p-2" name="search" type="search" defaultValue={filters.search} maxLength={256} /></label>
         <label>Role <select className="block rounded border p-2" name="role" defaultValue={filters.role ?? ''}>

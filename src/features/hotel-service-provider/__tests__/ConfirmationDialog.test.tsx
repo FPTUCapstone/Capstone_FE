@@ -4,6 +4,33 @@ import React from 'react';
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog';
 
 describe('ConfirmationDialog Component (CR-05)', () => {
+  it('keeps the rejection editor focused while parent state changes', () => {
+    function Editor() {
+      const [reason, setReason] = React.useState('');
+      return <ConfirmationDialog isOpen onClose={() => {}} onConfirm={() => {}}
+        title="Reject request" message={<textarea aria-label="Reason" value={reason}
+          onChange={event => setReason(event.target.value)} />} />;
+    }
+    render(<Editor />);
+    const input = screen.getByLabelText('Reason');
+    input.focus();
+    fireEvent.change(input, { target: { value: 'Fully booked' } });
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('dismisses through the backdrop and blocks dismissal during submission', () => {
+    const close = vi.fn();
+    const view = render(<ConfirmationDialog isOpen onClose={close} onConfirm={() => {}}
+      title="Confirm" message="Details" />);
+    fireEvent.mouseDown(screen.getByRole('alertdialog'));
+    expect(close).toHaveBeenCalledTimes(1);
+    view.rerender(<ConfirmationDialog isOpen onClose={close} onConfirm={() => {}}
+      title="Confirm" message="Details" isLoading />);
+    fireEvent.mouseDown(screen.getByRole('alertdialog'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
   it('does not render when isOpen is false', () => {
     render(
       <ConfirmationDialog

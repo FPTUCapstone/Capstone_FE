@@ -1,5 +1,2 @@
 import { redirect } from 'next/navigation';
-
-export default function ProviderIndexPage() {
-  redirect('/provider/bookings');
-}
+export default function ProviderPage() { redirect('/provider/bookings'); }

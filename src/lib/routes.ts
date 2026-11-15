@@ -70,6 +70,8 @@ export const ROUTES = {
     algorithmParameters: '/admin/settings/algorithm-parameters',
     activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
     users: '/admin/users',
+    createStaff: '/admin/users/create-staff',
+    createServiceProvider: '/admin/service-providers/create',
     userDetail: (id: string | number) => `/admin/users/${encodeURIComponent(id)}`,
     tourOperatorApplications: '/admin/tour-operator-applications',
     tourOperatorApplicationDetail: (userId: string | number) =>
