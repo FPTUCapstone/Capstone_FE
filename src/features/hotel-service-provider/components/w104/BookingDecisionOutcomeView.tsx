@@ -38,6 +38,9 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
   // Outcome states
   const [actualAmountInput, setActualAmountInput] = useState('');
   const [actualAmountError, setActualAmountError] = useState('');
+  const actualAmount = Number(actualAmountInput);
+  const isActualAmountValid = Number.isFinite(actualAmount) && actualAmount > 0
+    && actualAmount <= 9_999_999_999.99 && Math.round(actualAmount * 100) / 100 === actualAmount;
   const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
   const [isNoShowModalOpen, setIsNoShowModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,9 +107,8 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
   };
   const handleRecordCompleted = () => {
     if (!booking) return;
-    const amount = Number(actualAmountInput);
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 9_999_999_999.99 || Math.round(amount * 100) / 100 !== amount) { setActualAmountError(hotelProviderEn.messages.MSG143); return; }
-    void submit('outcome', { outcome: 'Completed', actualAmount: amount, rowVersion: booking.rowVersion }, hotelProviderEn.messages.MSG206);
+    if (!isActualAmountValid) { setActualAmountError(hotelProviderEn.messages.MSG143); return; }
+    void submit('outcome', { outcome: 'Completed', actualAmount, rowVersion: booking.rowVersion }, hotelProviderEn.messages.MSG206);
   };
   const handleRecordNoShow = () => booking && submit('outcome', { outcome: 'NoShow', rowVersion: booking.rowVersion }, hotelProviderEn.messages.MSG206);
 
@@ -361,7 +363,10 @@ export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewPro
                   <div className="flex flex-wrap items-center gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => setIsCompletedModalOpen(true)}
+                      onClick={() => {
+                        if (!isActualAmountValid) { setActualAmountError(hotelProviderEn.messages.MSG143); return; }
+                        setIsCompletedModalOpen(true);
+                      }}
                       className="px-5 py-2.5 bg-[#174B4A] hover:bg-[#103B39] text-white text-xs font-semibold rounded-lg transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-[16px]">verified</span>
