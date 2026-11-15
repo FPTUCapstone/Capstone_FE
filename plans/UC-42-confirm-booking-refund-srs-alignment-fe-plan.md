@@ -1,10 +1,11 @@
 # UC-41 / UC-42 / UC-67 — Confirm Booking Refund SRS Alignment (FE) — Plan v1
 
 Spec: `specs/UC-42-confirm-booking-refund-srs-alignment-fe-spec.md` v1 — **APPROVED 13/11/2026**
-(Nguyễn Văn Linh). Q-FE1 (screen layout) and Q-FE3 (screen 101 lists `Escalated` + `Reconciliation`)
-are resolved as proposed. Q-FE2 (new BE read endpoints) and the new `refund.payment_not_verified`
-error-code slug for MSG136 (spec's Screen 1 error mapping / Message codes section) remain open —
-both still block parts of Task 2 below.
+(Nguyễn Văn Linh). Q-FE1, Q-FE2 and Q-FE3 are resolved: the concrete read routes are now
+implemented by `OperatorRefundsController` and `AdminRefundsController`. The
+`refund.payment_not_verified` slug remains a backend catalogue follow-up; FE only presents the
+documented `Reconciliation` state and does not invent an HTTP error mapping for a slug absent from
+the backend contract.
 
 Process: isolated branch (done: `fix/linhnv-confirm-booking-refund`, worktree
 `Capstone_FE-confirm-booking-refund`) → TDD per task → review between tasks →
@@ -155,9 +156,8 @@ Green:
 - Any real-gateway integration work for UC-67 (Q4: simulated gateway, FE-invisible either way).
 
 ## Stop conditions
-- Q-FE2 unresolved → do not start Task 2's three read-route implementations against a guessed
-  response shape; confirm the actual BE contract first (ask, or re-read the BE spec once it's
-  updated).
+- The read-contract stop condition is closed: use the controller routes recorded in the spec, not
+  an inferred response shape.
 - `refund.payment_not_verified` (MSG136 slug) not yet added to the BE's error-code list / message
   catalogue → do not start the MSG136 part of Task 2/Task 4's error mapping against a guessed HTTP
   status; confirm the actual BE contract first.

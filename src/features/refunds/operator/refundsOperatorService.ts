@@ -61,14 +61,7 @@ export async function fetchOperatorRefundDetail(refundId: number, signal?: Abort
   return parseRefundDetail(body);
 }
 
-/** UC-42 step 3 [Confirm Refund]. The backend's acknowledgement is intentionally discarded — the
- * caller must re-fetch the detail to learn the committed status (spec Screen 1: never assume the
- * new status locally, since a zero operator share skips straight to settled). */
-export async function confirmOperatorRefund(refundId: number, signal?: AbortSignal): Promise<void> {
-  await request(`/api/operator/refunds/${refundId}/confirm`, { method: 'POST', signal });
-}
-
-/** UC-42 step 5 [Confirm Return]. Same re-fetch discipline as `confirmOperatorRefund`. */
+/** UC-42: reporting a bank transfer is followed by a fresh read of the committed status. */
 export async function reportOperatorRefundReturn(refundId: number, returnReference: string, signal?: AbortSignal): Promise<void> {
   await request(`/api/operator/refunds/${refundId}/return`, {
     method: 'POST',

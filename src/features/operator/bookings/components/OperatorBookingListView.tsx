@@ -273,14 +273,19 @@ export function OperatorBookingListView({
       });
 
       if (res.success) {
-        // UC-42: the refund (if any) now goes through the Confirm Booking Refund screen, not an
-        // inline dialog here. The backend does not yet return a refundId on this response, so a
-        // direct link cannot be built from here (BE spec Q-FE2 gap, out of this screen's control).
-        const message = res.refundFollowUpRequired
-          ? `${res.message} A refund request has been created and sent to you for confirmation.`
-          : res.message;
-        setFeedback({ type: 'success', message });
         setCancelDialogOpen(false);
+        // Cancellation now creates the financial obligation immediately. Both a zero-share
+        // automatic refund (Pending) and a non-zero partner-return refund
+        // (AwaitingPartnerReturn) must take the operator to the resulting record.
+        if (res.refundId && (res.refundStatus === 'Pending' || res.refundStatus === 'AwaitingPartnerReturn')) {
+          router.push(ROUTES.partner.refundDetail(res.refundId));
+          return;
+        }
+
+        setFeedback({
+          type: res.messageCode === 'MSG136' ? 'error' : 'success',
+          message: res.message,
+        });
         if (selectedBooking?.bookingId === cancelTargetBooking.bookingId && res.booking) {
           setSelectedBooking(res.booking);
         }
@@ -297,6 +302,7 @@ export function OperatorBookingListView({
     totalBookings: 0,
     totalParticipants: 0,
     totalConfirmedAmount: 0,
+    totalSettledPayoutAmount: 0,
   };
 
   const startDisplay =
@@ -424,7 +430,7 @@ export function OperatorBookingListView({
             </span>
           </div>
           <div className="mt-2 text-xl sm:text-2xl font-black text-[#174B4A] break-words">
-            {formatCurrencyVND(summary.totalConfirmedAmount)}
+            {formatCurrencyVND(summary.totalSettledPayoutAmount ?? 0)}
           </div>
           <p className="mt-1 text-[11px] text-slate-400 break-words">{bookingEn.summary.confirmedRevenueSubtitle}</p>
         </div>
@@ -741,7 +747,6 @@ export function OperatorBookingListView({
         loadState={detailState}
         errorMessage={detailError}
         onRetry={detailRetryable && selectedSummary ? () => void loadDetail(selectedSummary) : undefined}
-        isDemo={isDemoPermitted}
         onClose={handleCloseDetail}
         onOpenCancelDialog={(b) => handleOpenCancelDialog(b)}
       />

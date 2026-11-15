@@ -45,6 +45,7 @@ function emptyListResult(pageSize: number, errorCode?: BookingListErrorCode): Bo
     totalBookings: 0,
     totalParticipants: 0,
     totalConfirmedAmount: 0,
+    totalSettledPayoutAmount: 0,
   };
   return {
     items: [],
@@ -131,6 +132,7 @@ export async function getOperatorBookings(
     totalBookings: filtered.length,
     totalParticipants: travelling.reduce((acc, curr) => acc + curr.quantity, 0),
     totalConfirmedAmount: travelling.reduce((acc, curr) => acc + curr.totalAmount, 0),
+    totalSettledPayoutAmount: 0,
   };
 
   if (filtered.length === 0) {
@@ -281,7 +283,44 @@ async function cancelBookingLive(
   }
 
   if (response.ok) {
-    return { success: true, messageCode: 'BOOKING_CANCELLED', message: 'Booking cancelled.' };
+    const body: unknown = await response.json().catch(() => null);
+    const data = body && typeof body === 'object' && 'data' in body
+      ? (body as { data: unknown }).data
+      : body;
+    const source = data && typeof data === 'object' ? data as Record<string, unknown> : {};
+    const refundId = typeof source.refundId === 'number' && Number.isSafeInteger(source.refundId) && source.refundId > 0
+      ? source.refundId
+      : undefined;
+    const refundStatus = typeof source.refundStatus === 'string' ? source.refundStatus : undefined;
+
+    if (refundStatus === 'Reconciliation') {
+      return {
+        success: true,
+        messageCode: 'MSG136',
+        message: 'Booking cancelled. The refund requires payment reconciliation before it can proceed.',
+        refundId,
+        refundStatus,
+      };
+    }
+
+    if (refundStatus === 'NotRequired') {
+      return {
+        success: true,
+        messageCode: 'MSG136',
+        message: 'Booking cancelled. No verified payment was found, so no refund request was created.',
+        refundStatus,
+      };
+    }
+
+    return {
+      success: true,
+      messageCode: 'BOOKING_CANCELLED',
+      message: 'Booking cancelled.',
+      refundId,
+      refundStatus,
+      refundTriggered: refundId !== undefined,
+      refundFollowUpRequired: refundId !== undefined,
+    };
   }
 
   const body: unknown = await response.json().catch(() => null);

@@ -18,7 +18,6 @@ interface BookingDetailPanelProps {
   loadState?: BookingDetailLoadState;
   errorMessage?: string | null;
   onRetry?: () => void;
-  isDemo?: boolean;
   onClose: () => void;
   onOpenCancelDialog: (booking: BookingDetailView) => void;
 }
@@ -30,7 +29,6 @@ export function BookingDetailPanel({
   loadState = 'ready',
   errorMessage = null,
   onRetry,
-  isDemo = false,
   onClose,
   onOpenCancelDialog,
 }: BookingDetailPanelProps) {
@@ -122,10 +120,9 @@ export function BookingDetailPanel({
   // A ready drawer without a booking has nothing to show; loading and error drawers show the row basics.
   if (!open || !basics || (loadState === 'ready' && booking === null)) return null;
 
-  // Eligibility evaluation for actions. Cancellation follows the BE decision (`canCancel`), which
-  // mirrors UC-41; the browser does not recompute it. Both actions stay locked outside demo mode
-  // until their UC-41/UC-42 integration.
-  const isCancellable = isDemo && booking !== null && booking.canCancel;
+  // Cancellation follows the BE decision (`canCancel`), which mirrors UC-41; the browser does
+  // not recompute eligibility. The live cancellation and UC-42 follow-up are now integrated.
+  const isCancellable = booking !== null && booking.canCancel;
 
   const cancelBlockedTooltip =
     booking?.cancelBlockedReason === 'CheckedIn'
@@ -463,9 +460,7 @@ export function BookingDetailPanel({
               onClick={() => booking && onOpenCancelDialog(booking)}
               disabled={!isCancellable}
               title={
-                !isDemo
-                  ? bookingEn.detail.productionLockedTooltip
-                  : !isCancellable
+                !isCancellable
                   ? cancelBlockedTooltip
                   : bookingEn.detail.cancelBookingBtn
               }

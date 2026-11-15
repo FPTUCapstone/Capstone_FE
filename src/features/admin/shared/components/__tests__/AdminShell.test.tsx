@@ -56,6 +56,7 @@ describe('Batch E1 — Administration Shell Components', () => {
       expect(screen.getByRole('link', { name: /Staff Operations/i })).toBeTruthy();
       expect(screen.getByRole('link', { name: /Operator Applications/i })).toBeTruthy();
       expect(screen.getByRole('link', { name: /Tour Moderation/i })).toBeTruthy();
+      expect(screen.getByRole('link', { name: /Refund Reconciliation/i })).toBeTruthy();
       expect(screen.getByRole('link', { name: /Create POI/i })).toBeTruthy();
     });
 

@@ -12,11 +12,9 @@ const expiredBooking = toDemoDetailView(INITIAL_DEMO_BOOKINGS[3]); // BK-2026091
 
 function TestDrawerHarness({
   booking = cancellableBooking,
-  isDemo = true,
   onOpenCancel = vi.fn(),
 }: {
   booking?: BookingDetailView;
-  isDemo?: boolean;
   onOpenCancel?: (b: BookingDetailView) => void;
 }) {
   const [open, setOpen] = useState(true);
@@ -26,7 +24,6 @@ function TestDrawerHarness({
       <BookingDetailPanel
         open={open}
         booking={booking}
-        isDemo={isDemo}
         onClose={() => setOpen(false)}
         onOpenCancelDialog={onOpenCancel}
       />
@@ -55,7 +52,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
 
   it('enables Cancel button for cancellable demo booking and triggers callback', () => {
     const handleCancel = vi.fn();
-    render(<TestDrawerHarness booking={cancellableBooking} isDemo={true} onOpenCancel={handleCancel} />);
+    render(<TestDrawerHarness booking={cancellableBooking} onOpenCancel={handleCancel} />);
 
     const cancelBtn = screen.getByRole('button', {
       name: /Cancel Booking/i,
@@ -67,7 +64,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
   });
 
   it('disables Cancel button with the CheckedIn tooltip when canCancel is false because the customer checked in (MSG95)', () => {
-    render(<TestDrawerHarness booking={checkedInBooking} isDemo={true} />);
+    render(<TestDrawerHarness booking={checkedInBooking} />);
 
     const cancelBtn = screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement;
     expect(cancelBtn.disabled).toBe(true);
@@ -75,7 +72,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
   });
 
   it('disables Cancel button with the InvalidStatus tooltip for an Expired booking and shows the Expired badge', () => {
-    render(<TestDrawerHarness booking={expiredBooking} isDemo={true} />);
+    render(<TestDrawerHarness booking={expiredBooking} />);
 
     const cancelBtn = screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement;
     expect(cancelBtn.disabled).toBe(true);
@@ -89,7 +86,7 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
       canCancel: false,
       cancelBlockedReason: 'InvalidStatus',
     };
-    render(<TestDrawerHarness booking={forcedBlocked} isDemo={true} />);
+    render(<TestDrawerHarness booking={forcedBlocked} />);
 
     expect((screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -121,14 +118,14 @@ describe('BookingDetailPanel (UC-40 Drawer & Action Eligibility)', () => {
     expect(screen.queryByText(bookingEn.detail.ticketCode + ':')).toBeNull();
   });
 
-  it('disables all destructive mutation actions in production mode (NO_BACKEND)', () => {
-    render(<TestDrawerHarness booking={cancellableBooking} isDemo={false} />);
+  it('enables cancellation in production when the backend marks the booking cancellable', () => {
+    render(<TestDrawerHarness booking={cancellableBooking} />);
 
     const cancelBtn = screen.getByRole('button', {
       name: /Cancel Booking/i,
     });
 
-    expect(cancelBtn.getAttribute('disabled')).toBeDefined();
+    expect((cancelBtn as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('closes drawer on Escape key', () => {
@@ -192,7 +189,6 @@ describe('BookingDetailPanel loading and error states (UC-40 detail endpoint)', 
         booking={null}
         summary={summary}
         loadState="loading"
-        isDemo={false}
         onClose={vi.fn()}
         onOpenCancelDialog={vi.fn()}
         {...props}
@@ -215,7 +211,7 @@ describe('BookingDetailPanel loading and error states (UC-40 detail endpoint)', 
   });
 
   it('keeps the cancel action disabled while loading', () => {
-    renderPanel({ isDemo: true });
+    renderPanel();
 
     expect((screen.getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement).disabled).toBe(true);
   });

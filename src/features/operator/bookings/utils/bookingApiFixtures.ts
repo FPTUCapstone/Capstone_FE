@@ -7,7 +7,7 @@ export const listExample = () => ({
   pageSize: 20,
   totalCount: 37,
   totalPages: 2,
-  summary: { totalBookings: 37, totalParticipants: 112, totalConfirmedAmount: 98400000.0 },
+  summary: { totalBookings: 37, totalParticipants: 112, totalConfirmedAmount: 98400000.0, totalSettledPayoutAmount: 73800000.0 },
   items: [
     {
       bookingId: '1201',

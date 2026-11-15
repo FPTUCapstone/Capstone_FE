@@ -24,8 +24,8 @@ export const bookingEn = {
     totalBookingsSubtitle: 'Matching current filters',
     totalParticipants: 'Total Participants',
     totalParticipantsSubtitle: 'Confirmed & completed bookings',
-    confirmedRevenue: 'Confirmed Revenue',
-    confirmedRevenueSubtitle: 'Confirmed & completed bookings',
+    confirmedRevenue: 'Settled Payout',
+    confirmedRevenueSubtitle: 'Transfers completed to your account, net of confirmed returns',
   },
   filters: {
     tour: 'Tour Package',

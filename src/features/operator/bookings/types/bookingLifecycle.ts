@@ -224,6 +224,8 @@ export interface BookingSummaryMetrics {
   totalBookings: number;
   totalParticipants: number;
   totalConfirmedAmount: number;
+  /** Cash paid to the operator, net of returns received by TripMate. */
+  totalSettledPayoutAmount: number;
 }
 
 export interface BookingListResult {
@@ -256,6 +258,9 @@ export interface CancelBookingResult {
   messageCode: string;
   message: string;
   booking?: BookingDetailView;
+  /** Present when cancellation created a UC-42 refund request. */
+  refundId?: number;
+  refundStatus?: string;
   refundTriggered?: boolean;
   refundFollowUpRequired?: boolean;
 }

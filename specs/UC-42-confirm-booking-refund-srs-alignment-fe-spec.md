@@ -4,9 +4,10 @@
 
 **APPROVED (developer sign-off 13/11/2026, Nguyễn Văn Linh).** Q-FE1 (the proposed screen layout
 for screens 90/100/101) and Q-FE3 (listing `Escalated` and `Reconciliation` together on screen 101)
-are both approved as written in this spec — Task 1 of the plan is unblocked. Q-FE2 (new BE read
-endpoints not yet in the BE spec's §3.3) remains open and still blocks Task 2 (BFF proxies) until
-the BE spec adds them. Backend contract: BE spec
+are approved. **Q-FE2 is resolved:** the backend now exposes the operator detail and the
+Staff/Administrator list reads listed below, and the BFF proxies consume those exact routes.
+The implementation is awaiting the final validation evidence recorded in the plan; it must not be
+described as merge-ready before that gate passes. Backend contract: BE spec
 `specs/UC-42-confirm-booking-refund-srs-alignment-be-spec.md` v1.1 and plan
 `plans/UC-42-confirm-booking-refund-srs-alignment-be-plan.md`, on `Capstone_BE-confirm-booking-refund`
 branch `fix/linhnv-confirm-booking-refund` (worktree `D:\study\Project-Capstone\Capstone_BE-confirm-booking-refund`).
@@ -94,17 +95,15 @@ require the matching role, exactly as the daily-payout-transfer screens already 
 | `POST /api/operator/refunds/[refundId]/return` | `POST /api/v1/operator/refunds/{refundId}/return` | Tour Operator | `{ returnReference: string }` |
 | `POST /api/admin/refunds/[refundId]/return-received` | `POST /api/v1/admin/refunds/{refundId}/return-received` | Staff | none |
 | `POST /api/admin/refunds/[refundId]/resolve` | `POST /api/v1/admin/refunds/{refundId}/resolve` | Administrator | per existing `CompleteManualRefund` contract (gateway reference) |
-| `GET /api/operator/refunds/[refundId]` | (new BE read, same shape as the detail area below) | Tour Operator | — |
-| `GET /api/admin/refunds?status=ReturnReported` | (new BE list read) | Staff | — |
-| `GET /api/admin/refunds?status=Escalated,Reconciliation` | (new BE list read) | Administrator | — |
+| `GET /api/operator/refunds/[refundId]` | `GET /api/v1/operator/refunds/{refundId}` | Tour Operator | — |
+| `GET /api/admin/refunds?status=ReturnReported` | `GET /api/v1/admin/refunds?status=ReturnReported` | Staff | — |
+| `GET /api/admin/refunds?status=Escalated,Reconciliation` | `GET /api/v1/admin/refunds?status=Escalated&status=Reconciliation` | Administrator | — |
 
 No proxy route invents a field the backend doesn't have (operator id, amounts) — every mutating
 route forwards only what SRS §3.8.4.3 asks the actor to supply (confirmation has no body; return
 needs only the reference), identical to how `payoutSettlementsProxy.ts` strips unknown fields
-today. The three `GET` list/detail reads are new backend endpoints this FE spec requires but the
-BE spec doesn't yet enumerate them explicitly (BE spec §3.3 lists only the four mutating routes) —
-flagged as **Q-FE2** below; until they exist, use `GET /api/v1/admin/refunds/{refundId}` style
-reads mirroring `GetFailedPayoutBatchDetailQuery`'s shape (batch-style detail + list).
+today. The two `GET` resources are implemented by the backend controller contract above; the admin
+route accepts repeated `status` query parameters, not a client-defined comma-separated value.
 
 ## Screen 1 — Confirm Booking Refund (Tour Operator, UC-42 screen 90)
 
@@ -297,8 +296,8 @@ identical to a real one).
   one screen/API as this spec's Screen 3 proposed (mirroring the BE spec's single
   `GET .../admin/refunds?status=Escalated,Reconciliation` endpoint), since there is no other
   SRS-named screen for `Reconciliation`.
-- **Q-FE2 (new BE read endpoints) — still open.** This spec's detail/list reads (`GET` rows in the
-  API contract table) aren't yet enumerated in the BE spec's §3.3, which lists only the four
-  mutating routes. Needs a one-line addition to the BE spec (or a note that they reuse an
-  existing/broader admin refunds query) before Task 2 of the plan (BFF proxies) can be implemented
-  against a real contract rather than an assumed shape. This is the only remaining blocker.
+- **Q-FE2 (new BE read endpoints) — RESOLVED 15/11/2026.** `OperatorRefundsController` exposes
+  `GET /api/v1/operator/refunds/{refundId}`; `AdminRefundsController` exposes
+  `GET /api/v1/admin/refunds` with repeated `status` query parameters and `GET` detail. The BFF
+  proxy and strict parsers use that concrete contract; no route is implemented from an assumed
+  response shape.

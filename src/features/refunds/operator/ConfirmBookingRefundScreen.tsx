@@ -6,16 +6,13 @@ import { useRouter } from 'next/navigation';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { formatDepartureDate, formatVietnamDateTime, formatVnd, validateReturnReference, type RefundDetail } from '../types/refundLifecycle';
-import { confirmOperatorRefund, fetchOperatorRefundDetail, reportOperatorRefundReturn, RefundsOperatorError } from './refundsOperatorService';
+import { fetchOperatorRefundDetail, reportOperatorRefundReturn, RefundsOperatorError } from './refundsOperatorService';
 
 type LoadState = 'loading' | 'ready' | 'forbidden' | 'unavailable';
 
-/** UC-42 screen 90 (SRS 3.8.4.3): the Tour Operator confirms a refund request, then — only when
- * its return share is non-zero (BR-139) — reports the bank transfer reference once the share has
- * been paid back to TripMate. Every action re-fetches the detail on success rather than assuming
- * the new status locally (U03 stale-reload race guarded the same way as
- * `FailedPayoutSettlementScreen`'s `reloadToken`), since a zero-share confirmation skips straight
- * to a settled state and a race between two reloads must not let the older one win. */
+/** UC-42: cancellation creates the refund obligation immediately. The Tour Operator only reports
+ * its bank transfer when it has already received a non-zero share. Every action re-fetches the
+ * detail on success rather than assuming a local status. */
 export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
   const { replace } = useRouter();
   const [detail, setDetail] = useState<RefundDetail | null>(null);
@@ -23,7 +20,6 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
   const [reloadToken, setReloadToken] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
   const [returnReference, setReturnReference] = useState('');
   const [referenceInvalid, setReferenceInvalid] = useState(false);
   const [submittingReturn, setSubmittingReturn] = useState(false);
@@ -57,7 +53,6 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
 
   function messageFor(error: unknown): string {
     if (error instanceof RefundsOperatorError) {
-      if (error.errorCode === 'refund.request_not_pending') return 'This refund request is no longer pending your confirmation.';
       if (error.errorCode === 'refund.operator_not_owner') return 'You do not have permission to access this function.';
       if (error.errorCode === 'refund.return_reference_required') return 'A bank transfer reference is required.';
       // NOTE: refund.payment_not_verified is never returned by UC-42 — the domain guarantees that
@@ -65,22 +60,6 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
       // step 6 / BR-143). Unverified payments go straight to Reconciliation and never reach this screen.
     }
     return 'The request could not be completed. Please try again.';
-  }
-
-  async function handleConfirmRefund() {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    setConfirming(true);
-    setActionError(null);
-    try {
-      await confirmOperatorRefund(refundId);
-      reload('The confirmation is submitted successfully.');
-    } catch (error) {
-      setActionError(messageFor(error));
-    } finally {
-      inFlight.current = false;
-      setConfirming(false);
-    }
   }
 
   async function handleConfirmReturn(event: React.FormEvent) {
@@ -112,9 +91,9 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
     <main className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8">
       <header className="mb-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Booking Management</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Confirm Booking Refund</h1>
+        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Booking Refund</h1>
         <p className="mt-2 max-w-2xl text-sm text-[#486581]">
-          Confirm the refund, then — if your return share is non-zero — report the bank transfer once you have paid TripMate back.
+          Your refund obligation is calculated when the booking is cancelled. If your return share is non-zero, report the bank transfer once you have paid TripMate back.
         </p>
       </header>
 
@@ -146,15 +125,7 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
         </div>
       ) : null}
 
-      {state === 'ready' && detail && detail.status === 'PendingOperatorConfirmation' ? (
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" disabled={confirming} onClick={() => void handleConfirmRefund()} className={actionButton}>
-            {confirming ? 'Confirming…' : 'Confirm Refund'}
-          </button>
-        </div>
-      ) : null}
-
-      {state === 'ready' && detail && detail.operatorReturnShare > 0 && detail.status !== 'PendingOperatorConfirmation' ? (
+      {state === 'ready' && detail && detail.operatorReturnShare > 0 ? (
         <ReturnArea
           detail={detail}
           returnReference={returnReference}
@@ -267,8 +238,6 @@ function ReturnArea({
 }
 
 const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
-const actionButton = 'rounded-xl border border-[#006b5f] px-4 py-2 text-sm font-bold text-[#006b5f] hover:bg-[#e6f7f0] disabled:cursor-not-allowed disabled:opacity-50';
-
 function SummaryField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>

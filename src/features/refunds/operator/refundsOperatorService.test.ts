@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  confirmOperatorRefund,
   fetchOperatorRefundDetail,
   RefundsOperatorError,
   reportOperatorRefundReturn,
@@ -62,17 +61,6 @@ describe('fetchOperatorRefundDetail', () => {
   it('wraps a network failure as a status-0 error', async () => {
     fetchMock.mockRejectedValueOnce(new Error('network down'));
     await expect(fetchOperatorRefundDetail(501)).rejects.toBeInstanceOf(RefundsOperatorError);
-  });
-});
-
-describe('confirmOperatorRefund', () => {
-  it('posts with no body', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ status: 'AwaitingPartnerReturn' }));
-    await confirmOperatorRefund(501);
-    const [path, init] = fetchMock.mock.calls[0];
-    expect(path).toBe('/api/operator/refunds/501/confirm');
-    expect(init.method).toBe('POST');
-    expect(init.body).toBeUndefined();
   });
 });
 

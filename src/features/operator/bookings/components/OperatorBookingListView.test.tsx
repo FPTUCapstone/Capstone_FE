@@ -114,7 +114,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       // BE summary shown as returned (37 bookings, 112 participants)
       expect(screen.getAllByText('37').length).toBeGreaterThan(0); // KPI card (and the pagination total)
       expect(screen.getByText('112')).toBeDefined();
-      expect(screen.getByText(/98\.400\.000/)).toBeDefined();
+      expect(screen.getByText(/73\.800\.000/)).toBeDefined();
     });
 
     it('enables the filters and fills the tour select from the owned-tour list', async () => {
@@ -159,7 +159,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
             pageSize: 20,
             totalCount: 0,
             totalPages: 0,
-            summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0 },
+            summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0, totalSettledPayoutAmount: 0 },
             items: [],
           }),
       });
@@ -418,7 +418,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       expect(html).not.toMatch(/years old/i);
     });
 
-    it('keeps cancel disabled with the locked tooltip in live mode', async () => {
+    it('enables cancel in live mode when the backend marks the booking cancellable', async () => {
       routeFetch({ '1201': () => json(detailFor('1201', 'BK-20261020-0007')) });
       render(<OperatorBookingListView isDemo={false} />);
 
@@ -429,8 +429,8 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         expect(within(dialog).getByText('Nguyen Thi B')).toBeDefined();
       });
       const cancel = within(dialog).getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement;
-      expect(cancel.disabled).toBe(true);
-      expect(cancel.getAttribute('title')).toBe(bookingEn.detail.productionLockedTooltip);
+      expect(cancel.disabled).toBe(false);
+      expect(cancel.getAttribute('title')).toBe(bookingEn.detail.cancelBookingBtn);
     });
 
     it.each([

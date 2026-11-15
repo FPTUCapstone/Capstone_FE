@@ -10,5 +10,7 @@ export const cancellationMessages = {
   close: 'Đóng',
   loading: 'Đang tải thông tin hủy…',
   cancelled: 'Booking đã được hủy.',
+  refundReconciliation: 'Booking đã được hủy. Khoản hoàn cần được TripMate đối soát thanh toán trước khi tiếp tục.',
+  refundNotRequired: 'Booking đã được hủy. Không tìm thấy thanh toán đã xác minh nên không tạo yêu cầu hoàn tiền.',
   failed: 'Không thể hủy booking lúc này. Vui lòng thử lại.',
 } as const;

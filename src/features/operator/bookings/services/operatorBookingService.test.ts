@@ -265,17 +265,32 @@ describe('operatorBookingService', () => {
 
     it('posts the trimmed reason with a fresh Idempotency-Key to the BFF cancellation route', async () => {
       fetchMock.mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { bookingId: 42, status: 'Cancelled', refundAmount: 0 } }), { status: 200 })
+        new Response(JSON.stringify({ data: {
+          bookingId: 42, status: 'Cancelled', refundAmount: 400000, refundStatus: 'AwaitingPartnerReturn', refundId: 501,
+        } }), { status: 200 })
       );
 
       const result = await cancelCustomerBooking('42', payload, { isDemo: false });
 
       expect(result.success).toBe(true);
+      expect(result).toMatchObject({ refundId: 501, refundStatus: 'AwaitingPartnerReturn', refundFollowUpRequired: true });
       const [url, init] = fetchMock.mock.calls[0];
       expect(url).toBe('/api/v1/bookings/42/cancellation');
       expect(init.method).toBe('POST');
       expect(init.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/i);
       expect(JSON.parse(init.body)).toEqual({ reasonCategory: 'CUSTOMER_REQUEST', reasonDetail: 'Cannot travel' });
+    });
+
+    it('keeps a successful cancellation visible while surfacing the MSG136 reconciliation outcome', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: {
+          bookingId: 42, status: 'Cancelled', refundAmount: 400000, refundStatus: 'Reconciliation', refundId: 502,
+        } }), { status: 200 })
+      );
+
+      const result = await cancelCustomerBooking('42', payload, { isDemo: false });
+
+      expect(result).toMatchObject({ success: true, messageCode: 'MSG136', refundId: 502, refundStatus: 'Reconciliation' });
     });
 
     it('rejects an empty reason before calling the backend (BR-106, MSG123)', async () => {
@@ -576,7 +591,7 @@ describe('operatorBookingService live mode (UC-40 BFF)', () => {
 
       const result = await getOperatorBookings({}, { isDemo: false });
 
-      expect(result.summary).toEqual({ totalBookings: 37, totalParticipants: 112, totalConfirmedAmount: 98400000 });
+      expect(result.summary).toEqual({ totalBookings: 37, totalParticipants: 112, totalConfirmedAmount: 98400000, totalSettledPayoutAmount: 73800000 });
       expect(result.totalCount).toBe(37);
       expect(result.totalPages).toBe(2);
       expect(result.page).toBe(1);
@@ -600,7 +615,7 @@ describe('operatorBookingService live mode (UC-40 BFF)', () => {
           pageSize: 20,
           totalCount: 0,
           totalPages: 0,
-          summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0 },
+          summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0, totalSettledPayoutAmount: 0 },
           items: [],
         })
       );
