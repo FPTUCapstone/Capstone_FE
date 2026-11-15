@@ -6,10 +6,7 @@ import {
   toDemoListItem,
   type DemoBookingRecord,
 } from '../data/operatorBookingDemoFixtures';
-import {
-  calculateDemoBookingRefundPreview,
-  evaluateDemoCancelEligibility,
-} from '../data/operatorBookingDemoPolicy';
+import { evaluateDemoCancelEligibility } from '../data/operatorBookingDemoPolicy';
 import {
   BOOKING_ERROR_CODES,
   isCancellationReasonValue,
@@ -20,12 +17,9 @@ import {
   type BookingListErrorCode,
   type BookingListResult,
   type BookingTourOptionsResult,
-  type BookingRefundDto,
   type BookingSummaryMetrics,
   type CancelBookingPayload,
   type CancelBookingResult,
-  type InitiateRefundPayload,
-  type InitiateRefundResult,
 } from '../types/bookingLifecycle';
 import { toVietnamIsoDate } from '../utils/dateFormat';
 import {
@@ -51,6 +45,7 @@ function emptyListResult(pageSize: number, errorCode?: BookingListErrorCode): Bo
     totalBookings: 0,
     totalParticipants: 0,
     totalConfirmedAmount: 0,
+    totalSettledPayoutAmount: 0,
   };
   return {
     items: [],
@@ -66,11 +61,6 @@ function emptyListResult(pageSize: number, errorCode?: BookingListErrorCode): Bo
 export interface OperatorBookingServiceOptions {
   isDemo?: boolean;
   demoActorUserId?: number;
-}
-
-export interface InitiateBookingRefundOptions extends OperatorBookingServiceOptions {
-  simulateFailureMode?: 'none' | 'timeout' | 'retry' | 'system';
-  retryFailedRefund?: boolean;
 }
 
 /**
@@ -142,6 +132,7 @@ export async function getOperatorBookings(
     totalBookings: filtered.length,
     totalParticipants: travelling.reduce((acc, curr) => acc + curr.quantity, 0),
     totalConfirmedAmount: travelling.reduce((acc, curr) => acc + curr.totalAmount, 0),
+    totalSettledPayoutAmount: 0,
   };
 
   if (filtered.length === 0) {
@@ -292,7 +283,44 @@ async function cancelBookingLive(
   }
 
   if (response.ok) {
-    return { success: true, messageCode: 'BOOKING_CANCELLED', message: 'Booking cancelled.' };
+    const body: unknown = await response.json().catch(() => null);
+    const data = body && typeof body === 'object' && 'data' in body
+      ? (body as { data: unknown }).data
+      : body;
+    const source = data && typeof data === 'object' ? data as Record<string, unknown> : {};
+    const refundId = typeof source.refundId === 'number' && Number.isSafeInteger(source.refundId) && source.refundId > 0
+      ? source.refundId
+      : undefined;
+    const refundStatus = typeof source.refundStatus === 'string' ? source.refundStatus : undefined;
+
+    if (refundStatus === 'Reconciliation') {
+      return {
+        success: true,
+        messageCode: 'MSG136',
+        message: 'Booking cancelled. The refund requires payment reconciliation before it can proceed.',
+        refundId,
+        refundStatus,
+      };
+    }
+
+    if (refundStatus === 'NotRequired') {
+      return {
+        success: true,
+        messageCode: 'MSG136',
+        message: 'Booking cancelled. No verified payment was found, so no refund request was created.',
+        refundStatus,
+      };
+    }
+
+    return {
+      success: true,
+      messageCode: 'BOOKING_CANCELLED',
+      message: 'Booking cancelled.',
+      refundId,
+      refundStatus,
+      refundTriggered: refundId !== undefined,
+      refundFollowUpRequired: refundId !== undefined,
+    };
   }
 
   const body: unknown = await response.json().catch(() => null);
@@ -393,198 +421,3 @@ export async function cancelCustomerBooking(
   };
 }
 
-/**
- * Initiates a booking refund (UC-42).
- * Validations:
- * - BR-105: Owned tour check and fail-closed actor check (MSG126)
- * - Must have verified payment and be policy eligible (MSG84)
- * - BR-74: Idempotent - if any refund record already exists (Pending, Success, or Failed),
- *   normal manual initiation is rejected with MSG133 and never creates a duplicate record
- * - BR-134: When retrying an existing Failed refund (retryFailedRefund: true), updates the
- *   SAME refund record, preserves its original ID, and increments attemptCount
- * - BR-76: Returns via original payment channel
- * - BR-77: Original transaction is immutable, refund is a separate record
- */
-export async function initiateBookingRefund(
-  bookingId: string,
-  payload: InitiateRefundPayload = {},
-  options: InitiateBookingRefundOptions = {}
-): Promise<InitiateRefundResult> {
-  const isDemoActive = Boolean(options.isDemo && isBookingDemoAllowedInCurrentEnv());
-
-  if (!isDemoActive) {
-    return {
-      success: false,
-      messageCode: 'PENDING_BE_INTEGRATION',
-      message: OPERATOR_BOOKING_MESSAGES.PENDING_BE_INTEGRATION,
-    };
-  }
-
-  // BR-105 fail-closed when actor identity is missing
-  if (!isValidDemoActorUserId(options.demoActorUserId)) {
-    return {
-      success: false,
-      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
-      message: OPERATOR_BOOKING_MESSAGES.MSG126,
-    };
-  }
-
-  const booking = inMemoryDemoBookings.find((b) => b.bookingId === bookingId);
-  if (!booking) {
-    return {
-      success: false,
-      messageCode: 'MSG128',
-      message: OPERATOR_BOOKING_MESSAGES.MSG128,
-    };
-  }
-
-  // BR-105: Owned tour check
-  if (booking.operatorUserId !== options.demoActorUserId) {
-    return {
-      success: false,
-      messageCode: BOOKING_ERROR_CODES.BOOKING_OWNERSHIP_DENIED,
-      message: OPERATOR_BOOKING_MESSAGES.MSG126,
-    };
-  }
-
-  // Payment check: must have verified paid transaction
-  const paidAmount = booking.payment?.status === 'Success' ? booking.payment.amount : 0;
-  if (paidAmount <= 0 || !booking.payment) {
-    return {
-      success: false,
-      messageCode: 'MSG84',
-      message: OPERATOR_BOOKING_MESSAGES.MSG84,
-    };
-  }
-  const paymentGateway = booking.payment.gateway;
-
-  // BR-74 & BR-134: Idempotency and retry handling when a refund record already exists.
-  // Any existing refund (Pending, Success, or Failed) blocks manual duplicate creation (MSG133).
-  // Only an explicit retry on a Failed refund updates the existing refund record in place.
-  if (booking.refund) {
-    if (!options.retryFailedRefund || booking.refund.status !== 'Failed') {
-      return {
-        success: false,
-        messageCode: 'MSG133',
-        message: OPERATOR_BOOKING_MESSAGES.MSG133,
-        refund: JSON.parse(JSON.stringify(booking.refund)),
-      };
-    }
-
-    // Retrying an existing Failed refund on the SAME refund record (BR-74, BR-134)
-    const failureMode = options.simulateFailureMode ?? 'none';
-    if (failureMode === 'timeout') {
-      return {
-        success: false,
-        messageCode: 'MSG89',
-        message: OPERATOR_BOOKING_MESSAGES.MSG89,
-      };
-    }
-    if (failureMode === 'system') {
-      return {
-        success: false,
-        messageCode: 'MSG127',
-        message: OPERATOR_BOOKING_MESSAGES.MSG127,
-      };
-    }
-    if (failureMode === 'retry') {
-      booking.refund = {
-        ...booking.refund,
-        attemptCount: booking.refund.attemptCount + 1,
-        status: 'Failed',
-        notes: payload.notes || booking.refund.notes,
-      };
-      return {
-        success: false,
-        messageCode: 'MSG153',
-        message: OPERATOR_BOOKING_MESSAGES.MSG153,
-        refund: JSON.parse(JSON.stringify(booking.refund)),
-      };
-    }
-
-    booking.refund = {
-      ...booking.refund,
-      attemptCount: booking.refund.attemptCount + 1,
-      status: 'Success',
-      gatewayReference:
-        booking.refund.gatewayReference ||
-        `REFUND-${booking.bookingCode}-${Math.floor(1000 + Math.random() * 9000)}`,
-      notes: payload.notes || booking.refund.notes,
-    };
-
-    return {
-      success: true,
-      messageCode: 'MSG83',
-      message: OPERATOR_BOOKING_MESSAGES.MSG83,
-      refund: JSON.parse(JSON.stringify(booking.refund)),
-    };
-  }
-
-  // Test-only failure simulation via explicit service option (never from user notes)
-  const failureMode = options.simulateFailureMode ?? 'none';
-
-  if (failureMode === 'timeout') {
-    return {
-      success: false,
-      messageCode: 'MSG89',
-      message: OPERATOR_BOOKING_MESSAGES.MSG89,
-    };
-  }
-
-  const preview = calculateDemoBookingRefundPreview({ paidAmount });
-
-  if (failureMode === 'retry') {
-    const failedRefund: BookingRefundDto = {
-      id: `rf-${Date.now()}`,
-      bookingId: booking.bookingId,
-      refundableAmount: preview.refundableAmount,
-      deductionAmount: preview.deductionAmount,
-      policyApplied: preview.policyApplied,
-      paymentChannel: paymentGateway,
-      status: 'Failed',
-      attemptCount: 1,
-      notes: payload.notes || 'Payment gateway connection failed; queued for retry',
-      createdAt: new Date().toISOString(),
-    };
-    booking.refund = failedRefund;
-    return {
-      success: false,
-      messageCode: 'MSG153',
-      message: OPERATOR_BOOKING_MESSAGES.MSG153,
-      refund: JSON.parse(JSON.stringify(failedRefund)),
-    };
-  }
-
-  if (failureMode === 'system') {
-    return {
-      success: false,
-      messageCode: 'MSG127',
-      message: OPERATOR_BOOKING_MESSAGES.MSG127,
-    };
-  }
-
-  // Standard successful refund creation
-  const newRefund: BookingRefundDto = {
-    id: `rf-${Date.now()}`,
-    bookingId: booking.bookingId,
-    refundableAmount: preview.refundableAmount,
-    deductionAmount: preview.deductionAmount,
-    policyApplied: preview.policyApplied,
-    paymentChannel: paymentGateway,
-    status: 'Success',
-    gatewayReference: `REFUND-${booking.bookingCode}-${Math.floor(1000 + Math.random() * 9000)}`,
-    attemptCount: 1,
-    notes: payload.notes || 'Refund initiated successfully',
-    createdAt: new Date().toISOString(),
-  };
-
-  // Original transaction is immutable (BR-77)
-  booking.refund = newRefund;
-
-  return {
-    success: true,
-    messageCode: 'MSG83',
-    message: OPERATOR_BOOKING_MESSAGES.MSG83,
-    refund: JSON.parse(JSON.stringify(newRefund)),
-  };
-}

@@ -9,9 +9,9 @@ interface SettlementDetailsCardProps {
 }
 
 /**
- * SRS §3.8.5.1 Screen Layout, Middle Section (right column): shows the settlement math
- * (Payments Received - Refunds - Commission = Net Payout) with Gross Revenue and Discounts
- * Given as supporting figures, alongside the time-series chart.
+ * Shows booking/payment context alongside the cash amount actually transferred to the operator.
+ * Settled payout is not derived from the displayed booking-value rows: it comes from settled
+ * payout records minus returns whose receipt TripMate has confirmed.
  */
 export function SettlementDetailsCard({ summary }: SettlementDetailsCardProps) {
   const t = financeEn.revenue.settlement;

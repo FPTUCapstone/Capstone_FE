@@ -29,12 +29,31 @@ describe('operatorRevenueService (UC-44 & UC-45)', () => {
     vi.unstubAllGlobals();
   });
 
-  describe('UC-44 View Revenue Report - Production NO_BACKEND Truthfulness', () => {
-    it('discloses the unresolved SRS formula conflict without claiming business approval', () => {
+  describe('UC-44 View Revenue Report - live settlement contract', () => {
+    it('labels the settled-payout calculation as approved and keeps demo data non-authoritative', () => {
       expect(financeEn.revenue.formulaDecisionStatus).toBe(
-        'SRS_FINANCIAL_FORMULA_DECISION_PENDING'
+        'SETTLED_PAYOUT_MODEL_APPROVED_2026_11_14'
       );
-      expect(financeEn.revenue.demoNoticeDesc).toMatch(/non-authoritative/i);
+      expect(financeEn.revenue.demoNoticeDesc).toMatch(/non-authoritative fixtures/i);
+    });
+
+    it('preserves backend-settled payout instead of deriving it from gross value and commission', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+        summary: {
+          grossRevenue: 10000, paymentsReceived: 10000, discountsGiven: 0,
+          refundedAmount: 5000, netSales: 5000, platformCommission: 500,
+          netAmount: 4500, totalBookings: 1, totalParticipants: 1, commissionRatePercent: 10,
+        },
+        chartData: [{ periodKey: '2026-11-15', periodLabel: '2026-11-15', grossRevenue: 10000, refundedAmount: 5000, commission: 500, netAmount: 4500, bookingsCount: 1 }],
+        tourDetails: [], totalToursCount: 0, page: 1, pageSize: 20, totalPages: 0,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })));
+
+      const result = await getOperatorRevenueReport({
+        startDate: '2026-11-01', endDate: '2026-11-30', granularity: 'monthly',
+      }, { isDemo: false });
+
+      expect(result.summary.netAmount).toBe(4500);
+      expect(result.chartData[0].netAmount).toBe(4500);
     });
     it('uses the production report endpoint when isDemo is false', async () => {
       const fetchMock = vi.fn().mockResolvedValue(

@@ -17,6 +17,15 @@ export interface BookingCancellationInput {
   confirmed: boolean;
 }
 
+export interface BookingCancellationResponse {
+  bookingId: number;
+  status: string;
+  refundAmount: number;
+  refundStatus: string;
+  cancelledAtUtc: string;
+  refundId: number | null;
+}
+
 export type CancellationResult<T> = { ok: true; data: T } | { ok: false; errorCode: string };
 
 async function readResult<T>(response: Response): Promise<CancellationResult<T>> {
@@ -47,7 +56,7 @@ export async function submitBookingCancellation(
   bookingId: string,
   input: BookingCancellationInput,
   idempotencyKey: string,
-): Promise<CancellationResult<{ bookingId: number }>> {
+): Promise<CancellationResult<BookingCancellationResponse>> {
   try {
     const response = await fetch(`/api/v1/bookings/${encodeURIComponent(bookingId)}/cancellation`, {
       method: 'POST',
@@ -55,7 +64,7 @@ export async function submitBookingCancellation(
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
       body: JSON.stringify(input),
     });
-    return readResult<{ bookingId: number }>(response);
+    return readResult<BookingCancellationResponse>(response);
   } catch {
     return { ok: false, errorCode: 'CANCELLATION_UNAVAILABLE' };
   }

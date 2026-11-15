@@ -21,7 +21,13 @@ type RefundProgress = {
     | "ManualReview"
     | "Processed"
     | "Failed"
-    | "Rejected";
+    | "Rejected"
+    | "PendingOperatorConfirmation"
+    | "AwaitingPartnerReturn"
+    | "ReturnReported"
+    | "ReturnReceived"
+    | "Reconciliation"
+    | "Escalated";
   gatewayReference?: string | null;
   attemptCount: number;
   requestedAtUtc: string;
@@ -91,6 +97,38 @@ function statusCopy(status: RefundProgress["status"]) {
         label: "Processing refund",
         tone: "bg-blue-100 text-blue-800",
         description: "The payment provider is processing your refund.",
+      };
+    // UC-42 pre-settlement bookkeeping (SRS alignment spec, Screen 4): collapsed into one
+    // "Refund requested" label — the operator-share mechanics are TripMate/operator-internal
+    // state the traveler was never shown a breakdown of (SRS 3.10.2 Figure 99's own four-step
+    // timeline begins only once UC-67 actually starts).
+    case "PendingOperatorConfirmation":
+    case "AwaitingPartnerReturn":
+    case "ReturnReported":
+      return {
+        label: "Refund requested",
+        tone: "bg-blue-100 text-blue-800",
+        description:
+          "Your refund request has been received and is awaiting the tour operator's confirmation.",
+      };
+    case "ReturnReceived":
+      return {
+        label: "Processing refund",
+        tone: "bg-blue-100 text-blue-800",
+        description: "Your refund is being sent.",
+      };
+    case "Reconciliation":
+      return {
+        label: "Under review",
+        tone: "bg-amber-100 text-amber-800",
+        description: "We're verifying the payment details for this refund.",
+      };
+    case "Escalated":
+      return {
+        label: "Needs attention",
+        tone: "bg-rose-100 text-rose-800",
+        description:
+          "We could not complete the refund automatically. Support will follow up.",
       };
     default:
       return {
@@ -247,7 +285,7 @@ function RefundDetails({ progress }: { progress: RefundProgress }) {
           <Detail label="Attempts" value={String(progress.attemptCount)} />
         )}
       </dl>
-      {progress.status === "Failed" && (
+      {(progress.status === "Failed" || progress.status === "Escalated") && (
         <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
           No action is needed from you. Our support team will contact you if
           more information is required.

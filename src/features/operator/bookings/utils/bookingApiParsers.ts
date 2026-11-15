@@ -178,6 +178,7 @@ function summary(value: unknown, path: string): BookingSummaryMetrics {
     totalBookings: count(source.totalBookings, `${path}.totalBookings`),
     totalParticipants: count(source.totalParticipants, `${path}.totalParticipants`),
     totalConfirmedAmount: money(source.totalConfirmedAmount, `${path}.totalConfirmedAmount`),
+    totalSettledPayoutAmount: money(source.totalSettledPayoutAmount, `${path}.totalSettledPayoutAmount`),
   };
 }
 

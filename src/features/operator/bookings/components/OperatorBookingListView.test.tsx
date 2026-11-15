@@ -114,7 +114,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       // BE summary shown as returned (37 bookings, 112 participants)
       expect(screen.getAllByText('37').length).toBeGreaterThan(0); // KPI card (and the pagination total)
       expect(screen.getByText('112')).toBeDefined();
-      expect(screen.getByText(/98\.400\.000/)).toBeDefined();
+      expect(screen.getByText(/73\.800\.000/)).toBeDefined();
     });
 
     it('enables the filters and fills the tour select from the owned-tour list', async () => {
@@ -159,7 +159,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
             pageSize: 20,
             totalCount: 0,
             totalPages: 0,
-            summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0 },
+            summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0, totalSettledPayoutAmount: 0 },
             items: [],
           }),
       });
@@ -418,7 +418,7 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       expect(html).not.toMatch(/years old/i);
     });
 
-    it('keeps cancel and refund disabled with the locked tooltip in live mode', async () => {
+    it('enables cancel in live mode when the backend marks the booking cancellable', async () => {
       routeFetch({ '1201': () => json(detailFor('1201', 'BK-20261020-0007')) });
       render(<OperatorBookingListView isDemo={false} />);
 
@@ -429,11 +429,8 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
         expect(within(dialog).getByText('Nguyen Thi B')).toBeDefined();
       });
       const cancel = within(dialog).getByRole('button', { name: /Cancel Booking/i }) as HTMLButtonElement;
-      const refund = within(dialog).getByRole('button', { name: /Initiate Refund/i }) as HTMLButtonElement;
-      expect(cancel.disabled).toBe(true);
-      expect(refund.disabled).toBe(true);
-      expect(cancel.getAttribute('title')).toBe(bookingEn.detail.productionLockedTooltip);
-      expect(refund.getAttribute('title')).toBe(bookingEn.detail.productionLockedTooltip);
+      expect(cancel.disabled).toBe(false);
+      expect(cancel.getAttribute('title')).toBe(bookingEn.detail.cancelBookingBtn);
     });
 
     it.each([
@@ -883,41 +880,5 @@ describe('OperatorBookingListView (UC-40, UC-41, UC-42 Workspace)', () => {
       });
     });
 
-    it('executes refund initiation flow even when notes contain "timeout", "retry", or "system" (UC-42)', async () => {
-      render(<OperatorBookingListView isDemo={true} />);
-
-      await waitFor(() => {
-        expect(screen.getAllByText('BK-20260919-0141').length).toBeGreaterThan(0);
-      });
-
-      // Open detail drawer
-      const detailButtons = screen.getAllByRole('button', { name: /Details/i });
-      fireEvent.click(detailButtons[0]);
-
-      // Click refund action in drawer
-      const refundDrawerBtn = await screen.findByRole('button', {
-        name: /Initiate Refund \(UC-42\)/i,
-      });
-      fireEvent.click(refundDrawerBtn);
-
-      // Refund dialog opens; enter notes containing words that previously triggered hidden failures
-      const textarea = await screen.findByLabelText(/Refund Notes/i);
-      fireEvent.change(textarea, {
-        target: { value: 'Customer reported timeout during retry on old system' },
-      });
-
-      const submitRefundBtn = screen.getByRole('button', {
-        name: /send.*Initiate Refund/i,
-      });
-      fireEvent.click(submitRefundBtn);
-
-      // Verify feedback banner succeeds normally with MSG83
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeDefined();
-        expect(
-          screen.getByText(new RegExp(bookingEn.messages.MSG83, 'i'))
-        ).toBeDefined();
-      });
-    });
   });
 });

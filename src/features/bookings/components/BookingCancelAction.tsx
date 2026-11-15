@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import type { TicketStatus } from '../types/ticket';
+import type { BookingCancellationResponse } from '../services/cancellationApi';
 import { BookingCancelDialog } from './BookingCancelDialog';
 import { cancellationMessages as m } from './cancellationMessages';
 
@@ -16,6 +17,7 @@ interface BookingCancelActionProps {
 export function BookingCancelAction({ bookingId, ticketStatus }: BookingCancelActionProps) {
   const [open, setOpen] = useState(false);
   const [cancelled, setCancelled] = useState(false);
+  const [cancelledMessage, setCancelledMessage] = useState<string>(m.cancelled);
 
   if (!CANCELLABLE_TICKET_STATUSES.includes(ticketStatus)) return null;
 
@@ -23,7 +25,7 @@ export function BookingCancelAction({ bookingId, ticketStatus }: BookingCancelAc
     <div>
       {cancelled ? (
         <p role="status" className="text-sm font-semibold text-slate-700">
-          {m.cancelled}
+          {cancelledMessage}
         </p>
       ) : (
         <button
@@ -38,9 +40,16 @@ export function BookingCancelAction({ bookingId, ticketStatus }: BookingCancelAc
         <BookingCancelDialog
           bookingId={bookingId}
           onClose={() => setOpen(false)}
-          onCancelled={() => {
+          onCancelled={(result: BookingCancellationResponse) => {
             setOpen(false);
             setCancelled(true);
+            setCancelledMessage(
+              result.refundStatus === 'Reconciliation'
+                ? m.refundReconciliation
+                : result.refundStatus === 'NotRequired'
+                  ? m.refundNotRequired
+                  : m.cancelled,
+            );
           }}
         />
       ) : null}

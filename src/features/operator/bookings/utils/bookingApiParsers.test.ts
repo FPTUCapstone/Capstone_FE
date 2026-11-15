@@ -24,7 +24,7 @@ describe('parseBookingListResponse', () => {
     expect(result.pageSize).toBe(20);
     expect(result.totalCount).toBe(37);
     expect(result.totalPages).toBe(2);
-    expect(result.summary).toEqual({ totalBookings: 37, totalParticipants: 112, totalConfirmedAmount: 98400000 });
+    expect(result.summary).toEqual({ totalBookings: 37, totalParticipants: 112, totalConfirmedAmount: 98400000, totalSettledPayoutAmount: 73800000 });
     expect(result.items).toHaveLength(1);
     expect(result.items[0].booker.email).toBe('a@example.com');
     expect(result.items[0].checkedInAtUtc).toBeNull();
@@ -36,7 +36,7 @@ describe('parseBookingListResponse', () => {
       pageSize: 20,
       totalCount: 0,
       totalPages: 0,
-      summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0 },
+      summary: { totalBookings: 0, totalParticipants: 0, totalConfirmedAmount: 0, totalSettledPayoutAmount: 0 },
       items: [],
     };
     expect(parseBookingListResponse(empty).items).toEqual([]);

@@ -18,10 +18,8 @@ interface BookingDetailPanelProps {
   loadState?: BookingDetailLoadState;
   errorMessage?: string | null;
   onRetry?: () => void;
-  isDemo?: boolean;
   onClose: () => void;
   onOpenCancelDialog: (booking: BookingDetailView) => void;
-  onOpenRefundDialog: (booking: BookingDetailView) => void;
 }
 
 export function BookingDetailPanel({
@@ -31,10 +29,8 @@ export function BookingDetailPanel({
   loadState = 'ready',
   errorMessage = null,
   onRetry,
-  isDemo = false,
   onClose,
   onOpenCancelDialog,
-  onOpenRefundDialog,
 }: BookingDetailPanelProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
@@ -124,17 +120,9 @@ export function BookingDetailPanel({
   // A ready drawer without a booking has nothing to show; loading and error drawers show the row basics.
   if (!open || !basics || (loadState === 'ready' && booking === null)) return null;
 
-  // Eligibility evaluation for actions. Cancellation follows the BE decision (`canCancel`), which
-  // mirrors UC-41; the browser does not recompute it. Both actions stay locked outside demo mode
-  // until their UC-41/UC-42 integration.
-  const isCancellable = isDemo && booking !== null && booking.canCancel;
-
-  const isRefundable =
-    isDemo &&
-    booking !== null &&
-    booking.paidAmount > 0 &&
-    booking.payment?.status === 'Success' &&
-    !booking.refund;
+  // Cancellation follows the BE decision (`canCancel`), which mirrors UC-41; the browser does
+  // not recompute eligibility. The live cancellation and UC-42 follow-up are now integrated.
+  const isCancellable = booking !== null && booking.canCancel;
 
   const cancelBlockedTooltip =
     booking?.cancelBlockedReason === 'CheckedIn'
@@ -472,9 +460,7 @@ export function BookingDetailPanel({
               onClick={() => booking && onOpenCancelDialog(booking)}
               disabled={!isCancellable}
               title={
-                !isDemo
-                  ? bookingEn.detail.productionLockedTooltip
-                  : !isCancellable
+                !isCancellable
                   ? cancelBlockedTooltip
                   : bookingEn.detail.cancelBookingBtn
               }
@@ -482,24 +468,6 @@ export function BookingDetailPanel({
             >
               <span className="material-symbols-outlined text-[16px]">cancel</span>
               <span>{bookingEn.detail.cancelBookingBtn}</span>
-            </button>
-
-            {/* Initiate refund action (UC-42) */}
-            <button
-              type="button"
-              onClick={() => booking && onOpenRefundDialog(booking)}
-              disabled={!isRefundable}
-              title={
-                !isDemo
-                  ? bookingEn.detail.productionLockedTooltip
-                  : !isRefundable
-                  ? bookingEn.detail.notRefundableTooltip
-                  : bookingEn.detail.refundBtn
-              }
-              className="w-full sm:w-auto justify-center rounded-xl bg-[#174B4A] px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-[16px]">currency_exchange</span>
-              <span>{bookingEn.detail.refundBtn}</span>
             </button>
           </div>
         </div>

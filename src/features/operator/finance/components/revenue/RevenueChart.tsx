@@ -96,7 +96,7 @@ export function RevenueChart({ chartData }: RevenueChartProps) {
                 className="flex-1 flex flex-col items-center justify-end h-full group relative"
               >
                 {/* Tooltip on hover */}
-                <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-12 z-20 transition-opacity bg-slate-900 text-white rounded-md px-2 py-1 text-[10px] whitespace-nowrap shadow-md">
+                <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute top-2 z-20 transition-opacity bg-slate-900 text-white rounded-md px-2 py-1 text-[10px] whitespace-nowrap shadow-md">
                   <p className="font-bold">{pt.periodLabel}</p>
                   <p>Gross: {formatVndCurrency(pt.grossRevenue)}</p>
                   <p>Net: {formatVndCurrency(pt.netAmount)}</p>
