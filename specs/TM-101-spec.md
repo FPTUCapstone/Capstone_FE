@@ -18,4 +18,4 @@ Map preview reuses installed Mapbox GL and existing Directions helper. Walking u
 
 PC-01 Active route joins two Active POIs. PC-02 planner/navigation can retrieve Active persisted route metrics while guidance remains Mapbox. PC-03 immutable audit exists. PC-04 validation/save/audit failure commits no route. Prove with SQL/API integration tests; skipped tests are not proof.
 
-Acceptance follows all 20 criteria in user master prompt. Original SRS has inconsistent BR numbering between UC-specific text and global BR table; trace the UC-specific rules explicitly. Screen image is TBD, not Figure 84 as asserted by task. These discrepancies do not authorize modifying SRS.
+Acceptance follows the 20 criteria in the user master prompt and the current official Report 3, UC-54 §3.9.4.1. Create Route is shown in Figure 84. Trace the UC-specific rules and PC-01 through PC-04 to the verified source.
