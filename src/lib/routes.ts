@@ -79,7 +79,6 @@ export const ROUTES = {
     routesList: '/admin/routes',
     routeCreate: '/admin/routes/create',
     pois: '/admin/catalogue/points-of-interest',
-    createServiceProvider: '/admin/service-providers/create',
     commissionReconciliation: '/admin/commercial-settlements/reconciliation',
     landingContent: '/admin/landing-content',
     payoutSettlements: '/admin/payout-settlements',
