@@ -22,7 +22,7 @@ The Tour Operator can safely review and submit each valid UC-69 response on web,
 ## Task 3 — Detail and evidence presentation
 
 - Render all backend-authoritative complaint data and available action state.
-- Implement evidence links only from signed backend URLs with safe new-window attributes.
+- Implement evidence links only from signed backend URLs with safe new-window attributes, and display both the operator deadline and the returned three-day Traveler deadline after a proposal.
 - Ensure expired/rejected/approved records are read-only and do not show a submit control.
 
 **DoD:** Tests confirm no storage identifier or payment information appears, and expired details cannot become actionable through client state.
@@ -37,7 +37,7 @@ The Tour Operator can safely review and submit each valid UC-69 response on web,
 
 ## Task 5 — Cross-flow handoff messaging
 
-- After full acceptance, state that the refund awaits the existing UC-42 confirmation flow; after partial proposal, state that Traveler action is pending.
+- After full acceptance, state that the refund awaits the existing UC-42 confirmation flow; after partial proposal, state that Traveler action is pending until the returned three-day deadline.
 - Do not add an in-screen payment button or an optimistic `Paid` status.
 
 **DoD:** Copy and behavioural tests prove the UI does not make a gateway/refund API call and uses only the UC-69 response endpoint.
@@ -47,5 +47,6 @@ The Tour Operator can safely review and submit each valid UC-69 response on web,
 - Run focused Vitest suites, `npm run typecheck`, `npm run lint`, production build and relevant E2E test with live BE.
 - Manually test desktop and mobile widths, keyboard-only form submission, deadline expiry and foreign-record deep link.
 - Record API contract version, commands and final results in the PR.
+- Create/track the equivalent Flutter implementation using the same backend contract before declaring the SRS cross-platform requirement complete.
 
 **DoD:** All acceptance criteria pass and there are no accessibility, authorization or sensitive-link findings.
