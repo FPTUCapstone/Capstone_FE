@@ -23,6 +23,7 @@ import {
   ADMIN_SESSION_SECRET_ENV,
   createAdminSessionSeal,
 } from '@/lib/server/adminSession';
+vi.mock('@/features/admin/routes/components/RouteDirectoryView', () => ({ RouteDirectoryView: () => <h1>Routes List</h1> }));
 import RoutesPage from './page';
 
 const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
@@ -138,7 +139,7 @@ describe('RoutesPage (/admin/routes)', () => {
 
     render(await RoutesPage());
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Route Master Data' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Routes List' })).toBeTruthy();
   });
 
   it('renders AdminAccessDeniedView for authenticated Administrator (BR-115)', async () => {

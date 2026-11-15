@@ -23,6 +23,7 @@ import {
   ADMIN_SESSION_SECRET_ENV,
   createAdminSessionSeal,
 } from '@/lib/server/adminSession';
+vi.mock('@/features/admin/routes/components/CreateRouteView', () => ({ CreateRouteView: () => <h1>Create Route</h1> }));
 import CreateRoutePage from './page';
 
 const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
