@@ -25,7 +25,7 @@ describe('UC79–80 request decisions and outcomes', () => {
     await screen.findByRole('button', { name: /Mark Service Completed/i });
     fireEvent.change(screen.getByLabelText(/Actual Amount Collected/i), { target: { value: amount } });
     fireEvent.click(screen.getByRole('button', { name: /Mark Service Completed/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Confirm Completion/i }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(ProviderBookingService.recordOutcome).not.toHaveBeenCalled();
     expect(screen.getByText(/entered value is out of the allowed range/i)).toBeDefined();
   });
