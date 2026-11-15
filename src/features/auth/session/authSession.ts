@@ -23,6 +23,7 @@ export interface WebAuthContext {
   readonly email: string;
   readonly fullName: string;
   readonly role: AuthRole;
+  readonly mustChangePassword?: boolean;
   readonly status: 'Active';
   readonly applicationStatus: ApplicationStatus | null;
   readonly applicationUnresolved: boolean;
@@ -40,6 +41,7 @@ export function parseWebAuthContext(value: unknown): WebAuthContext {
   if (!Number.isSafeInteger(data.userId) || (data.userId as number) <= 0 ||
       typeof data.email !== 'string' || !data.email.trim() || typeof data.fullName !== 'string' ||
       !['Traveler', 'TourOperator', 'Administrator', 'Staff', 'ServiceProvider'].includes(data.role as string) || data.status !== 'Active' ||
+      (data.mustChangePassword !== undefined && typeof data.mustChangePassword !== 'boolean') ||
       typeof data.accessToken !== 'string' || !data.accessToken.trim() || 'refreshToken' in data ||
       !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|\+00:00)$/.test(expiry) ||
       !Number.isFinite(Date.parse(expiry)) || Date.parse(expiry) <= Date.now()) throw new InvalidAuthContextError();
@@ -47,7 +49,7 @@ export function parseWebAuthContext(value: unknown): WebAuthContext {
   const known = typeof data.applicationStatus === 'string' && ['Approved', 'PendingApproval', 'Rejected'].includes(data.applicationStatus);
   return Object.freeze({
     userId: data.userId as number, email: data.email, fullName: data.fullName,
-    role: data.role as AuthRole, status: 'Active',
+    role: data.role as AuthRole, status: 'Active', mustChangePassword: data.mustChangePassword === true,
     applicationStatus: operator && known ? data.applicationStatus as ApplicationStatus : null,
     applicationUnresolved: operator && !known,
     accessToken: data.accessToken, accessTokenExpiresAtUtc: expiry,

@@ -21,6 +21,8 @@ export default async function AdminConsoleLayout({ children }: Readonly<{ childr
     return redirect(ROUTES.admin.login);
   }
 
+  if (session.mustChangePassword) return redirect('/admin/first-password');
+
   return (
     <div className="admin-theme min-h-screen bg-[#F7F5EF] text-[#1C2928]">
       <AdminConsoleShell role={session.role}>

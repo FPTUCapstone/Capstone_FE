@@ -61,11 +61,11 @@ export async function signInAdmin(request: Request): Promise<NextResponse> {
         ? data.userId
         : null;
     return setAdminSession(
-      jsonNoStore({ authenticated: true, role: data.role }),
+      jsonNoStore({ authenticated: true, role: data.role, ...(data.mustChangePassword === true ? { mustChangePassword: true } : {}) }),
       data.accessToken,
       expiresAt,
       data.role,
-      { userId },
+      { userId, ...(data.mustChangePassword === true ? { mustChangePassword: true } : {}) },
     );
   } catch {
     return failure(503, unavailableMessage);

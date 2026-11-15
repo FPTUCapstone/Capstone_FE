@@ -1,213 +1,73 @@
-/**
- * Service Provider Booking API Integration Client (UC-78, UC-79, UC-80)
- * Adheres strictly to Section 10 and Section 7 of instructions:
- * Server-authoritative state, typed integration boundary, isolated fixtures for review/test.
- */
+import type { BookingFilterParams, BookingRequestItem, BookingRequestStatus, DecisionPayload, OutcomePayload } from '../types';
+import { record, WorkflowError, workflowRequest } from './workflowClient';
 
-import type {
-  BookingRequestItem,
-  BookingFilterParams,
-  DecisionPayload,
-  OutcomePayload,
-  BookingRequestStatus,
-} from '../types';
-import { DEMO_BOOKING_REQUESTS } from '../fixtures';
+const BASE = '/api/provider/service-booking-requests';
+const pendingKeys = new Map<string, string>();
+const STATUSES = ['PendingConfirmation', 'Confirmed', 'Rejected', 'Cancelled', 'Expired', 'Completed', 'NoShow'];
 
-// In-memory state for local review/test continuity
-let localBookings = [...DEMO_BOOKING_REQUESTS];
+function booking(value: unknown): BookingRequestItem {
+  const data = record(value);
+  if (!Number.isSafeInteger(data.id) || (data.id as number) <= 0 || !Number.isSafeInteger(data.serviceId) ||
+    typeof data.requestCode !== 'string' || typeof data.serviceName !== 'string' || typeof data.requestedDate !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(data.requestedDate) || typeof data.requestedTime !== 'string' ||
+    typeof data.quantity !== 'number' || typeof data.travelerName !== 'string' || !STATUSES.includes(data.status as string) ||
+    typeof data.rowVersion !== 'string' || !data.rowVersion) throw new WorkflowError();
+  return {
+    id: String(data.id), requestCode: data.requestCode, serviceId: data.serviceId as number,
+    serviceName: data.serviceName, serviceOption: typeof data.option === 'string' ? data.option : '—',
+    requestedDate: data.requestedDate, requestedTime: data.requestedTime, quantity: data.quantity,
+    travelerName: data.travelerName, status: data.status as BookingRequestStatus, rowVersion: data.rowVersion,
+    estimatedAmount: typeof data.estimatedAmount === 'number' ? data.estimatedAmount : 0,
+    actualAmount: typeof data.actualAmount === 'number' ? data.actualAmount : undefined,
+    commissionAmount: typeof data.commissionAmount === 'number' ? data.commissionAmount : undefined,
+    travelerPhone: typeof data.travelerPhone === 'string' ? data.travelerPhone : undefined,
+    travelerEmail: typeof data.travelerEmail === 'string' ? data.travelerEmail : undefined,
+    specialRequests: typeof data.specialRequest === 'string' ? data.specialRequest : undefined,
+    rejectionReason: typeof data.rejectionReason === 'string' ? data.rejectionReason : undefined,
+    submittedAt: typeof data.submittedAtUtc === 'string' ? data.submittedAtUtc : undefined,
+    decidedAt: typeof data.respondedAtUtc === 'string' ? data.respondedAtUtc : undefined,
+    outcomeRecordedAt: typeof data.outcomeAtUtc === 'string' ? data.outcomeAtUtc : undefined,
+    responseDeadlineUtc: typeof data.responseDeadlineUtc === 'string' ? data.responseDeadlineUtc : undefined,
+    outcomeAvailableAtUtc: typeof data.outcomeAvailableAtUtc === 'string' ? data.outcomeAvailableAtUtc : undefined,
+    autoCompleteAtUtc: typeof data.autoCompleteAtUtc === 'string' ? data.autoCompleteAtUtc : undefined,
+  };
+}
+
+async function mutate(id: string, operation: 'decision' | 'outcome', payload: DecisionPayload | OutcomePayload): Promise<BookingRequestItem> {
+  const body = JSON.stringify(payload);
+  const signature = `${id}/${operation}/${body}`;
+  const key = pendingKeys.get(signature) ?? crypto.randomUUID();
+  pendingKeys.set(signature, key);
+  try {
+    const result = booking(await workflowRequest(`${BASE}/${encodeURIComponent(id)}/${operation}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body,
+    }));
+    pendingKeys.delete(signature);
+    return result;
+  } catch (error) {
+    // Keep uncertain requests retryable. A definitive rejection consumes no mutation.
+    if (error instanceof WorkflowError && error.status >= 400 && error.status < 500) pendingKeys.delete(signature);
+    throw error;
+  }
+}
 
 export const ProviderBookingService = {
-  /**
-   * Reset local state to initial fixtures (used in automated tests).
-   */
-  resetState(): void {
-    localBookings = [...DEMO_BOOKING_REQUESTS];
+  async fetchBookingRequests(filters: BookingFilterParams = {}) {
+    const query = new URLSearchParams();
+    if (filters.status && filters.status !== 'All') query.set('status', filters.status);
+    if (filters.startDate) query.set('requestedDateFrom', filters.startDate);
+    if (filters.endDate) query.set('requestedDateTo', filters.endDate);
+    if (filters.keyword?.trim()) query.set('keyword', filters.keyword.trim());
+    query.set('pageNumber', String(filters.page ?? 1));
+    query.set('pageSize', String(filters.pageSize ?? 20));
+    const data = record(await workflowRequest(`${BASE}?${query}`));
+    if (!Array.isArray(data.items) || !Number.isSafeInteger(data.totalCount) || (data.totalCount as number) < 0 ||
+      !Number.isSafeInteger(data.pageNumber) || (data.pageNumber as number) < 1 || !Number.isSafeInteger(data.pageSize) || (data.pageSize as number) < 1) throw new WorkflowError();
+    return { items: data.items.map(booking), totalCount: data.totalCount as number, page: data.pageNumber as number, pageSize: data.pageSize as number };
   },
-
-  /**
-   * Fetch booking requests for the authenticated Service Provider (UC-78, §3.6.3).
-   * Enforces pagination (CR-01, default 20), sort (Pending first, then check-in date).
-   */
-  async fetchBookingRequests(
-    filters: BookingFilterParams = {}
-  ): Promise<{ items: BookingRequestItem[]; totalCount: number; page: number; pageSize: number }> {
-    const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
-
-    let filtered = [...localBookings];
-
-    // Status filter
-    if (filters.status && filters.status !== 'All') {
-      filtered = filtered.filter((item) => item.status === filters.status);
-    }
-
-    // Date range filter
-    if (filters.startDate) {
-      filtered = filtered.filter((item) => item.requestedDate >= filters.startDate!);
-    }
-    if (filters.endDate) {
-      filtered = filtered.filter((item) => item.requestedDate <= filters.endDate!);
-    }
-
-    // Keyword search (traveler name, request code, room option)
-    if (filters.keyword && filters.keyword.trim()) {
-      const normalize = (s: string) =>
-        s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const term = normalize(filters.keyword.trim());
-      filtered = filtered.filter(
-        (item) =>
-          normalize(item.requestCode).includes(term) ||
-          normalize(item.travelerName).includes(term) ||
-          normalize(item.serviceOption).includes(term) ||
-          normalize(item.serviceName).includes(term)
-      );
-    }
-
-    // Sort: Pending Confirmation first, then ascending check-in date
-    filtered.sort((a, b) => {
-      if (a.status === 'PendingConfirmation' && b.status !== 'PendingConfirmation') return -1;
-      if (a.status !== 'PendingConfirmation' && b.status === 'PendingConfirmation') return 1;
-      return a.requestedDate.localeCompare(b.requestedDate);
-    });
-
-    const totalCount = filtered.length;
-    const startIndex = (page - 1) * pageSize;
-    const items = filtered.slice(startIndex, startIndex + pageSize);
-
-    return {
-      items,
-      totalCount,
-      page,
-      pageSize,
-    };
+  async getBookingRequestById(id: string) {
+    return booking(await workflowRequest(`${BASE}/${encodeURIComponent(id)}`));
   },
-
-  /**
-   * Fetch request details by ID (W104).
-   */
-  async getBookingRequestById(id: string): Promise<BookingRequestItem | null> {
-    const found = localBookings.find((item) => item.id === id || item.requestCode === id);
-    return found ? { ...found } : null;
-  },
-
-  /**
-   * Submit decision: Confirm or Reject (UC-79, §3.6.4).
-   * Validates mandatory rejection reason per BR-195.
-   */
-  async submitDecision(
-    id: string,
-    payload: DecisionPayload
-  ): Promise<{ success: boolean; updatedStatus: BookingRequestStatus; error?: string }> {
-    const idx = localBookings.findIndex((item) => item.id === id || item.requestCode === id);
-    if (idx === -1) {
-      return { success: false, updatedStatus: 'PendingConfirmation', error: 'Booking request not found.' };
-    }
-
-    const current = localBookings[idx];
-    if (current.status !== 'PendingConfirmation') {
-      return {
-        success: false,
-        updatedStatus: current.status,
-        error: 'Request is no longer in an eligible state for a decision.',
-      };
-    }
-
-    if (payload.action === 'Reject') {
-      if (!payload.rejectionReason || !payload.rejectionReason.trim()) {
-        return {
-          success: false,
-          updatedStatus: current.status,
-          error: 'Rejection reason cannot be blank (BR-195).',
-        };
-      }
-
-      const updated: BookingRequestItem = {
-        ...current,
-        status: 'Rejected',
-        rejectionReason: payload.rejectionReason.trim(),
-        decidedAt: new Date().toISOString(),
-      };
-      localBookings[idx] = updated;
-      return { success: true, updatedStatus: 'Rejected' };
-    }
-
-    // Confirm
-    const updated: BookingRequestItem = {
-      ...current,
-      status: 'Confirmed',
-      decidedAt: new Date().toISOString(),
-    };
-    localBookings[idx] = updated;
-    return { success: true, updatedStatus: 'Confirmed' };
-  },
-
-  /**
-   * Record Service Outcome (UC-80, §3.6.5).
-   * Eligible only when Confirmed and stay date has arrived/passed.
-   */
-  async recordOutcome(
-    id: string,
-    payload: OutcomePayload
-  ): Promise<{
-    success: boolean;
-    updatedStatus: BookingRequestStatus;
-    actualAmount?: number;
-    commissionAmount?: number;
-    error?: string;
-  }> {
-    const idx = localBookings.findIndex((item) => item.id === id || item.requestCode === id);
-    if (idx === -1) {
-      return { success: false, updatedStatus: 'Confirmed', error: 'Booking request not found.' };
-    }
-
-    const current = localBookings[idx];
-    if (current.status !== 'Confirmed') {
-      return {
-        success: false,
-        updatedStatus: current.status,
-        error: 'Only Confirmed requests are eligible for recording an outcome.',
-      };
-    }
-
-    if (payload.outcome === 'NoShow') {
-      const updated: BookingRequestItem = {
-        ...current,
-        status: 'NoShow',
-        actualAmount: 0,
-        commissionAmount: 0,
-        outcomeRecordedAt: new Date().toISOString(),
-        outcomeRecordedBy: 'Staff Operator',
-      };
-      localBookings[idx] = updated;
-      return { success: true, updatedStatus: 'NoShow', actualAmount: 0, commissionAmount: 0 };
-    }
-
-    // Completed
-    const amount = payload.actualAmount ?? 0;
-    if (amount <= 0) {
-      return {
-        success: false,
-        updatedStatus: current.status,
-        error: 'Actual collected amount must be greater than 0 for completed stays.',
-      };
-    }
-
-    // 10% commission proposal BR-198
-    const commission = Math.round(amount * 0.1);
-    const updated: BookingRequestItem = {
-      ...current,
-      status: 'Completed',
-      actualAmount: amount,
-      commissionAmount: commission,
-      outcomeRecordedAt: new Date().toISOString(),
-      outcomeRecordedBy: 'Staff Operator',
-    };
-    localBookings[idx] = updated;
-    return {
-      success: true,
-      updatedStatus: 'Completed',
-      actualAmount: amount,
-      commissionAmount: commission,
-    };
-  },
+  submitDecision: (id: string, payload: DecisionPayload) => mutate(id, 'decision', payload),
+  recordOutcome: (id: string, payload: OutcomePayload) => mutate(id, 'outcome', payload),
 };

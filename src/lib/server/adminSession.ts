@@ -18,6 +18,7 @@ const MAX_ISSUED_AT_FUTURE_SKEW_MS = 60 * 1000;
 export type AdminSessionRole = 'Administrator' | 'Staff';
 
 export interface VerifiedAdminSession {
+  mustChangePassword?: boolean;
   role: AdminSessionRole;
   userId: number | null;
   issuedAtMs: number;
@@ -27,6 +28,7 @@ export interface VerifiedAdminSession {
 
 interface AdminSessionSealPayload {
   v: typeof ADMIN_SESSION_VERSION;
+  mustChangePassword?: boolean;
   role: AdminSessionRole;
   uid: number | null;
   th: string;
@@ -105,6 +107,7 @@ function extractJwtUnverifiedClaims(token: string): {
 
 export function createAdminSessionSeal(params: {
   token: string;
+  mustChangePassword?: boolean;
   role: AdminSessionRole;
   userId?: number | null;
   expiresAt: Date;
@@ -141,6 +144,7 @@ export function createAdminSessionSeal(params: {
 
   const payload: AdminSessionSealPayload = {
     v: ADMIN_SESSION_VERSION,
+    ...(params.mustChangePassword ? { mustChangePassword: true } : {}),
     role: params.role,
     uid: normalizedUserId,
     th: computeAdminTokenFingerprint(params.token),
@@ -218,6 +222,8 @@ export function verifyAdminSession(params: {
     return null;
   }
 
+  if (candidate.mustChangePassword !== undefined && typeof candidate.mustChangePassword !== 'boolean') return null;
+
   const nowMs =
     typeof params.nowMs === 'number' && Number.isFinite(params.nowMs)
       ? Math.floor(params.nowMs)
@@ -246,6 +252,7 @@ export function verifyAdminSession(params: {
   }
 
   return {
+    ...(candidate.mustChangePassword ? { mustChangePassword: true } : {}),
     role: candidate.role,
     userId: candidate.uid ?? null,
     issuedAtMs: candidate.iat,
@@ -324,12 +331,13 @@ export function setAdminSession(
   token: string,
   expiresAt: Date,
   role: AdminSessionRole = 'Administrator',
-  options?: { userId?: number | null; nowMs?: number; secret?: string | null },
+  options?: { userId?: number | null; nowMs?: number; secret?: string | null; mustChangePassword?: boolean },
 ): NextResponse {
   const sealed = createAdminSessionSeal({
     token,
     role,
     userId: options?.userId ?? null,
+    mustChangePassword: options?.mustChangePassword,
     expiresAt,
     nowMs: options?.nowMs,
     secret: options?.secret,

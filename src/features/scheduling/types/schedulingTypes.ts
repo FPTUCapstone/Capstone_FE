@@ -198,7 +198,35 @@ export interface ItineraryLocationDto {
   address: string | null;
 }
 
+export interface ItineraryBookedServiceDto {
+  id: number;
+  serviceId: number;
+  poiId: number | null;
+  serviceName: string;
+  serviceOption: string | null;
+  status: string;
+  startAtUtc: string;
+  endAtUtc: string | null;
+  quantity: number;
+  estimatedAmount: number;
+  actualAmount: number | null;
+}
+
+function isBookedService(value: unknown): value is ItineraryBookedServiceDto {
+  if (!isRecord(value)) return false;
+  return isValidItineraryId(value.id) && typeof value.id === 'number' &&
+    isValidItineraryId(value.serviceId) && typeof value.serviceId === 'number' &&
+    (value.poiId === null || (typeof value.poiId === 'number' && isValidItineraryId(value.poiId))) &&
+    typeof value.serviceName === 'string' && isOptional(value.serviceOption, isString) &&
+    typeof value.status === 'string' && typeof value.startAtUtc === 'string' && Number.isFinite(Date.parse(value.startAtUtc)) &&
+    (value.endAtUtc === null || (typeof value.endAtUtc === 'string' && Number.isFinite(Date.parse(value.endAtUtc)))) &&
+    typeof value.quantity === 'number' && Number.isSafeInteger(value.quantity) && value.quantity > 0 &&
+    typeof value.estimatedAmount === 'number' && Number.isFinite(value.estimatedAmount) && value.estimatedAmount >= 0 &&
+    (value.actualAmount === null || (typeof value.actualAmount === 'number' && Number.isFinite(value.actualAmount) && value.actualAmount >= 0));
+}
+
 export interface ItineraryDetailDto {
+  bookedServices?: ItineraryBookedServiceDto[];
   itineraryId: number;
   schedulingRequestId: number;
   title: string | null;
@@ -269,6 +297,7 @@ export function isValidItineraryDetailDto(data: unknown): data is ItineraryDetai
   ) {
     return false;
   }
+  if (candidate.bookedServices !== undefined && (!Array.isArray(candidate.bookedServices) || !candidate.bookedServices.every(isBookedService))) return false;
   if (candidate.isDemoFixture !== undefined && typeof candidate.isDemoFixture !== 'boolean') {
     return false;
   }
