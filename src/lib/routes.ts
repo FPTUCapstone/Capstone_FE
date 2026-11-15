@@ -16,6 +16,7 @@ export const ROUTES = {
   checkoutResult: '/checkout/result',
   /** UC-29 e-ticket of a booking (payment result); Trip History links use `account.ticket`. */
   bookingTicket: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/ticket`,
+  bookingComplaint: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/complaint`,
   partner: {
     dashboard: '/partner',
     profile: '/partner/profile',
