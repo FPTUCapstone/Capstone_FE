@@ -103,3 +103,24 @@ test('normalizes the published direct success DTOs at the BFF boundary', async (
   const response = await pois.proxyProvisionAccount(req(), 'pois');
   assert.deepEqual(await response.json(), { success: true, data: [{ id: 2, name: 'Hotel', category: 'Hotel' }] });
 });
+
+test('provider BFF stops reading oversized streamed JSON before buffering the full request', async () => {
+  const proxy = setup();
+  let reads = 0;
+  let cancelled = false;
+  const stream = new ReadableStream({
+    pull(controller) {
+      if (++reads <= 3) controller.enqueue(new Uint8Array(20_000).fill(32));
+      else controller.close();
+    },
+    cancel() { cancelled = true; },
+  });
+  const request = new Request('https://tripmate.test/api/provider/service-booking-requests/9/decision', {
+    method: 'POST', body: stream, duplex: 'half',
+    headers: { origin: 'https://tripmate.test', 'Content-Type': 'application/json',
+      'Idempotency-Key': '92a7302a-1754-4d33-8d70-0f87fe0486ef' },
+  });
+  assert.equal((await proxy.proxyProviderWorkflow(request, '9', 'decision')).status, 413);
+  assert.equal(cancelled, true);
+  assert.equal(proxy.calls.length, 1);
+});

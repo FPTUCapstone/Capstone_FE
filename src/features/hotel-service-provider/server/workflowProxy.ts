@@ -36,8 +36,24 @@ export async function providerServerContext() {
 
 async function readBody(request: Request): Promise<Record<string, unknown> | Response> {
   if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return failure(415);
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > 32_768) return failure(413);
+  if (!request.body) return failure(400);
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > 32_768) {
+        await reader.cancel();
+        return failure(413);
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+  } finally { reader.releaseLock(); }
   try {
     const value: unknown = JSON.parse(text);
     return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : failure(400);
