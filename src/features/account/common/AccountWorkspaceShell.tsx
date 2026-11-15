@@ -72,6 +72,11 @@ function isTicketRoute(pathname: string | null): boolean {
   return pathname?.startsWith(ROUTES.account.ticket('')) ?? false;
 }
 
+/** UC-75: the partial refund proposal is a standalone decision page, not an account tab. */
+function isComplaintRoute(pathname: string | null): boolean {
+  return pathname?.startsWith('/account/complaints/') ?? false;
+}
+
 export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) {
   const router = useRouter();
   const pathname = useSafePathname();
@@ -81,7 +86,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
   const profileRevision = useRef(0);
 
   const activeTab = resolveAccountTab(pathname);
-  const isReview = isReviewRoute(pathname) || isTicketRoute(pathname);
+  const isReview = isReviewRoute(pathname) || isTicketRoute(pathname) || isComplaintRoute(pathname);
 
   // Authenticated redirect guards
   useEffect(() => {

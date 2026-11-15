@@ -48,6 +48,9 @@ export const ROUTES = {
     tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
     bookingReview: (kind: 'commerceBooking' | 'serviceBooking', id: string | number) =>
       `/account/reviews/${kind}/${encodeURIComponent(id)}`,
+    /** UC-75 screen #97: the Traveler answers a partial refund proposal on a complaint. */
+    partialRefundProposal: (complaintId: string | number) =>
+      `/account/complaints/${encodeURIComponent(complaintId)}/partial-refund-proposal`,
   },
   admin: {
     login: '/admin/login',

@@ -182,4 +182,34 @@ describe('AccountWorkspaceShell', () => {
     expect(screen.queryByText('Hồ sơ cá nhân')).toBeNull();
     expect(screen.getByTestId('ticket-content')).toBeDefined();
   });
+
+  it('renders the UC-75 partial refund proposal route directly without the profile header', () => {
+    vi.spyOn(useWebSessionModule, 'useWebSession').mockReturnValue({
+      status: 'authenticated',
+      context: {
+        userId: 10,
+        email: 'traveler@tripmate.vn',
+        fullName: 'Hoang Van Traveler',
+        role: 'Traveler',
+        status: 'Active',
+        applicationStatus: null,
+        applicationUnresolved: false,
+        accessToken: 'token',
+        accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z',
+      },
+    });
+    vi.spyOn(useSafePathnameModule, 'useSafePathname').mockReturnValue(
+      '/account/complaints/501/partial-refund-proposal',
+    );
+
+    render(
+      <AccountWorkspaceShell>
+        <div data-testid="proposal-content">Partial refund proposal</div>
+      </AccountWorkspaceShell>
+    );
+
+    expect(screen.queryByText('TripMate AI Atlas')).toBeNull();
+    expect(screen.queryByText('Hồ sơ cá nhân')).toBeNull();
+    expect(screen.getByTestId('proposal-content')).toBeDefined();
+  });
 });
