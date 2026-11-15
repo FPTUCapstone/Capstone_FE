@@ -1,9 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
 
 import type { TourSearchItemDto } from '../types/tour';
 import { formatDateDisplay, formatVndPrice } from '../utils/tourQuery';
 import { devTourSearchCopy } from '../resources/en';
+import { TourThumbnail } from './TourThumbnail';
 
 interface TourCardProps {
   tour: TourSearchItemDto;
@@ -111,23 +111,7 @@ export function TourCard({ tour, searchContextQuery, aggregateRating, copy = leg
     >
       {/* Thumbnail area */}
       <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100">
-        {tour.thumbnailUrl ? (
-          <img
-            src={tour.thumbnailUrl}
-            alt={tour.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div
-            aria-hidden="true"
-            className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-teal-50 text-slate-400"
-          >
-            <span aria-hidden="true" className="material-symbols-outlined text-4xl text-teal-600/40">
-              tour
-            </span>
-          </div>
-        )}
+        <TourThumbnail url={tour.thumbnailUrl} title={tour.title} />
 
         {/* Destination tags */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1">

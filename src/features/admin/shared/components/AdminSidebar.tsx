@@ -104,9 +104,7 @@ export function AdminSidebar({
     {
       title: 'Catalog & Moderation',
       items: [
-        { href: ROUTES.admin.tourReviews, label: 'Tour Moderation', icon: 'verified' },
         { href: ROUTES.admin.pois, label: 'POI Master Data', icon: 'location_on' },
-        { href: ROUTES.admin.activeTrips, label: 'Live Monitoring', icon: 'commute' },
       ],
     },
     {

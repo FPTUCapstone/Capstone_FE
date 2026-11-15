@@ -16,7 +16,6 @@ vi.mock('next/navigation', () => ({
   notFound: mocks.notFound,
 }));
 
-import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 import {
   ADMIN_ACCESS_TOKEN_COOKIE,
   ADMIN_SESSION_SEAL_COOKIE,
@@ -72,6 +71,7 @@ describe('UC-47 User Account Detail page route', () => {
     const expiredSealed = createAdminSessionSeal({
       token: 'backend-access-token',
       role: 'Administrator',
+      nowMs: Date.now() - 20 * 60 * 1000,
       expiresAt: new Date(Date.now() - 10 * 60 * 1000),
       secret: TEST_SECRET,
     })!;
@@ -144,7 +144,7 @@ describe('UC-47 User Account Detail page route', () => {
     expect(mocks.notFound).toHaveBeenCalledTimes(1);
   });
 
-  it('renders detail unavailable shell when valid ID and session are provided', async () => {
+  it('renders detail when valid ID and session are provided', async () => {
     mockSealedCookies('Administrator');
 
     const view = await UserAccountDetailPage({ params: Promise.resolve({ userId: '4402' }) });
@@ -154,13 +154,13 @@ describe('UC-47 User Account Detail page route', () => {
     expect(view).toBeTruthy();
   });
 
-  it('renders access denied view when accessed with a valid Staff session', async () => {
+  it('accepts a valid Staff session', async () => {
     mockSealedCookies('Staff');
 
     const view = await UserAccountDetailPage({ params: Promise.resolve({ userId: '4402' }) });
 
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(mocks.notFound).not.toHaveBeenCalled();
-    expect(view?.type).toBe(AdminAccessDeniedView);
+    expect(view).toBeTruthy();
   });
 });

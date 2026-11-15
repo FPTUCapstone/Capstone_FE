@@ -23,7 +23,7 @@ const UPSTREAM = '/api/v1/admin/landing-content';
 const SAME_ORIGIN = 'http://localhost:3000';
 const ROUTE_URL = `${SAME_ORIGIN}/api/admin/landing-content`;
 
-function cookieJar(token?: string, role: 'Administrator' | 'Staff' = 'Administrator') {
+function cookieJar(token?: string, role: 'Administrator' | 'Staff' = 'Staff') {
   const sealed = token
     ? createAdminSessionSeal({ token, role, expiresAt: new Date(Date.now() + 10 * 60 * 1000), secret: TEST_SECRET })
     : null;

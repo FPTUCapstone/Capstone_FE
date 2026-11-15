@@ -3,11 +3,12 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTs } = require('./load-ts.cjs');
 
-function setup(token, backend) {
+function setup(token, backend, role = 'Staff') {
   return loadTs('src/features/admin/tour-operator-applications/api/tourOperatorApplicationProxy.ts', {
     'next/headers': { cookies: async () => ({ get: () => token ? { value: token } : undefined }) },
     '@/lib/server/backend': { fetchBackend: backend },
     '@/lib/server/adminSession': {
+      verifyAdminSessionFromCookies: () => token ? { role } : null,
       ADMIN_ACCESS_TOKEN_COOKIE: 'tripmate_admin_access_token',
       isSameOriginRequest: request => request.headers.get('origin') === new URL(request.url).origin,
       jsonNoStore: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
@@ -27,7 +28,7 @@ function request(method = 'GET', body) {
   });
 }
 
-test('requires an Administrator session before calling BE', async () => {
+test('requires a Staff session before calling BE', async () => {
   const forbidden = async () => { throw new Error('BE must not be called'); };
   const response = await setup(null, forbidden)(request(), '2');
   assert.equal(response.status, 401);
@@ -98,4 +99,14 @@ test('clears an invalid session on 401, preserves session on 403, and does not e
   const failed = await setup('admin-token', async () => Response.json({ detail: 'database-secret' }, { status: 500 }))(request(), '2');
   assert.equal(failed.status, 503);
   assert.doesNotMatch(await failed.text(), /database-secret/);
+});
+
+test('rejects a signed Administrator session before forwarding Staff operations', async () => {
+  let called = false;
+  const result = await setup('admin-token', async () => {
+    called = true;
+    return Response.json({});
+  }, 'Administrator')(request(), '2');
+  assert.equal(result.status, 403);
+  assert.equal(called, false);
 });

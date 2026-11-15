@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { TourCard } from './TourCard';
@@ -129,6 +129,29 @@ describe('TourCard component', () => {
   });
 
   describe('thumbnail rendering (TM-209)', () => {
+    it('keeps the neutral placeholder while loading and removes it after load', () => {
+      render(<TourCard tour={mockTour} />);
+      const image = screen.getByRole('img');
+      expect(screen.getByTestId('tour-image-placeholder')).toBeTruthy();
+      fireEvent.load(image);
+      expect(screen.queryByTestId('tour-image-placeholder')).toBeNull();
+    });
+
+    it('uses the neutral placeholder after a broken URL and recovers for a new URL', () => {
+      const { rerender } = render(<TourCard tour={mockTour} />);
+      fireEvent.error(screen.getByRole('img'));
+      expect(screen.queryByRole('img')).toBeNull();
+      expect(screen.getByTestId('tour-image-placeholder')).toBeTruthy();
+      expect(screen.getByRole('link', { name: /Xem chi tiết tour/ })).toBeTruthy();
+
+      const nextUrl = 'https://example.com/replacement.jpg';
+      rerender(<TourCard tour={{ ...mockTour, thumbnailUrl: nextUrl }} />);
+      const nextImage = screen.getByRole('img');
+      expect(nextImage.getAttribute('src')).toBe(nextUrl);
+      fireEvent.load(nextImage);
+      expect(screen.queryByTestId('tour-image-placeholder')).toBeNull();
+    });
+
     it('renders the real tour image with src and meaningful alt when thumbnailUrl is provided', () => {
       const tour: TourSearchItemDto = {
         ...mockTour,
