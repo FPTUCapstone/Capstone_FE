@@ -131,7 +131,7 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
     await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
 
-    const destInput = screen.getByLabelText('Điểm đến / Khu vực');
+    const destInput = await screen.findByLabelText('Điểm đến / Khu vực');
     fireEvent.change(destInput, { target: { value: 'Huế' } });
 
     const submitBtn = screen.getByRole('button', { name: /Tìm kiếm tour/i });
@@ -249,7 +249,7 @@ describe('ExploreToursPage', () => {
       }));
 
       const searches = vi.mocked(searchTours).mock.calls.length;
-      fireEvent.change(screen.getByLabelText('Ngôn ngữ tìm kiếm'), { target: { value: 'en' } });
+      fireEvent.change(await screen.findByLabelText('Ngôn ngữ tìm kiếm'), { target: { value: 'en' } });
       expect((screen.getByLabelText('Keyword') as HTMLInputElement).value).toBe('Hue');
       expect(recommendations.getByText('Recommended tour')).toBeTruthy();
       expect(getTourRecommendations).toHaveBeenCalledTimes(1);
@@ -372,7 +372,7 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
     await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
 
-    const keyword = screen.getByLabelText('Từ khóa') as HTMLInputElement;
+    const keyword = await screen.findByLabelText('Từ khóa') as HTMLInputElement;
     const minPrice = screen.getByLabelText('Giá tối thiểu') as HTMLInputElement;
     const destination = screen.getByLabelText('Điểm đến / Khu vực') as HTMLInputElement;
     fireEvent.change(minPrice, { target: { value: '100000' } });
