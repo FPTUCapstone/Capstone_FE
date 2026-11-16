@@ -29,6 +29,7 @@ export const adminUserAccountsEn = {
   },
   statusDialog: {
     cancelLabel: 'Cancel',
+    errorPrefix: 'Action failed:',
     reasonPlaceholder: 'Explain why this account access needs to change',
     lock: {
       title: 'Lock user account',
@@ -50,6 +51,7 @@ export const adminUserAccountsEn = {
       warningBody:
         'This dialog captures administrator lock rationale pending backend integration. When connected, locking this account will terminate active sessions and suspend marketplace listings according to platform governance policy.',
       confirmLabel: 'Confirm account lock',
+      submittingLabel: 'Locking account...',
     },
     unlock: {
       title: 'Unlock user account',
@@ -73,6 +75,7 @@ export const adminUserAccountsEn = {
       noticeBody:
         'Unlocking this account re-enables login and restores previous platform permissions.',
       confirmLabel: 'Confirm account unlock',
+      submittingLabel: 'Unlocking account...',
     },
   },
 } as const;

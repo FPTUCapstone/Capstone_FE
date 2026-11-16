@@ -212,4 +212,53 @@ describe('UserAccountStatusDialog (UC-48 Lock Account & UC-49 Unlock Account)', 
     expect(screen.getByRole('dialog', { name: 'Unlock user account' })).toBeTruthy();
     expect(screen.getAllByText('Unavailable pending backend integration').length).toBe(3);
   });
+
+  it('renders inline error alert when errorMessage is provided', () => {
+    render(
+      <UserAccountStatusDialog
+        accountLabel="operator@example.com"
+        isOpen
+        operation="unlock"
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+        errorMessage="Tour Operator has outstanding unrecovered debt (BR-189)."
+      />,
+    );
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeTruthy();
+    expect(alert.textContent).toContain('Action failed:');
+    expect(alert.textContent).toContain('Tour Operator has outstanding unrecovered debt (BR-189).');
+  });
+
+  it('disables controls and displays loading state when isSubmitting is true', () => {
+    const onCancel = vi.fn();
+    render(
+      <UserAccountStatusDialog
+        accountLabel="operator@example.com"
+        isOpen
+        operation="unlock"
+        isSubmitting
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Unlock user account' });
+    const reason = screen.getByRole('textbox', { name: 'Internal moderation notes' }) as HTMLTextAreaElement;
+    const categorySelect = screen.getByRole('combobox') as HTMLSelectElement;
+    const closeBtn = screen.getByLabelText('Close') as HTMLButtonElement;
+    const cancelBtn = screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement;
+    const confirmBtn = screen.getByRole('button', { name: /Unlocking account\.\.\./ }) as HTMLButtonElement;
+
+    expect(reason.disabled).toBe(true);
+    expect(categorySelect.disabled).toBe(true);
+    expect(closeBtn.disabled).toBe(true);
+    expect(cancelBtn.disabled).toBe(true);
+    expect(confirmBtn.disabled).toBe(true);
+    expect(confirmBtn.textContent).toContain('Unlocking account...');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(onCancel).not.toHaveBeenCalled();
+  });
 });

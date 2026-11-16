@@ -17,6 +17,8 @@ export interface UserAccountStatusDialogProps {
   lockedReason?: string;
   lockedBy?: string;
   lockedAt?: string;
+  isSubmitting?: boolean;
+  errorMessage?: string | null;
 }
 
 export function UserAccountStatusDialog({
@@ -28,6 +30,8 @@ export function UserAccountStatusDialog({
   lockedReason,
   lockedBy,
   lockedAt,
+  isSubmitting = false,
+  errorMessage = null,
 }: UserAccountStatusDialogProps) {
   const copy = adminUserAccountsEn.statusDialog;
   const isLock = operation === 'lock';
@@ -67,12 +71,13 @@ export function UserAccountStatusDialog({
   if (!isOpen) return null;
 
   function handleConfirm() {
-    if (!normalizedReason) return;
+    if (!normalizedReason || isSubmitting) return;
     onConfirm({ reason: normalizedReason, category: selectedCategory });
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === 'Escape') {
+      if (isSubmitting) return;
       event.preventDefault();
       onCancel();
       return;
@@ -137,8 +142,9 @@ export function UserAccountStatusDialog({
           <button
             type="button"
             aria-label="Close"
+            disabled={isSubmitting}
             onClick={onCancel}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#64748b] hover:bg-[#eceef1] transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#64748b] hover:bg-[#eceef1] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -175,6 +181,22 @@ export function UserAccountStatusDialog({
             </span>
           </div>
 
+          {/* Inline Error Alert Box */}
+          {errorMessage && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="p-3.5 rounded-xl bg-[#ffdad6] text-[#93000a] flex items-start gap-3 border border-[#ffb4ab]"
+            >
+              <span className="material-symbols-outlined text-[#ba1a1a] text-[20px] shrink-0 mt-0.5">
+                error
+              </span>
+              <div className="text-xs leading-relaxed">
+                <span className="font-bold">{copy.errorPrefix}</span> {errorMessage}
+              </div>
+            </div>
+          )}
+
           {/* SRS 3.9.1.3: Lock History Area (Unlock dialog only) */}
           {!isLock && (
             <div className="rounded-xl border border-[#fed7aa] bg-[#fff7ed] p-4 text-xs">
@@ -210,9 +232,10 @@ export function UserAccountStatusDialog({
             <div className="relative">
               <select
                 id="status-reason-category"
+                disabled={isSubmitting}
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full appearance-none rounded-lg bg-[#f2f4f7] py-2.5 pl-3.5 pr-10 text-xs font-semibold text-[#191c1e] outline-none border border-transparent focus:border-[#006b5f] focus:bg-white cursor-pointer"
+                className="w-full appearance-none rounded-lg bg-[#f2f4f7] py-2.5 pl-3.5 pr-10 text-xs font-semibold text-[#191c1e] outline-none border border-transparent focus:border-[#006b5f] focus:bg-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {operationCopy.reasonCategories.map((cat) => (
                   <option key={cat} value={cat}>
@@ -239,10 +262,11 @@ export function UserAccountStatusDialog({
               aria-label={operationCopy.reasonLabel}
               ref={reasonRef}
               rows={3}
+              disabled={isSubmitting}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={operationCopy.internalNotesPlaceholder}
-              className="w-full rounded-lg bg-[#f2f4f7] p-3 text-xs text-[#191c1e] placeholder:text-[#64748b] outline-none border border-transparent focus:border-[#006b5f] focus:bg-white transition-all"
+              className="w-full rounded-lg bg-[#f2f4f7] p-3 text-xs text-[#191c1e] placeholder:text-[#64748b] outline-none border border-transparent focus:border-[#006b5f] focus:bg-white transition-all disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
@@ -289,22 +313,28 @@ export function UserAccountStatusDialog({
         <div className="px-6 py-4 bg-[#f2f4f7] flex items-center justify-end gap-3 border-t border-[#e2e8f0]">
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={onCancel}
-            className="px-4 py-2.5 rounded-lg bg-white border border-[#e2e8f0] text-xs font-bold text-[#191c1e] hover:bg-[#eceef1] transition-colors"
+            className="px-4 py-2.5 rounded-lg bg-white border border-[#e2e8f0] text-xs font-bold text-[#191c1e] hover:bg-[#eceef1] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             {copy.cancelLabel}
           </button>
           <button
             type="button"
-            disabled={!normalizedReason}
+            disabled={!normalizedReason || isSubmitting}
             onClick={handleConfirm}
-            className={`px-5 py-2.5 rounded-lg text-xs font-bold text-white shadow-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`px-5 py-2.5 rounded-lg text-xs font-bold text-white shadow-xs transition-colors flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50 ${
               isLock
                 ? 'bg-[#ba1a1a] hover:bg-[#93000a]'
                 : 'bg-[#006b5f] hover:bg-[#005048]'
             }`}
           >
-            {operationCopy.confirmLabel}
+            {isSubmitting && (
+              <span className="material-symbols-outlined text-[16px] animate-spin">
+                progress_activity
+              </span>
+            )}
+            {isSubmitting ? operationCopy.submittingLabel : operationCopy.confirmLabel}
           </button>
         </div>
       </div>
