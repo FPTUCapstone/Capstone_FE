@@ -22,7 +22,7 @@ describe('Routes List', () => {
     window.history.replaceState(null, '', `/admin/routes?confirmation=${rememberRouteCreation()}`);
     render(<StrictMode><RouteDirectoryView /></StrictMode>);
     expect(await screen.findByText('Museum')).toBeTruthy();
-    expect(screen.getAllByText(message)).toHaveLength(1);
+    expect(await screen.findAllByText(message)).toHaveLength(1);
     expect(screen.getByText('Active')).toBeTruthy();
     expect(mocks.list).toHaveBeenCalled();
   });
