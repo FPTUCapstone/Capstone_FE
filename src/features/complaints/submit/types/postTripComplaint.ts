@@ -10,6 +10,7 @@ export const COMPLAINT_CATEGORIES = [
 export type ComplaintCategory = (typeof COMPLAINT_CATEGORIES)[number];
 
 export type ComplaintEvidence = Readonly<{
+  evidenceId: string;
   fileName: string;
   contentType: string;
   sizeBytes: number;
@@ -32,6 +33,7 @@ export type PostTripComplaintContext = Readonly<{
   endAtUtc: string;
   submissionDeadlineUtc: string;
   canSubmit: boolean;
+  canAmendEvidence: boolean;
   ineligibilityReason: string | null;
   complaint: ExistingPostTripComplaint | null;
 }>;
@@ -49,6 +51,26 @@ export type SubmitPostTripComplaintResponse = Readonly<{
   submittedAtUtc: string;
   responseDeadlineUtc: string;
   isReplay: boolean;
+}>;
+
+export type AmendPostTripComplaintEvidenceResponse = Readonly<{
+  complaintId: string;
+  evidenceAmendmentUsedAtUtc: string;
+  evidenceCount: number;
+  evidenceTotalBytes: number;
+  isReplay: boolean;
+}>;
+
+export type MyPostTripComplaint = Readonly<{
+  complaintId: string;
+  bookingId: string;
+  bookingCode: string;
+  tourTitle: string;
+  status: string;
+  reasonCategory: ComplaintCategory;
+  submittedAtUtc: string;
+  responseDeadlineUtc: string;
+  evidenceCount: number;
 }>;
 
 export class PostTripComplaintApiError extends Error {

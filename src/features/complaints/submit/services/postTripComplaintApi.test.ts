@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { submitPostTripComplaint } from './postTripComplaintApi';
+import { amendPostTripComplaintEvidence, submitPostTripComplaint } from './postTripComplaintApi';
 
 describe('post-trip complaint API', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -14,5 +14,16 @@ describe('post-trip complaint API', () => {
     expect(form.get('reasonCategory')).toBe('Other');
     expect(form.get('reasonDetail')).toBe('Details');
     expect((form.getAll('evidence')[0] as File).name).toBe('proof.pdf');
+  });
+
+  it('sends evidence-only multipart data to the one-time amendment endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ complaintId: 1, evidenceAmendmentUsedAtUtc: '2026-11-20T08:00:00Z', evidenceCount: 2, evidenceTotalBytes: 12, isReplay: false }), { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await amendPostTripComplaintEvidence('2', [new File(['proof'], 'added.png', { type: 'image/png' })], 'd290f1ee-6c54-4b01-90e6-d701748f0851');
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/v1/traveler/bookings/2/post-trip-complaint/evidence');
+    expect(options.headers).toEqual({ 'Idempotency-Key': 'd290f1ee-6c54-4b01-90e6-d701748f0851' });
+    expect((options.body as FormData).get('reasonCategory')).toBeNull();
+    expect(((options.body as FormData).getAll('evidence')[0] as File).name).toBe('added.png');
   });
 });

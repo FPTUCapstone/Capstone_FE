@@ -45,6 +45,7 @@ export const ROUTES = {
     preferences: '/account/preferences',
     security: '/account/security',
     trips: '/account/trips',
+    complaints: '/account/complaints',
     ticket: (ticketId: string | number) => `/account/tickets/${encodeURIComponent(ticketId)}`,
     tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
     bookingReview: (kind: 'commerceBooking' | 'serviceBooking', id: string | number) =>

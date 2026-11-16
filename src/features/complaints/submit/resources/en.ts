@@ -22,6 +22,11 @@ export const postTripComplaintEn = {
   submittedAt: 'Submitted',
   responseDeadline: 'Operator response deadline',
   evidenceList: 'Submitted evidence',
+  downloadEvidence: (name: string) => `Download ${name}`,
+  addEvidence: 'Add evidence once',
+  addingEvidence: 'Adding evidence…',
+  evidenceAmendmentHint: 'You may add evidence one time before the original submission deadline. The complaint details and deadline will not change.',
+  evidenceAmendmentSuccess: 'Additional evidence was added successfully.',
   categories: {
     ItineraryNotAsAdvertised: 'Itinerary not as advertised',
     ServiceQuality: 'Service quality',
@@ -41,6 +46,7 @@ export const postTripComplaintEn = {
     storageUnavailable: 'Your complaint was not recorded. Please try again.',
     accessDenied: 'You do not have access to this booking.',
     unavailable: 'Complaint details are unavailable. Please try again.',
+    evidenceAmendmentUnavailable: 'Additional evidence can no longer be added to this complaint.',
   },
   success: 'Your complaint was submitted successfully.',
 } as const;

@@ -13,7 +13,7 @@ export function isComplaintCategory(value: unknown): value is ComplaintCategory 
   return typeof value === 'string' && (COMPLAINT_CATEGORIES as readonly string[]).includes(value);
 }
 
-export function validateEvidenceAddition(existing: readonly File[], additions: readonly File[]): { accepted: File[]; error?: 'complaint.evidence_limit' | 'complaint.evidence_type' } {
+export function validateEvidenceAddition(existing: readonly Pick<File, 'size'>[], additions: readonly File[]): { accepted: File[]; error?: 'complaint.evidence_limit' | 'complaint.evidence_type' } {
   const accepted: File[] = [];
   let total = existing.reduce((sum, file) => sum + file.size, 0);
   for (const file of additions) {
