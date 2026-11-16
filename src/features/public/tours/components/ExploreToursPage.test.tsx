@@ -5,6 +5,7 @@ import { getTourCategories, getTourRecommendations, refreshTourRecommendations, 
 import { ExploreToursPage } from './ExploreToursPage';
 import type { PagedToursResponseDto } from '../types/tour';
 import { TourApiError } from '../types/tour';
+import { AuthStorage } from '@/features/auth/session/authSession';
 
 const push = vi.fn();
 let currentSearch = '';
@@ -76,6 +77,7 @@ describe('ExploreToursPage', () => {
   const originalDemoFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
 
   beforeEach(() => {
+    AuthStorage.accept({ userId: 1, role: 'Traveler', status: 'Active', email: 'qa@example.test', fullName: 'QA', accessToken: 'test-token', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z' }, false);
     localStorage.setItem('tripmate.uc24.locale', 'vi');
     push.mockClear();
     currentSearch = '';
@@ -142,8 +144,8 @@ describe('ExploreToursPage', () => {
     render(<ExploreToursPage />);
     await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
 
-    const minInput = screen.getByLabelText('Giá tối thiểu');
-    const maxInput = screen.getByLabelText('Giá tối đa');
+    const minInput = await screen.findByLabelText('Giá tối thiểu');
+    const maxInput = await screen.findByLabelText('Giá tối đa');
 
     fireEvent.change(minInput, { target: { value: '2000000' } });
     fireEvent.change(maxInput, { target: { value: '1000000' } });
@@ -255,11 +257,11 @@ describe('ExploreToursPage', () => {
       fireEvent.click(recommendations.getByRole('button', { name: /Làm mới/ }));
       await waitFor(() => expect(refreshTourRecommendations).toHaveBeenCalledWith({
         destination: 'Huế', startDate: '2026-12-10', endDate: null, minBudget: 500000, maxBudget: null,
-      }));
+      }, expect.any(AbortSignal)));
       await waitFor(() => expect((recommendations.getByRole('button', { name: 'Trang sau' }) as HTMLButtonElement).disabled).toBe(false));
       fireEvent.click(recommendations.getByRole('button', { name: 'Trang sau' }));
       await recommendations.findByText('Next recommended tour');
-      expect(getTourRecommendations).toHaveBeenLastCalledWith({ page: 2, allowDemo: false });
+      expect(getTourRecommendations).toHaveBeenLastCalledWith({ page: 2, allowDemo: false, signal: expect.any(AbortSignal) });
       fireEvent.change(screen.getByLabelText('Keyword'), { target: { value: 'Unsubmitted draft' } });
       currentSearch += '&recommendationPage=2';
       rerender(<ExploreToursPage />);
