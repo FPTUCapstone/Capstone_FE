@@ -295,7 +295,21 @@ async function requestRecommendations(
   return parseTourRecommendations(body);
 }
 
-let initialRefresh: Promise<TourRecommendationsResponseDto> | null = null;
+const refreshes = new Map<number, Promise<TourRecommendationsResponseDto>>();
+
+function refreshOnce(criteria: RefreshTourRecommendationsCriteria | undefined, signal?: AbortSignal) {
+  const userId = AuthStorage.getContext()?.userId;
+  if (userId === undefined) return Promise.reject(new TourApiError('Phiên đăng nhập đã hết hạn.', 401));
+  let request = refreshes.get(userId);
+  if (!request) {
+    const forget = () => { if (refreshes.get(userId) === request) refreshes.delete(userId); };
+    request = requestRecommendations('POST', 1, criteria, signal)
+      .finally(() => { forget(); signal?.removeEventListener('abort', forget); });
+    refreshes.set(userId, request);
+    signal?.addEventListener('abort', forget, { once: true });
+  }
+  return request;
+}
 
 /** GET latest; only a missing snapshot (criteria=null) triggers one deduplicated POST refresh. */
 export async function getTourRecommendations(options?: {
@@ -321,18 +335,15 @@ export async function getTourRecommendations(options?: {
   const page = options?.page ?? 1;
   const latest = await requestRecommendations('GET', page, undefined, options?.signal);
   if (latest.criteria !== null || page !== 1) return latest;
-  initialRefresh ??= requestRecommendations('POST', 1, options?.initialCriteria, options?.signal)
-    .finally(() => { initialRefresh = null; });
-  return initialRefresh;
+  if (options?.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  return refreshOnce(options?.initialCriteria, options?.signal);
 }
 
 export function refreshTourRecommendations(
   criteria: RefreshTourRecommendationsCriteria,
   signal?: AbortSignal,
 ): Promise<TourRecommendationsResponseDto> {
-  initialRefresh ??= requestRecommendations('POST', 1, criteria, signal)
-    .finally(() => { initialRefresh = null; });
-  return initialRefresh;
+  return refreshOnce(criteria, signal);
 }
 
 /** Tour ids are 64-bit integers; anything else cannot exist, so it never reaches the network. */
