@@ -28,15 +28,15 @@ export async function proxyTourOperatorApplication(
 
   const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return jsonNoStore({ title: 'Administrator sign-in required.' }, 401);
+  if (!token) return jsonNoStore({ title: 'Sign-in required.' }, 401);
 
-  if (typeof verifyAdminSessionFromCookies === 'function') {
+  {
     const session = verifyAdminSessionFromCookies(cookieStore);
     if (!session) {
-      return clearAdminSession(jsonNoStore({ title: 'Administrator sign-in required.' }, 401));
+      return clearAdminSession(jsonNoStore({ title: 'Sign-in required.' }, 401));
     }
-    if (session.role === 'Staff') {
-      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+    if (session.role !== 'Staff') {
+      return jsonNoStore({ title: 'Staff access is required.' }, 403);
     }
   }
 
@@ -64,11 +64,11 @@ export async function proxyTourOperatorApplication(
     }
     if (upstream.status === 401) {
       return clearAdminSession(
-        jsonNoStore({ title: 'Administrator sign-in required.' }, 401),
+        jsonNoStore({ title: 'Sign-in required.' }, 401),
       );
     }
     if (upstream.status === 403) {
-      return jsonNoStore({ title: 'Administrator access is not allowed.' }, 403);
+      return jsonNoStore({ title: 'Staff access is required.' }, 403);
     }
     if (upstream.status === 204 || upstream.headers.get('content-length') === '0') {
       return new Response(null, { status: upstream.status, headers: { 'Cache-Control': 'no-store' } });

@@ -1,3 +1,6 @@
+import { accountSession } from '@/features/admin/user-accounts/server/accounts';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
+import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -14,6 +17,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ActiveTripDetailsPage({ params }: PageProps) {
+  const session = await accountSession();
+  if (!session) return redirect('/admin/login?returnUrl=%2Fadmin%2Ftrips%2Factive');
+  if (session.role !== 'Staff') return <AdminAccessDeniedView requiredRole="Staff" />;
+
   const { id } = await params;
   if (!isValidTripId(id)) notFound();
   return <ActiveTripDetailsScreen tripId={id} />;

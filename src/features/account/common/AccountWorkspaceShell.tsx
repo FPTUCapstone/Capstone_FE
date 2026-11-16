@@ -52,6 +52,12 @@ const TAB_METADATA: Record<
     enTitle: accountCommonEn.navigation.tabs.trips,
     icon: 'route',
   },
+  complaints: {
+    viTitle: 'Khiếu nại của tôi',
+    viSubtitle: 'Theo dõi khiếu nại sau chuyến đi và các bằng chứng đã gửi.',
+    enTitle: accountCommonEn.navigation.tabs.complaints,
+    icon: 'report',
+  },
 };
 
 function resolveAccountTab(pathname: string | null): AccountTabKey {
@@ -59,6 +65,7 @@ function resolveAccountTab(pathname: string | null): AccountTabKey {
   if (pathname.startsWith(ROUTES.account.preferences)) return 'preferences';
   if (pathname.startsWith(ROUTES.account.security)) return 'security';
   if (pathname.startsWith(ROUTES.account.trips)) return 'trips';
+  if (pathname.startsWith(ROUTES.account.complaints)) return 'complaints';
   return 'profile';
 }
 
@@ -72,6 +79,11 @@ function isTicketRoute(pathname: string | null): boolean {
   return pathname?.startsWith(ROUTES.account.ticket('')) ?? false;
 }
 
+/** UC-75: the partial refund proposal is a standalone decision page, not an account tab. */
+function isComplaintRoute(pathname: string | null): boolean {
+  return pathname?.startsWith('/account/complaints/') ?? false;
+}
+
 export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) {
   const router = useRouter();
   const pathname = useSafePathname();
@@ -81,7 +93,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
   const profileRevision = useRef(0);
 
   const activeTab = resolveAccountTab(pathname);
-  const isReview = isReviewRoute(pathname) || isTicketRoute(pathname);
+  const isReview = isReviewRoute(pathname) || isTicketRoute(pathname) || isComplaintRoute(pathname);
 
   // Authenticated redirect guards
   useEffect(() => {

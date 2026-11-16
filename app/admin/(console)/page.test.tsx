@@ -155,16 +155,16 @@ describe('Administration Console Route Access Control (Fail-Closed BFF Session)'
     expect(screen.getByText('AlgorithmConfigMock')).toBeTruthy();
   });
 
-  it('AdminTourReviewQueuePage and TourOperatorApplicationDetailPage block Staff with AdminAccessDeniedView', async () => {
-    mockSealedSession('Staff');
+  it('AdminTourReviewQueuePage and TourOperatorApplicationDetailPage block Administrator with AdminAccessDeniedView', async () => {
+    mockSealedSession('Administrator');
     const reviewDenied = render(await AdminTourReviewQueuePage());
-    expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Staff Access Required' })).toBeTruthy();
     reviewDenied.unmount();
 
     const appDenied = render(
       await TourOperatorApplicationDetailPage({ params: Promise.resolve({ userId: '2' }) }),
     );
-    expect(screen.getByRole('heading', { name: 'Administrator Access Required' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Staff Access Required' })).toBeTruthy();
     appDenied.unmount();
   });
 

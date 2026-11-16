@@ -23,8 +23,8 @@ export default async function LandingContentPage() {
     return redirect('/admin/login?returnUrl=%2Fadmin%2Flanding-content');
   }
 
-  if (session.role !== 'Administrator' && session.role !== 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return <AdminAccessDeniedView requiredRole="Staff" />;
   }
 
   return <LandingContentScreen />;

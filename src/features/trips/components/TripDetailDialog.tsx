@@ -13,6 +13,7 @@ import type {
 import { formatTripDate, formatTripDateTime, formatTripTime } from '../utils/formatTripDate';
 import type { TripDetailFocus } from './TripCard';
 import { useModalFocusTrap } from './useModalFocusTrap';
+import { ComplaintEntryAction } from '@/features/complaints/submit/components/ComplaintEntryAction';
 
 interface TripDetailDialogProps {
   item: TripListItem;
@@ -72,7 +73,7 @@ function Section({
   );
 }
 
-function BookingSections({ detail, focus }: { detail: BookingTripDetail; focus?: TripDetailFocus }) {
+function BookingSections({ detail, focus, allowDemo }: { detail: BookingTripDetail; focus?: TripDetailFocus; allowDemo: boolean }) {
   const { adult, child, infant } = detail.participants;
   const counts = [
     adult > 0 ? copy.adults(adult) : null,
@@ -125,6 +126,7 @@ function BookingSections({ detail, focus }: { detail: BookingTripDetail; focus?:
           </Row>
         </Section>
       )}
+      <ComplaintEntryAction key={detail.id} bookingId={detail.id} disabled={allowDemo} />
     </>
   );
 }
@@ -268,7 +270,7 @@ export function TripDetailDialog({ item, focus, allowDemo, onClose }: TripDetail
 
           {state.phase === 'ready' &&
             (state.detail.kind === 'commerceBooking' ? (
-              <BookingSections detail={state.detail} focus={focus} />
+              <BookingSections detail={state.detail} focus={focus} allowDemo={allowDemo} />
             ) : (
               <ItinerarySections detail={state.detail} />
             ))}

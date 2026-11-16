@@ -10,6 +10,7 @@ export const accountCommonEn = {
       preferences: 'Travel Preferences',
       security: 'Security & Password',
       trips: 'My Trips',
+      complaints: 'My Complaints',
     },
   },
 } as const;

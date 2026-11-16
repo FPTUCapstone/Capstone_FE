@@ -330,6 +330,7 @@ describe('tourApi service', () => {
     });
 
     it('GETs latest then POSTs once when no snapshot exists, preserving D7 empty reasons', async () => {
+      AuthStorage.accept({ userId: 1, role: 'Traveler', status: 'Active', email: 'qa@example.test', fullName: 'QA', accessToken: 'traveler-token', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z' }, false);
       vi.spyOn(AuthStorage, 'getAccessToken').mockReturnValue('traveler-token');
       const fetchMock = vi.fn()
         .mockResolvedValueOnce(new Response(JSON.stringify(recommendationPage(null)), { status: 200, headers: { 'Content-Type': 'application/json' } }))

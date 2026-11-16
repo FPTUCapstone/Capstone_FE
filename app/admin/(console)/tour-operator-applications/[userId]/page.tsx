@@ -25,8 +25,8 @@ export default async function TourOperatorApplicationDetailPage({ params }: Page
     return redirect(ROUTES.admin.login);
   }
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return <AdminAccessDeniedView requiredRole="Staff" />;
   }
 
   const resolvedParams = await params;

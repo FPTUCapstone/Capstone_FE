@@ -25,8 +25,8 @@ export default async function AdminTourReviewQueuePage() {
     return redirect(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.tourReviews)}`);
   }
 
-  if (session.role === 'Staff') {
-    return <AdminAccessDeniedView />;
+  if (session.role !== 'Staff') {
+    return <AdminAccessDeniedView requiredRole="Staff" />;
   }
 
   return (

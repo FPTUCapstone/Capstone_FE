@@ -111,11 +111,11 @@ describe('UC-66 Landing Page Content Management page route', () => {
     expect(mocks.redirect).toHaveBeenCalledWith(LOGIN_REDIRECT);
   });
 
-  it('renders the screen for an Administrator session', async () => {
+  it('denies an Administrator session', async () => {
     mockCookies({ role: 'Administrator' });
     const result = await LandingContentPage();
     expect(mocks.redirect).not.toHaveBeenCalled();
-    expect((result as { type: unknown }).type).toBe(LandingContentScreen);
+    expect((result as { type: unknown }).type).toBe(AdminAccessDeniedView);
   });
 
   it('renders the screen for a Staff session', async () => {
