@@ -128,4 +128,3 @@ describe('UC79–80 request decisions and outcomes', () => {
   });
 
 });
-
