@@ -36,6 +36,7 @@ export function CommissionReconciliationView() {
   const [targetStatement, setTargetStatement] = useState<StatementItem | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [inspectStatement, setInspectStatement] = useState<StatementItem | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -119,18 +120,29 @@ export function CommissionReconciliationView() {
     }
   };
 
-  const providerOptions = [
-    { value: 'All', label: 'Tất cả đối tác' },
-    { value: '42', label: 'Hội An Riverside Heritage Resort' },
-    { value: '43', label: 'Da Nang Beachfront Boutique Resort' },
-  ];
+  const providerOptions = React.useMemo(() => {
+    const map = new Map<string, string>();
+    map.set('42', 'Hội An Riverside Heritage Resort');
+    map.set('43', 'Da Nang Beachfront Boutique Resort');
+    statements.forEach((s) => {
+      if (s.providerId) map.set(String(s.providerId), s.providerName);
+    });
+    return [
+      { value: 'All', label: 'Tất cả đối tác' },
+      ...Array.from(map.entries()).map(([value, label]) => ({ value, label })),
+    ];
+  }, [statements]);
 
-  const periodOptions = [
-    { value: 'All', label: 'Tất cả các kỳ' },
-    { value: '11/2026', label: 'Tháng 11/2026' },
-    { value: '10/2026', label: 'Tháng 10/2026' },
-    { value: '09/2026', label: 'Tháng 09/2026' },
-  ];
+  const periodOptions = React.useMemo(() => {
+    const set = new Set<string>(['11/2026', '10/2026', '09/2026']);
+    statements.forEach((s) => {
+      if (s.period) set.add(s.period);
+    });
+    return [
+      { value: 'All', label: 'Tất cả các kỳ' },
+      ...Array.from(set).map((p) => ({ value: p, label: `Tháng ${p}` })),
+    ];
+  }, [statements]);
 
   const statusOptions = [
     { value: 'All', label: 'Tất cả trạng thái' },
@@ -358,25 +370,37 @@ export function CommissionReconciliationView() {
 
                       {/* Action */}
                       <td className="py-3 px-4 text-right">
-                        {isReported ? (
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => handleOpenReceiptModal(item)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0E9F6E] hover:bg-[#065F46] text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer"
+                            onClick={() => setInspectStatement(item)}
+                            className="p-1.5 text-[#5B6E69] hover:text-[#174B4A] hover:bg-[#E8ECE9] rounded-lg transition-colors cursor-pointer"
+                            title="Xem chi tiết bảng kê"
+                            aria-label={`Xem chi tiết ${item.statementCode}`}
                           >
-                            <span className="material-symbols-outlined text-[15px]">task_alt</span>
-                            <span>{hotelProviderVi.w106.recordReceiptButton}</span>
+                            <span className="material-symbols-outlined text-[16px] block">visibility</span>
                           </button>
-                        ) : isPaid ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#065F46] bg-[#E6F7F0] px-2.5 py-1 rounded-md border border-[#A7F3D0]">
-                            <span className="material-symbols-outlined text-[13px]">done_all</span>
-                            <span>{hotelProviderVi.w106.reconciledBadge}</span>
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-[#8E9E9B] italic">
-                            Chờ chuyển khoản
-                          </span>
-                        )}
+
+                          {isReported ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenReceiptModal(item)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0E9F6E] hover:bg-[#065F46] text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">task_alt</span>
+                              <span>{hotelProviderVi.w106.recordReceiptButton}</span>
+                            </button>
+                          ) : isPaid ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#065F46] bg-[#E6F7F0] px-2.5 py-1 rounded-md border border-[#A7F3D0]">
+                              <span className="material-symbols-outlined text-[13px]">done_all</span>
+                              <span>{hotelProviderVi.w106.reconciledBadge}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-[#8E9E9B] italic">
+                              Chờ chuyển khoản
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -386,6 +410,113 @@ export function CommissionReconciliationView() {
           </div>
         )}
       </div>
+
+      {/* Inspection Modal: View Full Statement Detail */}
+      {inspectStatement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="bg-white border border-[#DCE2DD] rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#E8ECE9] pb-3">
+              <div>
+                <span className="font-mono text-xs font-bold text-[#174B4A] bg-[#E8F7F4] px-2 py-0.5 rounded border border-[#B2DFDB]">
+                  {inspectStatement.statementCode}
+                </span>
+                <h3 className="text-base font-bold text-[#1C2928] mt-1">
+                  Chi tiết bảng kê hoa hồng kỳ {inspectStatement.period}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectStatement(null)}
+                className="p-1.5 text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer"
+                aria-label="Đóng"
+              >
+                <span className="material-symbols-outlined text-[20px] block">close</span>
+              </button>
+            </div>
+
+            {/* Partner Info */}
+            <div className="p-3 bg-[#F7F5EF] rounded-xl text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[#5B6E69]">Đối tác:</span>
+                <span className="font-bold text-[#1C2928]">{inspectStatement.providerName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#5B6E69]">Hạn thanh toán:</span>
+                <span className="font-medium text-[#1C2928]">{formatDate(inspectStatement.dueDate)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#5B6E69]">Trạng thái:</span>
+                <StatusBadge status={inspectStatement.status} size="sm" />
+              </div>
+            </div>
+
+            {/* Financial Summary */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-white border border-[#DCE2DD] rounded-xl">
+                <span className="text-[#5B6E69] text-[11px] block">Lượt đơn hoàn thành</span>
+                <span className="text-base font-bold text-[#1C2928] font-mono">{inspectStatement.completedCount}</span>
+              </div>
+              <div className="p-3 bg-white border border-[#DCE2DD] rounded-xl">
+                <span className="text-[#5B6E69] text-[11px] block">Tổng doanh thu thực tế</span>
+                <span className="text-base font-bold text-[#1C2928] font-mono">{formatVnd(inspectStatement.totalRevenue)}</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-[#E8F7F4] border border-[#B2DFDB] rounded-xl flex items-center justify-between text-xs">
+              <span className="font-semibold text-[#174B4A]">Hoa hồng phải thu (10%):</span>
+              <span className="text-base font-bold font-mono text-[#174B4A]">{formatVnd(inspectStatement.commissionAmount)}</span>
+            </div>
+
+            {/* Bank wire reference info */}
+            <div className="p-3 border border-[#E8ECE9] rounded-xl text-xs space-y-2">
+              <span className="font-semibold text-[#1C2928] block">Thông tin thanh toán ngân hàng:</span>
+              <div className="flex items-center justify-between">
+                <span className="text-[#5B6E69]">Mã giao dịch ngân hàng:</span>
+                <span className="font-mono font-bold text-[#1C2928]">
+                  {inspectStatement.bankReference || 'Chưa cung cấp'}
+                </span>
+              </div>
+              {inspectStatement.reportedAt && (
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-[#5B6E69]">Thời gian gửi mã:</span>
+                  <span className="text-[#1C2928]">{formatDateTime(inspectStatement.reportedAt)}</span>
+                </div>
+              )}
+              {inspectStatement.confirmedAt && (
+                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[#E8ECE9]">
+                  <span className="text-[#065F46] font-medium">Xác nhận thu tiền lúc:</span>
+                  <span className="font-mono text-[#065F46]">{formatDateTime(inspectStatement.confirmedAt)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E8ECE9]">
+              <button
+                type="button"
+                onClick={() => setInspectStatement(null)}
+                className="px-4 py-2 border border-[#DCE2DD] hover:bg-[#F7F5EF] text-[#5B6E69] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+              {inspectStatement.status === 'PaymentReported' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const stmt = inspectStatement;
+                    setInspectStatement(null);
+                    handleOpenReceiptModal(stmt);
+                  }}
+                  className="px-4 py-2 bg-[#0E9F6E] hover:bg-[#065F46] text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[15px]">task_alt</span>
+                  <span>{hotelProviderVi.w106.recordReceiptButton}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Dialog: Record Receipt */}
       {targetStatement && (

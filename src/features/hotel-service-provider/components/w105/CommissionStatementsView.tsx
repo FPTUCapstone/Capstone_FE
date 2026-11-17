@@ -20,6 +20,35 @@ export function CommissionStatementsView() {
   const [bankRefError, setBankRefError] = useState('');
   const [isReporting, setIsReporting] = useState(false);
 
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        showToast(`Đã sao chép ${label} vào bộ nhớ tạm.`, 'info');
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleSelectStatement = async (statement: StatementItem) => {
+    setSelectedStatement(statement);
+    setBankRefInput(statement.bankReference || '');
+    setBankRefError('');
+    if (!statement.breakdown || statement.breakdown.length === 0) {
+      try {
+        const detail = await ProviderStatementService.getStatementById(statement.id);
+        if (detail?.breakdown) {
+          setSelectedStatement((prev) =>
+            prev && prev.id === statement.id ? { ...prev, breakdown: detail.breakdown } : prev
+          );
+        }
+      } catch {
+        // Keep summary
+      }
+    }
+  };
+
   useEffect(() => {
     let active = true;
     ProviderStatementService.fetchStatements()
@@ -27,10 +56,7 @@ export function CommissionStatementsView() {
         if (!active) return;
         setStatements(data.items);
         if (data.items.length > 0) {
-          setSelectedStatement(data.items[0]);
-          if (data.items[0].bankReference) {
-            setBankRefInput(data.items[0].bankReference);
-          }
+          handleSelectStatement(data.items[0]);
         }
         setIsLoading(false);
       })
@@ -44,12 +70,6 @@ export function CommissionStatementsView() {
       active = false;
     };
   }, [showToast]);
-
-  const handleSelectStatement = (statement: StatementItem) => {
-    setSelectedStatement(statement);
-    setBankRefInput(statement.bankReference || '');
-    setBankRefError('');
-  };
 
   const handleReportPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,6 +259,22 @@ export function CommissionStatementsView() {
                 </div>
               </div>
 
+              {/* Overdue Warning Alert (BR-200) */}
+              {selectedStatement.status === 'Overdue' && (
+                <div className="p-3.5 bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl text-xs space-y-1.5 shadow-2xs" role="alert">
+                  <div className="flex items-center gap-1.5 font-bold text-[#991B1B]">
+                    <span className="material-symbols-outlined text-[18px] text-[#DC2626]">warning</span>
+                    <span>Cảnh báo: Bảng kê đã quá hạn thanh toán</span>
+                  </div>
+                  <p className="text-[11px] text-[#7F1D1D] leading-relaxed">
+                    Theo quy định TripMate (BR-200), nếu bảng kê không được thanh toán trong vòng 15 ngày sau hạn thanh toán ({formatDate(selectedStatement.dueDate)}), tài khoản dịch vụ sẽ tự động bị khóa và tạm ngừng nhận yêu cầu đặt mới.
+                  </p>
+                  <p className="text-[10px] text-[#991B1B] font-semibold">
+                    Vui lòng hoàn tất chuyển khoản và gửi mã giao dịch ngân hàng ngay bên dưới để tránh gián đoạn dịch vụ.
+                  </p>
+                </div>
+              )}
+
               {/* Completed Bookings Audit Breakdown */}
               {selectedStatement.breakdown && selectedStatement.breakdown.length > 0 && (
                 <div>
@@ -299,18 +335,38 @@ export function CommissionStatementsView() {
                     <span className="text-[#5B6E69]">Chủ tài khoản:</span>{' '}
                     <strong>{hotelProviderVi.w105.detailDrawer.bankInfoCard.accountHolder}</strong>
                   </p>
-                  <p>
-                    <span className="text-[#5B6E69]">Số tài khoản:</span>{' '}
-                    <strong className="font-mono text-sm text-[#174B4A] tracking-wider">
-                      {hotelProviderVi.w105.detailDrawer.bankInfoCard.accountNumber}
-                    </strong>
-                  </p>
-                  <p className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[#5B6E69]">Cú pháp chuyển khoản:</span>{' '}
-                    <code className="font-mono bg-[#F7F5EF] px-2 py-0.5 rounded border border-[#DCE2DD] font-bold text-[#174B4A]">
-                      {hotelProviderVi.w105.detailDrawer.bankInfoCard.transferContent(selectedStatement.statementCode, 'HOIAN')}
-                    </code>
-                  </p>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p>
+                      <span className="text-[#5B6E69]">Số tài khoản:</span>{' '}
+                      <strong className="font-mono text-sm text-[#174B4A] tracking-wider">
+                        {hotelProviderVi.w105.detailDrawer.bankInfoCard.accountNumber}
+                      </strong>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(hotelProviderVi.w105.detailDrawer.bankInfoCard.accountNumber, 'Số tài khoản')}
+                      className="px-2 py-0.5 text-[10px] font-semibold text-[#174B4A] bg-[#E8F7F4] hover:bg-[#D1EFEA] rounded border border-[#B2DFDB] transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                      <span>Sao chép</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[#5B6E69]">Cú pháp chuyển khoản:</span>{' '}
+                      <code className="font-mono bg-[#F7F5EF] px-2 py-0.5 rounded border border-[#DCE2DD] font-bold text-[#174B4A]">
+                        {hotelProviderVi.w105.detailDrawer.bankInfoCard.transferContent(selectedStatement.statementCode, 'HOIAN')}
+                      </code>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(hotelProviderVi.w105.detailDrawer.bankInfoCard.transferContent(selectedStatement.statementCode, 'HOIAN'), 'Cú pháp chuyển khoản')}
+                      className="px-2 py-0.5 text-[10px] font-semibold text-[#174B4A] bg-[#E8F7F4] hover:bg-[#D1EFEA] rounded border border-[#B2DFDB] transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                      <span>Sao chép</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
