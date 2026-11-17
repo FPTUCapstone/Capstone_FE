@@ -1,8 +1,18 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AccountModerationForm } from '@/features/admin/user-accounts/components/AccountModerationForm';
-import { accountDate, accountSession, canManageAccount, fetchAccounts, type AccountDetail } from '@/features/admin/user-accounts/server/accounts';
+import { accountDate, accountSession, accountTimestamp, canManageAccount, fetchAccounts, type AccountDetail } from '@/features/admin/user-accounts/server/accounts';
 import { parseUserAccountRouteId } from '@/features/admin/user-accounts/server/userAccountRouteId';
+
+const actionLabels = new Map([
+  ['USER_ACCOUNT_LOCKED', 'Locked'],
+  ['USER_ACCOUNT_UNLOCKED', 'Unlocked'],
+  ['TOUR_OPERATOR_AUTO_LOCKED', 'Automatically locked'],
+  ['TOUR_OPERATOR_UNLOCKED', 'Unlocked after debt recovery'],
+  ['ApproveOperatorApplication', 'Application approved'],
+  ['RejectOperatorApplication', 'Application rejected'],
+  ['ResubmitOperatorApplication', 'Application resubmitted'],
+]);
 
 export default async function UserAccountDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const session = await accountSession();
@@ -19,7 +29,9 @@ export default async function UserAccountDetailPage({ params }: { params: Promis
   return (
     <section className="max-w-2xl space-y-5">
       <Link className="underline" href="/admin/users">Back to user accounts</Link>
-      {!detail ? <p role="alert">Account details could not be loaded.</p> : <>
+      {!detail ? <p role="alert">{response?.status === 403
+        ? 'You do not have permission to view user accounts.'
+        : 'Account details could not be loaded.'}</p> : <>
         <h1 className="text-2xl font-semibold">{detail.account.fullName}</h1>
         <dl className="grid grid-cols-2 gap-2">
           <dt>Email</dt><dd>{detail.account.email ?? '—'}</dd>
@@ -27,14 +39,19 @@ export default async function UserAccountDetailPage({ params }: { params: Promis
           <dt>Status</dt><dd>{detail.account.status}</dd>
           <dt>Registered</dt><dd>{accountDate(detail.account.createdAtUtc)}</dd>
           <dt>Last sign-in</dt><dd>{accountDate(detail.account.lastLoginAtUtc)}</dd>
-          <dt>Bookings</dt><dd>{detail.bookingCount}</dd>
+          <dt>Associated bookings</dt><dd>{detail.bookingCount ?? 'N/A'}</dd>
         </dl>
         {detail.account.status !== 'Inactive' && <AccountModerationForm
           accountId={String(userId)} locked={detail.account.status === 'Locked'} />}
         <h2 className="text-lg font-semibold">Moderation history</h2>
         {detail.moderationHistory.length === 0 ? <p>No moderation history.</p> :
           <ul className="space-y-2">{detail.moderationHistory.map((item, index) => (
-            <li key={index}>{accountDate(item.atUtc)} · {item.action === 'USER_ACCOUNT_LOCKED' ? 'Locked' : 'Unlocked'} · {item.reason}</li>
+            <li key={index}>
+              <time dateTime={item.atUtc}>{accountTimestamp(item.atUtc)}</time>
+              {' · '}{actionLabels.get(item.action) ?? 'Account moderation'}
+              {' · '}{item.actorAttribution}
+              {item.reason ? ` · ${item.reason}` : ''}
+            </li>
           ))}</ul>}
       </>}
     </section>
