@@ -316,6 +316,17 @@ export const DEMO_STATEMENTS: StatementItem[] = [
     reportedAt: '2026-11-05T10:15:00Z',
     confirmedAt: '2026-11-06T14:20:00Z',
     confirmedByStaffId: 101,
+    breakdown: [
+      {
+        id: 'bk-4',
+        bookingCode: 'HBR-20261025-091',
+        roomOption: 'Superior Garden View',
+        guestName: 'Phạm Hồng Nhung',
+        checkoutDate: '2026-10-27',
+        actualAmount: 1450000,
+        commissionAmount: 145000,
+      },
+    ],
   },
   {
     id: 'stmt-003',
@@ -329,11 +340,18 @@ export const DEMO_STATEMENTS: StatementItem[] = [
     totalRevenue: 38200000,
     commissionAmount: 3820000,
     dueDate: '2026-10-07',
-    status: 'Paid',
-    bankReference: 'VCB-20261004-874102',
-    reportedAt: '2026-10-04T16:00:00Z',
-    confirmedAt: '2026-10-05T09:10:00Z',
-    confirmedByStaffId: 101,
+    status: 'Overdue',
+    breakdown: [
+      {
+        id: 'bk-6',
+        bookingCode: 'HBR-20260915-022',
+        roomOption: 'Superior Garden View',
+        guestName: 'Đặng Tuấn Kiệt',
+        checkoutDate: '2026-09-17',
+        actualAmount: 1450000,
+        commissionAmount: 145000,
+      },
+    ],
   },
   {
     id: 'stmt-004',
@@ -348,5 +366,16 @@ export const DEMO_STATEMENTS: StatementItem[] = [
     commissionAmount: 2775000,
     dueDate: '2026-12-07',
     status: 'Issued',
+    breakdown: [
+      {
+        id: 'bk-7',
+        bookingCode: 'DBR-20261120-031',
+        roomOption: 'Ocean View Villa',
+        guestName: 'Nguyễn Bích Ngọc',
+        checkoutDate: '2026-11-22',
+        actualAmount: 3500000,
+        commissionAmount: 350000,
+      },
+    ],
   },
 ];

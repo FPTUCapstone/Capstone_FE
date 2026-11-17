@@ -5,8 +5,12 @@ import { ADMIN_ACCESS_TOKEN_COOKIE, isSameOriginRequest, verifyAdminSessionFromC
 import { fetchBackend } from '@/lib/server/backend';
 
 const PROVIDER_PATH = '/api/v1/provider/service-booking-requests';
-const SAFE_CODES = new Set(['MSG01', 'MSG05', 'MSG34', 'MSG123', 'MSG126', 'MSG127', 'MSG133', 'MSG143', 'MSG202', 'auth.password_change_required', 'MSG_PHONE_DUP', 'ServiceProviderRequest.Forbidden', 'ServiceProviderRequest.NotFound', 'ServiceProviderRequest.InvalidInput', 'ServiceProviderRequest.InvalidState', 'ServiceProviderRequest.VersionConflict', 'ServiceProviderRequest.IdempotencyMismatch']);
+const PROVIDER_STATEMENTS_PATH = '/api/v1/provider/commission-statements';
+const STAFF_RECONCILIATION_PATH = '/api/v1/admin/commercial-settlements/reconciliation';
+const SAFE_CODES = new Set(['MSG01', 'MSG05', 'MSG34', 'MSG123', 'MSG126', 'MSG127', 'MSG133', 'MSG143', 'MSG172', 'MSG202', 'MSG207', 'MSG208', 'MSG209', 'MSG210', 'auth.password_change_required', 'MSG_PHONE_DUP', 'ServiceProviderRequest.Forbidden', 'ServiceProviderRequest.NotFound', 'ServiceProviderRequest.InvalidInput', 'ServiceProviderRequest.InvalidState', 'ServiceProviderRequest.VersionConflict', 'ServiceProviderRequest.IdempotencyMismatch', 'CommissionStatement.Forbidden', 'CommissionStatement.NotFound', 'CommissionStatement.InvalidInput', 'CommissionStatement.InvalidState', 'CommissionStatement.MissingBankReference', 'CommissionStatement.AlreadyPaid', 'CommissionStatement.SystemError']);
 const QUERY_KEYS = ['status', 'requestedDateFrom', 'requestedDateTo', 'keyword', 'pageNumber', 'pageSize'];
+const STATEMENT_QUERY_KEYS = ['status', 'period', 'keyword', 'pageNumber', 'pageSize'];
+const RECONCILIATION_QUERY_KEYS = ['providerId', 'status', 'period', 'keyword', 'pageNumber', 'pageSize'];
 
 function json(body: unknown, status = 200): Response {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -144,4 +148,127 @@ export async function proxyProvisionAccount(request: Request, kind: 'staff' | 'p
       serviceProviderId: data.serviceProviderId, linkedPoiIds: data.linkedPoiIds, emailDeliveryStatus: data.emailDeliveryStatus,
     } }, response.status);
   } catch { return failure(503); }
+}
+
+export async function proxyProviderStatements(
+  request: Request,
+  id?: string,
+  action?: 'report-payment'
+): Promise<Response> {
+  if (id !== undefined && !/^[1-9]\d{0,18}$/.test(id)) return failure(400);
+  if (request.method !== (action ? 'POST' : 'GET')) return failure(405);
+  if (action && !isSameOriginRequest(request)) return failure(403);
+
+  try {
+    const auth = await providerServerContext();
+    if (!auth) return failure(401);
+    if (auth.role !== 'ServiceProvider' || auth.mustChangePassword) return failure(403);
+
+    const headers: Record<string, string> = { Authorization: `Bearer ${auth.token}` };
+    let path = id ? `${PROVIDER_STATEMENTS_PATH}/${id}` : PROVIDER_STATEMENTS_PATH;
+    let payload: string | undefined;
+
+    if (action === 'report-payment') {
+      const body = await readBody(request);
+      if (body instanceof Response) return body;
+      if (typeof body.bankTransferReference !== 'string' || !body.bankTransferReference.trim()) {
+        return failure(400, { errorCode: 'MSG172' });
+      }
+      payload = JSON.stringify({ bankTransferReference: body.bankTransferReference.trim() });
+      path += '/report-payment';
+      headers['Content-Type'] = 'application/json';
+      const key = request.headers.get('idempotency-key');
+      if (key) headers['Idempotency-Key'] = key;
+    } else if (!id) {
+      const incoming = new URL(request.url).searchParams;
+      const query = new URLSearchParams();
+      for (const name of STATEMENT_QUERY_KEYS) {
+        const value = incoming.get(name);
+        if (value) query.set(name, value);
+      }
+      if (query.size) path += `?${query}`;
+    }
+
+    const response = await fetchBackend(path, {
+      method: request.method,
+      headers,
+      body: payload,
+      signal: request.signal,
+    });
+    const result: unknown = await response.json().catch(() => null);
+    if (!response.ok) return failure(response.status, result);
+    return result && typeof result === 'object'
+      ? json({ success: true, data: 'data' in result ? result.data : result }, response.status)
+      : failure(502);
+  } catch {
+    return failure(503);
+  }
+}
+
+export async function proxyStaffReconciliation(
+  request: Request,
+  id?: string,
+  action?: 'reconcile' | 'generate' | 'process-overdue'
+): Promise<Response> {
+  if (id !== undefined && !/^[1-9]\d{0,18}$/.test(id)) return failure(400);
+  if (request.method !== (action ? 'POST' : 'GET')) return failure(405);
+  if (action && !isSameOriginRequest(request)) return failure(403);
+
+  try {
+    const store = await cookies();
+    const session = verifyAdminSessionFromCookies(store);
+    if (!session) return failure(401);
+    if ((session.role !== 'Staff' && session.role !== 'Administrator') || session.mustChangePassword) {
+      return failure(403);
+    }
+    const token = store.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+    if (!token) return failure(401);
+
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    let path = id ? `${STAFF_RECONCILIATION_PATH}/${id}` : STAFF_RECONCILIATION_PATH;
+    let payload: string | undefined;
+
+    if (action === 'reconcile') {
+      const body = await readBody(request);
+      if (body instanceof Response) return body;
+      path += '/reconcile';
+      headers['Content-Type'] = 'application/json';
+      payload = JSON.stringify({
+        notes: typeof body.notes === 'string' ? body.notes.trim() : null,
+      });
+    } else if (action === 'generate') {
+      path += '/generate';
+      if (request.headers.get('content-type')?.includes('application/json')) {
+        const body = await readBody(request);
+        if (!(body instanceof Response)) {
+          headers['Content-Type'] = 'application/json';
+          payload = JSON.stringify(body);
+        }
+      }
+    } else if (action === 'process-overdue') {
+      path += '/process-overdue';
+    } else if (!id) {
+      const incoming = new URL(request.url).searchParams;
+      const query = new URLSearchParams();
+      for (const name of RECONCILIATION_QUERY_KEYS) {
+        const value = incoming.get(name);
+        if (value) query.set(name, value);
+      }
+      if (query.size) path += `?${query}`;
+    }
+
+    const response = await fetchBackend(path, {
+      method: request.method,
+      headers,
+      body: payload,
+      signal: request.signal,
+    });
+    const result: unknown = await response.json().catch(() => null);
+    if (!response.ok) return failure(response.status, result);
+    return result && typeof result === 'object'
+      ? json({ success: true, data: 'data' in result ? result.data : result }, response.status)
+      : failure(502);
+  } catch {
+    return failure(503);
+  }
 }

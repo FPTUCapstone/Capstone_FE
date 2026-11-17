@@ -11,6 +11,7 @@ import { ROUTES } from '@/lib/routes';
 
 import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
+import { registerExplanationPending } from '../utils/explanationRefresh';
 import {
   buildVietnamStartAtIso,
   calculateTripEnd,
@@ -362,6 +363,8 @@ export function CreateSchedulingRequestForm({
       const result = await createSchedulingRequest(payload, { idempotencyKey });
       setOptimizationPhase('Hoàn tất! Lịch trình đã sẵn sàng.');
       setGeneratedItinerary(result.data);
+      // UC-10: the detail page refreshes once the AI sentences are written in the background.
+      registerExplanationPending(result.data);
 
       setFeedback({
         tone: 'success',

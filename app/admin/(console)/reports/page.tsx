@@ -18,7 +18,7 @@ export interface StatisticalReportsPageProps {
   readonly searchParams?: Promise<{ readonly demo?: string | string[] }>;
 }
 
-export default async function StatisticalReportsPage(_props: StatisticalReportsPageProps = {}) {
+export default async function StatisticalReportsPage(_props: StatisticalReportsPageProps) {
   void _props;
   let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
   try {

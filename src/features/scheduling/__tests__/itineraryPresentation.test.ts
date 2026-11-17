@@ -12,6 +12,7 @@ import {
   unfitReasonLabel,
   lunchCardAfterIndex,
   stopDisplayName,
+  stopExplanation,
 } from '../utils/itineraryPresentation';
 import { formatPriceLabel } from '@/lib/priceLabel';
 import { ItineraryDetailItemDto } from '../types/schedulingTypes';
@@ -213,5 +214,26 @@ describe('lunchCardAfterIndex (D11-1)', () => {
 
   it('falls back to the stop times when the trip window is unknown', () => {
     expect(lunchCardAfterIndex(day, null, null)).toBe(1);
+  });
+});
+
+describe('stopExplanation (UC-10)', () => {
+  it('prefers the AI sentence over the recommendation reason', () => {
+    expect(stopExplanation({ friendlyExplanation: 'Câu của AI', recommendationReason: 'Lý do mẫu' })).toBe('Câu của AI');
+  });
+
+  it.each([null, undefined, '', '   ', '\n\t'])('falls back to the reason when friendlyExplanation is %j', (friendly) => {
+    expect(stopExplanation({ friendlyExplanation: friendly, recommendationReason: 'Lý do mẫu' })).toBe('Lý do mẫu');
+  });
+
+  it('returns null when both are empty or only whitespace', () => {
+    expect(stopExplanation({ friendlyExplanation: '  ', recommendationReason: ' ' })).toBeNull();
+    expect(stopExplanation({})).toBeNull();
+    expect(stopExplanation({ friendlyExplanation: null, recommendationReason: null })).toBeNull();
+  });
+
+  it('trims the sentence it returns', () => {
+    expect(stopExplanation({ friendlyExplanation: '  Câu của AI  ' })).toBe('Câu của AI');
+    expect(stopExplanation({ recommendationReason: '  Lý do mẫu ' })).toBe('Lý do mẫu');
   });
 });

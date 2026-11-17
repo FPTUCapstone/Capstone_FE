@@ -28,7 +28,9 @@ import {
   SuggestionQuery,
   vietnamDayKey,
 } from '../types/schedulingTypes';
+import { mergeExplanations } from '../utils/explanationRefresh';
 import { handOffEdit, LastItineraryEdit, takeEditHandoff } from '../utils/itineraryEditHandoff';
+import { useExplanationRefresh } from './useExplanationRefresh';
 import {
   describeProvenance,
   describeStopInfeasible,
@@ -291,6 +293,18 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
       isMounted = false;
     };
   }, [itineraryId, status, userId, role]);
+
+  // UC-10: after a create that answered explanationPending, load the detail again until the AI sentences arrive.
+  useExplanationRefresh({
+    itineraryId: Number(itineraryId),
+    itinerary,
+    onFresh: (fresh) =>
+      setItinerary((current) =>
+        current !== null && current.itineraryId === fresh.itineraryId
+          ? mergeExplanations(current, fresh)
+          : current,
+      ),
+  });
 
   const errorPresentation = getErrorPresentation(error?.status);
   const signInHref = `${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.itinerary(itineraryId))}`;
