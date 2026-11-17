@@ -14,7 +14,7 @@ import {
   partialRefundMessages as MSG,
 } from "../resources/partialRefundMessages";
 
-type Decision = "Accept" | "Decline";
+type Decision = "Accept" | "CounterOffer" | "Decline";
 
 type PartialRefundProposal = {
   complaintId: number;
@@ -24,6 +24,11 @@ type PartialRefundProposal = {
   responseDeadlineUtc: string;
   status: string;
   canRespond: boolean;
+  proposalReason?: string | null;
+  round?: number;
+  canCounterOffer?: boolean;
+  canDeclineFinally?: boolean;
+  refundableAmount?: number;
 };
 
 type Notice = { tone: "success" | "error"; text: string };
@@ -59,7 +64,7 @@ function statusCopy(proposal: PartialRefundProposal) {
         label: "Awaiting your response",
         tone: "bg-amber-100 text-amber-800",
         description:
-          "Accept or decline before the response deadline (Vietnam time). No response by then counts as Decline.",
+          "Accept the offer, or send one counter-offer before the response deadline (Vietnam time).",
       };
     case "Approved":
       return {
@@ -85,6 +90,8 @@ function statusCopy(proposal: PartialRefundProposal) {
 function errorText(status: number, errorCode: unknown): string {
   if (status === 403 || errorCode === CODES.forbidden) return MSG.MSG126;
   if (status === 404 || errorCode === CODES.notFound) return MSG.notFound;
+  if (errorCode === CODES.reasonRequired) return "Please provide a reason before sending your response.";
+  if (errorCode === CODES.counterAmountInvalid) return "Enter a requested refund amount greater than zero and no higher than the refundable amount.";
   return MSG.MSG127;
 }
 
@@ -157,7 +164,7 @@ function ProposalScreen({ complaintId }: { complaintId: string }) {
     if (sessionStatus === "unauthenticated") router.replace(signInUrl);
   }, [router, sessionStatus, signInUrl]);
 
-  async function submit(decision: Decision) {
+  async function submit(decision: Decision, reason?: string, requestedAmount?: number) {
     setSubmitting(true);
     setNotice(null);
     try {
@@ -166,7 +173,7 @@ function ProposalScreen({ complaintId }: { complaintId: string }) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ decision }),
+          body: JSON.stringify({ decision, reason, requestedAmount }),
         },
       );
       if (response.status === 401) {
@@ -180,7 +187,9 @@ function ProposalScreen({ complaintId }: { complaintId: string }) {
             ? outcome.status
             : decision === "Accept"
               ? "Approved"
-              : "Declined";
+              : decision === "CounterOffer"
+                ? "AwaitingOperatorReconsideration"
+                : "Declined";
         setProposal((current) => (current ? { ...current, status, canRespond: false } : current));
         setResponded(true);
         setNotice({ tone: "success", text: MSG.MSG164 });
@@ -222,6 +231,8 @@ function ProposalScreen({ complaintId }: { complaintId: string }) {
         responded={responded}
         submitting={submitting}
         onChoose={setPendingDecision}
+        onCounterOffer={(reason, amount) => void submit("CounterOffer", reason, amount)}
+        onFinalDecline={(reason) => void submit("Decline", reason)}
       />
     ) : null;
 
@@ -256,12 +267,16 @@ function ProposalDetails({
   responded,
   submitting,
   onChoose,
+  onCounterOffer,
+  onFinalDecline,
 }: {
   proposal: PartialRefundProposal;
   notice: Notice | null;
   responded: boolean;
   submitting: boolean;
   onChoose: (decision: Decision) => void;
+  onCounterOffer: (reason: string, amount: number) => void;
+  onFinalDecline: (reason: string) => void;
 }) {
   const copy = statusCopy(proposal);
   return (
@@ -293,7 +308,9 @@ function ProposalDetails({
             {formatDeadline(proposal.responseDeadlineUtc)}
           </dd>
         </div>
+        {proposal.proposalReason ? <div className="px-4 py-3"><dt className="text-slate-500">Operator reason</dt><dd className="mt-1 whitespace-pre-wrap text-slate-800">{proposal.proposalReason}</dd></div> : null}
       </dl>
+      {proposal.canRespond && proposal.canCounterOffer ? <CounterOfferForm maxAmount={proposal.refundableAmount ?? proposal.proposedAmount} submitting={submitting} onSubmit={onCounterOffer} /> : null}
       {proposal.canRespond ? (
         <div className="flex flex-col gap-3 sm:flex-row">
           <ActionButton
@@ -301,22 +318,25 @@ function ProposalDetails({
             className="flex-1"
             disabled={submitting}
             onClick={() => onChoose("Accept")}
-          >
-            Accept
-          </ActionButton>
-          <ActionButton
-            type="button"
-            variant="outline"
-            className="flex-1"
-            disabled={submitting}
-            onClick={() => onChoose("Decline")}
-          >
-            Decline
-          </ActionButton>
+          >Accept</ActionButton>
+          {proposal.canDeclineFinally ? <FinalDeclineForm submitting={submitting} onSubmit={onFinalDecline} /> : null}
         </div>
       ) : null}
     </div>
   );
+}
+
+function CounterOfferForm({ maxAmount, submitting, onSubmit }: { maxAmount: number; submitting: boolean; onSubmit: (reason: string, amount: number) => void }) {
+  const [reason, setReason] = useState("");
+  const [amount, setAmount] = useState("");
+  const numericAmount = Number(amount);
+  const valid = reason.trim().length > 0 && Number.isFinite(numericAmount) && numericAmount > 0 && numericAmount <= maxAmount;
+  return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><h2 className="font-semibold text-slate-900">Not satisfied with this offer?</h2><p className="mt-1 text-xs text-slate-600">You may submit one counter-offer. The Tour Operator then has one final opportunity to revise it.</p><label className="mt-3 block text-sm font-medium" htmlFor="counter-offer-amount">Requested refund amount (maximum {formatVnd(maxAmount)})</label><input id="counter-offer-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" /><label className="mt-3 block text-sm font-medium" htmlFor="counter-offer-reason">Why is this offer inadequate?</label><textarea id="counter-offer-reason" value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 p-3" /><ActionButton type="button" variant="outline" className="mt-3" disabled={submitting || !valid} onClick={() => onSubmit(reason.trim(), numericAmount)}>Send counter-offer</ActionButton></div>;
+}
+
+function FinalDeclineForm({ submitting, onSubmit }: { submitting: boolean; onSubmit: (reason: string) => void }) {
+  const [reason, setReason] = useState("");
+  return <div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><label className="block text-sm font-medium" htmlFor="final-decline-reason">Reason for final decline</label><textarea id="final-decline-reason" value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} className="mt-1 min-h-20 w-full rounded-lg border border-slate-300 p-3" /><ActionButton type="button" variant="outline" className="mt-3" disabled={submitting || !reason.trim()} onClick={() => onSubmit(reason.trim())}>Decline final offer</ActionButton></div>;
 }
 
 function ConfirmDecisionDialog({

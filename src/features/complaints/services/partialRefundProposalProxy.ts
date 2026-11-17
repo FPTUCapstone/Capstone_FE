@@ -9,6 +9,8 @@ const BACKEND_CODES = new Set<string>([
   CODES.notFound,
   CODES.forbidden,
   CODES.responseClosed,
+  CODES.reasonRequired,
+  CODES.counterAmountInvalid,
 ]);
 
 function json(body: unknown, status: number): Response {
@@ -97,7 +99,7 @@ export async function proxyGetPartialRefundProposal(
   return forward(request, auth.token, backendPath(complaintId), { method: "GET" });
 }
 
-/** BFF boundary for UC-75 step 4: the Traveler accepts or declines (no other option exists). */
+/** BFF boundary for UC-75 step 4: the Traveler accepts, counter-offers once, or declines the final offer. */
 export async function proxyRespondToPartialRefundProposal(
   request: Request,
   complaintId: string,
@@ -109,8 +111,24 @@ export async function proxyRespondToPartialRefundProposal(
     incoming && typeof incoming === "object" && "decision" in incoming
       ? incoming.decision
       : undefined;
-  if (decision !== "Accept" && decision !== "Decline") {
+  if (decision !== "Accept" && decision !== "CounterOffer" && decision !== "Decline") {
     return json({ errorCode: CODES.invalidDecision }, 400);
+  }
+
+  const reason =
+    incoming && typeof incoming === "object" && "reason" in incoming && typeof incoming.reason === "string"
+      ? incoming.reason.trim()
+      : undefined;
+  const requestedAmount =
+    incoming && typeof incoming === "object" && "requestedAmount" in incoming && typeof incoming.requestedAmount === "number"
+      ? incoming.requestedAmount
+      : undefined;
+
+  if ((decision === "CounterOffer" || decision === "Decline") && !reason) {
+    return json({ errorCode: CODES.reasonRequired }, 400);
+  }
+  if (decision === "CounterOffer" && (requestedAmount === undefined || !Number.isFinite(requestedAmount) || requestedAmount <= 0)) {
+    return json({ errorCode: CODES.counterAmountInvalid }, 400);
   }
 
   const auth = await authorize(request.signal);
@@ -118,6 +136,10 @@ export async function proxyRespondToPartialRefundProposal(
 
   return forward(request, auth.token, backendPath(complaintId, "/response"), {
     method: "POST",
-    body: JSON.stringify({ decision }),
+    body: JSON.stringify({
+      decision,
+      ...(decision === "Accept" ? {} : { reason }),
+      ...(decision === "CounterOffer" ? { requestedAmount: requestedAmount! } : {}),
+    }),
   });
 }

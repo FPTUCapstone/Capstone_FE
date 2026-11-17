@@ -5,10 +5,14 @@ import { ROUTES } from '@/lib/routes';
 
 type Filters = { search?: string; role?: string; status?: string; registeredFrom?: string; registeredTo?: string; page?: string };
 
-export default async function UserAccountsPage({ searchParams }: { searchParams?: Promise<Filters> }) {
+type PageProps = { searchParams?: Promise<Filters> };
+
+export default async function UserAccountsPage(): Promise<React.JSX.Element | never>;
+export default async function UserAccountsPage(props: PageProps): Promise<React.JSX.Element | never>;
+export default async function UserAccountsPage(props: PageProps = {}) {
   const session = await accountSession();
   if (!session) return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
-  const filters = (await searchParams) ?? {};
+  const filters = (await props.searchParams) ?? {};
   const query = new URLSearchParams();
   for (const key of ['search', 'role', 'status', 'registeredFrom', 'registeredTo', 'page'] as const) {
     const value = filters[key];
