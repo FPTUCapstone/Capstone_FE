@@ -7,6 +7,13 @@ const ERROR_CODES: Record<string, keyof typeof hotelProviderEn.messages> = {
   'ServiceProviderRequest.InvalidState': 'MSG133',
   'ServiceProviderRequest.VersionConflict': 'MSG133',
   'ServiceProviderRequest.IdempotencyMismatch': 'MSG133',
+  'CommissionStatement.Forbidden': 'MSG126',
+  'CommissionStatement.NotFound': 'MSG126',
+  'CommissionStatement.InvalidInput': 'MSG143',
+  'CommissionStatement.InvalidState': 'MSG133',
+  'CommissionStatement.MissingBankReference': 'MSG172',
+  'CommissionStatement.AlreadyPaid': 'MSG133',
+  'CommissionStatement.SystemError': 'MSG127',
 };
 
 export class WorkflowError extends Error {
