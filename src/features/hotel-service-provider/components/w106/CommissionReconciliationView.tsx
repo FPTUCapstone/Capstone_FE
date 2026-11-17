@@ -490,6 +490,46 @@ export function CommissionReconciliationView() {
               )}
             </div>
 
+            {/* Completed Bookings Audit Breakdown */}
+            {inspectStatement.breakdown && inspectStatement.breakdown.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-[#1C2928] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] text-[#174B4A]">
+                    checklist
+                  </span>
+                  <span>Danh sách đơn hoàn thành ({inspectStatement.breakdown.length})</span>
+                </h4>
+                <div className="border border-[#E8ECE9] rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                  <table className="w-full text-left text-[11px] border-collapse">
+                    <thead className="bg-[#F7F5EF] text-[#5B6E69] font-semibold border-b border-[#E8ECE9]">
+                      <tr>
+                        <th scope="col" className="py-2 px-3">Mã đơn</th>
+                        <th scope="col" className="py-2 px-2.5">Gói dịch vụ</th>
+                        <th scope="col" className="py-2 px-2.5">Du khách</th>
+                        <th scope="col" className="py-2 px-2.5 text-right">Doanh thu</th>
+                        <th scope="col" className="py-2 px-3 text-right">Hoa hồng (10%)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E8ECE9] text-[#1C2928]">
+                      {inspectStatement.breakdown.map((row) => (
+                        <tr key={row.id} className="hover:bg-[#F7F5EF]/50">
+                          <td className="py-2 px-3 font-mono font-medium text-[#174B4A]">
+                            {row.bookingCode}
+                          </td>
+                          <td className="py-2 px-2.5 truncate max-w-[120px]">{row.roomOption}</td>
+                          <td className="py-2 px-2.5 truncate max-w-[100px]">{row.guestName}</td>
+                          <td className="py-2 px-2.5 text-right font-mono">{formatVnd(row.actualAmount)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-[#174B4A]">
+                            {formatVnd(row.commissionAmount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E8ECE9]">
               <button

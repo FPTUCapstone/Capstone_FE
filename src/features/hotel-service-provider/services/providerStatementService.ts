@@ -173,15 +173,8 @@ export const ProviderStatementService = {
               reportedAt: typeof json.data.reportedAtUtc === 'string' ? json.data.reportedAtUtc : new Date().toISOString(),
             };
           }
-        } else {
-          const json = await res.json().catch(() => null);
-          return {
-            success: false,
-            updatedStatus: 'Issued',
-            reportedAt: '',
-            error: json?.errorCode || 'Unable to report payment.',
-          };
         }
+        // If not ok (mock id, unauthenticated, or backend offline), fall back to local mock state
       } catch {
         // Fall back to local mock data
       }

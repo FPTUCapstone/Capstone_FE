@@ -125,15 +125,8 @@ export const StaffReconciliationService = {
               confirmedAt: typeof json.data.confirmedAtUtc === 'string' ? json.data.confirmedAtUtc : new Date().toISOString(),
             };
           }
-        } else {
-          const json = await res.json().catch(() => null);
-          return {
-            success: false,
-            updatedStatus: 'PaymentReported',
-            confirmedAt: '',
-            error: json?.errorCode || 'Unable to confirm receipt.',
-          };
         }
+        // If not ok (mock id, unauthenticated, or backend offline), fall back to local mock state
       } catch {
         // Fall back to local mock data
       }

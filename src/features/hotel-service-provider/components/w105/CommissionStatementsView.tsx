@@ -384,10 +384,22 @@ export function CommissionStatementsView() {
                   </p>
 
                   <div>
-                    <label htmlFor="w105-bank-ref" className="block text-xs font-semibold text-[#1C2928] mb-1">
-                      {hotelProviderVi.w105.detailDrawer.referenceInputLabel}{' '}
-                      <span className="text-[#DC2626]" aria-hidden="true">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="w105-bank-ref" className="block text-xs font-semibold text-[#1C2928]">
+                        {hotelProviderVi.w105.detailDrawer.referenceInputLabel}{' '}
+                        <span className="text-[#DC2626]" aria-hidden="true">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBankRefInput('VCB-202611-889900');
+                          if (bankRefError) setBankRefError('');
+                        }}
+                        className="text-[10px] text-[#174B4A] hover:underline font-semibold cursor-pointer"
+                      >
+                        + Điền mã mẫu
+                      </button>
+                    </div>
                     <input
                       id="w105-bank-ref"
                       type="text"
