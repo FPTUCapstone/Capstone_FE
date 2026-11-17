@@ -56,7 +56,7 @@ describe('UC-47 User Accounts Directory page route', () => {
   it('redirects missing session cookies to login with returnUrl', async () => {
     mocks.getCookie.mockReturnValue(undefined);
 
-    await UserAccountsPage();
+    await UserAccountsPage({});
 
     expect(mocks.redirect).toHaveBeenCalledWith(
       '/admin/login?returnUrl=%2Fadmin%2Fusers',
@@ -68,7 +68,7 @@ describe('UC-47 User Accounts Directory page route', () => {
       name === ADMIN_ACCESS_TOKEN_COOKIE ? { value: 'unsealed-token' } : undefined,
     );
 
-    await UserAccountsPage();
+    await UserAccountsPage({});
 
     expect(mocks.redirect).toHaveBeenCalledWith(
       '/admin/login?returnUrl=%2Fadmin%2Fusers',
@@ -89,7 +89,7 @@ describe('UC-47 User Accounts Directory page route', () => {
       return undefined;
     });
 
-    await UserAccountsPage();
+    await UserAccountsPage({});
 
     expect(mocks.redirect).toHaveBeenCalledWith(
       '/admin/login?returnUrl=%2Fadmin%2Fusers',
@@ -110,7 +110,7 @@ describe('UC-47 User Accounts Directory page route', () => {
       return undefined;
     });
 
-    await UserAccountsPage();
+    await UserAccountsPage({});
 
     expect(mocks.redirect).toHaveBeenCalledWith(
       '/admin/login?returnUrl=%2Fadmin%2Fusers',
@@ -130,7 +130,7 @@ describe('UC-47 User Accounts Directory page route', () => {
       return undefined;
     });
 
-    await UserAccountsPage();
+    await UserAccountsPage({});
 
     expect(mocks.redirect).toHaveBeenCalledWith(
       '/admin/login?returnUrl=%2Fadmin%2Fusers',
@@ -140,7 +140,7 @@ describe('UC-47 User Accounts Directory page route', () => {
   it('renders directory when valid Administrator session is present', async () => {
     mockSealedCookies('Administrator');
 
-    const view = await UserAccountsPage();
+    const view = await UserAccountsPage({});
 
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(view).toBeTruthy();
@@ -149,7 +149,7 @@ describe('UC-47 User Accounts Directory page route', () => {
   it('accepts a valid Staff session', async () => {
     mockSealedCookies('Staff');
 
-    const view = await UserAccountsPage();
+    const view = await UserAccountsPage({});
 
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(view).toBeTruthy();
