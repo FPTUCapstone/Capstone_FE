@@ -78,5 +78,6 @@ Behavior: takes the handoff once per mount (a ref, so a StrictMode effect re-run
 
 ### Task 5: Verification and docs
 - [ ] `npx vitest run src/features/scheduling` and `npx eslint src/features/scheduling` pass; `npx tsc --noEmit` shows no error under `src/features/scheduling`.
-- [ ] Add one paragraph on the Web behavior to `docs/UC10-...` if such a doc exists, otherwise skip. Commit.
+- [x] No UC-10 behavior doc exists in `docs/` (only `WEB_SCOPE_MATRIX.md`, a scope matrix); the spec in `specs/` is the record. Skipped.
+- Result (2026-11-17): scheduling tests 396 passed (351 baseline + 45 new); eslint and tsc clean under `src/features/scheduling`. Full suite: 4133 passed, 11 suites fail to load only because `gsap` and `@microsoft/signalr` are not installed in this checkout; the failing files are outside this change. `npm run build` was not run for the same reason.
 - [ ] Present merge / PR / keep / discard to the developer (FE AGENTS.md: no push or PR unprompted).
