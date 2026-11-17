@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 
 vi.mock('server-only', () => ({}));
 
@@ -144,14 +145,20 @@ describe('UC-47 User Accounts Directory page route', () => {
 
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(view).toBeTruthy();
+    render(view!);
+    expect(screen.getByRole('link', { name: 'Create Staff Account' }).getAttribute('href'))
+      .toBe('/admin/users/create-staff');
   });
 
-  it('accepts a valid Staff session', async () => {
+  it('renders user management with the Staff provisioning entrypoint', async () => {
     mockSealedCookies('Staff');
 
     const view = await UserAccountsPage({});
 
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(view).toBeTruthy();
+    render(view!);
+    expect(screen.getByRole('link', { name: 'Create Service Provider Account' }).getAttribute('href'))
+      .toBe('/admin/service-providers/create');
   });
 });

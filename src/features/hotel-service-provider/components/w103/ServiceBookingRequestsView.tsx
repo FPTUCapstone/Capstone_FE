@@ -8,16 +8,17 @@ import { AccessibleSelect } from '../common/AccessibleSelect';
 import { ProviderBookingService } from '../../services/providerBookingService';
 import type { BookingRequestItem, BookingRequestStatus } from '../../types';
 import { formatDate, formatTime, formatDateTime } from '../../utils/formatters';
-import { hotelProviderVi } from '../../resources/vi';
+import { hotelProviderEn } from '../../resources/en';
+import { WorkflowError } from '../../services/workflowClient';
 
 export function ServiceBookingRequestsView() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL query state preservation
+  // URL query state preservation (CR-01)
   const rawStatus = searchParams.get('status');
   const initialStatus: BookingRequestStatus | 'All' =
-    rawStatus && rawStatus !== 'All' ? (rawStatus as BookingRequestStatus) : 'All';
+    rawStatus && ['PendingConfirmation', 'Confirmed', 'Rejected', 'Cancelled', 'Expired', 'Completed', 'NoShow'].includes(rawStatus) ? rawStatus as BookingRequestStatus : 'All';
   const initialStart = searchParams.get('startDate') || '';
   const initialEnd = searchParams.get('endDate') || '';
   const initialKeyword = searchParams.get('keyword') || '';
@@ -42,8 +43,8 @@ export function ServiceBookingRequestsView() {
     keyword: initialKeyword,
   });
 
-  const [page, setPage] = useState(Number.isFinite(initialPage) && initialPage > 0 ? initialPage : 1);
-  const pageSize = 20;
+  const [page, setPage] = useState(Number.isSafeInteger(initialPage) && initialPage > 0 ? initialPage : 1);
+  const pageSize = 20; // Mandatory per CR-01
 
   const [requests, setRequests] = useState<BookingRequestItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -62,13 +63,15 @@ export function ServiceBookingRequestsView() {
     })
       .then((data) => {
         if (!active) return;
+        const lastPage = Math.max(1, Math.ceil(data.totalCount / pageSize));
+        if (page > lastPage) { setPage(lastPage); return; }
         setRequests(data.items);
         setTotalCount(data.totalCount);
         setIsLoading(false);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!active) return;
-        setErrorMessage(hotelProviderVi.messages.MSG127);
+        setErrorMessage(error instanceof WorkflowError ? error.message : hotelProviderEn.messages.MSG127);
         setIsLoading(false);
       });
 
@@ -91,9 +94,10 @@ export function ServiceBookingRequestsView() {
     router.replace(newUrl, { scroll: false });
   }, [appliedFilters, page, router]);
 
-  // Search on explicit submit only
+  // Search on explicit submit only (CR-02)
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (startDate && endDate && startDate > endDate) { setErrorMessage('The end date must be on or after the start date.'); return; }
     setIsLoading(true);
     setErrorMessage(null);
     setPage(1);
@@ -122,42 +126,14 @@ export function ServiceBookingRequestsView() {
   };
 
   const statusOptions = [
-    { value: 'All', label: 'Tất cả trạng thái' },
-    {
-      value: 'PendingConfirmation',
-      label: hotelProviderVi.statuses.pendingConfirmation,
-      icon: 'schedule',
-    },
-    {
-      value: 'Confirmed',
-      label: hotelProviderVi.statuses.confirmed,
-      icon: 'check_circle',
-    },
-    {
-      value: 'Completed',
-      label: hotelProviderVi.statuses.completed,
-      icon: 'verified',
-    },
-    {
-      value: 'NoShow',
-      label: hotelProviderVi.statuses.noShow,
-      icon: 'person_off',
-    },
-    {
-      value: 'Rejected',
-      label: hotelProviderVi.statuses.rejected,
-      icon: 'cancel',
-    },
-    {
-      value: 'Cancelled',
-      label: hotelProviderVi.statuses.cancelled,
-      icon: 'block',
-    },
-    {
-      value: 'Expired',
-      label: hotelProviderVi.statuses.expired,
-      icon: 'timer_off',
-    },
+    { value: 'All', label: 'All Statuses' },
+    { value: 'PendingConfirmation', label: hotelProviderEn.statuses.pendingConfirmation, icon: 'schedule' },
+    { value: 'Confirmed', label: hotelProviderEn.statuses.confirmed, icon: 'check_circle' },
+    { value: 'Completed', label: hotelProviderEn.statuses.completed, icon: 'verified' },
+    { value: 'NoShow', label: hotelProviderEn.statuses.noShow, icon: 'person_off' },
+    { value: 'Rejected', label: hotelProviderEn.statuses.rejected, icon: 'cancel' },
+    { value: 'Cancelled', label: hotelProviderEn.statuses.cancelled, icon: 'block' },
+    { value: 'Expired', label: hotelProviderEn.statuses.expired, icon: 'timer_off' },
   ];
 
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
@@ -170,27 +146,27 @@ export function ServiceBookingRequestsView() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1C2928] tracking-tight">
-            {hotelProviderVi.w103.pageTitle}
+            {hotelProviderEn.w103.pageTitle}
           </h1>
           <p className="mt-1 text-xs text-[#5B6E69]">
-            {hotelProviderVi.w103.subtitle}
+            {hotelProviderEn.w103.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-[#174B4A] bg-[#E8F7F4] border border-[#B2DFDB] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
             <span className="material-symbols-outlined text-[15px]">inventory</span>
-            <span>{hotelProviderVi.w103.totalRequestsCount(totalCount)}</span>
+            <span>{hotelProviderEn.w103.totalRequestsCount(totalCount)}</span>
           </span>
         </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
+      {/* Filter & Search Toolbar (CR-02) */}
       <div className="bg-white border border-[#DCE2DD] rounded-xl p-4 shadow-xs">
         <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
           {/* Keyword Search */}
-          <div className="lg:col-span-4">
+          <div className="min-w-0 lg:col-span-3">
             <label htmlFor="w103-search" className="block text-xs font-semibold text-[#1C2928] mb-1">
-              {hotelProviderVi.common.search}
+              Search
             </label>
             <div className="relative">
               <span
@@ -201,11 +177,11 @@ export function ServiceBookingRequestsView() {
               </span>
               <input
                 id="w103-search"
-                type="text"
+                type="search"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder={hotelProviderVi.w103.searchPlaceholder}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] placeholder-[#8E9E9B] focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15 focus:border-[#174B4A] transition-colors"
+                placeholder={hotelProviderEn.w103.searchPlaceholder}
+                className="w-full pl-9 pr-3 min-h-11 py-2 text-sm bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] placeholder-[#8E9E9B] focus:outline-none focus:ring-2 focus:ring-[#174B4A] focus:border-[#174B4A]"
               />
             </div>
           </div>
@@ -213,7 +189,7 @@ export function ServiceBookingRequestsView() {
           {/* Status Filter */}
           <div className="lg:col-span-3">
             <AccessibleSelect
-              label={hotelProviderVi.w103.statusFilterLabel}
+              label={hotelProviderEn.w103.statusFilterLabel}
               options={statusOptions}
               value={selectedStatus}
               onChange={(val) => setSelectedStatus(val as BookingRequestStatus | 'All')}
@@ -223,46 +199,47 @@ export function ServiceBookingRequestsView() {
           {/* From Date */}
           <div className="lg:col-span-2">
             <label htmlFor="w103-start-date" className="block text-xs font-semibold text-[#1C2928] mb-1">
-              {hotelProviderVi.w103.startDateLabel}
+              {hotelProviderEn.w103.startDateLabel}
             </label>
             <input
               id="w103-start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15 focus:border-[#174B4A] transition-colors"
+              className="w-full px-3 min-h-11 py-2 text-sm bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A] focus:border-[#174B4A]"
             />
           </div>
 
           {/* To Date */}
           <div className="lg:col-span-2">
             <label htmlFor="w103-end-date" className="block text-xs font-semibold text-[#1C2928] mb-1">
-              {hotelProviderVi.w103.endDateLabel}
+              {hotelProviderEn.w103.endDateLabel}
             </label>
             <input
               id="w103-end-date"
+              min={startDate || undefined}
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15 focus:border-[#174B4A] transition-colors"
+              className="w-full px-3 min-h-11 py-2 text-sm bg-white border border-[#DCE2DD] rounded-lg text-[#1C2928] focus:outline-none focus:ring-2 focus:ring-[#174B4A] focus:border-[#174B4A]"
             />
           </div>
 
           {/* Buttons */}
-          <div className="lg:col-span-1 flex items-center gap-1.5">
+          <div className="lg:col-span-2 flex items-center gap-1.5">
             <button
               type="submit"
-              className="flex-1 py-2 px-3 text-xs font-semibold text-white bg-[#174B4A] hover:bg-[#103B39] rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
+              className="min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-white bg-[#174B4A] hover:bg-[#103B39] rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
             >
               <span className="material-symbols-outlined text-[15px]" aria-hidden="true">search</span>
-              <span>{hotelProviderVi.w103.applyFiltersButton}</span>
+              <span>{hotelProviderEn.w103.applyFiltersButton}</span>
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="p-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer border border-[#DCE2DD]"
-              title={hotelProviderVi.w103.resetFiltersButton}
-              aria-label={hotelProviderVi.w103.resetFiltersButton}
+              className="min-h-11 min-w-11 shrink-0 p-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer border border-[#DCE2DD]"
+              title={hotelProviderEn.w103.resetFiltersButton}
+              aria-label={hotelProviderEn.w103.resetFiltersButton}
             >
               <span className="material-symbols-outlined text-[16px]" aria-hidden="true">refresh</span>
             </button>
@@ -272,10 +249,10 @@ export function ServiceBookingRequestsView() {
 
       {/* Sorting Notice */}
       <div className="flex items-center gap-2 text-[11px] text-[#5B6E69] px-1">
-        <span className="material-symbols-outlined text-[15px] text-[#B96D4C] shrink-0">
+        <span className="material-symbols-outlined text-[15px] text-[#B96D4C]">
           info
         </span>
-        <span>{hotelProviderVi.w103.sortNotice}</span>
+        <span>{hotelProviderEn.w103.sortNotice}</span>
       </div>
 
       {/* Operational Data Table */}
@@ -285,14 +262,14 @@ export function ServiceBookingRequestsView() {
             <span className="material-symbols-outlined text-[28px] animate-spin text-[#174B4A] mb-2 block mx-auto">
               progress_activity
             </span>
-            {hotelProviderVi.common.loading}
+            Loading booking requests...
           </div>
         ) : errorMessage ? (
-          <div className="p-12 text-center text-xs text-[#DC2626]">
+          <div role="alert" className="p-12 text-center text-xs text-[#DC2626]">
             <span className="material-symbols-outlined text-[32px] mb-2 block mx-auto">
               error
             </span>
-            <p className="font-semibold text-sm mb-1">Không thể tải danh sách yêu cầu</p>
+            <p className="font-semibold text-sm mb-1">Failed to load booking requests</p>
             <p className="text-[#5B6E69] mb-4">{errorMessage}</p>
             <button
               type="button"
@@ -301,9 +278,9 @@ export function ServiceBookingRequestsView() {
                 setErrorMessage(null);
                 setAppliedFilters((prev) => ({ ...prev }));
               }}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-[#174B4A] rounded-lg cursor-pointer"
+              className="px-4 min-h-11 py-1.5 text-sm font-semibold text-white bg-[#174B4A] rounded-lg"
             >
-              Thử lại
+              Retry
             </button>
           </div>
         ) : requests.length === 0 ? (
@@ -312,53 +289,68 @@ export function ServiceBookingRequestsView() {
               inbox
             </span>
             <h3 className="font-bold text-sm text-[#1C2928] mb-1">
-              {hotelProviderVi.w103.emptyTitle}
+              {hotelProviderEn.w103.emptyTitle}
             </h3>
             <p className="text-[#5B6E69] max-w-sm mx-auto">
-              {hotelProviderVi.w103.emptySubtitle}
+              {hotelProviderEn.w103.emptySubtitle}
             </p>
             <button
               type="button"
               onClick={handleReset}
-              className="mt-4 px-3 py-1.5 text-xs font-semibold text-[#174B4A] bg-[#E8F7F4] border border-[#B2DFDB] rounded-lg hover:bg-[#B2DFDB]/50 cursor-pointer"
+              className="mt-4 px-3 min-h-11 py-1.5 text-sm font-semibold text-[#174B4A] bg-[#E8F7F4] border border-[#B2DFDB] rounded-lg hover:bg-[#B2DFDB]/50 cursor-pointer"
             >
-              {hotelProviderVi.w103.resetFiltersButton}
+              Reset Filters
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
+          <div className="grid gap-3 p-4 lg:hidden">
+            {requests.map(item => <article key={item.id} className="rounded-lg border border-[#DCE2DD] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-mono text-sm font-bold">{item.requestCode}</h2><StatusBadge status={item.status} size="sm" /></div>
+              <p className="mt-3 text-sm font-semibold">{item.serviceName}</p>
+              <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <div><dt>Option</dt><dd>{item.serviceOption}</dd></div>
+                <div><dt>Requested Date</dt><dd>{formatDate(item.requestedDate)} {formatTime(item.requestedTime)}</dd></div>
+                <div><dt>Quantity</dt><dd>{item.quantity}</dd></div>
+                <div><dt>Traveler</dt><dd>{item.travelerName}</dd></div>
+                <div><dt>Submitted At</dt><dd>{formatDateTime(item.submittedAt)}</dd></div>
+              </dl>
+              <Link href={`/provider/bookings/${encodeURIComponent(item.id)}`} className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">View Details</Link>
+            </article>)}
+          </div>
+          <div className="hidden overflow-x-auto lg:block">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-[#F7F5EF] border-b border-[#DCE2DD] text-[#5B6E69] font-semibold uppercase tracking-wider text-[11px]">
-                  <th scope="col" className="py-3 px-4 w-[140px] whitespace-nowrap">
-                    {hotelProviderVi.w103.tableHeaders.requestCode}
+                  <th scope="col" className="py-3 px-4 w-[150px]">
+                    {hotelProviderEn.w103.tableHeaders.requestCode}
                   </th>
                   <th scope="col" className="py-3 px-4 min-w-[180px]">
-                    {hotelProviderVi.w103.tableHeaders.service}
+                    {hotelProviderEn.w103.tableHeaders.service}
                   </th>
-                  <th scope="col" className="py-3 px-4 min-w-[160px]">
-                    {hotelProviderVi.w103.tableHeaders.option}
+                  <th scope="col" className="py-3 px-4 min-w-[170px]">
+                    {hotelProviderEn.w103.tableHeaders.option}
                   </th>
                   <th scope="col" className="py-3 px-4 w-[110px] whitespace-nowrap">
-                    {hotelProviderVi.w103.tableHeaders.requestedDate}
+                    {hotelProviderEn.w103.tableHeaders.requestedDate}
                   </th>
-                  <th scope="col" className="py-3 px-4 w-[90px] whitespace-nowrap">
-                    {hotelProviderVi.w103.tableHeaders.requestedTime}
+                  <th scope="col" className="py-3 px-4 w-[85px] whitespace-nowrap">
+                    {hotelProviderEn.w103.tableHeaders.requestedTime}
                   </th>
-                  <th scope="col" className="py-3 px-4 w-[65px] text-center">
-                    {hotelProviderVi.w103.tableHeaders.quantity}
+                  <th scope="col" className="py-3 px-4 w-[60px] text-center">
+                    {hotelProviderEn.w103.tableHeaders.quantity}
                   </th>
-                  <th scope="col" className="py-3 px-4 min-w-[150px]">
-                    {hotelProviderVi.w103.tableHeaders.travelerName}
+                  <th scope="col" className="py-3 px-4 min-w-[160px]">
+                    {hotelProviderEn.w103.tableHeaders.travelerName}
                   </th>
-                  <th scope="col" className="py-3 px-4 w-[145px]">
-                    {hotelProviderVi.w103.tableHeaders.status}
+                  <th scope="col" className="py-3 px-4 w-[150px]">
+                    {hotelProviderEn.w103.tableHeaders.status}
                   </th>
                   <th scope="col" className="py-3 px-4 w-[130px] whitespace-nowrap">
-                    {hotelProviderVi.w103.tableHeaders.submittedAt}
+                    {hotelProviderEn.w103.tableHeaders.submittedAt}
                   </th>
                   <th scope="col" className="py-3 px-4 w-[100px] text-right">
-                    {hotelProviderVi.w103.tableHeaders.action}
+                    {hotelProviderEn.w103.tableHeaders.action}
                   </th>
                 </tr>
               </thead>
@@ -366,7 +358,7 @@ export function ServiceBookingRequestsView() {
                 {requests.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-[#F7F5EF]/70 transition-colors group"
+                    className="hover:bg-[#F7F5EF]/60 transition-colors group"
                   >
                     {/* Request Code */}
                     <td className="py-3 px-4 font-mono font-bold text-[#174B4A] whitespace-nowrap">
@@ -400,7 +392,7 @@ export function ServiceBookingRequestsView() {
 
                     {/* Traveler Name */}
                     <td className="py-3 px-4">
-                      <div className="font-semibold text-[#1C2928] truncate max-w-[150px]" title={item.travelerName}>
+                      <div className="font-medium text-[#1C2928] truncate max-w-[150px]" title={item.travelerName}>
                         {item.travelerName}
                       </div>
                       <div className="text-[10px] font-mono text-[#5B6E69]">
@@ -424,7 +416,7 @@ export function ServiceBookingRequestsView() {
                         href={`/provider/bookings/${item.id}`}
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#174B4A] bg-[#E8F7F4] hover:bg-[#174B4A] hover:text-white rounded-lg transition-colors cursor-pointer"
                       >
-                        <span>{hotelProviderVi.common.viewDetails}</span>
+                        <span>{hotelProviderEn.common.viewDetails}</span>
                         <span className="material-symbols-outlined text-[13px]" aria-hidden="true">arrow_forward</span>
                       </Link>
                     </td>
@@ -433,31 +425,32 @@ export function ServiceBookingRequestsView() {
               </tbody>
             </table>
           </div>
+          </div>
         )}
 
-        {/* Pagination Bar */}
+        {/* Pagination Bar (CR-01) */}
         {!isLoading && requests.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-[#F7F5EF] border-t border-[#DCE2DD] text-xs text-[#5B6E69]">
             <div>
-              {hotelProviderVi.common.pagination.showing}{' '}
+              {hotelProviderEn.common.pagination.showing}{' '}
               <span className="font-bold text-[#1C2928]">{startItem}</span>{' '}
-              {hotelProviderVi.common.pagination.to}{' '}
+              {hotelProviderEn.common.pagination.to}{' '}
               <span className="font-bold text-[#1C2928]">{endItem}</span>{' '}
-              {hotelProviderVi.common.pagination.of}{' '}
+              {hotelProviderEn.common.pagination.of}{' '}
               <span className="font-bold text-[#1C2928]">{totalCount}</span>{' '}
-              {hotelProviderVi.common.pagination.requests}
+              {hotelProviderEn.common.pagination.requests}
             </div>
 
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1 transition-colors"
-                aria-label="Trang trước"
+                onClick={() => { setIsLoading(true); setErrorMessage(null); setPage((p) => Math.max(1, p - 1)); }}
+                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1"
+                aria-label="Previous page"
               >
                 <span className="material-symbols-outlined text-[14px]">chevron_left</span>
-                <span>{hotelProviderVi.common.pagination.previous}</span>
+                <span>{hotelProviderEn.common.pagination.previous}</span>
               </button>
 
               <span className="px-3 py-1 font-semibold text-[#1C2928]">
@@ -466,12 +459,12 @@ export function ServiceBookingRequestsView() {
 
               <button
                 type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1 transition-colors"
-                aria-label="Trang sau"
+                disabled={isLoading || page >= totalPages}
+                onClick={() => { setIsLoading(true); setErrorMessage(null); setPage((p) => Math.min(totalPages, p + 1)); }}
+                className="px-2.5 py-1 bg-white border border-[#DCE2DD] rounded-lg text-xs font-semibold text-[#1C2928] hover:bg-[#E8F7F4] disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1"
+                aria-label="Next page"
               >
-                <span>{hotelProviderVi.common.pagination.next}</span>
+                <span>{hotelProviderEn.common.pagination.next}</span>
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               </button>
             </div>

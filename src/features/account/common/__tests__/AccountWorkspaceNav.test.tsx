@@ -16,7 +16,7 @@ describe('AccountWorkspaceNav', () => {
     expect(nav).toBeDefined();
 
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(4);
+    expect(tabs.length).toBe(5);
 
     const profileTab = screen.getByRole('tab', { name: new RegExp(accountCommonEn.navigation.tabs.profile, 'i') });
     expect(profileTab.getAttribute('aria-selected')).toBe('true');

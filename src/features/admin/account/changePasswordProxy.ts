@@ -109,7 +109,7 @@ export async function proxyAdminChangePassword(request: Request) {
       data.accessToken,
       expiresAt,
       session.role,
-      { userId: session.userId },
+      { userId: session.userId, mustChangePassword: data.mustChangePassword === true },
     );
   } catch {
     return jsonNoStore({ title: 'The authentication service could not be reached. The request could not be confirmed.' }, 503);

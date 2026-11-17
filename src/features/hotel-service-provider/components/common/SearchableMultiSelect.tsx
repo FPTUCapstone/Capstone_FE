@@ -32,8 +32,8 @@ export function SearchableMultiSelect({
     return pois.filter(
       (p) =>
         p.name.toLowerCase().includes(term) ||
-        p.code.toLowerCase().includes(term) ||
-        p.address.toLowerCase().includes(term)
+        (p.code ?? '').toLowerCase().includes(term) ||
+        (p.address ?? '').toLowerCase().includes(term)
     );
   }, [pois, searchTerm]);
 

@@ -52,6 +52,12 @@ const TAB_METADATA: Record<
     enTitle: accountCommonEn.navigation.tabs.trips,
     icon: 'route',
   },
+  complaints: {
+    viTitle: 'Khiếu nại của tôi',
+    viSubtitle: 'Theo dõi khiếu nại sau chuyến đi và các bằng chứng đã gửi.',
+    enTitle: accountCommonEn.navigation.tabs.complaints,
+    icon: 'report',
+  },
 };
 
 function resolveAccountTab(pathname: string | null): AccountTabKey {
@@ -59,6 +65,7 @@ function resolveAccountTab(pathname: string | null): AccountTabKey {
   if (pathname.startsWith(ROUTES.account.preferences)) return 'preferences';
   if (pathname.startsWith(ROUTES.account.security)) return 'security';
   if (pathname.startsWith(ROUTES.account.trips)) return 'trips';
+  if (pathname.startsWith(ROUTES.account.complaints)) return 'complaints';
   return 'profile';
 }
 

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useWebSession } from '@/features/auth/session/useWebSession';
+import { AuthStorage } from '@/features/auth/session/authSession';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { getTourCategories, getTourRecommendations, isTourDemoAllowedInCurrentEnv, refreshTourRecommendations, searchTours } from '../services/tourApi';
@@ -58,9 +60,6 @@ function PublicExploreToursPage() {
   const [displayed, setDisplayed] = useState<DisplayedResult | null>(null);
   const [categories, setCategories] = useState<TourCategoryDto[]>([]);
   const [categoryError, setCategoryError] = useState(false);
-  const [recommendations, setRecommendations] = useState<TourRecommendationsResponseDto | null>(null);
-  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
-  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
   const cycle = `${queryKey}:${version}`;
   const current = result?.key === cycle ? result : null;
 
@@ -85,56 +84,6 @@ function PublicExploreToursPage() {
     getTourCategories(controller.signal).then((items) => { setCategories(items); setCategoryError(false); }).catch(() => setCategoryError(true));
     return () => controller.abort();
   }, [version]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const savedPage = Number(new URLSearchParams(window.location.search).get('recommendationPage'));
-    getTourRecommendations({
-      ...(Number.isSafeInteger(savedPage) && savedPage > 1 ? { page: savedPage } : {}),
-      signal: controller.signal,
-      allowDemo: isDemo,
-      initialCriteria: recommendationCriteria(filters),
-    }).then((data) => {
-      setRecommendations(data);
-      setRecommendationsError(null);
-    }).catch((error: unknown) => {
-      if (error instanceof Error && error.name === 'AbortError') return;
-      setRecommendationsError(recommendationErrorCode(error));
-    }).finally(() => setRecommendationsLoading(false));
-    return () => controller.abort();
-    // Opening the screen reads latest once. Filter changes do not invent an automatic refresh policy.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDemo]);
-
-  async function refreshRecommendations() {
-    setRecommendationsLoading(true);
-    try {
-      const data = isDemo
-        ? await getTourRecommendations({ allowDemo: true })
-        : await refreshTourRecommendations(recommendationCriteria(filters));
-      saveRecommendationPage(data.page);
-      setRecommendations(data);
-      setRecommendationsError(null);
-    } catch (error) {
-      setRecommendationsError(recommendationErrorCode(error));
-    } finally {
-      setRecommendationsLoading(false);
-    }
-  }
-
-  async function changeRecommendationPage(page: number) {
-    setRecommendationsLoading(true);
-    try {
-      const data = await getTourRecommendations({ page, allowDemo: isDemo });
-      saveRecommendationPage(data.page);
-      setRecommendations(data);
-      setRecommendationsError(null);
-    } catch (error) {
-      setRecommendationsError(recommendationErrorCode(error));
-    } finally {
-      setRecommendationsLoading(false);
-    }
-  }
 
   function navigate(next: TourSearchState) {
     const params = toPublicUrlParams(next);
@@ -255,6 +204,85 @@ function PublicExploreToursPage() {
         </div>
 
         <div className="mt-12" lang="vi">
+          <SessionRecommendations isDemo={isDemo} filters={filters} />
+        </div>
+      </main>
+    </div>
+  );
+}
+
+
+function SessionRecommendations({ isDemo, filters }: { isDemo: boolean; filters: TourSearchState }) {
+  const { status, context } = useWebSession();
+  if (!isDemo && (status !== 'authenticated' || context?.role !== 'Traveler' || context.status !== 'Active')) return null;
+  return <TravelerRecommendations key={isDemo ? 'demo' : context!.userId} userId={context?.userId ?? null} isDemo={isDemo} filters={filters} />;
+}
+
+function TravelerRecommendations({ userId, isDemo, filters }: { userId: number | null; isDemo: boolean; filters: TourSearchState }) {
+  const [recommendations, setRecommendations] = useState<TourRecommendationsResponseDto | null>(null);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
+  const pending = useRef<AbortController | null>(null);
+  function isCurrent() {
+    return pending.current !== null && !pending.current.signal.aborted && (isDemo || AuthStorage.getContext()?.userId === userId);
+  }
+  useEffect(() => {
+    const controller = new AbortController();
+    pending.current = controller;
+    const savedPage = Number(new URLSearchParams(window.location.search).get('recommendationPage'));
+    getTourRecommendations({
+      ...(Number.isSafeInteger(savedPage) && savedPage > 1 ? { page: savedPage } : {}),
+      signal: controller.signal,
+      allowDemo: isDemo,
+      initialCriteria: recommendationCriteria(filters),
+    }).then((data) => {
+      if (controller.signal.aborted || !isCurrent()) return;
+      setRecommendations(data);
+      setRecommendationsError(null);
+    }).catch((error: unknown) => {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      if (!controller.signal.aborted && isCurrent()) setRecommendationsError(recommendationErrorCode(error));
+    }).finally(() => { if (!controller.signal.aborted && isCurrent()) setRecommendationsLoading(false); });
+    return () => controller.abort();
+    // Opening the screen reads latest once. Filter changes do not invent an automatic refresh policy.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemo]);
+
+  async function refreshRecommendations() {
+    if (!isCurrent()) return;
+    setRecommendationsLoading(true);
+    try {
+      const data = isDemo
+        ? await getTourRecommendations({ allowDemo: true })
+        : await refreshTourRecommendations(recommendationCriteria(filters), pending.current?.signal);
+      if (!isCurrent()) return;
+      saveRecommendationPage(data.page);
+      setRecommendations(data);
+      setRecommendationsError(null);
+    } catch (error) {
+      if (isCurrent()) setRecommendationsError(recommendationErrorCode(error));
+    } finally {
+      if (isCurrent()) setRecommendationsLoading(false);
+    }
+  }
+
+  async function changeRecommendationPage(page: number) {
+    if (!isCurrent()) return;
+    setRecommendationsLoading(true);
+    try {
+      const data = await getTourRecommendations({ page, allowDemo: isDemo, signal: pending.current?.signal });
+      if (!isCurrent()) return;
+      saveRecommendationPage(data.page);
+      setRecommendations(data);
+      setRecommendationsError(null);
+    } catch (error) {
+      if (isCurrent()) setRecommendationsError(recommendationErrorCode(error));
+    } finally {
+      if (isCurrent()) setRecommendationsLoading(false);
+    }
+  }
+
+  return (
           <TourRecommendationsSection
             recommendations={recommendations?.items ?? []}
             isDemo={recommendations?.isDemo ?? false}
@@ -267,9 +295,6 @@ function PublicExploreToursPage() {
             onRefresh={refreshRecommendations}
             onPageChange={changeRecommendationPage}
           />
-        </div>
-      </main>
-    </div>
   );
 }
 

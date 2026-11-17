@@ -1,146 +1,130 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+
 import { BookingDecisionOutcomeView } from '../components/w104/BookingDecisionOutcomeView';
+
 import { ToastProvider } from '../components/common/Toast';
+
 import { ProviderBookingService } from '../services/providerBookingService';
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-  }),
-}));
+import { testBooking } from './testBooking';
 
-describe('Screen W104: Booking Decision & Service Outcome (Service Provider Workspace, UC-79, UC-80)', () => {
-  beforeEach(() => {
-    ProviderBookingService.resetState();
+vi.mock('../services/providerBookingService', () => ({ ProviderBookingService: { getBookingRequestById: vi.fn(), submitDecision: vi.fn(), recordOutcome: vi.fn() } }));
+
+const navigation = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
+
+const renderView = () => render(<ToastProvider><BookingDecisionOutcomeView id="9" /></ToastProvider>);
+
+beforeEach(() => { vi.resetAllMocks(); vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking }); });
+
+describe('UC79–80 request decisions and outcomes', () => {
+  it('leaves navigation alone when a pending decision finishes after the view closes', async () => {
+    let complete!: (booking: typeof testBooking) => void;
+    vi.mocked(ProviderBookingService.submitDecision).mockReturnValue(new Promise(resolve => { complete = resolve; }));
+    const view = renderView();
+    fireEvent.click(await screen.findByRole('button', { name: /Confirm Request/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Acceptance/i }));
+    await waitFor(() => expect(ProviderBookingService.submitDecision).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await act(async () => { complete({ ...testBooking, status: 'Confirmed' }); });
+    expect(navigation.push).not.toHaveBeenCalled();
   });
 
-  const renderComponent = (id: string = 'req-001') =>
-    render(
-      <ToastProvider>
-        <BookingDecisionOutcomeView id={id} />
-      </ToastProvider>
-    );
-
-  it('renders 62/38 split layout, traveler identity and direct payment notice without technical metadata', async () => {
-    renderComponent('req-001');
-
-    await waitFor(() => {
-      expect(screen.getAllByText('HBR-20261113-082').length).toBeGreaterThan(0);
-    });
-
-    // Check 62/38 sections in Vietnamese
-    expect(screen.getByText('Thông tin Đặt phòng & Lưu trú')).toBeDefined();
-    expect(screen.getByText('Thông tin Du khách & Yêu cầu riêng')).toBeDefined();
-
-    // Check Traveler Info
-    expect(screen.getByText('Nguyễn Văn An')).toBeDefined();
-    expect(screen.getByText('0912 345 678')).toBeDefined();
-    expect(screen.getByText('an.nguyen@example.com')).toBeDefined();
-
-    // Check Direct Payment Policy Notice (no visible BR-196 tag)
-    expect(screen.getByText(/Chính sách thanh toán trực tiếp tại khách sạn/i)).toBeDefined();
-    expect(
-      screen.getByText(/Khách hàng sẽ thanh toán trực tiếp cho khách sạn khi nhận phòng/i)
-    ).toBeDefined();
+  it.each(['10000000000', '123.456'])('rejects unsupported actual amount %s before sending an outcome', async amount => {
+    vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking, status: 'Confirmed' });
+    renderView();
+    await screen.findByRole('button', { name: /Mark Service Completed/i });
+    fireEvent.change(screen.getByLabelText(/Actual Amount Collected/i), { target: { value: amount } });
+    fireEvent.click(screen.getByRole('button', { name: /Mark Service Completed/i }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(ProviderBookingService.recordOutcome).not.toHaveBeenCalled();
+    expect(screen.getByText(/entered value is out of the allowed range/i)).toBeDefined();
   });
 
-  it('executes Confirm decision flow via dialog and shows MSG203', async () => {
-    renderComponent('req-001');
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Xác nhận tiếp nhận/i })).toBeDefined();
+  it('closes manual outcomes at the automatic-completion deadline', async () => {
+    vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({
+      ...testBooking, status: 'Confirmed', autoCompleteAtUtc: '2020-01-04T17:00:00Z',
     });
-
-    // Click Confirm button
-    fireEvent.click(screen.getByRole('button', { name: /Xác nhận tiếp nhận/i }));
-
-    // Confirmation dialog opens
-    expect(screen.getByText(/Xác nhận tiếp nhận yêu cầu đặt phòng/i)).toBeDefined();
-    const confirmSubmitBtn = screen.getByRole('button', { name: /Xác nhận đồng ý/i });
-
-    fireEvent.click(confirmSubmitBtn);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Đã xác nhận yêu cầu đặt phòng\. Du khách đã được thông báo\./i)
-      ).toBeDefined();
-    });
+    renderView();
+    expect(await screen.findByText(/outcome recording window has ended/i)).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Mark Service Completed/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Mark Guest No-Show/i })).toBeNull();
   });
 
-  it('enforces mandatory rejection reason and MSG123 validation', async () => {
-    renderComponent('req-002');
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Từ chối yêu cầu/i })).toBeDefined();
+  it('uses service terminology for vehicle and restaurant requests', async () => {
+    vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({
+      ...testBooking, status: 'Confirmed', serviceName: 'Motorbike rental',
     });
-
-    // Open rejection dialog
-    fireEvent.click(screen.getByRole('button', { name: /Từ chối yêu cầu/i }));
-
-    expect(screen.getByText(/Từ chối yêu cầu đặt phòng/i)).toBeDefined();
-    const declineSubmitBtn = screen.getByRole('button', { name: /Xác nhận từ chối/i });
-
-    // Submit empty reason -> triggers MSG123
-    fireEvent.click(declineSubmitBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Vui lòng cung cấp lý do từ chối yêu cầu/i)).toBeDefined();
-    });
-
-    // Fill valid reason
-    const reasonTextarea = screen.getByPlaceholderText(/Nhập lý do từ chối rõ ràng/i);
-    fireEvent.change(reasonTextarea, {
-      target: { value: 'Khách sạn đã hết phòng trong thời gian này.' },
-    });
-
-    fireEvent.click(declineSubmitBtn);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Đã từ chối yêu cầu đặt phòng\. Du khách đã được thông báo lý do\./i)
-      ).toBeDefined();
-    });
+    renderView();
+    expect(await screen.findByRole('button', { name: /Mark Service Completed/i })).toBeDefined();
+    expect(screen.queryByText(/Stay Details/i)).toBeNull();
   });
 
-  it('allows recording service outcome on confirmed stay where check-in date has passed (req-004)', async () => {
-    // req-004 has requestedDate '2026-11-11' which is in the past
-    renderComponent('req-004');
 
-    await waitFor(() => {
-      expect(screen.getByText('Ghi nhận Kết quả Lưu trú')).toBeDefined();
-      expect(screen.getByRole('button', { name: /Đánh dấu Hoàn thành Lưu trú/i })).toBeDefined();
-      expect(screen.getByRole('button', { name: /Đánh dấu Khách Vắng mặt/i })).toBeDefined();
-    });
+  it('requires confirmation and submits the current row version', async () => {
 
-    // Verify 10% commission preview
-    expect(screen.getByText(/Ước tính hoa hồng nền tảng \(10%\)/i)).toBeDefined();
+    vi.mocked(ProviderBookingService.submitDecision).mockResolvedValue({ ...testBooking, status: 'Confirmed', rowVersion: 'new=' });
 
-    // Click Mark Completed
-    fireEvent.click(screen.getByRole('button', { name: /Đánh dấu Hoàn thành Lưu trú/i }));
+    renderView();
 
-    // Confirm dialog opens
-    expect(screen.getByText(/Xác nhận Khách đã Hoàn thành Lưu trú/i)).toBeDefined();
-    const confirmCompletionBtn = screen.getByRole('button', { name: /Xác nhận hoàn thành/i });
-    fireEvent.click(confirmCompletionBtn);
+    fireEvent.click(await screen.findByRole('button', { name: /Confirm Request/i }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/Đã ghi nhận kết quả lưu trú\./i)).toBeDefined();
-      expect(screen.getByText(/Kết quả Vận hành đã Ghi nhận/i)).toBeDefined();
-    });
+    expect(ProviderBookingService.submitDecision).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Acceptance/i }));
+
+    await waitFor(() => expect(ProviderBookingService.submitDecision).toHaveBeenCalledWith('9', { decision: 'Confirmed', rowVersion: testBooking.rowVersion }));
+
   });
 
-  it('shows locked notice when stay date is in the future (req-003)', async () => {
-    // req-003 has requestedDate '2026-12-20' (future)
-    renderComponent('req-003');
+  it('requires a rejection reason and supports Escape dismissal', async () => {
 
-    await waitFor(() => {
-      expect(screen.getByText(/Chưa đến thời điểm ghi nhận kết quả/i)).toBeDefined();
-      expect(
-        screen.getByText(/Chức năng ghi nhận kết quả lưu trú sẽ mở sau ngày khách làm thủ tục nhận phòng/i)
-      ).toBeDefined();
-    });
+    renderView();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Reject Request/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /Decline Request/i }));
+
+    expect(ProviderBookingService.submitDecision).not.toHaveBeenCalled();
+
+    expect(screen.getByText('Rejection reason cannot be blank.')).toBeDefined();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+
   });
+
+  it('uses server eligibility and records a positive actual amount', async () => {
+
+    vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking, status: 'Confirmed' });
+
+    vi.mocked(ProviderBookingService.recordOutcome).mockResolvedValue({ ...testBooking, status: 'Completed', actualAmount: 100000, commissionAmount: 10000 });
+
+    renderView();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Mark Service Completed/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Completion/i }));
+
+    await waitFor(() => expect(ProviderBookingService.recordOutcome).toHaveBeenCalledWith('9', { outcome: 'Completed', actualAmount: 100000, rowVersion: testBooking.rowVersion }));
+
+    expect(await screen.findByText('Outcome recorded.')).toBeDefined();
+
+  });
+
+  it('keeps outcomes locked before the server eligibility timestamp', async () => {
+
+    vi.mocked(ProviderBookingService.getBookingRequestById).mockResolvedValue({ ...testBooking, status: 'Confirmed', outcomeAvailableAtUtc: '2099-01-01T00:00:00Z' });
+
+    renderView();
+
+    expect(await screen.findByText(/Outcome Recording Locked/i)).toBeDefined();
+
+    expect(screen.queryByRole('button', { name: /Mark Service Completed/i })).toBeNull();
+
+  });
+
 });

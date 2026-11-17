@@ -16,6 +16,7 @@ export const ROUTES = {
   checkoutResult: '/checkout/result',
   /** UC-29 e-ticket of a booking (payment result); Trip History links use `account.ticket`. */
   bookingTicket: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/ticket`,
+  bookingComplaint: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/complaint`,
   partner: {
     dashboard: '/partner',
     profile: '/partner/profile',
@@ -44,6 +45,7 @@ export const ROUTES = {
     preferences: '/account/preferences',
     security: '/account/security',
     trips: '/account/trips',
+    complaints: '/account/complaints',
     ticket: (ticketId: string | number) => `/account/tickets/${encodeURIComponent(ticketId)}`,
     tripReview: (tripId: string | number) => `/account/trips/${encodeURIComponent(tripId)}/review`,
     bookingReview: (kind: 'commerceBooking' | 'serviceBooking', id: string | number) =>
@@ -68,6 +70,8 @@ export const ROUTES = {
     algorithmParameters: '/admin/settings/algorithm-parameters',
     activeTripDetails: (id: string) => `/admin/trips/active/${id}`,
     users: '/admin/users',
+    createStaff: '/admin/users/create-staff',
+    createServiceProvider: '/admin/service-providers/create',
     userDetail: (id: string | number) => `/admin/users/${encodeURIComponent(id)}`,
     tourOperatorApplications: '/admin/tour-operator-applications',
     tourOperatorApplicationDetail: (userId: string | number) =>
@@ -75,7 +79,6 @@ export const ROUTES = {
     routesList: '/admin/routes',
     routeCreate: '/admin/routes/create',
     pois: '/admin/catalogue/points-of-interest',
-    createServiceProvider: '/admin/service-providers/create',
     commissionReconciliation: '/admin/commercial-settlements/reconciliation',
     landingContent: '/admin/landing-content',
     payoutSettlements: '/admin/payout-settlements',
