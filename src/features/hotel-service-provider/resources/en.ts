@@ -63,8 +63,10 @@ export const hotelProviderEn = {
     MSG203: 'Request confirmed. The Traveler has been notified.',
     MSG204: 'Request rejected. The Traveler has been notified with the reason.',
     MSG206: 'Outcome recorded.',
+    MSG207: 'Commission statement payment is overdue. Please complete the bank transfer and submit the transaction reference to prevent account suspension.',
     MSG208: 'Payment reported. TripMate will confirm it after bank reconciliation.',
     MSG209: 'Receipt recorded. The statement is now Paid.',
+    MSG210: 'Your service provider account has been locked because a commission statement is 15 days overdue. Please contact support.',
   },
 
   directPaymentNotice: {
