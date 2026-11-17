@@ -9,6 +9,10 @@ export const metadata: Metadata = {
 
 export default function ProviderStatementsPage() {
   return (
+    <>
+      <p role="status" className="mb-6 rounded-xl border border-[#FFD8C2] bg-[#FFF2EB] p-4 text-sm text-[#995436]">
+        Bảng kê hoa hồng đang chờ tích hợp Backend. Dữ liệu và thao tác trên màn hình này chỉ phục vụ minh họa.
+      </p>
     <Suspense
       fallback={
         <div className="p-12 text-center text-xs text-[#5B6E69]">
@@ -21,5 +25,6 @@ export default function ProviderStatementsPage() {
     >
       <CommissionStatementsView />
     </Suspense>
+    </>
   );
 }

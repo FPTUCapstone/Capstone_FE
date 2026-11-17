@@ -803,6 +803,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       fireEvent.click(submitBtn);
 
       await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      await screen.findByText(/Không thể tạo lịch trình tối ưu/i);
       const key1 = createSpy.mock.calls[0][1]?.idempotencyKey;
 
       // Change transport to Car
@@ -830,6 +831,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       fireEvent.click(submitBtn);
 
       await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      await screen.findByText(/Không thể tạo lịch trình tối ưu/i);
       const key1 = createSpy.mock.calls[0][1]?.idempotencyKey;
 
       // Explore around another place

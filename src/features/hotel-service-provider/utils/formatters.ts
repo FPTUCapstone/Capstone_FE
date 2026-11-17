@@ -104,7 +104,7 @@ export function isDateInPast(dateString: string): boolean {
     }).format(new Date());
 
     const checkDate = dateString.substring(0, 10);
-    return checkDate <= todayVN;
+    return /^\d{4}-\d{2}-\d{2}$/.test(checkDate) && checkDate < todayVN;
   } catch {
     return false;
   }

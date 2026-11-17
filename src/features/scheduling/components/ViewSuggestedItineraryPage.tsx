@@ -53,6 +53,7 @@ import { ItinerarySuggestionsDialog } from './ItinerarySuggestionsDialog';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
 import { ItineraryTimeline } from './ItineraryTimeline';
 import { StopRemovalReasonDialog } from './StopRemovalReasonDialog';
+import { BookedServices } from './BookedServices';
 
 /** How long the Undo toast stays after an edit (Review 2, D11-4). */
 const UNDO_VISIBLE_MS = 8000;
@@ -776,6 +777,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
               {/* Summary Stats Cards */}
               <ItinerarySummaryCards itinerary={itinerary} />
+              <BookedServices services={itinerary.bookedServices} />
 
               {/* Day Navigation */}
               {uniqueDays.length > 0 && (

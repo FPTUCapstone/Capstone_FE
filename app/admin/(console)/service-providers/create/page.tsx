@@ -1,16 +1,13 @@
-import type { Metadata } from 'next';
-import { CreateServiceProviderView } from '@/features/hotel-service-provider/components/w102/CreateServiceProviderView';
-import { ToastProvider } from '@/features/hotel-service-provider/components/common/Toast';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
+import { AccountProvisioningForm } from '@/features/hotel-service-provider/components/AccountProvisioningForm';
+import { AdminAccessDeniedView } from '@/features/admin/staff/components/AdminAccessDeniedView';
 
-export const metadata: Metadata = {
-  title: 'Tạo tài khoản đối tác dịch vụ | TripMate Staff',
-  description: 'Khởi tạo tài khoản đối tác thương mại và liên kết cơ sở lưu trú vào hệ thống vận hành.',
-};
-
-export default function CreateServiceProviderPage() {
-  return (
-    <ToastProvider>
-      <CreateServiceProviderView />
-    </ToastProvider>
-  );
+export default async function CreateAccountPage() {
+  const session = verifyAdminSessionFromCookies(await cookies());
+  if (!session) redirect('/admin/login');
+  if (session.role !== 'Staff') return <AdminAccessDeniedView />;
+  if (session.mustChangePassword) redirect('/admin/first-password');
+  return <AccountProvisioningForm kind="provider" />;
 }

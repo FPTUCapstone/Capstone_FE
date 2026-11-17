@@ -60,6 +60,7 @@ export const DEMO_COMMERCIAL_POIS: CommercialPoiItem[] = [
 export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   {
     id: 'req-001',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261113-082',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -77,6 +78,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-002',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261113-083',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -94,6 +96,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-003',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261112-074',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -112,6 +115,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-004',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261110-061',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -130,6 +134,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-005',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261108-052',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -151,6 +156,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-006',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261105-043',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -172,6 +178,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-007',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261102-031',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -190,6 +197,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-008',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261028-024',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -206,6 +214,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-009',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261020-015',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',
@@ -222,6 +231,7 @@ export const DEMO_BOOKING_REQUESTS: BookingRequestItem[] = [
   },
   {
     id: 'req-010',
+    rowVersion: 'AAAAAAAAAAA=',
     requestCode: 'HBR-20261015-008',
     serviceId: 42,
     serviceName: 'Hội An Riverside Heritage Resort',

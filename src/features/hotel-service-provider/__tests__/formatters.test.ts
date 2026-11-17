@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   formatVnd,
   formatDate,
@@ -68,6 +68,15 @@ describe('TripMate Formatters & Date/Time Utilities', () => {
   });
 
   describe('isDateInPast', () => {
+    it('requires the Vietnam calendar date to have fully passed', () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      try {
+        vi.setSystemTime(new Date('2026-11-14T16:59:59Z'));
+        expect(isDateInPast('2026-11-14')).toBe(false);
+        vi.setSystemTime(new Date('2026-11-14T17:00:00Z'));
+        expect(isDateInPast('2026-11-14')).toBe(true);
+      } finally { vi.useRealTimers(); }
+    });
     it('returns true for past dates', () => {
       expect(isDateInPast('2020-01-01')).toBe(true);
     });

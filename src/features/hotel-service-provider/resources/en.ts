@@ -1,6 +1,6 @@
 /**
  * TripMate Hotel & Commercial Service Provider Workflow — English Resources
- * Clean, production-quality resources with technical metadata removed from user-facing UI.
+ * Strictly compliant with Canonical SRS Report 3 (§5.2 English UI requirement, §5.3 Application Messages).
  */
 
 export const hotelProviderEn = {
@@ -33,28 +33,28 @@ export const hotelProviderEn = {
       of: 'of',
       records: 'records',
       requests: 'requests',
-      statements: 'statements',
       page: 'Page',
       previous: 'Previous',
       next: 'Next',
       recordsPerPage: 'Records per page',
     },
-    demoDataNotice: 'DEMO DATA — Illustrative figures for interface review only.',
   },
 
   messages: {
+    // Canonical SRS Application Messages (§5.3)
     MSG01: 'Please fill in all required fields.',
+    MSG_PHONE_DUP: 'An account with this phone number already exists.',
     MSG05: 'An account with this email already exists. Please sign in or use another email.',
     MSG34: 'This point of interest is no longer available.',
     MSG71: (available: number) => `Only ${available} available for the selected date.`,
-    MSG72: 'Your booking has been confirmed by the hotel and added to your itinerary schedule.',
+    MSG72: 'Your booking has been confirmed by the service provider and added to your itinerary schedule.',
     MSG73: (reason: string) => `Your booking request was declined. Reason: ${reason}`,
     MSG76: 'The date must be in the future.',
     MSG123: 'Rejection reason cannot be blank.',
     MSG126: 'Access denied. You do not have permission to access this workspace.',
     MSG127: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
     MSG128: 'No requests found matching your filter criteria.',
-    MSG133: 'Network error occurred. Please check your connection and try again.',
+    MSG133: 'This request is no longer eligible for this action. Reload its current status.',
     MSG143: 'The entered value is out of the allowed range or is not valid. Check the highlighted field and try again.',
     MSG172: 'Please enter the bank transfer reference before confirming the payment.',
     MSG186: 'Booking request cancelled successfully.',
@@ -68,8 +68,8 @@ export const hotelProviderEn = {
   },
 
   directPaymentNotice: {
-    title: 'Direct Hotel Payment Policy',
-    body: 'The estimated amount is informational only. The traveler pays the hotel directly upon check-in. TripMate collects no traveler funds and processes no booking refunds for this reservation.',
+    title: 'Direct Service Payment',
+    body: 'The estimated amount is informational only. The traveler pays the provider directly when using the service. TripMate collects no traveler funds and processes no booking refunds for this reservation.',
   },
 
   statuses: {
@@ -86,6 +86,97 @@ export const hotelProviderEn = {
     overdue: 'Overdue',
     active: 'Active',
     inactive: 'Inactive',
+  },
+
+  w103: {
+    pageTitle: 'Service Booking Requests',
+    subtitle: 'Review, filter, and process incoming service booking requests submitted by TripMate travelers.',
+    searchPlaceholder: 'Search by Request Code, Traveler Name, or Service...',
+    statusFilterLabel: 'Status Filter',
+    startDateLabel: 'From Date',
+    endDateLabel: 'To Date',
+    applyFiltersButton: 'Search',
+    resetFiltersButton: 'Reset',
+    tableHeaders: {
+      requestCode: 'Request Code',
+      service: 'Service',
+      option: 'Service Option',
+      requestedDate: 'Requested Date',
+      requestedTime: 'Requested Time',
+      quantity: 'Qty',
+      travelerName: 'Traveler Name',
+      status: 'Status',
+      submittedAt: 'Submitted At',
+      action: 'Action',
+    },
+    emptyTitle: 'No Booking Requests Found',
+    emptySubtitle: 'No requests match your current filter parameters. Try adjusting the date range or status filter.',
+    sortNotice: 'Pending Confirmation requests are prioritized first, followed by earliest requested dates.',
+    totalRequestsCount: (count: number) => `Total ${count} booking requests on file`,
+  },
+
+  w104: {
+    pageTitle: 'Booking Request Details',
+    breadcrumbList: 'Booking Requests',
+    subtitle: 'Review reservation specifications, verify service availability, and execute operational decisions.',
+    sectionParametersTitle: 'Reservation Parameters & Service Details',
+    sectionTravelerTitle: 'Traveler Identity & Special Inquiries',
+    sectionDecisionTitle: 'Provider Decision Actions',
+    sectionOutcomeTitle: 'Record Service Outcome',
+    fields: {
+      requestCode: 'Request Code',
+      service: 'Service',
+      option: 'Service Option',
+      requestedDate: 'Requested Date',
+      requestedTime: 'Estimated Arrival',
+      quantity: 'Quantity',
+      estimatedAmount: 'Estimated Total Amount',
+      submittedAt: 'Submitted Timestamp',
+      travelerFullName: 'Guest Full Name',
+      travelerPhone: 'Contact Phone',
+      travelerEmail: 'Contact Email',
+      specialRequests: 'Special Requests / Notes',
+      noneProvided: 'No special requests provided by guest.',
+    },
+    responseDeadlineLabel: 'Response Target: Standard 24h operational response window',
+    decisionActions: {
+      confirmPrompt: 'Confirm this booking request if service availability is verified.',
+      confirmButton: 'Confirm Request',
+      rejectButton: 'Reject Request',
+      confirmDialogTitle: 'Confirm Booking Request',
+      confirmDialogMessage: (code: string) =>
+        `Confirm acceptance of booking request ${code}? The traveler will be notified immediately and reservation details will be added to their itinerary schedule.`,
+      rejectDialogTitle: 'Reject Booking Request',
+      rejectReasonLabel: 'Rejection Reason (Required)',
+      rejectReasonPlaceholder: 'Enter clear reason for declining this request (e.g. Fully booked on selected date, service unavailable)...',
+      rejectPresets: [
+        'Fully booked for the selected date range',
+        'Service unavailable due to scheduled maintenance',
+        'Unable to accommodate requested party size',
+      ],
+      cancelAction: 'Cancel',
+      submitConfirm: 'Confirm Acceptance',
+      submitReject: 'Decline Request',
+    },
+    outcomeSection: {
+      lockedNotice: (date: string) =>
+        `Service outcome recording will unlock after the service date (${date}) has passed in Vietnam.`,
+      eligiblePrompt: 'Requested service date has passed. Please record the actual outcome and total collected amount.',
+      actualAmountLabel: 'Actual Amount Collected (VND)',
+      actualAmountPlaceholder: 'Enter total amount paid by guest',
+      commissionPreviewLabel: 'TripMate Commission Preview (10% estimate)',
+      commissionCalculationNote: 'Estimated at 10% of the actual amount, rounded down to whole VND.',
+      markCompletedButton: 'Mark Service Completed',
+      markNoShowButton: 'Mark Guest No-Show',
+      completedDialogTitle: 'Confirm Service Completion',
+      completedDialogMessage: (amount: string, comm: string) =>
+        `Confirm recording service completion with actual spend of ${amount} (Commission: ${comm})? Please verify the actual amount.`,
+      noShowDialogTitle: 'Confirm Guest No-Show',
+      noShowDialogMessage:
+        'Confirm recording guest no-show for this booking? The commission for this request will be recorded as 0 VND.',
+      terminalNotice: (status: string, date: string, actor: string) =>
+        `Outcome recorded as ${status} on ${date} by ${actor}. `,
+    },
   },
 
   w102: {
@@ -138,98 +229,6 @@ export const hotelProviderEn = {
     securityCardTitle: 'Strict Password Privacy',
     securityCardDesc:
       'In accordance with strict security governance, passwords are never entered or inspected by Staff. An automated cryptographically secure activation dispatch is delivered directly to the partner email.',
-  },
-
-  w103: {
-    pageTitle: 'Service Booking Requests',
-    subtitle: 'Review, verify room availability, and execute timely operational decisions on traveler booking requests.',
-    searchPlaceholder: 'Search by booking code, guest name, phone...',
-    statusFilterLabel: 'Filter by Status',
-    startDateLabel: 'Stay Date From',
-    endDateLabel: 'Stay Date To',
-    applyFiltersButton: 'Search',
-    resetFiltersButton: 'Reset Filters',
-    sortNotice:
-      'Pending Confirmation requests are prioritized first to ensure prompt operational response times.',
-    tableHeaders: {
-      requestCode: 'Request Code',
-      service: 'Property / Service',
-      option: 'Room Option',
-      requestedDate: 'Requested Date',
-      requestedTime: 'Check-in Time',
-      quantity: 'Qty',
-      travelerName: 'Traveler Name',
-      status: 'Status',
-      submittedAt: 'Submitted At',
-      action: 'Action',
-    },
-    emptyTitle: 'No Matching Booking Requests Found',
-    emptySubtitle: 'No reservation requests match the current search keyword or filter parameters.',
-    totalRequestsCount: (count: number) => `${count} booking requests on file`,
-  },
-
-  w104: {
-    pageTitle: 'Booking Request Details',
-    breadcrumbList: 'Booking Requests',
-    subtitle: 'Review reservation specifications, verify room availability, and execute operational decisions.',
-    sectionParametersTitle: 'Reservation Parameters & Stay Details',
-    sectionTravelerTitle: 'Traveler Identity & Special Inquiries',
-    sectionDecisionTitle: 'Provider Decision Actions',
-    sectionOutcomeTitle: 'Record Service Outcome',
-    fields: {
-      requestCode: 'Request Code',
-      service: 'Commercial Property',
-      option: 'Selected Room Option',
-      requestedDate: 'Requested Date',
-      requestedTime: 'Estimated Arrival',
-      quantity: 'Number of Rooms',
-      estimatedAmount: 'Estimated Total Amount',
-      submittedAt: 'Submitted Timestamp',
-      travelerFullName: 'Guest Full Name',
-      travelerPhone: 'Contact Phone',
-      travelerEmail: 'Contact Email',
-      specialRequests: 'Special Requests / Notes',
-      noneProvided: 'No special requests provided by guest.',
-    },
-    responseDeadlineLabel: 'Response Target: Standard 24h operational response window',
-    decisionActions: {
-      confirmPrompt: 'Confirm this booking request if room availability is verified.',
-      confirmButton: 'Confirm Request',
-      rejectButton: 'Reject Request',
-      confirmDialogTitle: 'Confirm Booking Request',
-      confirmDialogMessage: (code: string) =>
-        `Confirm acceptance of booking request ${code}? The traveler will be notified immediately and reservation details will be added to their itinerary schedule.`,
-      rejectDialogTitle: 'Reject Booking Request',
-      rejectReasonLabel: 'Rejection Reason',
-      rejectReasonPlaceholder: 'Enter clear reason for declining this request (e.g. Fully booked on selected date, property under maintenance)...',
-      rejectPresets: [
-        'Fully booked for the selected date range',
-        'Property undergoing scheduled maintenance',
-        'Unable to accommodate requested party size',
-      ],
-      cancelAction: 'Cancel',
-      submitConfirm: 'Confirm Acceptance',
-      submitReject: 'Decline Request',
-    },
-    outcomeSection: {
-      lockedNotice: (date: string) =>
-        `Service outcome recording will unlock after the check-in date (${date}) has arrived.`,
-      eligiblePrompt: 'Guest check-in date has passed. Please record the actual outcome and total collected amount.',
-      actualAmountLabel: 'Actual Amount Collected (VND)',
-      actualAmountPlaceholder: 'Enter total amount paid by guest',
-      commissionPreviewLabel: 'TripMate Commission Preview (10% standard parameter)',
-      commissionCalculationNote: 'Calculated as 10% of actual collected spend.',
-      markCompletedButton: 'Mark Stay Completed',
-      markNoShowButton: 'Mark Guest No-Show',
-      completedDialogTitle: 'Confirm Stay Completion',
-      completedDialogMessage: (amount: string, comm: string) =>
-        `Confirm recording stay completion with actual spend of ${amount} (Commission: ${comm})? This action is immutable once recorded.`,
-      noShowDialogTitle: 'Confirm Guest No-Show',
-      noShowDialogMessage:
-        'Confirm recording guest no-show for this booking? The commission for this request will be recorded as 0 VND.',
-      terminalNotice: (status: string, date: string, actor: string) =>
-        `Outcome recorded as ${status} on ${date} by ${actor}. Reservation state is immutable.`,
-    },
   },
 
   w105: {
