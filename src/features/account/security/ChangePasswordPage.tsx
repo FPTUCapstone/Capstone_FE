@@ -23,6 +23,12 @@ export function ChangePasswordPage() {
       router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.account.security)}`);
     } else if (status === 'authenticated' && context?.role === 'Administrator') {
       router.replace(ROUTES.admin.accountSecurity);
+    } else if (status === 'authenticated' && context?.role === 'TourOperator') {
+      router.replace(ROUTES.partner.dashboard);
+    } else if (status === 'authenticated' && context?.role === 'Staff') {
+      router.replace(ROUTES.admin.staffDashboard);
+    } else if (status === 'authenticated' && context?.role === 'ServiceProvider') {
+      router.replace(ROUTES.provider.security);
     }
   }, [status, context, router]);
 
@@ -40,7 +46,7 @@ export function ChangePasswordPage() {
     );
   }
 
-  if (status === 'unauthenticated' || !context || context.role === 'Administrator') {
+  if (status === 'unauthenticated' || !context || context.role !== 'Traveler') {
     return null;
   }
 

@@ -58,6 +58,19 @@ describe('partnerRouteDecision (CR-11 matrix, evaluated only after restore settl
     });
   });
 
+  describe('C3. ServiceProvider', () => {
+    it.each([
+      ['register', '/provider/bookings'],
+      ['dashboard', '/provider/bookings'],
+      ['application', '/provider/bookings'],
+      ['profile', '/provider/bookings'],
+      ['resubmit', '/provider/bookings'],
+      ['couponCreate', '/provider/bookings'],
+    ] as const)('denies %s by redirecting to %s', (route, href) => {
+      expect(partnerRouteDecision(route, ctx({ role: 'ServiceProvider' }))).toEqual({ action: 'redirect', href });
+    });
+  });
+
   describe('D. TourOperator Approved', () => {
     const approved = ctx({ role: 'TourOperator', applicationStatus: 'Approved' });
     it('allows /partner', () => {

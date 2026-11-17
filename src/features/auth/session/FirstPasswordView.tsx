@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChangePasswordForm } from '@/features/account/security/ChangePasswordForm';
 import { createWebChangePasswordCapability } from '@/features/account/security/webChangePasswordCapability';
@@ -41,8 +41,17 @@ export function FirstPasswordView({ administration = false, destination = '/admi
 }
 
 export function WebFirstPasswordPage() {
+  const router = useRouter();
   const { status, context } = useWebSession();
+
+  useEffect(() => {
+    if (status === 'authenticated' && context && !context.mustChangePassword) {
+      router.replace(signInDestination(context) ?? '/');
+    }
+  }, [status, context, router]);
+
   if (status === 'restoring') return <p role="status" className="p-8">Restoring session…</p>;
   if (!context) return <p className="p-8">Your session has expired. <a href="/sign-in">Sign in again</a></p>;
+  if (!context.mustChangePassword) return null;
   return <FirstPasswordView />;
 }

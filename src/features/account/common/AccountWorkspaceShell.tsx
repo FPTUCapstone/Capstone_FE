@@ -106,6 +106,8 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
       router.replace(ROUTES.admin.dashboard);
     } else if (status === 'authenticated' && context?.role === 'Staff') {
       router.replace(ROUTES.admin.staffDashboard);
+    } else if (status === 'authenticated' && context?.role === 'ServiceProvider') {
+      router.replace(pathname === ROUTES.account.security ? ROUTES.provider.security : ROUTES.provider.dashboard);
     }
   }, [status, context, router, pathname]);
 
