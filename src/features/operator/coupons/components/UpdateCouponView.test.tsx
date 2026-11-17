@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UpdateCouponView } from './UpdateCouponView';
 import * as couponService from '../services/operatorCouponService';
 import { couponEn } from '../resources/en';
-import type { CouponDto, EligibleTourDto } from '../types/couponLifecycle';
+import { OPERATOR_COUPON_MESSAGES, type CouponDto, type EligibleTourDto } from '../types/couponLifecycle';
 
 const mockPush = vi.fn();
 const obsoleteModeParam = ['de', 'mo'].join('');
@@ -42,6 +42,27 @@ describe('UpdateCouponView (UC-39)', () => {
     expect(screen.getByText(couponEn.update.couponCodeNote)).toBeDefined();
     expect(screen.getAllByText('86').length).toBeGreaterThan(0);
     expect(screen.queryByPlaceholderText(/SUMMER2026/i)).toBeNull();
+  });
+
+  it('marks the maximum discount amount as required for a percentage coupon', () => {
+    render(<UpdateCouponView initialCoupon={initialCoupon} eligibleTours={eligibleTours} currentUserId={101} />);
+
+    const label = screen.getByText(couponEn.create.fields.maxDiscountAmount).closest('label');
+
+    expect(label?.textContent).toContain('*');
+  });
+
+  it('explains why a percentage coupon cannot be saved without a maximum discount amount', async () => {
+    const save = vi.spyOn(couponService, 'updateCoupon');
+    render(<UpdateCouponView initialCoupon={initialCoupon} eligibleTours={eligibleTours} currentUserId={101} />);
+
+    const cap = screen.getByLabelText(couponEn.create.fields.maxDiscountAmount, { exact: false });
+    fireEvent.change(cap, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(couponEn.update.actions.save, 'i') }));
+
+    await waitFor(() => expect(cap.getAttribute('aria-invalid')).toBe('true'));
+    expect(screen.getByText(OPERATOR_COUPON_MESSAGES.INVALID_NUMERIC)).toBeDefined();
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('calls the production update service and preserves unlimited limits', async () => {
