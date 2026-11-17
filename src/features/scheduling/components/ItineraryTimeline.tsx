@@ -15,6 +15,7 @@ import {
   lunchCardAfterIndex,
   MOTORBIKE_ESTIMATE_NOTE,
   stopDisplayName,
+  stopExplanation,
 } from '../utils/itineraryPresentation';
 import { formatPriceLabel } from '@/lib/priceLabel';
 import { legIdBetweenItems } from '../utils/mapGeometry';
@@ -315,13 +316,13 @@ export function ItineraryTimeline({
                     {item.poiName || 'Điểm dừng chân theo lộ trình'}
                   </h3>
 
-                  {/* Recommendation reason */}
-                  {item.recommendationReason && (
+                  {/* AI sentence, or the recommendation reason when there is none (UC-10) */}
+                  {stopExplanation(item) && (
                     <p className="mt-1 flex items-start gap-1 text-xs text-slate-600 sm:text-sm">
                       <span className="material-symbols-outlined text-sm text-teal-600 shrink-0 mt-0.5">
                         tips_and_updates
                       </span>
-                      <span>{item.recommendationReason}</span>
+                      <span>{stopExplanation(item)}</span>
                     </p>
                   )}
 
