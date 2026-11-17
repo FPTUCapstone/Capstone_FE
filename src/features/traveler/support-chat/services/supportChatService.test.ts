@@ -4,6 +4,14 @@ import { sendSupportMessage, safeSourcePath, SupportChatError } from './supportC
 afterEach(() => vi.unstubAllGlobals());
 
 describe('support chat service', () => {
+  it.each(['/plan', '/pois', '/account/profile', '/account/preferences', '/account/security'])(
+    'accepts the exact supported feature destination %s', async url => {
+      const actions = [{ type: 'navigate', label: 'Open feature', url }];
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ answer: 'Open this page', sources: [], actions }))));
+      await expect(sendSupportMessage({ message: 'Open this feature', history: [] }, 'token')).resolves.toMatchObject({ actions });
+    },
+  );
+
   it.each(['adults=2&children=-1', 'adults=2&children=51', 'adults=50&infants=1',
     'adults=2&children=1&children=2', 'children=1', 'adults=2&infants=1.5'])('rejects unsafe mixed counts %s', async counts => {
     const actions = [{ type: 'navigate', label: 'Book', url: `/tours/101/book?scheduleId=11004&${counts}` }];
