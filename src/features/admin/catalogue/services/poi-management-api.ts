@@ -1,4 +1,7 @@
 import type {
+  DeactivatePoiRequest,
+  DeactivatePoiResponse,
+  PoiDeactivationReferences,
   PoiManagementCategory, PoiManagementItem, PoiManagementOpeningHour, PoiManagementQuery,
   PoiManagementResponse, PoiManagementStatus,
 } from '../types/poi-management';
@@ -200,4 +203,127 @@ export async function loadPoiManagement(query: PoiManagementQuery = {}, signal?:
     parsed.items.some(item => (query.categoryId !== undefined && item.categoryId !== query.categoryId) ||
       (query.status !== undefined && item.status !== query.status))) return unavailable();
   return parsed;
+}
+
+export function parsePoiDeactivationReferences(value: unknown): PoiDeactivationReferences {
+  const body = record(value);
+  const id = integer(body.poiId, 1);
+  const name = text(body.poiName);
+  const stat = text(body.status);
+  const activeItinerariesCount = integer(body.activeItinerariesCount, 0);
+  const activeRoutesCount = integer(body.activeRoutesCount, 0);
+  const openCommercialBookingsCount = integer(body.openCommercialBookingsCount, 0);
+  const hasActiveReferences = typeof body.hasActiveReferences === 'boolean' ? body.hasActiveReferences : unavailable();
+  const referenceSnapshotToken = text(body.referenceSnapshotToken);
+  const messageCode = body.messageCode === null || body.messageCode === undefined ? null : String(body.messageCode);
+  const message = body.message === null || body.message === undefined ? null : String(body.message);
+
+  return {
+    poiId: id,
+    poiName: name,
+    status: stat,
+    activeItinerariesCount,
+    activeRoutesCount,
+    openCommercialBookingsCount,
+    hasActiveReferences,
+    referenceSnapshotToken,
+    messageCode,
+    message,
+  };
+}
+
+export function parseDeactivatePoiResponse(value: unknown): DeactivatePoiResponse {
+  const body = record(value);
+  const id = integer(body.poiId, 1);
+  const stat = text(body.status);
+  if (stat !== 'Inactive') return unavailable();
+  const deactivatedConnectingRoutesCount = integer(body.deactivatedConnectingRoutesCount, 0);
+  const deactivatedAtUtc = text(body.deactivatedAtUtc);
+  const messageCode = text(body.messageCode);
+  const message = text(body.message);
+
+  return {
+    poiId: id,
+    status: stat,
+    deactivatedConnectingRoutesCount,
+    deactivatedAtUtc,
+    messageCode,
+    message,
+  };
+}
+
+export async function loadPoiDeactivationReferences(
+  poiId: string | number,
+  signal?: AbortSignal,
+): Promise<PoiDeactivationReferences> {
+  const id = typeof poiId === 'number' ? poiId : Number(poiId);
+  if (!Number.isInteger(id) || id <= 0) return unavailable();
+
+  let response: Response;
+  let body: unknown;
+  try {
+    response = await fetch(`/api/admin/pois/${id}/deactivation-references`, {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      signal,
+    });
+    body = await response.json().catch(() => null);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    return unavailable();
+  }
+  if (signal?.aborted) throw signal.reason;
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new PoiManagementApiError(response.status, 'POI_MANAGEMENT_ACCESS_REQUIRED');
+    }
+    return unavailable();
+  }
+  return parsePoiDeactivationReferences(body);
+}
+
+export async function deactivatePoi(
+  request: DeactivatePoiRequest,
+  signal?: AbortSignal,
+): Promise<DeactivatePoiResponse> {
+  if (!request || !Number.isInteger(request.poiId) || request.poiId <= 0 || !request.reason?.trim() || !request.referenceSnapshotToken?.trim()) {
+    throw new PoiManagementApiError(400, 'POI_MANAGEMENT_INVALID_QUERY');
+  }
+
+  let response: Response;
+  let body: unknown;
+  try {
+    response = await fetch(`/api/admin/pois/${request.poiId}/deactivate`, {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+      signal,
+    });
+    body = await response.json().catch(() => null);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    return unavailable();
+  }
+  if (signal?.aborted) throw signal.reason;
+
+  if (response.status === 409) {
+    const raw = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
+    const err = new PoiManagementApiError(409, 'POI_MANAGEMENT_INVALID_QUERY');
+    (err as unknown as { conflictData: unknown }).conflictData = raw;
+    throw err;
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new PoiManagementApiError(response.status, 'POI_MANAGEMENT_ACCESS_REQUIRED');
+    }
+    return unavailable();
+  }
+
+  return parseDeactivatePoiResponse(body);
 }
