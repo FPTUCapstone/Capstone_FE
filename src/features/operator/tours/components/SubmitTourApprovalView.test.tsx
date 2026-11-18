@@ -1,5 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as service from '../services/operatorTourService';
+import { OperatorTourApiError } from '../services/operatorTourApi';
 import { SubmitTourApprovalView } from './SubmitTourApprovalView';
 import type { TourPackageDto } from '../types/tourLifecycle';
 
@@ -75,8 +77,123 @@ const mockIncompleteTour: TourPackageDto = {
 };
 
 describe('SubmitTourApprovalView (UC-37 Screen #43)', () => {
+  afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('identifies the tour, traps focus, and restores the trigger on Escape or backdrop dismissal without submitting', () => {
+    const submit = vi.spyOn(service, 'submitTourForApproval');
+    render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    const trigger = screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i });
+    trigger.focus();
+    fireEvent.click(trigger);
+    expect(screen.getByRole('dialog').textContent).toContain(mockCompleteTour.title);
+    const cancel = screen.getByRole('button', { name: 'Hủy bỏ' });
+    expect(document.activeElement).toBe(cancel);
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Xác nhận gửi' }));
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(cancel);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('dialog'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('sends the note once, locks request controls, and stays read-only after confirmed success until navigation', async () => {
+    vi.useFakeTimers();
+    let resolve!: (value: Awaited<ReturnType<typeof service.submitTourForApproval>>) => void;
+    const submit = vi.spyOn(service, 'submitTourForApproval').mockImplementation(() => new Promise((done) => { resolve = done; }));
+    render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    const note = screen.getByRole('textbox') as HTMLTextAreaElement;
+    fireEvent.change(note, { target: { value: 'Staff note' } });
+    fireEvent.click(screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }));
+    const confirm = screen.getByRole('button', { name: 'Xác nhận gửi' });
+    act(() => { fireEvent.click(confirm); fireEvent.click(confirm); });
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(submit.mock.calls[0][1].note).toBe('Staff note');
+    expect(note.disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Quay lại chỉnh sửa' }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => resolve({ status: 'SUCCESS', data: { ...mockCompleteTour, status: 'Pending', submittedAtUtc: '2026-11-18T12:00:00Z' } }));
+    expect((screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }) as HTMLButtonElement).disabled).toBe(true);
+    expect(note.disabled).toBe(true);
+    expect(screen.getByText('Chờ duyệt')).toBeDefined();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1200); });
+    expect(mocks.push).toHaveBeenCalledWith('/partner/tours');
+  });
+
+  it.each([0, 409, 500])('requires reloading before a retry for uncertain or conflicting outcome %s', async (status) => {
+    vi.spyOn(service, 'submitTourForApproval').mockRejectedValue(new OperatorTourApiError(status, 'CONFLICT', 'unsafe upstream text'));
+    render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    fireEvent.click(screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gửi' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/tải lại/i));
+    expect((screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: /Tải lại/i })).toBeDefined();
+  });
+
+  it('redirects an expired session to sign in', async () => {
+    vi.spyOn(service, 'submitTourForApproval').mockRejectedValue(new OperatorTourApiError(401, 'AUTH_REQUIRED', 'expired'));
+    render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    fireEvent.click(screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gửi' }));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(expect.stringContaining('/sign-in?returnUrl=')));
+  });
+
+  it.each([[403, /quyền/i], [404, /Không tìm thấy/i], [422, /mục bắt buộc/i]])('explains submission failure %s and retains the note', async (status, message) => {
+    vi.spyOn(service, 'submitTourForApproval').mockRejectedValue(new OperatorTourApiError(status as number, undefined, 'unsafe upstream text'));
+    render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Keep my note' } });
+    fireEvent.click(screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gửi' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(message as RegExp));
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Keep my note');
+    expect((screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }) as HTMLButtonElement).disabled).toBe(status !== 422);
+  });
+
+  it('fails safely when a service response cannot confirm Pending', async () => {
+    vi.spyOn(service, 'submitTourForApproval').mockResolvedValue({ status: 'SUCCESS', data: { ...mockCompleteTour, status: 'Draft' } });
+    render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    fireEvent.click(screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gửi' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/tải lại/i));
+    expect(screen.queryByRole('status')).toBeNull();
+    expect((screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('cleans the delayed navigation timer after success on unmount', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(service, 'submitTourForApproval').mockResolvedValue({ status: 'SUCCESS', data: { ...mockCompleteTour, status: 'Pending' } });
+    const view = render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    fireEvent.click(screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gửi' })); });
+    view.unmount();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it('uses Staff copy and a storage limit without unsupported promises', () => {
+    const view = render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    expect(view.container.textContent).toContain('Staff');
+    expect(view.container.textContent).not.toMatch(/Quản trị viên|1 ngày làm việc|nhận được thông báo/i);
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).maxLength).toBe(4000);
+  });
+
+  it('does not navigate after unmount while submission is still in flight', async () => {
+    vi.useFakeTimers();
+    let resolve!: (value: Awaited<ReturnType<typeof service.submitTourForApproval>>) => void;
+    vi.spyOn(service, 'submitTourForApproval').mockImplementation(() => new Promise((done) => { resolve = done; }));
+    const view = render(<SubmitTourApprovalView tour={mockCompleteTour} />);
+    fireEvent.click(screen.getByRole('button', { name: /Gửi yêu cầu xét duyệt/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gửi' }));
+    view.unmount();
+    await act(async () => resolve({ status: 'SUCCESS', data: { ...mockCompleteTour, status: 'Pending' } }));
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it('renders Screen #43 header and tour summary card', () => {

@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
+import { OperatorTourApiError } from '../services/operatorTourApi';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import {
@@ -17,10 +19,20 @@ import {
 interface SubmitTourApprovalViewProps {
   tour: TourPackageDto;
   isDemo?: boolean;
+  onReload?: () => void;
+  initialShowConfirmModal?: boolean;
+  initialSuccessMessage?: string | null;
 }
 
-export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourApprovalViewProps) {
+export function SubmitTourApprovalView({
+  tour: initialTour,
+  isDemo = false,
+  onReload,
+  initialShowConfirmModal = false,
+  initialSuccessMessage = null,
+}: SubmitTourApprovalViewProps) {
   const router = useRouter();
+  const [tour, setTour] = useState(initialTour);
   const completeness = evaluateTourCompleteness(tour);
   const isSubmittableStatus = tour.status === 'Draft' || tour.status === 'Rejected';
 
@@ -35,13 +47,44 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
     nonSubmittableReason = 'Chỉ gói tour ở trạng thái Bản nháp hoặc Bị từ chối mới có thể gửi xét duyệt.';
   }
 
-  const [reviewerNote, setReviewerNote] = useState('');
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [reviewerNote, setReviewerNote] = useState(initialTour.submissionNote ?? '');
+  const [showConfirmModal, setShowConfirmModal] = useState(initialShowConfirmModal);
   const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(initialSuccessMessage);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reloadRequired, setReloadRequired] = useState(false);
+  const requestLock = useRef(false);
+  const mounted = useRef(false);
+  const navigationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const locked = submitting || !isSubmittableStatus || reloadRequired;
+  const noteTooLong = reviewerNote.trim().length > 4000;
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (navigationTimer.current) clearTimeout(navigationTimer.current);
+    };
+  }, []);
+
+  function handleFailure(error: unknown) {
+    const status = error instanceof OperatorTourApiError ? error.status : 0;
+    const uncertain = status === 0 || status === 409 || status >= 500;
+    requestLock.current = !(status === 400 || status === 422 || status === 429);
+    setReloadRequired(uncertain || status === 403 || status === 404 || status === 401);
+    setErrorMessage(status === 401 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+      : status === 403 ? 'Bạn không có quyền gửi duyệt gói tour này hoặc tài khoản chưa được phê duyệt.'
+      : status === 404 ? 'Không tìm thấy gói tour hoặc tour không còn khả dụng. Vui lòng tải lại danh sách.'
+      : status === 409 ? 'Trạng thái tour đã thay đổi. Vui lòng tải lại tour trước khi gửi lại.'
+      : status === 400 || status === 422 ? 'Không thể gửi duyệt. Hãy kiểm tra các mục bắt buộc và ghi chú (tối đa 4.000 ký tự), rồi tải lại tour để cập nhật danh mục kiểm tra.'
+      : status === 429 ? 'Có quá nhiều yêu cầu. Vui lòng chờ một lát trước khi thử lại.'
+      : 'Chưa xác định được kết quả gửi duyệt. Vui lòng tải lại tour để kiểm tra trạng thái trước khi gửi lại.');
+    if (status === 401) router.replace(`/sign-in?returnUrl=${encodeURIComponent(OPERATOR_TOUR_ROUTES.submit(tour.id))}`);
+  }
 
   const handleConfirmSubmit = async () => {
+    if (requestLock.current || locked || noteTooLong || !completeness.isEligibleForSubmission) return;
+    requestLock.current = true;
     setErrorMessage(null);
     setSuccessMessage(null);
     setSubmitting(true);
@@ -52,30 +95,33 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
         currentTour: tour,
         note: reviewerNote,
       });
+      if (!mounted.current) return;
 
-      if (result.status === 'SUCCESS' && result.data) {
+      if (result.status === 'SUCCESS' && result.data?.status === 'Pending' && result.data.id === tour.id) {
+        setTour(result.data);
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS);
         setShowConfirmModal(false);
         // After 1.5s redirect back to tour list
-        setTimeout(() => {
-          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
+        navigationTimer.current = setTimeout(() => {
+          if (mounted.current) router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
         }, 1200);
-      } else if (result.status === 'ERROR') {
-        setErrorMessage(result.message || OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      } else {
+        handleFailure(null);
         setShowConfirmModal(false);
       }
     } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE
-      );
+      if (!mounted.current) return;
+      handleFailure(err);
       setShowConfirmModal(false);
     } finally {
-      setSubmitting(false);
+      if (mounted.current) {
+        setSubmitting(false);
+      }
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]" aria-busy={submitting}>
       {/* Header bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
@@ -83,13 +129,13 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
             Gửi duyệt gói tour
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Kiểm tra các thông tin bắt buộc trước khi chuyển giao cho Quản trị viên phê duyệt.
+            Kiểm tra các thông tin bắt buộc trước khi chuyển giao cho nhân viên TripMate (Staff) phê duyệt.
           </p>
         </div>
 
         <Link
           href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-primary transition"
         >
           Quay lại danh sách
         </Link>
@@ -97,7 +143,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
 
       {/* Demo Mode Banner */}
       {isDemo && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 shadow-2xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 shadow-2xs">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-amber-600" aria-hidden="true">
               preview
@@ -127,6 +173,11 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
           className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800 shadow-xs"
         >
           {errorMessage}
+          {reloadRequired && (
+            <button type="button" onClick={() => onReload ? onReload() : window.location.reload()} className="mt-3 block min-h-11 rounded-xl border border-rose-300 px-4 py-2 focus-visible:ring-2 focus-visible:ring-primary">
+              Tải lại tour để kiểm tra
+            </button>
+          )}
         </div>
       )}
       {nonSubmittableReason && (
@@ -141,11 +192,11 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       {/* Tour Summary Card (Screen #43 header) */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 max-w-full items-center gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#174B4A]">
               <span className="material-symbols-outlined text-[28px]">tour</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-base font-extrabold text-[#1C2928] sm:text-lg">{tour.title}</h2>
               <p className="mt-1 font-mono text-xs text-slate-500">
                 {tour.tourCode} · {tour.destination} · {tour.durationDays} ngày · {tour.basePrice.toLocaleString()} đ
@@ -157,7 +208,7 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       </div>
 
       {/* 2-Column Responsive Layout (Screen #43) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left Column: Submission Checklist */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
           <div className="border-b border-slate-100 pb-3">
@@ -171,10 +222,10 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
 
           <div className="mt-4 divide-y divide-slate-100">
             {completeness.items.map((item) => (
-              <div key={item.key} className="flex items-center justify-between py-3.5 text-xs">
-                <div className="flex items-center gap-3">
+              <div key={item.key} className="flex flex-wrap items-center justify-between gap-2 py-3.5 text-xs">
+                <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className={`material-symbols-outlined text-[20px] ${
+                    className={`material-symbols-outlined shrink-0 text-[20px] ${
                       item.isComplete ? 'text-emerald-600' : 'text-slate-300'
                     }`}
                   >
@@ -195,12 +246,12 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
             ))}
           </div>
 
-          {!completeness.isEligibleForSubmission && (
+          {!completeness.isEligibleForSubmission && isSubmittableStatus && !submitting && !reloadRequired && (
             <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 font-medium">
               Còn <strong>{completeness.missingCount}</strong> mục bắt buộc chưa hoàn tất. Vui lòng quay lại màn hình chỉnh sửa để bổ sung đầy đủ trước khi gửi xét duyệt.{' '}
               <Link
                 href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(tour.id), isDemo)}
-                className="font-bold underline"
+                className="inline-flex min-h-11 items-center font-bold underline focus-visible:ring-2 focus-visible:ring-primary"
               >
                 Mở màn hình chỉnh sửa
               </Link>
@@ -227,36 +278,43 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#174B4A]/10 text-[11px] font-extrabold text-[#174B4A]">
                   2
                 </span>
-                <p>Quản trị viên TripMate sẽ kiểm tra tính pháp lý, giá cả và nội dung lịch trình.</p>
+                <p>Nhân viên TripMate (Staff) sẽ kiểm tra gói tour theo quy trình xét duyệt.</p>
               </div>
               <div className="flex items-start gap-3">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#174B4A]/10 text-[11px] font-extrabold text-[#174B4A]">
                   3
                 </span>
                 <p>
-                  Khi được duyệt, quản trị viên sẽ xuất bản gói tour để mở bán công khai cho du khách. Gói tour đã duyệt chưa hiển thị với du khách cho tới lúc đó.
+                  Gói tour chưa hiển thị công khai và chưa thể đặt chỗ cho tới khi được Staff phê duyệt và xuất bản.
                 </p>
               </div>
             </div>
 
             <p className="mt-4 rounded-xl bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500 border border-slate-100">
-              Thời gian kiểm duyệt tiêu chuẩn là 1 ngày làm việc. Trong thời gian này, gói tour sẽ bị khóa chỉnh sửa.
+              Trong thời gian chờ duyệt, gói tour ở chế độ chỉ đọc và bị khóa chỉnh sửa.
             </p>
           </section>
 
           {/* Note to Reviewer */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <label htmlFor="reviewer-note" className="block text-xs font-bold text-[#1C2928]">
-              Ghi chú gửi Quản trị viên (Tùy chọn)
+              Ghi chú gửi nhân viên TripMate (Staff) (Tùy chọn)
             </label>
             <textarea
               id="reviewer-note"
               rows={3}
               value={reviewerNote}
-              onChange={(e) => setReviewerNote(e.target.value)}
+              disabled={locked}
+              maxLength={4000}
+              aria-describedby="reviewer-note-limit"
+              aria-invalid={noteTooLong}
+              onChange={(e) => { setReviewerNote(e.target.value); setErrorMessage(null); }}
               placeholder="Ví dụ: Chuyến đi khởi hành buổi tối, bao gồm vé tham quan và thuyền hoa đăng..."
               className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
             />
+            <p id="reviewer-note-limit" className="mt-2 text-xs text-slate-500">{reviewerNote.length.toLocaleString('vi-VN')}/4.000 ký tự (giới hạn lưu trữ).</p>
+            {noteTooLong && <p role="alert" className="mt-2 text-xs text-rose-800">Ghi chú không được vượt quá 4.000 ký tự.</p>}
+            {tour.submittedAtUtc && <p className="mt-2 text-xs text-slate-500">Đã gửi lúc: {new Date(tour.submittedAtUtc).toLocaleString('vi-VN')}</p>}
           </section>
         </div>
       </div>
@@ -265,16 +323,17 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <button
           type="button"
+          disabled={locked}
           onClick={() => router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(tour.id), isDemo))}
-          className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="min-h-11 w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-primary transition disabled:opacity-50"
         >
           Quay lại chỉnh sửa
         </button>
         <button
           type="button"
-          onClick={() => setShowConfirmModal(true)}
-          disabled={!isSubmittableStatus || !completeness.isEligibleForSubmission || submitting}
-          className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
+          onClick={() => { setErrorMessage(null); setShowConfirmModal(true); }}
+          disabled={locked || !completeness.isEligibleForSubmission || noteTooLong}
+          className="min-h-11 w-full sm:w-auto text-center rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary transition disabled:opacity-50"
         >
           Gửi yêu cầu xét duyệt
         </button>
@@ -282,40 +341,12 @@ export function SubmitTourApprovalView({ tour, isDemo = false }: SubmitTourAppro
 
       {/* Confirmation Modal (Screen #43 Dialog) */}
       {showConfirmModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs animate-in fade-in duration-150"
-        >
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl">
-            <h3 id="modal-title" className="text-base font-extrabold text-[#1C2928]">
-              Gửi gói tour này để xét duyệt?
-            </h3>
-            <p className="mt-2 text-xs leading-relaxed text-slate-600">
-              Gói tour sẽ chuyển sang trạng thái <strong>Chờ duyệt</strong> và bị khóa chỉnh sửa cho đến khi Quản trị viên đưa ra quyết định. Bạn sẽ nhận được thông báo ngay khi quá trình kiểm duyệt hoàn tất.
-            </p>
-
-            <div className="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                disabled={submitting}
-                className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSubmit}
-                disabled={submitting}
-                className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
-              >
-                {submitting ? 'Đang gửi...' : 'Xác nhận gửi'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmationDialog title="Gửi gói tour này để xét duyệt?" pending={submitting}
+          onCancel={() => { if (!requestLock.current) setShowConfirmModal(false); }} onConfirm={handleConfirmSubmit}>
+          <p className="font-bold">{tour.title} · {tour.tourCode}</p>
+          <p>Gói tour sẽ chuyển sang trạng thái <strong>Chờ duyệt</strong> và bị khóa chỉnh sửa cho đến khi nhân viên TripMate (Staff) đưa ra quyết định.</p>
+          <p>Tour chưa hiển thị công khai và chưa thể đặt chỗ cho tới khi được Staff phê duyệt và xuất bản.</p>
+        </ConfirmationDialog>
       )}
     </div>
   );
