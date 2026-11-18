@@ -134,21 +134,21 @@ export function CreateSchedulingRequestForm({
     message: string;
   } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [firstInvalidFieldId, setFirstInvalidFieldId] = useState<string | null>(null);
   const [infeasibilityFix, setInfeasibilityFix] = useState<{
     requiredMinutes: number;
     currentMinutes: number;
     suggestedHours: number;
   } | null>(null);
 
-  useEffect(() => {
-    if (!firstInvalidFieldId) return;
+  const focusField = (fieldId: string) => {
+    if (typeof window === 'undefined') return;
 
-    const field = document.getElementById(firstInvalidFieldId);
-    field?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    field?.focus();
-    setFirstInvalidFieldId(null);
-  }, [firstInvalidFieldId]);
+    window.requestAnimationFrame(() => {
+      const field = document.getElementById(fieldId);
+      field?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      field?.focus();
+    });
+  };
 
   const locateStartPoint = async () => {
     setIsLocating(true);
@@ -326,7 +326,7 @@ export function CreateSchedulingRequestForm({
     setValidationErrors(errors);
     const firstError = Object.keys(errors)[0];
     if (firstError) {
-      setFirstInvalidFieldId(ERROR_FIELD_IDS[firstError]);
+      focusField(ERROR_FIELD_IDS[firstError]);
     }
     return Object.keys(errors).length === 0;
   };
@@ -462,7 +462,7 @@ export function CreateSchedulingRequestForm({
             'Ràng buộc không khả thi hoặc hệ thống đang bận. Vui lòng mở rộng bán kính hoặc tăng thời lượng chuyến đi.',
         });
       }
-      setFirstInvalidFieldId('scheduling-feedback');
+      focusField('scheduling-feedback');
     } finally {
       setIsSubmitting(false);
       setOptimizationPhase(null);
