@@ -26,8 +26,16 @@ vi.mock('@/components/navigation/PublicNavigation', () => ({
 }));
 
 vi.mock('../components/CreateSchedulingRequestForm', () => ({
-  CreateSchedulingRequestForm: ({ userId }: { userId?: string | number | null }) => (
-    <div data-testid="scheduling-form">Form for user {userId}</div>
+  CreateSchedulingRequestForm: ({
+    userId,
+    onSuccess,
+  }: {
+    userId?: string | number | null;
+    onSuccess?: (itinerary: { itineraryId: number }) => void;
+  }) => (
+    <button data-testid="scheduling-form" onClick={() => onSuccess?.({ itineraryId: 88 })}>
+      Form for user {userId}
+    </button>
   ),
 }));
 
@@ -58,6 +66,13 @@ describe('CreateSchedulingRequestPage (/plan - UC-10)', () => {
       screen.getByRole('heading', { name: /Lập Lịch Trình Du Lịch Tối Ưu/i, level: 1 }),
     ).toBeDefined();
     expect(screen.getByTestId('scheduling-form')).toBeDefined();
+  });
+
+  it('opens the generated itinerary immediately after successful creation', () => {
+    render(<CreateSchedulingRequestPage />);
+    screen.getByTestId('scheduling-form').click();
+
+    expect(mocks.push).toHaveBeenCalledWith('/itinerary/88');
   });
 
   it('renders restoring indicator while session is restoring', () => {
