@@ -17,6 +17,7 @@ export interface UserAccount {
 export interface AccountPage {
   items: UserAccount[];
   totalPages: number;
+  totalCount?: number;
 }
 
 export interface AccountDetail {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import { useId } from 'react';
 import type { SearchLocale } from '../resources/publicSearch';
 import { formatVndPrice } from '../utils/tourQuery';
 
@@ -31,10 +31,10 @@ interface PricePreset {
 
 const PRESETS: PricePreset[] = [
   { id: 'all', labelVi: 'Tất cả', labelEn: 'All', min: '', max: '' },
-  { id: 'u1m', labelVi: '< 1 triệu', labelEn: '< 1M', min: '', max: '1000000' },
+  { id: 'u1m', labelVi: '≤ 1 triệu', labelEn: '≤ 1M', min: '', max: '1000000' },
   { id: '1m-3m', labelVi: '1 - 3 triệu', labelEn: '1M - 3M', min: '1000000', max: '3000000' },
   { id: '3m-5m', labelVi: '3 - 5 triệu', labelEn: '3M - 5M', min: '3000000', max: '5000000' },
-  { id: 'o5m', labelVi: '> 5 triệu', labelEn: '> 5M', min: '5000000', max: '' },
+  { id: 'o5m', labelVi: '≥ 5 triệu', labelEn: '≥ 5M', min: '5000000', max: '' },
 ];
 
 export function TourPriceRangeSlider({
@@ -51,71 +51,14 @@ export function TourPriceRangeSlider({
   maxLabel = locale === 'vi' ? 'Giá tối đa' : 'Maximum price',
 }: TourPriceRangeSliderProps) {
   const sliderId = useId();
-  const minInputRef = useRef<HTMLInputElement>(null);
-  const maxInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamic ceiling accommodating higher prices from query/URL without truncation
-  const parsedMin = minPrice !== '' && Number.isFinite(Number(minPrice)) ? Number(minPrice) : 0;
-  const parsedMax = maxPrice !== '' && Number.isFinite(Number(maxPrice)) ? Number(maxPrice) : null;
+  const parsedMin = minPrice !== '' && Number.isFinite(Number(minPrice)) ? Math.max(0, Number(minPrice)) : 0;
+  const parsedMax = maxPrice !== '' && Number.isFinite(Number(maxPrice)) ? Math.max(0, Number(maxPrice)) : null;
   const effectiveMax = Math.max(sliderMaxCeiling, parsedMax ?? 0, parsedMin);
 
   const currentMin = parsedMin;
   const currentMax = parsedMax !== null ? parsedMax : effectiveMax;
-
-  useEffect(() => {
-    const input = minInputRef.current;
-    if (!input) return;
-    const nativeDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-    if (!nativeDescriptor) return;
-
-    Object.defineProperty(input, 'value', {
-      get() {
-        const nativeVal = nativeDescriptor.get?.call(this) ?? '';
-        if (
-          minPrice === '' &&
-          (nativeVal === '0' ||
-            nativeVal === '50' ||
-            nativeVal === '5000000' ||
-            nativeVal === String(Math.floor(effectiveMax / 2)))
-        ) {
-          return '';
-        }
-        return nativeVal;
-      },
-      set(val) {
-        nativeDescriptor.set?.call(this, val);
-      },
-      configurable: true,
-    });
-  }, [minPrice, effectiveMax]);
-
-  useEffect(() => {
-    const input = maxInputRef.current;
-    if (!input) return;
-    const nativeDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-    if (!nativeDescriptor) return;
-
-    Object.defineProperty(input, 'value', {
-      get() {
-        const nativeVal = nativeDescriptor.get?.call(this) ?? '';
-        if (
-          maxPrice === '' &&
-          (nativeVal === '0' ||
-            nativeVal === '50' ||
-            nativeVal === '5000000' ||
-            nativeVal === String(effectiveMax) ||
-            nativeVal === String(Math.floor(effectiveMax / 2)))
-        ) {
-          return '';
-        }
-        return nativeVal;
-      },
-      set(val) {
-        nativeDescriptor.set?.call(this, val);
-      },
-      configurable: true,
-    });
-  }, [maxPrice, effectiveMax]);
 
   // Track bar percentages (0 to 100)
   const minPercent = effectiveMax > 0 ? Math.min(100, Math.max(0, (currentMin / effectiveMax) * 100)) : 0;
@@ -137,29 +80,34 @@ export function TourPriceRangeSlider({
   const isFiltered = minPrice !== '' || maxPrice !== '';
 
   function handleMinInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = e.target.value;
-    // In real user events (isTrusted), ensure min does not cross max
-    if (e.isTrusted) {
-      const num = Number(val);
-      if (num > currentMax) {
-        onMinChange(String(currentMax));
-        return;
-      }
+    const rawVal = e.target.value;
+    const num = Number(rawVal);
+    if (!Number.isFinite(num)) {
+      onMinChange(rawVal);
+      return;
     }
-    onMinChange(val);
+    // Prevent min thumb from crossing max thumb (clamping to max)
+    const upperLimit = parsedMax !== null ? parsedMax : effectiveMax;
+    if (num > upperLimit) {
+      onMinChange(String(upperLimit));
+      return;
+    }
+    onMinChange(String(num));
   }
 
   function handleMaxInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = e.target.value;
-    // In real user events (isTrusted), ensure max does not cross min
-    if (e.isTrusted) {
-      const num = Number(val);
-      if (num < currentMin) {
-        onMaxChange(String(currentMin));
-        return;
-      }
+    const rawVal = e.target.value;
+    const num = Number(rawVal);
+    if (!Number.isFinite(num)) {
+      onMaxChange(rawVal);
+      return;
     }
-    onMaxChange(val);
+    // Prevent max thumb from crossing min thumb (clamping to min)
+    if (num < parsedMin) {
+      onMaxChange(String(parsedMin));
+      return;
+    }
+    onMaxChange(String(num));
   }
 
   function applyPreset(presetMin: string, presetMax: string) {
@@ -178,6 +126,14 @@ export function TourPriceRangeSlider({
   const isPresetActive = (preset: PricePreset) => {
     return minPrice === preset.min && maxPrice === preset.max;
   };
+
+  const isAtSameValue = currentMin === currentMax;
+  const minZIndex = isAtSameValue
+    ? currentMin >= effectiveMax / 2 ? 5 : 3
+    : currentMin > effectiveMax - 100 ? 5 : 3;
+  const maxZIndex = isAtSameValue
+    ? currentMin >= effectiveMax / 2 ? 3 : 5
+    : 4;
 
   return (
     <div className="space-y-3">
@@ -213,46 +169,50 @@ export function TourPriceRangeSlider({
 
         {/* Minimum price thumb */}
         <input
-          ref={minInputRef}
           type="range"
           id={`${sliderId}-min`}
           name="minPrice"
           min={0}
           max={effectiveMax}
           step={step}
-          value={minPrice}
+          value={minPrice !== '' ? parsedMin : 0}
           aria-label={minLabel}
           aria-valuemin={0}
           aria-valuemax={effectiveMax}
-          aria-valuenow={currentMin}
-          aria-valuetext={formatVndPrice(currentMin)}
+          aria-valuenow={parsedMin}
+          aria-valuetext={
+            minPrice !== ''
+              ? formatVndPrice(currentMin)
+              : (locale === 'vi' ? 'Không giới hạn dưới' : 'No minimum')
+          }
           onChange={handleMinInput}
           className="pointer-events-none absolute h-2 w-full appearance-none bg-transparent focus:outline-hidden"
-          style={{ zIndex: currentMin > effectiveMax - 100 ? 5 : 3 }}
+          style={{ zIndex: minZIndex }}
         />
 
         {/* Maximum price thumb */}
         <input
-          ref={maxInputRef}
           type="range"
           id={`${sliderId}-max`}
           name="maxPrice"
           min={0}
           max={effectiveMax}
           step={step}
-          value={maxPrice}
+          value={maxPrice !== '' ? (parsedMax ?? effectiveMax) : effectiveMax}
           aria-label={maxLabel}
           aria-valuemin={0}
           aria-valuemax={effectiveMax}
-          aria-valuenow={currentMax}
+          aria-valuenow={parsedMax !== null ? parsedMax : effectiveMax}
           aria-valuetext={
-            currentMax >= effectiveMax && maxPrice === ''
-              ? `${formatVndPrice(effectiveMax)}+`
-              : formatVndPrice(currentMax)
+            maxPrice !== ''
+              ? (currentMax >= effectiveMax && maxPrice === ''
+                  ? `${formatVndPrice(effectiveMax)}+`
+                  : formatVndPrice(currentMax))
+              : (locale === 'vi' ? 'Không giới hạn trên' : 'No maximum')
           }
           onChange={handleMaxInput}
           className="pointer-events-none absolute h-2 w-full appearance-none bg-transparent focus:outline-hidden"
-          style={{ zIndex: 4 }}
+          style={{ zIndex: maxZIndex }}
         />
       </div>
 

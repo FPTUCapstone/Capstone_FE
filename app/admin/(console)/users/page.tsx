@@ -372,9 +372,15 @@ export default async function UserAccountsPage(props: PageProps = {}) {
               >
                 person_search
               </span>
-              <p className="text-base font-bold text-[#1D2D2B]">No matching accounts.</p>
+              <p className="text-base font-bold text-[#1D2D2B]">
+                {data.items.length > 0
+                  ? 'No permitted accounts on this page.'
+                  : 'No matching accounts.'}
+              </p>
               <p className="mt-1 text-xs text-[#61736F]">
-                Try adjusting your search keyword or clearing filter constraints.
+                {data.items.length > 0
+                  ? `Accounts exist on this page, but none match your ${session.role} management scope. Please select a specific permitted role from the filter.`
+                  : 'Try adjusting your search keyword or clearing filter constraints.'}
               </p>
             </div>
           )}
@@ -386,8 +392,14 @@ export default async function UserAccountsPage(props: PageProps = {}) {
           >
             <p className="text-xs text-[#61736F]">
               Showing <strong className="text-[#1D2D2B] font-bold">{accounts.length}</strong>{' '}
-              {accounts.length === 1 ? 'account' : 'accounts'} · Page{' '}
-              <strong className="text-[#1D2D2B] font-bold">{page}</strong> of{' '}
+              {typeof data.totalCount === 'number' ? (
+                <>
+                  of <strong className="text-[#1D2D2B] font-bold">{data.totalCount}</strong> total accounts
+                </>
+              ) : (
+                <>{accounts.length === 1 ? 'account' : 'accounts'}</>
+              )}{' '}
+              · Page <strong className="text-[#1D2D2B] font-bold">{page}</strong> of{' '}
               <strong className="text-[#1D2D2B] font-bold">{data.totalPages || 1}</strong>
             </p>
             <div className="flex items-center gap-2">

@@ -99,6 +99,72 @@ describe('tourQuery utils', () => {
       expect(params.get('page')).toBe('3');
       expect(params.get('pageSize')).toBe('10');
     });
+
+    describe('URL state synchronization for price boundaries', () => {
+      it('serializes open-ended upper price limit omitting maxPrice', () => {
+        const params = toPublicUrlParams({
+          destination: '',
+          departureDate: '',
+          minPrice: '5000000',
+          maxPrice: '',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(params.get('minPrice')).toBe('5000000');
+        expect(params.has('maxPrice')).toBe(false);
+      });
+
+      it('serializes open-ended lower price limit omitting minPrice', () => {
+        const params = toPublicUrlParams({
+          destination: '',
+          departureDate: '',
+          minPrice: '',
+          maxPrice: '1000000',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(params.has('minPrice')).toBe(false);
+        expect(params.get('maxPrice')).toBe('1000000');
+      });
+
+      it('serializes equal min and max price boundaries', () => {
+        const params = toPublicUrlParams({
+          destination: '',
+          departureDate: '',
+          minPrice: '2500000',
+          maxPrice: '2500000',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(params.get('minPrice')).toBe('2500000');
+        expect(params.get('maxPrice')).toBe('2500000');
+      });
+
+      it('round-trips URL state through parseTourSearchState', () => {
+        const state = {
+          keyword: 'Scuba',
+          destination: 'Nha Trang',
+          departureDate: '2026-11-20',
+          startDate: '',
+          endDate: '',
+          minPrice: '1500000',
+          maxPrice: '3500000',
+          durationDays: '2',
+          category: 'Adventure',
+          minimumRating: '4',
+          sort: 'priceAsc',
+          page: 2,
+          pageSize: 20,
+        };
+        const serialized = toPublicUrlParams(state);
+        const parsed = parseTourSearchState(serialized);
+        expect(parsed.minPrice).toBe('1500000');
+        expect(parsed.maxPrice).toBe('3500000');
+        expect(parsed.destination).toBe('Nha Trang');
+        expect(parsed.keyword).toBe('Scuba');
+        expect(parsed.page).toBe(2);
+      });
+    });
   });
 
   describe('buildBackendTourQuery', () => {
