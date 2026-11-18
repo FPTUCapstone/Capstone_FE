@@ -50,6 +50,8 @@ export async function getDestinationOptions() {
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per BR-16
 
 export const REVIEW_BLOCKER_MESSAGES: Record<string, string> = {
+  required_fields_missing: 'Cần hoàn tất thông tin bắt buộc của tour',
+  itinerary_missing: 'Cần ít nhất 1 ngày lịch trình có hoạt động',
   primary_image_missing: 'Cần có ảnh đại diện đang hoạt động',
   future_departure_missing: 'Cần ít nhất 1 lịch khởi hành trong tương lai có giá người lớn',
   cancellation_policy_missing: 'Cần chọn chính sách hủy tour',
@@ -239,6 +241,8 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
     cancellationPolicy: detail.cancellationPolicyTemplateId ? String(detail.cancellationPolicyTemplateId) : '',
     status: statusFromApi(detail.status),
     rejectionReason: detail.rejectionReason ?? undefined,
+    submissionNote: detail.submissionNote ?? null,
+    submittedAtUtc: detail.submittedAtUtc ?? null,
     version: detail.versionNo ?? 1, itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo), schedules,
     media: mapMedia(media),
     createdAt: '', updatedAt: '',
@@ -500,6 +504,8 @@ export function evaluateTourCompleteness(
   // The server is the authority on review prerequisites: honour any blocker it still reports.
   if (serverReadiness) {
     const blockerToItem: Record<string, string> = {
+      required_fields_missing: 'basic-info',
+      itinerary_missing: 'itinerary',
       primary_image_missing: 'photos',
       future_departure_missing: 'schedules',
       cancellation_policy_missing: 'cancellation-policy',
@@ -511,8 +517,16 @@ export function evaluateTourCompleteness(
         item.isComplete = false;
         item.isMandatory = true;
         item.summaryText = REVIEW_BLOCKER_MESSAGES[blocker] ?? item.summaryText;
+      } else {
+        items.push({ key: blocker, label: 'Điều kiện gửi duyệt từ máy chủ', isComplete: false,
+          summaryText: 'Vui lòng tải lại tour và kiểm tra thông tin trước khi gửi duyệt.', isMandatory: true });
       }
     }
+  }
+
+  if ('canSubmitForReview' in tour && tour.canSubmitForReview === false && !items.some((item) => item.isMandatory && !item.isComplete)) {
+    items.push({ key: 'server-readiness', label: 'Điều kiện gửi duyệt từ máy chủ', isComplete: false,
+      summaryText: 'Tour chưa được phép gửi duyệt. Vui lòng tải lại để kiểm tra trạng thái.', isMandatory: true });
   }
 
   const mandatoryItems = items.filter((item) => item.isMandatory);
@@ -867,7 +881,7 @@ export async function updateTourPackage(
 }
 
 /**
- * UC-37: Submits a Tour Package for Administrator approval.
+ * UC-37: Submits a Tour Package for Staff approval.
  * Adheres to BR-104 allow-list (ONLY Draft or Rejected) and BR-101 completeness.
  * Status eligibility is strictly evaluated BEFORE completeness checks.
  */
@@ -880,6 +894,10 @@ export async function submitTourForApproval(
   }
 ): Promise<TourActionResult<TourPackageDto>> {
   const { currentTour } = options;
+  const submissionNote = options.note?.trim() || null;
+  if (submissionNote && submissionNote.length > 4000) {
+    throw new Error('Ghi chú không được vượt quá 4.000 ký tự.');
+  }
 
   // 1. Status eligibility (BR-104 allow-list: ONLY Draft or Rejected)
   // Check BEFORE evaluateTourCompleteness so non-submittable tours fail immediately
@@ -916,6 +934,8 @@ export async function submitTourForApproval(
     const submittedTour: TourPackageDto = {
       ...currentTour,
       status: 'Pending',
+      submissionNote,
+      submittedAtUtc: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isDemo: true,
     };
@@ -930,8 +950,11 @@ export async function submitTourForApproval(
     };
   }
 
-  const response = await submitTour(asBackendId(tourId, 'Mã gói tour'));
-  return { status: 'SUCCESS', data: await loadTourDetail(response.tourId), message: OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS, isDemo: false };
+  const response = await submitTour(asBackendId(tourId, 'Mã gói tour'), submissionNote);
+  // The command confirms persistence. A failed subsequent read must not turn it into a failed write.
+  return { status: 'SUCCESS', data: { ...currentTour, status: 'Pending', submissionNote,
+    submittedAtUtc: response.submittedAtUtc ?? null, canSubmitForReview: false },
+    message: OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS, isDemo: false };
 }
 
 

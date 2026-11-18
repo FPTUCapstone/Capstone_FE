@@ -81,6 +81,7 @@ export interface ApiItineraryItem { dayNo: number; sequenceNo: number; poiId: nu
 export interface ApiDeparture { id: number; startAtUtc: string; endAtUtc: string; meetingPoint: string | null; minimumCapacity: number; totalCapacity: number; reservedCapacity: number; registrationDeadlineAtUtc: string | null; adultPrice: number | null; childPrice: number | null; infantPrice: number | null; status: string; }
 export interface ApiDestination { destinationId: number; name: string; }
 export interface ApiTourDetail {
+  submissionNote?: string | null; submittedAtUtc?: string | null;
   id: number; title: string; destination: string; description: string; categoryId: number | null;
   basePrice: number; durationDays: number; versionNo?: number; status: string; rejectionReason: string | null;
   inclusions: string | null; exclusions: string | null; destinations: ApiDestination[];
@@ -118,7 +119,16 @@ export async function listTours(): Promise<ApiTourListItem[]> {
 export const getTour = (id: number) => request<ApiTourDetail>(`/operator/tours/${id}`);
 export const createTour = (body: ApiCreateTour, idempotencyKey: string) => request<{ tourId: number; status: string }>('/operator/tours', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify(body) });
 export const updateTour = (id: number, body: ApiCreateTour) => request<{ tourId: number; status: string }>(`/operator/tours/${id}`, { method: 'PUT', body: JSON.stringify(body) });
-export const submitTour = (id: number) => request<{ tourId: number; status: string }>(`/operator/tours/${id}/submit-review`, { method: 'POST' });
+export async function submitTour(id: number, submissionNote: string | null = null) {
+  const result = await request<{ tourId: number; status: string; submittedAtUtc?: string | null }>(`/operator/tours/${id}/submit-review`, {
+    method: 'POST', body: JSON.stringify({ submissionNote }),
+  });
+  if (!result || result.tourId !== id || result.status !== 'Pending' ||
+    (result.submittedAtUtc != null && (typeof result.submittedAtUtc !== 'string' || !Number.isFinite(Date.parse(result.submittedAtUtc))))) {
+    throw new OperatorTourApiError(0, 'INVALID_RESPONSE', 'Chưa xác định được kết quả gửi duyệt. Vui lòng tải lại tour để kiểm tra trạng thái trước khi gửi lại.');
+  }
+  return result;
+}
 export const listCancellationPolicies = () => request<ApiPolicy[]>('/operator/tours/cancellation-policies');
 export const listCategories = () => request<ApiCategory[]>('/tour-categories');
 export const listDestinations = () => request<ApiDestination[]>('/destinations');

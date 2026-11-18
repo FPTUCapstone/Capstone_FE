@@ -2,7 +2,8 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { OperatorTourApiError } from '@/features/operator/tours/services/operatorTourApi';
 import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
 import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { SubmitTourApprovalView } from '@/features/operator/tours/components/SubmitTourApprovalView';
@@ -17,6 +18,7 @@ import {
 function SubmitTourContent() {
   const params = useParams<{ id: string }>();
   const id = params?.id || '';
+  const { replace } = useRouter();
   const searchParams = useSearchParams();
   const isDemoParam = searchParams.get('demo') === '1';
   const isDemo = isDemoParam && isTourDemoAllowedInCurrentEnv();
@@ -24,28 +26,34 @@ function SubmitTourContent() {
   const [tour, setTour] = useState<TourPackageDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     async function load() {
       setLoading(true);
       setErrorMessage(null);
+      setTour(null);
       try {
         const res = await getOperatorTourById(id, { allowDemo: isDemo });
         if (isMounted) {
           if (res.status === 'SUCCESS' && res.data) {
             setTour(res.data);
           } else if (res.status === 'PENDING_BE_INTEGRATION') {
-            setTour(null);
+            setErrorMessage(OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
           } else {
             setErrorMessage(res.message || 'Không tìm thấy gói tour.');
           }
         }
       } catch (err) {
         if (isMounted) {
-          setErrorMessage(
-            err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE
-          );
+          const status = err instanceof OperatorTourApiError ? err.status : 0;
+          setErrorMessage(status === 401 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+            : status === 403 ? 'Bạn không có quyền xem hoặc gửi duyệt gói tour này.'
+            : status === 404 ? 'Không tìm thấy gói tour hoặc tour không còn khả dụng.'
+            : status === 0 ? 'Không thể kết nối máy chủ. Vui lòng kiểm tra mạng và thử tải lại.'
+            : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+          if (status === 401) replace(`/sign-in?returnUrl=${encodeURIComponent(OPERATOR_TOUR_ROUTES.submit(id))}`);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -55,7 +63,7 @@ function SubmitTourContent() {
     return () => {
       isMounted = false;
     };
-  }, [id, isDemo]);
+  }, [id, isDemo, reloadVersion, replace]);
 
   return (
     <PartnerWorkspaceLayout activeTab="tours" isDemo={isDemo}>
@@ -68,54 +76,18 @@ function SubmitTourContent() {
             <p className="mt-2 text-xs font-bold">Đang tải thông tin gói tour...</p>
           </div>
         ) : tour ? (
-          <SubmitTourApprovalView tour={tour} isDemo={isDemo} />
-        ) : !isDemo ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-amber-900">
-            <div className="flex items-start gap-4">
-              <span className="material-symbols-outlined text-[32px] text-amber-600">
-                engineering
-              </span>
-              <div>
-                <h2 className="text-lg font-bold">
-                  Chức năng gửi duyệt gói tour đang chờ cập nhật hệ thống
-                </h2>
-                <p className="mt-2 text-sm text-amber-800">
-                  {OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION}
-                </p>
-                <p className="mt-1 text-xs text-amber-700">
-                  Mã gói tour yêu cầu: <span className="font-mono font-bold">{id}</span>
-                </p>
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <Link
-                    href={OPERATOR_TOUR_ROUTES.list}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
-                  >
-                    <span className="material-symbols-outlined text-sm">arrow_back</span>
-                    Quay lại danh sách tour
-                  </Link>
-                  {isTourDemoAllowedInCurrentEnv() && (
-                    <Link
-                      href={`/partner/tours/${id}/submit?demo=1`}
-                      className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
-                    >
-                      <span className="material-symbols-outlined text-sm">science</span>
-                      Xem giao diện mẫu (Demo Mode)
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <SubmitTourApprovalView key={`${id}:${isDemo}:${reloadVersion}`} tour={tour} isDemo={isDemo} onReload={() => setReloadVersion((value) => value + 1)} />
         ) : (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-900">
-            <h2 className="text-lg font-bold">Không tìm thấy gói tour</h2>
+          <div role="alert" className="min-w-0 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-900 [overflow-wrap:anywhere] sm:p-8">
+            <h2 className="text-lg font-bold">Không thể tải gói tour</h2>
             <p className="mt-2 text-sm text-red-800">
               {errorMessage || 'Gói tour với mã trên không tồn tại trong bộ dữ liệu.'}
             </p>
-            <div className="mt-6">
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="button" onClick={() => setReloadVersion((value) => value + 1)} className="min-h-11 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-xs font-bold focus-visible:ring-2 focus-visible:ring-primary">Thử tải lại</button>
               <Link
                 href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-800 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-700"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-800 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <span className="material-symbols-outlined text-sm">arrow_back</span>
                 Quay lại danh sách tour
