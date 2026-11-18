@@ -221,6 +221,150 @@ describe('tourQuery utils', () => {
       expect(result.isValid).toBe(false);
       expect(result.errorMessage).toContain('YYYY-MM-DD');
     });
+
+    describe('Numeric validation suite (Mandatory Section 6)', () => {
+      it('accepts minimum smaller than maximum', () => {
+        const result = validateTourFilters({
+          destination: '',
+          departureDate: '',
+          minPrice: '500000',
+          maxPrice: '1500000',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(result.isValid).toBe(true);
+      });
+
+      it('accepts minimum equal to maximum', () => {
+        const result = validateTourFilters({
+          destination: '',
+          departureDate: '',
+          minPrice: '1000000',
+          maxPrice: '1000000',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(result.isValid).toBe(true);
+      });
+
+      it('rejects minimum greater than maximum (MSG29)', () => {
+        const result = validateTourFilters({
+          destination: '',
+          departureDate: '',
+          minPrice: '2000000',
+          maxPrice: '1000000',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(result.isValid).toBe(false);
+        expect(result.errorMessage).toContain('Giá tối thiểu không được lớn hơn giá tối đa');
+      });
+
+      it.each(['-100', '100.5', 'NaN', 'Infinity', 'abc'])(
+        'rejects invalid minPrice: %s',
+        (minPrice) => {
+          const result = validateTourFilters({
+            destination: '',
+            departureDate: '',
+            minPrice,
+            maxPrice: '',
+            page: 1,
+            pageSize: 20,
+          });
+          expect(result.isValid).toBe(false);
+        },
+      );
+
+      it.each(['-100', '100.5', 'NaN', 'Infinity', 'xyz'])(
+        'rejects invalid maxPrice: %s',
+        (maxPrice) => {
+          const result = validateTourFilters({
+            destination: '',
+            departureDate: '',
+            minPrice: '',
+            maxPrice,
+            page: 1,
+            pageSize: 20,
+          });
+          expect(result.isValid).toBe(false);
+        },
+      );
+
+      it('accepts empty/unset price filter (Any price)', () => {
+        const result = validateTourFilters({
+          destination: '',
+          departureDate: '',
+          minPrice: '',
+          maxPrice: '',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(result.isValid).toBe(true);
+      });
+
+      it('accepts valid positive integer duration in days', () => {
+        const result = validateTourFilters({
+          destination: '',
+          departureDate: '',
+          minPrice: '',
+          maxPrice: '',
+          durationDays: '3',
+          page: 1,
+          pageSize: 20,
+        });
+        expect(result.isValid).toBe(true);
+      });
+
+      it.each(['0', '-1', '2.5', 'NaN', 'Infinity', 'abc'])(
+        'rejects invalid durationDays: %s',
+        (durationDays) => {
+          const result = validateTourFilters({
+            destination: '',
+            departureDate: '',
+            minPrice: '',
+            maxPrice: '',
+            durationDays,
+            page: 1,
+            pageSize: 20,
+          });
+          expect(result.isValid).toBe(false);
+          expect(result.errorMessage).toContain('Thời lượng');
+        },
+      );
+
+      it.each(['1', '3', '4.5', '5'])(
+        'accepts valid rating threshold within 1..5 scale: %s',
+        (minimumRating) => {
+          const result = validateTourFilters({
+            destination: '',
+            departureDate: '',
+            minPrice: '',
+            maxPrice: '',
+            minimumRating,
+            page: 1,
+            pageSize: 20,
+          });
+          expect(result.isValid).toBe(true);
+        },
+      );
+
+      it.each(['0', '5.5', '6', '-1', 'NaN', 'abc'])(
+        'rejects rating threshold outside 1..5 scale: %s',
+        (minimumRating) => {
+          const result = validateTourFilters({
+            destination: '',
+            departureDate: '',
+            minPrice: '',
+            maxPrice: '',
+            minimumRating,
+            page: 1,
+            pageSize: 20,
+          });
+          expect(result.isValid).toBe(false);
+          expect(result.errorMessage).toContain('Đánh giá');
+        },
+      );
+    });
   });
 
   describe('formatVndPrice & formatDateDisplay', () => {
