@@ -901,6 +901,50 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     });
   });
 
+  it('scrolls to and focuses the first invalid field after validation fails', async () => {
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    try {
+      render(<CreateSchedulingRequestForm />);
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Vui lòng chọn điểm xuất phát/i)).toBeDefined();
+        expect(document.activeElement).toBe(screen.getByText('Chọn điểm xuất phát').closest('button'));
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+      });
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: originalScrollIntoView,
+      });
+    }
+  });
+
+  it('moves focus to the error feedback when itinerary creation fails', async () => {
+    vi.spyOn(schedulingApi, 'createSchedulingRequest').mockRejectedValueOnce({
+      status: 500,
+      message: 'Internal Server Error',
+    });
+
+    render(<CreateSchedulingRequestForm />);
+    await chooseStartAndArea();
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Internal Server Error')).toBeDefined();
+        expect(document.activeElement).toBe(document.getElementById('scheduling-feedback'));
+      },
+      { timeout: 4000 },
+    );
+  });
+
   it('submits form and calls onSuccess when API responds successfully', async () => {
     vi.spyOn(schedulingApi, 'createSchedulingRequest').mockResolvedValueOnce(mockSuccessResponse);
     const onSuccessMock = vi.fn();
