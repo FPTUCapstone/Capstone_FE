@@ -7,7 +7,7 @@ import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
 import { getWeatherSafetyReviewBadgeCount } from '@/features/operator/weather-safety/weatherSafetyApi';
 
-export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts' | 'weatherSafety';
+export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'complaints' | 'revenue' | 'payouts' | 'weatherSafety';
 
 interface PartnerWorkspaceNavProps {
   activeTab: PartnerWorkspaceTabKey;
@@ -54,6 +54,12 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     label: 'Đơn đặt chỗ',
     icon: 'receipt_long',
     href: ROUTES.partner.bookings,
+  },
+  {
+    key: 'complaints',
+    label: 'Khiếu nại sau tour',
+    icon: 'report',
+    href: ROUTES.partner.postTripComplaints,
   },
   {
     key: 'revenue',

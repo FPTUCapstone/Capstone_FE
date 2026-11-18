@@ -64,8 +64,10 @@ export const hotelProviderVi = {
     MSG203: 'Đã xác nhận yêu cầu đặt phòng. Du khách đã được thông báo.',
     MSG204: 'Đã từ chối yêu cầu đặt phòng. Du khách đã được thông báo lý do.',
     MSG206: 'Đã ghi nhận kết quả lưu trú.',
+    MSG207: 'Bảng kê hoa hồng đã quá hạn thanh toán. Vui lòng chuyển khoản và gửi mã giao dịch để tránh việc tài khoản bị khóa theo quy định.',
     MSG208: 'Đã gửi thông tin chuyển khoản. Bộ phận tài chính sẽ kiểm tra và xác nhận sau khi đối soát.',
     MSG209: 'Đã xác nhận thu tiền. Bảng kê hoa hồng được cập nhật sang trạng thái Đã thanh toán.',
+    MSG210: 'Tài khoản dịch vụ đã bị tạm khóa do bảng kê hoa hồng quá hạn thanh toán 15 ngày. Vui lòng liên hệ quản trị viên để được hỗ trợ.',
   },
 
   directPaymentNotice: {

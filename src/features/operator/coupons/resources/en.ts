@@ -95,8 +95,9 @@ export const couponEn = {
       discountValuePercentageHelp: 'Enter a percentage from 1 to 100.',
       discountValueFlatHelp: 'Enter fixed discount amount in VND.',
       maxDiscountAmount: 'Maximum Discount Amount (VND)',
-      maxDiscountAmountPlaceholder: 'Optional cap (leave blank if unlimited)',
-      maxDiscountAmountHelp: 'Maximum monetary cap applied when using percentage discount.',
+      maxDiscountAmountPlaceholder: 'e.g., 50000',
+      maxDiscountAmountHelp:
+        'Required for percentage coupons: the largest amount a single booking can be discounted.',
       minSpend: 'Minimum Spend (VND)',
       minSpendPlaceholder: '0',
       minSpendHelp: 'Minimum booking subtotal required before coupon applies.',

@@ -133,13 +133,19 @@ describe("proxyGetPartialRefundProposal", () => {
 });
 
 describe("proxyRespondToPartialRefundProposal", () => {
-  it.each([{ decision: "Counter" }, { decision: 1 }, {}])(
+  it.each([
+    [{ decision: "Counter" }, "INVALID_DECISION"],
+    [{ decision: 1 }, "INVALID_DECISION"],
+    [{}, "INVALID_DECISION"],
+    [{ decision: "CounterOffer" }, "complaint.partial_refund.reason_required"],
+    [{ decision: "CounterOffer", reason: "Need more" }, "complaint.partial_refund.counter_amount_invalid"],
+  ])(
     "rejects %j without calling the backend",
-    async (body) => {
+    async (body, errorCode) => {
       const response = await proxyRespondToPartialRefundProposal(postRequest(body), "501");
 
       expect(response.status).toBe(400);
-      expect(await response.json()).toEqual({ errorCode: "INVALID_DECISION" });
+      expect(await response.json()).toEqual({ errorCode });
       expect(mocks.fetchBackend).not.toHaveBeenCalled();
     },
   );
@@ -169,6 +175,32 @@ describe("proxyRespondToPartialRefundProposal", () => {
     expect(JSON.parse(init.body)).toEqual({ decision: "Accept" });
   });
 
+  it("forwards a counter-offer with its reason and requested amount", async () => {
+    signedIn();
+    const outcome = {
+      complaintId: 501,
+      status: "AwaitingOperatorReconsideration",
+      approvedAmount: null,
+      counterOfferAmount: 10000,
+      respondedAtUtc: "2026-11-07T03:00:00Z",
+    };
+    mocks.fetchBackend.mockResolvedValueOnce(new Response(JSON.stringify(outcome), { status: 200 }));
+
+    const response = await proxyRespondToPartialRefundProposal(
+      postRequest({ decision: "CounterOffer", reason: "The offer does not cover the missing service.", requestedAmount: 10000 }),
+      "501",
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(outcome);
+    const [, init] = mocks.fetchBackend.mock.calls.at(-1)!;
+    expect(JSON.parse(init.body)).toEqual({
+      decision: "CounterOffer",
+      reason: "The offer does not cover the missing service.",
+      requestedAmount: 10000,
+    });
+  });
+
   it("preserves the MSG165 conflict code", async () => {
     signedIn();
     mocks.fetchBackend.mockResolvedValueOnce(
@@ -176,7 +208,7 @@ describe("proxyRespondToPartialRefundProposal", () => {
     );
 
     const response = await proxyRespondToPartialRefundProposal(
-      postRequest({ decision: "Decline" }),
+      postRequest({ decision: "Decline", reason: "The final offer is not adequate." }),
       "501",
     );
 
@@ -191,7 +223,7 @@ describe("proxyRespondToPartialRefundProposal", () => {
     mocks.fetchBackend.mockRejectedValueOnce(new Error("offline"));
 
     const response = await proxyRespondToPartialRefundProposal(
-      postRequest({ decision: "Decline" }),
+      postRequest({ decision: "Decline", reason: "The final offer is not adequate." }),
       "501",
     );
 

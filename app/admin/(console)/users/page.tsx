@@ -8,10 +8,14 @@ import { ROUTES } from '@/lib/routes';
 const filterKeys = ['search', 'role', 'status', 'registeredFrom', 'registeredTo', 'page'] as const;
 type Filters = Partial<Record<(typeof filterKeys)[number], string>>;
 
-export default async function UserAccountsPage({ searchParams }: { searchParams?: Promise<Filters> }) {
+type PageProps = { searchParams?: Promise<Filters> };
+
+export default async function UserAccountsPage(): Promise<React.JSX.Element | never>;
+export default async function UserAccountsPage(props: PageProps): Promise<React.JSX.Element | never>;
+export default async function UserAccountsPage(props: PageProps = {}) {
   const session = await accountSession();
   if (!session) return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
-  const filters = (await searchParams) ?? {};
+  const filters = (await props.searchParams) ?? {};
   const filterParams = new URLSearchParams();
   for (const key of filterKeys) {
     const value = filters[key];

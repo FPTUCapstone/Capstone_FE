@@ -307,7 +307,10 @@ export async function webRefresh(): Promise<WebAuthContext> {
 export async function webLogout(): Promise<void> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/auth/web/logout`, { method: 'POST', credentials: 'include' });
+    // Use the same-origin route so it can revoke the backend session and expire
+    // every browser-visible cookie path. This is important after a local DB
+    // restore, where an old scoped refresh cookie can otherwise survive logout.
+    res = await fetch('/api/auth/session/logout', { method: 'POST', credentials: 'include' });
   } catch {
     throw { code: 'NETWORK', message: 'Sign out unavailable.', status: 0 } satisfies ApiError;
   }

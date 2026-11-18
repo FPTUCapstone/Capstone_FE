@@ -5,13 +5,14 @@ const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 vi.mock('./refundsOperatorService', () => ({
   fetchOperatorRefundDetail: vi.fn(),
+  confirmOperatorRefund: vi.fn(),
   reportOperatorRefundReturn: vi.fn(),
   RefundsOperatorError: class extends Error {
     constructor(public status: number, public errorCode?: string, title?: string) { super(title); }
   },
 }));
 
-import { fetchOperatorRefundDetail, RefundsOperatorError, reportOperatorRefundReturn } from './refundsOperatorService';
+import { confirmOperatorRefund, fetchOperatorRefundDetail, RefundsOperatorError, reportOperatorRefundReturn } from './refundsOperatorService';
 import { ConfirmBookingRefundScreen } from './ConfirmBookingRefundScreen';
 
 const awaitingReturn = {
@@ -25,7 +26,24 @@ describe('ConfirmBookingRefundScreen', () => {
   beforeEach(() => {
     replace.mockClear();
     vi.mocked(fetchOperatorRefundDetail).mockReset().mockResolvedValue(awaitingReturn);
+    vi.mocked(confirmOperatorRefund).mockReset().mockResolvedValue(undefined);
     vi.mocked(reportOperatorRefundReturn).mockReset().mockResolvedValue(undefined);
+  });
+
+  it('shows Confirm Refund for a pending operator confirmation and reloads the committed state', async () => {
+    vi.mocked(fetchOperatorRefundDetail).mockResolvedValueOnce({
+      ...awaitingReturn,
+      status: 'PendingOperatorConfirmation',
+      returnDeadlineAtUtc: null,
+    });
+    vi.mocked(fetchOperatorRefundDetail).mockResolvedValueOnce({
+      ...awaitingReturn,
+      status: 'AwaitingPartnerReturn',
+    });
+    render(<ConfirmBookingRefundScreen refundId={501} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm Refund' }));
+    await waitFor(() => expect(confirmOperatorRefund).toHaveBeenCalledWith(501));
+    expect(await screen.findByLabelText('Bank Transfer Reference')).toBeTruthy();
   });
 
   it('shows the cancellation-created obligation and deadline without a confirmation action', async () => {
@@ -59,6 +77,7 @@ describe('ConfirmBookingRefundScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Return' }));
     await waitFor(() => expect(reportOperatorRefundReturn).toHaveBeenCalledWith(501, 'FT-998877'));
     expect(await screen.findByText('ReturnReported')).toBeTruthy();
+    expect(screen.getByText('Bank transfer reference submitted successfully.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Confirm Return' })).toBeNull();
   });
 

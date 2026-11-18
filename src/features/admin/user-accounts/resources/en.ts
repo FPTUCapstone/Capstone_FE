@@ -1,4 +1,30 @@
 export const adminUserAccountsEn = {
+  moderation: {
+    lock: {
+      label: 'Lock account',
+      reasonLabel: 'Reason for locking',
+      confirmationTitle: 'Lock account',
+      confirmLabel: 'Confirm lock',
+    },
+    unlock: {
+      label: 'Unlock account',
+      reasonLabel: 'Reason for unlocking',
+      confirmationTitle: 'Unlock account',
+      confirmLabel: 'Confirm unlock',
+    },
+    messages: {
+      MSG130: 'Are you sure you want to continue? This action may not be reversible.',
+      MSG189: 'Account locked. The account holder has been notified.',
+      MSG190: 'Account unlocked. The account holder has been notified.',
+    },
+    reasonSummary: 'Reason',
+    cancelLabel: 'Cancel',
+    closeLabel: 'Close confirmation',
+    updatingLabel: 'Updating…',
+    dismissToastLabel: 'Dismiss notification',
+    updateFailed: 'Account update failed.',
+    unavailable: 'Account management is temporarily unavailable.',
+  },
   directory: {
     eyebrow: 'Account Governance',
     title: 'User Account Management',

@@ -1,19 +1,28 @@
+import { hotelProviderVi } from '../resources/vi';
 import { hotelProviderEn } from '../resources/en';
 
-const ERROR_CODES: Record<string, keyof typeof hotelProviderEn.messages> = {
+const ERROR_CODES: Record<string, keyof typeof hotelProviderVi.messages> = {
   'ServiceProviderRequest.Forbidden': 'MSG126',
   'ServiceProviderRequest.NotFound': 'MSG126',
   'ServiceProviderRequest.InvalidInput': 'MSG143',
   'ServiceProviderRequest.InvalidState': 'MSG133',
   'ServiceProviderRequest.VersionConflict': 'MSG133',
   'ServiceProviderRequest.IdempotencyMismatch': 'MSG133',
+  'CommissionStatement.Forbidden': 'MSG126',
+  'CommissionStatement.NotFound': 'MSG126',
+  'CommissionStatement.InvalidInput': 'MSG143',
+  'CommissionStatement.InvalidState': 'MSG133',
+  'CommissionStatement.MissingBankReference': 'MSG172',
+  'CommissionStatement.AlreadyPaid': 'MSG133',
+  'CommissionStatement.SystemError': 'MSG127',
 };
 
 export class WorkflowError extends Error {
   constructor(public readonly code = 'MSG127', public readonly status = 0) {
     const key = ERROR_CODES[code] ?? code;
-    const message = hotelProviderEn.messages[key as keyof typeof hotelProviderEn.messages];
-    super(typeof message === 'string' ? message : hotelProviderEn.messages.MSG127);
+    const message = hotelProviderVi.messages[key as keyof typeof hotelProviderVi.messages] ??
+                    hotelProviderEn.messages[key as keyof typeof hotelProviderEn.messages];
+    super(typeof message === 'string' ? message : hotelProviderVi.messages.MSG127);
   }
 }
 

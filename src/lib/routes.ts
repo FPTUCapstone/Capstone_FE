@@ -31,6 +31,9 @@ export const ROUTES = {
     payoutSettlements: '/partner/payout-settlements',
     refunds: '/partner/refunds',
     refundDetail: (refundId: string | number) => `/partner/refunds/${encodeURIComponent(refundId)}`,
+    postTripComplaints: '/partner/post-trip-complaints',
+    postTripComplaint: (complaintId: string | number) =>
+      `/partner/post-trip-complaints/${encodeURIComponent(complaintId)}`,
     weatherSafetyReviews: '/partner/weather-safety-reviews',
     weatherSafetyReview: (id: string | number) => `/partner/weather-safety-reviews/${id}`,
   },

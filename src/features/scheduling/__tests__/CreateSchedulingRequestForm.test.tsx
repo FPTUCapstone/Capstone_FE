@@ -12,6 +12,7 @@ import {
   buildVietnamStartAtIso,
   isFutureVietnamStartAt,
 } from '../types/schedulingTypes';
+import { takeExplanationPending } from '../utils/explanationRefresh';
 
 const CHAM_MUSEUM = {
   id: 10003,
@@ -923,5 +924,53 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       },
       { timeout: 4000 },
     );
+  });
+});
+
+describe('CreateSchedulingRequestForm pending explanation handoff (UC-10)', () => {
+  const baseResponse = {
+    success: true,
+    messageCode: 'MSG30',
+    message: 'Khởi tạo lịch trình thành công!',
+    data: {
+      schedulingRequestId: 11,
+      itineraryId: 889,
+      title: 'Lịch trình Đà Nẵng',
+      status: 'OptimalGenerated',
+      totalEstimatedCost: 650000,
+      totalDurationMinutes: 480,
+      items: [],
+    },
+  };
+
+  beforeEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
+  });
+
+  async function submitWith(data: typeof baseResponse.data & { explanationPending?: boolean }) {
+    vi.spyOn(schedulingApi, 'createSchedulingRequest').mockResolvedValueOnce({ ...baseResponse, data });
+    const onSuccess = vi.fn();
+    render(<CreateSchedulingRequestForm onSuccess={onSuccess} />);
+    await chooseStartAndArea();
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled(), { timeout: 4000 });
+  }
+
+  it('registers the itinerary for a later refresh when the backend says the AI explanation is pending', async () => {
+    await submitWith({ ...baseResponse.data, itineraryId: 889, explanationPending: true });
+
+    const handoff = takeExplanationPending(889);
+
+    expect(handoff).not.toBeNull();
+    expect(handoff!.itineraryId).toBe(889);
+  });
+
+  it('registers nothing when the explanation is not pending', async () => {
+    await submitWith({ ...baseResponse.data, itineraryId: 890, explanationPending: false });
+
+    expect(takeExplanationPending(890)).toBeNull();
   });
 });

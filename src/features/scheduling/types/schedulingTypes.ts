@@ -65,6 +65,8 @@ export interface SchedulingItemDto {
   estimatedCost: number | null;
   isMandatory: boolean;
   recommendationReason: string | null;
+  /** UC-10: the template sentence at create time; the AI sentence once the background explanation is saved. */
+  friendlyExplanation?: string | null;
   travelDistanceToNextMeters?: number | null;
   transportModeToNext?: TransportMode | null;
   costKind?: CostKind;
@@ -106,6 +108,8 @@ export interface SchedulingResponseDto {
   items: SchedulingItemDto[];
   isDemoFixture?: boolean;
   provenance?: SchedulingProvenanceDto | null;
+  /** UC-10: true when the items carry template sentences and the AI sentences are written in the background. */
+  explanationPending?: boolean;
 }
 
 export interface SchedulingFormValues {
@@ -180,6 +184,7 @@ export interface ItineraryDetailItemDto {
   estimatedCost: number | null;
   isMandatory: boolean;
   recommendationReason: string | null;
+  friendlyExplanation?: string | null;
   isUnavailable: boolean;
   latitude?: number | null;
   longitude?: number | null;
@@ -339,6 +344,7 @@ export function isValidItineraryDetailDto(data: unknown): data is ItineraryDetai
       (i.recommendationReason !== undefined &&
         i.recommendationReason !== null &&
         typeof i.recommendationReason !== 'string') ||
+      !isOptional(i.friendlyExplanation, isString) ||
       typeof i.isUnavailable !== 'boolean' ||
       !isOptional(i.latitude, isNumber) ||
       !isOptional(i.longitude, isNumber) ||
@@ -374,6 +380,9 @@ export function isValidSchedulingResponseDto(data: unknown): data is SchedulingR
   if (!isOptional(candidate.provenance, isValidSchedulingProvenance)) {
     return false;
   }
+  if (!isOptional(candidate.explanationPending, isBoolean)) {
+    return false;
+  }
   for (const item of candidate.items) {
     if (!item || typeof item !== 'object') return false;
     const i = item as Partial<SchedulingItemDto>;
@@ -393,6 +402,7 @@ export function isValidSchedulingResponseDto(data: unknown): data is SchedulingR
       (i.recommendationReason !== undefined &&
         i.recommendationReason !== null &&
         typeof i.recommendationReason !== 'string') ||
+      !isOptional(i.friendlyExplanation, isString) ||
       !isOptional(i.travelDistanceToNextMeters, isNumber) ||
       !isOptional(i.transportModeToNext, isTransportMode) ||
       !isOptionalCostKind(i.costKind)
