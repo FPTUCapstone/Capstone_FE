@@ -9,10 +9,15 @@ import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceN
 import { useAccountWorkspace } from '@/features/account/common/AccountWorkspaceContext';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
-import { tripReviewEn } from '../resources/en';
+import { tripReviewEn as tripReviewEnOriginal } from '../resources/en';
+import { tripReviewVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { TripHistoryView } from './TripHistoryView';
 
 export function TripHistoryPage() {
+  const { locale, hasProvider } = useI18n();
+  const effectiveLocale = hasProvider ? locale : 'en';
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
   const router = useRouter();
   const { isInsideShell } = useAccountWorkspace();
   const { status, context } = useWebSession();
@@ -51,7 +56,7 @@ export function TripHistoryPage() {
     <>
       {!isInsideShell && (
         <>
-          <PublicNavigation locale="en" />
+          <PublicNavigation locale={effectiveLocale} />
           {/* Breadcrumb Navigation */}
           <nav
             aria-label={tripReviewEn.accessibility.breadcrumbAria}
@@ -95,7 +100,7 @@ export function TripHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="en">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang={effectiveLocale}>
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         {content}
       </main>

@@ -27,7 +27,9 @@ import { BookingDetailPanel, type BookingDetailLoadState } from './BookingDetail
 import { CancelBookingDialog } from './CancelBookingDialog';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
 import { buildBookingListUrl, withBookingDemoMode } from '../routes';
-import { bookingEn } from '../resources/en';
+import { bookingEn as bookingEnOriginal } from '../resources/en';
+import { bookingVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 interface OperatorBookingListViewProps {
@@ -49,6 +51,8 @@ export function OperatorBookingListView({
   isDemo = false,
   demoActorUserId,
 }: OperatorBookingListViewProps) {
+  const { locale, hasProvider } = useI18n();
+  const bookingEn = hasProvider && locale === 'vi' ? bookingVi : bookingEnOriginal;
   const router = useRouter();
 
   const isDemoPermitted = isDemo && isBookingDemoAllowedInCurrentEnv();

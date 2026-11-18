@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { formatVndCurrency } from '../../utils/financeFormat';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import type { RevenueChartDataPoint } from '../../types/revenueLifecycle';
 
 interface RevenueChartProps {
@@ -10,6 +12,8 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ chartData }: RevenueChartProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const [showTableFallback, setShowTableFallback] = useState(false);
 
   if (!chartData || chartData.length === 0) {

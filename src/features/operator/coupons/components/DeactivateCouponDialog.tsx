@@ -2,7 +2,9 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { couponEn } from '../resources/en';
+import { couponEn as couponEnOriginal } from '../resources/en';
+import { couponVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 interface DeactivateCouponDialogProps {
   open: boolean;
@@ -23,6 +25,8 @@ export function DeactivateCouponDialog({
   onClose,
   onConfirm,
 }: DeactivateCouponDialogProps) {
+  const { locale, hasProvider } = useI18n();
+  const couponEn = hasProvider && locale === 'vi' ? couponVi : couponEnOriginal;
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
 

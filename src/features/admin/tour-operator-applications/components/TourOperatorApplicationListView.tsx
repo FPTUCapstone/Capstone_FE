@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ROUTES } from '@/lib/routes';
-import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { tourOperatorApplicationEn as copyOriginal } from '../resources/en';
+import { tourOperatorApplicationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 export interface OperatorApplicationSummary {
   userId: number;
@@ -21,6 +23,9 @@ interface TourOperatorApplicationListViewProps {
 }
 
 export function TourOperatorApplicationListView({ initialApplications = [] }: TourOperatorApplicationListViewProps) {
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? tourOperatorApplicationVi : copyOriginal;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
 

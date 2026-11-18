@@ -2,6 +2,7 @@
 
 import React from 'react';
 import LogoutButton from '@/components/LogoutButton';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 interface ProviderTopbarProps {
   onOpenMobileSidebar: () => void;
@@ -59,6 +60,7 @@ export function ProviderTopbar({ onOpenMobileSidebar }: ProviderTopbarProps) {
           </div>
         </div>
 
+        <LanguageSwitcher variant="compact" />
         <LogoutButton />
       </div>
     </header>

@@ -8,10 +8,14 @@ import { AccessibleSelect } from '../common/AccessibleSelect';
 import { ProviderBookingService } from '../../services/providerBookingService';
 import type { BookingRequestItem, BookingRequestStatus } from '../../types';
 import { formatDate, formatTime, formatDateTime } from '../../utils/formatters';
-import { hotelProviderEn } from '../../resources/en';
+import { hotelProviderVi, hotelProviderEn as hotelProviderEnOriginal } from '../../resources';
+import { useI18n } from '@/i18n';
 import { WorkflowError } from '../../services/workflowClient';
 
 export function ServiceBookingRequestsView() {
+  const { locale, hasProvider } = useI18n();
+  const effectiveLocale = hasProvider ? locale : 'en';
+  const hotelProviderEn = effectiveLocale === 'vi' ? (hotelProviderVi as unknown as typeof hotelProviderEnOriginal) : hotelProviderEnOriginal;
   const router = useRouter();
   const searchParams = useSearchParams();
 

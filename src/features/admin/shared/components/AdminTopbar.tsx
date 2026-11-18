@@ -4,6 +4,7 @@ import Link from 'next/link';
 import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
 import type { AdministrationRole } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { AdminBreadcrumbs } from './AdminBreadcrumbs';
 import { AdminRoleBadge } from './AdminRoleBadge';
 
@@ -31,6 +32,9 @@ export function AdminTopbar({ role, onOpenMobileSidebar }: AdminTopbarProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Language Switcher */}
+        <LanguageSwitcher variant="compact" />
+
         {/* Contextual Role Badge */}
         <AdminRoleBadge role={role} size="sm" />
 

@@ -4,7 +4,9 @@ import Link from 'next/link';
 import React, { useId } from 'react';
 
 import { ROUTES } from '@/lib/routes';
-import { tripReviewEn } from '../resources/en';
+import { tripReviewEn as tripReviewEnOriginal } from '../resources/en';
+import { tripReviewVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import type { TripListItem } from '../types/tripHistoryContract';
 import { formatTripDate } from '../utils/formatTripDate';
 
@@ -33,6 +35,8 @@ const LINK_ACTION =
   'inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-98';
 
 export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) {
+  const { locale, hasProvider } = useI18n();
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
   const titleId = useId();
   const isItinerary = item.kind === 'itinerary';
   const isCancelled = item.tab === 'Cancelled';

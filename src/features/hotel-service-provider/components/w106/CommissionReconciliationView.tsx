@@ -9,10 +9,13 @@ import { useToast } from '../common/Toast';
 import { StaffReconciliationService } from '../../services/staffReconciliationService';
 import type { StatementItem, StatementStatus } from '../../types';
 import { formatDate, formatDateTime, formatVnd } from '../../utils/formatters';
-import { hotelProviderVi } from '../../resources/vi';
+import { hotelProviderVi as hotelProviderViOriginal, hotelProviderEn } from '../../resources';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 export function CommissionReconciliationView() {
+  const { locale } = useI18n();
+  const hotelProviderVi = locale === 'en' ? (hotelProviderEn as unknown as typeof hotelProviderViOriginal) : hotelProviderViOriginal;
   const { showToast } = useToast();
 
   const [statements, setStatements] = useState<StatementItem[]>([]);

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import type {
   RevenueFilterInput,
   RevenuePeriodGranularity,
@@ -27,6 +29,8 @@ export function RevenueFilterControls({
   isLoading = false,
   isToursLoading = false,
 }: RevenueFilterControlsProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   // Local draft state (CR-02)
   const [draftFilters, setDraftFilters] =
     useState<RevenueFilterInput>(appliedFilters);

@@ -1,7 +1,9 @@
 'use client';
 
 import { formatVndCurrency } from '../../utils/financeFormat';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import type { RevenueSummaryDto } from '../../types/revenueLifecycle';
 
 interface SettlementDetailsCardProps {
@@ -14,6 +16,8 @@ interface SettlementDetailsCardProps {
  * payout records minus returns whose receipt TripMate has confirmed.
  */
 export function SettlementDetailsCard({ summary }: SettlementDetailsCardProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const t = financeEn.revenue.settlement;
 
   const rows: Array<{ label: string; value: number; variant?: 'supporting' | 'deduction' | 'subtotal' | 'total' }> = [

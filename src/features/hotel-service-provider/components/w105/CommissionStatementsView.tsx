@@ -6,9 +6,12 @@ import { useToast } from '../common/Toast';
 import { ProviderStatementService } from '../../services/providerStatementService';
 import type { StatementItem } from '../../types';
 import { formatDate, formatDateTime, formatVnd } from '../../utils/formatters';
-import { hotelProviderVi } from '../../resources/vi';
+import { hotelProviderVi as hotelProviderViOriginal, hotelProviderEn } from '../../resources';
+import { useI18n } from '@/i18n';
 
 export function CommissionStatementsView() {
+  const { locale } = useI18n();
+  const hotelProviderVi = locale === 'en' ? (hotelProviderEn as unknown as typeof hotelProviderViOriginal) : hotelProviderViOriginal;
   const { showToast } = useToast();
 
   const [statements, setStatements] = useState<StatementItem[]>([]);

@@ -1,47 +1,56 @@
+'use client';
+
 import Link from 'next/link';
 
 import BrandLogo from '@/components/brand/BrandIcon';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { AdminSignInForm } from '@/features/admin/auth/AdminSignInForm';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
+import { adminStaffVi } from '@/features/admin/staff/resources/vi';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 interface AdminLoginPageProps {
   returnUrl?: string;
 }
 
-const featureCards = [
-  {
-    icon: 'admin_panel_settings',
-    title: 'Control Center',
-    desc: 'Quản trị hệ thống toàn diện',
-    iconBg: 'bg-[#174B4A]/60',
-    position: 'top-0 left-0 animate-float-1',
-  },
-  {
-    icon: 'verified',
-    title: 'Tour Moderation',
-    desc: 'Kiểm duyệt & phê duyệt tour',
-    iconBg: 'bg-[#5B6E69]/40',
-    position: 'top-16 right-0 animate-float-2',
-  },
-  {
-    icon: 'history_edu',
-    title: 'Audit Logs',
-    desc: 'Theo dõi mọi hoạt động hệ thống',
-    iconBg: 'bg-[#5B6E69]/30',
-    position: 'bottom-0 left-12 animate-float-3',
-  },
-];
-
-const stats = [
-  { value: '24/7', label: 'Giám sát hệ thống', color: 'text-[#5B6E69]' },
-  { value: '100%', label: 'Kiểm soát truy cập', color: 'text-[#5B6E69]' },
-  { value: '15ph', label: 'Phiên bảo mật', color: 'text-[#5B6E69]' },
-];
-
 export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
+  const { locale } = useI18n();
+  const isVi = locale === 'vi';
+  const strings = isVi ? adminStaffVi : adminStaffEn;
+
+  const featureCards = [
+    {
+      icon: 'admin_panel_settings',
+      title: isVi ? 'Bảng điều khiển' : 'Control Center',
+      desc: isVi ? 'Quản trị hệ thống toàn diện' : 'Comprehensive system administration',
+      iconBg: 'bg-[#174B4A]/60',
+      position: 'top-0 left-0 animate-float-1',
+    },
+    {
+      icon: 'verified',
+      title: isVi ? 'Kiểm duyệt Tour' : 'Tour Moderation',
+      desc: isVi ? 'Kiểm duyệt & phê duyệt tour' : 'Review & approve tour submissions',
+      iconBg: 'bg-[#5B6E69]/40',
+      position: 'top-16 right-0 animate-float-2',
+    },
+    {
+      icon: 'history_edu',
+      title: isVi ? 'Nhật ký kiểm toán' : 'Audit Logs',
+      desc: isVi ? 'Theo dõi mọi hoạt động hệ thống' : 'Track all system activities',
+      iconBg: 'bg-[#5B6E69]/30',
+      position: 'bottom-0 left-12 animate-float-3',
+    },
+  ];
+
+  const stats = [
+    { value: '24/7', label: isVi ? 'Giám sát hệ thống' : 'System Monitoring', color: 'text-[#5B6E69]' },
+    { value: '100%', label: isVi ? 'Kiểm soát truy cập' : 'Access Control', color: 'text-[#5B6E69]' },
+    { value: isVi ? '15ph' : '15m', label: isVi ? 'Phiên bảo mật' : 'Security Session', color: 'text-[#5B6E69]' },
+  ];
+
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr]">
+    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr]" lang={locale}>
       {/* Hero Panel */}
       <aside className="relative hidden lg:flex admin-hero-bg text-white overflow-hidden">
         <div className="absolute inset-0 grid-pattern opacity-40" />
@@ -67,14 +76,14 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
                 <span className="material-symbols-outlined text-[16px] text-[#5B6E69]">
                   shield
                 </span>
-                ADMINISTRATION WORKSPACE
+                {isVi ? 'KHÔNG GIAN QUẢN TRỊ HỆ THỐNG' : 'ADMINISTRATION WORKSPACE'}
               </span>
               <h1 className="text-5xl xl:text-6xl font-extrabold leading-[1.1] tracking-tight">
-                Quản trị{' '}
+                {isVi ? 'Quản trị' : 'Administer'}{' '}
                 <span className="text-[#5B6E69]">TripMate</span>
               </h1>
               <p className="text-lg text-white/70 leading-relaxed max-w-md">
-                {adminStaffEn.login.description}
+                {strings.login.description}
               </p>
             </div>
 
@@ -127,12 +136,13 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
           </span>
         </div>
 
-        <div className="absolute top-6 right-6">
+        <div className="absolute top-6 right-6 flex items-center gap-3">
+          <LanguageSwitcher variant="compact" />
           <Link
             href={ROUTES.signIn}
             className="text-sm font-semibold text-[#5B6E69] hover:text-[#174B4A] transition-colors"
           >
-            {adminStaffEn.login.backLabel}
+            {strings.login.backLabel}
           </Link>
         </div>
 
@@ -140,20 +150,22 @@ export function AdminLoginPage({ returnUrl }: AdminLoginPageProps) {
           <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">
             <div className="mb-8">
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#174B4A]">
-                {adminStaffEn.login.eyebrow}
+                {strings.login.eyebrow}
               </p>
               <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy">
-                {adminStaffEn.login.title}
+                {strings.login.title}
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-brand-textSecondary">
-                {adminStaffEn.login.description}
+                {strings.login.description}
               </p>
             </div>
             <AdminSignInForm returnUrl={returnUrl} />
           </div>
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
-            Phiên đăng nhập quản trị có thời hạn 15 phút vì lý do bảo mật.
+            {isVi
+              ? 'Phiên đăng nhập quản trị có thời hạn 15 phút vì lý do bảo mật.'
+              : 'Administration sessions expire after 15 minutes for security.'}
             <br />© 2026 TripMate — Administration Workspace
           </p>
         </div>

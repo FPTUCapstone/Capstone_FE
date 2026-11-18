@@ -1,7 +1,9 @@
 'use client';
 
 import { TourOperatorApplicationDetailDto } from '@/types/tour-operator-application';
-import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { tourOperatorApplicationEn as copyOriginal } from '../resources/en';
+import { tourOperatorApplicationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { formatApplicationDateTime } from '../utils/format';
 
 interface CompanyInfoCardProps {
@@ -9,6 +11,8 @@ interface CompanyInfoCardProps {
 }
 
 export function CompanyInfoCard({ detail }: CompanyInfoCardProps) {
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? tourOperatorApplicationVi : copyOriginal;
   const reviewedAt = formatApplicationDateTime(detail.reviewedAt) ?? copy.common.notAvailable;
 
   return (

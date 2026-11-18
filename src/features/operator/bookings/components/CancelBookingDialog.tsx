@@ -10,7 +10,9 @@ import {
 } from '../types/bookingLifecycle';
 import { calculateDemoBookingRefundPreview } from '../data/operatorBookingDemoPolicy';
 import { formatCurrencyVND, formatVietnamDate } from '../utils/dateFormat';
-import { bookingEn } from '../resources/en';
+import { bookingEn as bookingEnOriginal } from '../resources/en';
+import { bookingVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 interface CancelBookingDialogProps {
   open: boolean;
@@ -33,6 +35,8 @@ function CancelBookingModalContent({
   onClose,
   onConfirm,
 }: CancelBookingModalContentProps) {
+  const { locale, hasProvider } = useI18n();
+  const bookingEn = hasProvider && locale === 'vi' ? bookingVi : bookingEnOriginal;
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();

@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { ModerationDialog } from './components/ModerationDialog';
 import { focusRing } from './components/ModerationNotices';
 import { RejectTourDialog, type RejectionReason } from './components/RejectTourDialog';
-import { tourModerationEn } from './resources/en';
+import { tourModerationEn as tourModerationEnOriginal } from './resources/en';
+import { tourModerationVi } from './resources/vi';
+import { useI18n } from '@/i18n';
 import type { ReviewCriterionKey } from './types';
-
-const copy = tourModerationEn.decision;
 
 const CRITERIA: readonly ReviewCriterionKey[] = [
   'contentCompleteness',
@@ -35,6 +35,10 @@ type DemoDecision =
  * backend contract, so every decision here is a clearly labelled local simulation.
  */
 export function TourReviewDecisionPanel() {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+  const copy = tourModerationEn.decision;
+
   const [checklist, setChecklist] = useState(initialChecklist);
   const [note, setNote] = useState('');
   const [checklistError, setChecklistError] = useState(false);

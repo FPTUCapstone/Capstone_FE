@@ -1,6 +1,8 @@
 import React from 'react';
 import type { CouponStatus } from '../types/couponLifecycle';
-import { couponEn } from '../resources/en';
+import { couponEn as couponEnOriginal } from '../resources/en';
+import { couponVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 interface OperatorCouponStatusBadgeProps {
   status: CouponStatus;
@@ -11,6 +13,9 @@ export function OperatorCouponStatusBadge({
   status,
   className = '',
 }: OperatorCouponStatusBadgeProps) {
+  const { locale, hasProvider } = useI18n();
+  const couponEn = hasProvider && locale === 'vi' ? couponVi : couponEnOriginal;
+
   let label: string = couponEn.statuses.unknown;
   let badgeStyles = 'bg-slate-100 text-slate-700 border-slate-200';
   let dotStyles = 'bg-slate-400';

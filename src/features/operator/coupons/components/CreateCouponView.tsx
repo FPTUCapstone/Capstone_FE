@@ -16,7 +16,8 @@ import {
   getTodayDateString,
   validateCreateCoupon,
 } from '../services/operatorCouponService';
-import { couponEn } from '../resources/en';
+import { couponEn as couponEnOriginal, couponVi } from '../resources';
+import { useI18n } from '@/i18n';
 
 interface CreateCouponViewProps {
   eligibleTours: EligibleTourDto[];
@@ -44,6 +45,8 @@ export function CreateCouponView({
   isDemo = false,
   operatorName = 'Han River Travel',
 }: CreateCouponViewProps) {
+  const { locale, hasProvider } = useI18n();
+  const couponEn = hasProvider && locale === 'vi' ? couponVi : couponEnOriginal;
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = resolveCouponReturnUrl(searchParams?.get('returnUrl'), isDemo);

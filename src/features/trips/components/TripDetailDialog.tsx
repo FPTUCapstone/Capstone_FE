@@ -2,7 +2,9 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import { tripReviewEn } from '../resources/en';
+import { tripReviewEn as tripReviewEnOriginal } from '../resources/en';
+import { tripReviewVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { fetchTripDetail, TripHistoryClientError } from '../services/tripHistoryClient';
 import type {
   BookingTripDetail,
@@ -27,8 +29,6 @@ type LoadState =
   | { phase: 'loading' }
   | { phase: 'ready'; detail: TripDetail }
   | { phase: 'error'; message: string; retryable: boolean };
-
-const copy = tripReviewEn.dialogs.tripDetail;
 
 function formatVnd(amount: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -74,6 +74,9 @@ function Section({
 }
 
 function BookingSections({ detail, focus, allowDemo }: { detail: BookingTripDetail; focus?: TripDetailFocus; allowDemo: boolean }) {
+  const { locale, hasProvider } = useI18n();
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
+  const copy = tripReviewEn.dialogs.tripDetail;
   const { adult, child, infant } = detail.participants;
   const counts = [
     adult > 0 ? copy.adults(adult) : null,
@@ -132,6 +135,10 @@ function BookingSections({ detail, focus, allowDemo }: { detail: BookingTripDeta
 }
 
 function ItinerarySections({ detail }: { detail: ItineraryTripDetail }) {
+  const { locale, hasProvider } = useI18n();
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
+  const copy = tripReviewEn.dialogs.tripDetail;
+
   return (
     <>
       {detail.visitedCount !== undefined && (
@@ -187,6 +194,9 @@ function ItinerarySections({ detail }: { detail: ItineraryTripDetail }) {
 }
 
 export function TripDetailDialog({ item, focus, allowDemo, onClose }: TripDetailDialogProps) {
+  const { locale, hasProvider } = useI18n();
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
+  const copy = tripReviewEnOriginal.dialogs.tripDetail;
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [state, setState] = useState<LoadState>({ phase: 'loading' });

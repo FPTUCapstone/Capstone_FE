@@ -1,7 +1,9 @@
 'use client';
 
 import { formatVndCurrency } from '../../utils/financeFormat';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import type { RevenueSummaryDto } from '../../types/revenueLifecycle';
 
 interface RevenueSummaryCardsProps {
@@ -9,6 +11,8 @@ interface RevenueSummaryCardsProps {
 }
 
 export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const cards = [
     {
       title: financeEn.revenue.summary.grossRevenue,

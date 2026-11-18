@@ -8,6 +8,8 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { AccountWorkspaceNav } from '@/features/account/common/AccountWorkspaceNav';
 import { useAccountWorkspace } from '@/features/account/common/AccountWorkspaceContext';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 import { preferenceMessages } from './resources/messages';
@@ -28,6 +30,7 @@ export function TravelPreferencesPage() {
   const router = useRouter();
   const { isInsideShell } = useAccountWorkspace();
   const { status, context } = useWebSession();
+  const { t, locale } = useI18n();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [reloadToken, setReloadToken] = useState(0);
   const isTraveler = status === 'authenticated' && context?.role === 'Traveler';
@@ -98,25 +101,42 @@ export function TravelPreferencesPage() {
       {!isInsideShell && (
         <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]">
           <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
-            Trang chủ
+            {t('navigation.home')}
           </Link>
           <span aria-hidden="true">/</span>
           <Link href={ROUTES.account.profile} className="hover:text-[#174B4A] hover:underline">
-            Tài khoản
+            {t('navigation.account')}
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#1C2928]">Sở thích du lịch</span>
+          <span className="text-[#1C2928]">{t('settings.travelPreferencesTitle')}</span>
         </nav>
       )}
 
       {/* Account Workspace Navigation Tabs (suppressed automatically inside shell) */}
       <AccountWorkspaceNav activeTab="preferences" />
 
+      {/* Display Language Setting */}
+      <section className="mb-6 rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-bold text-[#1C2928] sm:text-lg">
+              {t('settings.languageSectionTitle')}
+            </h2>
+            <p className="mt-1 text-xs text-[#5B6E69] sm:text-sm">
+              {t('settings.languageSectionDesc')}
+            </p>
+          </div>
+          <div className="shrink-0">
+            <LanguageSwitcher variant="segmented" />
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:p-8">
         <header className="mb-6 border-b border-[#DCE2DD] pb-4">
-          <h1 className="text-xl font-black tracking-tight text-[#1C2928] sm:text-2xl">Sở thích du lịch</h1>
+          <h1 className="text-xl font-black tracking-tight text-[#1C2928] sm:text-2xl">{t('settings.travelPreferencesTitle')}</h1>
           <p className="mt-1 text-xs text-[#5B6E69] sm:text-sm">
-            Tùy chỉnh các tiêu chí ưu tiên để TripMate cá nhân hóa gợi ý và điền sẵn khi lập lịch trình.
+            {t('settings.travelPreferencesDesc')}
           </p>
         </header>
 
@@ -136,7 +156,7 @@ export function TravelPreferencesPage() {
               onClick={retry}
               className="inline-flex min-h-[44px] items-center rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-xs font-semibold text-[#1C2928] hover:bg-[#F7F5EF]"
             >
-              Thử lại
+              {t('common.buttons.retry')}
             </button>
           </div>
         ) : null}
@@ -148,7 +168,7 @@ export function TravelPreferencesPage() {
               href={SIGN_IN_RETURN}
               className="inline-flex min-h-[44px] items-center rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#103B39]"
             >
-              Đăng nhập lại
+              {t('navigation.signInAgain')}
             </Link>
           </div>
         ) : null}
@@ -165,7 +185,7 @@ export function TravelPreferencesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang={locale}>
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         {content}
       </main>

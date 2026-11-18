@@ -22,7 +22,9 @@ import {
 } from '../services/operatorCouponService';
 import { OperatorCouponStatusBadge } from './OperatorCouponStatusBadge';
 import { DeactivateCouponDialog } from './DeactivateCouponDialog';
-import { couponEn } from '../resources/en';
+import { couponEn as couponEnOriginal } from '../resources/en';
+import { couponVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { toVietnamDateTimeInput, vietnamDateTimeToUtc } from '../services/couponDateTime';
 
 interface UpdateCouponViewProps {
@@ -47,6 +49,8 @@ export function UpdateCouponView({
   eligibleTours,
   currentUserId,
 }: UpdateCouponViewProps) {
+  const { locale, hasProvider } = useI18n();
+  const couponEn = hasProvider && locale === 'vi' ? couponVi : couponEnOriginal;
   const searchParams = useSearchParams();
   const returnUrl = resolveCouponReturnUrl(searchParams?.get('returnUrl'));
 

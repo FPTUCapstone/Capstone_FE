@@ -5,10 +5,15 @@ import { useRouter } from "next/navigation";
 import { webLogout } from "@/lib/authApi";
 import { AuthStorage } from "@/features/auth/session/authSession";
 import { operatorCommonEn } from "@/features/operator/common/resources/en";
+import { useI18n } from "@/i18n";
 import LogoutDialog from "./LogoutDialog";
 
 export default function LogoutButton() {
   const router = useRouter();
+  const { locale, hasProvider } = useI18n();
+  const isVi = hasProvider && locale === 'vi';
+  const buttonLabel = isVi ? "Đăng xuất" : operatorCommonEn.logout.button;
+
   const logoutInFlightRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -24,7 +29,7 @@ export default function LogoutButton() {
       router.replace("/sign-in");
       router.refresh();
     } catch {
-      setErrorMessage(operatorCommonEn.logout.errorMessage);
+      setErrorMessage(isVi ? "Không thể kết thúc phiên đăng nhập. Vui lòng thử lại." : operatorCommonEn.logout.errorMessage);
     } finally {
       logoutInFlightRef.current = false;
     }
@@ -38,13 +43,13 @@ export default function LogoutButton() {
           setErrorMessage(null);
           setOpen(true);
         }}
-        aria-label={operatorCommonEn.logout.button}
+        aria-label={buttonLabel}
         className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
       >
         <span className="material-symbols-outlined text-base" aria-hidden="true">
           logout
         </span>
-        {operatorCommonEn.logout.button}
+        {buttonLabel}
       </button>
 
       <LogoutDialog

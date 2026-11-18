@@ -1,13 +1,15 @@
 import Link from 'next/link';
 
-import { adminUserAccountsEn } from '@/features/admin/user-accounts/resources/en';
+import { useI18n } from '@/i18n';
+import { adminUserAccountsEn, adminUserAccountsVi } from '@/features/admin/user-accounts/resources';
 
 interface UserAccountDetailUnavailableViewProps {
   userId: number;
 }
 
 export function UserAccountDetailUnavailableView({ userId }: UserAccountDetailUnavailableViewProps) {
-  const copy = adminUserAccountsEn.detail;
+  const { locale, hasProvider } = useI18n();
+  const copy = (hasProvider && locale === 'vi' ? adminUserAccountsVi : adminUserAccountsEn).detail;
 
   return (
     <div className="pb-16 text-[#1C2928]">

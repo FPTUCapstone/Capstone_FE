@@ -22,6 +22,7 @@ import {
   mapFirebaseAuthError,
 } from '@/lib/authErrorMapper';
 import { validatePassword } from '@/lib/passwordPolicy';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
@@ -101,6 +102,8 @@ function validateForm(fields: {
 
 export function TravelerRegistrationForm() {
   const router = useRouter();
+  const { locale, hasProvider } = useI18n();
+  const isVi = hasProvider ? locale === 'vi' : true;
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -320,21 +323,23 @@ export function TravelerRegistrationForm() {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight mb-2">
-            Tạo tài khoản Traveler
+            {isVi ? 'Tạo tài khoản Traveler' : 'Create Traveler Account'}
           </h2>
           <p className="text-sm text-brand-textSecondary leading-relaxed">
-            Lên lịch trình thông minh &amp; khám phá trọn vẹn chuyến đi
+            {isVi
+              ? 'Lên lịch trình thông minh & khám phá trọn vẹn chuyến đi'
+              : 'Smart itinerary planning & seamless travel exploration'}
           </p>
         </div>
 
         <form className="space-y-4" noValidate onSubmit={handleSubmit}>
           {/* Full Name */}
           <TextField
-            label="Họ và tên"
+            label={isVi ? 'Họ và tên' : 'Full Name'}
             name="fullName"
             autoComplete="name"
             maxLength={150}
-            placeholder="Nguyễn Văn A"
+            placeholder={isVi ? 'Nguyễn Văn A' : 'John Doe'}
             value={fullName}
             disabled={loading}
             error={errors.fullName}
@@ -346,7 +351,7 @@ export function TravelerRegistrationForm() {
 
           {/* Email */}
           <TextField
-            label="Email"
+            label={isVi ? 'Email' : 'Email'}
             name="email"
             type="email"
             autoComplete="email"
@@ -363,7 +368,7 @@ export function TravelerRegistrationForm() {
 
           {/* Phone Number (Optional) */}
           <TextField
-            label="Số điện thoại (không bắt buộc)"
+            label={isVi ? 'Số điện thoại (không bắt buộc)' : 'Phone number (optional)'}
             name="phone"
             type="tel"
             autoComplete="tel"
@@ -380,7 +385,7 @@ export function TravelerRegistrationForm() {
 
           {/* Password */}
           <PasswordField
-            label="Mật khẩu"
+            label={isVi ? 'Mật khẩu' : 'Password'}
             name="password"
             autoComplete="new-password"
             maxLength={72}
@@ -391,13 +396,13 @@ export function TravelerRegistrationForm() {
             leading={
               <span className="material-symbols-outlined text-[20px]">lock</span>
             }
-            help="Tối thiểu 8 ký tự gồm chữ hoa, số và ký tự đặc biệt"
+            help={isVi ? 'Tối thiểu 8 ký tự gồm chữ hoa, số và ký tự đặc biệt' : 'At least 8 characters with uppercase, numbers and symbols'}
             onChange={(e) => handlePasswordChange(e.target.value)}
           />
 
           {/* Confirm Password */}
           <PasswordField
-            label="Xác nhận mật khẩu"
+            label={isVi ? 'Xác nhận mật khẩu' : 'Confirm Password'}
             name="confirmPassword"
             autoComplete="new-password"
             placeholder="••••••••••••"
@@ -413,7 +418,7 @@ export function TravelerRegistrationForm() {
                 setErrors((prev) => ({
                   ...prev,
                   confirmPassword:
-                    e.target.value !== password ? 'Mật khẩu không khớp. Vui lòng nhập lại.' : undefined,
+                    e.target.value !== password ? (isVi ? 'Mật khẩu không khớp. Vui lòng nhập lại.' : 'Passwords do not match. Please re-enter.') : undefined,
                 }));
               }
             }}
@@ -428,23 +433,23 @@ export function TravelerRegistrationForm() {
               error={errors.terms}
               onChange={(e) => setTerms(e.target.checked)}
             >
-              Tôi đồng ý với{' '}
+              {isVi ? 'Tôi đồng ý với ' : 'I agree to the '}
               <button
                 type="button"
                 onClick={() => setLegalModal('terms')}
                 className="text-brand-teal font-semibold hover:underline"
               >
-                Điều khoản dịch vụ
+                {isVi ? 'Điều khoản dịch vụ' : 'Terms of Service'}
               </button>{' '}
-              và{' '}
+              {isVi ? 'và ' : 'and '}
               <button
                 type="button"
                 onClick={() => setLegalModal('privacy')}
                 className="text-brand-teal font-semibold hover:underline"
               >
-                Chính sách bảo mật
+                {isVi ? 'Chính sách bảo mật' : 'Privacy Policy'}
               </button>{' '}
-              của TripMate
+              {isVi ? 'của TripMate' : 'of TripMate'}
             </CheckboxField>
           </div>
 
@@ -454,14 +459,14 @@ export function TravelerRegistrationForm() {
               type="submit"
               disabled={loading || !terms}
               aria-busy={loading}
-              aria-label={loading ? 'Đang đăng ký' : undefined}
+              aria-label={loading ? (isVi ? 'Đang đăng ký' : 'Registering') : undefined}
               className="w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 group disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true" />
               ) : (
                 <>
-                  <span>Đăng ký</span>
+                  <span>{isVi ? 'Đăng ký' : 'Register'}</span>
                   <span className="material-symbols-outlined text-[18px] transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span>
                 </>
               )}
@@ -475,7 +480,9 @@ export function TravelerRegistrationForm() {
             <div className="w-full border-t border-slate-200" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="px-3 bg-brand-card text-slate-400 font-medium">Hoặc tiếp tục với</span>
+            <span className="px-3 bg-brand-card text-slate-400 font-medium">
+              {isVi ? 'Hoặc tiếp tục với' : 'Or continue with'}
+            </span>
           </div>
         </div>
 
@@ -492,7 +499,7 @@ export function TravelerRegistrationForm() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
           </svg>
-          <span>Tiếp tục với Google</span>
+          <span>{isVi ? 'Tiếp tục với Google' : 'Continue with Google'}</span>
         </button>
 
         {feedback ? (
@@ -503,12 +510,12 @@ export function TravelerRegistrationForm() {
 
         {/* Login link */}
         <p className="mt-6 text-center text-sm text-brand-textSecondary">
-          Đã có tài khoản?
+          {isVi ? 'Đã có tài khoản?' : 'Already have an account?'}
           <Link
             href={ROUTES.signIn}
             className="text-brand-teal font-bold hover:underline ml-1"
           >
-            Đăng nhập
+            {isVi ? 'Đăng nhập' : 'Sign in'}
           </Link>
         </p>
       </div>

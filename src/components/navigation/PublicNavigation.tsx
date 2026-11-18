@@ -16,6 +16,8 @@ import {
   type TravelerProfileDto,
 } from '@/features/account/profile/travelerProfileApi';
 import { ROUTES } from '@/lib/routes';
+import { useI18n } from '@/i18n';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { publicNavigationEn } from './resources/en';
 import { publicNavigationVi } from './resources/vi';
 
@@ -179,7 +181,8 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
     }
   };
 
-  const resolvedLocale = locale ?? 'vi';
+  const { locale: i18nLocale } = useI18n();
+  const resolvedLocale = locale ?? i18nLocale ?? 'vi';
   const strings = resolvedLocale === 'en' ? publicNavigationEn : publicNavigationVi;
   const drawerStrings = strings.drawer;
 
@@ -456,6 +459,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
 
         {/* Desktop Account / Session Actions */}
         <div className="hidden sm:flex items-center gap-3">
+          <LanguageSwitcher variant="compact" />
           {status === 'authenticated' ? (
             <div className="flex items-center justify-end gap-2">
               {context?.role === 'TourOperator' ? (
@@ -769,6 +773,10 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
 
             {/* Drawer Bottom Session Actions */}
             <div className="pt-6 border-t border-[#E5E0D8] space-y-3">
+              <div className="flex items-center justify-between pb-1">
+                <span className="text-xs font-semibold text-[#5B6E69]">Ngôn ngữ / Language</span>
+                <LanguageSwitcher variant="compact" />
+              </div>
               {status === 'authenticated' ? (
                 <div className="space-y-3">
                   {context?.role === 'TourOperator' ? (

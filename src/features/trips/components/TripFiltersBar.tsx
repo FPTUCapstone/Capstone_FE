@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { tripReviewEn } from '../resources/en';
+import { tripReviewEn as tripReviewEnOriginal } from '../resources/en';
+import { tripReviewVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import type { TripTypeFilter } from '../types/tripHistoryContract';
 
 interface TripFiltersBarProps {
@@ -26,6 +28,8 @@ export function TripFiltersBar({
   toDate,
   onDateRangeChange,
 }: TripFiltersBarProps) {
+  const { locale, hasProvider } = useI18n();
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
   const [dateError, setDateError] = useState<string | null>(null);
 
   const changeRange = (from: string, to: string) => {

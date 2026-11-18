@@ -9,6 +9,8 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { PasswordField, TextField } from '@/components/ui/FormControls';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
+import { adminStaffVi } from '@/features/admin/staff/resources/vi';
+import { useI18n } from '@/i18n';
 import type { AdministrationRole } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
 
@@ -68,6 +70,10 @@ export function getSafeAdminReturnUrl(
 
 export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
   const router = useRouter();
+  const { locale, hasProvider } = useI18n();
+  const isVi = hasProvider && locale === 'vi';
+  const strings = isVi ? adminStaffVi : adminStaffEn;
+
   const submitting = useRef(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,8 +85,8 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
     event.preventDefault();
     if (submitting.current) return;
     const nextErrors: typeof errors = {};
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = adminStaffEn.login.invalidEmailError;
-    if (!password.trim()) nextErrors.password = adminStaffEn.login.requiredFieldError;
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = strings.login.invalidEmailError;
+    if (!password.trim()) nextErrors.password = strings.login.requiredFieldError;
     setErrors(nextErrors);
     setMessage(null);
     if (Object.keys(nextErrors).length) return;
@@ -100,7 +106,7 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
         setMessage(
           result && typeof result === 'object' && 'message' in result && typeof result.message === 'string'
             ? result.message
-            : adminStaffEn.login.unavailableError,
+            : strings.login.unavailableError,
         );
         return;
       }
@@ -113,7 +119,7 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
         ? '/admin/first-password' : getSafeAdminReturnUrl(returnUrl, authenticatedRole));
       router.refresh();
     } catch {
-      setMessage(adminStaffEn.login.connectionError);
+      setMessage(strings.login.connectionError);
     } finally {
       submitting.current = false;
       setLoading(false);
@@ -124,21 +130,21 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
     <div>
       <form className="space-y-5" noValidate onSubmit={handleSubmit}>
         <TextField
-          label={adminStaffEn.login.emailLabel}
+          label={strings.login.emailLabel}
           name="email"
           type="email"
           autoComplete="email"
-          placeholder={adminStaffEn.login.emailPlaceholder}
+          placeholder={strings.login.emailPlaceholder}
           value={email}
           disabled={loading}
           error={errors.email}
           onChange={(event) => setEmail(event.target.value)}
         />
         <PasswordField
-          label={adminStaffEn.login.passwordLabel}
+          label={strings.login.passwordLabel}
           name="password"
           autoComplete="current-password"
-          placeholder={adminStaffEn.login.passwordPlaceholder}
+          placeholder={strings.login.passwordPlaceholder}
           value={password}
           disabled={loading}
           error={errors.password}
@@ -146,16 +152,16 @@ export function AdminSignInForm({ returnUrl }: AdminSignInFormProps) {
         />
         <div className="flex justify-end">
           <Link href={ROUTES.admin.forgotPassword} className="text-sm font-bold text-[#174B4A] hover:text-[#103B39] hover:underline">
-            {adminStaffEn.login.forgotPassword}
+            {strings.login.forgotPassword}
           </Link>
         </div>
         <ActionButton type="submit" variant="forest" loading={loading} className="w-full">
-          {adminStaffEn.login.submitButton}
+          {strings.login.submitButton}
         </ActionButton>
       </form>
       {message ? <div className="mt-6"><FeedbackAlert tone="error">{message}</FeedbackAlert></div> : null}
       <p className="mt-6 rounded-lg border border-[#E1E8E4] bg-[#F1F4F2] px-3 py-2 text-center text-[11px] leading-relaxed text-[#103B39]">
-        {adminStaffEn.login.footerNote}
+        {strings.login.footerNote}
       </p>
     </div>
   );

@@ -1,6 +1,8 @@
 import React from 'react';
 import type { BookingStatus, CheckInStatus } from '../types/bookingLifecycle';
-import { bookingEn } from '../resources/en';
+import { bookingEn as bookingEnOriginal } from '../resources/en';
+import { bookingVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 interface BookingStatusBadgeProps {
   status: BookingStatus;
@@ -8,6 +10,8 @@ interface BookingStatusBadgeProps {
 }
 
 export function BookingStatusBadge({ status, className = '' }: BookingStatusBadgeProps) {
+  const { locale, hasProvider } = useI18n();
+  const bookingEn = hasProvider && locale === 'vi' ? bookingVi : bookingEnOriginal;
   switch (status) {
     case 'Confirmed':
       return (
@@ -71,6 +75,8 @@ interface CheckInStatusBadgeProps {
 }
 
 export function CheckInStatusBadge({ status, className = '' }: CheckInStatusBadgeProps) {
+  const { locale, hasProvider } = useI18n();
+  const bookingEn = hasProvider && locale === 'vi' ? bookingVi : bookingEnOriginal;
   if (status === 'CheckedIn') {
     return (
       <span

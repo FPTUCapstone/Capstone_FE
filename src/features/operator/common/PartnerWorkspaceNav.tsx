@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 import { getWeatherSafetyReviewBadgeCount } from '@/features/operator/weather-safety/weatherSafetyApi';
+import { operatorCommonEn } from './resources/en';
 
 export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts' | 'weatherSafety';
 
@@ -24,66 +27,6 @@ interface NavItem {
   disabled?: boolean;
 }
 
-const WORKSPACE_NAV_ITEMS: NavItem[] = [
-  {
-    key: 'dashboard',
-    label: 'Bảng điều khiển',
-    icon: 'dashboard',
-    href: ROUTES.partner.dashboard,
-  },
-  {
-    key: 'weatherSafety',
-    label: 'Cảnh báo an toàn',
-    icon: 'warning',
-    href: ROUTES.partner.weatherSafetyReviews,
-  },
-  {
-    key: 'tours',
-    label: 'Gói tour',
-    icon: 'tour',
-    href: '/partner/tours',
-  },
-  {
-    key: 'coupons',
-    label: 'Mã giảm giá',
-    icon: 'confirmation_number',
-    href: '/partner/coupons',
-  },
-  {
-    key: 'bookings',
-    label: 'Đơn đặt chỗ',
-    icon: 'receipt_long',
-    href: ROUTES.partner.bookings,
-  },
-  {
-    key: 'revenue',
-    label: 'Doanh thu',
-    icon: 'monitoring',
-    href: ROUTES.partner.revenue,
-  },
-  {
-    key: 'payouts',
-    label: 'Thanh toán',
-    icon: 'payments',
-    href: ROUTES.partner.payouts,
-  },
-];
-
-const ACCOUNT_NAV_ITEMS: NavItem[] = [
-  {
-    key: 'profile',
-    label: 'Hồ sơ doanh nghiệp',
-    icon: 'domain',
-    href: ROUTES.partner.profile,
-  },
-  {
-    key: 'settings',
-    label: 'Cài đặt tài khoản',
-    icon: 'settings',
-    disabled: true,
-  },
-];
-
 export function PartnerWorkspaceNav({
   activeTab,
   className = '',
@@ -93,6 +36,68 @@ export function PartnerWorkspaceNav({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [serverBadgeCount, setServerBadgeCount] = useState<number>(0);
   const badgeCount = weatherAlertBadgeCount ?? serverBadgeCount;
+  const { locale } = useI18n();
+  const isVi = locale === 'vi';
+
+  const workspaceNavItems: NavItem[] = [
+    {
+      key: 'dashboard',
+      label: isVi ? 'Bảng điều khiển' : operatorCommonEn.navigation.dashboard,
+      icon: 'dashboard',
+      href: ROUTES.partner.dashboard,
+    },
+    {
+      key: 'weatherSafety',
+      label: isVi ? 'Cảnh báo an toàn' : 'Safety Alerts',
+      icon: 'warning',
+      href: ROUTES.partner.weatherSafetyReviews,
+    },
+    {
+      key: 'tours',
+      label: isVi ? 'Gói tour' : operatorCommonEn.navigation.tours,
+      icon: 'tour',
+      href: '/partner/tours',
+    },
+    {
+      key: 'coupons',
+      label: isVi ? 'Mã giảm giá' : operatorCommonEn.navigation.coupons,
+      icon: 'confirmation_number',
+      href: '/partner/coupons',
+    },
+    {
+      key: 'bookings',
+      label: isVi ? 'Đơn đặt chỗ' : operatorCommonEn.navigation.bookings,
+      icon: 'receipt_long',
+      href: ROUTES.partner.bookings,
+    },
+    {
+      key: 'revenue',
+      label: isVi ? 'Doanh thu' : operatorCommonEn.navigation.revenue,
+      icon: 'monitoring',
+      href: ROUTES.partner.revenue,
+    },
+    {
+      key: 'payouts',
+      label: isVi ? 'Thanh toán' : operatorCommonEn.navigation.payouts,
+      icon: 'payments',
+      href: ROUTES.partner.payouts,
+    },
+  ];
+
+  const accountNavItems: NavItem[] = [
+    {
+      key: 'profile',
+      label: isVi ? 'Hồ sơ doanh nghiệp' : operatorCommonEn.navigation.profile,
+      icon: 'domain',
+      href: ROUTES.partner.profile,
+    },
+    {
+      key: 'settings',
+      label: isVi ? 'Cài đặt tài khoản' : operatorCommonEn.navigation.settings,
+      icon: 'settings',
+      disabled: true,
+    },
+  ];
 
   useEffect(() => {
     if (weatherAlertBadgeCount !== undefined) {
@@ -133,6 +138,7 @@ export function PartnerWorkspaceNav({
         </div>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher variant="compact" />
           {operatorName ? (
             <span className="hidden max-w-[140px] truncate text-xs font-bold text-slate-700 sm:inline">
               {operatorName}
@@ -180,10 +186,10 @@ export function PartnerWorkspaceNav({
           {/* Main workspace section */}
           <div>
             <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Quản lý vận hành
+              {isVi ? 'Quản lý vận hành' : operatorCommonEn.navigation.operationsSection}
             </div>
             <ul className="space-y-1" role="list">
-              {WORKSPACE_NAV_ITEMS.map((item) => {
+              {workspaceNavItems.map((item) => {
                 const isActive = item.key === activeTab;
                 if (item.disabled || !item.href) {
                   return (
@@ -241,10 +247,10 @@ export function PartnerWorkspaceNav({
           {/* Account section */}
           <div>
             <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Tài khoản đối tác
+              {isVi ? 'Tài khoản đối tác' : operatorCommonEn.navigation.accountSection}
             </div>
             <ul className="space-y-1" role="list">
-              {ACCOUNT_NAV_ITEMS.map((item) => {
+              {accountNavItems.map((item) => {
                 const isActive = item.key === activeTab;
                 if (item.disabled || !item.href) {
                   return (
@@ -294,7 +300,11 @@ export function PartnerWorkspaceNav({
         </nav>
 
         {/* Footer profile indicator */}
-        <div className="border-t border-slate-800 p-4">
+        <div className="border-t border-slate-800 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-slate-400">Ngôn ngữ / Lang</span>
+            <LanguageSwitcher variant="compact" />
+          </div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#174B4A] text-xs font-black text-white">
@@ -302,7 +312,7 @@ export function PartnerWorkspaceNav({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-white">
-                  {operatorName || 'Đối tác lữ hành'}
+                  {operatorName || (isVi ? 'Đối tác lữ hành' : 'Tour Operator')}
                 </p>
                 <p className="truncate text-[10px] text-slate-400">Tour Operator</p>
               </div>

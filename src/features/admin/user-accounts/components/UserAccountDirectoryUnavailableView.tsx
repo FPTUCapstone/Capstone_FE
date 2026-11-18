@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import type { AdministrationRole } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
+import { useI18n } from '@/i18n';
 
-import { adminUserAccountsEn } from '@/features/admin/user-accounts/resources/en';
+import { adminUserAccountsEn, adminUserAccountsVi } from '@/features/admin/user-accounts/resources';
 
 export function UserAccountDirectoryUnavailableView({ role = 'Administrator' }: { role?: AdministrationRole }) {
-  const copy = adminUserAccountsEn.directory;
+  const { locale, hasProvider } = useI18n();
+  const copy = (hasProvider && locale === 'vi' ? adminUserAccountsVi : adminUserAccountsEn).directory;
+  const isVi = hasProvider && locale === 'vi';
 
   return (
     <div className="pb-16 text-[#1C2928]">
@@ -19,7 +22,7 @@ export function UserAccountDirectoryUnavailableView({ role = 'Administrator' }: 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href={role === 'Administrator' ? ROUTES.admin.createStaff : ROUTES.admin.createServiceProvider}
             className="inline-flex min-h-11 items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
-            {role === 'Administrator' ? 'Create Staff Account' : 'Create Service Provider Account'}
+            {role === 'Administrator' ? (isVi ? 'Tạo Tài khoản Nhân viên' : 'Create Staff Account') : (isVi ? 'Tạo Tài khoản Nhà cung cấp' : 'Create Service Provider Account')}
           </Link>
         </div>
 

@@ -8,7 +8,9 @@ import {
 } from '@/types/tour-operator-application';
 import { ROUTES } from '@/lib/routes';
 import { fetchOperatorApplicationDetail } from '../api/tourOperatorApplicationApi';
-import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { tourOperatorApplicationEn as copyOriginal } from '../resources/en';
+import { tourOperatorApplicationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { ApplicationErrorView, describeApplicationError } from '../utils/applicationErrors';
 import { usableDecisionMessage } from '../utils/decisionMessage';
 import { hasUsableBusinessLicense } from '../utils/documents';
@@ -26,6 +28,9 @@ interface TourOperatorApplicationDetailViewProps {
 const TOAST_DURATION_MS = 8000;
 
 export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplicationDetailViewProps) {
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? tourOperatorApplicationVi : copyOriginal;
+
   const [detail, setDetail] = useState<TourOperatorApplicationDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApplicationErrorView | null>(null);

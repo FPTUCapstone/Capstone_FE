@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import { formatFinanceDate } from '../../utils/financeFormat';
 import { useAccessibleFinanceDialog } from '../useAccessibleFinanceDialog';
 import type {
@@ -31,6 +33,8 @@ export function ExportRevenueDialog({
   onClose,
   onExport,
 }: ExportRevenueDialogProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const [selectedScope, setSelectedScope] =
     useState<RevenueExportScope>('summary_and_details');
   const [isSubmitting, setIsSubmitting] = useState(false);

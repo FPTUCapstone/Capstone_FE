@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import type {
   BeneficiaryBankAccountDto,
   BeneficiaryBankAccountInput,
@@ -20,6 +22,8 @@ const EMPTY_DRAFT: BeneficiaryBankAccountInput = {
 };
 
 export function BeneficiaryBankCard({ bankInfo, onUpdateBank }: BeneficiaryBankCardProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const [isEditing, setIsEditing] = useState(false);
   // The account number field always starts empty: the server never returns the full number,
   // so there is nothing to prefill it with (UC-46 FE spec: edit form does not prefill it).

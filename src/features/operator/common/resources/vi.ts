@@ -1,95 +1,68 @@
 /**
- * TripMate Partner Workspace — Từ điển Tiếng Việt chuẩn hóa.
- * Áp dụng thống nhất cho toàn bộ màn hình điều hành đối tác (Batch H).
+ * Chuỗi tài nguyên tiếng Việt dùng chung cho Không gian làm việc Nhà điều hành tour.
  */
-export const operatorVi = {
-  common: {
-    workspaceTitle: 'Không gian làm việc đối tác',
-    verifiedBadge: 'Đã xác minh',
-    demoBadge: 'Chế độ thử nghiệm (Demo)',
-    defaultOperatorName: 'Đối tác lữ hành',
-    back: 'Quay lại',
-    cancel: 'Hủy bỏ',
-    confirm: 'Xác nhận',
-    save: 'Lưu thay đổi',
-    search: 'Tìm kiếm...',
-    filter: 'Bộ lọc',
-    all: 'Tất cả',
-    loading: 'Đang tải dữ liệu...',
-    noData: 'Không có dữ liệu phù hợp.',
-    viewDetails: 'Xem chi tiết',
-    actions: 'Thao tác',
-    status: 'Trạng thái',
-    edit: 'Chỉnh sửa',
-    delete: 'Xóa',
-  },
+import type { operatorCommonEn } from './en';
+
+type DeepString<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends string
+  ? string
+  : T extends object
+  ? { [K in keyof T]: DeepString<T[K]> }
+  : T;
+
+export type OperatorCommonResources = DeepString<typeof operatorCommonEn>;
+
+export const operatorCommonVi: OperatorCommonResources = {
   navigation: {
     dashboard: 'Bảng điều khiển',
     tours: 'Gói tour',
     coupons: 'Mã giảm giá',
-    bookings: 'Đơn đặt chỗ',
+    bookings: 'Đơn đặt tour',
     revenue: 'Doanh thu',
-    payouts: 'Thanh toán & Rút tiền',
+    payouts: 'Quyết toán',
     profile: 'Hồ sơ doanh nghiệp',
     settings: 'Cài đặt tài khoản',
+    comingSoon: 'Sắp ra mắt',
+    operationsSection: 'Quản lý vận hành',
+    accountSection: 'Tài khoản đối tác',
+    servicesSection: 'Dịch vụ & Vận hành',
+    defaultOperatorTitle: 'Nhà điều hành tour',
+    verifiedPartnerBadge: 'Đối tác đã xác thực',
+    featureInDevelopment: 'Tính năng này hiện đang được phát triển',
+    workspaceNavAria: 'Điều hướng không gian đối tác',
+    openMenuAria: 'Mở menu điều hướng',
+    closeMenuAria: 'Đóng menu điều hướng',
+    demoBadge: 'Bản dùng thử',
+  },
+  logout: {
+    button: 'Đăng xuất',
+    confirmTitle: 'Xác nhận đăng xuất',
+    confirmMessage: 'Bạn có chắc chắn muốn đăng xuất khỏi TripMate?',
+    cancelButton: 'Hủy',
+    confirmButton: 'Đăng xuất',
+    loading: 'Đang đăng xuất...',
+    errorMessage: 'Không thể kết thúc phiên đăng nhập. Vui lòng thử lại.',
+    dialogAriaTitle: 'Xác nhận đăng xuất',
+    dialogAriaDesc: 'Bạn có chắc chắn muốn đăng xuất khỏi TripMate?',
+  },
+  accessibility: {
+    closeDialog: 'Đóng hộp thoại',
   },
   statuses: {
     approved: 'Đã duyệt',
-    pending: 'Chờ duyệt',
-    pendingReview: 'Đang chờ duyệt',
-    draft: 'Bản nháp',
-    rejected: 'Bị từ chối',
     confirmed: 'Đã xác nhận',
-    cancelled: 'Đã hủy',
     settled: 'Đã quyết toán',
-    closed: 'Đã kết toán',
-    open: 'Đang mở',
     active: 'Đang hoạt động',
-    inactive: 'Đã tắt',
-  },
-  bookings: {
-    title: 'Đơn đặt chỗ khách hàng',
-    description: 'Theo dõi danh sách khách đặt tour và quản lý các yêu cầu điều hành.',
-    code: 'Mã đặt chỗ',
-    tour: 'Gói tour',
-    leadGuest: 'Khách hàng đại diện',
-    departureDate: 'Ngày khởi hành',
-    passengerCount: 'Số lượng khách',
-    totalAmount: 'Tổng thanh toán',
-    cancelBooking: 'Hủy đơn đặt chỗ',
-    initiateRefund: 'Khởi tạo hoàn tiền',
-    manifestTitle: 'Danh sách đoàn khách',
-  },
-  tours: {
-    title: 'Quản lý gói tour',
-    description: 'Danh sách toàn bộ các chương trình tour du lịch của doanh nghiệp.',
-    createNew: 'Tạo gói tour mới',
-    tourCode: 'Mã tour',
-    destination: 'Điểm đến',
-    duration: 'Thời lượng',
-    price: 'Giá người lớn',
-    capacity: 'Sức chứa',
-    submitApproval: 'Gửi duyệt',
-    deleteConfirmTitle: 'Xóa gói tour?',
-  },
-  coupons: {
-    title: 'Mã giảm giá',
-    description: 'Quản lý các chương trình ưu đãi và khuyến mãi dành cho du khách.',
-    createNew: 'Tạo mã giảm giá mới',
-    code: 'Mã ưu đãi',
-    discount: 'Mức giảm',
-    scope: 'Phạm vi áp dụng',
-    validity: 'Thời hạn',
-    usage: 'Lượt sử dụng',
-  },
-  finance: {
-    revenueTitle: 'Doanh thu & Phân tích',
-    revenueDescription: 'Báo cáo chi tiết các khoản thanh toán, hoa hồng sàn và lợi nhuận thực nhận.',
-    payoutsTitle: 'Thanh toán & Rút tiền',
-    payoutsDescription: 'Quản lý kỳ kết toán doanh thu và theo dõi lịch sử rút tiền về tài khoản ngân hàng.',
-    availableBalance: 'Số dư khả dụng để rút',
-    requestPayout: 'Yêu cầu rút tiền khả dụng',
-    bankAccount: 'Tài khoản ngân hàng thụ hưởng',
-    exportReport: 'Xuất báo cáo',
+    pending: 'Chờ duyệt',
+    pendingReview: 'Chờ duyệt',
+    draft: 'Bản nháp',
+    open: 'Đang mở',
+    closed: 'Đã đóng',
+    inactive: 'Ngưng hoạt động',
+    rejected: 'Bị từ chối',
+    cancelled: 'Đã hủy',
   },
 };
+
+export const operatorVi = operatorCommonVi;

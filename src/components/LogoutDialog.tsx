@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { operatorCommonEn } from "@/features/operator/common/resources/en";
+import { useI18n } from "@/i18n";
 
 export type LogoutDialogLabels = {
   title?: string;
@@ -27,14 +28,16 @@ export default function LogoutDialog({
   errorMessage,
   labels,
 }: LogoutDialogProps) {
+  const { locale, hasProvider } = useI18n();
+  const isVi = hasProvider && locale === 'vi';
   const [loading, setLoading] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  const titleText = labels?.title ?? operatorCommonEn.logout.confirmTitle;
-  const descText = labels?.description ?? operatorCommonEn.logout.confirmMessage;
-  const cancelText = labels?.cancelButton ?? operatorCommonEn.logout.cancelButton;
-  const confirmText = labels?.confirmButton ?? operatorCommonEn.logout.confirmButton;
-  const loadingText = labels?.loadingText ?? operatorCommonEn.logout.loading;
+  const titleText = labels?.title ?? (isVi ? "Xác nhận đăng xuất" : operatorCommonEn.logout.confirmTitle);
+  const descText = labels?.description ?? (isVi ? "Bạn có chắc chắn muốn đăng xuất khỏi TripMate không?" : operatorCommonEn.logout.confirmMessage);
+  const cancelText = labels?.cancelButton ?? (isVi ? "Hủy" : operatorCommonEn.logout.cancelButton);
+  const confirmText = labels?.confirmButton ?? (isVi ? "Đăng xuất" : operatorCommonEn.logout.confirmButton);
+  const loadingText = labels?.loadingText ?? (isVi ? "Đang đăng xuất..." : operatorCommonEn.logout.loading);
 
   const handleClose = useCallback(() => {
     setLoading(false);

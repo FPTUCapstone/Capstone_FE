@@ -3,7 +3,9 @@
 import { useRef, useState } from 'react';
 import { approveOperatorApplication } from '../api/tourOperatorApplicationApi';
 import { ApproveOperatorApplicationResponseDto } from '@/types/tour-operator-application';
-import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { tourOperatorApplicationEn as copyOriginal } from '../resources/en';
+import { tourOperatorApplicationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { describeApplicationError } from '../utils/applicationErrors';
 import { useAccessibleDecisionDialog } from './useAccessibleDecisionDialog';
 
@@ -24,6 +26,9 @@ export function ApproveModal({
   onClose,
   onSuccess,
 }: ApproveModalProps) {
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? tourOperatorApplicationVi : copyOriginal;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);

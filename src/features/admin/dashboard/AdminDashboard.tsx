@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-import { adminDashboardEn, type AdminDashboardModule, type AdminModuleStatus } from './resources/en';
+import { useI18n } from '@/i18n';
+import { adminDashboardEn as adminDashboardEnOriginal, adminDashboardVi, type AdminDashboardModule, type AdminModuleStatus } from './resources';
 import { AdminAnalyticsTabView } from '@/features/admin/shared/components/analytics/AdminAnalyticsTabView';
 import { DashboardMainTabs, type DashboardTab } from '@/features/admin/shared/components/tabs/DashboardMainTabs';
 
@@ -13,7 +14,7 @@ const statusTone: Record<AdminModuleStatus, string> = {
   pendingSpecification: 'border-[#D2D1CC] bg-[#F7F5EF] text-[#515553]',
 };
 
-function ModuleCard({ module }: { module: AdminDashboardModule }) {
+function ModuleCard({ module, copy }: { module: AdminDashboardModule; copy: typeof adminDashboardEnOriginal }) {
   const titleId = `admin-module-${module.id}`;
 
   return (
@@ -38,7 +39,7 @@ function ModuleCard({ module }: { module: AdminDashboardModule }) {
           <span
             className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${statusTone[module.status]}`}
           >
-            {adminDashboardEn.statusLabels[module.status]}
+            {copy.statusLabels[module.status]}
           </span>
         </div>
         <p className="text-xs font-semibold uppercase tracking-wider text-[#5B6E69]">{module.category}</p>
@@ -51,7 +52,7 @@ function ModuleCard({ module }: { module: AdminDashboardModule }) {
             href={module.href}
             className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white transition-colors hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B6E69]"
           >
-            {module.actionLabel ?? adminDashboardEn.openModuleLabel}
+            {module.actionLabel ?? copy.openModuleLabel}
           </Link>
         ) : (
           <p className="mt-4 rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-3 py-2.5 text-xs text-[#5B6E69]">
@@ -64,6 +65,8 @@ function ModuleCard({ module }: { module: AdminDashboardModule }) {
 }
 
 export function AdminDashboard() {
+  const { locale, hasProvider } = useI18n();
+  const adminDashboardEn = hasProvider && locale === 'vi' ? (adminDashboardVi as unknown as typeof adminDashboardEnOriginal) : adminDashboardEnOriginal;
   const [activeTab, setActiveTab] = useState<DashboardTab>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -127,7 +130,7 @@ export function AdminDashboard() {
               </h2>
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 xl:grid-cols-3">
                 {adminDashboardEn.modules.map((module) => (
-                  <ModuleCard key={module.id} module={module} />
+                  <ModuleCard key={module.id} module={module} copy={adminDashboardEn} />
                 ))}
               </ul>
             </section>

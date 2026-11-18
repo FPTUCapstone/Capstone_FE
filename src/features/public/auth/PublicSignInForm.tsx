@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FeedbackAlert } from "@/components/ui/FeedbackAlert";
 import { GoogleConsentModal } from "@/features/auth/google/GoogleConsentModal";
 import { useSignInEngine } from "@/features/auth/sign-in/useSignInEngine";
+import { useI18n } from "@/i18n";
 import { ROUTES } from "@/lib/routes";
 
 import { SignInField } from './SignInField';
@@ -30,16 +31,18 @@ export function PublicSignInForm() {
     handleGoogle,
     handleResendEmail,
   } = useSignInEngine();
+  const { locale } = useI18n();
+  const isVi = locale === 'vi';
 
   return (
-    <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100">
+    <div className="bg-brand-card rounded-3xl shadow-card-lg p-8 sm:p-10 border border-slate-100" lang={locale}>
       {/* Header */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-brand-navy tracking-tight mb-2">
-          Đăng nhập
+          {isVi ? "Đăng nhập" : "Sign In"}
         </h2>
         <p className="text-sm text-brand-textSecondary leading-relaxed">
-          Chào mừng bạn quay lại với TripMate
+          {isVi ? "Chào mừng bạn quay lại với TripMate" : "Welcome back to TripMate"}
         </p>
       </div>
 
@@ -48,7 +51,7 @@ export function PublicSignInForm() {
           id="email"
           name="email"
           type="email"
-          label="Email"
+          label={isVi ? "Email" : "Email"}
           icon="mail"
           placeholder="traveler@example.com"
           autoComplete="email"
@@ -68,7 +71,7 @@ export function PublicSignInForm() {
         <SignInField
           id="password"
           name="password"
-          label="Mật khẩu"
+          label={isVi ? "Mật khẩu" : "Password"}
           icon="lock"
           placeholder="••••••••••••"
           autoComplete="current-password"
@@ -97,14 +100,14 @@ export function PublicSignInForm() {
               disabled={loading}
               className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-teal focus:ring-brand-teal/20 focus:ring-offset-0 transition"
             />
-            <span className="text-xs text-slate-600">Ghi nhớ đăng nhập</span>
+            <span className="text-xs text-slate-600">{isVi ? "Ghi nhớ đăng nhập" : "Remember me"}</span>
           </label>
 
           <Link
             href={ROUTES.forgotPassword}
             className="text-xs text-brand-teal font-semibold hover:underline"
           >
-            Quên mật khẩu?
+            {isVi ? "Quên mật khẩu?" : "Forgot password?"}
           </Link>
         </div>
 
@@ -115,7 +118,7 @@ export function PublicSignInForm() {
             disabled={loading}
             className="group w-full h-12 bg-brand-teal hover:bg-brand-brightTeal active:scale-[0.98] text-white font-semibold text-base rounded-xl shadow-btn transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <span>{loading ? "Đang xử lý..." : "Đăng nhập"}</span>
+            <span>{loading ? (isVi ? "Đang xử lý..." : "Signing in...") : (isVi ? "Đăng nhập" : "Sign In")}</span>
             {!loading ? (
               <span className="material-symbols-outlined text-[18px] transition-transform duration-200 group-hover:translate-x-0.5">
                 arrow_forward
@@ -136,7 +139,7 @@ export function PublicSignInForm() {
         </div>
         <div className="relative flex justify-center text-xs">
           <span className="px-3 bg-brand-card text-slate-400 font-medium">
-            Hoặc tiếp tục với
+            {isVi ? "Hoặc tiếp tục với" : "Or continue with"}
           </span>
         </div>
       </div>
@@ -154,14 +157,14 @@ export function PublicSignInForm() {
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
         </svg>
-        <span>Tiếp tục với Google</span>
+        <span>{isVi ? "Tiếp tục với Google" : "Continue with Google"}</span>
       </button>
 
       {/* Register redirect */}
       <p className="mt-6 text-center text-sm text-brand-textSecondary">
-        Chưa có tài khoản?
+        {isVi ? "Chưa có tài khoản?" : "Don't have an account?"}
         <Link href={ROUTES.register} className="text-brand-teal font-bold hover:underline ml-1">
-          Tạo tài khoản
+          {isVi ? "Tạo tài khoản" : "Create account"}
         </Link>
       </p>
 
@@ -173,7 +176,7 @@ export function PublicSignInForm() {
         <div className="relative flex justify-center text-xs">
           <span className="px-3 bg-brand-card text-[#5B6E69] font-medium flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]" aria-hidden="true">shield</span>
-            Dành cho nhân viên hệ thống?
+            {isVi ? "Dành cho nhân viên hệ thống?" : "System staff or administrator?"}
           </span>
         </div>
       </div>
@@ -182,7 +185,7 @@ export function PublicSignInForm() {
         className="w-full h-12 rounded-xl bg-[#1C2928] text-[#F7F5EF] font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#174B4A] active:scale-[0.98] transition-all duration-200"
       >
         <span className="material-symbols-outlined text-[18px] text-[#E8F0EA]" aria-hidden="true">verified_user</span>
-        Đăng nhập quản trị
+        {isVi ? "Đăng nhập quản trị" : "Admin Sign In"}
       </Link>
 
       {/* Feedback / verification resend / google hint */}
@@ -192,14 +195,16 @@ export function PublicSignInForm() {
           {googlePasswordHint ? (
             <p className="text-xs text-brand-textSecondary">
               <Link href={ROUTES.signIn} className="font-semibold text-brand-teal hover:underline">
-                Đăng nhập bằng email và mật khẩu
+                {isVi ? "Đăng nhập bằng email và mật khẩu" : "Sign in with email and password"}
               </Link>
             </p>
           ) : null}
           {unverifiedEmail ? (
             <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-brand-surface p-3 text-xs text-brand-textSecondary">
               <p>
-                Chưa nhận được email xác minh? Kiểm tra thư mục spam hoặc gửi lại bên dưới.
+                {isVi
+                  ? "Chưa nhận được email xác minh? Kiểm tra thư mục spam hoặc gửi lại bên dưới."
+                  : "Haven't received the verification email? Check your spam folder or resend below."}
               </p>
               <button
                 type="button"
@@ -207,7 +212,9 @@ export function PublicSignInForm() {
                 onClick={() => { void handleResendEmail(); }}
                 className="h-10 w-full rounded-lg border border-slate-300 bg-white text-xs font-semibold text-brand-navy hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {resendOnCooldown ? `Gửi lại (${resendSecondsLeft}s)` : "Gửi lại email xác minh"}
+                {resendOnCooldown
+                  ? (isVi ? `Gửi lại (${resendSecondsLeft}s)` : `Resend (${resendSecondsLeft}s)`)
+                  : (isVi ? "Gửi lại email xác minh" : "Resend verification email")}
               </button>
             </div>
           ) : null}

@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
-import { tripReviewEn } from '../resources/en';
+import { tripReviewEn as tripReviewEnOriginal } from '../resources/en';
+import { tripReviewVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import type { TripSummary } from '../types/tripHistoryContract';
 
 interface TripSummaryBannerProps {
@@ -11,6 +13,8 @@ interface TripSummaryBannerProps {
 
 /** The two figures TM-78 returns for the Completed tab; nothing else is shown or derived. */
 export function TripSummaryBanner({ summary, isDemo }: TripSummaryBannerProps) {
+  const { locale, hasProvider } = useI18n();
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
   return (
     <section
       aria-label={tripReviewEn.accessibility.tripSummaryAria}

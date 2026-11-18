@@ -8,12 +8,10 @@ import {
   type CouponDto,
   type CouponStatus,
 } from '../types/couponLifecycle';
-import {
-  OPERATOR_COUPON_ROUTES,
-  buildCouponListUrl,
-} from '../routes';
+import { OPERATOR_COUPON_ROUTES, buildCouponListUrl } from '../routes';
 import { OperatorCouponStatusBadge } from './OperatorCouponStatusBadge';
-import { couponEn } from '../resources/en';
+import { couponEn as couponEnOriginal, couponVi } from '../resources';
+import { useI18n } from '@/i18n';
 
 interface OperatorCouponListViewProps {
   coupons: CouponDto[];
@@ -47,6 +45,8 @@ function formatDiscountSummary(coupon: CouponDto): string {
 }
 
 export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps) {
+  const { locale, hasProvider } = useI18n();
+  const couponEn = hasProvider && locale === 'vi' ? couponVi : couponEnOriginal;
   const router = useRouter();
   const searchParams = useSearchParams();
 

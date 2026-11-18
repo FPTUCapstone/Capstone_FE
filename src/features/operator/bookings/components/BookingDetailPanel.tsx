@@ -5,7 +5,9 @@ import { createPortal } from 'react-dom';
 import type { BookingDetailView, BookingListItemDto } from '../types/bookingLifecycle';
 import { BookingStatusBadge, CheckInStatusBadge } from './OperatorBookingStatusBadge';
 import { formatCurrencyVND, formatVietnamDate, formatVietnamDateTime } from '../utils/dateFormat';
-import { bookingEn } from '../resources/en';
+import { bookingEn as bookingEnOriginal } from '../resources/en';
+import { bookingVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 export type BookingDetailLoadState = 'loading' | 'ready' | 'error';
 
@@ -32,6 +34,8 @@ export function BookingDetailPanel({
   onClose,
   onOpenCancelDialog,
 }: BookingDetailPanelProps) {
+  const { locale, hasProvider } = useI18n();
+  const bookingEn = hasProvider && locale === 'vi' ? bookingVi : bookingEnOriginal;
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();

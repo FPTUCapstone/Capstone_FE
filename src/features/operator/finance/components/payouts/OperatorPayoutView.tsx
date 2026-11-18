@@ -10,7 +10,9 @@ import {
   updateBeneficiaryBankAccount,
 } from '../../services/operatorPayoutService';
 import { isFinanceDemoAllowedInCurrentEnv } from '../../data/operatorRevenueDemoFixtures';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import type {
   BeneficiaryBankAccountDto,
   BeneficiaryBankAccountInput,
@@ -33,6 +35,8 @@ const EMPTY_BANK: BeneficiaryBankAccountDto = {
  * `/partner/payout-settlements` (src/features/operator/payout-settlements).
  */
 export function OperatorPayoutView() {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const { context } = useWebSession();
   const searchParams = useSearchParams();
   const router = useRouter();

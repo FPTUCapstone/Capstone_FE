@@ -2,7 +2,9 @@
 
 import { OperatorDocumentDto } from '@/types/tour-operator-application';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { tourOperatorApplicationEn as copyOriginal } from '../resources/en';
+import { tourOperatorApplicationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { getSafeDocumentUrl } from '../utils/documentUrl';
 import { hasUsableBusinessLicense } from '../utils/documents';
 import { formatApplicationDateTime } from '../utils/format';
@@ -12,6 +14,8 @@ interface DocumentsGridProps {
 }
 
 export function DocumentsGrid({ documents }: DocumentsGridProps) {
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? tourOperatorApplicationVi : copyOriginal;
   const isMissingMandatory = !hasUsableBusinessLicense(documents);
 
   return (

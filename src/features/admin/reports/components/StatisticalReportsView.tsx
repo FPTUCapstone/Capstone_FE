@@ -9,7 +9,9 @@ import { ROUTES } from '@/lib/routes';
 import {
   canAccessStatisticalReports,
 } from '../guards/statisticalReportAuth';
-import { statisticalReportsEn } from '../resources/en';
+import { statisticalReportsEn as statisticalReportsEnOriginal } from '../resources/en';
+import { statisticalReportsVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import {
   CANONICAL_BOOKING_TYPE_OPTIONS,
   DEFAULT_DRAFT_CRITERIA,
@@ -66,7 +68,8 @@ const EXPORT_FORMAT_KEYS: readonly ExportFormat[] = ['CSV', 'EXCEL'];
 export function StatisticalReportsView({
   actorRole,
 }: StatisticalReportsViewProps) {
-  const copy = statisticalReportsEn;
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? statisticalReportsVi : statisticalReportsEnOriginal;
   const effectiveRole = actorRole ?? null;
 
   const [draftCriteria, setDraftCriteria] =
@@ -114,7 +117,7 @@ export function StatisticalReportsView({
   useEffect(() => {
     const controller = new AbortController();
     const reportFilterLoadFailure = () => {
-      if (!controller.signal.aborted) setProductionFilterLoadError(statisticalReportsEn.filters.loadErrorMessage);
+      if (!controller.signal.aborted) setProductionFilterLoadError(copy.filters.loadErrorMessage);
     };
     void fetchProductionReportingOperators(controller.signal)
       .then(setProductionOperators)

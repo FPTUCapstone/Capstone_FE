@@ -3,11 +3,12 @@
 import { useState, type FormEvent } from 'react';
 
 import { DEMO_REJECTION_REASON_CATEGORIES } from '../demo/demoTourModerationFixtures';
-import { tourModerationEn } from '../resources/en';
+import { tourModerationEn as tourModerationEnOriginal } from '../resources/en';
+import { tourModerationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { ModerationDialog } from './ModerationDialog';
 import { focusRing } from './ModerationNotices';
 
-const copy = tourModerationEn.rejectDialog;
 const MAX_REASON_LENGTH = 1000;
 
 export interface RejectionReason {
@@ -26,6 +27,10 @@ interface RejectTourDialogProps {
  * The detailed reason is required; the category options are demo-only fixtures.
  */
 export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogProps) {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+  const copy = tourModerationEn.rejectDialog;
+
   const [step, setStep] = useState<'reason' | 'confirm'>('reason');
   const [category, setCategory] = useState('');
   const [detail, setDetail] = useState('');

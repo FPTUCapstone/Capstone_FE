@@ -5,14 +5,14 @@ import { useSearchParams } from 'next/navigation';
 
 import { DemoModeBanner, PendingIntegrationNotice, focusRing } from './components/ModerationNotices';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
-import { tourModerationEn } from './resources/en';
+import { tourModerationEn as tourModerationEnOriginal } from './resources/en';
+import { tourModerationVi } from './resources/vi';
+import { useI18n } from '@/i18n';
 import { getPendingTourPost } from './services/tourModerationService';
 import type { PendingTourPost } from './types';
 import { formatDisplayDate, formatDisplayDateTime, formatDisplayTime, formatVnd } from './utils/format';
 import { buildTourQueueHref, parseTourQueueQuery } from './utils/queueQuery';
 import { TourReviewDecisionPanel } from './TourReviewDecisionPanel';
-
-const copy = tourModerationEn.detail;
 
 function FactChip({ label, value }: { label: string; value: string }) {
   return (
@@ -37,6 +37,10 @@ function ServiceList({ title, items }: { title: string; items: readonly string[]
 }
 
 function TourContent({ tour }: { tour: PendingTourPost }) {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+  const copy = tourModerationEn.detail;
+
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
       <div className="space-y-8 lg:col-span-8">
@@ -125,6 +129,10 @@ function TourContent({ tour }: { tour: PendingTourPost }) {
 }
 
 export function TourReview({ id }: { id: string }) {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+  const copy = tourModerationEn.detail;
+
   const searchParams = useSearchParams();
   const demo = isTourModerationDemoRequested(searchParams.get('demo'));
   const backHref = buildTourQueueHref(parseTourQueueQuery(searchParams), demo);

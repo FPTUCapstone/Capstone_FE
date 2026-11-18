@@ -6,6 +6,7 @@ import { WebSessionProvider } from '@/features/auth/session/WebSessionProvider';
 import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvider';
 import { ScrollResetHandler } from '@/components/providers/ScrollResetHandler';
 import { PersistentPublicLayout } from '@/components/layout/PersistentPublicLayout';
+import { I18nProvider } from '@/i18n';
 
 import './globals.css';
 
@@ -73,14 +74,16 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} ${bricolage.variable} ${manrope.variable} antialiased bg-brand-surface font-sans text-brand-textPrimary selection:bg-brand-lightTeal selection:text-brand-teal`}
         suppressHydrationWarning
       >
-        <WebSessionProvider>
-          <SmoothScrollProvider>
-            <ScrollResetHandler />
-            <PersistentPublicLayout>
-              {children}
-            </PersistentPublicLayout>
-          </SmoothScrollProvider>
-        </WebSessionProvider>
+        <I18nProvider initialLocale="vi">
+          <WebSessionProvider>
+            <SmoothScrollProvider>
+              <ScrollResetHandler />
+              <PersistentPublicLayout>
+                {children}
+              </PersistentPublicLayout>
+            </SmoothScrollProvider>
+          </WebSessionProvider>
+        </I18nProvider>
       </body>
     </html>
   );

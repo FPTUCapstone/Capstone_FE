@@ -38,6 +38,21 @@ export const operatorCommonEn = {
   accessibility: {
     closeDialog: 'Close dialog',
   },
+  statuses: {
+    approved: 'Approved',
+    confirmed: 'Confirmed',
+    settled: 'Settled',
+    active: 'Active',
+    pending: 'Pending',
+    pendingReview: 'Pending Review',
+    draft: 'Draft',
+    open: 'Open',
+    closed: 'Closed',
+    inactive: 'Inactive',
+    rejected: 'Rejected',
+    cancelled: 'Cancelled',
+  },
 } as const;
 
+export const operatorEn = operatorCommonEn;
 export type OperatorCommonResources = typeof operatorCommonEn;

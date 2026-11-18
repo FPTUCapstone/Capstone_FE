@@ -1,22 +1,44 @@
+'use client';
+
 import BrandLogo from '@/components/BrandLogo';
 import HeroPanel from '@/components/HeroPanel';
-
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useI18n } from '@/i18n';
 import { PublicSignInForm } from './PublicSignInForm';
 
 export function PublicSignInPage() {
+  const { locale } = useI18n();
+  const isVi = locale === 'vi';
+
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr]">
+    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] xl:grid-cols-[1.2fr_1fr]" lang={locale}>
       <HeroPanel
         title={
-          <>
-            Chào mừng trở lại{' '}
-            <span className="text-teal-300">TripMate</span>
-          </>
+          isVi ? (
+            <>
+              Chào mừng trở lại{' '}
+              <span className="text-teal-300">TripMate</span>
+            </>
+          ) : (
+            <>
+              Welcome back to{' '}
+              <span className="text-teal-300">TripMate</span>
+            </>
+          )
         }
-        description="Đăng nhập để quản lý lịch trình, khám phá điểm đến và đồng hành cùng bạn trên mọi chuyến đi."
+        description={
+          isVi
+            ? 'Đăng nhập để quản lý lịch trình, khám phá điểm đến và đồng hành cùng bạn trên mọi chuyến đi.'
+            : 'Sign in to manage your itineraries, discover destinations, and explore Central Vietnam.'
+        }
       />
 
       <main className="flex items-center justify-center p-6 sm:p-10 lg:p-12 xl:p-16 bg-brand-surface relative">
+        {/* Top-right Language Switcher */}
+        <div className="absolute top-6 right-6 z-10">
+          <LanguageSwitcher variant="compact" />
+        </div>
+
         <div className="absolute top-6 left-6 lg:hidden flex items-center space-x-2.5">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-navy to-brand-navyContainer flex items-center justify-center shadow-md text-white">
             <BrandLogo size={22} />
@@ -30,8 +52,13 @@ export function PublicSignInPage() {
           <PublicSignInForm />
 
           <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
-            Bằng việc đăng nhập, bạn đã đồng ý với các điều khoản của TripMate.
-            <br />© 2026 TripMate — Hành trình của bạn, công nghệ của chúng tôi.
+            {isVi
+              ? 'Bằng việc đăng nhập, bạn đã đồng ý với các điều khoản của TripMate.'
+              : "By signing in, you agree to TripMate's terms of service."}
+            <br />
+            {isVi
+              ? '© 2026 TripMate — Hành trình của bạn, công nghệ của chúng tôi.'
+              : '© 2026 TripMate — Your journey, our technology.'}
           </p>
         </div>
       </main>

@@ -4,6 +4,8 @@ import Link from 'next/link';
 
 import { useAccountWorkspace } from './AccountWorkspaceContext';
 import { accountCommonEn } from './resources/en';
+import { accountCommonVi } from './resources/vi';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 export type AccountTabKey = 'profile' | 'preferences' | 'security' | 'trips' | 'complaints';
@@ -12,6 +14,7 @@ export interface AccountWorkspaceNavProps {
   activeTab: AccountTabKey;
   className?: string;
   variant?: 'horizontal' | 'sidebar';
+  locale?: 'vi' | 'en';
 }
 
 interface NavTabItem {
@@ -59,8 +62,13 @@ export function AccountWorkspaceNav({
   activeTab,
   className = '',
   variant,
+  locale,
 }: AccountWorkspaceNavProps) {
   const { isInsideShell } = useAccountWorkspace();
+  const { locale: i18nLocale, hasProvider } = useI18n();
+  const activeLocale = locale ?? (hasProvider ? i18nLocale : 'en');
+  const isVi = activeLocale === 'vi';
+  const strings = isVi ? accountCommonVi : accountCommonEn;
 
   // If invoked inside the Master-Detail shell without an explicit variant (i.e. from child page),
   // suppress rendering to eliminate duplicate navigation bars in the content area.
@@ -73,7 +81,7 @@ export function AccountWorkspaceNav({
   if (isSidebar) {
     return (
       <nav
-        aria-label={accountCommonEn.navigation.workspaceNavAria}
+        aria-label={strings.navigation.workspaceNavAria}
         className={`w-full ${className}`}
       >
         <div
@@ -83,6 +91,7 @@ export function AccountWorkspaceNav({
         >
           {ACCOUNT_WORKSPACE_TABS.map((tab) => {
             const isActive = tab.key === activeTab;
+            const label = strings.navigation.tabs[tab.key] || tab.label;
             return (
               <Link
                 key={tab.key}
@@ -104,7 +113,7 @@ export function AccountWorkspaceNav({
                   >
                     {tab.icon}
                   </span>
-                  <span className="truncate">{tab.label}</span>
+                  <span className="truncate">{label}</span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {tab.badge ? (
@@ -140,12 +149,13 @@ export function AccountWorkspaceNav({
   // Horizontal variant (default standalone mode or mobile capsule bar)
   return (
     <nav
-      aria-label={accountCommonEn.navigation.workspaceNavAria}
+      aria-label={strings.navigation.workspaceNavAria}
       className={`mb-6 flex border-b border-[#DCE2DD] overflow-x-auto ${className}`}
     >
       <div className="flex gap-2 min-w-full sm:min-w-0" role="tablist">
         {ACCOUNT_WORKSPACE_TABS.map((tab) => {
           const isActive = tab.key === activeTab;
+          const label = strings.navigation.tabs[tab.key] || tab.label;
           return (
             <Link
               key={tab.key}
@@ -161,7 +171,7 @@ export function AccountWorkspaceNav({
               <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
                 {tab.icon}
               </span>
-              <span>{tab.label}</span>
+              <span>{label}</span>
               {tab.badge ? (
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${

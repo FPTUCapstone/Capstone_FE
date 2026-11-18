@@ -5,7 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
 import { ROUTES } from '@/lib/routes';
-import { tripReviewEn } from '../resources/en';
+import { tripReviewEn as tripReviewEnOriginal } from '../resources/en';
+import { tripReviewVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { isTripDemoAllowedInCurrentEnv } from '../services/tripHistoryApi';
 import { fetchTripHistory, TripHistoryClientError } from '../services/tripHistoryClient';
 import {
@@ -29,6 +31,8 @@ const TAB_BUTTON =
   'flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm';
 
 export function TripHistoryView() {
+  const { locale, hasProvider } = useI18n();
+  const tripReviewEn = hasProvider && locale === 'vi' ? tripReviewVi : tripReviewEnOriginal;
   const searchParams = useSearchParams();
   const isDemo = searchParams.get('demo') === '1';
   // The page may ask for demo data; the client and this banner both honour it only where it is allowed.

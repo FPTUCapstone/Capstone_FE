@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
-import { operatorCommonEn } from '../../common/resources/en';
+import { operatorCommonEn as operatorCommonEnOriginal } from '../../common/resources/en';
+import { operatorCommonVi } from '../../common/resources/vi';
+import { useI18n } from '@/i18n';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 
 export type OperatorNavKey =
@@ -25,9 +28,12 @@ interface OperatorTourNavProps {
 
 export function OperatorTourNav({
   activeTab,
-  operatorName = operatorCommonEn.navigation.defaultOperatorTitle,
+  operatorName,
   isDemo = false,
 }: OperatorTourNavProps) {
+  const { locale, hasProvider } = useI18n();
+  const operatorCommonEn = hasProvider && locale === 'vi' ? operatorCommonVi : operatorCommonEnOriginal;
+  const resolvedOperatorName = operatorName || operatorCommonEn.navigation.defaultOperatorTitle;
   const navItems = [
     {
       key: 'dashboard',
@@ -88,10 +94,10 @@ export function OperatorTourNav({
         {/* Operator Profile Preview Card */}
         <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3 border border-slate-100">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#174B4A] font-bold text-white shadow-xs">
-            {operatorName.charAt(0).toUpperCase()}
+            {resolvedOperatorName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-bold text-[#1C2928]">{operatorName}</p>
+            <p className="truncate text-xs font-bold text-[#1C2928]">{resolvedOperatorName}</p>
             <p className="text-[11px] text-slate-500">
               {operatorCommonEn.navigation.verifiedPartnerBadge}
             </p>
@@ -144,8 +150,9 @@ export function OperatorTourNav({
           </div>
         </nav>
 
-        {/* Logout action */}
-        <div className="mt-6 border-t border-slate-100 pt-4 flex justify-center">
+        {/* Language & Logout action */}
+        <div className="mt-6 border-t border-slate-100 pt-4 flex flex-col items-center gap-3">
+          <LanguageSwitcher variant="segmented" />
           <LogoutButton />
         </div>
       </div>

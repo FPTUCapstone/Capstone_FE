@@ -5,6 +5,7 @@ import * as nextNav from 'next/navigation';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
 import type { AdministrationRole } from '@/features/auth/session/authSession';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 interface AdminSidebarProps {
@@ -47,71 +48,73 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = useSafePathname();
   const isStaff = role === 'Staff';
+  const { locale, hasProvider } = useI18n();
+  const isVi = hasProvider ? locale === 'vi' : false;
 
   // Navigation schema based on Table 3 and Approved Batch E0 IA
   const staffSections: NavSection[] = [
     {
-      title: 'Overview',
+      title: isVi ? 'Tổng quan' : 'Overview',
       items: [
-        { href: ROUTES.admin.staffDashboard, label: 'Staff Operations', icon: 'dashboard' },
+        { href: ROUTES.admin.staffDashboard, label: isVi ? 'Vận hành nhân viên' : 'Staff Operations', icon: 'dashboard' },
       ],
     },
     {
-      title: 'Operational Queues',
+      title: isVi ? 'Hàng đợi vận hành' : 'Operational Queues',
       items: [
-        { href: ROUTES.admin.tourOperatorApplications, label: 'Operator Applications', icon: 'assignment_ind' },
-        { href: ROUTES.admin.tourReviews, label: 'Tour Moderation', icon: 'rate_review' },
-        { href: ROUTES.admin.createServiceProvider, label: 'Create Service Provider', icon: 'person_add' },
-        { href: ROUTES.admin.commissionReconciliation, label: 'Commission Reconciliation', icon: 'account_balance_wallet' },
-        { href: ROUTES.admin.refundReconciliation, label: 'Refund Reconciliation', icon: 'currency_exchange' },
+        { href: ROUTES.admin.tourOperatorApplications, label: isVi ? 'Hồ sơ đối tác tour' : 'Operator Applications', icon: 'assignment_ind' },
+        { href: ROUTES.admin.tourReviews, label: isVi ? 'Duyệt tour du lịch' : 'Tour Moderation', icon: 'rate_review' },
+        { href: ROUTES.admin.createServiceProvider, label: isVi ? 'Cấp tài khoản NCC' : 'Create Service Provider', icon: 'person_add' },
+        { href: ROUTES.admin.commissionReconciliation, label: isVi ? 'Đối soát hoa hồng' : 'Commission Reconciliation', icon: 'account_balance_wallet' },
+        { href: ROUTES.admin.refundReconciliation, label: isVi ? 'Đối soát hoàn tiền' : 'Refund Reconciliation', icon: 'currency_exchange' },
       ],
     },
     {
-      title: 'Catalog & Spatial',
+      title: isVi ? 'Danh mục & Điểm đến' : 'Catalog & Spatial',
       items: [
-        { href: ROUTES.admin.pois, label: 'POI Catalog', icon: 'location_on' },
-        { href: ROUTES.admin.createPoi, label: 'Create POI', icon: 'add_location_alt' },
-        { href: ROUTES.admin.routesList, label: 'Routes & Network', icon: 'alt_route' },
+        { href: ROUTES.admin.pois, label: isVi ? 'Danh mục điểm tham quan' : 'POI Catalog', icon: 'location_on' },
+        { href: ROUTES.admin.createPoi, label: isVi ? 'Tạo điểm tham quan' : 'Create POI', icon: 'add_location_alt' },
+        { href: ROUTES.admin.routesList, label: isVi ? 'Tuyến đường & Mạng lưới' : 'Routes & Network', icon: 'alt_route' },
       ],
     },
     {
-      title: 'Live & Content',
+      title: isVi ? 'Vận hành & Nội dung' : 'Live & Content',
       items: [
-        { href: ROUTES.admin.activeTrips, label: 'Active Trips', icon: 'commute' },
-        { href: ROUTES.admin.users, label: 'User Directory', icon: 'group' },
-        { href: ROUTES.admin.landingContent, label: 'Landing Content', icon: 'web' },
+        { href: ROUTES.admin.activeTrips, label: isVi ? 'Chuyến đi đang hoạt động' : 'Active Trips', icon: 'commute' },
+        { href: ROUTES.admin.users, label: isVi ? 'Danh sách người dùng' : 'User Directory', icon: 'group' },
+        { href: ROUTES.admin.landingContent, label: isVi ? 'Nội dung trang chủ' : 'Landing Content', icon: 'web' },
       ],
     },
   ];
 
   const adminSections: NavSection[] = [
     {
-      title: 'System Overview',
+      title: isVi ? 'Tổng quan hệ thống' : 'System Overview',
       items: [
-        { href: ROUTES.admin.dashboard, label: 'Control Center', icon: 'admin_panel_settings' },
-        { href: ROUTES.admin.staffDashboard, label: 'Staff Workspace', icon: 'dashboard' },
+        { href: ROUTES.admin.dashboard, label: isVi ? 'Bảng điều khiển' : 'Control Center', icon: 'admin_panel_settings' },
+        { href: ROUTES.admin.staffDashboard, label: isVi ? 'Khu vực nhân viên' : 'Staff Workspace', icon: 'dashboard' },
       ],
     },
     {
-      title: 'Governance & Finance',
+      title: isVi ? 'Quản trị & Tài chính' : 'Governance & Finance',
       items: [
-        { href: ROUTES.admin.users, label: 'User Governance', icon: 'manage_accounts' },
-        { href: ROUTES.admin.reports, label: 'Statistical Reports', icon: 'analytics' },
-        { href: ROUTES.admin.commissionReconciliation, label: 'Commission Reconciliation', icon: 'account_balance_wallet' },
-        { href: ROUTES.admin.refundReconciliation, label: 'Refund Reconciliation', icon: 'currency_exchange' },
+        { href: ROUTES.admin.users, label: isVi ? 'Quản trị người dùng' : 'User Governance', icon: 'manage_accounts' },
+        { href: ROUTES.admin.reports, label: isVi ? 'Báo cáo thống kê' : 'Statistical Reports', icon: 'analytics' },
+        { href: ROUTES.admin.commissionReconciliation, label: isVi ? 'Đối soát hoa hồng' : 'Commission Reconciliation', icon: 'account_balance_wallet' },
+        { href: ROUTES.admin.refundReconciliation, label: isVi ? 'Đối soát hoàn tiền' : 'Refund Reconciliation', icon: 'currency_exchange' },
       ],
     },
     {
-      title: 'Catalog & Moderation',
+      title: isVi ? 'Danh mục & Kiểm duyệt' : 'Catalog & Moderation',
       items: [
-        { href: ROUTES.admin.pois, label: 'POI Master Data', icon: 'location_on' },
+        { href: ROUTES.admin.pois, label: isVi ? 'Dữ liệu điểm tham quan' : 'POI Master Data', icon: 'location_on' },
       ],
     },
     {
-      title: 'Security & System',
+      title: isVi ? 'Bảo mật & Hệ thống' : 'Security & System',
       items: [
-        { href: ROUTES.admin.algorithmParameters, label: 'Algorithm Config', icon: 'tune' },
-        { href: ROUTES.admin.auditLogs, label: 'Audit Logs', icon: 'history_edu' },
+        { href: ROUTES.admin.algorithmParameters, label: isVi ? 'Cấu hình thuật toán' : 'Algorithm Config', icon: 'tune' },
+        { href: ROUTES.admin.auditLogs, label: isVi ? 'Nhật ký kiểm toán' : 'Audit Logs', icon: 'history_edu' },
       ],
     },
   ];

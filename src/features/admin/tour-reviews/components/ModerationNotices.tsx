@@ -1,9 +1,14 @@
-import { tourModerationEn } from '../resources/en';
+import { tourModerationEn as tourModerationEnOriginal } from '../resources/en';
+import { tourModerationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 export const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]';
 
 export function DemoModeBanner() {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+
   return (
     <aside
       aria-label={tourModerationEn.demoBanner.label}
@@ -21,6 +26,9 @@ export function DemoModeBanner() {
 }
 
 export function PendingIntegrationNotice({ body }: { body: string }) {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+
   return (
     <section
       role="status"

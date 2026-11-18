@@ -8,13 +8,13 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { DemoModeBanner, PendingIntegrationNotice, focusRing } from './components/ModerationNotices';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
-import { tourModerationEn } from './resources/en';
+import { tourModerationEn as tourModerationEnOriginal } from './resources/en';
+import { tourModerationVi } from './resources/vi';
+import { useI18n } from '@/i18n';
 import { getPendingTourPosts } from './services/tourModerationService';
 import type { PendingTourPost, TourQueueQuery } from './types';
 import { formatDisplayDate, formatDisplayDateTime, formatVnd } from './utils/format';
 import { buildTourDetailHref, buildTourQueueHref, parseTourQueueQuery } from './utils/queueQuery';
-
-const copy = tourModerationEn.queue;
 
 interface SearchFormProps {
   readonly appliedKeyword: string;
@@ -24,6 +24,9 @@ interface SearchFormProps {
 
 /** CR-02: the draft keyword is applied only on explicit submit, never per keystroke. */
 function QueueSearchForm({ appliedKeyword, onSubmit, onReset }: SearchFormProps) {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+  const copy = tourModerationEn.queue;
   const [draft, setDraft] = useState(appliedKeyword);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -70,6 +73,10 @@ function QueueSearchForm({ appliedKeyword, onSubmit, onReset }: SearchFormProps)
 }
 
 function QueueRow({ tour, href }: { tour: PendingTourPost; href: string }) {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+  const copy = tourModerationEn.queue;
+
   return (
     <li className="grid gap-3 px-5 py-5 lg:grid-cols-[2fr_1.3fr_1fr_0.9fr_0.9fr_auto] lg:items-center lg:gap-4">
       <div>
@@ -118,6 +125,8 @@ function QueuePagination({
   query: TourQueueQuery;
   demo: boolean;
 }) {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
   const linkClass = `inline-flex min-h-11 items-center rounded-xl border border-[#DCE2DD] bg-white px-4 text-xs font-bold text-[#1C2928] hover:bg-[#DCE2DD] ${focusRing}`;
   const disabledClass = 'inline-flex min-h-11 items-center rounded-xl border border-[#DCE2DD] px-4 text-xs font-bold text-[#a0a3a8]';
 
@@ -149,6 +158,10 @@ function QueuePagination({
 }
 
 export function TourReviewQueue() {
+  const { locale, hasProvider } = useI18n();
+  const tourModerationEn = hasProvider && locale === 'vi' ? tourModerationVi : tourModerationEnOriginal;
+  const copy = tourModerationEn.queue;
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const demo = isTourModerationDemoRequested(searchParams.get('demo'));

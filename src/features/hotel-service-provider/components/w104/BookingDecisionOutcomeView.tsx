@@ -11,7 +11,8 @@ import { useToast } from '../common/Toast';
 import { ProviderBookingService } from '../../services/providerBookingService';
 import type { BookingRequestItem } from '../../types';
 import { formatDate, formatTime, formatDateTime, formatVnd, isDateInPast } from '../../utils/formatters';
-import { hotelProviderEn } from '../../resources/en';
+import { hotelProviderVi, hotelProviderEn as hotelProviderEnOriginal } from '../../resources';
+import { useI18n } from '@/i18n';
 import { ROUTES } from '@/lib/routes';
 
 interface BookingDecisionOutcomeViewProps {
@@ -19,6 +20,9 @@ interface BookingDecisionOutcomeViewProps {
 }
 
 export function BookingDecisionOutcomeView({ id }: BookingDecisionOutcomeViewProps) {
+  const { locale, hasProvider } = useI18n();
+  const effectiveLocale = hasProvider ? locale : 'en';
+  const hotelProviderEn = effectiveLocale === 'vi' ? (hotelProviderVi as unknown as typeof hotelProviderEnOriginal) : hotelProviderEnOriginal;
   const { showToast } = useToast();
   const router = useRouter();
   const [now, setNow] = useState(() => Date.now());

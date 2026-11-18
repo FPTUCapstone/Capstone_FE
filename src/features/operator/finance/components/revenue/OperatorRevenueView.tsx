@@ -10,7 +10,9 @@ import {
   getOperatorRevenueTours,
 } from '../../services/operatorRevenueService';
 import { isFinanceDemoAllowedInCurrentEnv } from '../../data/operatorRevenueDemoFixtures';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import {
   REVENUE_DEFAULT_PAGE_SIZE,
   type CreateRevenueExportResult,
@@ -69,6 +71,8 @@ function RevenueWorkspace({ actorUserId, isDemo }: {
   actorUserId: string | number | undefined;
   isDemo: boolean;
 }) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const initialFilters: RevenueFilterInput = {
     ...currentMonthRange(),
     granularity: 'monthly',

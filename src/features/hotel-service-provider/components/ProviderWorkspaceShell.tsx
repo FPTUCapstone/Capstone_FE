@@ -5,26 +5,33 @@ import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { webLogout } from '@/lib/authApi';
 import { AuthStorage } from '@/features/auth/session/authSession';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useI18n } from '@/i18n';
 import { ToastProvider } from './common/Toast';
 
 export function ProviderWorkspaceShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function logout() {
     setBusy(true);
     try { await webLogout(); AuthStorage.clear(); router.replace('/sign-in'); router.refresh(); }
-    catch { setError('Unable to sign out. Please try again.'); setBusy(false); }
+    catch {
+      setError(locale === 'vi' ? 'Không thể đăng xuất. Vui lòng thử lại.' : 'Unable to sign out. Please try again.');
+      setBusy(false);
+    }
   }
   return <ToastProvider>
-    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang={locale}>
       <header className="border-b border-[#DCE2DD] bg-white px-4 sm:px-8">
         <nav aria-label="Service Provider workspace" className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 py-3">
-          <Link href="/provider/bookings" className="inline-flex min-h-11 items-center text-lg font-bold">TripMate <span className="ml-3 text-sm font-normal text-[#5B6E69]">Service Provider</span></Link>
+          <Link href="/provider/bookings" className="inline-flex min-h-11 items-center text-lg font-bold">TripMate <span className="ml-3 text-sm font-normal text-[#5B6E69]">{t('serviceProviders.title')}</span></Link>
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/provider/bookings" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">Booking Requests</Link>
-            <Link href="/provider/statements" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">Commission Statements</Link>
-            <button type="button" onClick={logout} disabled={busy} className="min-h-11 rounded-lg border border-[#DCE2DD] px-4 text-sm font-semibold disabled:opacity-50">{busy ? 'Signing out…' : 'Sign out'}</button>
+            <Link href="/provider/bookings" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">{t('serviceProviders.bookingRequests')}</Link>
+            <Link href="/provider/statements" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">{t('serviceProviders.commissionStatements')}</Link>
+            <LanguageSwitcher variant="compact" />
+            <button type="button" onClick={logout} disabled={busy} className="min-h-11 rounded-lg border border-[#DCE2DD] px-4 text-sm font-semibold disabled:opacity-50">{busy ? (locale === 'vi' ? 'Đang đăng xuất…' : 'Signing out…') : t('common.buttons.signOut')}</button>
           </div>
         </nav>
       </header>

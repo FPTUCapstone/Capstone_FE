@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import { formatFinanceDateTime } from '../../utils/financeFormat';
 import {
   downloadRevenueExport,
@@ -11,7 +13,9 @@ import type { RevenueExportRecord, RevenueExportStatus } from '../../types/reven
 
 const POLL_INTERVAL_MS = 10_000;
 
-const STATUS_BADGE: Record<RevenueExportStatus, { label: keyof typeof financeEn.exportHistory; className: string }> = {
+type ExportHistoryKey = 'statusQueued' | 'statusProcessing' | 'statusReady' | 'statusFailed' | 'statusExpired';
+
+const STATUS_BADGE: Record<RevenueExportStatus, { label: ExportHistoryKey; className: string }> = {
   Queued: { label: 'statusQueued', className: 'bg-slate-100 text-slate-600' },
   Processing: { label: 'statusProcessing', className: 'bg-blue-50 text-blue-700' },
   Ready: { label: 'statusReady', className: 'bg-emerald-50 text-emerald-700' },
@@ -31,6 +35,8 @@ export function ExportHistoryPanel({
   demoActorUserId,
   refreshToken,
 }: ExportHistoryPanelProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const [items, setItems] = useState<RevenueExportRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);

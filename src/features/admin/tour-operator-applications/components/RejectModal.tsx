@@ -2,7 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { rejectOperatorApplication } from '../api/tourOperatorApplicationApi';
-import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { tourOperatorApplicationEn as copyOriginal } from '../resources/en';
+import { tourOperatorApplicationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 import { describeApplicationError } from '../utils/applicationErrors';
 import { usableDecisionMessage } from '../utils/decisionMessage';
 import { useAccessibleDecisionDialog } from './useAccessibleDecisionDialog';
@@ -25,6 +27,9 @@ export function RejectModal({
   onClose,
   onSuccess,
 }: RejectModalProps) {
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? tourOperatorApplicationVi : copyOriginal;
+
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

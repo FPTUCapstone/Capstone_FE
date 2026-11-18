@@ -1,7 +1,9 @@
 'use client';
 
 import { formatVndCurrency } from '../../utils/financeFormat';
-import { financeEn } from '../../resources/en';
+import { financeEn as financeEnOriginal } from '../../resources/en';
+import { financeVi } from '../../resources/vi';
+import { useI18n } from '@/i18n';
 import type { TourRevenueDetailItem } from '../../types/revenueLifecycle';
 
 interface RevenueDetailTableProps {
@@ -21,6 +23,8 @@ export function RevenueDetailTable({
   pageSize,
   onPageChange,
 }: RevenueDetailTableProps) {
+  const { locale, hasProvider } = useI18n();
+  const financeEn = hasProvider && locale === 'vi' ? financeVi : financeEnOriginal;
   const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endRecord = Math.min(currentPage * pageSize, totalCount);
 

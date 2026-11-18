@@ -16,6 +16,7 @@ import { TourPagination } from './TourPagination';
 import { TourRecommendationsSection } from './TourRecommendationsSection';
 import { TourListSkeleton } from './TourStates';
 import { publicSearchCopy, resolveSearchLocale, searchLocaleKey, searchValidationCopy, type SearchLocale } from '../resources/publicSearch';
+import { useI18n } from '@/i18n';
 
 type CurrentResult = { key: string } & ({ status: 'success'; data: PagedToursResponseDto } | { status: 'error' });
 type DisplayedResult = { query: string; filters: TourSearchState; data: PagedToursResponseDto };
@@ -38,16 +39,27 @@ export function ExploreToursPage({ devSearchEnabled = false }: { devSearchEnable
 }
 
 function PublicExploreToursPage() {
-  const [locale, setLocale] = useState<SearchLocale>('en');
+  const { locale: i18nLocale, setLocale: setI18nLocale, hasProvider } = useI18n();
+  const [fallbackLocale, setFallbackLocale] = useState<SearchLocale>('en');
+  const locale: SearchLocale = hasProvider ? i18nLocale : fallbackLocale;
   const copy = publicSearchCopy(locale);
+  const changeLocale = (next: SearchLocale) => {
+    if (hasProvider) {
+      setI18nLocale(next);
+    } else {
+      setFallbackLocale(next);
+      try { window.localStorage.setItem(searchLocaleKey, next); } catch { /* storage unavailable */ }
+    }
+  };
   useEffect(() => {
+    if (hasProvider) return;
     const timer = window.setTimeout(() => {
       let saved: string | null = null;
       try { saved = window.localStorage.getItem(searchLocaleKey); } catch { /* storage unavailable */ }
-      setLocale(resolveSearchLocale(saved, navigator.language));
+      setFallbackLocale(resolveSearchLocale(saved, navigator.language));
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [hasProvider]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const recommendationPage = searchParams.get('recommendationPage');
@@ -109,9 +121,7 @@ function PublicExploreToursPage() {
         <label className="mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
           {copy.language}
           <select value={locale} className="min-h-11 rounded-xl border border-brand-border px-3 focus-visible:ring-2 focus-visible:ring-brand-teal" onChange={(event) => {
-            const selected = event.target.value === 'vi' ? 'vi' : 'en';
-            setLocale(selected);
-            try { window.localStorage.setItem(searchLocaleKey, selected); } catch { /* storage unavailable */ }
+            changeLocale(event.target.value === 'vi' ? 'vi' : 'en');
           }}>
             <option value="vi" lang="vi">Tiếng Việt</option>
             <option value="en" lang="en">English</option>

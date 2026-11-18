@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ROUTES } from '@/lib/routes';
 import { OperatorApprovalStatus } from '@/types/tour-operator-application';
-import { tourOperatorApplicationEn as copy } from '../resources/en';
+import { tourOperatorApplicationEn as copyOriginal } from '../resources/en';
+import { tourOperatorApplicationVi } from '../resources/vi';
+import { useI18n } from '@/i18n';
 
 interface ApplicationHeaderProps {
   userId: number;
@@ -23,6 +25,9 @@ export function ApplicationHeader({
   onOpenApprove,
   onOpenReject,
 }: ApplicationHeaderProps) {
+  const { locale, hasProvider } = useI18n();
+  const copy = hasProvider && locale === 'vi' ? tourOperatorApplicationVi : copyOriginal;
+
   const isPending = applicationStatus === 'PendingApproval';
   const isApproved = applicationStatus === 'Approved';
   const isRejected = applicationStatus === 'Rejected';
