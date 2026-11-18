@@ -8,7 +8,10 @@ import { ModerationDialog } from './ModerationDialog';
 import { focusRing } from './ModerationNotices';
 
 const copy = tourModerationEn.rejectDialog;
-const MAX_REASON_LENGTH = 1000;
+const DEMO_MAX_REASON_LENGTH = 1000;
+/** The backend stores at most 500 characters; the category label and its separator count against it. */
+const LIVE_MAX_REASON_LENGTH = 500;
+const CATEGORY_SEPARATOR_LENGTH = 3;
 
 export interface RejectionReason {
   readonly categoryLabel: string | null;
@@ -19,13 +22,15 @@ interface RejectTourDialogProps {
   readonly open: boolean;
   readonly onClose: () => void;
   readonly onConfirm: (reason: RejectionReason) => void;
+  /** True when the decision is really sent to the backend (not the local demo simulation). */
+  readonly live?: boolean;
 }
 
 /**
  * Screen #15: rejection / revision reason, followed by the CR-05 confirmation step.
  * The detailed reason is required; the category options are demo-only fixtures.
  */
-export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogProps) {
+export function RejectTourDialog({ open, onClose, onConfirm, live = false }: RejectTourDialogProps) {
   const [step, setStep] = useState<'reason' | 'confirm'>('reason');
   const [category, setCategory] = useState('');
   const [detail, setDetail] = useState('');
@@ -41,7 +46,7 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
 
   const handleReasonSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!detail.trim()) {
+    if (!detail.trim() || detail.trim().length > detailLimit) {
       setShowError(true);
       return;
     }
@@ -50,6 +55,11 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
 
   const categoryLabel =
     DEMO_REJECTION_REASON_CATEGORIES.find((option) => option.value === category)?.label ?? null;
+  const maxTotal = live ? LIVE_MAX_REASON_LENGTH : DEMO_MAX_REASON_LENGTH;
+  const detailLimit = maxTotal - (categoryLabel ? categoryLabel.length + CATEGORY_SEPARATOR_LENGTH : 0);
+  const tooLong = detail.trim().length > detailLimit;
+  const invalidDetail = showError && (!detail.trim() || tooLong);
+  const liveCopy = tourModerationEn.decisionLive;
 
   if (step === 'confirm') {
     return (
@@ -59,7 +69,7 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
         titleId="reject-tour-confirm-title"
         title={copy.confirmTitle}
         descriptionId="reject-tour-confirm-description"
-        description={copy.confirmDescription}
+        description={live ? liveCopy.rejectConfirmDescription : copy.confirmDescription}
         onClose={close}
       >
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -96,7 +106,7 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
       titleId="reject-tour-title"
       title={copy.title}
       descriptionId="reject-tour-description"
-      description={copy.description}
+      description={live ? liveCopy.rejectDescription : copy.description}
       onClose={close}
     >
       <form noValidate onSubmit={handleReasonSubmit} className="space-y-4">
@@ -123,24 +133,24 @@ export function RejectTourDialog({ open, onClose, onConfirm }: RejectTourDialogP
             {copy.reasonLabel}
           </label>
           <p id={hintId} className="mb-1 text-xs text-[#5B6E69]">
-            {copy.reasonHint}
+            {live ? liveCopy.rejectReasonHint : copy.reasonHint}
           </p>
           <textarea
             id="reject-tour-reason"
             rows={4}
             required
-            maxLength={MAX_REASON_LENGTH}
+            maxLength={Math.max(detailLimit, 1)}
             value={detail}
-            aria-invalid={showError && !detail.trim()}
-            aria-describedby={showError && !detail.trim() ? `${hintId} ${errorId}` : hintId}
+            aria-invalid={invalidDetail}
+            aria-describedby={invalidDetail ? `${hintId} ${errorId}` : hintId}
             onChange={(event) => setDetail(event.target.value)}
             className={`w-full rounded-xl border bg-white p-3 text-sm ${
-              showError && !detail.trim() ? 'border-[#ba1a1a]' : 'border-[#DCE2DD]'
+              invalidDetail ? 'border-[#ba1a1a]' : 'border-[#DCE2DD]'
             } ${focusRing}`}
           />
-          {showError && !detail.trim() ? (
+          {invalidDetail ? (
             <p id={errorId} role="alert" className="mt-1 text-xs font-semibold text-[#ba1a1a]">
-              {copy.reasonRequired}
+              {tooLong ? liveCopy.reasonTooLong(detailLimit) : copy.reasonRequired}
             </p>
           ) : null}
         </div>

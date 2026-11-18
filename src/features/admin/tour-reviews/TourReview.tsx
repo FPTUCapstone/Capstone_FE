@@ -1,40 +1,25 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
-import { DemoModeBanner, PendingIntegrationNotice, focusRing } from './components/ModerationNotices';
+import { ROUTES } from '@/lib/routes';
+
+import { DemoModeBanner, focusRing } from './components/ModerationNotices';
+import { FactChip, ServiceList } from './components/TourFacts';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
 import { tourModerationEn } from './resources/en';
+import { LiveTourContent } from './LiveTourContent';
+import { fetchTourReview } from './services/tourModerationApi';
 import { getPendingTourPost } from './services/tourModerationService';
 import type { PendingTourPost } from './types';
 import { formatDisplayDate, formatDisplayDateTime, formatDisplayTime, formatVnd } from './utils/format';
 import { buildTourQueueHref, parseTourQueueQuery } from './utils/queueQuery';
 import { TourReviewDecisionPanel } from './TourReviewDecisionPanel';
+import { useModerationResource } from './useModerationResource';
 
 const copy = tourModerationEn.detail;
-
-function FactChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] p-3">
-      <dt className="block text-[11px] font-semibold text-[#5B6E69]">{label}</dt>
-      <dd className="text-base font-bold text-[#1C2928]">{value}</dd>
-    </div>
-  );
-}
-
-function ServiceList({ title, items }: { title: string; items: readonly string[] }) {
-  return (
-    <div>
-      <h3 className="mb-2 text-sm font-bold text-[#1C2928]">{title}</h3>
-      <ul className="list-disc space-y-1 pl-5 text-sm text-[#5B6E69]">
-        {items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 function TourContent({ tour }: { tour: PendingTourPost }) {
   return (
@@ -124,11 +109,92 @@ function TourContent({ tour }: { tour: PendingTourPost }) {
   );
 }
 
+function StatusSection({ title, body, role = 'status', children }: { title: string; body: string; role?: 'status' | 'alert'; children?: React.ReactNode }) {
+  return (
+    <section role={role} className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center shadow-xs">
+      <h1 className="text-lg font-bold text-[#1C2928]">{title}</h1>
+      <p className="mt-1 text-sm text-[#5B6E69]">{body}</p>
+      {children}
+    </section>
+  );
+}
+
+function TourHeader({ name, operatorName, location }: { name: string; operatorName: string; location: string }) {
+  return (
+    <header className="mb-8 border-b border-[#DCE2DD] pb-6">
+      <p className="text-xs font-bold uppercase tracking-wider text-[#174B4A]">{copy.eyebrow}</p>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1C2928] md:text-3xl">{name}</h1>
+      <p className="mt-1 text-sm text-[#5B6E69]">
+        <span className="font-semibold">{copy.operatorLabel}: </span>
+        {operatorName}
+        <span aria-hidden="true"> · </span>
+        <span className="font-semibold">{copy.locationLabel}: </span>
+        {location}
+      </p>
+    </header>
+  );
+}
+
 export function TourReview({ id }: { id: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const demo = isTourModerationDemoRequested(searchParams.get('demo'));
   const backHref = buildTourQueueHref(parseTourQueueQuery(searchParams), demo);
-  const result = getPendingTourPost(id, { demo });
+  const demoResult = demo ? getPendingTourPost(id, { demo }) : null;
+  const { resource, retry } = useModerationResource((signal) => fetchTourReview(id, signal), [id], !demo);
+  const liveCopy = tourModerationEn.live;
+
+  const unauthorized = resource.status === 'failed' && resource.failure === 'unauthorized';
+  useEffect(() => {
+    if (unauthorized) router.replace(ROUTES.admin.login);
+  }, [unauthorized, router]);
+
+  let content: React.ReactNode;
+  if (demoResult) {
+    content =
+      demoResult.status === 'NOT_FOUND' ? (
+        <StatusSection title={copy.notFoundTitle} body={copy.notFoundBody} />
+      ) : demoResult.status === 'DEMO' ? (
+        <>
+          <DemoModeBanner />
+          <TourHeader name={demoResult.tour.tourName} operatorName={demoResult.tour.operatorName} location={demoResult.tour.location} />
+          <TourContent tour={demoResult.tour} />
+        </>
+      ) : null;
+  } else if (resource.status === 'ready') {
+    content = (
+      <>
+        <TourHeader name={resource.data.tourName} operatorName={resource.data.operatorName} location={resource.data.location} />
+        <LiveTourContent tour={resource.data} />
+      </>
+    );
+  } else if (resource.status === 'failed') {
+    const failure = resource.failure;
+    content =
+      failure === 'notFound' ? (
+        <StatusSection title={copy.notFoundTitle} body={copy.notFoundBody} />
+      ) : failure === 'conflict' ? (
+        <StatusSection title={liveCopy.alreadyDecidedTitle} body={liveCopy.alreadyDecidedBody} />
+      ) : failure === 'forbidden' ? (
+        <StatusSection title={liveCopy.forbiddenTitle} body={liveCopy.forbiddenBody} role="alert" />
+      ) : failure === 'unauthorized' ? (
+        <StatusSection title={tourModerationEn.metadata.detailTitle} body={liveCopy.redirecting} />
+      ) : failure === 'invalid' ? (
+        <StatusSection title={liveCopy.invalidTitle} body={liveCopy.invalidBody} role="alert" />
+      ) : (
+        <StatusSection title={liveCopy.unavailableTitle} body={liveCopy.unavailableDetailBody} role="alert">
+          <button
+            type="button"
+            onClick={retry}
+            className={`mt-4 min-h-11 rounded-xl bg-[#174B4A] px-5 text-sm font-bold text-white hover:bg-[#103B39] ${focusRing}`}
+          >
+            {liveCopy.retry}
+          </button>
+        </StatusSection>
+      );
+  } else {
+    content = <StatusSection title={tourModerationEn.metadata.detailTitle} body={liveCopy.loadingDetail} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] pb-24 text-[#1C2928] md:pb-12">
@@ -142,36 +208,7 @@ export function TourReview({ id }: { id: string }) {
           </span>
           {copy.backToQueue}
         </Link>
-
-        {result.status === 'NO_BACKEND' ? (
-          <>
-            <h1 className="sr-only">{tourModerationEn.metadata.detailTitle}</h1>
-            <PendingIntegrationNotice body={tourModerationEn.pendingIntegration.detailBody} />
-          </>
-        ) : result.status === 'NOT_FOUND' ? (
-          <section role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center shadow-xs">
-            <h1 className="text-lg font-bold text-[#1C2928]">{copy.notFoundTitle}</h1>
-            <p className="mt-1 text-sm text-[#5B6E69]">{copy.notFoundBody}</p>
-          </section>
-        ) : (
-          <>
-            <DemoModeBanner />
-            <header className="mb-8 border-b border-[#DCE2DD] pb-6">
-              <p className="text-xs font-bold uppercase tracking-wider text-[#174B4A]">{copy.eyebrow}</p>
-              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1C2928] md:text-3xl">
-                {result.tour.tourName}
-              </h1>
-              <p className="mt-1 text-sm text-[#5B6E69]">
-                <span className="font-semibold">{copy.operatorLabel}: </span>
-                {result.tour.operatorName}
-                <span aria-hidden="true"> · </span>
-                <span className="font-semibold">{copy.locationLabel}: </span>
-                {result.tour.location}
-              </p>
-            </header>
-            <TourContent tour={result.tour} />
-          </>
-        )}
+        {content}
       </main>
     </div>
   );
