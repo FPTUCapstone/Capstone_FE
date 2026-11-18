@@ -318,6 +318,18 @@ describe('PublicNavigation Partner Navigation v2.0 & Role dropdowns', () => {
     expect(screen.getByRole('link', { name: /Super Admin/i }).getAttribute('href')).toBe('/admin');
   });
 
+  it('routes an authenticated ServiceProvider exclusively to their provider workspace', () => {
+    AuthStorage.accept(context({ role: 'ServiceProvider', fullName: 'Grand Hotel' }), false);
+    render(<PublicNavigation locale="en" />);
+    expect(screen.queryByRole('button', { name: publicNavigationEn.account.partnerMenuAria })).toBeNull();
+    expect(screen.queryByRole('link', { name: publicNavigationEn.links.forPartners })).toBeNull();
+    const providerLinks = screen.getAllByRole('link', { name: /Grand Hotel/i });
+    expect(providerLinks.length).toBeGreaterThanOrEqual(1);
+    for (const link of providerLinks) {
+      expect(link.getAttribute('href')).toBe('/provider/bookings');
+    }
+  });
+
   it('closes dropdown when clicking outside', () => {
     AuthStorage.accept(context({ role: 'TourOperator', fullName: 'Skyline Travel', applicationStatus: 'Approved' }), false);
     render(

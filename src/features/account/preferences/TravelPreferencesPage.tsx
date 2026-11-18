@@ -41,6 +41,8 @@ export function TravelPreferencesPage() {
       router.replace(ROUTES.admin.dashboard);
     } else if (status === 'authenticated' && context?.role === 'Staff') {
       router.replace(ROUTES.admin.staffDashboard);
+    } else if (status === 'authenticated' && context?.role === 'ServiceProvider') {
+      router.replace(ROUTES.provider.dashboard);
     }
   }, [status, context, router]);
 

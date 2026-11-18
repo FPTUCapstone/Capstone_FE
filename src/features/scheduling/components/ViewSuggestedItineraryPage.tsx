@@ -245,6 +245,10 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
       router.replace(ROUTES.partner.dashboard);
     } else if (status === 'authenticated' && role === 'Administrator') {
       router.replace(ROUTES.admin.dashboard);
+    } else if (status === 'authenticated' && role === 'Staff') {
+      router.replace(ROUTES.admin.staffDashboard);
+    } else if (status === 'authenticated' && role === 'ServiceProvider') {
+      router.replace(ROUTES.provider.dashboard);
     }
   }, [status, role, router, itineraryId]);
 
