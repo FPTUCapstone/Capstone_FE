@@ -25,3 +25,6 @@ In production (non-demo) mode, the queue and detail load **real** data and the d
 - Live queue: 20/page, keyword applies only on submit, state survives round trip to detail (existing CR-01/CR-02 behaviour).
 - Live detail shows images, price, policy, schedule, itinerary; decision panel disabled after a decision; double submit is impossible.
 - `npm test`, `npm run lint`, `npm run typecheck`, `npm run build` all pass.
+
+> ## Revision 2026-11-19 — backend contract changed
+> After TM-83 (#189) landed on the backend, the queue is no longer `GET /api/v1/admin/tours/pending`: the TM-83 queue `GET /api/v1/admin/tours` gained `keyword` and the Screen 13 columns. The proxy now forwards `keyword` and `pageNumber` (as `page`) to that endpoint with a forced page size of 20. The queue envelope is `items, page, pageSize, totalCount` (no `totalPages`; derived client-side), rows use `id`/`title`, and `submittedAtUtc` may be null for legacy rows (shown as "Not available"). The review model `GET /api/v1/admin/tours/{id}/review` is unchanged. Our own same-origin route `/api/admin/tours/pending` and its `pageNumber` parameter are unchanged.
