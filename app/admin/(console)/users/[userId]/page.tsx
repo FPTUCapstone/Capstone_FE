@@ -7,7 +7,9 @@ import { parseUserAccountRouteId } from '@/features/admin/user-accounts/server/u
 const actionLabels = new Map([
   ['USER_ACCOUNT_LOCKED', 'Locked'],
   ['USER_ACCOUNT_UNLOCKED', 'Unlocked'],
+  ['UnlockUserAccount', 'Unlocked'],
   ['TOUR_OPERATOR_AUTO_LOCKED', 'Automatically locked'],
+  ['SERVICE_PROVIDER_AUTO_LOCKED', 'Automatically locked'],
   ['TOUR_OPERATOR_UNLOCKED', 'Unlocked after debt recovery'],
   ['ApproveOperatorApplication', 'Application approved'],
   ['RejectOperatorApplication', 'Application rejected'],

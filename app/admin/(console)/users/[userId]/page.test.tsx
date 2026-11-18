@@ -191,4 +191,26 @@ describe('UC-46 User Account Detail page route', () => {
     expect(markup).toContain('01:30');
     expect(markup).not.toContain('backend-access-token');
   });
+
+  it('labels idempotent unlocks and Service Provider automatic locks', async () => {
+    mockSealedCookies('Staff');
+    mocks.fetchBackend.mockResolvedValue(Response.json({
+      account: { userId: '4403', fullName: 'Provider Account', email: null, role: 'ServiceProvider', status: 'Active',
+        createdAtUtc: '2026-11-15T18:30:00Z', lastLoginAtUtc: null },
+      bookingCount: null,
+      moderationHistory: [
+        { action: 'UnlockUserAccount', actorAttribution: 'Account 10', reason: 'Settlement verified',
+          atUtc: '2026-11-16T10:00:00Z' },
+        { action: 'SERVICE_PROVIDER_AUTO_LOCKED', actorAttribution: 'System', reason: null,
+          atUtc: '2026-11-15T18:30:00Z' },
+      ],
+    }));
+    const view = await UserAccountDetailPage({ params: Promise.resolve({ userId: '4403' }) });
+    const markup = renderToStaticMarkup(view!);
+    expect(markup).toContain('Unlocked');
+    expect(markup).toContain('Automatically locked');
+    expect(markup).toContain('Account 10');
+    expect(markup).toContain('Settlement verified');
+    expect(markup).not.toContain('Account moderation');
+  });
 });
