@@ -40,9 +40,35 @@ function mockBackend(routes: Record<string, Handler | Handler[]>) {
   return mock;
 }
 
+/** One row of the TM-83 Staff queue (GET /api/v1/admin/tours) with the Screen 13 columns. */
 const summary = (id: number, name: string, extra: Record<string, unknown> = {}) => ({
-  tourId: id,
-  tourName: name,
+  id,
+  operatorUserId: 101,
+  title: name,
+  status: 'Pending',
+  submittedAtUtc: '2026-11-10T08:00:00+00:00',
+  submissionNote: null,
+  operatorName: 'Sunrise Travel',
+  location: 'Hoi An',
+  category: null,
+  durationDays: 2,
+  priceVnd: 1500000,
+  nextDepartureAtUtc: '2026-11-20T01:00:00+00:00',
+  nextDepartureCapacity: 8,
+  imageCount: 2,
+  ...extra,
+});
+
+const page = (items: unknown[], totalCount = items.length, pageNumber = 1) => ({
+  items,
+  totalCount,
+  page: pageNumber,
+  pageSize: 20,
+});
+
+const detail = () => ({
+  tourId: 12,
+  tourName: 'Hoi An lantern night',
   operatorName: 'Sunrise Travel',
   location: 'Hoi An',
   category: null,
@@ -52,19 +78,6 @@ const summary = (id: number, name: string, extra: Record<string, unknown> = {}) 
   nextDepartureAtUtc: '2026-11-20T01:00:00+00:00',
   nextDepartureCapacity: 8,
   imageCount: 2,
-  ...extra,
-});
-
-const page = (items: unknown[], totalCount = items.length, pageNumber = 1, totalPages = 1) => ({
-  items,
-  totalCount,
-  pageNumber,
-  pageSize: 20,
-  totalPages,
-});
-
-const detail = () => ({
-  ...summary(12, 'Hoi An lantern night'),
   overview: 'A relaxed food tour.',
   highlights: 'Lantern boat ride',
   includedServices: ['Breakfast', 'Guide'],
@@ -107,7 +120,7 @@ afterEach(() => {
 
 describe('Pending queue backed by the backend (Screen #13)', () => {
   it('renders backend rows, the total, the page indicator and context-preserving links', async () => {
-    mockBackend({ 'GET /api/admin/tours/pending': () => json(page([summary(12, 'Hoi An lantern night'), summary(13, 'Mountain trek')], 25, 1, 2)) });
+    mockBackend({ 'GET /api/admin/tours/pending': () => json(page([summary(12, 'Hoi An lantern night'), summary(13, 'Mountain trek')], 25, 1)) });
 
     render(<TourReviewQueue />);
 
@@ -120,6 +133,15 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
     expect(screen.getByText(copy.pagination.pageOf(1, 2))).toBeTruthy();
     expect(screen.getByRole('link', { name: copy.pagination.next }).getAttribute('href')).toBe('/admin/tours/reviews?page=2');
     expect(screen.queryByText(copy.demoBanner.body)).toBeNull();
+  });
+
+  it('shows "Not available" for a legacy row that has no submission time instead of a made-up date', async () => {
+    mockBackend({ 'GET /api/admin/tours/pending': () => json(page([summary(12, 'Legacy tour', { submittedAtUtc: null })])) });
+
+    render(<TourReviewQueue />);
+
+    const row = (await screen.findAllByRole('listitem'))[0];
+    expect(within(row).getByText(copy.format.unavailable)).toBeTruthy();
   });
 
   it('says so when a tour has no departure instead of inventing a date', async () => {
@@ -135,7 +157,7 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
 
   it('sends the applied page and keyword to the backend', async () => {
     navigation.params = new URLSearchParams('page=2&q=lantern');
-    const fetchMock = mockBackend({ 'GET /api/admin/tours/pending?pageNumber=2&keyword=lantern': () => json(page([], 0, 2, 0)) });
+    const fetchMock = mockBackend({ 'GET /api/admin/tours/pending?pageNumber=2&keyword=lantern': () => json(page([], 0, 2)) });
 
     render(<TourReviewQueue />);
 

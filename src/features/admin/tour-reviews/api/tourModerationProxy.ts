@@ -14,7 +14,6 @@ import { fetchBackend } from '@/lib/server/backend';
 /** CR-01: the queue is always served 20 records per page; the client cannot change it. */
 export const TOUR_QUEUE_SERVER_PAGE_SIZE = 20;
 
-const ALLOWED_QUEUE_PARAMETERS = ['keyword', 'pageNumber'] as const;
 const CHECKLIST_KEYS = [
   'contentCompleteness',
   'imageAppropriateness',
@@ -93,20 +92,23 @@ function isValidTourId(value: string): boolean {
   return POSITIVE_INTEGER.test(value) && Number.isSafeInteger(Number(value));
 }
 
-/** Screen 13: pending queue. Forwards only the whitelisted query fields and forces the page size. */
+/**
+ * Screen 13: the Staff review queue (backend `GET /api/v1/admin/tours`). Only `keyword` and `pageNumber` are
+ * forwarded (the latter as the backend's `page`); the page size is forced.
+ */
 export async function proxyPendingTours(request: Request): Promise<Response> {
   const session = await requireStaff();
   if (!session.ok) return session.response;
 
   const incoming = new URL(request.url).searchParams;
   const query = new URLSearchParams();
-  for (const name of ALLOWED_QUEUE_PARAMETERS) {
-    const value = incoming.get(name);
-    if (value !== null) query.set(name, value);
-  }
+  const keyword = incoming.get('keyword');
+  if (keyword !== null) query.set('keyword', keyword);
+  const pageNumber = incoming.get('pageNumber');
+  if (pageNumber !== null) query.set('page', pageNumber);
   query.set('pageSize', String(TOUR_QUEUE_SERVER_PAGE_SIZE));
 
-  return forward(`/api/v1/admin/tours/pending?${query}`, session.token, { method: 'GET', signal: request.signal });
+  return forward(`/api/v1/admin/tours?${query}`, session.token, { method: 'GET', signal: request.signal });
 }
 
 /** Screen 14: review detail of one pending tour. */

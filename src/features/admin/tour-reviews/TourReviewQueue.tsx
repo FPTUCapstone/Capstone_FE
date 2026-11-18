@@ -78,7 +78,7 @@ interface QueueRowTour {
   readonly tourName: string;
   readonly operatorName: string;
   readonly location: string;
-  readonly submittedAtUtc: string;
+  readonly submittedAtUtc: string | null;
   readonly departureAtUtc: string | null;
   readonly priceVnd: number;
 }
@@ -97,7 +97,7 @@ function QueueRow({ tour, href }: { tour: QueueRowTour; href: string }) {
       </div>
       <div>
         <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.submitted}</span>
-        <p className="font-mono text-xs text-[#1C2928]">{formatDisplayDateTime(tour.submittedAtUtc)}</p>
+        <p className="font-mono text-xs text-[#1C2928]">{tour.submittedAtUtc ? formatDisplayDateTime(tour.submittedAtUtc) : tourModerationEn.format.unavailable}</p>
       </div>
       <div>
         <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.departure}</span>
