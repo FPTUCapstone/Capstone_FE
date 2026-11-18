@@ -28,6 +28,16 @@ describe('TravelerProfileForm', () => {
     expect(screen.queryByLabelText('Địa chỉ cư trú')).toBeNull();
   });
 
+  it('does not expose business-rule or message codes in profile copy', async () => {
+    const { container } = render(<TravelerProfileForm />);
+    await waitFor(() => expect(screen.getByLabelText(/Họ và tên/)).toBeDefined());
+
+    expect(container.textContent).not.toMatch(/BR-\d+|MSG\d+/);
+    expect(screen.getByText('Chỉ đọc')).toBeDefined();
+    expect(screen.getByText('Tối thiểu 16 tuổi')).toBeDefined();
+    expect(screen.getByText(/Số điện thoại di động 10 chữ số bắt đầu bằng 0/)).toBeDefined();
+  });
+
   it('shows a terminal error when GET fails', async () => {
     vi.mocked(api.getTravelerProfile).mockRejectedValue(new api.TravelerProfileApiError(503, 'MSG127'));
     render(<TravelerProfileForm />);

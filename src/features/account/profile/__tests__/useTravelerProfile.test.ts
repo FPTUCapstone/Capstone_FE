@@ -23,6 +23,10 @@ describe('profile validation', () => {
     expect(validateDateOfBirth('2000-02-29')).toBeUndefined();
     expect(validateAvatarFile(new File(['a'], 'a.pdf', { type: 'application/pdf' }))).toBeDefined();
   });
+
+  it('returns a user-facing age error without a business-rule code', () => {
+    expect(validateDateOfBirth('2020-01-01')).toBe('Người dùng phải từ 16 tuổi trở lên.');
+  });
 });
 
 describe('useTravelerProfile', () => {

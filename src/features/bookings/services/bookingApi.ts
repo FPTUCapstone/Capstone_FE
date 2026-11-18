@@ -75,6 +75,8 @@ const BOOKING_ERROR_MESSAGES: Record<string, string> = {
   'tour_booking.idempotency_key_payload_mismatch': 'Yêu cầu đặt tour trước đó chưa hoàn tất, vui lòng thử lại.',
   'tour_booking.too_many_unpaid_bookings':
     'Bạn có quá nhiều đơn đặt tour đang chờ thanh toán. Vui lòng hoàn tất hoặc hủy một đơn trước khi tiếp tục.',
+  'tour_booking.itinerary_not_bookable':
+    'Lịch trình tour chưa được sắp xếp hợp lệ nên chưa thể đặt tour.',
   'tour_booking.invalid_request': 'Thông tin đặt tour không hợp lệ.',
   UNAUTHENTICATED: 'Vui lòng đăng nhập lại để tiếp tục.',
   FORBIDDEN: 'Tính năng này chỉ dành cho tài khoản Du khách (Traveler).',

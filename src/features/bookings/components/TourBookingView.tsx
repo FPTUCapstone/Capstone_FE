@@ -102,7 +102,7 @@ export function TourBookingView({
   // `null` means the traveler has not edited this field. That lets a profile value that arrives
   // after the form render act as a default without an effect that overwrites an explicit edit.
   const [leadPhone, setLeadPhone] = useState<string | null>(
-    isDemo ? '0905 123 456' : null,
+    isDemo ? '0905123456' : null,
   );
   const resolvedLeadPhone = leadPhone ?? profilePhone?.trim() ?? '';
   const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>({});
@@ -244,8 +244,17 @@ export function TourBookingView({
 
   const validateRequiredFields = (): boolean => {
     const errors: RequiredFieldErrors = {};
+    const normalizedLeadPhone = resolvedLeadPhone.trim();
     if (!leadName.trim()) errors.leadName = 'Vui lòng nhập họ và tên trưởng đoàn.';
-    if (!resolvedLeadPhone.trim()) errors.leadPhone = 'Vui lòng nhập số điện thoại liên hệ để tiếp tục đặt tour.';
+    if (!normalizedLeadPhone) {
+      errors.leadPhone = 'Vui lòng nhập số điện thoại liên hệ để tiếp tục đặt tour.';
+    } else if (!/^\d+$/.test(normalizedLeadPhone)) {
+      errors.leadPhone = 'Số điện thoại chỉ được chứa chữ số.';
+    } else if (normalizedLeadPhone.length !== 10) {
+      errors.leadPhone = 'Số điện thoại phải gồm đúng 10 chữ số.';
+    } else if (!normalizedLeadPhone.startsWith('0')) {
+      errors.leadPhone = 'Số điện thoại phải bắt đầu bằng số 0.';
+    }
     if (!leadEmail.trim()) errors.leadEmail = 'Vui lòng nhập email nhận vé điện tử.';
     if (!agreedTerms) errors.agreedTerms = 'Vui lòng đồng ý với điều khoản đặt tour và chính sách hoàn hủy.';
 
@@ -291,7 +300,7 @@ export function TourBookingView({
     setSubmissionError(null);
 
     const participants: BookingParticipantRequestDto[] = [
-      { fullName: leadName, participantType: 'Adult', phoneNumber: resolvedLeadPhone, email: leadEmail },
+      { fullName: leadName, participantType: 'Adult', phoneNumber: resolvedLeadPhone.trim(), email: leadEmail },
       ...(adultCount > 1
         ? Array.from({ length: adultCount - 1 }, (_, i) => ({
             fullName: `Người lớn ${i + 2}`,
@@ -688,13 +697,16 @@ export function TourBookingView({
                     ref={phoneInputRef}
                     id={phoneInputId}
                     type="tel"
+                    inputMode="numeric"
+                    pattern="0[0-9]{9}"
+                    maxLength={10}
                     required
                     value={resolvedLeadPhone}
                     onChange={(e) => {
                       setLeadPhone(e.target.value);
                       clearRequiredFieldError('leadPhone');
                     }}
-                    placeholder="Ví dụ: 0905 123 456"
+                    placeholder="Ví dụ: 0905123456"
                     aria-invalid={Boolean(requiredFieldErrors.leadPhone)}
                     aria-describedby={requiredFieldErrors.leadPhone ? `${phoneInputId}-error` : undefined}
                     className={`w-full rounded-xl border px-3 py-2.5 text-xs text-slate-900 focus:outline-hidden focus:ring-1 ${

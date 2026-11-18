@@ -50,7 +50,7 @@ export function validateDateOfBirth(value: string): string | undefined {
     return 'Ngày sinh không hợp lệ.';
   const today = new Date();
   const limit = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
-  if (date > limit) return 'Người dùng phải từ 16 tuổi trở lên (BR-18).';
+  if (date > limit) return 'Người dùng phải từ 16 tuổi trở lên.';
   return undefined;
 }
 
