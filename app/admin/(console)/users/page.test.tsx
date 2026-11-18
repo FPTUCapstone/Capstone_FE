@@ -195,6 +195,80 @@ describe('UC-46 User Accounts Directory page route', () => {
     expect(markup).not.toContain('backend-access-token');
   });
 
+  it('displays accurate totalCount when provided by backend', async () => {
+    mockSealedCookies('Administrator');
+    mocks.fetchBackend.mockResolvedValue(
+      Response.json({
+        items: [
+          {
+            userId: '101',
+            fullName: 'Nguyen Staff',
+            email: 'staff@tripmate.vn',
+            role: 'Staff',
+            status: 'Active',
+            createdAtUtc: '2026-03-01T08:00:00Z',
+            lastLoginAtUtc: null,
+          },
+        ],
+        totalPages: 5,
+        totalCount: 48,
+      }),
+    );
+
+    const markup = renderToStaticMarkup((await UserAccountsPage({}))!);
+    expect(markup).toContain('of <strong class="text-[#1D2D2B] font-bold">48</strong> total accounts');
+    expect(markup).toContain('Page <strong class="text-[#1D2D2B] font-bold">1</strong> of <strong class="text-[#1D2D2B] font-bold">5</strong>');
+  });
+
+  it('renders accurate message without misleading total when totalCount is not provided', async () => {
+    mockSealedCookies('Administrator');
+    mocks.fetchBackend.mockResolvedValue(
+      Response.json({
+        items: [
+          {
+            userId: '101',
+            fullName: 'Nguyen Staff',
+            email: 'staff@tripmate.vn',
+            role: 'Staff',
+            status: 'Active',
+            createdAtUtc: '2026-03-01T08:00:00Z',
+            lastLoginAtUtc: null,
+          },
+        ],
+        totalPages: 2,
+      }),
+    );
+
+    const markup = renderToStaticMarkup((await UserAccountsPage({}))!);
+    expect(markup).toContain('Showing <strong class="text-[#1D2D2B] font-bold">1</strong> account');
+    expect(markup).not.toContain('total accounts');
+  });
+
+  it('informs user with non-misleading notice when page has records outside user role management scope', async () => {
+    mockSealedCookies('Administrator');
+    mocks.fetchBackend.mockResolvedValue(
+      Response.json({
+        items: [
+          {
+            userId: '201',
+            fullName: 'Tran Traveler',
+            email: 'traveler@gmail.com',
+            role: 'Traveler',
+            status: 'Active',
+            createdAtUtc: '2026-03-01T08:00:00Z',
+            lastLoginAtUtc: null,
+          },
+        ],
+        totalPages: 1,
+        totalCount: 1,
+      }),
+    );
+
+    const markup = renderToStaticMarkup((await UserAccountsPage({}))!);
+    expect(markup).toContain('No permitted accounts on this page.');
+    expect(markup).toContain('none match your Administrator management scope');
+  });
+
   it.each([
     { registeredFrom: '0001-01-01' },
     { registeredFrom: '2026-02-29' },
