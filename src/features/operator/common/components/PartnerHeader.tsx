@@ -26,6 +26,7 @@ const TAB_LABELS: Record<PartnerWorkspaceTabKey, string> = {
   tours: 'Gói tour',
   coupons: 'Mã giảm giá',
   bookings: 'Đơn đặt chỗ',
+  complaints: 'Khiếu nại sau tour',
   revenue: 'Doanh thu',
   payouts: 'Thanh toán & Rút tiền',
   profile: 'Hồ sơ doanh nghiệp',

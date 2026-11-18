@@ -14,6 +14,7 @@ import {
   clearAdminSession,
   computeAdminTokenFingerprint,
   createAdminSessionSeal,
+  isSameOriginRequest,
   parseAdminRoleFromToken,
   setAdminSession,
   verifyAdminSession,
@@ -45,6 +46,28 @@ describe('BFF-Signed Administration Session Integrity (HMAC-SHA256)', () => {
       delete process.env[ADMIN_SESSION_SECRET_ENV];
     } else {
       process.env[ADMIN_SESSION_SECRET_ENV] = priorSecret;
+    }
+  });
+
+  it('accepts a loopback browser Origin when Next dev is bound to 0.0.0.0', () => {
+    const request = new Request('http://0.0.0.0:3001/api/v1/traveler/tour-bookings', {
+      method: 'POST',
+      headers: { Origin: 'http://localhost:3001' },
+    });
+
+    expect(isSameOriginRequest(request)).toBe(true);
+  });
+
+  it('never accepts a loopback alias as a production CSRF bypass', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    try {
+      const request = new Request('http://0.0.0.0:3001/api/v1/traveler/tour-bookings', {
+        method: 'POST',
+        headers: { Origin: 'http://localhost:3001' },
+      });
+      expect(isSameOriginRequest(request)).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 

@@ -7,12 +7,12 @@ import { AuthStorage } from './authSession';
 // non-JSON, because success must never depend on envelope parsing.
 afterEach(() => { vi.unstubAllGlobals(); AuthStorage.clear(); });
 
-it('sends POST /auth/web/logout with cookie credentials and no credential body', async () => {
+it('sends POST to the same-origin session logout route with cookie credentials and no credential body', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: 'Signed out successfully.' }), { status: 200 }));
   vi.stubGlobal('fetch', fetchMock);
   await webLogout();
   const [url, options] = fetchMock.mock.calls[0];
-  expect(url).toMatch(/\/auth\/web\/logout$/);
+  expect(url).toBe('/api/auth/session/logout');
   expect(options.method).toBe('POST');
   expect(options.credentials).toBe('include');
 });

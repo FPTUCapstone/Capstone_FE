@@ -12,6 +12,7 @@ export type PartnerWorkspaceTabKey =
   | 'tours'
   | 'coupons'
   | 'bookings'
+  | 'complaints'
   | 'revenue'
   | 'payouts';
 
@@ -62,6 +63,12 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
     label: 'Đơn đặt chỗ',
     icon: 'receipt_long',
     baseHref: ROUTES.partner.bookings,
+  },
+  {
+    key: 'complaints',
+    label: 'Khiếu nại sau tour',
+    icon: 'report',
+    baseHref: ROUTES.partner.postTripComplaints,
   },
   {
     key: 'revenue',

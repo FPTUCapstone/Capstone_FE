@@ -298,6 +298,30 @@ export function isSameOriginRequest(request: Request): boolean {
   const origin = request.headers.get('origin');
   if (!origin || origin === 'null') return false;
   if (origin === new URL(request.url).origin) return true;
+
+  // `next dev --hostname 0.0.0.0` reports request.url with the bind address,
+  // whereas a browser correctly identifies itself as localhost or 127.0.0.1.
+  // Treat those loopback aliases as one local origin only outside production;
+  // production continues to require an exact configured public origin.
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const supplied = new URL(origin);
+      const target = new URL(request.url);
+      const localHosts = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
+      if (
+        ['http:', 'https:'].includes(supplied.protocol) &&
+        supplied.protocol === target.protocol &&
+        supplied.port === target.port &&
+        localHosts.has(supplied.hostname) &&
+        localHosts.has(target.hostname)
+      ) {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  }
+
   const configuredOrigin = process.env.TRIPMATE_WEB_ORIGIN;
   if (!configuredOrigin) return false;
   try {
