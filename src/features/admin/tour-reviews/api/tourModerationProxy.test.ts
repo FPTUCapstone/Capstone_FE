@@ -121,7 +121,7 @@ describe('tour moderation proxy: queue and detail', () => {
 
     expect(response.status).toBe(200);
     const [path, init] = fetchBackendMock.mock.calls[0];
-    expect(path).toBe('/api/v1/admin/tours/pending?keyword=lantern&pageNumber=2&pageSize=20');
+    expect(path).toBe('/api/v1/admin/tours?keyword=lantern&page=2&pageSize=20');
     expect(init.headers.Authorization).toBe('Bearer staff-token');
     expect(response.headers.get('cache-control')).toContain('no-store');
   });

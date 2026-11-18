@@ -10,7 +10,26 @@ import {
   submitRejection,
 } from './tourModerationApi';
 
-const summary = {
+/** One row of GET /api/v1/admin/tours (TM-83 members first, then the Screen 13 columns). */
+const queueRow = {
+  id: 12,
+  operatorUserId: 101,
+  title: 'Hoi An lantern night',
+  status: 'Pending',
+  submittedAtUtc: '2026-11-10T08:00:00+00:00',
+  submissionNote: null,
+  operatorName: 'Sunrise Travel',
+  location: 'Hoi An',
+  category: null,
+  durationDays: 2,
+  priceVnd: 1500000,
+  nextDepartureAtUtc: '2026-11-20T01:00:00+00:00',
+  nextDepartureCapacity: 8,
+  imageCount: 3,
+};
+
+/** Header members of GET /api/v1/admin/tours/{id}/review. */
+const reviewHeader = {
   tourId: 12,
   tourName: 'Hoi An lantern night',
   operatorName: 'Sunrise Travel',
@@ -24,8 +43,10 @@ const summary = {
   imageCount: 3,
 };
 
+const envelope = (items: unknown[], totalCount = items.length, page = 1, pageSize = 20) => ({ items, totalCount, page, pageSize });
+
 const detail = {
-  ...summary,
+  ...reviewHeader,
   overview: 'A relaxed food tour.',
   highlights: null,
   includedServices: ['Breakfast'],
@@ -52,13 +73,14 @@ afterEach(() => {
 });
 
 describe('parsePendingTourPage', () => {
-  it('maps the backend paging envelope and stringifies ids', () => {
-    const page = parsePendingTourPage({ items: [summary], totalCount: 1, pageNumber: 1, pageSize: 20, totalPages: 1 });
+  it('maps the backend queue envelope and stringifies ids', () => {
+    const page = parsePendingTourPage(envelope([queueRow]));
 
     expect(page.items).toHaveLength(1);
     expect(page.items[0]).toMatchObject({
       id: '12',
       tourName: 'Hoi An lantern night',
+      submittedAtUtc: '2026-11-10T08:00:00+00:00',
       operatorName: 'Sunrise Travel',
       departureAtUtc: '2026-11-20T01:00:00+00:00',
       capacity: 8,
@@ -69,18 +91,28 @@ describe('parsePendingTourPage', () => {
   });
 
   it('accepts a tour without a departure', () => {
-    const page = parsePendingTourPage({
-      items: [{ ...summary, nextDepartureAtUtc: null, nextDepartureCapacity: null }],
-      totalCount: 1,
-      pageNumber: 1,
-      pageSize: 20,
-      totalPages: 1,
-    });
+    const page = parsePendingTourPage(envelope([{ ...queueRow, nextDepartureAtUtc: null, nextDepartureCapacity: null }]));
     expect(page.items[0].departureAtUtc).toBeNull();
     expect(page.items[0].capacity).toBeNull();
   });
 
-  it.each([null, 'x', 42, {}, { items: 'nope' }, { items: [{ tourId: 'x' }], totalCount: 1, pageNumber: 1, pageSize: 20, totalPages: 1 }])(
+  it('accepts a legacy row without a submission time', () => {
+    const page = parsePendingTourPage(envelope([{ ...queueRow, submittedAtUtc: null }]));
+    expect(page.items[0].submittedAtUtc).toBeNull();
+  });
+
+  it('derives totalPages because the backend envelope does not carry it', () => {
+    expect(parsePendingTourPage(envelope([queueRow], 25, 2, 20)).totalPages).toBe(2);
+    expect(parsePendingTourPage(envelope([queueRow], 20, 1, 20)).totalPages).toBe(1);
+    expect(parsePendingTourPage(envelope([queueRow], 21, 1, 20)).totalPages).toBe(2);
+    expect(parsePendingTourPage(envelope([], 0, 1, 20)).totalPages).toBe(0);
+  });
+
+  it('rejects an envelope whose page size is not positive', () => {
+    expect(() => parsePendingTourPage(envelope([], 0, 1, 0))).toThrow(ModerationApiError);
+  });
+
+  it.each([null, 'x', 42, {}, { items: 'nope' }, { items: [{ id: 'x' }], totalCount: 1, page: 1, pageSize: 20 }])(
     'rejects a malformed payload %#',
     (payload) => {
       expect(() => parsePendingTourPage(payload)).toThrow(ModerationApiError);
@@ -119,7 +151,7 @@ describe('fetch helpers', () => {
   }
 
   it('requests the queue with only the paging and keyword', async () => {
-    const mock = stubFetch(200, { items: [], totalCount: 0, pageNumber: 2, pageSize: 20, totalPages: 0 });
+    const mock = stubFetch(200, envelope([], 0, 2, 20));
 
     await fetchPendingTourPage({ page: 2, keyword: 'lantern' });
 
@@ -127,7 +159,7 @@ describe('fetch helpers', () => {
   });
 
   it('omits an empty keyword and the first page', async () => {
-    const mock = stubFetch(200, { items: [], totalCount: 0, pageNumber: 1, pageSize: 20, totalPages: 0 });
+    const mock = stubFetch(200, envelope([], 0, 1, 20));
 
     await fetchPendingTourPage({ page: 1, keyword: '' });
 

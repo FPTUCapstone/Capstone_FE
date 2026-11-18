@@ -7,7 +7,8 @@ export interface QueueTour {
   readonly operatorName: string;
   readonly location: string;
   readonly category: string | null;
-  readonly submittedAtUtc: string;
+  /** Absent for legacy rows that pre-date the submission column. */
+  readonly submittedAtUtc: string | null;
   readonly departureAtUtc: string | null;
   readonly priceVnd: number;
   readonly durationDays: number;
@@ -56,7 +57,8 @@ export interface TourImage {
 }
 
 /** Everything Staff need to fill the five-item checklist (UC-60 Screen 14). */
-export interface TourReviewDetail extends QueueTour {
+export interface TourReviewDetail extends Omit<QueueTour, 'submittedAtUtc'> {
+  readonly submittedAtUtc: string;
   readonly overview: string | null;
   readonly highlights: string | null;
   readonly includedServices: readonly string[];
@@ -122,17 +124,32 @@ function record(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : invalid();
 }
 
-function parseQueueTour(raw: unknown): QueueTour {
-  const row = record(raw);
-  const id = num(row.tourId);
+interface CommonFields {
+  readonly id: string;
+  readonly tourName: string;
+  readonly operatorName: string;
+  readonly location: string;
+  readonly category: string | null;
+  readonly departureAtUtc: string | null;
+  readonly priceVnd: number;
+  readonly durationDays: number;
+  readonly capacity: number | null;
+  readonly imageCount: number;
+}
+
+function parseId(value: unknown): string {
+  const id = num(value);
   if (!Number.isSafeInteger(id) || id <= 0) invalid();
+  return String(id);
+}
+
+function parseCommon(row: Record<string, unknown>, id: unknown, tourName: unknown): CommonFields {
   return {
-    id: String(id),
-    tourName: text(row.tourName),
+    id: parseId(id),
+    tourName: text(tourName),
     operatorName: text(row.operatorName),
     location: text(row.location),
     category: textOrNull(row.category),
-    submittedAtUtc: text(row.submittedAtUtc),
     departureAtUtc: textOrNull(row.nextDepartureAtUtc),
     priceVnd: num(row.priceVnd),
     durationDays: num(row.durationDays),
@@ -141,14 +158,24 @@ function parseQueueTour(raw: unknown): QueueTour {
   };
 }
 
+/** One row of the Staff queue: `GET /api/v1/admin/tours` (TM-83 members plus the Screen 13 columns). */
+function parseQueueTour(raw: unknown): QueueTour {
+  const row = record(raw);
+  return { ...parseCommon(row, row.id, row.title), submittedAtUtc: textOrNull(row.submittedAtUtc) };
+}
+
+/** The queue envelope has no totalPages; it is derived from totalCount and pageSize. */
 export function parsePendingTourPage(payload: unknown): PendingTourPage {
   const body = record(payload);
+  const pageSize = num(body.pageSize);
+  const totalCount = num(body.totalCount);
+  if (pageSize <= 0 || totalCount < 0) invalid();
   return {
     items: list(body.items).map(parseQueueTour),
-    totalCount: num(body.totalCount),
-    page: num(body.pageNumber),
-    pageSize: num(body.pageSize),
-    totalPages: num(body.totalPages),
+    totalCount,
+    page: num(body.page),
+    pageSize,
+    totalPages: totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize),
   };
 }
 
@@ -163,7 +190,8 @@ function isHttpsUrl(value: string): boolean {
 export function parseTourReview(payload: unknown): TourReviewDetail {
   const body = record(payload);
   return {
-    ...parseQueueTour(body),
+    ...parseCommon(body, body.tourId, body.tourName),
+    submittedAtUtc: text(body.submittedAtUtc),
     overview: textOrNull(body.overview),
     highlights: textOrNull(body.highlights),
     includedServices: list(body.includedServices).map(text),
