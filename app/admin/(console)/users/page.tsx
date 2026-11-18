@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { isAccountDateRangeValid } from '@/features/admin/user-accounts/accountDateRange';
+import { AccountFilterForm } from '@/features/admin/user-accounts/components/AccountFilterForm';
 import { accountDate, accountSession, canManageAccount, fetchAccounts, type AccountPage } from '@/features/admin/user-accounts/server/accounts';
 import { ROUTES } from '@/lib/routes';
 
-type Filters = { search?: string; role?: string; status?: string; registeredFrom?: string; registeredTo?: string; page?: string };
+const filterKeys = ['search', 'role', 'status', 'registeredFrom', 'registeredTo', 'page'] as const;
+type Filters = Partial<Record<(typeof filterKeys)[number], string>>;
 
 type PageProps = { searchParams?: Promise<Filters> };
 
@@ -13,25 +16,28 @@ export default async function UserAccountsPage(props: PageProps = {}) {
   const session = await accountSession();
   if (!session) return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
   const filters = (await props.searchParams) ?? {};
-  const query = new URLSearchParams();
-  for (const key of ['search', 'role', 'status', 'registeredFrom', 'registeredTo', 'page'] as const) {
+  const filterParams = new URLSearchParams();
+  for (const key of filterKeys) {
     const value = filters[key];
-    if (typeof value === 'string' && value) query.set(key, value);
+    if (typeof value === 'string' && value) filterParams.set(key, value);
   }
-  for (const key of ['registeredFrom', 'registeredTo'] as const) {
-    const date = query.get(key);
-    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      query.set(key, `${date}T${key === 'registeredFrom' ? '00:00:00' : '23:59:59.999'}+07:00`);
-    }
-  }
-  const response = await fetchAccounts(session.token, `?${query}`).catch(() => null);
+  const query = new URLSearchParams(filterParams);
+  const from = query.get('registeredFrom') ?? '';
+  const to = query.get('registeredTo') ?? '';
+  const validRange = isAccountDateRangeValid(from, to);
+  if (from) query.set('registeredFrom', `${from}T00:00:00+07:00`);
+  if (to) query.set('registeredTo', `${to}T23:59:59.9999999+07:00`);
+  const response = validRange ? await fetchAccounts(session.token, `?${query}`).catch(() => null) : null;
   if (response?.status === 401) return redirect('/admin/login?returnUrl=%2Fadmin%2Fusers');
   const data: AccountPage | null = response?.ok ? await response.json().catch(() => null) : null;
   const roles = ['Traveler', 'TourOperator', 'ServiceProvider', 'Staff'].filter((role) => canManageAccount(session.role, role));
+  const accounts = data?.items.filter((account) => canManageAccount(session.role, account.role)) ?? [];
+  const problem: unknown = response?.status === 400 ? await response.json().catch(() => null) : null;
+  const invalidRange = !validRange || (typeof problem === 'object' && problem !== null
+    && 'errorCode' in problem && problem.errorCode === 'account_management.invalid_date_range');
   const page = Number(filters.page) || 1;
   const link = (next: number) => {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(filters)) if (typeof value === 'string' && value) params.set(key, value);
+    const params = new URLSearchParams(filterParams);
     params.set('page', String(next));
     return `/admin/users?${params}`;
   };
@@ -53,7 +59,7 @@ export default async function UserAccountsPage(props: PageProps = {}) {
           )}
         </nav>
       </header>
-      <form className="flex flex-wrap items-end gap-3">
+      <AccountFilterForm key={filterParams.toString()} invalidRange={invalidRange}>
         <label>Search <input className="block rounded border p-2" name="search" type="search" defaultValue={filters.search} maxLength={256} /></label>
         <label>Role <select className="block rounded border p-2" name="role" defaultValue={filters.role ?? ''}>
           <option value="">All permitted roles</option>
@@ -66,12 +72,15 @@ export default async function UserAccountsPage(props: PageProps = {}) {
         <label>Registered from <input className="block rounded border p-2" type="date" name="registeredFrom" defaultValue={filters.registeredFrom} /></label>
         <label>Registered to <input className="block rounded border p-2" type="date" name="registeredTo" defaultValue={filters.registeredTo} /></label>
         <button className="rounded bg-teal-800 px-4 py-2 text-white">Apply filters</button>
-      </form>
-      {!data ? <p role="alert">{response?.status === 400 ? 'Check the account filters.' : 'User accounts could not be loaded.'}</p> :
+      </AccountFilterForm>
+      {!data ? !invalidRange && <p role="alert">{
+        response?.status === 403 ? 'You do not have permission to view user accounts.' :
+          response?.status === 400 ? 'Check the account filters.' : 'User accounts could not be loaded.'
+      }</p> :
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead><tr>{['Name', 'Email', 'Role', 'Status', 'Registered', 'Last sign-in'].map((label) => <th className="p-2" scope="col" key={label}>{label}</th>)}</tr></thead>
-            <tbody>{data.items.filter((account) => canManageAccount(session.role, account.role)).map((account) => (
+            <tbody>{accounts.map((account) => (
               <tr className="border-t" key={account.userId}>
                 <td className="p-2"><Link className="underline" href={`/admin/users/${encodeURIComponent(account.userId)}`}>{account.fullName}</Link></td>
                 <td className="p-2">{account.email ?? '—'}</td><td className="p-2">{account.role}</td><td className="p-2">{account.status}</td>
@@ -79,7 +88,7 @@ export default async function UserAccountsPage(props: PageProps = {}) {
               </tr>
             ))}</tbody>
           </table>
-          {data.items.length === 0 && <p>No matching accounts.</p>}
+          {accounts.length === 0 && <p>No matching accounts.</p>}
           <nav className="mt-3 flex gap-4" aria-label="Account pages">
             {page > 1 && <Link href={link(page - 1)}>Previous</Link>}
             {page < data.totalPages && <Link href={link(page + 1)}>Next</Link>}
