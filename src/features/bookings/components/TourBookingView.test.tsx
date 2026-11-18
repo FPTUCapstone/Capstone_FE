@@ -347,6 +347,31 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       expect(alertSpy).not.toHaveBeenCalled();
     });
 
+    it.each([
+      ['1234567890', 'bắt đầu bằng số 0'],
+      ['090512345', 'gồm đúng 10 chữ số'],
+      ['09051234567', 'gồm đúng 10 chữ số'],
+      ['0905abc456', 'chỉ được chứa chữ số'],
+    ])('rejects an invalid lead phone %s inline', async (phone, expectedMessage) => {
+      const createBookingSpy = vi.spyOn(bookingApi, 'createBooking');
+      render(
+        <TourBookingView
+          tour={DEMO_TOUR_DETAIL_HOI_AN}
+          initialScheduleId="9007199254740997"
+          isDemo={false}
+          userContext={TRAVELER_CONTEXT}
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      fireEvent.change(screen.getByLabelText('Số điện thoại liên hệ *'), { target: { value: phone } });
+      fireEvent.click(screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Tiếp tục thanh toán/i }));
+
+      expect(await screen.findByText(new RegExp(expectedMessage))).toBeTruthy();
+      expect(createBookingSpy).not.toHaveBeenCalled();
+    });
+
     it('shows every missing required field inline and focuses the first one', async () => {
       render(
         <TourBookingView
@@ -413,7 +438,7 @@ describe('TourBookingView with real tour detail data (UC-26 handoff)', () => {
     fireEvent.click(
       screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }),
     );
-    fireEvent.change(screen.getByPlaceholderText(/Ví dụ: 0905 123 456/), { target: { value: '0905123456' } });
+    fireEvent.change(screen.getByPlaceholderText(/Ví dụ: 0905123456/), { target: { value: '0905123456' } });
 
     const submit = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
     expect(submit.disabled).toBe(true);

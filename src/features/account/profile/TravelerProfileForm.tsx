@@ -201,7 +201,7 @@ export function TravelerProfileForm({
             </div>
 
             <p className="text-[11px] text-[#5B6E69]">
-              Định dạng cho phép: JPG, PNG, WEBP. Dung lượng tối đa: 5MB (BR-16).
+              Định dạng cho phép: JPG, PNG, WEBP. Dung lượng tối đa: 5MB.
             </p>
 
             {errors.avatar ? (
@@ -247,7 +247,7 @@ export function TravelerProfileForm({
               <span className="flex items-center justify-between gap-2">
                 <span>Địa chỉ Email</span>
                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 normal-case tracking-normal">
-                  Chỉ đọc (BR-17)
+                  Chỉ đọc
                 </span>
               </span>
             </label>
@@ -287,7 +287,7 @@ export function TravelerProfileForm({
             autoComplete="tel"
             disabled={submitting}
             optional
-            help="Số điện thoại di động 10 chữ số bắt đầu bằng 0 (MSG04)."
+            help="Số điện thoại di động 10 chữ số bắt đầu bằng 0."
           />
 
           {/* Date of Birth (Optional, age >= 16, BR-18) */}
@@ -299,7 +299,7 @@ export function TravelerProfileForm({
               <span className="flex items-center justify-between gap-2">
                 <span>Ngày sinh</span>
                 <span className="font-medium normal-case tracking-normal text-slate-400">
-                  Tối thiểu 16 tuổi (BR-18)
+                  Tối thiểu 16 tuổi
                 </span>
               </span>
             </label>

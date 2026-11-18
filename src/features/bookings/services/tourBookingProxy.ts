@@ -25,6 +25,7 @@ const SAFE_CODES = new Set([
   'tour_booking.idempotency_key_required',
   'tour_booking.idempotency_key_payload_mismatch',
   'tour_booking.too_many_unpaid_bookings',
+  'tour_booking.itinerary_not_bookable',
 ]);
 
 function json(body: unknown, status: number): Response {
