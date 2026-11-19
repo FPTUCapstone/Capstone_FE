@@ -370,3 +370,17 @@ export function lunchCardAfterIndex(
   }
   return best;
 }
+
+/**
+ * UC-10: the sentence a stop shows. The AI sentence (`friendlyExplanation`) when it has text, else the
+ * recommendation reason; never both. Whitespace-only text counts as empty, so a blank AI sentence cannot hide
+ * the reason.
+ */
+export function stopExplanation(
+  item: { friendlyExplanation?: string | null; recommendationReason?: string | null },
+): string | null {
+  const friendly = item.friendlyExplanation?.trim();
+  if (friendly) return friendly;
+  const reason = item.recommendationReason?.trim();
+  return reason ? reason : null;
+}

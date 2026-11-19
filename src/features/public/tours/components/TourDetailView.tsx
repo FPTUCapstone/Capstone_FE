@@ -27,7 +27,7 @@ function isSelectable(schedule: TourScheduleDto): boolean {
 function scheduleAvailabilityLabel(schedule: TourScheduleDto): { text: string; warning: boolean } {
   if (isSelectable(schedule)) return { text: `Còn ${schedule.remainingSlots} chỗ`, warning: false };
   if (schedule.status === 'Scheduled') return { text: 'Chưa xác định số chỗ', warning: true };
-  if (schedule.status === 'SoldOut' || schedule.remainingSlots <= 0) return { text: 'Hết chỗ (MSG65)', warning: true };
+  if (schedule.status === 'SoldOut' || schedule.remainingSlots <= 0) return { text: 'Hết chỗ', warning: true };
   return { text: 'Đã đóng đăng ký', warning: true };
 }
 
@@ -725,7 +725,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                   disabled
                   className="w-full rounded-xl bg-slate-200 py-3 px-4 text-sm font-bold text-slate-500 cursor-not-allowed"
                 >
-                  {hasAvailableSchedules ? 'Lịch này đã hết chỗ' : 'Tạm hết chỗ (MSG65)'}
+                  {hasAvailableSchedules ? 'Lịch này đã hết chỗ' : 'Tạm hết chỗ'}
                 </button>
               )}
 

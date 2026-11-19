@@ -482,7 +482,7 @@ export function UpdateCouponView({
               {coupon.discountType === 'Percentage' && (
                 <div>
                   <label htmlFor="maxDiscountAmount" className="block text-xs font-bold text-slate-700 mb-1">
-                    {couponEn.create.fields.maxDiscountAmount}
+                    {couponEn.create.fields.maxDiscountAmount} <span className="text-rose-600">*</span>
                   </label>
                   <input
                     id="maxDiscountAmount"
@@ -491,8 +491,17 @@ export function UpdateCouponView({
                     step="10000"
                     value={maxDiscountAmount}
                     onChange={(e) => setMaxDiscountAmount(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]"
+                    aria-invalid={Boolean(errors.maxDiscountAmount)}
+                    aria-describedby={errors.maxDiscountAmount ? 'maxDiscountAmount-error' : undefined}
+                    className={`w-full rounded-xl border px-3.5 py-2.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-[#174B4A] ${
+                      errors.maxDiscountAmount ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 bg-white'
+                    }`}
                   />
+                  {errors.maxDiscountAmount && (
+                    <p id="maxDiscountAmount-error" role="alert" className="mt-1 text-xs font-bold text-rose-600">
+                      {errors.maxDiscountAmount}
+                    </p>
+                  )}
                 </div>
               )}
 

@@ -65,4 +65,21 @@ describe('ScrollResetHandler (Universal Scroll Reset On Reload)', () => {
     window.dispatchEvent(new Event('beforeunload'));
     expect(mockScrollTo).not.toHaveBeenCalled();
   });
+
+  it('resets global Lenis instance to top immediately on mount or route transition', () => {
+    const mockLenisScrollTo = vi.fn();
+    (window as unknown as { __lenis?: { scrollTo: typeof mockLenisScrollTo } }).__lenis = {
+      scrollTo: mockLenisScrollTo,
+    };
+
+    render(<ScrollResetHandler />);
+    expect(mockLenisScrollTo).toHaveBeenCalledWith(0, { immediate: true });
+    expect(mockScrollTo).toHaveBeenCalledWith({
+      top: 0,
+      left: 0,
+      behavior: 'instant',
+    });
+
+    delete (window as unknown as { __lenis?: unknown }).__lenis;
+  });
 });

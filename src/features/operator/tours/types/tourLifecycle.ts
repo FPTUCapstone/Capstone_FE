@@ -95,6 +95,8 @@ export interface TourPackageDto {
   cancellationPolicy: string;
   status: TourLifecycleStatus;
   rejectionReason?: string;
+  submissionNote?: string | null;
+  submittedAtUtc?: string | null;
   version: number;
   itinerary: TourItineraryDay[];
   schedules: TourDepartureSchedule[];
@@ -179,7 +181,7 @@ export const OPERATOR_TOUR_MESSAGES = {
   APPROVED_DIRECT_EDIT: 'Gói tour đã duyệt không thể sửa trực tiếp. Thay đổi sẽ được lưu vào phiên bản nháp mới.',
   CREATE_SUCCESS: 'Tạo gói tour thành công ở trạng thái Bản nháp.',
   UPDATE_SUCCESS: 'Cập nhật thông tin gói tour thành công.',
-  SUBMIT_SUCCESS: 'Gói tour đã được gửi để quản trị viên kiểm duyệt thành công.',
+  SUBMIT_SUCCESS: 'Gói tour đã được gửi để nhân viên TripMate (Staff) kiểm duyệt thành công.',
   SYSTEM_FAILURE: 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại.',
   PENDING_BE_INTEGRATION: 'Tính năng quản lý gói tour hiện chưa thể kết nối máy chủ.',
 } as const;

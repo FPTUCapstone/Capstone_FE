@@ -192,8 +192,9 @@ describe('TourDetailView (real data)', () => {
         { isAuthenticated: true },
       );
 
-      const disabled = screen.getByRole('button', { name: /Tạm hết chỗ \(MSG65\)/ });
+      const disabled = screen.getByRole('button', { name: 'Tạm hết chỗ' });
       expect(disabled.hasAttribute('disabled')).toBe(true);
+      expect(disabled.textContent).not.toContain('MSG65');
       expect(screen.queryByRole('link', { name: /Đặt tour|Đăng nhập để đặt tour/ })).toBeNull();
     });
 
@@ -238,7 +239,7 @@ describe('TourDetailView (real data)', () => {
       );
 
       expect(screen.getByText(/chưa có lịch khởi hành mới/i)).toBeTruthy();
-      expect(screen.getByRole('button', { name: /Tạm hết chỗ \(MSG65\)/ }).hasAttribute('disabled')).toBe(true);
+      expect(screen.getByRole('button', { name: 'Tạm hết chỗ' }).hasAttribute('disabled')).toBe(true);
     });
 
     it('states that the slot counts are a snapshot, not a reservation (BR-59)', () => {

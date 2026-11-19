@@ -10,7 +10,7 @@ import { ROUTES } from '@/lib/routes';
 import { getWeatherSafetyReviewBadgeCount } from '@/features/operator/weather-safety/weatherSafetyApi';
 import { operatorCommonEn } from './resources/en';
 
-export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'revenue' | 'payouts' | 'weatherSafety';
+export type PartnerWorkspaceTabKey = 'dashboard' | 'profile' | 'tours' | 'coupons' | 'bookings' | 'complaints' | 'revenue' | 'payouts' | 'weatherSafety';
 
 interface PartnerWorkspaceNavProps {
   activeTab: PartnerWorkspaceTabKey;
@@ -69,6 +69,12 @@ export function PartnerWorkspaceNav({
       label: isVi ? 'Đơn đặt chỗ' : operatorCommonEn.navigation.bookings,
       icon: 'receipt_long',
       href: ROUTES.partner.bookings,
+    },
+    {
+      key: 'complaints',
+      label: isVi ? 'Khiếu nại sau tour' : 'Post-Trip Complaints',
+      icon: 'report',
+      href: ROUTES.partner.postTripComplaints,
     },
     {
       key: 'revenue',

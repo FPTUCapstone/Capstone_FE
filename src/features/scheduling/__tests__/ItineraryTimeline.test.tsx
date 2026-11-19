@@ -469,3 +469,46 @@ describe('ItineraryTimeline (UC-11)', () => {
     });
   });
 });
+
+describe('ItineraryTimeline stop explanation (UC-10)', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  const REASON = 'Phù hợp với sở thích Văn hóa & Di sản';
+  const stop: ItineraryDetailItemDto = {
+    itemId: 1,
+    sequenceNo: 1,
+    poiId: 101,
+    poiName: 'Bảo tàng Chăm',
+    category: 'Văn hóa',
+    kind: 'Visit',
+    plannedArrival: '2026-10-20T08:00:00+07:00',
+    plannedDeparture: '2026-10-20T09:00:00+07:00',
+    stayDurationMinutes: 60,
+    travelDurationFromPreviousMinutes: null,
+    estimatedCost: 60000,
+    isMandatory: true,
+    recommendationReason: REASON,
+    isUnavailable: false,
+  };
+
+  it('shows the AI sentence and not the recommendation reason', () => {
+    render(<ItineraryTimeline items={[{ ...stop, friendlyExplanation: 'Câu của AI cho điểm này' }]} />);
+
+    expect(screen.getByText('Câu của AI cho điểm này')).toBeTruthy();
+    expect(screen.queryByText(REASON)).toBeNull();
+  });
+
+  it('falls back to the recommendation reason when the AI sentence is only whitespace', () => {
+    render(<ItineraryTimeline items={[{ ...stop, friendlyExplanation: '   ' }]} />);
+
+    expect(screen.getByText(REASON)).toBeTruthy();
+  });
+
+  it('shows the recommendation reason when there is no AI sentence', () => {
+    render(<ItineraryTimeline items={[stop]} />);
+
+    expect(screen.getByText(REASON)).toBeTruthy();
+  });
+});

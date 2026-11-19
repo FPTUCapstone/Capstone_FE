@@ -17,6 +17,8 @@ export const PARTIAL_REFUND_ERROR_CODES = {
   notFound: "complaint.not_found",
   forbidden: "complaint.partial_refund.forbidden",
   responseClosed: "complaint.partial_refund.response_closed",
+  reasonRequired: "complaint.partial_refund.reason_required",
+  counterAmountInvalid: "complaint.partial_refund.counter_amount_invalid",
   invalidDecision: "INVALID_DECISION",
   unauthenticated: "UNAUTHENTICATED",
   unavailable: "PARTIAL_REFUND_UNAVAILABLE",

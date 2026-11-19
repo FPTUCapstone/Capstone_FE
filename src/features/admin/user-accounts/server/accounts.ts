@@ -17,12 +17,13 @@ export interface UserAccount {
 export interface AccountPage {
   items: UserAccount[];
   totalPages: number;
+  totalCount?: number;
 }
 
 export interface AccountDetail {
   account: UserAccount;
-  bookingCount: number;
-  moderationHistory: { action: string; reason: string | null; atUtc: string }[];
+  bookingCount: number | null;
+  moderationHistory: { action: string; actorAttribution: string; reason: string | null; atUtc: string }[];
 }
 
 export function canManageAccount(actor: string, target: string) {
@@ -46,4 +47,11 @@ export async function fetchAccounts(token: string, suffix: string, init?: Reques
 
 export function accountDate(value: string | null) {
   return value ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(value)) : '—';
+}
+
+export function accountTimestamp(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).format(new Date(value));
 }

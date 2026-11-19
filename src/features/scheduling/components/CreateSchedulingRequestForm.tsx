@@ -11,6 +11,7 @@ import { ROUTES } from '@/lib/routes';
 
 import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
+import { registerExplanationPending } from '../utils/explanationRefresh';
 import {
   buildVietnamStartAtIso,
   calculateTripEnd,
@@ -35,6 +36,17 @@ const MAX_MANDATORY_POIS = 6;
 // Same bounds as the API (and the mobile app): Da Nang to Hue is about 85 km.
 const MIN_SEARCH_RADIUS_KM = 1;
 const MAX_SEARCH_RADIUS_KM = 100;
+
+const ERROR_FIELD_IDS: Record<string, string> = {
+  startPoint: 'start-point-picker',
+  exploration: 'exploration-picker',
+  endPoi: 'end-poi-picker',
+  startDate: 'start-date',
+  startTime: 'start-time',
+  availableHours: 'duration-hours',
+  searchRadiusKm: 'radius-slider',
+  budgetVnd: 'budget-input',
+};
 
 type PickerTarget = 'start' | 'exploration' | 'end' | 'mandatory';
 
@@ -127,6 +139,16 @@ export function CreateSchedulingRequestForm({
     currentMinutes: number;
     suggestedHours: number;
   } | null>(null);
+
+  const focusField = (fieldId: string) => {
+    if (typeof window === 'undefined') return;
+
+    window.requestAnimationFrame(() => {
+      const field = document.getElementById(fieldId);
+      field?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      field?.focus();
+    });
+  };
 
   const locateStartPoint = async () => {
     setIsLocating(true);
@@ -302,6 +324,10 @@ export function CreateSchedulingRequestForm({
     }
 
     setValidationErrors(errors);
+    const firstError = Object.keys(errors)[0];
+    if (firstError) {
+      focusField(ERROR_FIELD_IDS[firstError]);
+    }
     return Object.keys(errors).length === 0;
   };
 
@@ -362,6 +388,8 @@ export function CreateSchedulingRequestForm({
       const result = await createSchedulingRequest(payload, { idempotencyKey });
       setOptimizationPhase('Hoàn tất! Lịch trình đã sẵn sàng.');
       setGeneratedItinerary(result.data);
+      // UC-10: the detail page refreshes once the AI sentences are written in the background.
+      registerExplanationPending(result.data);
 
       setFeedback({
         tone: 'success',
@@ -434,6 +462,7 @@ export function CreateSchedulingRequestForm({
             'Ràng buộc không khả thi hoặc hệ thống đang bận. Vui lòng mở rộng bán kính hoặc tăng thời lượng chuyến đi.',
         });
       }
+      focusField('scheduling-feedback');
     } finally {
       setIsSubmitting(false);
       setOptimizationPhase(null);
@@ -476,7 +505,7 @@ export function CreateSchedulingRequestForm({
 
       {/* Feedback banner */}
       {feedback && (
-        <div className="mb-6 space-y-3">
+        <div id="scheduling-feedback" tabIndex={-1} className="mb-6 space-y-3">
           <FeedbackAlert
             tone={feedback.tone}
             title={feedback.title}
@@ -568,6 +597,7 @@ export function CreateSchedulingRequestForm({
                     {isLocating ? 'Đang lấy vị trí…' : 'Dùng vị trí hiện tại'}
                   </button>
                   <button
+                    id="start-point-picker"
                     type="button"
                     onClick={() => setPickerTarget('start')}
                     disabled={isSubmitting}
@@ -585,6 +615,7 @@ export function CreateSchedulingRequestForm({
               {/* Explore around */}
               <div className="mt-5 border-t border-slate-100 pt-5">
                 <PlaceField
+                  id="exploration-picker"
                   label="Khu vực khám phá"
                   value={explorationPoi?.label ?? null}
                   helper={
@@ -616,6 +647,7 @@ export function CreateSchedulingRequestForm({
                 </label>
                 <div className="mt-3">
                   <PlaceField
+                    id="end-poi-picker"
                     label="Điểm kết thúc"
                     value={returnToStart ? null : endPoi?.label ?? null}
                     helper={
@@ -1295,6 +1327,7 @@ const PICKER_TITLES: Record<PickerTarget, string> = {
 };
 
 function PlaceField({
+  id,
   label,
   value,
   helper,
@@ -1302,6 +1335,7 @@ function PlaceField({
   onOpen,
   error,
 }: {
+  id: string;
   label: string;
   value: string | null;
   helper: string;
@@ -1313,6 +1347,7 @@ function PlaceField({
     <div>
       <p className="text-xs font-bold text-slate-700 sm:text-sm">{label}</p>
       <button
+        id={id}
         type="button"
         onClick={onOpen}
         disabled={disabled}

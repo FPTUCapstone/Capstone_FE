@@ -32,6 +32,15 @@ const openProposal = {
   responseDeadlineUtc: "2026-11-09T03:00:00Z",
   status: "AwaitingTravelerResponse",
   canRespond: true,
+  canCounterOffer: true,
+  refundableAmount: 500000,
+};
+
+const finalProposal = {
+  ...openProposal,
+  round: 2,
+  canCounterOffer: false,
+  canDeclineFinally: true,
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -70,11 +79,11 @@ describe("PartialRefundProposalPage", () => {
 
     await renderLoaded();
 
-    expect(screen.getByText(/500[.,]000/)).toBeDefined();
+    expect(screen.getAllByText(/500[.,]000/).length).toBeGreaterThan(0);
     // 03:00 UTC is 10:00 in Asia/Ho_Chi_Minh.
     expect(screen.getByText(/9 Nov 2026.*10:00/)).toBeDefined();
     expect(screen.getByRole("button", { name: "Accept" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Decline" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Send counter-offer" })).toBeDefined();
     expect(fetchMock).toHaveBeenCalledWith(
       GET_URL,
       expect.objectContaining({ cache: "no-store" }),
@@ -103,14 +112,36 @@ describe("PartialRefundProposalPage", () => {
     expect(postedDecision(fetchMock)).toBe("Accept");
     expect(screen.getByText("Accepted")).toBeDefined();
     expect(screen.queryByRole("button", { name: "Accept" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Decline" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send counter-offer" })).toBeNull();
   });
 
-  it("records nothing when the traveler backs out of the confirmation", async () => {
+  it("sends one counter-offer with the requested amount and reason", async () => {
+    const fetchMock = stubFetch(
+      jsonResponse(openProposal),
+      jsonResponse({ complaintId: 501, status: "AwaitingOperatorReconsideration" }),
+    );
+    await renderLoaded();
+
+    fireEvent.change(screen.getByLabelText(/Requested refund amount/i), { target: { value: "450000" } });
+    fireEvent.change(screen.getByLabelText("Why is this offer inadequate?"), { target: { value: "The missed itinerary items warrant a higher refund." } });
+    fireEvent.click(screen.getByRole("button", { name: "Send counter-offer" }));
+
+    await waitFor(() => expect(screen.getByText(partialRefundMessages.MSG164)).toBeDefined());
+    const call = fetchMock.mock.calls.find(([url]) => url === POST_URL);
+    expect(call).toBeDefined();
+    expect(JSON.parse(call![1].body)).toEqual({
+      decision: "CounterOffer",
+      reason: "The missed itinerary items warrant a higher refund.",
+      requestedAmount: 450000,
+    });
+    expect(screen.getByText("Closed")).toBeDefined();
+  });
+
+  it("records nothing when the traveler backs out of the acceptance confirmation", async () => {
     const fetchMock = stubFetch(jsonResponse(openProposal));
     await renderLoaded();
 
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
     fireEvent.click(screen.getByRole("button", { name: "Go back" }));
 
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -120,15 +151,15 @@ describe("PartialRefundProposalPage", () => {
   it("moves focus into the dialog, closes it with Escape and returns focus", async () => {
     const fetchMock = stubFetch(jsonResponse(openProposal));
     await renderLoaded();
-    const decline = screen.getByRole("button", { name: "Decline" });
-    decline.focus();
+    const accept = screen.getByRole("button", { name: "Accept" });
+    accept.focus();
 
-    fireEvent.click(decline);
+    fireEvent.click(accept);
 
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Go back" }));
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Decline" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Accept" }));
     expect(postedDecision(fetchMock)).toBeUndefined();
   });
 
@@ -163,9 +194,9 @@ describe("PartialRefundProposalPage", () => {
     await waitFor(() => expect(screen.getByText(partialRefundMessages.MSG164)).toBeDefined());
   });
 
-  it("declines after confirmation and shows the declined outcome", async () => {
+  it("declines the final proposal with a required reason and shows the declined outcome", async () => {
     const fetchMock = stubFetch(
-      jsonResponse(openProposal),
+      jsonResponse(finalProposal),
       jsonResponse({
         complaintId: 501,
         status: "Declined",
@@ -175,8 +206,8 @@ describe("PartialRefundProposalPage", () => {
     );
     await renderLoaded();
 
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+    fireEvent.change(screen.getByLabelText("Reason for final decline"), { target: { value: "The revised offer is still inadequate." } });
+    fireEvent.click(screen.getByRole("button", { name: "Decline final offer" }));
 
     await waitFor(() =>
       expect(screen.getByText(partialRefundMessages.MSG164)).toBeDefined(),
@@ -213,18 +244,18 @@ describe("PartialRefundProposalPage", () => {
 
   it("keeps the proposal open and shows MSG127 when recording fails", async () => {
     stubFetch(
-      jsonResponse(openProposal),
+      jsonResponse(finalProposal),
       jsonResponse({ errorCode: "PARTIAL_REFUND_UNAVAILABLE" }, 503),
     );
     await renderLoaded();
 
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+    fireEvent.change(screen.getByLabelText("Reason for final decline"), { target: { value: "The revised offer is still inadequate." } });
+    fireEvent.click(screen.getByRole("button", { name: "Decline final offer" }));
 
     await waitFor(() =>
       expect(screen.getByText(partialRefundMessages.MSG127)).toBeDefined(),
     );
-    expect(screen.getByRole("button", { name: "Decline" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Decline final offer" })).toBeDefined();
     expect(screen.getByText("Awaiting your response")).toBeDefined();
   });
 

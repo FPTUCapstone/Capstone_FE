@@ -191,6 +191,28 @@ describe('bookingApi service (UC-27, UC-28, UC-29)', () => {
         message: expect.stringContaining('Không còn đủ chỗ trống'),
       });
     });
+
+    it('explains when the tour itinerary cannot be booked', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({ errorCode: 'tour_booking.itinerary_not_bookable' }),
+            { status: 422, headers: { 'content-type': 'application/json' } },
+          ),
+        ),
+      );
+
+      await expect(
+        createBooking({
+          tourScheduleId: '10610',
+          participants: [{ fullName: 'Test Traveler', participantType: 'Adult' }],
+        }),
+      ).rejects.toMatchObject({
+        status: 422,
+        message: 'Lịch trình tour chưa được sắp xếp hợp lệ nên chưa thể đặt tour.',
+      });
+    });
   });
 
   describe('getBooking (UC-27 / UC-28)', () => {

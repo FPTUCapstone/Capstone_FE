@@ -12,6 +12,7 @@ import {
   buildVietnamStartAtIso,
   isFutureVietnamStartAt,
 } from '../types/schedulingTypes';
+import { takeExplanationPending } from '../utils/explanationRefresh';
 
 const CHAM_MUSEUM = {
   id: 10003,
@@ -900,6 +901,50 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     });
   });
 
+  it('scrolls to and focuses the first invalid field after validation fails', async () => {
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    try {
+      render(<CreateSchedulingRequestForm />);
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Vui lòng chọn điểm xuất phát/i)).toBeDefined();
+        expect(document.activeElement).toBe(screen.getByText('Chọn điểm xuất phát').closest('button'));
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+      });
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: originalScrollIntoView,
+      });
+    }
+  });
+
+  it('moves focus to the error feedback when itinerary creation fails', async () => {
+    vi.spyOn(schedulingApi, 'createSchedulingRequest').mockRejectedValueOnce({
+      status: 500,
+      message: 'Internal Server Error',
+    });
+
+    render(<CreateSchedulingRequestForm />);
+    await chooseStartAndArea();
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Internal Server Error')).toBeDefined();
+        expect(document.activeElement).toBe(document.getElementById('scheduling-feedback'));
+      },
+      { timeout: 4000 },
+    );
+  });
+
   it('submits form and calls onSuccess when API responds successfully', async () => {
     vi.spyOn(schedulingApi, 'createSchedulingRequest').mockResolvedValueOnce(mockSuccessResponse);
     const onSuccessMock = vi.fn();
@@ -923,5 +968,53 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       },
       { timeout: 4000 },
     );
+  });
+});
+
+describe('CreateSchedulingRequestForm pending explanation handoff (UC-10)', () => {
+  const baseResponse = {
+    success: true,
+    messageCode: 'MSG30',
+    message: 'Khởi tạo lịch trình thành công!',
+    data: {
+      schedulingRequestId: 11,
+      itineraryId: 889,
+      title: 'Lịch trình Đà Nẵng',
+      status: 'OptimalGenerated',
+      totalEstimatedCost: 650000,
+      totalDurationMinutes: 480,
+      items: [],
+    },
+  };
+
+  beforeEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
+  });
+
+  async function submitWith(data: typeof baseResponse.data & { explanationPending?: boolean }) {
+    vi.spyOn(schedulingApi, 'createSchedulingRequest').mockResolvedValueOnce({ ...baseResponse, data });
+    const onSuccess = vi.fn();
+    render(<CreateSchedulingRequestForm onSuccess={onSuccess} />);
+    await chooseStartAndArea();
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled(), { timeout: 4000 });
+  }
+
+  it('registers the itinerary for a later refresh when the backend says the AI explanation is pending', async () => {
+    await submitWith({ ...baseResponse.data, itineraryId: 889, explanationPending: true });
+
+    const handoff = takeExplanationPending(889);
+
+    expect(handoff).not.toBeNull();
+    expect(handoff!.itineraryId).toBe(889);
+  });
+
+  it('registers nothing when the explanation is not pending', async () => {
+    await submitWith({ ...baseResponse.data, itineraryId: 890, explanationPending: false });
+
+    expect(takeExplanationPending(890)).toBeNull();
   });
 });
