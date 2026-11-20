@@ -20,7 +20,11 @@ import {
   createAdminSessionSeal,
   verifyAdminSessionFromCookies,
 } from '@/lib/server/adminSession';
-import { proxyPoiManagementList } from './poi-management-proxy';
+import {
+  proxyDeactivatePoi,
+  proxyPoiDeactivationReferences,
+  proxyPoiManagementList,
+} from './poi-management-proxy';
 
 const TEST_SECRET = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').toString('base64url');
 const ROUTE = 'http://localhost:3001/api/admin/pois';
@@ -200,5 +204,120 @@ describe('POI management-list BFF GET', () => {
       expect(JSON.stringify(body)).not.toContain('private');
       assertNoStore(response);
     }
+  });
+});
+
+describe('proxyPoiDeactivationReferences', () => {
+  beforeEach(() => {
+    process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
+    cookiesMock.mockReturnValue(sealedCookies('Administrator'));
+    fetchBackendMock.mockReset();
+  });
+
+  afterEach(() => {
+    delete process.env[ADMIN_SESSION_SECRET_ENV];
+    vi.restoreAllMocks();
+  });
+
+  it('rejects Staff with 403 Forbidden', async () => {
+    cookiesMock.mockReturnValue(sealedCookies('Staff'));
+    const response = await proxyPoiDeactivationReferences(new Request('http://localhost:3001/api/admin/pois/42/deactivation-references'), '42');
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ errorCode: 'POI_MANAGEMENT_ACCESS_REQUIRED' });
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
+  it('forwards valid request to backend for Administrator', async () => {
+    fetchBackendMock.mockResolvedValueOnce(Response.json({
+      poiId: 42,
+      poiName: 'Dragon Bridge',
+      status: 'Active',
+      activeItinerariesCount: 2,
+      activeRoutesCount: 1,
+      openCommercialBookingsCount: 0,
+      hasActiveReferences: true,
+      referenceSnapshotToken: 'SNAPSHOT_TOKEN_42',
+      messageCode: 'MSG194',
+      message: 'The point of interest is referenced by itineraries, routes or bookings.',
+    }));
+
+    const response = await proxyPoiDeactivationReferences(new Request('http://localhost:3001/api/admin/pois/42/deactivation-references'), '42');
+    expect(response.status).toBe(200);
+    expect(fetchBackendMock).toHaveBeenCalledWith(
+      '/api/v1/admin/pois/42/deactivation-references',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    const body = await response.json();
+    expect(body.hasActiveReferences).toBe(true);
+    expect(body.messageCode).toBe('MSG194');
+  });
+});
+
+describe('proxyDeactivatePoi', () => {
+  beforeEach(() => {
+    process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
+    cookiesMock.mockReturnValue(sealedCookies('Administrator'));
+    fetchBackendMock.mockReset();
+  });
+
+  afterEach(() => {
+    delete process.env[ADMIN_SESSION_SECRET_ENV];
+    vi.restoreAllMocks();
+  });
+
+  it('rejects Staff with 403 Forbidden', async () => {
+    cookiesMock.mockReturnValue(sealedCookies('Staff'));
+    const req = new Request('http://localhost:3001/api/admin/pois/42/deactivate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'Closure', referenceSnapshotToken: 'TOKEN' }),
+    });
+    const response = await proxyDeactivatePoi(req, '42');
+    expect(response.status).toBe(403);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects empty reason with 400 and MSG123', async () => {
+    const req = new Request('http://localhost:3001/api/admin/pois/42/deactivate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: '   ', referenceSnapshotToken: 'TOKEN' }),
+    });
+    const response = await proxyDeactivatePoi(req, '42');
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ errorCode: 'MSG123' });
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
+  it('forwards valid deactivation request to backend for Administrator', async () => {
+    fetchBackendMock.mockResolvedValueOnce(Response.json({
+      poiId: 42,
+      status: 'Inactive',
+      deactivatedConnectingRoutesCount: 1,
+      deactivatedAtUtc: '2026-11-25T10:00:00Z',
+      messageCode: 'MSG193',
+      message: 'Point of interest deactivated.',
+    }));
+
+    const req = new Request('http://localhost:3001/api/admin/pois/42/deactivate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'Site permanently closed.', referenceSnapshotToken: 'SNAPSHOT_TOKEN' }),
+    });
+    const response = await proxyDeactivatePoi(req, '42');
+    expect(response.status).toBe(200);
+    expect(fetchBackendMock).toHaveBeenCalledWith(
+      '/api/v1/admin/pois/42/deactivate',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          poiId: 42,
+          reason: 'Site permanently closed.',
+          referenceSnapshotToken: 'SNAPSHOT_TOKEN',
+        }),
+      }),
+    );
+    const body = await response.json();
+    expect(body.messageCode).toBe('MSG193');
   });
 });

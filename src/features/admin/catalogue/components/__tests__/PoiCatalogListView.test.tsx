@@ -281,4 +281,39 @@ describe('PoiCatalogListView (Screen #16)', () => {
     expect(screen.getByRole('status').textContent).toContain('2 points of interest loaded');
     expect(screen.queryByRole('button', { name: /Remove/i })).toBeNull();
   });
+
+  describe('Administrator Deactivate POI affordance (TM-100 / BR-115 / BR-121)', () => {
+    it('shows Deactivate button for Active POI when role is Administrator', async () => {
+      loadPoiManagementMock.mockResolvedValueOnce(response());
+      render(<PoiCatalogListView role="Administrator" />);
+      await screen.findByText('Marble Mountains');
+
+      const rowMarble = screen.getByText('Marble Mountains').closest('tr');
+      const rowMuseum = screen.getByText('Historic Museum').closest('tr');
+      expect(within(rowMarble!).queryByRole('button', { name: /Deactivate/i })).not.toBeNull();
+      expect(within(rowMuseum!).queryByRole('button', { name: /Deactivate/i })).toBeNull();
+    });
+
+    it('does not show Deactivate button when role is Staff or omitted', async () => {
+      loadPoiManagementMock.mockResolvedValueOnce(response());
+      render(<PoiCatalogListView role="Staff" />);
+      await screen.findByText('Marble Mountains');
+
+      expect(screen.queryByRole('button', { name: /Deactivate/i })).toBeNull();
+    });
+
+    it('clicking Deactivate opens the deactivation dialog', async () => {
+      loadPoiManagementMock.mockResolvedValueOnce(response());
+      render(<PoiCatalogListView role="Administrator" />);
+      await screen.findByText('Marble Mountains');
+
+      const deactivateBtn = screen.getByRole('button', { name: /Deactivate/i });
+      fireEvent.click(deactivateBtn);
+
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toBeTruthy();
+      expect(within(dialog).getByText('Deactivate Point of Interest')).toBeTruthy();
+      expect(within(dialog).getByText(/Marble Mountains/)).toBeTruthy();
+    });
+  });
 });
