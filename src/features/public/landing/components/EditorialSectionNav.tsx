@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/i18n';
+
 export interface NavSection {
   id: string;
   number: string;
@@ -14,29 +16,40 @@ export const NAV_SECTIONS: NavSection[] = [
   { id: 'final-cta', number: '04', label: 'Khởi Hành Ngay', subtitle: 'Lên lịch trình thông minh' },
 ];
 
+const NAV_SECTIONS_EN: NavSection[] = [
+  { id: 'destinations', number: '01', label: 'Iconic Destinations', subtitle: 'Da Nang • Hoi An • Hue' },
+  { id: 'how-it-works', number: '02', label: 'How It Works', subtitle: 'Optimized planning' },
+  { id: 'tours', number: '03', label: 'Curated Local Tours', subtitle: 'Verified & protected' },
+  { id: 'final-cta', number: '04', label: 'Start Your Journey', subtitle: 'Smart trip planner' },
+];
+
 export interface EditorialSectionNavProps {
   activeSection: string;
   onNavigate: (sectionId: string) => void;
 }
 
 export function EditorialSectionNav({ activeSection, onNavigate }: EditorialSectionNavProps) {
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
+  const sections = isVi ? NAV_SECTIONS : NAV_SECTIONS_EN;
+
   return (
     <aside
-      aria-label="Mục lục bài viết"
+      aria-label={isVi ? "Mục lục bài viết" : "Table of contents"}
       className="hidden min-[1360px]:block w-36 xl:w-40 2xl:w-44 shrink-0 sticky top-20 pt-16 pb-12 z-20 self-start"
     >
       <div className="pl-1">
         <div className="flex items-center gap-2 pb-3 mb-3 border-b border-[#DCE2DD]">
           <span className="text-[9px] font-bold tracking-[0.18em] uppercase text-[#5B6E69]">
-            MỤC LỤC
+            {isVi ? 'MỤC LỤC' : 'CONTENTS'}
           </span>
         </div>
 
-        <nav className="relative space-y-4" aria-label="Mục lục hành trình">
+        <nav className="relative space-y-4" aria-label={isVi ? "Mục lục hành trình" : "Navigation contents"}>
           {/* Subtle vertical hairline track */}
           <div className="absolute left-[6px] top-2 bottom-2 w-[1px] bg-[#DCE2DD]" aria-hidden="true" />
 
-          {NAV_SECTIONS.map((sec) => {
+          {sections.map((sec) => {
             const isActive = activeSection === sec.id;
             return (
               <button

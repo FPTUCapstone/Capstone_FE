@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CENTRAL_DESTINATIONS } from '@/data/landingData';
 import { EditorialTextReveal, CardReveal } from '@/components/ui/ScrollReveal';
 import { ROUTES } from '@/lib/routes';
+import { useI18n } from '@/i18n';
 
 interface CentralVietnamShowcaseProps {
   activeCity?: 'danang' | 'hoian' | 'hue';
@@ -13,6 +14,8 @@ interface CentralVietnamShowcaseProps {
 }
 
 export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralVietnamShowcaseProps) {
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
   function handleSelectCity(cityId: string) {
     if (onSelectCity && (cityId === 'danang' || cityId === 'hoian' || cityId === 'hue')) {
       onSelectCity(cityId);
@@ -45,20 +48,21 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                 <span className="material-symbols-outlined text-sm" aria-hidden="true">
                   location_on
                 </span>
-                <span>Khám phá điểm đến Miền Trung</span>
+                <span>{isVi ? 'Khám phá điểm đến Miền Trung' : 'Central Vietnam Destinations'}</span>
               </div>
             </EditorialTextReveal>
 
             <EditorialTextReveal delay={120} duration={480}>
               <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#1C2928] tracking-tight text-balance">
-                Ba Điểm Đến Biểu Tượng Miền Trung
+                {isVi ? 'Ba Điểm Đến Biểu Tượng Miền Trung' : 'Three Iconic Central Vietnam Destinations'}
               </h2>
             </EditorialTextReveal>
 
             <EditorialTextReveal delay={200} duration={480}>
               <p className="mt-2.5 text-[#5B6E69] text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
-                Hệ sinh thái điểm đến tại Đà Nẵng, Hội An và Cố Đô Huế với địa danh đặc sắc,
-                giờ hoạt động chuẩn xác và trải nghiệm bản địa phong phú.
+                {isVi
+                  ? 'Hệ sinh thái điểm đến tại Đà Nẵng, Hội An và Cố Đô Huế với địa danh đặc sắc, giờ hoạt động chuẩn xác và trải nghiệm bản địa phong phú.'
+                  : 'Curated destination ecosystem across Da Nang, Hoi An, and Ancient Hue featuring authentic landmarks, verified operating hours, and rich local experiences.'}
               </p>
             </EditorialTextReveal>
           </div>
@@ -69,7 +73,7 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                 <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
                   verified
                 </span>
-                <span>Điểm đến chọn lọc</span>
+                <span>{isVi ? 'Điểm đến chọn lọc' : 'Curated Destinations'}</span>
               </span>
             </div>
           </EditorialTextReveal>
@@ -174,7 +178,7 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                         {/* Top POIs Chips */}
                         <div className="pt-2">
                           <span className="text-[11px] font-semibold text-[#5B6E69] block mb-2">
-                            Điểm đến tiêu biểu:
+                            {isVi ? 'Điểm đến tiêu biểu:' : 'Featured Highlights:'}
                           </span>
                           <div className="flex flex-wrap gap-1.5 sm:gap-2">
                             {dest.topPois.map((poi) => (
@@ -195,12 +199,12 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                           <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
                             travel_explore
                           </span>
-                          <span>Khám phá điểm đến miền Trung</span>
+                          <span>{isVi ? 'Khám phá điểm đến miền Trung' : 'Central Vietnam Destination'}</span>
                         </div>
 
                         <Link
                           href={ROUTES.pois}
-                          aria-label={`Khám phá địa điểm tại ${dest.name}`}
+                          aria-label={isVi ? `Khám phá địa điểm tại ${dest.name}` : `Explore destinations in ${dest.name}`}
                           onClick={(e) => {
                             e.stopPropagation();
                           }}
@@ -209,7 +213,7 @@ export function CentralVietnamShowcase({ activeCity, onSelectCity }: CentralViet
                           }}
                           className="px-5 py-2.5 rounded-xl bg-slate-50 hover:bg-[#103B39] hover:text-white text-[#103B39] text-xs font-bold border border-[#DCE2DD] hover:border-[#103B39] flex items-center justify-center gap-2 transition-all cursor-pointer group/btn shadow-2xs"
                         >
-                          <span>Khám phá địa điểm {dest.name}</span>
+                          <span>{isVi ? `Khám phá địa điểm ${dest.name}` : `Explore ${dest.name}`}</span>
                           <span
                             className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1"
                             aria-hidden="true"

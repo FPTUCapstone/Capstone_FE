@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { ROUTES } from '@/lib/routes';
+import { useI18n } from '@/i18n';
 
 interface StepItem {
   step: string;
@@ -12,7 +13,7 @@ interface StepItem {
   tag: string;
 }
 
-const STEPS: StepItem[] = [
+const STEPS_VI: StepItem[] = [
   {
     step: '01',
     title: 'Khám phá Điểm đến',
@@ -39,7 +40,38 @@ const STEPS: StepItem[] = [
   },
 ];
 
+const STEPS_EN: StepItem[] = [
+  {
+    step: '01',
+    title: 'Discover Destinations',
+    description:
+      'Explore iconic landmarks, rich heritage, and authentic local cuisine across Da Nang, Hoi An, and Ancient Hue.',
+    icon: 'travel_explore',
+    tag: 'Curated Spots',
+  },
+  {
+    step: '02',
+    title: 'Optimize Your Itinerary',
+    description:
+      'The system balances operating hours, transit distances, and travel pace to craft a balanced, feasible journey.',
+    icon: 'route',
+    tag: 'AI Optimization',
+  },
+  {
+    step: '03',
+    title: 'Travel Effortlessly',
+    description:
+      'Get intelligent real-time adaptation recommendations during weather shifts, enjoying peace of mind on every stop.',
+    icon: 'sunny_snowing',
+    tag: 'Weather Adaptive',
+  },
+];
+
 export function HowItWorksPreviewSection() {
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
+  const steps = isVi ? STEPS_VI : STEPS_EN;
+
   return (
     <section className="scroll-mt-20 py-16 sm:py-20 bg-white px-3 sm:px-6 lg:px-8 border-b border-slate-200">
       <div className="mx-auto max-w-7xl xl:max-w-[1440px]">
@@ -51,14 +83,15 @@ export function HowItWorksPreviewSection() {
                 <span className="material-symbols-outlined text-sm" aria-hidden="true">
                   alt_route
                 </span>
-                <span>Cách thức hoạt động</span>
+                <span>{isVi ? 'Cách thức hoạt động' : 'How It Works'}</span>
               </div>
               <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-black text-[#1C2928] tracking-tight text-balance">
-                Ba Bước Khởi Hành Trọn Vẹn
+                {isVi ? 'Ba Bước Khởi Hành Trọn Vẹn' : 'Three Steps to an Effortless Journey'}
               </h2>
               <p className="mt-3 text-slate-600 text-sm sm:text-base max-w-2xl leading-relaxed text-pretty">
-                Từ cảm hứng ban đầu đến chuyến đi thực tế, TripMate hỗ trợ bạn kết nối các điểm đến
-                miền Trung một cách mạch lạc, thông minh và tiết kiệm thời gian.
+                {isVi
+                  ? 'Từ cảm hứng ban đầu đến chuyến đi thực tế, TripMate hỗ trợ bạn kết nối các điểm đến miền Trung một cách mạch lạc, thông minh và tiết kiệm thời gian.'
+                  : 'From initial inspiration to real journeys, TripMate connects Central Vietnam destinations intelligently and seamlessly.'}
               </p>
             </div>
 
@@ -66,7 +99,7 @@ export function HowItWorksPreviewSection() {
               href={`${ROUTES.about}#planning`}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#103B39] hover:text-[#174B4A] transition group shrink-0"
             >
-              <span>Tìm hiểu sâu về công nghệ TripMate</span>
+              <span>{isVi ? 'Tìm hiểu sâu về công nghệ TripMate' : 'Learn more about TripMate technology'}</span>
               <span className="material-symbols-outlined text-sm group-hover:translate-x-0.5 transition-transform" aria-hidden="true">
                 arrow_forward
               </span>
@@ -76,7 +109,7 @@ export function HowItWorksPreviewSection() {
 
         {/* 3 Sequential Step Cards */}
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {STEPS.map((item, idx) => (
+          {steps.map((item, idx) => (
             <ScrollReveal key={item.step} animation="fade-up" delay={idx * 120}>
               <div className="h-full rounded-2xl border border-slate-200/90 bg-[#f8fafc] p-6 lg:p-7 flex flex-col justify-between hover:bg-white hover:border-teal-300 hover:shadow-md transition-all duration-300 group">
                 <div>
@@ -107,7 +140,7 @@ export function HowItWorksPreviewSection() {
                 {/* Subtle Step Divider / Action */}
                 <div className="pt-6 mt-6 border-t border-slate-200/70 flex items-center justify-between text-xs">
                   <span className="text-[11px] font-medium text-slate-500">
-                    Bước {idx + 1} trên 3
+                    {isVi ? `Bước ${idx + 1} trên 3` : `Step ${idx + 1} of 3`}
                   </span>
                   <span className="material-symbols-outlined text-base text-slate-300 group-hover:text-[#103B39] group-hover:translate-x-1 transition-all" aria-hidden="true">
                     east

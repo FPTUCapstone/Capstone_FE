@@ -4,6 +4,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
+import { useI18n } from '@/i18n';
 import { gsap } from 'gsap';
 import { SplitText } from 'gsap/SplitText';
 
@@ -136,6 +137,8 @@ function getVideoEligibilityServerSnapshot(): boolean {
  * B. Son Tra Cinematic Aerial Drone Video Background with instant-loading image poster fallback
  */
 export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHeroProps) {
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
   // Preserve callback compatibility if needed by parent
   if (activeCity !== 'danang' && onSelectCity) {
     // Graceful no-op to maintain type and prop interface without unexpected state mutations
@@ -442,7 +445,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
           >
             <span className="h-2 w-2 rounded-full bg-[#103B39] animate-pulse" aria-hidden="true" />
             <span className="font-[family-name:var(--font-manrope)] text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] text-[#174B4A]">
-              TripMate · Khám phá miền Trung
+              {isVi ? 'TripMate · Khám phá miền Trung' : 'TripMate · Explore Central Vietnam'}
             </span>
           </div>
 
@@ -451,8 +454,17 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             ref={headlineRef}
             className="mt-4 sm:mt-6 font-[family-name:var(--font-bricolage)] text-[32px] sm:text-5xl md:text-[56px] lg:text-[66px] xl:text-[74px] font-extrabold tracking-[-0.035em] leading-[1.12] sm:leading-[1.08] text-[#1C2928] drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]"
           >
-            Đà Nẵng, nơi <br />
-            hành trình bắt đầu.
+            {isVi ? (
+              <>
+                Đà Nẵng, nơi <br />
+                hành trình bắt đầu.
+              </>
+            ) : (
+              <>
+                Da Nang, where <br />
+                journeys begin.
+              </>
+            )}
           </h1>
 
           {/* Supporting Description — Manrope */}
@@ -460,7 +472,9 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             ref={descRef}
             className="mt-4 sm:mt-6 font-[family-name:var(--font-manrope)] text-sm sm:text-lg md:text-xl font-medium leading-[1.6] text-slate-800 drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] max-w-xl"
           >
-            Khám phá những điểm đến đáng nhớ, trải nghiệm tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn.
+            {isVi
+              ? 'Khám phá những điểm đến đáng nhớ, trải nghiệm tour bản địa và lên lịch trình phù hợp với chuyến đi của bạn.'
+              : 'Discover memorable destinations, experience authentic local tours, and craft the perfect itinerary for your trip.'}
           </p>
 
           {/* Two Prominent Contrasting CTA Buttons */}
@@ -473,7 +487,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
               href={ROUTES.plan}
               className="group inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2.5 rounded-xl bg-[#103B39] px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#103B39]/30 hover:bg-[#174B4A] hover:shadow-xl hover:shadow-[#103B39]/40 transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
             >
-              <span>Lập lịch trình</span>
+              <span>{isVi ? 'Lập lịch trình' : 'Plan Itinerary'}</span>
               <span
                 className="material-symbols-outlined text-lg transition-transform duration-200 group-hover:translate-x-1"
                 aria-hidden="true"
@@ -487,7 +501,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
               href={ROUTES.tours}
               className="inline-flex min-h-[48px] sm:min-h-[54px] items-center justify-center gap-2 rounded-xl bg-white/90 hover:bg-[#103B39] text-[#1C2928] hover:text-white border border-white/80 px-7 sm:px-8 py-3.5 text-sm sm:text-base font-bold backdrop-blur-md shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
             >
-              <span>Khám phá tour</span>
+              <span>{isVi ? 'Khám phá tour' : 'Explore Tours'}</span>
               <span className="material-symbols-outlined text-lg opacity-70" aria-hidden="true">
                 explore
               </span>
@@ -503,13 +517,13 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
               <span className="material-symbols-outlined text-base text-[#103B39]" aria-hidden="true">
                 verified
               </span>
-              <span>Tour xác thực bản địa</span>
+              <span>{isVi ? 'Tour xác thực bản địa' : 'Verified Local Tours'}</span>
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-md bg-white/60 px-2 py-1 backdrop-blur-xs">
               <span className="material-symbols-outlined text-base text-[#103B39]" aria-hidden="true">
                 map
               </span>
-              <span>Lịch trình tối ưu thời gian</span>
+              <span>{isVi ? 'Lịch trình tối ưu thời gian' : 'Time-Optimized Schedules'}</span>
             </div>
           </div>
         </div>
@@ -522,7 +536,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
             type="button"
             data-testid="hero-playback-toggle"
             onClick={togglePlayback}
-            aria-label={isVideoPlaying ? 'Tạm dừng video nền' : 'Phát video nền'}
+            aria-label={isVideoPlaying ? (isVi ? 'Tạm dừng video nền' : 'Pause video') : (isVi ? 'Phát video nền' : 'Play video')}
             className="group inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-800 hover:text-[#103B39] backdrop-blur-md border border-white/80 shadow-md transition-all duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#103B39] focus-visible:ring-offset-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg" aria-hidden="true">
@@ -535,7 +549,7 @@ export function LandingHero({ activeCity = 'danang', onSelectCity }: LandingHero
           <span className="material-symbols-outlined text-sm text-[#103B39]" aria-hidden="true">
             location_on
           </span>
-          <span>Bán đảo Sơn Trà & Chùa Linh Ứng · Đà Nẵng</span>
+          <span>{isVi ? 'Bán đảo Sơn Trà & Chùa Linh Ứng · Đà Nẵng' : 'Son Tra Peninsula & Linh Ung Pagoda · Da Nang'}</span>
         </div>
       </div>
     </section>

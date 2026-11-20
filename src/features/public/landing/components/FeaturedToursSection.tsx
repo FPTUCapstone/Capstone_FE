@@ -7,6 +7,7 @@ import { ROUTES } from '@/lib/routes';
 import { VERIFIED_TOURS, VerifiedTour } from '@/data/landingData';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { LandingEyebrow } from './LandingEyebrow';
+import { useI18n } from '@/i18n';
 
 function subscribeReducedMotion(callback: () => void) {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
@@ -25,6 +26,8 @@ function getReducedMotionServerSnapshot() {
 }
 
 export function FeaturedToursSection() {
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
   const [filterCity, setFilterCity] = useState<'all' | 'Đà Nẵng' | 'Hội An' | 'Huế'>('all');
   const [selectedTour, setSelectedTour] = useState<VerifiedTour | null>(null);
 
@@ -303,14 +306,23 @@ export function FeaturedToursSection() {
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-10">
             <div className="max-w-2xl">
               <LandingEyebrow icon="verified" className="mb-3">
-                Tour bản địa được bảo chứng
+                {isVi ? 'Tour bản địa được bảo chứng' : 'Verified Local Tours'}
               </LandingEyebrow>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#1C2928] tracking-tight">
-                Tour Trải Nghiệm Bản Địa <span className="text-[#103B39]">Đã Kiểm Duyệt</span>
+                {isVi ? (
+                  <>
+                    Tour Trải Nghiệm Bản Địa <span className="text-[#103B39]">Đã Kiểm Duyệt</span>
+                  </>
+                ) : (
+                  <>
+                    Verified Local <span className="text-[#103B39]">Experience Tours</span>
+                  </>
+                )}
               </h2>
               <p className="mt-3 text-slate-500 text-sm sm:text-base leading-relaxed text-pretty">
-                Khám phá các tour du lịch tiêu biểu từ những đối tác lữ hành uy tín tại Miền Trung.
-                Tích hợp lịch khởi hành chi tiết và bảo chứng thanh toán an toàn.
+                {isVi
+                  ? 'Khám phá các tour du lịch tiêu biểu từ những đối tác lữ hành uy tín tại Miền Trung. Tích hợp lịch khởi hành chi tiết và bảo chứng thanh toán an toàn.'
+                  : 'Explore verified tours from top travel operators across Central Vietnam with detailed departures and secure payment protection.'}
               </p>
             </div>
 
@@ -326,7 +338,7 @@ export function FeaturedToursSection() {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Tất cả ({VERIFIED_TOURS.length})
+                  {isVi ? `Tất cả (${VERIFIED_TOURS.length})` : `All (${VERIFIED_TOURS.length})`}
                 </button>
                 <button
                   type="button"
@@ -359,7 +371,7 @@ export function FeaturedToursSection() {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Cố Đô Huế
+                  {isVi ? 'Cố Đô Huế' : 'Hue'}
                 </button>
               </div>
 
@@ -367,7 +379,7 @@ export function FeaturedToursSection() {
                 href={ROUTES.tours}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#103B39] hover:text-teal-800 transition group shrink-0"
               >
-                <span>Xem tất cả tour</span>
+                <span>{isVi ? 'Xem tất cả tour' : 'View all tours'}</span>
                 <span className="material-symbols-outlined text-sm group-hover:translate-x-0.5 transition-transform">
                   arrow_forward
                 </span>
@@ -479,7 +491,7 @@ export function FeaturedToursSection() {
                           {/* Price & CTA */}
                           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                             <div>
-                              <span className="text-[10px] text-slate-400 block font-medium">Giá từ:</span>
+                              <span className="text-[10px] text-slate-400 block font-medium">{isVi ? 'Giá từ:' : 'From:'}</span>
                               <span className="text-base font-black text-[#103B39]">{tour.price}</span>
                             </div>
                             <button
@@ -487,7 +499,7 @@ export function FeaturedToursSection() {
                               onClick={() => handleOpenTour(tour)}
                               className="px-3.5 py-2 rounded-xl bg-[#103B39] hover:bg-[#103B39] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98"
                             >
-                              Xem chi tiết
+                              {isVi ? 'Xem chi tiết' : 'Details'}
                             </button>
                           </div>
                         </div>
@@ -634,7 +646,7 @@ export function FeaturedToursSection() {
               {/* Price & Action */}
               <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-slate-400 block">Giá từ:</span>
+                  <span className="text-xs text-slate-400 block">{isVi ? 'Giá từ:' : 'From:'}</span>
                   <span className="text-2xl font-black text-[#103B39]">{selectedTour.price}</span>
                 </div>
 
@@ -644,13 +656,13 @@ export function FeaturedToursSection() {
                     onClick={handleCloseModal}
                     className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
                   >
-                    Đóng
+                    {isVi ? 'Đóng' : 'Close'}
                   </button>
                   <Link
                     href={ROUTES.tours}
                     className="px-6 py-2.5 rounded-xl bg-[#103B39] hover:bg-[#174B4A] text-white text-xs font-bold transition shadow-md shadow-teal-700/25 cursor-pointer flex items-center gap-2"
                   >
-                    <span>Khám phá tour &amp; Lịch khởi hành</span>
+                    <span>{isVi ? 'Khám phá tour & Lịch khởi hành' : 'Explore Tours & Departures'}</span>
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                   </Link>
                 </div>
