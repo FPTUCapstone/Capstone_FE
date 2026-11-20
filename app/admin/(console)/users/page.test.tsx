@@ -3,11 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 vi.mock('server-only', () => ({}));
-vi.mock('@/lib/server/backend', () => ({
-  fetchBackend: vi.fn(async () => new Response(JSON.stringify({ items: [], totalPages: 1 }), {
-    headers: { 'Content-Type': 'application/json' },
-  })),
-}));
 
 const mocks = vi.hoisted(() => ({
   getCookie: vi.fn(),
