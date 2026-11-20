@@ -61,6 +61,20 @@ describe('ItineraryTimeline (UC-11)', () => {
     },
   ];
 
+  it('keeps an explicitly added restaurant in one yellow dining/rest card with its cost and duration', () => {
+    render(<ItineraryTimeline items={[{
+      ...mockItems[0], poiName: 'Bún Bò bà Dũng', category: 'Food & Drink', costKind: 'AverageSpend',
+      stayDurationMinutes: 45, estimatedCost: 150000,
+    }]} />);
+    expect(screen.getByText('Ăn uống / Nghỉ ngơi')).toBeDefined();
+    expect(screen.queryByText('Điểm tham quan')).toBeNull();
+    expect(screen.getAllByRole('heading', { name: 'Bún Bò bà Dũng' })).toHaveLength(1);
+    expect(screen.getByText('45 phút')).toBeDefined();
+    expect(screen.getByText('Mức chi tiêu dự kiến: 150.000 VNĐ/người')).toBeDefined();
+    const card = screen.getByRole('heading', { name: 'Bún Bò bà Dũng' }).closest('[data-item-id]')!.firstElementChild!;
+    expect(card.className).toContain('bg-amber-50/40');
+  });
+
   it('renders all stops with sequence numbers and details', () => {
     render(<ItineraryTimeline items={mockItems} />);
 
@@ -70,7 +84,7 @@ describe('ItineraryTimeline (UC-11)', () => {
 
     // Check item kind badges
     expect(screen.getAllByText('Điểm tham quan').length).toBe(2);
-    expect(screen.getByText('Nghỉ ngơi / Ẩm thực')).toBeDefined();
+    expect(screen.getByText('Ăn uống / Nghỉ ngơi')).toBeDefined();
 
     // Mandatory badge
     expect(screen.getByText('Bắt buộc')).toBeDefined();
@@ -89,15 +103,35 @@ describe('ItineraryTimeline (UC-11)', () => {
     expect(screen.getByText('Miễn phí')).toBeDefined();
   });
 
-  it('renders "Điểm dừng chân tránh nắng" for rest stops without dining category', () => {
+  it('does not claim a free rest with no POI is a sheltered place', () => {
     const shelterRestItem = {
       ...mockItems[1],
       category: 'Natural attraction',
       costKind: undefined,
     };
     render(<ItineraryTimeline items={[mockItems[0], shelterRestItem]} />);
-    expect(screen.getByText('Điểm dừng chân tránh nắng')).toBeDefined();
-    expect(screen.queryByText('Nghỉ ngơi / Ẩm thực')).toBeNull();
+    expect(screen.getByText('Nghỉ tự do — chưa chọn địa điểm')).toBeDefined();
+    expect(screen.queryByText('Điểm dừng chân tránh nắng')).toBeNull();
+    expect(screen.queryByText('Ăn uống / Nghỉ ngơi')).toBeNull();
+  });
+
+  it('labels a named non-dining automatic rest without claiming it provides shelter', () => {
+    render(<ItineraryTimeline items={[{ ...mockItems[1], poiId: 999, category: 'Rest Area', costKind: undefined }]} />);
+    expect(screen.getByText('Nghỉ ngơi')).toBeDefined();
+    expect(screen.queryByText('Điểm dừng chân tránh nắng')).toBeNull();
+  });
+
+  it('keeps removal and leg-mode editing available for a chosen dining/rest stop', () => {
+    const onRemoveStop = vi.fn();
+    const onChangeLegMode = vi.fn();
+    const dining = { ...mockItems[2], poiName: 'Bún Bò bà Dũng', category: 'Food & Drink', costKind: 'AverageSpend' as const, isUnavailable: false };
+    render(<ItineraryTimeline items={[mockItems[0], dining]} editable onRemoveStop={onRemoveStop} onChangeLegMode={onChangeLegMode} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Thao tác với Bún Bò bà Dũng' }));
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Bỏ khỏi lịch' }));
+    expect(onRemoveStop).toHaveBeenCalledWith(dining);
+    fireEvent.click(screen.getByRole('button', { name: 'Đổi phương tiện đến Bún Bò bà Dũng' }));
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitemradio', { name: '🚶 Đi bộ' }));
+    expect(onChangeLegMode).toHaveBeenCalledWith(101, 'Walking');
   });
 
 

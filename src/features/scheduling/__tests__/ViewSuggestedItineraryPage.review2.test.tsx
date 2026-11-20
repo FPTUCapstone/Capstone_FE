@@ -231,7 +231,16 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
     const suggestions = vi
       .spyOn(schedulingApi, 'getItinerarySuggestions')
       .mockResolvedValueOnce({ itineraryId: 789, kind: 'Food', searchRadiusKm: 15, items: [restaurant] });
-    const update = vi.spyOn(schedulingApi, 'updateItineraryStops').mockResolvedValueOnce({ ...itinerary, version: 2 });
+    const diningItem: ItineraryDetailItemDto = {
+      ...itinerary.items[1], itemId: 501, sequenceNo: 3, poiId: restaurant.poiId, poiName: restaurant.name,
+      category: restaurant.category, costKind: restaurant.costKind, estimatedCost: restaurant.estimatedCost,
+      plannedArrival: '2026-10-20T11:10:00+07:00', plannedDeparture: '2026-10-20T11:55:00+07:00',
+      stayDurationMinutes: 45,
+    };
+    const update = vi.spyOn(schedulingApi, 'updateItineraryStops').mockResolvedValueOnce({
+      ...itinerary, version: 2,
+      items: [itinerary.items[0], itinerary.items[1], diningItem, { ...itinerary.items[2], sequenceNo: 4 }],
+    });
     await renderLoaded();
 
     fireEvent.click(screen.getByRole('button', { name: 'Chọn quán' }));
@@ -247,6 +256,13 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
       ]),
     );
     expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await screen.findByText('Ăn uống / Nghỉ ngơi')).toBeDefined();
+    expect(screen.getAllByRole('heading', { name: restaurant.name })).toHaveLength(1);
+    expect(screen.getByText('Mức chi tiêu dự kiến: 120.000 VNĐ/người')).toBeDefined();
+    expect(screen.getByText('45 phút')).toBeDefined();
+    const card = screen.getByRole('heading', { name: restaurant.name }).closest('[data-item-id]')!.lastElementChild!;
+    expect(card.className).toContain('bg-amber-50/40');
+    expect(screen.getByRole('button', { name: 'Thao tác với Bếp Hến' })).toBeDefined();
   });
 
   it('replaces a stop in place from the "⋯" menu', async () => {
