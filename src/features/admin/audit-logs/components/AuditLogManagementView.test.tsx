@@ -52,6 +52,16 @@ function page(actorFullName: string | null, result: AuditLogSummaryDto['result']
 }
 
 describe('UC-68 audit log management', () => {
+  it('offers the Staff actor role and sends it as a filter', async () => {
+    vi.mocked(auditLogService.getAuditLogs).mockResolvedValue(page(null));
+    render(<AuditLogManagementView />);
+    await screen.findByText('N/A');
+    expect(screen.getByRole('option', { name: 'Staff' })).toBeDefined();
+    fireEvent.change(screen.getByLabelText('Actor Role'), { target: { value: 'Staff' } });
+    await waitFor(() => expect(auditLogService.getAuditLogs).toHaveBeenLastCalledWith(
+      expect.objectContaining({ actorRole: 'Staff' }), expect.anything(),
+    ));
+  });
   beforeEach(() => {
     vi.resetAllMocks();
   });

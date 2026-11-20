@@ -31,6 +31,9 @@ export async function proxyTourRequest(
 
   const safePath = segments.map((segment) => encodeURIComponent(segment)).join('/');
   const query = sanitizeProxyQuery(incomingQuery);
+  // Public discovery only lists departures accepted by booking preflight. The
+  // backend applies this before counting/paging, not after rendering a page.
+  if (segments.length === 0) query.set('bookableOnly', 'true');
   const queryString = query.size > 0 ? `?${query.toString()}` : '';
   const relativePath = `/api/v1/tours${safePath ? `/${safePath}` : ''}${queryString}`;
 

@@ -21,7 +21,7 @@ describe('Administrator Dashboard Dedicated Tabs & Analytics', () => {
 
     // Modules heading in Overview
     expect(screen.getByRole('heading', { level: 2, name: 'Administration modules' })).toBeTruthy();
-    expect(screen.getByText('System Configuration')).toBeTruthy();
+    expect(screen.getByText('User Governance')).toBeTruthy();
   });
 
   it('switches to Analytics tab on click, displaying Platform Analytics and honest empty state', () => {

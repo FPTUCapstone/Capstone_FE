@@ -89,7 +89,6 @@ export function AdminSidebar({
       title: 'System Overview',
       items: [
         { href: ROUTES.admin.dashboard, label: 'Control Center', icon: 'admin_panel_settings' },
-        { href: ROUTES.admin.staffDashboard, label: 'Staff Workspace', icon: 'dashboard' },
       ],
     },
     {
@@ -110,7 +109,6 @@ export function AdminSidebar({
     {
       title: 'Security & System',
       items: [
-        { href: ROUTES.admin.algorithmParameters, label: 'Algorithm Config', icon: 'tune' },
         { href: ROUTES.admin.auditLogs, label: 'Audit Logs', icon: 'history_edu' },
       ],
     },

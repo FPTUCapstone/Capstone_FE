@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { focusValidationError } from '@/lib/focusValidationError';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
@@ -119,6 +120,17 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
 
   // Validation & UI state
   const [errors, setErrors] = useState<TourValidationErrors>({});
+  const viewRef = useRef<HTMLDivElement>(null);
+  const revealErrors = (nextErrors: TourValidationErrors) => {
+    const targets: Record<string, string> = {
+      title: '#field-title', destination: '#field-destination', category: '#field-category',
+      description: '#field-description', itinerary: '#tour-itinerary',
+      cancellationPolicy: '#field-cancellation', basePrice: '#field-basePrice',
+      childPrice: '#field-childPrice', maxCapacity: '#field-capacity', durationDays: '#field-duration',
+      schedules: '#tour-schedules', media: '#media-upload',
+    };
+    focusValidationError(viewRef.current, Object.keys(nextErrors).map((key) => targets[key]).filter(Boolean));
+  };
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -260,6 +272,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     }
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      revealErrors(validationErrors);
       showValidationToast('Không thể lưu gói tour. Vui lòng kiểm tra các trường được đánh dấu.');
       return;
     }
@@ -293,6 +306,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     } catch (err) {
       if (err instanceof OperatorTourValidationError) {
         setErrors(err.errors);
+        revealErrors(err.errors);
         showValidationToast('Không thể lưu gói tour. Vui lòng kiểm tra các trường được đánh dấu.');
       } else {
         setErrorMessage(
@@ -305,7 +319,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   };
 
   return (
-    <div className="space-y-6">
+    <div ref={viewRef} className="space-y-6">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="min-w-0">
@@ -487,7 +501,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           </section>
 
           {/* Card 2: Day-by-Day Itinerary Builder */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+          <section id="tour-itinerary" tabIndex={-1} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-extrabold text-[#1C2928]">
@@ -645,7 +659,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
             </div>
 
             {errors.schedules && (
-              <p role="alert" className="mt-3 text-xs font-semibold text-rose-600">
+              <p id="tour-schedules" tabIndex={-1} role="alert" className="mt-3 text-xs font-semibold text-rose-600">
                 {errors.schedules}
               </p>
             )}
