@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { focusValidationError } from '@/lib/focusValidationError';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type {
@@ -48,6 +49,7 @@ export function CreateCouponView({
   const { locale, hasProvider } = useI18n();
   const couponEn = hasProvider && locale === 'vi' ? couponVi : couponEnOriginal;
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const returnUrl = resolveCouponReturnUrl(searchParams?.get('returnUrl'), isDemo);
 
@@ -110,6 +112,7 @@ export function CreateCouponView({
 
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors);
+      focusValidationError(formRef.current);
       return;
     }
     setErrors({});
@@ -139,6 +142,7 @@ export function CreateCouponView({
         }, 800);
       } else if (res.status === 'VALIDATION_ERROR' && res.errors) {
         setErrors(res.errors);
+        focusValidationError(formRef.current);
         setServerNotice({
           tone: 'error',
           message: res.message || couponEn.create.notices.genericError,
@@ -210,7 +214,7 @@ export function CreateCouponView({
       )}
 
       {/* 2-Column Responsive Layout */}
-      <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Form Fields (Span 2) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Card 1: General Info */}
@@ -579,7 +583,7 @@ export function CreateCouponView({
             )}
 
             {errors.appliedTourIds && (
-              <p role="alert" className="text-xs font-bold text-rose-600">
+              <p role="alert" tabIndex={-1} data-validation-error="true" className="text-xs font-bold text-rose-600">
                 {errors.appliedTourIds}
               </p>
             )}

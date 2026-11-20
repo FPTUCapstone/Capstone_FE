@@ -255,7 +255,11 @@ export function TourBookingView({
     } else if (!normalizedLeadPhone.startsWith('0')) {
       errors.leadPhone = 'Số điện thoại phải bắt đầu bằng số 0.';
     }
-    if (!leadEmail.trim()) errors.leadEmail = 'Vui lòng nhập email nhận vé điện tử.';
+    if (!leadEmail.trim()) {
+      errors.leadEmail = 'Vui lòng nhập email nhận vé điện tử.';
+    } else if (leadEmail.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail.trim())) {
+      errors.leadEmail = 'Vui lòng nhập địa chỉ email hợp lệ.';
+    }
     if (!agreedTerms) errors.agreedTerms = 'Vui lòng đồng ý với điều khoản đặt tour và chính sách hoàn hủy.';
 
     setRequiredFieldErrors(errors);
@@ -300,7 +304,7 @@ export function TourBookingView({
     setSubmissionError(null);
 
     const participants: BookingParticipantRequestDto[] = [
-      { fullName: leadName, participantType: 'Adult', phoneNumber: resolvedLeadPhone.trim(), email: leadEmail },
+      { fullName: leadName, participantType: 'Adult', phoneNumber: resolvedLeadPhone.trim(), email: leadEmail.trim() },
       ...(adultCount > 1
         ? Array.from({ length: adultCount - 1 }, (_, i) => ({
             fullName: `Người lớn ${i + 2}`,

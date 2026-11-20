@@ -65,22 +65,22 @@ describe('AdminDashboard (Screen #5)', () => {
     const links = screen.getAllByRole('link');
 
     expect(links.map((link) => link.getAttribute('href')).sort()).toEqual(
-      ['/admin/audit-logs', '/admin/settings/algorithm-parameters'].sort(),
+      ['/admin/audit-logs', '/admin/users', '/admin/reports', '/admin/commercial-settlements/reconciliation', '/admin/refund-reconciliation', '/admin/catalogue/points-of-interest'].sort(),
     );
     for (const link of links) {
       expect(routeFileExists(link.getAttribute('href') ?? '')).toBe(true);
     }
   });
 
-  it('labels unavailable modules truthfully without links', () => {
+  it('makes the existing Admin modules available without obsolete placeholders', () => {
     render(<AdminDashboard />);
 
     const expectations: Record<string, string> = {
-      'Statistical Reports': adminDashboardEn.statusLabels.pendingIntegration,
-      'Payout Settlement': adminDashboardEn.statusLabels.pendingIntegration,
-      'Platform Revenue': adminDashboardEn.statusLabels.pendingSpecification,
-      'Create Staff Account': adminDashboardEn.statusLabels.pendingSpecification,
-      'System Configuration': adminDashboardEn.statusLabels.available,
+      'Statistical Reports': adminDashboardEn.statusLabels.available,
+      'User Governance': adminDashboardEn.statusLabels.available,
+      'Commission Reconciliation': adminDashboardEn.statusLabels.available,
+      'Refund Reconciliation': adminDashboardEn.statusLabels.available,
+      'POI Master Data': adminDashboardEn.statusLabels.available,
       'Audit Logs': adminDashboardEn.statusLabels.available,
     };
 
@@ -93,9 +93,9 @@ describe('AdminDashboard (Screen #5)', () => {
     }
   });
 
-  it('keeps Platform Revenue separate from Statistical Reports', () => {
+  it('does not surface removed configuration or Staff workspace entries', () => {
     render(<AdminDashboard />);
-    const revenue = screen.getByRole('article', { name: 'Platform Revenue' });
-    expect(within(revenue).getByText(/separate from Statistical Reports/)).toBeTruthy();
+    expect(screen.queryByRole('article', { name: 'System Configuration' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Staff Workspace/i })).toBeNull();
   });
 });

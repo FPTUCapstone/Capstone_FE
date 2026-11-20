@@ -92,7 +92,6 @@ export function AdminSidebar({
       title: isVi ? 'Tổng quan hệ thống' : 'System Overview',
       items: [
         { href: ROUTES.admin.dashboard, label: isVi ? 'Bảng điều khiển' : 'Control Center', icon: 'admin_panel_settings' },
-        { href: ROUTES.admin.staffDashboard, label: isVi ? 'Khu vực nhân viên' : 'Staff Workspace', icon: 'dashboard' },
       ],
     },
     {
@@ -113,7 +112,6 @@ export function AdminSidebar({
     {
       title: isVi ? 'Bảo mật & Hệ thống' : 'Security & System',
       items: [
-        { href: ROUTES.admin.algorithmParameters, label: isVi ? 'Cấu hình thuật toán' : 'Algorithm Config', icon: 'tune' },
         { href: ROUTES.admin.auditLogs, label: isVi ? 'Nhật ký kiểm toán' : 'Audit Logs', icon: 'history_edu' },
       ],
     },

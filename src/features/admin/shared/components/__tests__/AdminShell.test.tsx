@@ -74,7 +74,8 @@ describe('Batch E1 — Administration Shell Components', () => {
       expect(screen.getByRole('link', { name: /Control Center/i })).toBeTruthy();
       expect(screen.getByRole('link', { name: /User Governance/i })).toBeTruthy();
       expect(screen.getByRole('link', { name: /Statistical Reports/i })).toBeTruthy();
-      expect(screen.getByRole('link', { name: /Algorithm Config/i })).toBeTruthy();
+      expect(screen.queryByRole('link', { name: /Algorithm Config/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /Staff Workspace/i })).toBeNull();
       expect(screen.getByRole('link', { name: /Audit Logs/i })).toBeTruthy();
     });
 

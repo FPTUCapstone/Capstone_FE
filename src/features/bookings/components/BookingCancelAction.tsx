@@ -12,9 +12,10 @@ const CANCELLABLE_TICKET_STATUSES: readonly TicketStatus[] = ['NotYetActive', 'V
 interface BookingCancelActionProps {
   bookingId: string;
   ticketStatus: TicketStatus;
+  onCancelled?: (result: BookingCancellationResponse, message: string) => void;
 }
 
-export function BookingCancelAction({ bookingId, ticketStatus }: BookingCancelActionProps) {
+export function BookingCancelAction({ bookingId, ticketStatus, onCancelled }: BookingCancelActionProps) {
   const [open, setOpen] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [cancelledMessage, setCancelledMessage] = useState<string>(m.cancelled);
@@ -43,13 +44,13 @@ export function BookingCancelAction({ bookingId, ticketStatus }: BookingCancelAc
           onCancelled={(result: BookingCancellationResponse) => {
             setOpen(false);
             setCancelled(true);
-            setCancelledMessage(
-              result.refundStatus === 'Reconciliation'
+            const message = result.refundStatus === 'Reconciliation'
                 ? m.refundReconciliation
                 : result.refundStatus === 'NotRequired'
                   ? m.refundNotRequired
-                  : m.cancelled,
-            );
+                  : m.cancelled;
+            setCancelledMessage(message);
+            onCancelled?.(result, message);
           }}
         />
       ) : null}

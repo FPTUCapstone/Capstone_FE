@@ -1,4 +1,4 @@
-export type UserRole = 'Traveler' | 'TourOperator' | 'Administrator';
+export type UserRole = 'Traveler' | 'TourOperator' | 'Administrator' | 'Staff';
 export type AuditLogResult = 'Success' | 'Failure';
 
 export interface AuditLogSummaryDto {
@@ -60,7 +60,7 @@ function isNullableString(value: unknown): value is string | null {
 }
 
 function isUserRole(value: unknown): value is UserRole {
-  return value === 'Traveler' || value === 'TourOperator' || value === 'Administrator';
+  return value === 'Traveler' || value === 'TourOperator' || value === 'Administrator' || value === 'Staff';
 }
 
 function isAuditLogResult(value: unknown): value is AuditLogResult {
