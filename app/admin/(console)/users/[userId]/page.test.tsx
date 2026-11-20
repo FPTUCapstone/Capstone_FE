@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/server/backend', () => ({
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getCookie: vi.fn(),
   redirect: vi.fn(),
   notFound: vi.fn(),
+  fetchBackend: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({
@@ -17,7 +19,9 @@ vi.mock('next/headers', () => ({
 vi.mock('next/navigation', () => ({
   redirect: mocks.redirect,
   notFound: mocks.notFound,
+  useRouter: () => ({ refresh: vi.fn() }),
 }));
+vi.mock('@/lib/server/backend', () => ({ fetchBackend: mocks.fetchBackend }));
 
 import {
   ADMIN_ACCESS_TOKEN_COOKIE,
@@ -43,11 +47,12 @@ function mockSealedCookies(role: 'Administrator' | 'Staff' = 'Administrator', to
   });
 }
 
-describe('UC-47 User Account Detail page route', () => {
+describe('UC-46 User Account Detail page route', () => {
   let priorSecret: string | undefined;
 
   beforeEach(() => {
     vi.resetAllMocks();
+    mocks.fetchBackend.mockResolvedValue(new Response(null, { status: 500 }));
     priorSecret = process.env[ADMIN_SESSION_SECRET_ENV];
     process.env[ADMIN_SESSION_SECRET_ENV] = TEST_SECRET;
   });
@@ -165,5 +170,50 @@ describe('UC-47 User Account Detail page route', () => {
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(mocks.notFound).not.toHaveBeenCalled();
     expect(view).toBeTruthy();
+  });
+
+  it.each([
+    { role: 'Staff', actor: 'Administrator', bookingCount: null, expected: 'N/A' },
+    { role: 'TourOperator', actor: 'Staff', bookingCount: 0, expected: '0' },
+  ])('renders the metric and event attribution for a $role target', async ({ role, actor, bookingCount, expected }) => {
+    mockSealedCookies(actor === 'Staff' ? 'Staff' : 'Administrator');
+    mocks.fetchBackend.mockResolvedValue(Response.json({
+      account: { userId: '4402', fullName: 'Test Account', email: null, role, status: 'Active',
+        createdAtUtc: '2026-11-15T18:30:00Z', lastLoginAtUtc: null },
+      bookingCount,
+      moderationHistory: [{ action: 'TOUR_OPERATOR_AUTO_LOCKED', actorAttribution: 'System',
+        reason: 'Outstanding balance', atUtc: '2026-11-15T18:30:00Z' }],
+    }));
+    const view = await UserAccountDetailPage({ params: Promise.resolve({ userId: '4402' }) });
+    const markup = renderToStaticMarkup(view!);
+    expect(markup).toContain(`<dt>Associated bookings</dt><dd>${expected}</dd>`);
+    expect(markup).toContain('Automatically locked');
+    expect(markup).toContain('System');
+    expect(markup).toContain('Outstanding balance');
+    expect(markup).toContain('16/11/2026');
+    expect(markup).toContain('01:30');
+    expect(markup).not.toContain('backend-access-token');
+  });
+
+  it('labels idempotent unlocks and Service Provider automatic locks', async () => {
+    mockSealedCookies('Staff');
+    mocks.fetchBackend.mockResolvedValue(Response.json({
+      account: { userId: '4403', fullName: 'Provider Account', email: null, role: 'ServiceProvider', status: 'Active',
+        createdAtUtc: '2026-11-15T18:30:00Z', lastLoginAtUtc: null },
+      bookingCount: null,
+      moderationHistory: [
+        { action: 'UnlockUserAccount', actorAttribution: 'Account 10', reason: 'Settlement verified',
+          atUtc: '2026-11-16T10:00:00Z' },
+        { action: 'SERVICE_PROVIDER_AUTO_LOCKED', actorAttribution: 'System', reason: null,
+          atUtc: '2026-11-15T18:30:00Z' },
+      ],
+    }));
+    const view = await UserAccountDetailPage({ params: Promise.resolve({ userId: '4403' }) });
+    const markup = renderToStaticMarkup(view!);
+    expect(markup).toContain('Unlocked');
+    expect(markup).toContain('Automatically locked');
+    expect(markup).toContain('Account 10');
+    expect(markup).toContain('Settlement verified');
+    expect(markup).not.toContain('Account moderation');
   });
 });

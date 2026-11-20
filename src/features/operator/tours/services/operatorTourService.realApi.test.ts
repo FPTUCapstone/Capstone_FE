@@ -14,8 +14,9 @@ import {
   setPrimaryTourImage,
   updateTourPackage,
   uploadTourImage,
+  submitTourForApproval,
 } from './operatorTourService';
-import type { ApiTourDetail } from './operatorTourApi';
+import { submitTour, type ApiTourDetail } from './operatorTourApi';
 import type { CreateTourPackagePayload } from '../types/tourLifecycle';
 
 const detail: ApiTourDetail = {
@@ -100,6 +101,62 @@ describe('operatorTourService against the UC-35 backend contract', () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it.each(['  Staff note  ', '', '😀'.repeat(2000)])('sends a trimmed optional submission note and keeps confirmed success without a detail reload', async (note) => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ...detail, reviewBlockers: [], canSubmitForReview: true }));
+    fetchMock.mockResolvedValueOnce(jsonResponse([{ tourMediaId: 1, deliveryUrl: '/cover.jpg', sortOrder: 0, isPrimary: true }]));
+    const loaded = await getOperatorTourById('42');
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ tourId: 42, status: 'Pending', submittedAtUtc: '2026-11-18T12:00:00Z' }));
+    const result = await submitTourForApproval('42', { currentTour: loaded.data!, note });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ submissionNote: note.trim() || null });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.data).toMatchObject({ status: 'Pending', submissionNote: note.trim() || null, submittedAtUtc: '2026-11-18T12:00:00Z' });
+  });
+
+  it('rejects a note exceeding 4000 UTF-16 units before sending', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ...detail, reviewBlockers: [], canSubmitForReview: true }));
+    fetchMock.mockResolvedValueOnce(jsonResponse([{ tourMediaId: 1, deliveryUrl: '/cover.jpg', sortOrder: 0, isPrimary: true }]));
+    const loaded = await getOperatorTourById('42');
+    fetchMock.mockClear();
+    await expect(submitTourForApproval('42', { currentTour: loaded.data!, note: '😀'.repeat(2001) })).rejects.toThrow(/4[.,]?000/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['required_fields_missing', 'itinerary_missing'])('explains server readiness blocker %s even when local fields look complete', async (blocker) => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ...detail, reviewBlockers: [blocker], canSubmitForReview: false }));
+    fetchMock.mockResolvedValueOnce(jsonResponse([{ tourMediaId: 1, deliveryUrl: '/cover.jpg', sortOrder: 0, isPrimary: true }]));
+    const loaded = await getOperatorTourById('42');
+    const checklist = evaluateTourCompleteness(loaded.data!);
+    expect(checklist.isEligibleForSubmission).toBe(false);
+    expect(checklist.items.some((item) => !item.isComplete && item.isMandatory)).toBe(true);
+  });
+
+  it('retains submission metadata from detail reads', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ...detail, submissionNote: 'For Staff', submittedAtUtc: '2026-11-18T12:00:00Z' }));
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+    expect((await getOperatorTourById('42')).data).toMatchObject({ submissionNote: 'For Staff', submittedAtUtc: '2026-11-18T12:00:00Z' });
+  });
+
+  it.each([
+    null,
+    { tourId: 42, status: 'Draft' },
+    { tourId: 43, status: 'Pending' },
+    { tourId: 42, status: 'Pending', submittedAtUtc: 'not a date' },
+  ])('fails safely on an unrecognized submission response %j', async (response) => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(response));
+    await expect(submitTour(42, null)).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+
+  it.each([
+    { reviewBlockers: ['new_server_blocker'], canSubmitForReview: false },
+    { reviewBlockers: [], canSubmitForReview: false },
+  ])('never allows submission when server readiness denies it: %j', async (readiness) => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ...detail, ...readiness }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(media));
+    const loaded = await getOperatorTourById('42');
+    expect(evaluateTourCompleteness(loaded.data!).isEligibleForSubmission).toBe(false);
   });
 
   it('creates with destinationIds and the policy template in ONE request, using the caller idempotency key', async () => {

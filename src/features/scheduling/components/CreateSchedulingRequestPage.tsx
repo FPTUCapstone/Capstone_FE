@@ -74,7 +74,10 @@ export function CreateSchedulingRequestPage() {
           </div>
 
           {/* Form */}
-          <CreateSchedulingRequestForm userId={context.userId} />
+          <CreateSchedulingRequestForm
+            userId={context.userId}
+            onSuccess={(itinerary) => router.push(ROUTES.itinerary(itinerary.itineraryId))}
+          />
         </div>
       </main>
 

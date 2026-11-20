@@ -2,15 +2,18 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ROUTES } from '@/lib/routes';
 
-import { DemoModeBanner, PendingIntegrationNotice, focusRing } from './components/ModerationNotices';
+import { DemoModeBanner, focusRing } from './components/ModerationNotices';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
 import { tourModerationEn } from './resources/en';
+import { fetchPendingTourPage } from './services/tourModerationApi';
 import { getPendingTourPosts } from './services/tourModerationService';
-import type { PendingTourPost, TourQueueQuery } from './types';
+import type { TourQueueQuery } from './types';
+import { useModerationResource, type ModerationFailure } from './useModerationResource';
 import { formatDisplayDate, formatDisplayDateTime, formatVnd } from './utils/format';
 import { buildTourDetailHref, buildTourQueueHref, parseTourQueueQuery } from './utils/queueQuery';
 
@@ -69,7 +72,18 @@ function QueueSearchForm({ appliedKeyword, onSubmit, onReset }: SearchFormProps)
   );
 }
 
-function QueueRow({ tour, href }: { tour: PendingTourPost; href: string }) {
+/** The fields a queue row needs; satisfied by both demo fixtures and live backend rows. */
+interface QueueRowTour {
+  readonly id: string;
+  readonly tourName: string;
+  readonly operatorName: string;
+  readonly location: string;
+  readonly submittedAtUtc: string | null;
+  readonly departureAtUtc: string | null;
+  readonly priceVnd: number;
+}
+
+function QueueRow({ tour, href }: { tour: QueueRowTour; href: string }) {
   return (
     <li className="grid gap-3 px-5 py-5 lg:grid-cols-[2fr_1.3fr_1fr_0.9fr_0.9fr_auto] lg:items-center lg:gap-4">
       <div>
@@ -83,11 +97,11 @@ function QueueRow({ tour, href }: { tour: PendingTourPost; href: string }) {
       </div>
       <div>
         <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.submitted}</span>
-        <p className="font-mono text-xs text-[#1C2928]">{formatDisplayDateTime(tour.submittedAtUtc)}</p>
+        <p className="font-mono text-xs text-[#1C2928]">{tour.submittedAtUtc ? formatDisplayDateTime(tour.submittedAtUtc) : tourModerationEn.format.unavailable}</p>
       </div>
       <div>
         <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.departure}</span>
-        <p className="font-mono text-xs text-[#1C2928]">{formatDisplayDate(tour.departureAtUtc)}</p>
+        <p className="font-mono text-xs text-[#1C2928]">{tour.departureAtUtc ? formatDisplayDate(tour.departureAtUtc) : tourModerationEn.live.noDeparture}</p>
       </div>
       <div>
         <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.price}</span>
@@ -148,12 +162,82 @@ function QueuePagination({
   );
 }
 
+type QueueView =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'failed'; readonly failure: ModerationFailure; readonly retry: () => void }
+  | {
+      readonly kind: 'ready';
+      readonly items: readonly QueueRowTour[];
+      readonly totalCount: number;
+      readonly page: number;
+      readonly totalPages: number;
+    };
+
+/** Demo mode stays synchronous and local; otherwise the queue is loaded from the backend. */
+function useQueueView(query: TourQueueQuery, demo: boolean): QueueView {
+  const { resource, retry } = useModerationResource(
+    (signal) => fetchPendingTourPage(query, signal),
+    [query.page, query.keyword],
+    !demo,
+  );
+
+  if (demo) {
+    const result = getPendingTourPosts(query, { demo });
+    if (result.status === 'DEMO') {
+      return { kind: 'ready', items: result.items, totalCount: result.totalCount, page: result.page, totalPages: result.totalPages };
+    }
+    return { kind: 'failed', failure: 'unavailable', retry };
+  }
+
+  if (resource.status === 'ready') {
+    const { items, totalCount, page, totalPages } = resource.data;
+    return { kind: 'ready', items, totalCount, page, totalPages };
+  }
+  if (resource.status === 'failed') return { kind: 'failed', failure: resource.failure, retry };
+  return { kind: 'loading' };
+}
+
+function QueueFailure({ failure, onRetry }: { failure: ModerationFailure; onRetry: () => void }) {
+  const live = tourModerationEn.live;
+  if (failure === 'unauthorized') {
+    return (
+      <section role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-sm font-semibold text-[#5B6E69] shadow-xs">
+        {live.redirecting}
+      </section>
+    );
+  }
+  const forbidden = failure === 'forbidden';
+  return (
+    <section role="alert" className="rounded-2xl border border-[#DCE2DD] bg-white p-6 text-center shadow-xs sm:p-8">
+      <h2 className="text-lg font-bold text-[#1C2928]">{forbidden ? live.forbiddenTitle : live.unavailableTitle}</h2>
+      <p className="mx-auto mt-2 max-w-xl text-sm text-[#5B6E69]">
+        {forbidden ? live.forbiddenBody : live.unavailableQueueBody}
+      </p>
+      {forbidden ? null : (
+        <button
+          type="button"
+          onClick={onRetry}
+          className={`mt-4 min-h-11 rounded-xl bg-[#174B4A] px-5 text-sm font-bold text-white hover:bg-[#103B39] ${focusRing}`}
+        >
+          {live.retry}
+        </button>
+      )}
+    </section>
+  );
+}
+
 export function TourReviewQueue() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const demo = isTourModerationDemoRequested(searchParams.get('demo'));
   const query = parseTourQueueQuery(searchParams);
-  const result = getPendingTourPosts(query, { demo });
+  const view = useQueueView(query, demo);
+
+  useEffect(() => {
+    if (view.kind === 'failed' && view.failure === 'unauthorized') {
+      router.replace(`${ROUTES.admin.login}?returnUrl=${encodeURIComponent(ROUTES.admin.tourReviews)}`);
+    }
+  }, [view, router]);
 
   return (
     <main className="min-h-[calc(100vh-65px)] bg-[#F7F5EF] px-4 py-8 md:px-8 md:py-10">
@@ -164,11 +248,15 @@ export function TourReviewQueue() {
           <p className="mt-2 text-sm text-[#5B6E69]">{copy.subtitle}</p>
         </header>
 
-        {result.status === 'NO_BACKEND' ? (
-          <PendingIntegrationNotice body={tourModerationEn.pendingIntegration.queueBody} />
+        {view.kind === 'loading' ? (
+          <section role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-sm font-semibold text-[#5B6E69] shadow-xs">
+            {tourModerationEn.live.loadingQueue}
+          </section>
+        ) : view.kind === 'failed' ? (
+          <QueueFailure failure={view.failure} onRetry={view.retry} />
         ) : (
           <>
-            <DemoModeBanner />
+            {demo ? <DemoModeBanner /> : null}
             <QueueSearchForm
               key={query.keyword}
               appliedKeyword={query.keyword}
@@ -177,10 +265,10 @@ export function TourReviewQueue() {
             />
 
             <p className="mb-3 text-sm font-semibold text-[#1C2928]" aria-live="polite">
-              {copy.totalCount(result.totalCount)}
+              {copy.totalCount(view.totalCount)}
             </p>
 
-            {result.items.length === 0 ? (
+            {view.items.length === 0 ? (
               <section role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center shadow-xs">
                 <h2 className="text-base font-bold text-[#1C2928]">{copy.emptyTitle}</h2>
                 <p className="mt-1 text-sm text-[#5B6E69]">{copy.emptyBody}</p>
@@ -199,22 +287,22 @@ export function TourReviewQueue() {
                   <span className="text-right">{copy.columns.action}</span>
                 </div>
                 <ul aria-label={copy.listLabel} className="divide-y divide-[#DCE2DD]">
-                  {result.items.map((tour) => (
+                  {view.items.map((tour) => (
                     <QueueRow
                       key={tour.id}
                       tour={tour}
-                      href={buildTourDetailHref(tour.id, { page: result.page, keyword: query.keyword }, demo)}
+                      href={buildTourDetailHref(tour.id, { page: view.page, keyword: query.keyword }, demo)}
                     />
                   ))}
                 </ul>
               </section>
             )}
 
-            {result.totalCount > 0 ? (
+            {view.totalCount > 0 ? (
               <QueuePagination
-                page={result.page}
-                totalPages={result.totalPages}
-                query={{ page: result.page, keyword: query.keyword }}
+                page={view.page}
+                totalPages={view.totalPages}
+                query={{ page: view.page, keyword: query.keyword }}
                 demo={demo}
               />
             ) : null}

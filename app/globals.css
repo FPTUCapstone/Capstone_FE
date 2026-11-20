@@ -42,6 +42,15 @@
   --color-brand-textPrimary: #1C2928;
   --color-brand-textSecondary: #5B6E69;
 
+  /* Refined TripMate Administrative & Marketplace Palette */
+  --color-brand-deepTeal: #0D5754;
+  --color-brand-deepTealHover: #094743;
+  --color-brand-darkSidebar: #172B29;
+  --color-brand-primaryInk: #1D2D2B;
+  --color-brand-pageBg: #F5F7F6;
+  --color-brand-mutedText: #61736F;
+  --color-brand-subtleBorder: #DCE5E2;
+
   --color-surface-dim: #E8E6DF;
   --color-surface-bright: #FFFFFF;
   --color-surface-container-lowest: #FFFFFF;
@@ -1082,4 +1091,55 @@ textarea {
 .mapboxgl-canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+/* Dual-thumb price range slider */
+.dual-range-slider input[type="range"] {
+  pointer-events: none;
+}
+.dual-range-slider input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto;
+  cursor: pointer;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background-color: #0D5754;
+  border: 2.5px solid #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+.dual-range-slider input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(13, 87, 84, 0.35);
+}
+.dual-range-slider input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+  background-color: #094743;
+}
+.dual-range-slider input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  cursor: pointer;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background-color: #0D5754;
+  border: 2.5px solid #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+.dual-range-slider input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(13, 87, 84, 0.35);
+}
+.dual-range-slider input[type="range"]::-moz-range-thumb:active {
+  transform: scale(1.2);
+  background-color: #094743;
+}
+.dual-range-slider input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #0D5754;
+  outline-offset: 2px;
+}
+.dual-range-slider input[type="range"]:focus-visible::-moz-range-thumb {
+  outline: 2px solid #0D5754;
+  outline-offset: 2px;
 }
