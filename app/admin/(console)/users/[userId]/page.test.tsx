@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
+vi.mock('@/lib/server/backend', () => ({
+  fetchBackend: vi.fn(async () => new Response(null, { status: 503 })),
+}));
 
 const mocks = vi.hoisted(() => ({
   getCookie: vi.fn(),

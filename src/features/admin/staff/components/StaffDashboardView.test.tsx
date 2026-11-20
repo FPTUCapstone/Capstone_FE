@@ -156,14 +156,14 @@ describe('Screen #35 StaffDashboardView and Administration Role Foundation', () 
     render(<AdminNavigation role="Administrator" />);
     const adminNav = screen.getByRole('navigation', { name: adminStaffEn.navigation.navAriaLabel });
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.adminDashboard })).toBeTruthy();
-    expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeTruthy();
+    expect(within(adminNav).queryByRole('link', { name: adminStaffEn.navigation.staffDashboard })).toBeNull();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.tourReviews })).toBeTruthy();
     expect(within(adminNav).queryByRole('link', { name: adminStaffEn.navigation.createPoi })).toBeNull();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.statisticalReports })).toBeTruthy();
     expect(
       within(adminNav).getByRole('link', { name: adminStaffEn.navigation.statisticalReports }).getAttribute('href'),
     ).toBe('/admin/reports');
-    expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeTruthy();
+    expect(within(adminNav).queryByRole('link', { name: adminStaffEn.navigation.algorithmSettings })).toBeNull();
     expect(within(adminNav).getByRole('link', { name: adminStaffEn.navigation.auditLogs })).toBeTruthy();
   });
 

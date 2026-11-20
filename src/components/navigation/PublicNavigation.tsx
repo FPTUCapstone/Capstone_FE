@@ -324,12 +324,6 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
     ...(context?.role === 'Traveler'
       ? [{ key: 'itineraries', href: ROUTES.myItineraries, label: strings.links.myItineraries }]
       : []),
-    {
-      key: 'weather',
-      href: `${ROUTES.about}#weather`,
-      label: strings.links.weatherRerouting,
-      isAnchor: false,
-    },
     { key: 'tours', href: ROUTES.tours, label: strings.links.localTours },
   ];
 
@@ -721,19 +715,6 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                   </div>
                 </Link>
 
-                <Link
-                  href={`${ROUTES.about}#weather`}
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
-                >
-                  <span className="material-symbols-outlined text-xl text-[#174B4A]">thunderstorm</span>
-                  <div>
-                    <div>{strings.links.weatherRerouting}</div>
-                    <div className="text-[10px] font-normal text-[#5B6E69]">
-                      {drawerStrings.weatherDesc}
-                    </div>
-                  </div>
-                </Link>
 
                 <Link
                   href={ROUTES.tours}

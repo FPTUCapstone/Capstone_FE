@@ -229,6 +229,33 @@ describe('TourBookingView (UC-27 & UC-28 Step 1)', () => {
       expect(participants.map(person => person.participantType)).toEqual(['Adult', 'Adult', 'Child']);
     });
 
+    it.each(['wrong-email', 'a@', 'user name@example.com'])('rejects malformed email %s before creating a booking', async (email) => {
+      const createBookingSpy = vi.spyOn(bookingApi, 'createBooking');
+      render(<TourBookingView tour={DEMO_TOUR_DETAIL_HOI_AN} initialScheduleId="9007199254740997"
+        isDemo={false} userContext={TRAVELER_CONTEXT} profilePhone="0905123456" />);
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      const emailInput = screen.getByLabelText('Email nhận vé điện tử *');
+      fireEvent.change(emailInput, { target: { value: email } });
+      fireEvent.click(screen.getByRole('checkbox'));
+      fireEvent.click(screen.getByRole('button', { name: /Tiếp tục thanh toán/i }));
+      expect(await screen.findByText('Vui lòng nhập địa chỉ email hợp lệ.')).toBeTruthy();
+      expect(emailInput.getAttribute('aria-invalid')).toBe('true');
+      await waitFor(() => expect(document.activeElement).toBe(emailInput));
+      expect(createBookingSpy).not.toHaveBeenCalled();
+    });
+
+    it('accepts a valid email and trims it in the booking payload', async () => {
+      render(<TourBookingView tour={DEMO_TOUR_DETAIL_HOI_AN} initialScheduleId="9007199254740997"
+        isDemo={false} userContext={TRAVELER_CONTEXT} profilePhone="0905123456" />);
+      await waitFor(() => expect(screen.getByText(/2\.000\.000/)).toBeTruthy());
+      fireEvent.change(screen.getByLabelText('Email nhận vé điện tử *'), { target: { value: ' traveler@example.com ' } });
+      fireEvent.click(screen.getByRole('checkbox'));
+      fireEvent.click(screen.getByRole('button', { name: /Tiếp tục thanh toán/i }));
+      await screen.findByText('BK-20261017-00001');
+      const createCall = vi.mocked(fetch).mock.calls.find(([url]) => !String(url).endsWith('/quote'));
+      expect(JSON.parse(createCall?.[1]?.body as string).participants[0].email).toBe('traveler@example.com');
+    });
+
     it('uses the assisted adult count in real quotes and retains edits when the profile arrives', async () => {
       const view = render(<TourBookingView tour={DEMO_TOUR_DETAIL_HOI_AN}
         initialScheduleId="9007199254740997" initialAdultCount={3} isDemo={false} userContext={TRAVELER_CONTEXT} />);

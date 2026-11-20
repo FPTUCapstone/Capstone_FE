@@ -185,6 +185,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
           >
             <option value="">All Roles</option>
             <option value="Administrator">Administrator</option>
+            <option value="Staff">Staff</option>
             <option value="TourOperator">TourOperator</option>
             <option value="Traveler">Traveler</option>
           </select>
