@@ -19,6 +19,7 @@ import {
   type AccountTabKey,
 } from './AccountWorkspaceNav';
 import { accountCommonEn } from './resources/en';
+import { useI18n } from '@/i18n';
 
 interface AccountWorkspaceShellProps {
   children: ReactNode;
@@ -26,36 +27,41 @@ interface AccountWorkspaceShellProps {
 
 const TAB_METADATA: Record<
   AccountTabKey,
-  { viTitle: string; viSubtitle: string; enTitle: string; icon: string }
+  { viTitle: string; viSubtitle: string; enTitle: string; enSubtitle: string; icon: string }
 > = {
   profile: {
     viTitle: 'Hồ sơ cá nhân',
     viSubtitle: 'Quản lý thông tin định danh và thông tin liên lạc của bạn trên TripMate.',
     enTitle: accountCommonEn.navigation.tabs.profile,
+    enSubtitle: 'Manage your personal identity and contact information on TripMate.',
     icon: 'account_circle',
   },
   preferences: {
     viTitle: 'Sở thích du lịch',
     viSubtitle: 'Tùy chỉnh phong cách du lịch, ẩm thực và phương tiện yêu thích để AI Atlas gợi ý tối ưu.',
     enTitle: accountCommonEn.navigation.tabs.preferences,
+    enSubtitle: 'Customize your travel style, dining, and transit preferences for smart AI recommendations.',
     icon: 'tune',
   },
   security: {
     viTitle: 'Bảo mật & Mật khẩu',
     viSubtitle: 'Cập nhật mật khẩu định kỳ và bảo vệ tài khoản của bạn trên nền tảng TripMate.',
     enTitle: accountCommonEn.navigation.tabs.security,
+    enSubtitle: 'Update your password and protect your account security on TripMate.',
     icon: 'lock',
   },
   trips: {
     viTitle: 'Lịch sử chuyến đi',
     viSubtitle: 'Tra cứu các chuyến đi đã hoàn thành, hành trình sắp tới và đánh giá dịch vụ.',
     enTitle: accountCommonEn.navigation.tabs.trips,
+    enSubtitle: 'View completed bookings, upcoming itineraries, and service reviews.',
     icon: 'route',
   },
   complaints: {
     viTitle: 'Khiếu nại của tôi',
     viSubtitle: 'Theo dõi khiếu nại sau chuyến đi và các bằng chứng đã gửi.',
     enTitle: accountCommonEn.navigation.tabs.complaints,
+    enSubtitle: 'Track post-trip complaints and submitted evidence.',
     icon: 'report',
   },
 };
@@ -181,8 +187,11 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
     return null;
   }
 
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
+
   const currentProfile = travelerProfile?.userId === context.userId ? travelerProfile : null;
-  const displayName = currentProfile?.fullName?.trim() || context.fullName?.trim() || 'Du khách';
+  const displayName = currentProfile?.fullName?.trim() || context.fullName?.trim() || (isVi ? 'Du khách' : 'Traveler');
   const displayEmail = context.email;
   const avatarUrl = currentProfile?.avatarUrl;
 
@@ -197,7 +206,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
 
   return (
     <AccountWorkspaceContext.Provider value={{ isInsideShell: true, activeTab }}>
-      <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
+      <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang={locale}>
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {/* Top Workspace Breadcrumb & Header */}
           <header className="mb-6">
@@ -206,14 +215,14 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
               className="flex items-center gap-2 text-xs font-semibold text-[#5B6E69]"
             >
               <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
-                Trang chủ
+                {isVi ? 'Trang chủ' : 'Home'}
               </Link>
               <span aria-hidden="true">/</span>
               <Link href={ROUTES.account.profile} className="hover:text-[#174B4A] hover:underline">
-                Tài khoản cá nhân
+                {isVi ? 'Tài khoản cá nhân' : 'Account'}
               </Link>
               <span aria-hidden="true">/</span>
-              <span className="text-[#1C2928]">{currentTabMeta.viTitle}</span>
+              <span className="text-[#1C2928]">{isVi ? currentTabMeta.viTitle : currentTabMeta.enTitle}</span>
             </nav>
           </header>
 
@@ -236,14 +245,14 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
                 )}
                 <span
                   className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500"
-                  title="Đang hoạt động"
+                  title={isVi ? "Đang hoạt động" : "Active"}
                 />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h2 className="truncate text-base font-bold text-[#1C2928]">{displayName}</h2>
                   <span className="rounded-full bg-[#E8F0EA] px-2 py-0.5 text-[10px] font-bold text-[#174B4A]">
-                    Du khách
+                    {isVi ? 'Du khách' : 'Traveler'}
                   </span>
                 </div>
                 <p className="truncate text-xs text-slate-500">{displayEmail}</p>
@@ -263,7 +272,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
             {/* Left Column: Persistent Master Side-Rail (lg:col-span-4 xl:col-span-3) */}
             <aside
               className="hidden space-y-5 lg:sticky lg:top-24 lg:col-span-4 lg:block xl:col-span-3"
-              aria-label="Bảng điều hướng tài khoản du khách"
+              aria-label={isVi ? "Bảng điều hướng tài khoản du khách" : "Traveler account navigation"}
             >
               {/* Traveler Identity Profile Card */}
               <div className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs transition hover:shadow-sm">
@@ -284,8 +293,8 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
                     <Link
                       href={ROUTES.account.profile}
                       className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#174B4A] text-white shadow-xs transition hover:bg-[#103B39]"
-                      title="Chỉnh sửa ảnh đại diện"
-                      aria-label="Chỉnh sửa ảnh đại diện trong Hồ sơ"
+                      title={isVi ? "Chỉnh sửa ảnh đại diện" : "Edit profile photo"}
+                      aria-label={isVi ? "Chỉnh sửa ảnh đại diện trong Hồ sơ" : "Edit profile photo"}
                     >
                       <span className="material-symbols-outlined text-[15px]">photo_camera</span>
                     </Link>
@@ -299,16 +308,16 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
                       <span className="material-symbols-outlined text-[13px]" aria-hidden="true">
                         verified
                       </span>
-                      Du khách TripMate
+                      {isVi ? 'Du khách TripMate' : 'TripMate Traveler'}
                     </span>
                   </div>
 
                   <div className="mt-4 w-full border-t border-slate-100 pt-3 text-left">
                     <div className="flex items-center justify-between text-[11px] text-slate-500">
-                      <span>Trạng thái tài khoản</span>
+                      <span>{isVi ? 'Trạng thái tài khoản' : 'Account Status'}</span>
                       <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Đang hoạt động
+                        {isVi ? 'Đang hoạt động' : 'Active'}
                       </span>
                     </div>
                   </div>
@@ -318,7 +327,7 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
               {/* Vertical Side-Rail Navigation Card */}
               <div className="rounded-2xl border border-[#DCE2DD] bg-white p-3 shadow-xs">
                 <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Không gian làm việc
+                  {isVi ? 'Không gian làm việc' : 'Workspace'}
                 </p>
                 <AccountWorkspaceNav activeTab={activeTab} variant="sidebar" />
               </div>
@@ -332,13 +341,15 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
                   <div>
                     <h3 className="font-bold text-[#1C2928]">TripMate AI Atlas</h3>
                     <p className="mt-1 leading-relaxed text-[#5B6E69]">
-                      Cập nhật đầy đủ sở thích và lịch sử du lịch giúp TripMate gợi ý tour và lịch trình phù hợp nhất cho chuyến đi của bạn.
+                      {isVi
+                        ? 'Cập nhật đầy đủ sở thích và lịch sử du lịch giúp TripMate gợi ý tour và lịch trình phù hợp nhất cho chuyến đi của bạn.'
+                        : 'Updating your travel preferences helps TripMate recommend the most relevant tours and itineraries for your trip.'}
                     </p>
                     <Link
                       href={ROUTES.account.preferences}
                       className="mt-2.5 inline-flex items-center gap-1 font-bold text-[#174B4A] hover:underline"
                     >
-                      <span>Cập nhật sở thích ngay</span>
+                      <span>{isVi ? 'Cập nhật sở thích ngay' : 'Update preferences now'}</span>
                       <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
                         arrow_forward
                       </span>

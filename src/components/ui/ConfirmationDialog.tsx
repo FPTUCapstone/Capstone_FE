@@ -1,15 +1,28 @@
 'use client';
 
 import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useI18n } from '@/i18n';
 
 /** Shared confirmation pattern: cancel first, contained focus, dismiss, then restore focus. */
-export function ConfirmationDialog({ title, children, pending, onCancel, onConfirm }: {
+export function ConfirmationDialog({
+  title,
+  children,
+  pending,
+  onCancel,
+  onConfirm,
+  confirmLabel,
+  cancelLabel,
+}: {
   title: string;
   children: ReactNode;
   pending: boolean;
   onCancel: () => void;
   onConfirm: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
 }) {
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
   const titleId = useId();
   const descriptionId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -69,8 +82,14 @@ export function ConfirmationDialog({ title, children, pending, onCancel, onConfi
         <h2 id={titleId} className="text-base font-extrabold text-brand-textPrimary">{title}</h2>
         <div id={descriptionId} className="mt-2 space-y-2 text-xs leading-relaxed text-slate-600">{children}</div>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onCancel} disabled={pending} className="min-h-11 min-w-11 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">Hủy bỏ</button>
-          <button type="button" onClick={onConfirm} disabled={pending} className="min-h-11 min-w-11 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">{pending ? 'Đang gửi...' : 'Xác nhận gửi'}</button>
+          <button type="button" onClick={onCancel} disabled={pending} className="min-h-11 min-w-11 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">
+            {cancelLabel ?? (isVi ? 'Hủy bỏ' : 'Cancel')}
+          </button>
+          <button type="button" onClick={onConfirm} disabled={pending} className="min-h-11 min-w-11 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">
+            {pending
+              ? (isVi ? 'Đang gửi...' : 'Submitting...')
+              : (confirmLabel ?? (isVi ? 'Xác nhận gửi' : 'Confirm'))}
+          </button>
         </div>
       </div>
     </div>

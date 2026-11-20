@@ -1,7 +1,10 @@
+'use client';
+
 import type { ReactNode } from "react";
 import BrandLogo from "../brand/BrandIcon";
+import { useI18n } from "@/i18n";
 
-const featureCards = [
+const featureCardsVi = [
   {
     icon: "route",
     title: "Lịch trình thông minh",
@@ -25,10 +28,40 @@ const featureCards = [
   },
 ];
 
-const stats = [
+const featureCardsEn = [
+  {
+    icon: "route",
+    title: "Smart Itinerary",
+    desc: "AI Engine optimizes route & timing",
+    iconBg: "bg-brand-teal/30",
+    position: "top-0 left-0 animate-float-1",
+  },
+  {
+    icon: "thunderstorm",
+    title: "Weather Alerts",
+    desc: "Automatically adapts travel plans",
+    iconBg: "bg-brand-coral/30",
+    position: "top-16 right-0 animate-float-2",
+  },
+  {
+    icon: "groups",
+    title: "Group Companion",
+    desc: "Real-time live GPS & updates",
+    iconBg: "bg-brand-brightTeal/40",
+    position: "bottom-0 left-12 animate-float-3",
+  },
+];
+
+const statsVi = [
   { value: "120+", label: "Điểm đến nổi bật", color: "text-teal-300" },
   { value: "15K+", label: "Traveler đang dùng", color: "text-teal-300" },
   { value: "4.9★", label: "Đánh giá trung bình", color: "text-brand-coral" },
+];
+
+const statsEn = [
+  { value: "120+", label: "Top Destinations", color: "text-teal-300" },
+  { value: "15K+", label: "Active Travelers", color: "text-teal-300" },
+  { value: "4.9★", label: "Average Rating", color: "text-brand-coral" },
 ];
 
 type AuthHeroPanelProps = {
@@ -38,6 +71,11 @@ type AuthHeroPanelProps = {
 };
 
 export default function AuthHeroPanel({ title, description, sticky = false }: AuthHeroPanelProps) {
+  const { locale, hasProvider } = useI18n();
+  const isVi = !hasProvider || locale === 'vi';
+  const featureCards = isVi ? featureCardsVi : featureCardsEn;
+  const stats = isVi ? statsVi : statsEn;
+
   return (
     <aside className={`relative hidden lg:flex${sticky ? " lg:sticky lg:top-0 lg:h-screen" : ""} hero-bg text-white overflow-hidden`}>
       <div className="absolute inset-0 grid-pattern opacity-60" />
@@ -60,7 +98,7 @@ export default function AuthHeroPanel({ title, description, sticky = false }: Au
               <span className="material-symbols-outlined text-[16px] text-teal-300">
                 auto_awesome
               </span>
-              HÀNH TRÌNH THÔNG MINH CHO NGƯỜI VIỆT
+              {isVi ? 'HÀNH TRÌNH THÔNG MINH CHO NGƯỜI VIỆT' : 'SMART TRAVEL JOURNEYS FOR EXPLORERS'}
             </span>
             <h1 className="text-5xl xl:text-6xl font-extrabold leading-[1.1] tracking-tight">
               {title}
