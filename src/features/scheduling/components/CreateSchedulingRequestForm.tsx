@@ -1309,7 +1309,7 @@ export function CreateSchedulingRequestForm({
           title={PICKER_TITLES[pickerTarget]}
           allowAddresses={pickerTarget === 'start'}
           near={pickerTarget === 'mandatory' ? explorationPoi ?? startPoint : startPoint}
-          radiusKm={pickerTarget === 'mandatory' ? searchRadiusKm : null}
+          radiusKm={pickerTarget === 'mandatory' ? searchRadiusKm : pickerTarget === 'exploration' ? 100 : null}
           excludeFoodAndDrink={pickerTarget === 'mandatory'}
           onSelect={handlePicked}
           onClose={() => setPickerTarget(null)}
