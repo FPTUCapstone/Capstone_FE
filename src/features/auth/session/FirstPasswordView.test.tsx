@@ -8,7 +8,7 @@ vi.mock('@/features/admin/auth/services/adminSessionClient', () => ({ signOutAdm
 vi.mock('@/features/account/security/webChangePasswordCapability', () => ({ createWebChangePasswordCapability: () => ({ status: 'available' }) }));
 vi.mock('@/features/admin/account/adminChangePasswordCapability', () => ({ createAdminChangePasswordCapability: () => ({ status: 'available' }) }));
 vi.mock('@/features/account/security/ChangePasswordForm', () => ({ ChangePasswordForm: ({ onSuccess }: { onSuccess: () => void }) => <button onClick={onSuccess}>Password API succeeded</button> }));
-import { FirstPasswordView } from './FirstPasswordView';
+import { FirstPasswordView, WebFirstPasswordPage } from './FirstPasswordView';
 const context = { userId: 7, email: 'provider@example.com', fullName: 'Provider', role: 'ServiceProvider', status: 'Active', accessToken: 'token', accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z' };
 beforeEach(() => { vi.resetAllMocks(); AuthStorage.clear(); });
 afterEach(() => AuthStorage.clear());
@@ -29,5 +29,20 @@ describe('first-password continuation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/sign-in'));
     expect(AuthStorage.getContext()).toBeNull();
+  });
+
+  describe('WebFirstPasswordPage guard', () => {
+    it('redirects already-unrestricted active accounts to their landing destination', () => {
+      AuthStorage.accept({ ...context, mustChangePassword: false }, false);
+      render(<WebFirstPasswordPage />);
+      expect(mocks.replace).toHaveBeenCalledWith('/provider/bookings');
+    });
+
+    it('renders the password view when mustChangePassword is true', () => {
+      AuthStorage.accept({ ...context, mustChangePassword: true }, false);
+      render(<WebFirstPasswordPage />);
+      expect(screen.getByText('Change your temporary password to continue.')).toBeDefined();
+      expect(mocks.replace).not.toHaveBeenCalled();
+    });
   });
 });

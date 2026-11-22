@@ -36,6 +36,10 @@ export function MyItinerariesPage() {
       router.replace(ROUTES.partner.dashboard);
     } else if (status === 'authenticated' && context?.role === 'Administrator') {
       router.replace(ROUTES.admin.dashboard);
+    } else if (status === 'authenticated' && context?.role === 'Staff') {
+      router.replace(ROUTES.admin.staffDashboard);
+    } else if (status === 'authenticated' && context?.role === 'ServiceProvider') {
+      router.replace(ROUTES.provider.dashboard);
     }
   }, [status, context, router]);
 

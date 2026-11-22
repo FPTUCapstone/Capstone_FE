@@ -101,11 +101,13 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
       const returnUrl = encodeURIComponent(pathname || ROUTES.account.profile);
       router.replace(`${ROUTES.signIn}?returnUrl=${returnUrl}`);
     } else if (status === 'authenticated' && context?.role === 'TourOperator') {
-      router.replace(ROUTES.partner.dashboard);
+      if (pathname !== ROUTES.account.security) router.replace(ROUTES.partner.dashboard);
     } else if (status === 'authenticated' && context?.role === 'Administrator') {
       router.replace(ROUTES.admin.dashboard);
     } else if (status === 'authenticated' && context?.role === 'Staff') {
       router.replace(ROUTES.admin.staffDashboard);
+    } else if (status === 'authenticated' && context?.role === 'ServiceProvider') {
+      router.replace(pathname === ROUTES.account.security ? ROUTES.provider.security : ROUTES.provider.dashboard);
     }
   }, [status, context, router, pathname]);
 
@@ -138,6 +140,11 @@ export function AccountWorkspaceShell({ children }: AccountWorkspaceShellProps) 
       window.removeEventListener(TRAVELER_PROFILE_UPDATED_EVENT, onProfileUpdated);
     };
   }, [status, context?.role, context?.userId]);
+
+  // The shared password endpoint also serves Tour Operators, without Traveler workspace data.
+  if (pathname === ROUTES.account.security && status === 'authenticated' && context?.role === 'TourOperator') {
+    return children;
+  }
 
   // Dedicated review route passthrough
   if (isReview) {

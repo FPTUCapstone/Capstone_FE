@@ -563,6 +563,16 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     </div>
                   )}
                 </div>
+              ) : context?.role === 'ServiceProvider' ? (
+                <Link
+                  href={ROUTES.provider.dashboard}
+                  className="flex items-center gap-2 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#d5e7dc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
+                >
+                  <span className="material-symbols-outlined text-base" aria-hidden="true">
+                    business_center
+                  </span>
+                  <span className="max-w-[140px] truncate">{displayName}</span>
+                </Link>
               ) : context?.role === 'Administrator' || context?.role === 'Staff' ? (
                 <Link
                   href={ROUTES.admin.dashboard}
@@ -759,6 +769,15 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                       className="w-full flex items-center gap-2 p-3 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] text-xs font-bold text-[#174B4A]"
                     >
                       <span className="material-symbols-outlined text-base">storefront</span>
+                      <span className="truncate">{displayName}</span>
+                    </Link>
+                  ) : context?.role === 'ServiceProvider' ? (
+                    <Link
+                      href={ROUTES.provider.dashboard}
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="w-full flex items-center gap-2 p-3 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] text-xs font-bold text-[#174B4A]"
+                    >
+                      <span className="material-symbols-outlined text-base">business_center</span>
                       <span className="truncate">{displayName}</span>
                     </Link>
                   ) : context?.role === 'Administrator' || context?.role === 'Staff' ? (

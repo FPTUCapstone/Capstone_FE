@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { webLogout } from '@/lib/authApi';
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { ToastProvider } from './common/Toast';
+import { ROUTES } from '@/lib/routes';
 
 export function ProviderWorkspaceShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -24,6 +25,7 @@ export function ProviderWorkspaceShell({ children }: { children: ReactNode }) {
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/provider/bookings" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">Booking Requests</Link>
             <Link href="/provider/statements" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">Commission Statements</Link>
+            <Link href={ROUTES.provider.security} className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700">Security</Link>
             <button type="button" onClick={logout} disabled={busy} className="min-h-11 rounded-lg border border-[#DCE2DD] px-4 text-sm font-semibold disabled:opacity-50">{busy ? 'Signing out…' : 'Sign out'}</button>
           </div>
         </nav>
