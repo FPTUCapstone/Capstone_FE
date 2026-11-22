@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MyItinerariesPage, formatSchedule } from '../components/MyItinerariesPage';
 import * as schedulingApi from '../services/schedulingApi';
 import type { ItinerarySummaryDto } from '../services/schedulingApi';
+import * as travelGroupApi from '@/features/traveler/groups/services/travelGroupApi';
 
 const mocks = vi.hoisted(() => ({ replace: vi.fn() }));
 
@@ -155,6 +156,79 @@ describe('MyItinerariesPage (/itineraries)', () => {
     render(<MyItinerariesPage />);
 
     expect(mocks.replace).toHaveBeenCalledWith('/partner');
+  });
+
+  it('opens join group modal and successfully joins travel group', async () => {
+    const listSpy = vi.spyOn(schedulingApi, 'listMyItineraries').mockResolvedValue({
+      items: [trip()],
+      page: 1,
+      pageSize: 20,
+      totalCount: 1,
+    });
+
+    const joinSpy = vi.spyOn(travelGroupApi, 'joinTravelGroup').mockResolvedValueOnce({
+      groupId: 99,
+      groupName: 'Đà Lạt Mộng Mơ',
+      itineraryId: 202,
+    });
+
+    render(<MyItinerariesPage />);
+
+    await waitFor(() => expect(screen.getByText('Đà Nẵng một ngày')).toBeDefined());
+
+    // Click "Tham gia nhóm" button in header
+    fireEvent.click(screen.getByRole('button', { name: /Tham gia nhóm/ }));
+
+    // Modal dialog is open
+    expect(screen.getByRole('dialog')).toBeDefined();
+    expect(screen.getByText('Mã lời mời (8 ký tự)')).toBeDefined();
+
+    // Fill in 8-char code
+    const input = screen.getByPlaceholderText('VD: A7K4P2QX');
+    fireEvent.change(input, { target: { value: 'a7k4p2qx' } });
+    expect((input as HTMLInputElement).value).toBe('A7K4P2QX');
+
+    // Submit form
+    fireEvent.click(screen.getByRole('button', { name: 'Tham gia nhóm' }));
+
+    await waitFor(() => {
+      expect(joinSpy).toHaveBeenCalledWith('A7K4P2QX', { accessToken: 'traveler-token' });
+      expect(screen.getByText(/Bạn đã tham gia "Đà Lạt Mộng Mơ"!/)).toBeDefined();
+    });
+
+    // Re-fetched list
+    expect(listSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('displays error in modal when join group fails', async () => {
+    vi.spyOn(schedulingApi, 'listMyItineraries').mockResolvedValue({
+      items: [trip()],
+      page: 1,
+      pageSize: 20,
+      totalCount: 1,
+    });
+
+    vi.spyOn(travelGroupApi, 'joinTravelGroup').mockRejectedValueOnce(
+      new travelGroupApi.TravelGroupHttpError(
+        400,
+        'Mã lời mời không hợp lệ, đã hết hạn hoặc không còn khả dụng. Vui lòng kiểm tra lại.',
+        'travel_group.invitation_unavailable',
+      ),
+    );
+
+    render(<MyItinerariesPage />);
+    await waitFor(() => expect(screen.getByText('Đà Nẵng một ngày')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: /Tham gia nhóm/ }));
+    const input = screen.getByPlaceholderText('VD: A7K4P2QX');
+    fireEvent.change(input, { target: { value: 'INVALID1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Tham gia nhóm' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Mã lời mời không hợp lệ, đã hết hạn hoặc không còn khả dụng/),
+      ).toBeDefined();
+    });
   });
 });
 
