@@ -95,11 +95,14 @@ describe('operatorTourService against the UC-35 backend contract', () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
     fetchMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('creates with destinationIds and the policy template in ONE request, using the caller idempotency key', async () => {
