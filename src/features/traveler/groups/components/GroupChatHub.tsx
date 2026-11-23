@@ -16,11 +16,22 @@ import { VietQrModal } from './VietQrModal';
 import { CreatePollModal } from './CreatePollModal';
 import { CreateExpenseModal } from './CreateExpenseModal';
 import { BroadcastModal } from './BroadcastModal';
+import {
+  postGroupMessage,
+  acknowledgeBroadcastMessage,
+  checkinRollCallMessage,
+  toggleExpensePaymentStatus,
+  votePollOption,
+  TravelGroupHttpError,
+} from '../services/travelGroupApi';
 
 export function GroupChatHub() {
   const { status, context } = useWebSession();
   const currentUserId = context?.userId ?? 1;
   const currentUserName = context?.fullName?.trim() || 'Bạn (Traveler)';
+
+  // Error Banner State
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Navigation & Conversation selection
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -72,7 +83,7 @@ export function GroupChatHub() {
 
   const activeConversation = chatStorage.getConversation(selectedConvId);
 
-  const handleSendMessage = (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const trimmed = inputText.trim();
     if (!trimmed || !selectedConvId) return;
@@ -89,29 +100,94 @@ export function GroupChatHub() {
     setInputText('');
     setMessages(chatStorage.getMessages(selectedConvId));
     setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    if (numericGroupId > 0) {
+      try {
+        await postGroupMessage(numericGroupId, { messageType: 'text', content: trimmed });
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Lưu cơ sở dữ liệu thất bại (${err.status}): ${err.message}`);
+        }
+      }
+    }
   };
 
-  const handleAcknowledgeBroadcast = (messageId: string) => {
+  const handleAcknowledgeBroadcast = async (messageId: string) => {
     chatStorage.toggleAcknowledgeBroadcast(selectedConvId, messageId, currentUserId);
     setMessages(chatStorage.getMessages(selectedConvId));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    const numericMessageId = Number(messageId.replace(/\D/g, ''));
+    if (numericGroupId > 0 && numericMessageId > 0) {
+      try {
+        await acknowledgeBroadcastMessage(numericGroupId, numericMessageId);
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Lưu xác nhận đọc thất bại: ${err.message}`);
+        }
+      }
+    }
   };
 
-  const handleRollCall = (messageId: string) => {
+  const handleRollCall = async (messageId: string) => {
     chatStorage.toggleRollCall(selectedConvId, messageId, currentUserId);
     setMessages(chatStorage.getMessages(selectedConvId));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    const numericMessageId = Number(messageId.replace(/\D/g, ''));
+    if (numericGroupId > 0 && numericMessageId > 0) {
+      try {
+        await checkinRollCallMessage(numericGroupId, numericMessageId);
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Lưu điểm danh thất bại: ${err.message}`);
+        }
+      }
+    }
   };
 
-  const handleVotePoll = (messageId: string, optionId: string) => {
+  const handleVotePoll = async (messageId: string, optionId: string) => {
     chatStorage.toggleVotePoll(selectedConvId, messageId, optionId, currentUserId);
     setMessages(chatStorage.getMessages(selectedConvId));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    const numericMessageId = Number(messageId.replace(/\D/g, ''));
+    const optionIndex = Number(optionId.replace(/\D/g, '')) || 0;
+    if (numericGroupId > 0 && numericMessageId > 0) {
+      try {
+        await votePollOption(numericGroupId, numericMessageId, optionIndex);
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Lưu bình chọn thất bại: ${err.message}`);
+        }
+      }
+    }
   };
 
-  const handleMarkPaidExpense = (messageId: string) => {
+  const handleMarkPaidExpense = async (messageId: string) => {
     chatStorage.markPaidExpense(selectedConvId, messageId, currentUserId);
     setMessages(chatStorage.getMessages(selectedConvId));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    const numericMessageId = Number(messageId.replace(/\D/g, ''));
+    if (numericGroupId > 0 && numericMessageId > 0) {
+      try {
+        await toggleExpensePaymentStatus(numericGroupId, numericMessageId, true);
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Cập nhật trạng thái thanh toán thất bại: ${err.message}`);
+        }
+      }
+    }
   };
 
-  const handleCreatePoll = (pollData: PollData) => {
+  const handleCreatePoll = async (pollData: PollData) => {
     chatStorage.sendMessage(selectedConvId, {
       senderId: currentUserId,
       senderName: currentUserName,
@@ -123,9 +199,25 @@ export function GroupChatHub() {
     });
     setMessages(chatStorage.getMessages(selectedConvId));
     setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    if (numericGroupId > 0) {
+      try {
+        await postGroupMessage(numericGroupId, {
+          messageType: 'poll',
+          content: pollData.question,
+          metadataJson: JSON.stringify(pollData),
+        });
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Tạo bình chọn trên DB thất bại: ${err.message}`);
+        }
+      }
+    }
   };
 
-  const handleCreateExpense = (splitBillData: SplitBillData) => {
+  const handleCreateExpense = async (splitBillData: SplitBillData) => {
     chatStorage.sendMessage(selectedConvId, {
       senderId: currentUserId,
       senderName: currentUserName,
@@ -137,9 +229,25 @@ export function GroupChatHub() {
     });
     setMessages(chatStorage.getMessages(selectedConvId));
     setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    if (numericGroupId > 0) {
+      try {
+        await postGroupMessage(numericGroupId, {
+          messageType: 'split_bill',
+          content: splitBillData.title,
+          metadataJson: JSON.stringify(splitBillData),
+        });
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Tạo khoản chia tiền trên DB thất bại: ${err.message}`);
+        }
+      }
+    }
   };
 
-  const handleCreateBroadcast = (broadcastData: BroadcastData) => {
+  const handleCreateBroadcast = async (broadcastData: BroadcastData) => {
     chatStorage.sendMessage(selectedConvId, {
       senderId: currentUserId,
       senderName: `${currentUserName} (HDV)`,
@@ -151,6 +259,22 @@ export function GroupChatHub() {
     });
     setMessages(chatStorage.getMessages(selectedConvId));
     setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+
+    const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
+    if (numericGroupId > 0) {
+      try {
+        await postGroupMessage(numericGroupId, {
+          messageType: 'broadcast',
+          content: broadcastData.title,
+          metadataJson: JSON.stringify(broadcastData),
+        });
+        setApiError(null);
+      } catch (err) {
+        if (err instanceof TravelGroupHttpError) {
+          setApiError(`Phát thông báo lên DB thất bại: ${err.message}`);
+        }
+      }
+    }
   };
 
   return (
@@ -464,6 +588,23 @@ export function GroupChatHub() {
                   className="rounded p-1 text-slate-400 hover:text-slate-600"
                 >
                   <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+            )}
+
+            {/* DB / API Error Alert Banner */}
+            {apiError && (
+              <div className="px-4 py-2 bg-rose-50 border-b border-rose-200 flex items-center justify-between text-xs text-rose-800 shadow-2xs animate-fadeIn">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="material-symbols-outlined text-rose-600 text-sm">warning</span>
+                  <span className="font-medium truncate">{apiError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setApiError(null)}
+                  className="rounded p-1 text-rose-500 hover:text-rose-700 font-bold ml-2 underline text-[11px] cursor-pointer"
+                >
+                  Đã hiểu
                 </button>
               </div>
             )}

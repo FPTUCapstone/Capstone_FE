@@ -157,3 +157,140 @@ export async function joinTravelGroup(
     errorCode ?? 'server.error',
   );
 }
+
+export interface GroupMessageApiDto {
+  messageId: number;
+  groupId: number;
+  senderUserId: number;
+  senderName: string;
+  senderAvatarUrl?: string;
+  messageType: 'text' | 'broadcast' | 'roll_call' | 'split_bill' | 'poll';
+  content: string;
+  metadataJson?: string;
+  createdAtUtc: string;
+  readByCount: number;
+  isReadByMe: boolean;
+  presentCount: number;
+  isPresentByMe: boolean;
+  paidUserIds: number[];
+  pollVoteCounts: Record<number, number>;
+  myPollVoteOption?: number | null;
+}
+
+async function requestWithAuth<T>(
+  url: string,
+  method: 'GET' | 'POST',
+  body?: unknown,
+): Promise<T> {
+  const token = AuthStorage.getContext()?.accessToken;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch {
+    throw new TravelGroupHttpError(
+      503,
+      'TripMate tạm thời không thể kết nối máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.',
+      'network.unavailable',
+    );
+  }
+
+  if (response.ok) {
+    if (response.status === 204) return {} as T;
+    try {
+      return (await response.json()) as T;
+    } catch {
+      throw new TravelGroupHttpError(502, 'Dữ liệu phản hồi từ máy chủ không hợp lệ.', 'server.malformed_response');
+    }
+  }
+
+  let errorPayload: Record<string, unknown> = {};
+  try {
+    errorPayload = (await response.json()) as Record<string, unknown>;
+  } catch {
+    // Non-json error
+  }
+
+  const errorCode = typeof errorPayload.errorCode === 'string' ? errorPayload.errorCode : undefined;
+  const message = typeof errorPayload.detail === 'string'
+    ? errorPayload.detail
+    : (typeof errorPayload.title === 'string' ? errorPayload.title : 'Đã xảy ra lỗi khi kết nối máy chủ.');
+
+  throw new TravelGroupHttpError(response.status, message, errorCode ?? 'server.error');
+}
+
+export async function fetchGroupMessages(
+  groupId: number,
+  limit = 50,
+  beforeMessageId?: number,
+): Promise<GroupMessageApiDto[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (beforeMessageId) params.append('beforeMessageId', String(beforeMessageId));
+  return requestWithAuth<GroupMessageApiDto[]>(
+    `${getApiBase()}/travel-groups/${groupId}/messages?${params.toString()}`,
+    'GET',
+  );
+}
+
+export async function postGroupMessage(
+  groupId: number,
+  payload: { messageType: string; content: string; metadataJson?: string },
+): Promise<GroupMessageApiDto> {
+  return requestWithAuth<GroupMessageApiDto>(
+    `${getApiBase()}/travel-groups/${groupId}/messages`,
+    'POST',
+    payload,
+  );
+}
+
+export async function acknowledgeBroadcastMessage(
+  groupId: number,
+  messageId: number,
+): Promise<number> {
+  return requestWithAuth<number>(
+    `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/acknowledge`,
+    'POST',
+  );
+}
+
+export async function checkinRollCallMessage(
+  groupId: number,
+  messageId: number,
+): Promise<number> {
+  return requestWithAuth<number>(
+    `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/checkin`,
+    'POST',
+  );
+}
+
+export async function toggleExpensePaymentStatus(
+  groupId: number,
+  messageId: number,
+  isPaid: boolean,
+): Promise<number[]> {
+  return requestWithAuth<number[]>(
+    `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/toggle-payment`,
+    'POST',
+    { isPaid },
+  );
+}
+
+export async function votePollOption(
+  groupId: number,
+  messageId: number,
+  optionIndex: number,
+): Promise<Record<number, number>> {
+  return requestWithAuth<Record<number, number>>(
+    `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/vote`,
+    'POST',
+    { optionIndex },
+  );
+}
