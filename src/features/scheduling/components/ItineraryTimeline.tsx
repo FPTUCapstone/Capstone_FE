@@ -142,6 +142,9 @@ export function ItineraryTimeline({
       <div className="space-y-6">
         {items.map((item, index) => {
           const isRest = (item.kind ?? (item as unknown as { itemKind?: string }).itemKind) === 'Rest';
+          const isDining = item.costKind === 'AverageSpend' ||
+            Boolean(item.category && /ẩm thực|quán|nhà hàng|food|restaurant|cafe|coffee|ăn uống/i.test(item.category));
+          const isRestCard = isRest || isDining;
           const isLast = index === items.length - 1;
           const arrivalTime = formatTime(item.plannedArrival);
           const departureTime = formatTime(item.plannedDeparture);
@@ -220,7 +223,7 @@ export function ItineraryTimeline({
                 }${
                   item.isUnavailable
                     ? 'border-rose-200 bg-rose-50/30'
-                    : isRest
+                    : isRestCard
                     ? 'border-amber-200/80 bg-amber-50/40 hover:border-amber-300'
                     : 'border-slate-200 bg-white hover:border-teal-300'
                 }`}
@@ -230,7 +233,7 @@ export function ItineraryTimeline({
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black shadow-xs sm:h-12 sm:w-12 sm:text-base ${
                     item.isUnavailable
                       ? 'bg-rose-500 text-white'
-                      : isRest
+                      : isRestCard
                       ? 'bg-amber-500 text-white'
                       : 'bg-[#103B39] text-white'
                   }`}
@@ -244,21 +247,16 @@ export function ItineraryTimeline({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       {(() => {
-                        const isDiningRest =
-                          isRest &&
-                          (item.costKind === 'AverageSpend' ||
-                            (Boolean(item.category) &&
-                              /ẩm thực|quán|nhà hàng|food|restaurant|cafe|coffee|ăn uống/i.test(item.category!)));
-                        const badgeLabel = isRest
-                          ? isDiningRest
-                            ? 'Nghỉ ngơi / Ẩm thực'
-                            : 'Điểm dừng chân tránh nắng'
-                          : 'Điểm tham quan';
-                        const badgeIcon = isRest ? (isDiningRest ? 'restaurant' : 'beach_access') : 'tour';
+                        const badgeLabel = isDining
+                          ? 'Ăn uống / Nghỉ ngơi'
+                          : isRest
+                            ? item.poiId === null ? 'Nghỉ tự do — chưa chọn địa điểm' : 'Nghỉ ngơi'
+                            : 'Điểm tham quan';
+                        const badgeIcon = isDining ? 'restaurant' : isRest ? 'beach_access' : 'tour';
                         return (
                           <span
                             className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold ${
-                              isRest
+                              isRestCard
                                 ? 'bg-amber-100 text-amber-900'
                                 : 'bg-teal-100 text-[#103B39]'
                             }`}

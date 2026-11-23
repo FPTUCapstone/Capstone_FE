@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UpdateTourPackageView } from './UpdateTourPackageView';
 import type { TourPackageDto } from '../types/tourLifecycle';
 
@@ -77,7 +77,13 @@ const mockTourDraft: TourPackageDto = {
 
 describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders pre-filled tour package fields for editing draft', () => {

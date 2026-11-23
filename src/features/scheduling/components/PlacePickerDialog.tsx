@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
+import { calculateDistanceKm } from '../utils/schedulingGeometry';
 import {
   AddressCandidate,
   createAddressSession,
@@ -57,7 +59,15 @@ export function PlacePickerDialog({
   const isFirstMount = useRef(true);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    inputRef.current?.focus({ preventScroll: true });
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
@@ -133,9 +143,12 @@ export function PlacePickerDialog({
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  const dialog = (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-3 sm:p-4"
+      data-lenis-prevent
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -144,12 +157,20 @@ export function PlacePickerDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="place-picker-title"
-        className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+        data-lenis-prevent
+        className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl bg-white p-5 shadow-xl m-auto"
       >
-        <div className="mb-3 flex items-center justify-between">
-          <h2 id="place-picker-title" className="text-base font-bold text-slate-900">
-            {title}
-          </h2>
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div>
+            <h2 id="place-picker-title" className="text-base font-bold text-slate-900">
+              {title}
+            </h2>
+            {title === 'Chọn khu vực khám phá' && (
+              <p className="mt-0.5 text-xs text-slate-500">
+                Địa điểm bạn chọn sẽ là tâm chính để tìm kiếm và lập lịch trình.
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -268,30 +289,40 @@ export function PlacePickerDialog({
                   <p className="py-2 text-xs text-slate-500">Không có địa điểm phù hợp.</p>
                 ) : (
                   <ul>
-                    {places.map((poi) => (
-                      <li key={poi.id}>
-                        <button
-                          type="button"
-                          onClick={() => onSelect({
-                            label: poi.name,
-                            latitude: poi.latitude,
-                            longitude: poi.longitude,
-                            poi,
-                          })}
-                          className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
-                        >
-                          <span className="material-symbols-outlined mt-0.5 text-lg text-[#103B39]">
-                            place
-                          </span>
-                          <span>
-                            <span className="block text-sm font-semibold text-slate-800">{poi.name}</span>
-                            <span className="block text-xs text-slate-500">
-                              {poi.address ?? poi.categoryName}
+                    {places.map((poi) => {
+                      const distKm = near
+                        ? calculateDistanceKm(near.latitude, near.longitude, poi.latitude, poi.longitude)
+                        : null;
+                      return (
+                        <li key={poi.id}>
+                          <button
+                            type="button"
+                            onClick={() => onSelect({
+                              label: poi.name,
+                              latitude: poi.latitude,
+                              longitude: poi.longitude,
+                              poi,
+                            })}
+                            className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+                          >
+                            <span className="material-symbols-outlined mt-0.5 text-lg text-[#103B39]">
+                              place
                             </span>
-                          </span>
-                        </button>
-                      </li>
-                    ))}
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-semibold text-slate-800">{poi.name}</span>
+                              <span className="block text-xs text-slate-500">
+                                {poi.address ?? poi.categoryName}
+                                {distKm !== null && (
+                                  <span className="ml-1.5 font-medium text-teal-700">
+                                    • Cách bạn {distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1).replace('.', ',')} km`}
+                                  </span>
+                                )}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>
@@ -301,6 +332,8 @@ export function PlacePickerDialog({
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }
 
 function messageOf(error: unknown): string {
