@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 import { chatStorage } from '../services/groupChatStorage';
 import {
-  Conversation,
-  GroupChatMessage,
   SplitBillData,
   PollData,
   BroadcastData,
@@ -26,21 +24,21 @@ import {
 } from '../services/travelGroupApi';
 
 export function GroupChatHub() {
-  const { status, context } = useWebSession();
+  const { context } = useWebSession();
   const currentUserId = context?.userId ?? 1;
   const currentUserName = context?.fullName?.trim() || 'Bạn (Traveler)';
 
   // Error Banner State
   const [apiError, setApiError] = useState<string | null>(null);
+  const [storageVersion, setStorageVersion] = useState(0);
+  const refreshStorage = () => setStorageVersion((prev) => prev + 1);
 
   // Navigation & Conversation selection
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConvId, setSelectedConvId] = useState<string>('conv-tour-101');
   const [activeTab, setActiveTab] = useState<'all' | 'tour' | 'self_guided' | 'direct'>('all');
   const [convSearchKeyword, setConvSearchKeyword] = useState('');
 
   // Active Chat State
-  const [messages, setMessages] = useState<GroupChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [inChatSearchOpen, setInChatSearchOpen] = useState(false);
   const [inChatSearchKeyword, setInChatSearchKeyword] = useState('');
@@ -61,18 +59,17 @@ export function GroupChatHub() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Load conversations
-  useEffect(() => {
-    const list = chatStorage.getConversations(activeTab, convSearchKeyword);
-    setConversations(list);
-  }, [activeTab, convSearchKeyword]);
+  // Derive conversations & messages from client storage without synchronous setState in useEffect
+  const conversations = useMemo(() => {
+    void storageVersion;
+    return chatStorage.getConversations(activeTab, convSearchKeyword);
+  }, [activeTab, convSearchKeyword, storageVersion]);
 
-  // Load messages for selected conversation
-  useEffect(() => {
-    if (!selectedConvId) return;
-    const list = chatStorage.getMessages(selectedConvId, inChatSearchKeyword);
-    setMessages(list);
-  }, [selectedConvId, inChatSearchKeyword]);
+  const messages = useMemo(() => {
+    void storageVersion;
+    if (!selectedConvId) return [];
+    return chatStorage.getMessages(selectedConvId, inChatSearchKeyword);
+  }, [selectedConvId, inChatSearchKeyword, storageVersion]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -98,8 +95,7 @@ export function GroupChatHub() {
     });
 
     setInputText('');
-    setMessages(chatStorage.getMessages(selectedConvId));
-    setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     if (numericGroupId > 0) {
@@ -116,7 +112,7 @@ export function GroupChatHub() {
 
   const handleAcknowledgeBroadcast = async (messageId: string) => {
     chatStorage.toggleAcknowledgeBroadcast(selectedConvId, messageId, currentUserId);
-    setMessages(chatStorage.getMessages(selectedConvId));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     const numericMessageId = Number(messageId.replace(/\D/g, ''));
@@ -134,7 +130,7 @@ export function GroupChatHub() {
 
   const handleRollCall = async (messageId: string) => {
     chatStorage.toggleRollCall(selectedConvId, messageId, currentUserId);
-    setMessages(chatStorage.getMessages(selectedConvId));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     const numericMessageId = Number(messageId.replace(/\D/g, ''));
@@ -152,7 +148,7 @@ export function GroupChatHub() {
 
   const handleVotePoll = async (messageId: string, optionId: string) => {
     chatStorage.toggleVotePoll(selectedConvId, messageId, optionId, currentUserId);
-    setMessages(chatStorage.getMessages(selectedConvId));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     const numericMessageId = Number(messageId.replace(/\D/g, ''));
@@ -171,7 +167,7 @@ export function GroupChatHub() {
 
   const handleMarkPaidExpense = async (messageId: string) => {
     chatStorage.markPaidExpense(selectedConvId, messageId, currentUserId);
-    setMessages(chatStorage.getMessages(selectedConvId));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     const numericMessageId = Number(messageId.replace(/\D/g, ''));
@@ -197,8 +193,7 @@ export function GroupChatHub() {
       content: `Bình chọn: ${pollData.question}`,
       pollData,
     });
-    setMessages(chatStorage.getMessages(selectedConvId));
-    setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     if (numericGroupId > 0) {
@@ -227,8 +222,7 @@ export function GroupChatHub() {
       content: `Chia tiền: ${splitBillData.title} (${splitBillData.totalAmount.toLocaleString('vi-VN')} đ)`,
       splitBillData,
     });
-    setMessages(chatStorage.getMessages(selectedConvId));
-    setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     if (numericGroupId > 0) {
@@ -257,8 +251,7 @@ export function GroupChatHub() {
       content: `Thông báo: ${broadcastData.title}`,
       broadcastData,
     });
-    setMessages(chatStorage.getMessages(selectedConvId));
-    setConversations(chatStorage.getConversations(activeTab, convSearchKeyword));
+    refreshStorage();
 
     const numericGroupId = Number(selectedConvId.replace(/\D/g, ''));
     if (numericGroupId > 0) {

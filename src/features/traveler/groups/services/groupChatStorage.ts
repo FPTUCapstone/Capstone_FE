@@ -1,11 +1,6 @@
 import {
   Conversation,
   GroupChatMessage,
-  BroadcastData,
-  RollCallData,
-  SplitBillData,
-  PollData,
-  MeetingPointData,
 } from '../types/groupChatTypes';
 
 const INITIAL_CONVERSATIONS: Conversation[] = [

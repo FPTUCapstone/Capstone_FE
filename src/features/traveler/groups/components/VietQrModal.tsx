@@ -65,6 +65,7 @@ export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalPr
         <div className="my-4 flex flex-col items-center rounded-2xl bg-slate-50 p-4 border border-slate-100">
           <div className="overflow-hidden rounded-xl bg-white p-2 shadow-xs border border-slate-200">
             {/* VietQR Image */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrUrl}
               alt="Mã VietQR chuyển khoản"

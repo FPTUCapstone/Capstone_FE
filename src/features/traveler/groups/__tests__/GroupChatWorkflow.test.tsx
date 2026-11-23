@@ -320,5 +320,39 @@ describe('GroupChatHub - End-to-End User Workflows & Exception Safety', () => {
       expect(directionsLink).toBeDefined();
       expect(directionsLink.getAttribute('href')).toContain('google.com/maps');
     });
+
+    it('displays and dismisses DB/API error banner when backend returns HTTP 500 ProblemDetails', async () => {
+      const originalFetch = global.fetch;
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ detail: 'Database transaction failed' }),
+      } as unknown as Response);
+
+      try {
+        render(<GroupChatHub />);
+
+        const input = screen.getByPlaceholderText('Nhập tin nhắn...');
+        fireEvent.change(input, { target: { value: 'Kiểm tra hiển thị lỗi DB' } });
+
+        const sendBtn = screen.getByLabelText('Gửi tin nhắn');
+        fireEvent.click(sendBtn);
+
+        await waitFor(() => {
+          expect(
+            screen.getByText(/Lưu cơ sở dữ liệu thất bại \(500\): Database transaction failed/),
+          ).toBeDefined();
+        });
+
+        const dismissBtn = screen.getByRole('button', { name: 'Đã hiểu' });
+        fireEvent.click(dismissBtn);
+
+        expect(
+          screen.queryByText(/Lưu cơ sở dữ liệu thất bại \(500\): Database transaction failed/),
+        ).toBeNull();
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
   });
 });
