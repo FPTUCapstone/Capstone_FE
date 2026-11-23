@@ -1,6 +1,7 @@
 import type {
   ApiProblem,
   PagedPois,
+  PoiCategoryOption,
   PoiDetail,
   PoiOpeningHour,
   PoiPhoto,
@@ -197,6 +198,49 @@ function isDemoFixturesEnabled(): boolean {
     return false;
   }
   return process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES === 'true';
+}
+
+export function parsePoiCategories(value: unknown): PoiCategoryOption[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Dữ liệu danh mục địa điểm không hợp lệ.');
+  }
+
+  return value.map((item) => {
+    if (
+      !isRecord(item) ||
+      typeof item.id !== 'number' ||
+      typeof item.name !== 'string' ||
+      (item.poiCount !== undefined && typeof item.poiCount !== 'number')
+    ) {
+      throw new Error('Dữ liệu danh mục địa điểm không hợp lệ.');
+    }
+
+    return {
+      id: item.id,
+      name: item.name,
+      ...(typeof item.poiCount === 'number' ? { poiCount: item.poiCount } : {}),
+    };
+  });
+}
+
+export async function fetchPoiCategories(signal?: AbortSignal): Promise<PoiCategoryOption[]> {
+  if (isDemoFixturesEnabled()) {
+    const sample = getSamplePagedPois(new URLSearchParams({ pageSize: '100' }));
+    const counts = new Map<number, PoiCategoryOption>();
+    for (const item of sample.items) {
+      const existing = counts.get(item.categoryId);
+      if (existing) {
+        existing.poiCount = (existing.poiCount ?? 0) + 1;
+      } else {
+        counts.set(item.categoryId, { id: item.categoryId, name: item.categoryName, poiCount: 1 });
+      }
+    }
+    return Array.from(counts.values()).sort(
+      (a, b) => (b.poiCount ?? 0) - (a.poiCount ?? 0) || a.name.localeCompare(b.name, 'vi'),
+    );
+  }
+
+  return parsePoiCategories(await requestJson('/api/pois/categories', signal));
 }
 
 export async function fetchPois(query: URLSearchParams, signal?: AbortSignal): Promise<PagedPois> {

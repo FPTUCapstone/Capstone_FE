@@ -31,7 +31,7 @@ describe('POI query helpers', () => {
       search: 'Hội An',
       categoryId: null,
       openNow: false,
-      sort: 'name',
+      sort: 'rating',
       page: 1,
     });
   });
@@ -48,7 +48,7 @@ describe('POI query helpers', () => {
       { latitude: 16.0544 },
     );
 
-    expect(query.get('sort')).toBe('name');
+    expect(query.get('sort')).toBe('rating');
     expect(query.has('originLatitude')).toBe(false);
     expect(query.has('originLongitude')).toBe(false);
   });

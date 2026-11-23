@@ -16,6 +16,8 @@ const ALLOWED_PROXY_QUERY = new Set([
 
 const POI_SORTS: PoiSort[] = ['name', 'distance', 'rating'];
 
+export const DEFAULT_POI_SORT: PoiSort = 'rating';
+
 function positiveInteger(value: string | null): number | null {
   if (!value || !/^\d+$/.test(value)) return null;
   const parsed = Number(value);
@@ -36,7 +38,7 @@ export function parsePoiSearchState(params: URLSearchParams): PoiSearchState {
     search: (params.get('search') ?? '').trim(),
     categoryId: positiveInteger(params.get('categoryId')),
     openNow: params.get('openNow') === 'true',
-    sort: POI_SORTS.includes(rawSort as PoiSort) ? (rawSort as PoiSort) : 'name',
+    sort: POI_SORTS.includes(rawSort as PoiSort) ? (rawSort as PoiSort) : DEFAULT_POI_SORT,
     page: positiveInteger(params.get('page')) ?? 1,
   };
 }
@@ -45,7 +47,7 @@ export function buildPoiQuery(state: PoiSearchState, origin: PoiOrigin = {}): UR
   const query = new URLSearchParams();
   const search = state.search.trim();
   const hasOrigin = Number.isFinite(origin.latitude) && Number.isFinite(origin.longitude);
-  const safeSort = state.sort === 'distance' && !hasOrigin ? 'name' : state.sort;
+  const safeSort = state.sort === 'distance' && !hasOrigin ? DEFAULT_POI_SORT : state.sort;
 
   if (search) query.set('search', search);
   if (state.categoryId) query.set('categoryId', String(state.categoryId));
@@ -70,7 +72,7 @@ export function toPublicUrlParams(state: PoiSearchState): URLSearchParams {
   if (state.search) params.set('search', state.search);
   if (state.categoryId) params.set('categoryId', String(state.categoryId));
   if (state.openNow) params.set('openNow', 'true');
-  if (state.sort !== 'name') params.set('sort', state.sort);
+  if (state.sort !== DEFAULT_POI_SORT) params.set('sort', state.sort);
   if (state.page > 1) params.set('page', String(state.page));
   return params;
 }
