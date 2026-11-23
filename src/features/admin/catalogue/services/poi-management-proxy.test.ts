@@ -320,4 +320,28 @@ describe('proxyDeactivatePoi', () => {
     const body = await response.json();
     expect(body.messageCode).toBe('MSG193');
   });
+  it('preserves the exact BIGINT POI ID and forwards the same idempotency key', async () => {
+    const id = '9007199254740993';
+    const key = '0ee6e791-12d5-47c8-a8ca-97ae99b97300';
+    fetchBackendMock.mockResolvedValueOnce(new Response(
+      '{"poiId":9007199254740993,"status":"Inactive","deactivatedConnectingRoutesCount":0,'
+      + '"deactivatedAtUtc":"2026-11-25T10:00:00Z","messageCode":"MSG193","message":"Point of interest deactivated."}',
+    ));
+
+    const response = await proxyDeactivatePoi(new Request('http://localhost/api/admin/pois/' + id + '/deactivate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+      body: JSON.stringify({ reason: 'Closure', referenceSnapshotToken: 'SNAPSHOT_TOKEN' }),
+    }), id);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ poiId: id, messageCode: 'MSG193' });
+    expect(fetchBackendMock).toHaveBeenCalledWith('/api/v1/admin/pois/' + id + '/deactivate',
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Idempotency-Key': key }),
+        body: JSON.stringify({ poiId: id, reason: 'Closure', referenceSnapshotToken: 'SNAPSHOT_TOKEN' }),
+      }),
+    );
+  });
+
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { poiManagementEn } from '../resources/en';
 import {
   deactivatePoi,
@@ -50,7 +50,8 @@ function DeactivatePoiDialogModal({
   const [references, setReferences] = useState<PoiDeactivationReferences | null>(null);
   const [loadingReferences, setLoadingReferences] = useState(true);
   const [reason, setReason] = useState('');
-  const [reasonError, setReasonError] = useState<string | null>(null);
+  const attempt = useRef<{ key: string; reason: string; token: string } | null>(null);
+  const reasonError = reason.trim() ? null : poiManagementEn.msg123;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [concurrencyNotice, setConcurrencyNotice] = useState(false);
@@ -69,9 +70,11 @@ function DeactivatePoiDialogModal({
         if (isMounted) {
           setLoadingReferences(false);
           setSubmitError(
-            err instanceof PoiManagementApiError && err.status === 403
-              ? poiManagementEn.msg126
-              : poiManagementEn.unavailable,
+            err instanceof PoiManagementApiError && err.backendCode === 'POI.AlreadyInactive'
+              ? poiManagementEn.alreadyInactive
+              : err instanceof PoiManagementApiError && err.status === 403
+                ? poiManagementEn.msg126
+                : poiManagementEn.unavailable,
           );
         }
       });
@@ -81,26 +84,13 @@ function DeactivatePoiDialogModal({
     };
   }, [poi.id]);
 
-  const handleReasonChange = (value: string) => {
-    setReason(value);
-    if (value.trim()) {
-      setReasonError(null);
-    }
-  };
-
   const handleConfirm = async () => {
     const trimmedReason = reason.trim();
-    if (!trimmedReason) {
-      setReasonError(poiManagementEn.msg123);
-      return;
-    }
-    if (trimmedReason.length > 500) {
-      setReasonError(poiManagementEn.reasonMaxLengthError);
-      return;
-    }
-    if (!references?.referenceSnapshotToken) {
-      setSubmitError(poiManagementEn.unavailable);
-      return;
+    const token = references?.referenceSnapshotToken;
+    if (!trimmedReason || !token || isSubmitting || loadingReferences) return;
+
+    if (attempt.current?.reason !== trimmedReason || attempt.current.token !== token) {
+      attempt.current = { key: crypto.randomUUID(), reason: trimmedReason, token };
     }
 
     setIsSubmitting(true);
@@ -109,28 +99,39 @@ function DeactivatePoiDialogModal({
 
     try {
       const result = await deactivatePoi({
-        poiId: Number(poi.id),
+        poiId: poi.id,
         reason: trimmedReason,
-        referenceSnapshotToken: references.referenceSnapshotToken,
+        referenceSnapshotToken: token,
+        idempotencyKey: attempt.current.key,
       });
       setIsSubmitting(false);
       onSuccess(result.message || poiManagementEn.msg193);
       onClose();
     } catch (err: unknown) {
       setIsSubmitting(false);
-      if (err instanceof PoiManagementApiError && err.status === 409) {
-        // Abnormal case 6.a2: Concurrency mismatch - references changed!
-        setConcurrencyNotice(true);
-        // Refresh references automatically so user sees updated state and can re-confirm
+      if (err instanceof PoiManagementApiError && err.backendCode === 'POI.AlreadyInactive') {
+        onSuccess(poiManagementEn.alreadyInactive);
+        onClose();
+        return;
+      }
+
+      if (err instanceof PoiManagementApiError && err.backendCode === 'POI.ReferenceMismatch') {
+        setReferences(null);
         setLoadingReferences(true);
-        loadPoiDeactivationReferences(poi.id)
-          .then((fresh) => {
-            setReferences(fresh);
-            setLoadingReferences(false);
-          })
-          .catch(() => {
-            setLoadingReferences(false);
-          });
+        try {
+          const fresh = await loadPoiDeactivationReferences(poi.id);
+          setReferences(fresh);
+          setConcurrencyNotice(true);
+        } catch (refreshError) {
+          if (refreshError instanceof PoiManagementApiError && refreshError.backendCode === 'POI.AlreadyInactive') {
+            onSuccess(poiManagementEn.alreadyInactive);
+            onClose();
+          } else {
+            setSubmitError(poiManagementEn.unavailable);
+          }
+        } finally {
+          setLoadingReferences(false);
+        }
         return;
       }
 
@@ -277,7 +278,9 @@ function DeactivatePoiDialogModal({
               value={reason}
               maxLength={500}
               placeholder={poiManagementEn.reasonPlaceholder}
-              onChange={(e) => handleReasonChange(e.target.value)}
+              onChange={(e) => setReason(e.target.value)}
+              required
+              aria-describedby={reasonError ? "deactivate-reason-error" : undefined}
               disabled={isSubmitting}
               className={`w-full rounded-xl border p-3 text-xs text-[#1C2928] placeholder-[#5B6E69]/60 transition focus:outline-none focus:ring-2 ${
                 reasonError
@@ -287,7 +290,7 @@ function DeactivatePoiDialogModal({
             />
 
             {reasonError && (
-              <p role="alert" className="text-xs font-medium text-red-600">
+              <p id="deactivate-reason-error" className="text-xs font-medium text-red-600">
                 {reasonError}
               </p>
             )}
@@ -314,7 +317,7 @@ function DeactivatePoiDialogModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={isSubmitting || loadingReferences || !reason.trim()}
+            disabled={isSubmitting || loadingReferences || !references?.referenceSnapshotToken || !!reasonError}
             className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
           >
             {isSubmitting ? (

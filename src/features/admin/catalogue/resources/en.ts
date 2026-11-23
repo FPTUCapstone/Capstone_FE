@@ -19,6 +19,7 @@ export const poiManagementEn = {
   msg126: 'You do not have permission to access this function.',
   msg127: 'TripMate is temporarily unable to process your request. Please check your connection and try again.',
   msg193: 'Point of interest deactivated.',
+  alreadyInactive: 'This point of interest is already inactive.',
   msg194: 'The point of interest is referenced by itineraries, routes or bookings.',
   deactivateButton: 'Deactivate',
   deactivateTitle: 'Deactivate Point of Interest',

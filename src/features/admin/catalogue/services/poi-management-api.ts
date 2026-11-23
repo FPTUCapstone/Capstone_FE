@@ -17,6 +17,7 @@ export class PoiManagementApiError extends Error {
     public readonly status: number,
     public readonly code: ErrorCode,
     public readonly errors: Record<string, string[]> = {},
+    public readonly backendCode?: string,
   ) {
     super(status === 400 ? 'Some filters need attention. Review the highlighted fields.'
       : status === 401 ? 'Your session has expired. Sign in again to continue.'
@@ -205,9 +206,17 @@ export async function loadPoiManagement(query: PoiManagementQuery = {}, signal?:
   return parsed;
 }
 
-export function parsePoiDeactivationReferences(value: unknown): PoiDeactivationReferences {
+function deactivationResponseId(value: unknown, requestedId?: string): string | number {
+  if (typeof value === 'string' && deactivationPathId(value)) return value;
+  // The BFF knows the exact path ID even when JSON parsing rounds the upstream BIGINT.
+  if (requestedId && typeof value === 'number' && !Number.isSafeInteger(value)
+      && Number(requestedId) === value) return requestedId;
+  return integer(value, 1);
+}
+
+export function parsePoiDeactivationReferences(value: unknown, requestedId?: string): PoiDeactivationReferences {
   const body = record(value);
-  const id = integer(body.poiId, 1);
+  const id = deactivationResponseId(body.poiId, requestedId);
   const name = text(body.poiName);
   const stat = text(body.status);
   const activeItinerariesCount = integer(body.activeItinerariesCount, 0);
@@ -232,9 +241,9 @@ export function parsePoiDeactivationReferences(value: unknown): PoiDeactivationR
   };
 }
 
-export function parseDeactivatePoiResponse(value: unknown): DeactivatePoiResponse {
+export function parseDeactivatePoiResponse(value: unknown, requestedId?: string): DeactivatePoiResponse {
   const body = record(value);
-  const id = integer(body.poiId, 1);
+  const id = deactivationResponseId(body.poiId, requestedId);
   const stat = text(body.status);
   if (stat !== 'Inactive') return unavailable();
   const deactivatedConnectingRoutesCount = integer(body.deactivatedConnectingRoutesCount, 0);
@@ -252,12 +261,24 @@ export function parseDeactivatePoiResponse(value: unknown): DeactivatePoiRespons
   };
 }
 
+function deactivationPathId(poiId: string | number): string | null {
+  if (typeof poiId === 'number' && !Number.isSafeInteger(poiId)) return null;
+  const id = String(poiId);
+  return /^[1-9]\d*$/.test(id) ? id : null;
+}
+
+function deactivationConflict(body: unknown): PoiManagementApiError {
+  const code = body && typeof body === 'object' && 'errorCode' in body ? body.errorCode : undefined;
+  return new PoiManagementApiError(409, 'POI_MANAGEMENT_INVALID_QUERY', {},
+    typeof code === 'string' ? code : undefined);
+}
+
 export async function loadPoiDeactivationReferences(
   poiId: string | number,
   signal?: AbortSignal,
 ): Promise<PoiDeactivationReferences> {
-  const id = typeof poiId === 'number' ? poiId : Number(poiId);
-  if (!Number.isInteger(id) || id <= 0) return unavailable();
+  const id = deactivationPathId(poiId);
+  if (!id) return unavailable();
 
   let response: Response;
   let body: unknown;
@@ -274,6 +295,7 @@ export async function loadPoiDeactivationReferences(
     return unavailable();
   }
   if (signal?.aborted) throw signal.reason;
+  if (response.status === 409) throw deactivationConflict(body);
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
       throw new PoiManagementApiError(response.status, 'POI_MANAGEMENT_ACCESS_REQUIRED');
@@ -287,21 +309,24 @@ export async function deactivatePoi(
   request: DeactivatePoiRequest,
   signal?: AbortSignal,
 ): Promise<DeactivatePoiResponse> {
-  if (!request || !Number.isInteger(request.poiId) || request.poiId <= 0 || !request.reason?.trim() || !request.referenceSnapshotToken?.trim()) {
+  const id = request && deactivationPathId(request.poiId);
+  if (!id || !request.reason?.trim() || !request.referenceSnapshotToken?.trim()) {
     throw new PoiManagementApiError(400, 'POI_MANAGEMENT_INVALID_QUERY');
   }
 
+  const { idempotencyKey, ...bodyRequest } = request;
   let response: Response;
   let body: unknown;
   try {
-    response = await fetch(`/api/admin/pois/${request.poiId}/deactivate`, {
+    response = await fetch(`/api/admin/pois/${id}/deactivate`, {
       method: 'POST',
       cache: 'no-store',
       credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
       },
-      body: JSON.stringify(request),
+      body: JSON.stringify(bodyRequest),
       signal,
     });
     body = await response.json().catch(() => null);
@@ -311,12 +336,7 @@ export async function deactivatePoi(
   }
   if (signal?.aborted) throw signal.reason;
 
-  if (response.status === 409) {
-    const raw = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
-    const err = new PoiManagementApiError(409, 'POI_MANAGEMENT_INVALID_QUERY');
-    (err as unknown as { conflictData: unknown }).conflictData = raw;
-    throw err;
-  }
+  if (response.status === 409) throw deactivationConflict(body);
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {

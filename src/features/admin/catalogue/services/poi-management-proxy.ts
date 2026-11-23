@@ -174,7 +174,7 @@ export async function proxyPoiDeactivationReferences(request: Request, id: strin
     const body = await readJson(upstream);
     if (body === null) return unavailable();
     try {
-      return jsonNoStore(parsePoiDeactivationReferences(body));
+      return jsonNoStore(parsePoiDeactivationReferences(body, id));
     } catch {
       return unavailable();
     }
@@ -215,15 +215,17 @@ export async function proxyDeactivatePoi(request: Request, id: string): Promise<
     return jsonNoStore({ errorCode: 'POI_MANAGEMENT_INVALID_QUERY' }, 400);
   }
 
+  const idempotencyKey = request.headers.get('Idempotency-Key');
   try {
     const upstream = await fetchBackend(`/api/v1/admin/pois/${id}/deactivate`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
       },
       body: JSON.stringify({
-        poiId: Number(id),
+        poiId: Number.isSafeInteger(Number(id)) ? Number(id) : id,
         reason: reason.trim(),
         referenceSnapshotToken: referenceSnapshotToken.trim(),
       }),
@@ -246,7 +248,7 @@ export async function proxyDeactivatePoi(request: Request, id: string): Promise<
     const body = await readJson(upstream);
     if (body === null) return unavailable();
     try {
-      return jsonNoStore(parseDeactivatePoiResponse(body));
+      return jsonNoStore(parseDeactivatePoiResponse(body, id));
     } catch {
       return unavailable();
     }

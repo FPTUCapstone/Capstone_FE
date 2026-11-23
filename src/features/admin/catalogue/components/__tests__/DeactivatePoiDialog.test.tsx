@@ -151,6 +151,7 @@ describe('DeactivatePoiDialog (TM-100 / SRS §3.9.3.3 / Fig. 83)', () => {
 
     const confirmBtn = screen.getByRole('button', { name: poiManagementEn.confirmDeactivate });
     expect((confirmBtn as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(poiManagementEn.msg123)).toBeTruthy();
 
     const textarea = screen.getByPlaceholderText(poiManagementEn.reasonPlaceholder);
     fireEvent.change(textarea, { target: { value: '   ' } });
@@ -158,6 +159,7 @@ describe('DeactivatePoiDialog (TM-100 / SRS §3.9.3.3 / Fig. 83)', () => {
 
     fireEvent.change(textarea, { target: { value: 'Temporary maintenance until next month' } });
     expect((confirmBtn as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByText(poiManagementEn.msg123)).toBeNull();
   });
 
   it('calls deactivatePoi and calls onSuccess with MSG193 on success', async () => {
@@ -193,9 +195,10 @@ describe('DeactivatePoiDialog (TM-100 / SRS §3.9.3.3 / Fig. 83)', () => {
 
     await waitFor(() => {
       expect(deactivatePoiMock).toHaveBeenCalledWith({
-        poiId: 9007199254740993,
+        poiId: '9007199254740993',
         reason: 'Site reconstruction',
         referenceSnapshotToken: 'token_abc123',
+        idempotencyKey: expect.any(String),
       });
     });
 
@@ -209,6 +212,8 @@ describe('DeactivatePoiDialog (TM-100 / SRS §3.9.3.3 / Fig. 83)', () => {
     const conflictError = new PoiManagementApiError(
       409,
       'POI_MANAGEMENT_INVALID_QUERY',
+      {},
+      'POI.ReferenceMismatch',
     );
     deactivatePoiMock.mockRejectedValueOnce(conflictError);
 
@@ -254,6 +259,23 @@ describe('DeactivatePoiDialog (TM-100 / SRS §3.9.3.3 / Fig. 83)', () => {
     expect(screen.getByText(poiManagementEn.concurrencyNotice)).toBeTruthy();
     expect(screen.getByText('5')).toBeTruthy();
     expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the catalogue when another Administrator already deactivated the POI', async () => {
+    loadPoiDeactivationReferencesMock.mockResolvedValueOnce(sampleReferencesClean);
+    deactivatePoiMock.mockRejectedValueOnce(
+      new PoiManagementApiError(409, 'POI_MANAGEMENT_INVALID_QUERY', {}, 'POI.AlreadyInactive'),
+    );
+    render(<DeactivatePoiDialog isOpen poi={samplePoi} onClose={onClose} onSuccess={onSuccess} />);
+
+    const confirm = screen.getByRole('button', { name: poiManagementEn.confirmDeactivate });
+    fireEvent.change(screen.getByPlaceholderText(poiManagementEn.reasonPlaceholder), { target: { value: 'Closure' } });
+    await waitFor(() => expect((confirm as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(poiManagementEn.alreadyInactive));
+    expect(onClose).toHaveBeenCalled();
+    expect(loadPoiDeactivationReferencesMock).toHaveBeenCalledTimes(1);
   });
 
   it('handles 403 Forbidden with MSG126', async () => {

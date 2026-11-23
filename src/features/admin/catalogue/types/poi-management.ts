@@ -36,7 +36,7 @@ export interface PoiManagementResponse {
 }
 
 export interface PoiDeactivationReferences {
-  poiId: number;
+  poiId: number | string;
   poiName: string;
   status: string;
   activeItinerariesCount: number;
@@ -49,13 +49,14 @@ export interface PoiDeactivationReferences {
 }
 
 export interface DeactivatePoiRequest {
-  poiId: number;
+  poiId: number | string;
   reason: string;
   referenceSnapshotToken: string;
+  idempotencyKey?: string;
 }
 
 export interface DeactivatePoiResponse {
-  poiId: number;
+  poiId: number | string;
   status: string;
   deactivatedConnectingRoutesCount: number;
   deactivatedAtUtc: string;
