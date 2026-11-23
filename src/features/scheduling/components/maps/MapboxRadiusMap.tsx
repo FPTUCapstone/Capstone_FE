@@ -104,7 +104,7 @@ export function MapboxRadiusMap({ token, center, radiusKm, onUnavailable }: Mapb
   return (
     <div
       ref={containerRef}
-      className="h-56 w-full overflow-hidden rounded-xl bg-slate-100"
+      className="h-72 w-full overflow-hidden rounded-xl bg-[#EFECE3]"
       role="region"
       aria-label="Bản đồ khu vực khám phá"
     />

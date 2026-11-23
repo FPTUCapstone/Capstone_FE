@@ -61,9 +61,9 @@ describe('CreateSchedulingRequestPage (/plan - UC-10)', () => {
 
   it('renders page layout for authenticated Traveler', () => {
     render(<CreateSchedulingRequestPage />);
-    expect(screen.getByText('Lập lịch trình thông minh')).toBeDefined();
+    expect(screen.getByText('Lập lịch trình')).toBeDefined();
     expect(
-      screen.getByRole('heading', { name: /Lập Lịch Trình Du Lịch Tối Ưu/i, level: 1 }),
+      screen.getByRole('heading', { name: /Lên lịch trình chuyến đi của bạn/i, level: 1 }),
     ).toBeDefined();
     expect(screen.getByTestId('scheduling-form')).toBeDefined();
   });
