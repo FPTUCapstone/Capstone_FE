@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchPoiDetail, fetchPois, parsePagedPois, parsePoiDetail } from './poiApi';
+import {
+  fetchPoiDetail,
+  fetchPois,
+  parsePagedPois,
+  parsePoiCategories,
+  parsePoiDetail,
+} from './poiApi';
 
 describe('POI API response parsing', () => {
   it('accepts nullable list fields without inventing values', () => {
@@ -99,6 +105,22 @@ describe('POI API response parsing', () => {
     expect(legacy.costKind).toBeNull();
 
     expect(() => parsePoiDetail({ ...base, estimatedVisitCost: '40000' })).toThrow();
+  });
+
+  it('parses public POI category summaries and rejects malformed items', () => {
+    expect(
+      parsePoiCategories([
+        { id: 67, name: 'Food & Drink', poiCount: 1520 },
+        { id: 56, name: 'Bãi biển' },
+      ]),
+    ).toEqual([
+      { id: 67, name: 'Food & Drink', poiCount: 1520 },
+      { id: 56, name: 'Bãi biển' },
+    ]);
+
+    expect(() => parsePoiCategories([{ id: '67', name: 'Food & Drink' }])).toThrow(
+      'Dữ liệu danh mục địa điểm không hợp lệ.',
+    );
   });
 });
 

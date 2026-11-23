@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PoiApiError } from '../types/poi';
-import { fetchPois } from '../services/poiApi';
+import { fetchPoiCategories, fetchPois } from '../services/poiApi';
 import { ExplorePoisPage } from './ExplorePoisPage';
 
 const push = vi.fn();
@@ -20,7 +20,13 @@ vi.mock('@/components/navigation/PublicNavigation', () => ({
 
 vi.mock('../services/poiApi', () => ({
   fetchPois: vi.fn(),
+  fetchPoiCategories: vi.fn(),
 }));
+
+const mockCategories = [
+  { id: 2, name: 'Biển & Đảo', poiCount: 42 },
+  { id: 1, name: 'Tâm linh & Tôn giáo', poiCount: 15 },
+];
 
 const mockData = {
   page: 1,
@@ -72,6 +78,8 @@ describe('ExplorePoisPage', () => {
     currentSearch = '';
     vi.mocked(fetchPois).mockReset();
     vi.mocked(fetchPois).mockResolvedValue(mockData);
+    vi.mocked(fetchPoiCategories).mockReset();
+    vi.mocked(fetchPoiCategories).mockResolvedValue(mockCategories);
   });
 
   it('renders loaded POI items and displays result count', async () => {
@@ -171,9 +179,19 @@ describe('ExplorePoisPage', () => {
     await screen.findAllByText('Bãi biển Mỹ Khê');
 
     const sortSelect = screen.getByLabelText('Sắp xếp địa điểm');
-    fireEvent.change(sortSelect, { target: { value: 'rating' } });
+    fireEvent.change(sortSelect, { target: { value: 'name' } });
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/pois?sort=rating'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/pois?sort=name'));
+  });
+
+  it('renders live categories and filters when selecting a category tab', async () => {
+    render(<ExplorePoisPage />);
+    await screen.findAllByText('Bãi biển Mỹ Khê');
+
+    const beachTab = await screen.findByRole('button', { name: 'Biển & Đảo' });
+    fireEvent.click(beachTab);
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/pois?categoryId=2'));
   });
 
   it('toggles openNow filter when clicking the openNow button', async () => {
