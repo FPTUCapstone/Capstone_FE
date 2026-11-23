@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 
 import { DemoModeBanner, focusRing } from './components/ModerationNotices';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
 import { tourModerationEn } from './resources/en';
+import { takeApprovalOutcome, type ApprovalOutcome } from './services/approvalFeedback';
 import { fetchPendingTourPage } from './services/tourModerationApi';
 import { getPendingTourPosts } from './services/tourModerationService';
 import type { TourQueueQuery } from './types';
@@ -232,6 +234,33 @@ export function TourReviewQueue() {
   const demo = isTourModerationDemoRequested(searchParams.get('demo'));
   const query = parseTourQueueQuery(searchParams);
   const view = useQueueView(query, demo);
+  const decisionToken = demo ? null : searchParams.get('decision');
+  const [outcome, setOutcome] = useState<ApprovalOutcome | null>(null);
+
+  useEffect(() => {
+    if (!decisionToken) return;
+
+    // Wait until the queue is mounted so React Strict Mode cannot consume the result twice.
+    const frame = requestAnimationFrame(() => {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('decision') !== decisionToken) return;
+      setOutcome(takeApprovalOutcome(decisionToken));
+      url.searchParams.delete('decision');
+      window.history.replaceState(null, '', url);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [decisionToken]);
+
+  useEffect(() => {
+    const clear = () => setOutcome(null);
+    const onRestore = (event: PageTransitionEvent) => { if (event.persisted) clear(); };
+    window.addEventListener('popstate', clear);
+    window.addEventListener('pageshow', onRestore);
+    return () => {
+      window.removeEventListener('popstate', clear);
+      window.removeEventListener('pageshow', onRestore);
+    };
+  }, []);
 
   useEffect(() => {
     if (view.kind === 'failed' && view.failure === 'unauthorized') {
@@ -248,6 +277,14 @@ export function TourReviewQueue() {
           <p className="mt-2 text-sm text-[#5B6E69]">{copy.subtitle}</p>
         </header>
 
+        {outcome && (
+          <div className="mb-4">
+            <FeedbackAlert tone={outcome === 'approved' ? 'success' : 'warning'}>
+              {tourModerationEn.decisionLive[outcome === 'approved' ? 'approvedResult' : 'alreadyDecided']}
+            </FeedbackAlert>
+          </div>
+        )}
+
         {view.kind === 'loading' ? (
           <section role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-sm font-semibold text-[#5B6E69] shadow-xs">
             {tourModerationEn.live.loadingQueue}
@@ -260,8 +297,14 @@ export function TourReviewQueue() {
             <QueueSearchForm
               key={query.keyword}
               appliedKeyword={query.keyword}
-              onSubmit={(keyword) => router.push(buildTourQueueHref({ page: 1, keyword }, demo))}
-              onReset={() => router.push(buildTourQueueHref({ page: 1, keyword: '' }, demo))}
+              onSubmit={(keyword) => {
+                setOutcome(null);
+                router.push(buildTourQueueHref({ page: 1, keyword }, demo));
+              }}
+              onReset={() => {
+                setOutcome(null);
+                router.push(buildTourQueueHref({ page: 1, keyword: '' }, demo));
+              }}
             />
 
             <p className="mb-3 text-sm font-semibold text-[#1C2928]" aria-live="polite">

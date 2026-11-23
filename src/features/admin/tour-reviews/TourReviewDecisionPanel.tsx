@@ -6,6 +6,7 @@ import { ModerationDialog } from './components/ModerationDialog';
 import { focusRing } from './components/ModerationNotices';
 import { RejectTourDialog, type RejectionReason } from './components/RejectTourDialog';
 import { tourModerationEn } from './resources/en';
+import type { ApprovalOutcome } from './services/approvalFeedback';
 import { submitApproval, submitRejection, type DecisionSender } from './services/tourModerationApi';
 import type { ReviewCriterionKey } from './types';
 import { classifyFailure, type ModerationFailure } from './useModerationResource';
@@ -52,13 +53,14 @@ interface TourReviewDecisionPanelProps {
    * Absent in demo mode, where every decision stays a local simulation.
    */
   readonly liveTourId?: string;
+  readonly onApprovalOutcome?: (outcome: ApprovalOutcome) => void;
 }
 
 /**
  * Review decision panel. With `liveTourId` the decision is submitted to the backend (one request at a time,
  * outcomes reported honestly); without it (demo mode) every decision is a clearly labelled local simulation.
  */
-export function TourReviewDecisionPanel({ liveTourId }: TourReviewDecisionPanelProps = {}) {
+export function TourReviewDecisionPanel({ liveTourId, onApprovalOutcome }: TourReviewDecisionPanelProps = {}) {
   const [checklist, setChecklist] = useState(initialChecklist);
   const [note, setNote] = useState('');
   const [checklistError, setChecklistError] = useState(false);
@@ -90,10 +92,12 @@ export function TourReviewDecisionPanel({ liveTourId }: TourReviewDecisionPanelP
     try {
       await send();
       setDecision(recorded);
+      if (recorded.kind === 'approved') onApprovalOutcome?.('approved');
     } catch (error) {
       const failure = classifyFailure(error);
       setSubmitError(FAILURE_MESSAGE[failure]);
       if (failure === 'conflict' || failure === 'notFound') setLockedByConflict(true);
+      if (recorded.kind === 'approved' && failure === 'conflict') onApprovalOutcome?.('alreadyDecided');
     } finally {
       inFlight.current = false;
       setSubmitting(false);
