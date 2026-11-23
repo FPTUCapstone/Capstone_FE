@@ -580,7 +580,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       }
     });
 
-    it('excludes restaurants from the must-see picker but not from the area picker (Review 2, D2)', async () => {
+    it('allows restaurants in both the area picker and the must-see picker (Food Tour support)', async () => {
       render(<CreateSchedulingRequestForm />);
       await chooseStartAndArea();
       expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
@@ -589,7 +589,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
       await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
       expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
-        expect.objectContaining({ excludeFoodAndDrink: true }),
+        expect.not.objectContaining({ excludeFoodAndDrink: true }),
       );
     });
   });

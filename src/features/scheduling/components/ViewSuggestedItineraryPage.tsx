@@ -452,7 +452,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   };
 
   const hasAddedRestaurant = Boolean(
-    itinerary?.items.some((item) => item.kind === 'Visit' && item.costKind === 'AverageSpend'),
+    itinerary?.items.some((item) => item.kind === 'Visit' && item.costKind === 'AverageSpend' && !item.isMandatory),
   );
 
   const startAdjustingOrder = () => {
