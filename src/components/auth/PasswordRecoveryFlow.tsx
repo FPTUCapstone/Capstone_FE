@@ -1,20 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { ActionButton } from '@/components/ui/ActionButton';
-import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { PasswordField, TextField } from '@/components/ui/FormControls';
 import {
   confirmWebPasswordReset,
   requestWebPasswordReset,
 } from '@/features/auth/recovery/webRecovery';
 import { mapPasswordResetError } from '@/lib/authErrorMapper';
-import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
 import { validatePassword } from '@/lib/passwordPolicy';
 import { ROUTES } from '@/lib/routes';
+import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
 
 type RecoveryStep = 'request' | 'reset' | 'success';
 
@@ -29,12 +28,6 @@ type Feedback = {
 
 type FieldErrors = Partial<Record<'email' | 'code' | 'password' | 'confirmPassword', string>>;
 
-const steps: { id: RecoveryStep; label: string }[] = [
-  { id: 'request', label: 'Request' },
-  { id: 'reset', label: 'New Password' },
-  { id: 'success', label: 'Success' },
-];
-
 // The Backend owns the OTP TTL; this copy is informational only.
 const OTP_TTL_NOTICE = 'The code is single-use and expires in 3 minutes.';
 const emailRequiredMessage = 'Please enter your email.';
@@ -47,30 +40,97 @@ const confirmMismatchMessage = 'Passwords do not match. Please re-enter.';
 // The OTP is a 6-ASCII-digit string; the leading zero must survive to the
 // Backend, so the value is never coerced through Number()/parseInt().
 const RESET_CODE_RE = /^[0-9]{6}$/;
+const OTP_LENGTH = 6;
+const OTP_SLOTS = [0, 1, 2, 3, 4, 5] as const;
 
 // Backend rule: a new OTP may be requested 60 seconds after the previous one.
 const RESEND_COOLDOWN_SECONDS = 60;
 
+function evaluatePasswordChecks(password: string) {
+  const checks = [
+    { id: 'length', label: '8+ characters', met: password.length >= 8 && password.length <= 72 },
+    { id: 'case', label: 'Upper & lowercase', met: /[A-Z]/.test(password) && /[a-z]/.test(password) },
+    { id: 'digit', label: '1 number', met: /\d/.test(password) },
+    { id: 'special', label: '1 special symbol', met: /[^A-Za-z0-9]/.test(password) },
+  ] as const;
+  const hasWhitespace = /\s/u.test(password);
+  const score = checks.filter((item) => item.met).length;
+  return { checks, hasWhitespace, score };
+}
+
+function NoticeBox({ feedback, title }: { feedback: NonNullable<Feedback>; title?: string }) {
+  const tones = {
+    info: 'border-[#B2D6C4] bg-[#E8F0EA] text-[#103B39]',
+    success: 'border-[#B9E7D4] bg-[#E6F7F0] text-[#085B3E]',
+    error: 'border-[#F7C9D3] bg-[#FDECEF] text-[#8C1030]',
+  };
+
+  return (
+    <div
+      className={`rounded-xl border px-3.5 py-2.5 text-[12px] leading-relaxed ${tones[feedback.tone]}`}
+      role={feedback.tone === 'error' ? 'alert' : 'status'}
+    >
+      {title ? <p className="font-bold">{title}</p> : null}
+      <p>{feedback.message}</p>
+    </div>
+  );
+}
+
 export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProps) {
   const [step, setStep] = useState<RecoveryStep>('request');
   const [email, setEmail] = useState('');
+  const [lastRequestedEmail, setLastRequestedEmail] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [loading, setLoading] = useState(false);
+  const [otpFocused, setOtpFocused] = useState(false);
+  const [otpCaret, setOtpCaret] = useState(0);
   const resendInFlightRef = useRef(false);
-  const { secondsLeft: resendSecondsLeft, isOnCooldown: resendOnCooldown, startCooldown: startResendCooldown } = useVerificationEmailCooldown(RESEND_COOLDOWN_SECONDS);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+  const otpId = useId();
+  const otpErrorId = `${otpId}-error`;
+  const {
+    secondsLeft: resendSecondsLeft,
+    isOnCooldown: resendOnCooldown,
+    startCooldown: startResendCooldown,
+  } = useVerificationEmailCooldown(RESEND_COOLDOWN_SECONDS);
+
+  const steps: { id: RecoveryStep; label: string }[] = [
+    { id: 'request', label: 'Request' },
+    { id: 'reset', label: 'New Password' },
+    { id: 'success', label: 'Done' },
+  ];
+
   const signInRoute = admin ? ROUTES.admin.login : ROUTES.signIn;
-  const backLinkClass = admin
-    ? 'flex min-h-11 items-center justify-center rounded-xl border border-[#9aa1aa] px-5 py-3 text-sm font-bold text-[#1C2928] hover:bg-[#F7F5EF]'
-    : 'flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.98]';
+  const backLinkClass =
+    'mx-auto flex w-fit items-center justify-center gap-1.5 py-1 text-sm font-medium text-brand-textSecondary transition-colors hover:text-brand-teal';
   const currentIndex = steps.findIndex((item) => item.id === step);
+
+  const stepHeading =
+    step === 'request'
+      ? admin
+        ? 'Recover administrator access'
+        : 'Reset your password'
+      : step === 'reset'
+        ? 'Set a new password'
+        : 'Password updated';
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const sameEmailOnCooldown = Boolean(
+    lastRequestedEmail && normalizedEmail === lastRequestedEmail && resendOnCooldown,
+  );
+  const codeChars = Array.from(code);
+  const activeSlotIndex = Math.min(otpCaret, Math.min(codeChars.length, OTP_LENGTH - 1));
+  const passwordEval = evaluatePasswordChecks(password);
+  const passwordsMatch =
+    confirmPassword.length > 0 && confirmPassword === password && !errors.confirmPassword;
 
   async function submitRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (loading) return;
+    if (loading || sameEmailOnCooldown) return;
     const trimmedEmail = email.trim();
     const nextErrors: FieldErrors = {};
     if (!trimmedEmail) nextErrors.email = emailRequiredMessage;
@@ -80,13 +140,15 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     setFeedback(null);
     if (nextErrors.email) return;
 
+    const targetEmail = trimmedEmail.toLowerCase();
     setLoading(true);
     try {
       // The Backend answers enumeration-safely; this UX is deliberately
       // identical whether or not the account exists.
-      await requestWebPasswordReset(trimmedEmail.toLowerCase());
-      // A successful request starts the 60-second resend window; the Backend
-      // alone decides when a new OTP may actually be issued.
+      await requestWebPasswordReset(targetEmail);
+      // Track the last successfully requested email so returning via
+      // "Change email" cannot re-fire requests during the active cooldown.
+      setLastRequestedEmail(targetEmail);
       startResendCooldown();
       setStep('reset');
       setFeedback({
@@ -94,6 +156,10 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
         message: `If an account exists for this email, a 6-digit reset code has been sent. ${OTP_TTL_NOTICE}`,
       });
     } catch (error: unknown) {
+      if ((error as { status?: number } | null)?.status === 429) {
+        setLastRequestedEmail(targetEmail);
+        startResendCooldown();
+      }
       setFeedback({ tone: 'error', message: mapPasswordResetError(error) });
     } finally {
       setLoading(false);
@@ -120,9 +186,10 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
 
     setLoading(true);
     try {
-      await confirmWebPasswordReset({ email: email.trim().toLowerCase(), code, newPassword: password });
+      await confirmWebPasswordReset({ email: normalizedEmail, code, newPassword: password });
       // Recovery state is dead the moment the reset succeeds; nothing about it
       // may authenticate the user or survive into the next screen.
+      setLastRequestedEmail(null);
       setCode('');
       setPassword('');
       setConfirmPassword('');
@@ -148,7 +215,8 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     setFeedback(null);
     setLoading(true);
     try {
-      await requestWebPasswordReset(email.trim().toLowerCase());
+      await requestWebPasswordReset(normalizedEmail);
+      setLastRequestedEmail(normalizedEmail);
       startResendCooldown();
       setFeedback({
         tone: 'info',
@@ -165,34 +233,94 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     }
   }
 
+  function handleChangeEmail() {
+    if (loading) return;
+    setCode('');
+    setPassword('');
+    setConfirmPassword('');
+    setErrors({});
+    setFeedback(null);
+    setStep('request');
+  }
+
+  function handleResumeResetStep() {
+    if (loading || !lastRequestedEmail) return;
+    setEmail(lastRequestedEmail);
+    setErrors({});
+    setStep('reset');
+  }
+
+  const strengthBarColor =
+    password.length === 0
+      ? 'bg-brand-border'
+      : passwordEval.hasWhitespace || passwordEval.score <= 1
+        ? 'bg-[#E02D4D]'
+        : passwordEval.score < 4
+          ? 'bg-[#D97706]'
+          : 'bg-[#0E9F6E]';
+
   return (
     <div>
-      {!admin ? (
-        <div className="mb-8">
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-teal">Progressive recovery</p>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy">Password Recovery</h2>
-        </div>
-      ) : null}
+      {/* Clean Single Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold tracking-tight text-brand-textPrimary">
+          {stepHeading}
+        </h2>
+        {step === 'request' ? (
+          <p className="mt-1.5 text-sm leading-relaxed text-brand-textSecondary">
+            {admin
+              ? 'Enter your administrator email. The next step is identical whether or not an account exists.'
+              : 'Enter your email address. We will send a 6-digit code if an account exists.'}
+          </p>
+        ) : null}
+      </div>
 
-      <ol className="mb-8 grid grid-cols-3 gap-2" aria-label="Password recovery progress">
-        {steps.map((item, index) => (
-          <li key={item.id} className="min-w-0">
-            <span className={`block h-1.5 rounded-full transition-colors ${index <= currentIndex ? 'bg-brand-brightTeal' : 'bg-slate-200'}`} />
-            <span className={`mt-2 hidden text-[10px] font-bold uppercase tracking-wide sm:block ${index === currentIndex ? 'text-brand-teal' : 'text-brand-textSecondary'}`}>
-              {item.label}
-            </span>
-          </li>
-        ))}
+      {/* Slim 3-Step Stepper */}
+      <ol className="relative mb-6 grid grid-cols-3 items-start" aria-label="Password recovery progress">
+        <div
+          className="pointer-events-none absolute top-3 right-[16.666%] left-[16.666%] h-px bg-brand-border"
+          aria-hidden="true"
+        >
+          <div
+            className="h-full bg-brand-teal transition-all duration-300"
+            style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
+          />
+        </div>
+
+        {steps.map((item, index) => {
+          const isCompleted = index < currentIndex;
+          const isCurrent = index === currentIndex;
+          return (
+            <li
+              key={item.id}
+              aria-current={isCurrent ? 'step' : undefined}
+              className="relative z-10 flex flex-col items-center text-center"
+            >
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors ${
+                  isCompleted
+                    ? 'border-brand-teal bg-brand-teal text-white'
+                    : isCurrent
+                      ? 'border-brand-navy bg-brand-navy text-white'
+                      : 'border-brand-border bg-white text-brand-textSecondary'
+                }`}
+              >
+                {index + 1}
+              </span>
+              <span
+                className={`mt-1.5 text-[11px] font-medium ${
+                  isCurrent ? 'text-brand-textPrimary' : 'text-brand-textSecondary'
+                }`}
+              >
+                {item.label}
+              </span>
+            </li>
+          );
+        })}
       </ol>
 
       {step === 'request' ? (
-        <form className="space-y-5" noValidate onSubmit={submitRequest}>
-          <div>
-            <h3 className="text-xl font-extrabold text-brand-navy">{admin ? 'Recover administrator access' : 'Reset your password'}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-brand-textSecondary">
-              Enter the {admin ? 'Administrator ' : ''}Email Address associated with the account. The response does not disclose whether an account exists.
-            </p>
-          </div>
+        <form className="space-y-4" noValidate onSubmit={submitRequest}>
           <TextField
             label="Email Address"
             name="email"
@@ -203,66 +331,224 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             disabled={loading}
             error={errors.email}
             onChange={(event) => setEmail(event.target.value)}
-            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">mail</span> : undefined}
           />
-          <ActionButton type="submit" variant={admin ? 'forest' : 'teal'} loading={loading} className="group w-full">
-            <span>Send Reset Code</span>
-            {!admin ? <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span> : null}
+
+          <ActionButton
+            type="submit"
+            variant={admin ? 'forest' : 'teal'}
+            loading={loading}
+            disabled={sameEmailOnCooldown}
+            className="w-full"
+          >
+            <span className="tabular-nums">
+              {sameEmailOnCooldown
+                ? `Send Reset Code (${resendSecondsLeft}s)`
+                : 'Send Reset Code'}
+            </span>
           </ActionButton>
-          {feedback ? <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert> : null}
-          <Link href={signInRoute} className={backLinkClass}>
-            {!admin ? <span className="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_back</span> : null}
-            Back to {admin ? 'Admin Login' : 'Sign In'}
-          </Link>
+
+          {sameEmailOnCooldown ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-xs text-brand-textSecondary">
+              <span>A code was recently requested for this email.</span>
+              <button
+                type="button"
+                onClick={handleResumeResetStep}
+                className="font-semibold text-brand-teal underline underline-offset-2 hover:text-brand-navy"
+              >
+                Enter existing code
+              </button>
+            </div>
+          ) : null}
+
+          {feedback ? <NoticeBox feedback={feedback} /> : null}
+
+          <div className="pt-1">
+            <Link href={signInRoute} className={backLinkClass}>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                arrow_back
+              </span>
+              <span>{admin ? 'Return to Admin Login' : 'Back to Sign In'}</span>
+            </Link>
+          </div>
         </form>
       ) : null}
 
       {step === 'reset' ? (
-        <form className="space-y-5" noValidate onSubmit={submitReset}>
-          <div>
-            <h3 className="text-xl font-extrabold text-brand-navy">Set a new password</h3>
-            <p className="mt-2 text-sm leading-relaxed text-brand-textSecondary">
-              Enter the 6-digit code sent to <span className="break-all font-semibold text-brand-navy">{email.trim().toLowerCase()}</span>, then choose a new password. {OTP_TTL_NOTICE}
-            </p>
+        <form className="space-y-4" noValidate onSubmit={submitReset}>
+          {/* Compact Email Context Row */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-border pb-3 text-xs">
+            <span className="min-w-0 text-brand-textSecondary">
+              Code sent to{' '}
+              <span className="break-all font-semibold text-brand-textPrimary">{normalizedEmail}</span>
+            </span>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleChangeEmail}
+              className="shrink-0 font-semibold text-brand-teal hover:underline disabled:opacity-50"
+            >
+              Change email
+            </button>
           </div>
-          <TextField
-            label="Reset Code"
-            name="resetCode"
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            autoComplete="one-time-code"
-            placeholder="Enter the 6-digit code"
-            value={code}
-            disabled={loading}
-            error={errors.code}
-            onChange={(event) => setCode(event.target.value)}
-            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">pin</span> : undefined}
-          />
-          <PasswordField
-            label="New Password"
-            name="newPassword"
-            autoComplete="new-password"
-            value={password}
-            disabled={loading}
-            help="At least 8 characters with uppercase, lowercase, number, and special character."
-            error={errors.password}
-            onChange={(event) => setPassword(event.target.value)}
-            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">lock</span> : undefined}
-          />
-          <PasswordField
-            label="Confirm New Password"
-            name="confirmPassword"
-            autoComplete="new-password"
-            value={confirmPassword}
-            disabled={loading}
-            error={errors.confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            leading={!admin ? <span className="material-symbols-outlined text-[20px]" aria-hidden="true">lock_reset</span> : undefined}
-          />
-          {feedback ? <FeedbackAlert tone={feedback.tone}>{feedback.message}</FeedbackAlert> : null}
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            <ActionButton className="min-w-0 w-full" type="submit" variant={admin ? 'forest' : 'teal'} loading={loading}>Reset Password</ActionButton>
+
+          {/* 6-Slot OTP Input (Single Accessible Input Overlay, no decorative icon) */}
+          <div>
+            <label
+              htmlFor={otpId}
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-700"
+            >
+              Reset Code
+            </label>
+
+            <div className="relative mt-2" onClick={() => otpInputRef.current?.focus()}>
+              <input
+                ref={otpInputRef}
+                id={otpId}
+                name="resetCode"
+                type="text"
+                inputMode="numeric"
+                maxLength={OTP_LENGTH}
+                autoComplete="one-time-code"
+                aria-label="Reset Code"
+                aria-describedby={errors.code ? otpErrorId : undefined}
+                aria-invalid={Boolean(errors.code)}
+                value={code}
+                disabled={loading}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setCode(nextValue);
+                  setOtpCaret(Math.min(event.target.selectionStart ?? nextValue.length, OTP_LENGTH - 1));
+                }}
+                onFocus={(event) => {
+                  setOtpFocused(true);
+                  setOtpCaret(Math.min(event.target.selectionStart ?? code.length, OTP_LENGTH - 1));
+                }}
+                onBlur={() => setOtpFocused(false)}
+                onSelect={(event) => {
+                  const target = event.currentTarget;
+                  setOtpCaret(Math.min(target.selectionStart ?? code.length, OTP_LENGTH - 1));
+                }}
+                className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0 disabled:cursor-not-allowed"
+              />
+
+              <div className="grid grid-cols-6 gap-2" aria-hidden="true">
+                {OTP_SLOTS.map((slotIndex) => {
+                  const digit = codeChars[slotIndex] ?? '';
+                  const isActive = otpFocused && !loading && slotIndex === activeSlotIndex;
+                  return (
+                    <div
+                      key={slotIndex}
+                      data-otp-slot={slotIndex}
+                      className={`flex h-12 items-center justify-center rounded-xl border font-mono text-lg font-semibold tabular-nums transition-colors ${
+                        errors.code
+                          ? 'border-red-500 bg-red-50/70 text-red-700'
+                          : isActive
+                            ? 'border-brand-teal bg-white text-brand-textPrimary ring-2 ring-brand-teal/20'
+                            : digit
+                              ? 'border-[#174B4A]/40 bg-white text-brand-textPrimary'
+                              : 'border-brand-border bg-brand-surface text-slate-400'
+                      }`}
+                    >
+                      {digit ? (
+                        digit
+                      ) : isActive ? (
+                        <span className="h-5 w-px animate-pulse bg-brand-teal" />
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {errors.code ? (
+              <span
+                id={otpErrorId}
+                role="alert"
+                className="mt-1.5 block text-[11px] font-semibold text-red-600"
+              >
+                {errors.code}
+              </span>
+            ) : null}
+          </div>
+
+          {/* New Password + Clean 4-Rule Checklist (no decorative icons) */}
+          <div>
+            <PasswordField
+              label="New Password"
+              name="newPassword"
+              autoComplete="new-password"
+              value={password}
+              disabled={loading}
+              error={errors.password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+
+            <div className="mt-2 space-y-2" aria-label="Password strength requirements">
+              <div className="grid grid-cols-4 gap-1" aria-hidden="true">
+                {[0, 1, 2, 3].map((segment) => (
+                  <span
+                    key={segment}
+                    className={`h-1 rounded-full transition-colors ${
+                      password.length > 0 && segment < Math.max(1, passwordEval.score)
+                        ? strengthBarColor
+                        : 'bg-brand-border'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+                {passwordEval.checks.map((rule) => (
+                  <li
+                    key={rule.id}
+                    className={`flex items-center gap-1.5 text-[11px] transition-colors ${
+                      rule.met ? 'font-medium text-[#0E9F6E]' : 'text-brand-textSecondary'
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
+                        rule.met ? 'bg-[#0E9F6E]' : 'bg-brand-border'
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span>{rule.label}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {passwordEval.hasWhitespace ? (
+                <p className="text-[11px] font-medium text-[#D97706]">No spaces allowed</p>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Confirm New Password (no decorative icon) */}
+          <div>
+            <PasswordField
+              label="Confirm New Password"
+              name="confirmPassword"
+              autoComplete="new-password"
+              value={confirmPassword}
+              disabled={loading}
+              error={errors.confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+            />
+            {passwordsMatch ? (
+              <p className="mt-1 text-[11px] font-medium text-[#0E9F6E]">Passwords match</p>
+            ) : null}
+          </div>
+
+          {feedback ? <NoticeBox feedback={feedback} /> : null}
+
+          <div className="grid gap-3 pt-1 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <ActionButton
+              className="min-w-0 w-full"
+              type="submit"
+              variant={admin ? 'forest' : 'teal'}
+              loading={loading}
+            >
+              Reset Password
+            </ActionButton>
             <ActionButton
               className="min-w-0 w-full"
               type="button"
@@ -276,29 +562,50 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
               </span>
             </ActionButton>
           </div>
-          <Link href={signInRoute} className={backLinkClass}>
-            {!admin ? <span className="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_back</span> : null}
-            Back to {admin ? 'Admin Login' : 'Sign In'}
-          </Link>
+
+          <div className="pt-1">
+            <Link href={signInRoute} className={backLinkClass}>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                arrow_back
+              </span>
+              <span>Back to {admin ? 'Admin Login' : 'Sign In'}</span>
+            </Link>
+          </div>
         </form>
       ) : null}
 
       {step === 'success' ? (
-        <div className={`space-y-5 ${admin ? '' : 'text-center'}`}>
-          {!admin ? (
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-lightTeal text-brand-teal">
-              <span className="material-symbols-outlined text-[36px]" aria-hidden="true">check_circle</span>
-            </div>
-          ) : null}
-          <FeedbackAlert tone="success" title="Password reset successful">
-            Your password has been reset successfully. Please sign in with your new password.
-          </FeedbackAlert>
-          <p className="text-sm leading-relaxed text-brand-textSecondary">For your security, sign in with your new password the next time you access TripMate.</p>
-          <Link href={signInRoute} className={admin
-            ? 'flex min-h-11 items-center justify-center rounded-xl bg-[#103B39] px-5 py-3 text-sm font-bold text-white hover:bg-[#103B39]'
-            : 'group flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-white shadow-btn transition hover:bg-brand-brightTeal active:scale-[0.98]'}>
+        <div className="space-y-5 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-lightTeal text-brand-teal">
+            <span className="material-symbols-outlined text-[36px]" aria-hidden="true">
+              check_circle
+            </span>
+          </div>
+
+          <div className="text-left">
+            <NoticeBox
+              feedback={{
+                tone: 'success',
+                message:
+                  'Your password has been reset successfully. Please sign in with your new password.',
+              }}
+              title="Password reset successful"
+            />
+          </div>
+
+          <p className="text-sm leading-relaxed text-brand-textSecondary">
+            Sign in with your new password to access TripMate.
+          </p>
+
+          <Link
+            href={signInRoute}
+            className={
+              admin
+                ? 'flex min-h-11 items-center justify-center rounded-xl bg-[#103B39] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#174B4A]'
+                : 'flex min-h-11 items-center justify-center rounded-xl bg-brand-teal px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-brightTeal'
+            }
+          >
             {admin ? 'Return to Admin Login' : 'Sign In'}
-            {!admin ? <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span> : null}
           </Link>
         </div>
       ) : null}
