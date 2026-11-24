@@ -137,7 +137,7 @@ export function TourOperatorApplicationListView({ initialApplications }: TourOpe
         </div>
 
         {/* Applications Queue Table */}
-        {loading ? <p role="status">Loading applications…</p> : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}>{copy.errors.retry}</button></div> : <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
+        {loading ? <p role="status">{copy.list.loading}</p> : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}>{copy.errors.retry}</button></div> : <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs" aria-label={copy.list.tableAriaLabel}>
               <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[11px] font-bold uppercase tracking-wider text-[#5B6E69]">
@@ -220,7 +220,7 @@ export function TourOperatorApplicationListView({ initialApplications }: TourOpe
             </table>
           </div>
         </div>}
-        {initialApplications === undefined && !loading && !error && totalCount > 50 && <nav aria-label="Application pages" className="mt-4 flex items-center justify-between"><button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button><span>{page} / {Math.ceil(totalCount / 50)}</span><button type="button" disabled={page * 50 >= totalCount} onClick={() => setPage(value => value + 1)}>Next</button></nav>}
+        {initialApplications === undefined && !loading && !error && totalCount > 50 && <nav aria-label={copy.list.pagesLabel} className="mt-4 flex items-center justify-between"><button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>{copy.list.previousPage}</button><span>{page} / {Math.ceil(totalCount / 50)}</span><button type="button" disabled={page * 50 >= totalCount} onClick={() => setPage(value => value + 1)}>{copy.list.nextPage}</button></nav>}
       </div>
     </div>
   );

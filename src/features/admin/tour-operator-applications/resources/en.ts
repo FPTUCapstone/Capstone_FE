@@ -50,6 +50,10 @@ export const tourOperatorApplicationEn = {
     statusApproved: 'Approved',
     statusRejected: 'Rejected',
     reviewAction: 'Review',
+    loading: 'Loading applications…',
+    pagesLabel: 'Application pages',
+    previousPage: 'Previous',
+    nextPage: 'Next',
     emptyNotice: 'No operator applications found matching your criteria.',
     demoNoticeTitle: 'UI Review Prototype • Sample Queue Records',
     demoNoticeBody:
