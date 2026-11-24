@@ -42,4 +42,12 @@ describe('BrandLogo component', () => {
     expect(svg).not.toBeNull();
     expect(svg?.getAttribute('viewBox')).toBe('0 0 334 182');
   });
+
+  it('applies custom labelClassName when provided', () => {
+    render(<BrandLogo labelClassName="text-base leading-none" />);
+    const label = screen.getByText('TripMate');
+    expect(label.className).toContain('text-base');
+    expect(label.className).toContain('leading-none');
+    expect(label.className).not.toContain('md:text-2xl');
+  });
 });

@@ -22,6 +22,7 @@ import {
   RemovedStopInput,
   StopInfeasibleDetails,
   SuggestionQuery,
+  TransportMode,
 } from '../types/schedulingTypes';
 import { creationSuccessMessage } from '../utils/itineraryPresentation';
 
@@ -781,6 +782,8 @@ export async function getItinerarySuggestions(
   );
 }
 
+export type ItineraryListSort = 'priority' | 'newest';
+
 export interface ItinerarySummaryDto {
   itineraryId: number;
   schedulingRequestId: number | null;
@@ -792,6 +795,9 @@ export interface ItinerarySummaryDto {
   canManage: boolean;
   stopCount: number;
   openNavigationSessionId: number | null;
+  createdAt?: string | null;
+  transportMode?: TransportMode | null;
+  previewStopNames?: string[] | null;
 }
 
 export interface ItinerarySummaryPageDto {
@@ -803,17 +809,18 @@ export interface ItinerarySummaryPageDto {
 
 /**
  * The Traveler's trips (GET /api/v1/itineraries): itineraries they own or share through a
- * travel group, the trip in progress first.
+ * travel group, the trip in progress first by default or newest-created first when sort='newest'.
  */
 export async function listMyItineraries(
   page = 1,
   pageSize = 20,
-  options?: { accessToken?: string },
+  options?: { accessToken?: string; sort?: ItineraryListSort },
 ): Promise<ItinerarySummaryPageDto> {
   const token = options?.accessToken ?? AuthStorage.getContext()?.accessToken;
+  const sortSuffix = options?.sort === 'newest' ? '&sort=newest' : '';
   let response: Response;
   try {
-    response = await fetch(`${getApiBase()}/itineraries?page=${page}&pageSize=${pageSize}`, {
+    response = await fetch(`${getApiBase()}/itineraries?page=${page}&pageSize=${pageSize}${sortSuffix}`, {
       credentials: 'include',
       headers: {
         Accept: 'application/json',

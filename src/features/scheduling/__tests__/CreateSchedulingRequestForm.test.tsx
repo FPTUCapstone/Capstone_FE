@@ -67,6 +67,22 @@ async function pickPlace(fieldName: RegExp, placeName: string) {
   await flush();
 }
 
+/** Opens the custom duration inputs when collapsed. */
+function openCustomDuration() {
+  const toggle = screen.getByRole('button', { name: 'Tùy chỉnh' });
+  if (toggle.getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(toggle);
+  }
+}
+
+/** Opens the collapsible optional preferences section when collapsed. */
+function openOptionalSection() {
+  const toggle = screen.getByRole('button', { name: /3\. Tùy chọn thêm/i });
+  if (toggle.getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(toggle);
+  }
+}
+
 /** Start from the current location and explore around the Cham museum. */
 async function chooseStartAndArea() {
   fireEvent.click(screen.getByRole('button', { name: /Dùng vị trí hiện tại/ }));
@@ -110,13 +126,13 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     localStorage.clear();
   });
 
-  it('renders all form cards and inputs correctly with Section 4 as Budget only', () => {
+  it('renders Split Studio sections and supported transport modes', () => {
     render(<CreateSchedulingRequestForm />);
 
-    expect(screen.getByText(/1\. Điểm xuất phát & khu vực khám phá/i)).toBeDefined();
-    expect(screen.getByText(/2\. Thời gian & Thời lượng chuyến đi/i)).toBeDefined();
-    expect(screen.getByText(/3\. Phương tiện & Nhịp độ di chuyển/i)).toBeDefined();
-    expect(screen.getByText(/4\. Ngân sách/i)).toBeDefined();
+    expect(screen.getByText(/1\. Hành trình của bạn/i)).toBeDefined();
+    expect(screen.getByText(/2\. Thời gian & Phương tiện/i)).toBeDefined();
+    expect(screen.getByText(/3\. Tùy chọn thêm/i)).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Xe buýt/i })).toBeNull();
     expect(screen.queryByText(/Ngân sách & Sở thích trải nghiệm/i)).toBeNull();
     expect(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i })).toBeDefined();
   });
@@ -232,6 +248,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
       fireEvent.change(timeInput, { target: { value: '09:00' } });
 
+      openCustomDuration();
       fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
@@ -315,6 +332,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
       fireEvent.change(timeInput, { target: { value: '19:30' } });
 
+      openCustomDuration();
       fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i });
@@ -358,14 +376,14 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
   /* [P1-1] Starting location truthfulness tests                        */
   /* ------------------------------------------------------------------ */
   describe('[P1-1] Starting point, area, finish and must-see places (same as mobile)', () => {
-    it('has no city presets and starts with nothing chosen', () => {
+    it('has no city presets, starts with nothing chosen, and leaves exploration area unlocked', () => {
       render(<CreateSchedulingRequestForm />);
 
       expect(screen.queryByLabelText(/Thành phố \/ Điểm đến/i)).toBeNull();
       expect(screen.getByTestId('start-point-label').textContent).toBe('Chưa chọn điểm xuất phát');
       expect(
         (screen.getByRole('button', { name: /^Khu vực khám phá:/ }) as HTMLButtonElement).disabled,
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('requires a starting point and an area before generating', async () => {
@@ -379,13 +397,11 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(createSpy).not.toHaveBeenCalled();
     });
 
-    it('keeps "Finish at" locked while returning to the start, with the reason', async () => {
+    it('hides "Finish at" while returning to the start and reveals it when toggled off', async () => {
       render(<CreateSchedulingRequestForm />);
       await chooseStartAndArea();
 
-      const finish = screen.getByRole('button', { name: /^Điểm kết thúc:/ }) as HTMLButtonElement;
-      expect(finish.disabled).toBe(true);
-      expect(finish.textContent).toContain('Bỏ chọn "Quay về điểm xuất phát"');
+      expect(screen.queryByRole('button', { name: /^Điểm kết thúc:/ })).toBeNull();
 
       fireEvent.click(screen.getByLabelText(/Quay về điểm xuất phát khi kết thúc hành trình/));
       expect(
@@ -402,6 +418,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
       fireEvent.click(screen.getByLabelText(/Quay về điểm xuất phát khi kết thúc hành trình/));
       await pickPlace(/^Điểm kết thúc:/, MY_KHE.name);
+      openOptionalSection();
       await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
 
       fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
@@ -466,6 +483,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       // Switch to Walking mode (low speed = 4.5 km/h)
       fireEvent.click(screen.getByRole('button', { name: /Đi bộ/ }));
       // Set duration to 1 hour
+      openCustomDuration();
       const hoursInput = screen.getByLabelText('Số giờ');
       fireEvent.change(hoursInput, { target: { value: '1' } });
       await flush();
@@ -523,6 +541,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       fireEvent.change(slider, { target: { value: '100' } });
       expect(screen.getByText('100 km')).toBeDefined();
 
+      openOptionalSection();
       await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
       expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
         expect.objectContaining({ radiusKm: 100 }),
@@ -580,16 +599,17 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       }
     });
 
-    it('excludes restaurants from the must-see picker but not from the area picker (Review 2, D2)', async () => {
+    it('allows restaurants in both the area picker and the must-see picker (Food Tour support)', async () => {
       render(<CreateSchedulingRequestForm />);
       await chooseStartAndArea();
       expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
         expect.not.objectContaining({ excludeFoodAndDrink: true }),
       );
 
+      openOptionalSection();
       await pickPlace(/Thêm địa điểm muốn ghé/, MY_KHE.name);
       expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenLastCalledWith(
-        expect.objectContaining({ excludeFoodAndDrink: true }),
+        expect.not.objectContaining({ excludeFoodAndDrink: true }),
       );
     });
   });
@@ -626,6 +646,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
         await screen.findByText(/TripMate đã tự động điền phương tiện từ sở thích du lịch đã lưu của bạn/i),
       ).toBeDefined();
       expect(screen.getByRole('button', { name: /Ô tô/i }).className).toContain('border-[#103B39]');
+      openCustomDuration();
       expect((screen.getByLabelText('Số giờ') as HTMLInputElement).value).toBe('8');
       expect(screen.queryByText(/sở thích trải nghiệm/i)).toBeNull();
     });
@@ -772,6 +793,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       const key1 = createSpy.mock.calls[0][1]?.idempotencyKey;
 
       // User changes budget materially
+      openOptionalSection();
       const budgetInput = screen.getByLabelText(/Ngân sách dự kiến/i);
       fireEvent.change(budgetInput, { target: { value: '1500000' } });
 
@@ -855,6 +877,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
     const timeInput = screen.getByLabelText(/Giờ xuất phát/i);
     fireEvent.change(timeInput, { target: { value: '09:00' } });
+    openCustomDuration();
     fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '3' } });
     fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: '15' } });
 
@@ -866,6 +889,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     render(<CreateSchedulingRequestForm />);
 
     fireEvent.change(screen.getByLabelText(/Giờ xuất phát/i), { target: { value: '20:00' } });
+    openCustomDuration();
     fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: '30' } });
     fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: '0' } });
 
@@ -880,6 +904,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
   ])('rejects %s h %s min', (hours, minutes, message) => {
     render(<CreateSchedulingRequestForm />);
 
+    openCustomDuration();
     fireEvent.change(screen.getByLabelText('Số giờ'), { target: { value: hours } });
     fireEvent.change(screen.getByLabelText('Số phút'), { target: { value: minutes } });
 
@@ -890,6 +915,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
     render(<CreateSchedulingRequestForm />);
     await chooseStartAndArea();
 
+    openOptionalSection();
     const budgetInput = screen.getByLabelText(/Ngân sách dự kiến/i);
     fireEvent.change(budgetInput, { target: { value: '-50000' } });
 
@@ -957,7 +983,7 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
 
     // ADR-002 (G3): no scripted progress steps before the request; the heading says what really runs.
     await waitFor(() => {
-      expect(screen.getByText(/Đang xếp lịch trình bằng thuật toán CSP/i)).toBeDefined();
+      expect(screen.getByText(/Đang tối ưu lịch trình cho bạn/i)).toBeDefined();
     });
     expect(screen.queryByText(/Chạy thuật toán thỏa mãn ràng buộc CSP/i)).toBeNull();
     expect(screen.queryByText(/Tính toán ma trận thời gian/i)).toBeNull();
@@ -968,6 +994,91 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       },
       { timeout: 4000 },
     );
+  });
+
+  it('updates availableMinutes in BE payload when quick duration chips are clicked', async () => {
+    const createSpy = vi
+      .spyOn(schedulingApi, 'createSchedulingRequest')
+      .mockResolvedValue(mockSuccessResponse);
+
+    render(<CreateSchedulingRequestForm />);
+    await chooseStartAndArea();
+
+    fireEvent.click(screen.getByRole('button', { name: '4 giờ' }));
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    expect(createSpy.mock.calls[0][0].availableMinutes).toBe(240);
+
+    fireEvent.click(screen.getByRole('button', { name: '2 ngày' }));
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(2), { timeout: 4000 });
+    expect(createSpy.mock.calls[1][0].availableMinutes).toBe(2160);
+  });
+
+  it('opens PlacePickerDialog pre-filled and searching when a quick destination chip is clicked', async () => {
+    render(<CreateSchedulingRequestForm />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sơn Trà' }));
+    const dialog = await screen.findByRole('dialog');
+    const searchInput = within(dialog).getByRole('searchbox') as HTMLInputElement;
+
+    expect(searchInput.value).toBe('Sơn Trà');
+    await waitFor(() => {
+      expect(vi.mocked(placeSearchApi.searchSelectablePois)).toHaveBeenCalledWith(
+        expect.objectContaining({ query: 'Sơn Trà' }),
+      );
+    });
+  });
+
+  it('automatically opens optional preferences and shows validation error when an invalid budget is submitted while collapsed', async () => {
+    render(<CreateSchedulingRequestForm />);
+    await chooseStartAndArea();
+
+    openOptionalSection();
+    fireEvent.change(screen.getByLabelText(/Ngân sách dự kiến/i), { target: { value: '0' } });
+    // Collapse section before submitting
+    fireEvent.click(screen.getByRole('button', { name: /3\. Tùy chọn thêm/i }));
+    expect(screen.queryByLabelText(/Ngân sách dự kiến/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+
+    expect(await screen.findByText(/Ngân sách dự kiến phải lớn hơn 0 VNĐ/i)).toBeDefined();
+    expect(screen.getByLabelText(/Ngân sách dự kiến/i)).toBeDefined();
+  });
+
+  it('allows changing departure time via the single inline time input popover and sends updated startAt', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-01T01:00:00.000Z'));
+
+    const createSpy = vi
+      .spyOn(schedulingApi, 'createSchedulingRequest')
+      .mockResolvedValueOnce(mockSuccessResponse);
+
+    render(<CreateSchedulingRequestForm />);
+    await chooseStartAndArea();
+
+    expect(screen.queryByRole('button', { name: 'Chọn giờ' })).toBeNull();
+
+    fireEvent.click(screen.getByLabelText(/Giờ xuất phát/i));
+    const popover = screen.getByRole('region', { name: 'Bảng chọn giờ' });
+    fireEvent.click(within(popover).getByRole('button', { name: '09:00' }));
+
+    expect((screen.getByLabelText(/Giờ xuất phát/i) as HTMLInputElement).value).toBe('09:00');
+    expect(screen.getByText('17:00')).toBeDefined();
+
+    fireEvent.click(screen.getByLabelText(/Giờ xuất phát/i));
+    const reopenedPopover = screen.getByRole('region', { name: 'Bảng chọn giờ' });
+    fireEvent.change(within(reopenedPopover).getByLabelText('Chọn giờ'), { target: { value: '10' } });
+    fireEvent.change(within(reopenedPopover).getByLabelText('Chọn phút'), { target: { value: '30' } });
+
+    expect((screen.getByLabelText(/Giờ xuất phát/i) as HTMLInputElement).value).toBe('10:30');
+    expect(screen.getByText('18:30')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(createSpy.mock.calls[0][0].startAt).toBe('2026-10-02T10:30:00+07:00');
   });
 });
 

@@ -21,7 +21,7 @@ export function ItineraryStopMenu({ stopName, actions }: ItineraryStopMenuProps)
     <PopoverMenu
       triggerLabel={`Thao tác với ${stopName}`}
       triggerContent="⋯"
-      triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg text-lg font-black leading-none text-slate-500 transition hover:bg-slate-100"
+      triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg text-lg font-black leading-none text-[#5B6E69] transition hover:bg-[#F7F5EF] hover:text-[#1C2928]"
       menuLabel={`Thao tác với ${stopName}`}
       itemRole="menuitem"
       align="right"

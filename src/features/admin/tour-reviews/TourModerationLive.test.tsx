@@ -287,6 +287,7 @@ describe('Live decisions', () => {
   });
 
   it('approves with the checklist and note, then reports the recorded decision honestly', async () => {
+    navigation.params = new URLSearchParams('page=2&q=lantern');
     const fetchMock = await openDetail({ [APPROVE_URL]: () => json({ tourId: 12, status: 'Approved' }) });
 
     checkAll();
@@ -297,6 +298,7 @@ describe('Live decisions', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: copy.approveDialog.confirm }));
 
     expect(await screen.findByText(copy.decisionLive.approvedResult)).toBeTruthy();
+    expect(navigation.replace).toHaveBeenCalledWith(expect.stringMatching(/^\/admin\/tours\/reviews\?q=lantern&decision=/));
     const calls = postsTo(fetchMock, APPROVE_URL);
     expect(calls).toHaveLength(1);
     expect(JSON.parse(calls[0][1]!.body as string)).toEqual({
@@ -407,6 +409,7 @@ describe('Live decisions', () => {
     );
 
     expect((await screen.findByRole('alert')).textContent).toContain(copy.decisionLive.alreadyDecided);
+    expect(navigation.replace).toHaveBeenCalledWith(expect.stringMatching(/^\/admin\/tours\/reviews\?decision=/));
     expect(screen.queryByText(copy.decisionLive.approvedResult)).toBeNull();
     expect(screen.getByRole('button', { name: copy.decision.approveButton }).hasAttribute('disabled')).toBe(true);
     expect(postsTo(fetchMock, APPROVE_URL)).toHaveLength(1);

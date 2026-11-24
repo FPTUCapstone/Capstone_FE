@@ -24,13 +24,13 @@ export function CreateSchedulingRequestPage() {
 
   if (status === 'restoring') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F5EF]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-slate-500">Đang tải kế hoạch du lịch…</p>
+          <p className="text-xs font-semibold text-[#5B6E69]">Đang tải kế hoạch du lịch…</p>
         </div>
       </div>
     );
@@ -41,35 +41,29 @@ export function CreateSchedulingRequestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]">
 
-      <main className="px-4 py-8 sm:px-6 lg:px-8">
+      <main className="px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           {/* Breadcrumb */}
           <nav
             aria-label="Breadcrumb"
-            className="mb-4 flex items-center gap-2 text-xs text-slate-500"
+            className="mb-3 flex items-center gap-1.5 text-xs font-medium text-[#5B6E69]"
           >
-            <Link href={ROUTES.home} className="hover:text-[#103B39] transition">
+            <Link href={ROUTES.home} className="transition hover:text-[#174B4A]">
               Trang chủ
             </Link>
-            <span className="material-symbols-outlined text-xs">chevron_right</span>
-            <span className="font-semibold text-slate-800">Lập lịch trình thông minh</span>
+            <span aria-hidden="true">/</span>
+            <span className="font-semibold text-[#1C2928]">Lập lịch trình</span>
           </nav>
 
-          {/* Page Header */}
-          <div className="mb-8 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-[#103B39] shadow-2xs">
-              <span className="material-symbols-outlined text-sm">auto_awesome</span>
-              Thuật toán CSP & Tối ưu hóa thời gian thực
-            </div>
-            <h1 className="mt-2.5 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
-              Lập Lịch Trình Du Lịch Tối Ưu
+          {/* Compact Page Header */}
+          <div className="mb-6 text-center sm:text-left">
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#1C2928] sm:text-3xl">
+              Lên lịch trình chuyến đi của bạn
             </h1>
-            <p className="mt-2 max-w-2xl text-xs text-slate-600 sm:text-sm">
-              Nhập điểm xuất phát, thời gian dự kiến và sở thích của bạn. Thuật toán CSP của TripMate
-              sẽ tự động tính toán cung đường ngắn nhất, thời gian di chuyển và giờ mở cửa để tạo nên
-              chuyến đi hoàn hảo.
+            <p className="mt-1.5 max-w-2xl text-sm text-[#5B6E69]">
+              Chọn điểm đến, thời gian và phương tiện — TripMate sẽ tự động sắp xếp cung đường hợp lý nhất.
             </p>
           </div>
 
@@ -81,7 +75,7 @@ export function CreateSchedulingRequestPage() {
         </div>
       </main>
 
-      <footer className="mt-16 border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+      <footer className="mt-16 border-t border-[#DCE2DD] bg-white/80 py-8 text-center text-xs text-[#5B6E69]">
         <div className="mx-auto max-w-7xl px-4">
           <p>© 2026 TripMate AI Travel Planner. Nền tảng du lịch thông minh Việt Nam.</p>
         </div>
