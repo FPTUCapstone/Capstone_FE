@@ -1,21 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useChatDialog } from './useChatDialog';
 import { BroadcastData } from '../types/groupChatTypes';
 
 interface BroadcastModalProps {
+  apiError?: string;
   onClose: () => void;
-  onSubmit: (broadcastData: BroadcastData) => void;
+  onSubmit: (broadcastData: BroadcastData) => Promise<boolean> | boolean;
 }
 
-export function BroadcastModal({ onClose, onSubmit }: BroadcastModalProps) {
+export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState<'high' | 'normal'>('high');
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const dialogRef = useChatDialog(onClose);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
@@ -32,21 +37,26 @@ export function BroadcastModal({ onClose, onSubmit }: BroadcastModalProps) {
       title: trimmedTitle,
       content: trimmedContent,
       priority,
-      acknowledgedUserIds: [1], // Author acknowledged
+      acknowledgedUserIds: [], // Only server receipts establish acknowledgement.
     };
 
-    onSubmit(data);
-    onClose();
+    setSaving(true);
+    let saved = false;
+    try { saved = await onSubmit(data); }
+    catch { setError('Chưa lưu được nội dung. Vui lòng thử lại.'); }
+    finally { setSaving(false); }
+    if (saved) onClose();
   };
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="broadcast-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
@@ -78,6 +88,8 @@ export function BroadcastModal({ onClose, onSubmit }: BroadcastModalProps) {
               Tiêu đề thông báo <span className="text-rose-500">*</span>
             </label>
             <input
+                aria-label="Tiêu đề thông báo"
+                disabled={saving}
               type="text"
               value={title}
               onChange={(e) => {
@@ -127,6 +139,8 @@ export function BroadcastModal({ onClose, onSubmit }: BroadcastModalProps) {
               Nội dung thông báo <span className="text-rose-500">*</span>
             </label>
             <textarea
+                aria-label="Nội dung thông báo"
+                disabled={saving}
               rows={4}
               value={content}
               onChange={(e) => {
@@ -141,10 +155,10 @@ export function BroadcastModal({ onClose, onSubmit }: BroadcastModalProps) {
             </p>
           </div>
 
-          {error && (
+          {(error || apiError) && (
             <div className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-rose-600">error</span>
-              <span>{error}</span>
+              <span>{error || apiError}</span>
             </div>
           )}
 
@@ -158,6 +172,7 @@ export function BroadcastModal({ onClose, onSubmit }: BroadcastModalProps) {
             </button>
             <button
               type="submit"
+              disabled={saving}
               className="rounded-xl bg-[#103B39] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#174B4A] transition"
             >
               Phát thông báo

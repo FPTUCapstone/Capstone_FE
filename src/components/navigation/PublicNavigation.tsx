@@ -325,6 +325,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
       ? [{ key: 'itineraries', href: ROUTES.myItineraries, label: strings.links.myItineraries }]
       : []),
     { key: 'tours', href: ROUTES.tours, label: strings.links.localTours },
+    ...(context ? [{ key: 'messages', href: ROUTES.messages, label: locale === 'en' ? 'Messages' : 'Tin nhắn' }] : []),
   ];
 
   if (isNestedUnderPersistentLayout) {
@@ -745,6 +746,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     </div>
                   </Link>
                 )}
+                {context && <Link href={ROUTES.messages} onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3.5 rounded-xl p-3 text-sm font-bold text-brand-textPrimary transition hover:bg-brand-lightTeal"><span className="material-symbols-outlined text-xl text-brand-teal" aria-hidden="true">forum</span>{locale === 'en' ? 'Messages' : 'Tin nhắn'}</Link>}
               </nav>
             </div>
 

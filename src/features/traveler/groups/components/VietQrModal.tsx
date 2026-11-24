@@ -1,43 +1,73 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useChatDialog } from './useChatDialog';
 import { SplitBillData } from '../types/groupChatTypes';
 
 interface VietQrModalProps {
   data: SplitBillData;
   onClose: () => void;
-  onMarkPaid?: () => void;
+  onMarkPaid?: () => Promise<void> | void;
+  apiError?: string;
   isPaid?: boolean;
 }
 
-export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalProps) {
+const BANK_CODES: Record<string, string> = {
+  Vietcombank: 'VCB',
+  MBBank: 'MB',
+  Techcombank: 'TCB',
+  ACB: 'ACB',
+  VPBank: 'VPB',
+  BIDV: 'BIDV',
+  VietinBank: 'ICB',
+  TPBank: 'TPB',
+};
+
+const BANK_LABELS: Record<string, string> = {
+  Vietcombank: 'Vietcombank',
+  MBBank: 'MB Bank',
+  Techcombank: 'Techcombank',
+  ACB: 'ACB',
+  VPBank: 'VPBank',
+  BIDV: 'BIDV',
+  VietinBank: 'VietinBank',
+  TPBank: 'TPBank',
+};
+
+const QR_LOAD_TIMEOUT_MS = 12000;
+
+export function VietQrModal({ data, onClose, onMarkPaid, isPaid, apiError }: VietQrModalProps) {
   const [copied, setCopied] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
+  const dialogRef = useChatDialog(onClose);
 
   // Generate VietQR Quick Link URL (NAPAS standard format supported by all Vietnam mobile banking apps)
-  const bank = encodeURIComponent(data.payerBankName || 'Vietcombank');
-  const account = encodeURIComponent(data.payerBankAccount || '1018899889');
+  const bank = encodeURIComponent(BANK_CODES[data.payerBankName] ?? data.payerBankName);
+  const bankLabel = BANK_LABELS[data.payerBankName] ?? data.payerBankName;
+  const account = encodeURIComponent(data.payerBankAccount);
   const amount = data.perPersonAmount;
   const description = encodeURIComponent(`TripMate: ${data.title}`);
-  const qrUrl = `https://img.vietqr.io/image/${bank}-${account}-compact2.png?amount=${amount}&addInfo=${description}&accountName=${encodeURIComponent(
+  const baseQrUrl = `https://img.vietqr.io/image/${bank}-${account}-compact2.png?amount=${amount}&addInfo=${description}&accountName=${encodeURIComponent(
     data.payerName,
   )}`;
+  const qrUrl = retryKey > 0 ? `${baseQrUrl}&retry=${retryKey}` : baseQrUrl;
 
-  const handleCopyAccount = () => {
-    if (navigator.clipboard) {
-      void navigator.clipboard.writeText(data.payerBankAccount);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+  const handleCopyAccount = async () => {
+    try { await navigator.clipboard.writeText(data.payerBankAccount); setCopied(true); setCopyError(''); }
+    catch { setCopyError('Không sao chép được. Bạn có thể chọn và sao chép số tài khoản bên dưới.'); }
   };
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="vietqr-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
@@ -48,7 +78,7 @@ export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalPr
               <h3 id="vietqr-title" className="text-sm font-bold text-slate-900">
                 Thanh toán VietQR
               </h3>
-              <p className="text-[11px] text-slate-500">Chuyển tiền tự động qua app ngân hàng</p>
+              <p className="text-[11px] text-slate-500">Quét mã trong app ngân hàng; TripMate không tự chuyển tiền</p>
             </div>
           </div>
           <button
@@ -61,18 +91,14 @@ export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalPr
           </button>
         </div>
 
+        {(apiError || copyError) && <p role="alert" className="mt-3 text-sm text-red-700">{apiError || copyError}</p>}
         {/* QR Code Container */}
         <div className="my-4 flex flex-col items-center rounded-2xl bg-slate-50 p-4 border border-slate-100">
-          <div className="overflow-hidden rounded-xl bg-white p-2 shadow-xs border border-slate-200">
-            {/* VietQR Image */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrUrl}
-              alt="Mã VietQR chuyển khoản"
-              className="h-56 w-56 object-contain"
-              loading="lazy"
-            />
-          </div>
+          <VietQrImageFrame
+            key={qrUrl}
+            qrUrl={qrUrl}
+            onRetry={() => setRetryKey((k) => k + 1)}
+          />
           <p className="mt-2 text-center text-[11px] text-slate-500">
             Mở app ngân hàng bất kỳ (Vietcombank, MB, Techcombank,...) quét mã để chuyển khoản chính
             xác.
@@ -93,7 +119,7 @@ export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalPr
           </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-600">Ngân hàng:</span>
-            <span className="font-semibold text-slate-800">{data.payerBankName}</span>
+            <span className="font-semibold text-slate-800">{bankLabel}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-600">Số tài khoản:</span>
@@ -118,9 +144,10 @@ export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalPr
           {onMarkPaid && (
             <button
               type="button"
-              onClick={() => {
-                onMarkPaid();
-                onClose();
+              disabled={pending || isPaid}
+              onClick={async () => {
+                setPending(true);
+                try { await onMarkPaid(); } finally { setPending(false); }
               }}
               className={`flex-1 rounded-xl py-2.5 text-xs font-bold transition shadow-xs ${
                 isPaid
@@ -128,7 +155,7 @@ export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalPr
                   : 'bg-[#103B39] text-white hover:bg-[#174B4A]'
               }`}
             >
-              {isPaid ? 'Đánh dấu chưa chuyển' : 'Đã chuyển tiền xong'}
+              {isPaid ? 'Đã đánh dấu chuyển tiền' : pending ? 'Đang lưu…' : 'Tôi đã chuyển tiền'}
             </button>
           )}
           <button
@@ -140,6 +167,63 @@ export function VietQrModal({ data, onClose, onMarkPaid, isPaid }: VietQrModalPr
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function VietQrImageFrame({ qrUrl, onRetry }: { qrUrl: string; onRetry: () => void }) {
+  const [qrStatus, setQrStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (qrStatus !== 'loading') return;
+    const img = imgRef.current;
+    const doneId =
+      img?.complete && img.naturalWidth > 0
+        ? window.setTimeout(() => setQrStatus('loaded'), 0)
+        : undefined;
+    const timeoutId = window.setTimeout(() => {
+      setQrStatus((prev) => (prev === 'loading' ? 'error' : prev));
+    }, QR_LOAD_TIMEOUT_MS);
+    return () => {
+      if (doneId !== undefined) window.clearTimeout(doneId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [qrStatus]);
+
+  return (
+    <div className="relative flex h-60 w-60 items-center justify-center overflow-hidden rounded-xl bg-white p-2 shadow-xs border border-slate-200">
+      {qrStatus === 'loading' && (
+        <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/95 p-4 text-center text-xs text-slate-600">
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#103B39]" aria-hidden="true" />
+          <span>Đang tải mã VietQR…</span>
+        </div>
+      )}
+      {qrStatus === 'error' ? (
+        <div role="alert" className="flex flex-col items-center justify-center gap-3 p-4 text-center">
+          <span className="material-symbols-outlined text-3xl text-amber-600" aria-hidden="true">qr_code_2</span>
+          <p className="text-xs text-slate-700">
+            Không thể tải ảnh mã VietQR lúc này. Vui lòng thử lại hoặc chuyển khoản thủ công theo thông tin bên dưới.
+          </p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition"
+          >
+            Thử tải lại mã QR
+          </button>
+        </div>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          ref={imgRef}
+          src={qrUrl}
+          alt="Mã VietQR chuyển khoản"
+          className="h-56 w-56 object-contain"
+          onLoad={() => setQrStatus('loaded')}
+          onError={() => setQrStatus('error')}
+        />
+      )}
     </div>
   );
 }

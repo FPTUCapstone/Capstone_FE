@@ -7,6 +7,7 @@
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { getApiBase } from '@/lib/apiBase';
 import { bodyRecord } from '@/lib/jsonRequest';
+import { webRefresh } from '@/lib/authApi';
 
 export interface JoinTravelGroupResponse {
   groupId: number;
@@ -175,27 +176,41 @@ export interface GroupMessageApiDto {
   paidUserIds: number[];
   pollVoteCounts: Record<number, number>;
   myPollVoteOption?: number | null;
+  clientMessageId?: string | null;
 }
 
-async function requestWithAuth<T>(
+let renewal: ReturnType<typeof webRefresh> | null = null;
+
+export async function chatRequest<T>(
   url: string,
   method: 'GET' | 'POST',
   body?: unknown,
+  signal?: AbortSignal,
 ): Promise<T> {
-  const token = AuthStorage.getContext()?.accessToken;
+  const owner = AuthStorage.getContext();
+  if (!owner) throw new TravelGroupHttpError(401, 'Vui lòng đăng nhập để trò chuyện.', 'auth.unauthorized');
+  const send = (token: string) => fetch(url, {
+    method, credentials: 'include', signal: signal ?? AbortSignal.timeout(20000),
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}` },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
   let response: Response;
   try {
-    response = await fetch(url, {
-      method,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
-  } catch {
+    response = await send(owner.accessToken);
+    if (response.status === 401) {
+      renewal ??= webRefresh().finally(() => { renewal = null; });
+      const fresh = await renewal;
+      if (fresh.userId !== owner.userId) throw new TravelGroupHttpError(409, 'Tài khoản đã thay đổi. Vui lòng mở lại cuộc trò chuyện.', 'auth.changed');
+      signal?.throwIfAborted();
+      response = await send(fresh.accessToken);
+    }
+    if (AuthStorage.getContext()?.userId !== owner.userId) throw new TravelGroupHttpError(409, 'Phiên đăng nhập đã thay đổi.', 'auth.changed');
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    if (error instanceof TravelGroupHttpError) throw error;
+    if (error && typeof error === 'object' && 'status' in error && (error.status === 401 || error.status === 403)) {
+      throw new TravelGroupHttpError(401, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'auth.unauthorized');
+    }
     throw new TravelGroupHttpError(
       503,
       'TripMate tạm thời không thể kết nối máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.',
@@ -214,15 +229,23 @@ async function requestWithAuth<T>(
 
   let errorPayload: Record<string, unknown> = {};
   try {
-    errorPayload = (await response.json()) as Record<string, unknown>;
+    const parsed: unknown = await response.json();
+    errorPayload = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
   } catch {
     // Non-json error
   }
 
   const errorCode = typeof errorPayload.errorCode === 'string' ? errorPayload.errorCode : undefined;
-  const message = typeof errorPayload.detail === 'string'
-    ? errorPayload.detail
-    : (typeof errorPayload.title === 'string' ? errorPayload.title : 'Đã xảy ra lỗi khi kết nối máy chủ.');
+  const messages: Record<number, string> = {
+    400: 'Thông tin không hợp lệ. Vui lòng kiểm tra lại.',
+    401: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+    403: 'Bạn không còn quyền truy cập cuộc trò chuyện này.',
+    404: 'Cuộc trò chuyện hoặc tin nhắn không còn tồn tại.',
+    409: 'Nhóm đã đóng hoặc thao tác xung đột. Vui lòng tải lại.',
+    429: 'Bạn thao tác quá nhanh. Vui lòng đợi rồi thử lại.',
+  };
+  const message = errorCode === 'travel_group.group_closed' ? 'Nhóm đã đóng. Bạn chỉ có thể xem lịch sử.'
+    : messages[response.status] ?? 'Dịch vụ trò chuyện tạm thời không khả dụng. Vui lòng thử lại.';
 
   throw new TravelGroupHttpError(response.status, message, errorCode ?? 'server.error');
 }
@@ -232,30 +255,36 @@ export async function fetchGroupMessages(
   limit = 50,
   beforeMessageId?: number,
 ): Promise<GroupMessageApiDto[]> {
+  requireId(groupId);
   const params = new URLSearchParams({ limit: String(limit) });
   if (beforeMessageId) params.append('beforeMessageId', String(beforeMessageId));
-  return requestWithAuth<GroupMessageApiDto[]>(
+  const result = await chatRequest<unknown>(
     `${getApiBase()}/travel-groups/${groupId}/messages?${params.toString()}`,
     'GET',
   );
+  if (!Array.isArray(result) || !result.every(d => isGroupMessage(d) && d.groupId === groupId)) throw invalidContract();
+  return result;
 }
 
 export async function postGroupMessage(
   groupId: number,
-  payload: { messageType: string; content: string; metadataJson?: string },
+  payload: { messageType: string; content: string; metadataJson?: string; clientMessageId?: string },
 ): Promise<GroupMessageApiDto> {
-  return requestWithAuth<GroupMessageApiDto>(
+  requireId(groupId);
+  const result = await chatRequest<unknown>(
     `${getApiBase()}/travel-groups/${groupId}/messages`,
     'POST',
     payload,
   );
+  if (!isGroupMessage(result) || result.groupId !== groupId) throw invalidContract();
+  return result;
 }
 
 export async function acknowledgeBroadcastMessage(
   groupId: number,
   messageId: number,
 ): Promise<number> {
-  return requestWithAuth<number>(
+  return chatRequest<number>(
     `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/acknowledge`,
     'POST',
   );
@@ -265,7 +294,7 @@ export async function checkinRollCallMessage(
   groupId: number,
   messageId: number,
 ): Promise<number> {
-  return requestWithAuth<number>(
+  return chatRequest<number>(
     `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/checkin`,
     'POST',
   );
@@ -276,7 +305,7 @@ export async function toggleExpensePaymentStatus(
   messageId: number,
   isPaid: boolean,
 ): Promise<number[]> {
-  return requestWithAuth<number[]>(
+  return chatRequest<number[]>(
     `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/toggle-payment`,
     'POST',
     { isPaid },
@@ -288,9 +317,55 @@ export async function votePollOption(
   messageId: number,
   optionIndex: number,
 ): Promise<Record<number, number>> {
-  return requestWithAuth<Record<number, number>>(
+  return chatRequest<Record<number, number>>(
     `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/vote`,
     'POST',
     { optionIndex },
   );
+}
+
+export interface GroupConversation {
+  groupId: number; groupName: string; itineraryId: number; itineraryTitle: string | null;
+  itinerarySourceType: string; hostUserId: number; memberCount: number; status: 'Active' | 'Closed';
+  lastMessage: string | null; lastMessageAtUtc: string | null; unreadCount?: number;
+}
+export interface GroupConversationsPage { items: GroupConversation[]; nextBeforeGroupId: number | null }
+const positiveId = (v: unknown): v is number => Number.isSafeInteger(v) && Number(v) > 0;
+function requireId(v: number) { if (!positiveId(v)) throw new TravelGroupHttpError(400, 'ID cuộc trò chuyện không hợp lệ.', 'validation.id'); }
+const nullableString = (v: unknown) => v === null || typeof v === 'string';
+function invalidContract() { return new TravelGroupHttpError(502, 'Dữ liệu trò chuyện từ máy chủ không hợp lệ. Vui lòng tải lại.', 'server.invalid_contract'); }
+export function isGroupMessage(v: unknown): v is GroupMessageApiDto {
+  if (!v || typeof v !== 'object') return false;
+  const d = v as Record<string, unknown>;
+  return positiveId(d.messageId) && positiveId(d.groupId) && positiveId(d.senderUserId)
+    && typeof d.senderName === 'string' && typeof d.content === 'string'
+    && ['text', 'broadcast', 'roll_call', 'split_bill', 'poll'].includes(String(d.messageType))
+    && typeof d.createdAtUtc === 'string' && Number.isFinite(Date.parse(d.createdAtUtc))
+    && typeof d.isReadByMe === 'boolean' && typeof d.isPresentByMe === 'boolean'
+    && Number.isSafeInteger(d.readByCount) && Number(d.readByCount) >= 0
+    && Number.isSafeInteger(d.presentCount) && Number(d.presentCount) >= 0
+    && Array.isArray(d.paidUserIds) && d.paidUserIds.every(positiveId)
+    && !!d.pollVoteCounts && typeof d.pollVoteCounts === 'object'
+    && Object.entries(d.pollVoteCounts).every(([k, n]) => /^\d$/.test(k) && Number(k) <= 5 && Number.isSafeInteger(n) && Number(n) >= 0)
+    && (d.myPollVoteOption === undefined || d.myPollVoteOption === null || (Number.isInteger(d.myPollVoteOption) && Number(d.myPollVoteOption) >= 0 && Number(d.myPollVoteOption) <= 5));
+}
+export async function fetchGroupConversations(beforeGroupId?: number, signal?: AbortSignal): Promise<GroupConversationsPage> {
+  const p = new URLSearchParams({ limit: '50' });
+  if (beforeGroupId !== undefined) p.set('beforeGroupId', String(beforeGroupId));
+  const data = await chatRequest<GroupConversationsPage>(`${getApiBase()}/travel-groups/conversations?${p}`, 'GET', undefined, signal);
+  if (!data || !Array.isArray(data.items) || !data.items.every(d => d && typeof d === 'object' && positiveId(d.groupId) && positiveId(d.itineraryId)
+    && positiveId(d.hostUserId) && typeof d.groupName === 'string' && nullableString(d.itineraryTitle)
+    && typeof d.itinerarySourceType === 'string' && Number.isSafeInteger(d.memberCount) && d.memberCount >= 0
+    && ['Active', 'Closed'].includes(d.status) && nullableString(d.lastMessage) && nullableString(d.lastMessageAtUtc))
+    || !(data.nextBeforeGroupId === null || positiveId(data.nextBeforeGroupId))) throw invalidContract();
+  return data;
+}
+export interface ChatMember { memberId: number; displayName: string; isHost: boolean }
+export async function fetchChatMembers(groupId: number): Promise<ChatMember[]> {
+  const data = await chatRequest<{ groupId: number; members: ChatMember[] }>(`${getApiBase()}/travel-groups/${groupId}/members`, 'GET');
+  if (!data || data.groupId !== groupId || !Array.isArray(data.members) || !data.members.every(m => m && positiveId(m.memberId) && typeof m.displayName === 'string' && typeof m.isHost === 'boolean')) throw invalidContract();
+  return data.members;
+}
+export async function markGroupRead(groupId: number, throughMessageId: number): Promise<void> {
+  await chatRequest(`${getApiBase()}/travel-groups/${groupId}/messages/read`, 'POST', { throughMessageId });
 }

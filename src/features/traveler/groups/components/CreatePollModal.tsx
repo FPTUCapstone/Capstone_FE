@@ -1,17 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useChatDialog } from './useChatDialog';
 import { PollData } from '../types/groupChatTypes';
 
 interface CreatePollModalProps {
+  apiError?: string;
   onClose: () => void;
-  onSubmit: (pollData: PollData) => void;
+  onSubmit: (pollData: PollData) => Promise<boolean> | boolean;
 }
 
-export function CreatePollModal({ onClose, onSubmit }: CreatePollModalProps) {
+export function CreatePollModal({ onClose, onSubmit, apiError }: CreatePollModalProps) {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const dialogRef = useChatDialog(onClose);
 
   const handleAddOption = () => {
     if (options.length < 6) {
@@ -32,8 +36,9 @@ export function CreatePollModal({ onClose, onSubmit }: CreatePollModalProps) {
     setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     const trimmedQuestion = question.trim();
     if (!trimmedQuestion) {
       setError('Vui lòng nhập câu hỏi bình chọn.');
@@ -49,25 +54,30 @@ export function CreatePollModal({ onClose, onSubmit }: CreatePollModalProps) {
     const poll: PollData = {
       question: trimmedQuestion,
       options: validOptions.map((text, idx) => ({
-        id: `opt-${idx + 1}-${Date.now()}`,
+        id: String(idx),
         text,
         voterUserIds: [],
       })),
       totalVotes: 0,
     };
 
-    onSubmit(poll);
-    onClose();
+    setSaving(true);
+    let saved = false;
+    try { saved = await onSubmit(poll); }
+    catch { setError('Chưa lưu được nội dung. Vui lòng thử lại.'); }
+    finally { setSaving(false); }
+    if (saved) onClose();
   };
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-poll-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
@@ -97,6 +107,8 @@ export function CreatePollModal({ onClose, onSubmit }: CreatePollModalProps) {
               Câu hỏi bình chọn <span className="text-rose-500">*</span>
             </label>
             <input
+                aria-label="Câu hỏi bình chọn"
+                disabled={saving}
               type="text"
               value={question}
               onChange={(e) => {
@@ -118,6 +130,8 @@ export function CreatePollModal({ onClose, onSubmit }: CreatePollModalProps) {
                 <div key={idx} className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}.</span>
                   <input
+                aria-label={`Lựa chọn ${idx + 1}`}
+                disabled={saving}
                     type="text"
                     value={opt}
                     onChange={(e) => handleOptionChange(idx, e.target.value)}
@@ -150,10 +164,10 @@ export function CreatePollModal({ onClose, onSubmit }: CreatePollModalProps) {
             )}
           </div>
 
-          {error && (
+          {(error || apiError) && (
             <div className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-rose-600">error</span>
-              <span>{error}</span>
+              <span>{error || apiError}</span>
             </div>
           )}
 
@@ -167,6 +181,7 @@ export function CreatePollModal({ onClose, onSubmit }: CreatePollModalProps) {
             </button>
             <button
               type="submit"
+              disabled={saving}
               className="rounded-xl bg-[#103B39] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#174B4A] transition"
             >
               Tạo bình chọn

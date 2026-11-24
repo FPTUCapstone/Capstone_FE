@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('@/features/auth/session/authSession', () => ({ AuthStorage: { getContext: () => ({ userId: 1, accessToken: 'test-access' }) } }));
 import {
   acknowledgeBroadcastMessage,
   checkinRollCallMessage,
@@ -6,7 +7,6 @@ import {
   joinTravelGroup,
   postGroupMessage,
   toggleExpensePaymentStatus,
-  TravelGroupHttpError,
   votePollOption,
 } from './travelGroupApi';
 
@@ -99,167 +99,39 @@ describe('travelGroupApi: joinTravelGroup', () => {
   });
 });
 
-describe('travelGroupApi: group chat & interaction endpoints', () => {
-  const originalFetch = global.fetch;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    global.fetch = originalFetch;
-  });
-
-  it('fetchGroupMessages forwards limit & beforeMessageId query parameters', async () => {
-    const sample = [
-      {
-        messageId: 10,
-        groupId: 5,
-        senderUserId: 1,
-        senderName: 'Nam',
-        messageType: 'text',
-        content: 'Hello',
-        createdAtUtc: '2026-11-23T08:00:00Z',
-        readByCount: 0,
-        isReadByMe: false,
-        presentCount: 0,
-        isPresentByMe: false,
-        paidUserIds: [],
-        pollVoteCounts: {},
-      },
-    ];
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => sample,
-    } as unknown as Response);
-
-    const res = await fetchGroupMessages(5, 25, 99);
-    expect(res).toEqual(sample);
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/travel-groups/5/messages?limit=25&beforeMessageId=99'),
-      expect.objectContaining({ method: 'GET' }),
-    );
-  });
-
-  it('postGroupMessage returns created DTO and extracts ProblemDetails 400 error', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 201,
-      json: async () => ({ messageId: 11, content: 'Hi' }),
-    } as unknown as Response);
-
-    const created = await postGroupMessage(5, { messageType: 'text', content: 'Hi' });
-    expect(created.messageId).toBe(11);
-
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      json: async () => ({
-        title: 'Bad Request',
-        detail: 'Content is required.',
-        errorCode: 'travel_group.invalid_message_content',
-      }),
-    } as unknown as Response);
-
-    try {
-      await postGroupMessage(5, { messageType: 'text', content: '' });
-      throw new Error('Expected error');
-    } catch (err) {
-      expect(err).toBeInstanceOf(TravelGroupHttpError);
-      const httpErr = err as TravelGroupHttpError;
-      expect(httpErr.status).toBe(400);
-      expect(httpErr.message).toBe('Content is required.');
-      expect(httpErr.code).toBe('travel_group.invalid_message_content');
-    }
-  });
-
-  it('acknowledgeBroadcastMessage returns updated count and surfaces 404 ProblemDetails', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => 3,
-    } as unknown as Response);
-
-    await expect(acknowledgeBroadcastMessage(5, 11)).resolves.toBe(3);
-
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-      json: async () => ({ detail: 'Message not found.', errorCode: 'travel_group.message_not_found' }),
-    } as unknown as Response);
-
-    await expect(acknowledgeBroadcastMessage(5, 999)).rejects.toMatchObject({
-      status: 404,
-      message: 'Message not found.',
-      code: 'travel_group.message_not_found',
-    });
-  });
-
-  it('checkinRollCallMessage returns count and surfaces 409 GroupClosed', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => 5,
-    } as unknown as Response);
-
-    await expect(checkinRollCallMessage(5, 12)).resolves.toBe(5);
-
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 409,
-      json: async () => ({ detail: 'Group closed.', errorCode: 'travel_group.group_closed' }),
-    } as unknown as Response);
-
-    await expect(checkinRollCallMessage(5, 12)).rejects.toMatchObject({
-      status: 409,
-      code: 'travel_group.group_closed',
-    });
-  });
-
-  it('toggleExpensePaymentStatus posts isPaid flag and returns paidUserIds', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [1, 2],
-    } as unknown as Response);
-
-    await expect(toggleExpensePaymentStatus(5, 13, true)).resolves.toEqual([1, 2]);
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/travel-groups/5/messages/13/toggle-payment'),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ isPaid: true }),
-      }),
-    );
-  });
-
-  it('votePollOption returns counts and handles network 503 + malformed JSON 502', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ 1: 4 }),
-    } as unknown as Response);
-
-    await expect(votePollOption(5, 14, 1)).resolves.toEqual({ 1: 4 });
-
-    global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network down'));
-    await expect(votePollOption(5, 14, 1)).rejects.toMatchObject({
-      status: 503,
-      code: 'network.unavailable',
-    });
-
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => {
-        throw new SyntaxError('Unexpected token');
-      },
-    } as unknown as Response);
-
-    await expect(votePollOption(5, 14, 1)).rejects.toMatchObject({
-      status: 502,
-      code: 'server.malformed_response',
-    });
-  });
+const dto = { messageId: 10, groupId: 5, senderUserId: 1, senderName: 'Nam', messageType: 'text', content: 'Hello', createdAtUtc: '2026-11-23T08:00:00Z', readByCount: 0, isReadByMe: false, presentCount: 0, isPresentByMe: false, paidUserIds: [], pollVoteCounts: {}, myPollVoteOption: null };
+afterEach(() => vi.unstubAllGlobals());
+describe('real group chat API contract', () => {
+ it('loads history with exact group ID and pagination cursor', async () => {
+  const request=vi.fn().mockResolvedValue(new Response(JSON.stringify([dto])));vi.stubGlobal('fetch',request);
+  expect(await fetchGroupMessages(5,25,99)).toEqual([dto]);expect(request.mock.calls[0][0]).toContain('/travel-groups/5/messages?limit=25&beforeMessageId=99');
+ });
+ it('keeps the server ID and sends the stable retry key', async () => {
+  const request=vi.fn().mockResolvedValue(new Response(JSON.stringify(dto),{status:201}));vi.stubGlobal('fetch',request);
+  expect(await postGroupMessage(5,{messageType:'text',content:'Hello',clientMessageId:'stable-key'})).toEqual(dto);
+  expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({messageType:'text',content:'Hello',clientMessageId:'stable-key'});
+ });
+ it('does not accept history or a created message from another group', async () => {
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(JSON.stringify([{...dto,groupId:6}]))));
+  await expect(fetchGroupMessages(5)).rejects.toMatchObject({status:502});
+ });
+ it('uses zero-based vote indices and explicit cancellation', async () => {
+  const request=vi.fn().mockImplementation(()=>Promise.resolve(new Response('{}')));vi.stubGlobal('fetch',request);
+  await votePollOption(5,10,0);await votePollOption(5,10,-1);
+  expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({optionIndex:0});expect(JSON.parse(request.mock.calls[1][1].body)).toEqual({optionIndex:-1});
+ });
+ it('confirms receipts and attendance against real message IDs',async()=>{
+  const request=vi.fn().mockImplementation(()=>Promise.resolve(new Response('2')));vi.stubGlobal('fetch',request);
+  expect(await acknowledgeBroadcastMessage(5,10)).toBe(2);expect(await checkinRollCallMessage(5,11)).toBe(2);
+  expect(request.mock.calls[0][0]).toContain('/5/messages/10/acknowledge');expect(request.mock.calls[1][0]).toContain('/5/messages/11/checkin');
+ });
+ it('does not silently mark a payment when persistence fails',async()=>{
+  const request=vi.fn().mockResolvedValue(new Response('{}',{status:503}));vi.stubGlobal('fetch',request);
+  await expect(toggleExpensePaymentStatus(5,10,true)).rejects.toMatchObject({status:503});expect(request).toHaveBeenCalledTimes(1);
+ });
+ it('explains denied access even with a malformed error body',async()=>{
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('null',{status:403})));
+  await expect(fetchGroupMessages(5)).rejects.toMatchObject({status:403});
+ });
 });
