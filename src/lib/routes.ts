@@ -18,6 +18,7 @@ export const ROUTES = {
   bookingTicket: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/ticket`,
   bookingComplaint: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/complaint`,
   partner: {
+    contract: '/partner/contract',
     dashboard: '/partner',
     profile: '/partner/profile',
     coupons: '/partner/coupons',
@@ -58,6 +59,8 @@ export const ROUTES = {
       `/account/complaints/${encodeURIComponent(complaintId)}/partial-refund-proposal`,
   },
   admin: {
+    contractTemplates: '/admin/contract-templates',
+    contractTemplate: (id: string | number) => `/admin/contract-templates/${encodeURIComponent(id)}`,
     login: '/admin/login',
     forgotPassword: '/admin/forgot-password',
     accountSecurity: '/admin/account/security',

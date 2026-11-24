@@ -93,7 +93,7 @@ export function RefundReturnReconciliationScreen() {
             <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
               <tr>
                 {['Refund Code', 'Booking Code', 'Tour Operator', 'Operator Share Amount', 'Return Reference', 'Reported At', 'Actions'].map((heading) => (
-                  <th key={heading} scope="col" className="px-4 py-3">
+                  <th key={heading} scope="col" className={`px-4 py-3${heading === 'Operator Share Amount' ? ' text-right' : ''}`}>
                     {heading}
                   </th>
                 ))}

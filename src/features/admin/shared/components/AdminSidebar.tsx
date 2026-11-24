@@ -109,6 +109,7 @@ export function AdminSidebar({
     {
       title: 'Security & System',
       items: [
+        { href: ROUTES.admin.contractTemplates, label: 'Contract Templates', icon: 'description' },
         { href: ROUTES.admin.auditLogs, label: 'Audit Logs', icon: 'history_edu' },
       ],
     },

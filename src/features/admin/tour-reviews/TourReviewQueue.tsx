@@ -20,6 +20,9 @@ import { formatDisplayDate, formatDisplayDateTime, formatVnd } from './utils/for
 import { buildTourDetailHref, buildTourQueueHref, parseTourQueueQuery } from './utils/queueQuery';
 
 const copy = tourModerationEn.queue;
+// A fixed action track prevents each independent row from sizing columns
+// differently according to its button/status content.
+const queueColumns = '2xl:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_15rem]';
 
 interface SearchFormProps {
   readonly appliedKeyword: string;
@@ -87,29 +90,29 @@ interface QueueRowTour {
 
 function QueueRow({ tour, href }: { tour: QueueRowTour; href: string }) {
   return (
-    <li className="grid gap-3 px-5 py-5 lg:grid-cols-[2fr_1.3fr_1fr_0.9fr_0.9fr_auto] lg:items-center lg:gap-4">
+    <li className={`grid gap-3 px-5 py-5 2xl:items-center 2xl:gap-4 ${queueColumns}`}>
       <div>
-        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.tour}</span>
+        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.tour}</span>
         <h2 className="text-sm font-bold text-[#1C2928]">{tour.tourName}</h2>
         <p className="text-xs text-[#5B6E69]">{tour.location}</p>
       </div>
       <div>
-        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.operator}</span>
+        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.operator}</span>
         <p className="text-sm font-semibold text-[#174B4A]">{tour.operatorName}</p>
       </div>
       <div>
-        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.submitted}</span>
+        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.submitted}</span>
         <p className="font-mono text-xs text-[#1C2928]">{tour.submittedAtUtc ? formatDisplayDateTime(tour.submittedAtUtc) : tourModerationEn.format.unavailable}</p>
       </div>
       <div>
-        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.departure}</span>
+        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.departure}</span>
         <p className="font-mono text-xs text-[#1C2928]">{tour.departureAtUtc ? formatDisplayDate(tour.departureAtUtc) : tourModerationEn.live.noDeparture}</p>
       </div>
-      <div>
-        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.price}</span>
-        <p className="font-mono text-xs font-bold text-[#1C2928]">{formatVnd(tour.priceVnd)}</p>
+      <div className="text-right">
+        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.price}</span>
+        <p className="font-mono text-xs font-bold tabular-nums text-[#1C2928]">{formatVnd(tour.priceVnd)}</p>
       </div>
-      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+      <div className="flex flex-wrap items-center gap-3 2xl:justify-end">
         <StatusBadge tone="coral">{copy.pendingStatus}</StatusBadge>
         <Link
           href={href}
@@ -320,13 +323,13 @@ export function TourReviewQueue() {
               <section className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-white shadow-xs">
                 <div
                   aria-hidden="true"
-                  className="hidden grid-cols-[2fr_1.3fr_1fr_0.9fr_0.9fr_auto] gap-4 border-b border-[#DCE2DD] bg-[#DCE2DD] px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#5B6E69] lg:grid"
+                  className={`hidden gap-4 border-b border-[#DCE2DD] bg-[#DCE2DD] px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#5B6E69] 2xl:grid ${queueColumns}`}
                 >
                   <span>{copy.columns.tour}</span>
                   <span>{copy.columns.operator}</span>
                   <span>{copy.columns.submitted}</span>
                   <span>{copy.columns.departure}</span>
-                  <span>{copy.columns.price}</span>
+                  <span className="text-right">{copy.columns.price}</span>
                   <span className="text-right">{copy.columns.action}</span>
                 </div>
                 <ul aria-label={copy.listLabel} className="divide-y divide-[#DCE2DD]">

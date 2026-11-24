@@ -8,6 +8,7 @@ import { PartnerShell } from '@/components/layout/PartnerShell';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ROUTES } from '@/lib/routes';
+import { webRefresh } from '@/lib/authApi';
 import { getOperatorApplication, OperatorApplicationError, type OperatorApplication } from './operatorApplicationApi';
 import { operatorMessage } from './operatorMessages';
 
@@ -23,6 +24,18 @@ export function OperatorApplicationStatusPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
+  const [openingContract, setOpeningContract] = useState(false);
+  const [contractError, setContractError] = useState('');
+  async function openContract() {
+    if (openingContract) return;
+    setOpeningContract(true); setContractError('');
+    try {
+      const session = await webRefresh();
+      if (session.onboardingState !== 'AwaitingSignature' && session.onboardingState !== 'Active') throw new Error('Unresolved onboarding');
+      router.replace(ROUTES.partner.contract);
+    } catch { setContractError('Chưa làm mới được trạng thái tài khoản. Vui lòng thử lại.'); }
+    finally { setOpeningContract(false); }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -50,6 +63,7 @@ export function OperatorApplicationStatusPage() {
 
   const rejected = application.approvalStatus === 'Rejected';
   const pending = application.approvalStatus === 'PendingApproval';
+  const awaitingSignature = application.userStatus === 'PendingContractSignature';
   return (
     <PartnerShell title="Operator Application Status" description="Review the latest state of your Tour Operator application.">
       <section className="rounded-3xl border border-[#DCE2DD] bg-white p-6 shadow-[0_16px_45px_rgba(0,21,42,0.08)] sm:p-8">
@@ -59,7 +73,7 @@ export function OperatorApplicationStatusPage() {
         </div>
         {rejected && <div className="mt-6"><FeedbackAlert tone="error" title="Latest rejection reason">{application.rejectionReason || 'No reason recorded.'}</FeedbackAlert><p className="mt-2 text-xs text-[#5B6E69]">Reviewed: {dateTime(application.reviewedAtUtc)}</p></div>}
         {pending && <div className="mt-6"><FeedbackAlert>Partner workspace access remains locked while the application is under review.</FeedbackAlert></div>}
-        {!pending && !rejected && <div className="mt-6"><FeedbackAlert tone="success">Your application is approved.</FeedbackAlert></div>}
+        {!pending && !rejected && <div className="mt-6"><FeedbackAlert tone="success">{awaitingSignature ? 'Your application is approved. Sign the partnership contract to activate your account.' : 'Your application is approved.'}</FeedbackAlert>{awaitingSignature && <button type="button" disabled={openingContract} onClick={() => void openContract()} className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-60">{openingContract ? 'Đang cập nhật…' : 'Xem và ký hợp đồng'}</button>}{contractError && <p role="alert" className="mt-2 text-sm text-red-700">{contractError}</p>}</div>}
         <dl className="mt-7 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl bg-[#F7F5EF] p-4"><dt className="text-xs font-bold uppercase text-[#5B6E69]">Account</dt><dd className="mt-2 font-extrabold text-[#1C2928]">{application.userStatus}</dd></div>
           <div className="rounded-2xl bg-[#F7F5EF] p-4"><dt className="text-xs font-bold uppercase text-[#5B6E69]">Application</dt><dd className="mt-2 font-extrabold text-[#1C2928]">{application.approvalStatus}</dd></div>

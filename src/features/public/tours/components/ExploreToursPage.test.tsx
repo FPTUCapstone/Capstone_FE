@@ -231,6 +231,7 @@ describe('ExploreToursPage', () => {
 
     try {
       const { rerender } = render(<ExploreToursPage />);
+      expect(await screen.findByText('10/12/2026')).toBeTruthy();
       const recommendations = within(screen.getByRole('region', { name: 'Gợi ý tour cá nhân hóa' }));
       await recommendations.findByText('Recommended tour');
       await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/lib/routes';
 import { useSearchParams } from 'next/navigation';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
@@ -67,6 +69,7 @@ export function OperatorProfilePage() {
           }
         />
 
+        {context?.currentContractId && <Link href={ROUTES.partner.contract} className="mb-5 inline-flex min-h-11 items-center rounded-xl border border-brand-border bg-white px-4 text-sm font-semibold text-primary">Xem hợp đồng đối tác</Link>}
         {loading || authStatus === 'restoring' ? (
           <div
             role="status"

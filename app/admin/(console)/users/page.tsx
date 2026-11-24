@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { isAccountDateRangeValid } from '@/features/admin/user-accounts/accountDateRange';
 import { AccountFilterForm } from '@/features/admin/user-accounts/components/AccountFilterForm';
-import { accountDate, accountSession, canManageAccount, fetchAccounts, type AccountPage } from '@/features/admin/user-accounts/server/accounts';
+import { accountDate, accountSession, accountStatusLabel, canManageAccount, fetchAccounts, type AccountPage } from '@/features/admin/user-accounts/server/accounts';
 import { ROUTES } from '@/lib/routes';
 
 const filterKeys = ['search', 'role', 'status', 'registeredFrom', 'registeredTo', 'page'] as const;
@@ -19,6 +19,7 @@ function getStatusBadgeClass(status: string): string {
     case 'inactive':
       return 'bg-slate-100 text-slate-700 border border-slate-200';
     case 'pendingapproval':
+    case 'pendingcontractsignature':
     case 'pendingemailverification':
       return 'bg-amber-50 text-amber-800 border border-amber-200';
     case 'rejected':
@@ -180,8 +181,8 @@ export default async function UserAccountsPage(props: PageProps = {}) {
             defaultValue={filters.status ?? ''}
           >
             <option value="">All statuses</option>
-            {['Active', 'Locked', 'Inactive', 'PendingEmailVerification', 'PendingApproval', 'Rejected'].map((status) => (
-              <option key={status}>{status}</option>
+            {['Active', 'Locked', 'Inactive', 'PendingEmailVerification', 'PendingApproval', 'PendingContractSignature', 'Rejected'].map((status) => (
+              <option key={status} value={status}>{accountStatusLabel(status)}</option>
             ))}
           </select>
         </label>
@@ -336,7 +337,7 @@ export default async function UserAccountsPage(props: PageProps = {}) {
                           account.status,
                         )}`}
                       >
-                        {account.status}
+                        {accountStatusLabel(account.status)}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-xs font-medium text-[#61736F]">

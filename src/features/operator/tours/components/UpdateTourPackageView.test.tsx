@@ -93,6 +93,7 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
     expect((screen.getByRole('checkbox', { name: 'Đà Nẵng' }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByRole('checkbox', { name: 'Quảng Nam' }) as HTMLInputElement).checked).toBe(false);
     expect(screen.getByDisplayValue('1250000')).toBeDefined();
+    expect(screen.getByText('Khởi hành 20/11/2026')).toBeDefined();
   });
 
   it('fills in missing itinerary days from an existing tour duration', () => {

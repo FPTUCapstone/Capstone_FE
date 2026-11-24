@@ -224,7 +224,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                   <th scope="col" className="px-5 py-3.5">
                     {couponEn.list.table.codeAndName}
                   </th>
-                  <th scope="col" className="px-5 py-3.5">
+                  <th scope="col" className="px-5 py-3.5 text-right">
                     {couponEn.list.table.discount}
                   </th>
                   <th scope="col" className="px-5 py-3.5">
@@ -264,7 +264,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 font-bold text-[#174B4A]">
+                      <td className="px-5 py-4 text-right tabular-nums font-bold text-[#174B4A]">
                         {formatDiscountSummary(coupon)}
                       </td>
 
@@ -358,7 +358,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
                       <span className="text-[10px] text-slate-400 uppercase font-bold">
                         {couponEn.list.table.discount}:
                       </span>
-                      <p className="font-bold text-[#174B4A]">{formatDiscountSummary(coupon)}</p>
+                      <p className="text-right tabular-nums font-bold text-[#174B4A]">{formatDiscountSummary(coupon)}</p>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase font-bold">

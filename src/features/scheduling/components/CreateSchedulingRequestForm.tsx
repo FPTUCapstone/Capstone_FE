@@ -8,6 +8,7 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { getTravelPreferences } from '@/features/account/preferences/travelPreferencesApi';
 import { getMapboxPublicToken } from '@/lib/mapboxToken';
 import { ROUTES } from '@/lib/routes';
+import { formatDisplayDate } from '@/lib/displayDate';
 
 import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
@@ -1423,7 +1424,7 @@ export function CreateSchedulingRequestForm({
                 </span>
                 <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 font-semibold text-[#1C2928]">
                   {durationHours}h{durationMinutes !== '0' ? ` ${durationMinutes}p` : ''}
-                  {tripEnd ? ` (${startTime}–${tripEnd.time})` : ''}
+                  {tripEnd ? ` (${formatDisplayDate(startDate)} • ${startTime}–${tripEnd.time})` : ''}
                 </span>
                 <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 font-semibold text-[#1C2928]">
                   {transportLabel}

@@ -109,6 +109,21 @@ describe('Tour moderation production boundary (live mode never shows fixtures)',
 describe('Pending Tour Posts list (Screen #13) in demo mode', () => {
   beforeEach(enableDemoBuild);
 
+  it('keeps queue headers and rows on identical columns with right-aligned prices', () => {
+    setQuery('demo=1');
+    const { container } = render(<TourReviewQueue />);
+    const header = container.querySelector('[aria-hidden="true"].\\32xl\\:grid')!;
+    const template = (element: Element) => Array.from(element.classList).find((value) => value.includes('grid-cols-['));
+    const headerTemplate = template(header)?.replace(/^2xl:/, '');
+    for (const row of queueItems()) {
+      expect(template(row)?.replace(/^2xl:/, '')).toBe(headerTemplate);
+      expect(row.querySelector('span')?.classList.contains('2xl:sr-only')).toBe(true);
+      expect(row.children[4].classList.contains('text-right')).toBe(true);
+    }
+    expect(headerTemplate).not.toContain('auto');
+    expect(header.children[4].classList.contains('text-right')).toBe(true);
+  });
+
   it('shows 20 records per page with the total record count (CR-01)', () => {
     setQuery('demo=1');
     render(<TourReviewQueue />);

@@ -74,7 +74,7 @@ export function EscalatedRefundsMonitorScreen() {
             <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
               <tr>
                 {['Refund Code', 'Booking Code', 'Amount', 'Status', 'Attempt Count', 'Last Error', 'Actions'].map((heading) => (
-                  <th key={heading} scope="col" className="px-4 py-3">
+                  <th key={heading} scope="col" className={`px-4 py-3${heading === 'Amount' ? ' text-right' : ''}`}>
                     {heading}
                   </th>
                 ))}

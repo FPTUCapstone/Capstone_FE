@@ -167,7 +167,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                   <th className="p-4 font-bold">Gói tour</th>
                   <th className="p-4 font-bold">Điểm đến</th>
                   <th className="p-4 font-bold">Thời lượng</th>
-                  <th className="p-4 font-bold">Giá người lớn</th>
+                  <th className="p-4 text-right font-bold">Giá người lớn</th>
                   <th className="p-4 font-bold">Trạng thái</th>
                   <th className="p-4 font-bold text-right">Thao tác</th>
                 </tr>
@@ -201,7 +201,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                       </td>
                       <td className="p-4 font-medium text-slate-700">{t.destination}</td>
                       <td className="p-4 text-slate-600">{t.durationDays} ngày</td>
-                      <td className="p-4 font-mono font-bold text-[#1C2928]">
+                      <td className="p-4 text-right tabular-nums font-mono font-bold text-[#1C2928]">
                         {t.basePrice.toLocaleString()} đ
                       </td>
                       <td className="p-4">

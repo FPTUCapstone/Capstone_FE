@@ -297,7 +297,7 @@ export function CommissionReconciliationView() {
                   <th scope="col" className="py-3 px-3.5 w-[90px] whitespace-nowrap">
                     {hotelProviderVi.w106.tableHeaders.period}
                   </th>
-                  <th scope="col" className="py-3 px-3.5 w-[140px] whitespace-nowrap">
+                  <th scope="col" className="py-3 px-3.5 w-[140px] text-right whitespace-nowrap">
                     {hotelProviderVi.w106.tableHeaders.commissionAmount}
                   </th>
                   <th scope="col" className="py-3 px-3.5 w-[110px] whitespace-nowrap">
@@ -336,7 +336,7 @@ export function CommissionReconciliationView() {
                       </td>
 
                       {/* Commission Amount */}
-                      <td className="py-3 px-3.5 font-mono font-bold text-[#174B4A] whitespace-nowrap">
+                      <td className="py-3 px-3.5 text-right tabular-nums font-mono font-bold text-[#174B4A] whitespace-nowrap">
                         {formatVnd(item.commissionAmount)}
                       </td>
 

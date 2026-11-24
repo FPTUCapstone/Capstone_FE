@@ -11,6 +11,9 @@ export function signInDestination(context: WebAuthContext): string | null {
   if (context.role === 'Staff') return ROUTES.admin.staffDashboard;
   if (context.role === 'Traveler') return ROUTES.home;
   if (context.role !== 'TourOperator' || context.applicationUnresolved) return null;
+  if (context.onboardingState === 'AwaitingSignature') return ROUTES.partner.contract;
+  if (context.onboardingState === 'Unresolved') return null;
+  if (context.onboardingState === 'AwaitingReview' || context.onboardingState === 'Rejected') return ROUTES.partner.application;
   if (context.applicationStatus === 'Approved') return ROUTES.partner.dashboard;
   if (context.applicationStatus === 'PendingApproval' || context.applicationStatus === 'Rejected') return ROUTES.partner.application;
   return null;

@@ -1,5 +1,7 @@
 'use client';
 
+import { formatDisplayDate } from '@/lib/displayDate';
+
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -602,7 +604,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
               {schedules.map((sch, sIdx) => (
                 <div key={sch.id} className="rounded-xl border border-slate-200 p-3 bg-slate-50 text-xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800">Khởi hành {sch.departureDate}</span>
+                    <span className="font-bold text-slate-800">Khởi hành {formatDisplayDate(sch.departureDate)}</span>
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                       Đã bán: {sch.reservedCapacity}
                     </span>

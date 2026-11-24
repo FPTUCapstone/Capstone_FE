@@ -14,3 +14,8 @@ export function usableDecisionMessage(value: unknown): string | null {
   if (RAW_MESSAGE_CODE.test(trimmed) || MARKUP.test(trimmed)) return null;
   return trimmed;
 }
+
+export function approvalDecisionMessage(result: { accountStatus: string; message: unknown }, companyName: string): string {
+  if (result.accountStatus === 'PendingContractSignature') return 'Application approved. Waiting for the operator to sign the contract before account activation.';
+  return usableDecisionMessage(result.message) ?? `Tour Operator "${companyName}" approved.`;
+}
