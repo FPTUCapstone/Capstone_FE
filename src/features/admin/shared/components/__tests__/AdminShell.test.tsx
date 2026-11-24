@@ -115,6 +115,57 @@ describe('Batch E1 — Administration Shell Components', () => {
       expect(poiCatalogLink.className).not.toContain('bg-[#174B4A]');
       mockPathname = '/admin/tours/reviews';
     });
+
+    it('renders compact TripMate wordmark with single Admin badge in expanded sidebar and icon-only when collapsed', () => {
+      const { rerender } = render(
+        <AdminSidebar
+          role="Administrator"
+          collapsed={false}
+          onToggleCollapse={vi.fn()}
+          mobileOpen={false}
+          onCloseMobile={vi.fn()}
+        />,
+      );
+
+      const brandLink = screen.getByRole('link', { name: 'TripMate Administration Home' });
+      expect(brandLink.textContent).toContain('TripMate');
+      expect(brandLink.textContent).toContain('Admin');
+      expect(screen.queryByText('TripMate Admin')).toBeNull();
+      expect(brandLink.parentElement?.className).toContain('h-16');
+
+      rerender(
+        <AdminSidebar
+          role="Administrator"
+          collapsed={true}
+          onToggleCollapse={vi.fn()}
+          mobileOpen={false}
+          onCloseMobile={vi.fn()}
+        />,
+      );
+
+      const collapsedBrandLink = screen.getByRole('link', { name: 'TripMate Administration Home' });
+      expect(collapsedBrandLink.querySelector('svg')).not.toBeNull();
+      expect(screen.queryByText('TripMate')).toBeNull();
+      expect(screen.queryByText('Admin')).toBeNull();
+    });
+
+    it('integrates mobile close button cleanly inside mobile drawer header', () => {
+      const closeMobileMock = vi.fn();
+      render(
+        <AdminSidebar
+          role="Administrator"
+          collapsed={false}
+          onToggleCollapse={vi.fn()}
+          mobileOpen={true}
+          onCloseMobile={closeMobileMock}
+        />,
+      );
+
+      const closeButtons = screen.getAllByRole('button', { name: 'Close navigation drawer' });
+      expect(closeButtons).toHaveLength(1);
+      fireEvent.click(closeButtons[0]);
+      expect(closeMobileMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('AdminTopbar', () => {
