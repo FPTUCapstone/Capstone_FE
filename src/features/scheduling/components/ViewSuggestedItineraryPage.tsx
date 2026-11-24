@@ -31,6 +31,7 @@ import {
 import { mergeExplanations } from '../utils/explanationRefresh';
 import { handOffEdit, LastItineraryEdit, takeEditHandoff } from '../utils/itineraryEditHandoff';
 import { useExplanationRefresh } from './useExplanationRefresh';
+import { useItineraryWeatherTips } from './useItineraryWeatherTips';
 import {
   describeProvenance,
   describeStopInfeasible,
@@ -54,6 +55,7 @@ import { LazyItineraryMap } from './maps/LazyMaps';
 import { ROUTE_END_COLOR, ROUTE_LINE_COLOR, ROUTE_START_COLOR, STRAIGHT_LINE_OPACITY } from './maps/mapboxStyle';
 import { ItinerarySuggestionsDialog } from './ItinerarySuggestionsDialog';
 import { ItinerarySummaryCards } from './ItinerarySummaryCards';
+import { ItineraryWeatherTipsCard } from './ItineraryWeatherTipsCard';
 import { ItineraryTimeline } from './ItineraryTimeline';
 import { StopRemovalReasonDialog } from './StopRemovalReasonDialog';
 import { BookedServices } from './BookedServices';
@@ -305,6 +307,9 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           : current,
       ),
   });
+
+  // UC-10: weather tips for the day. Asked for after the itinerary loaded; null hides the card.
+  const weatherTips = useItineraryWeatherTips({ itineraryId: Number(itineraryId), itinerary });
 
   const errorPresentation = getErrorPresentation(error?.status);
   const signInHref = `${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.itinerary(itineraryId))}`;
@@ -727,6 +732,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
               {/* Summary Stats Cards */}
               <ItinerarySummaryCards itinerary={itinerary} />
+              {weatherTips !== null && <ItineraryWeatherTipsCard tips={weatherTips} />}
               <BookedServices services={itinerary.bookedServices} />
 
               {/* Day Navigation */}

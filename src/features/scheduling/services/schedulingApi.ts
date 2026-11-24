@@ -16,6 +16,8 @@ import {
   isValidItineraryDetailDto,
   isValidItineraryId,
   isValidItinerarySuggestionsDto,
+  parseWeatherTipsResponse,
+  WeatherTipsDto,
   isStopInfeasibleReason,
   ItineraryStopInput,
   ItinerarySuggestionsDto,
@@ -780,6 +782,31 @@ export async function getItinerarySuggestions(
     ),
     typeof errorCode === 'string' ? errorCode : 'itinerary.suggestions_failed',
   );
+}
+
+/**
+ * UC-10: the weather tips of an itinerary day (specs/UC-10-weather-packing-tips-web-spec.md). Never throws for HTTP,
+ * network or contract problems: every one of them is `null`, which hides the card. Only an aborted request rejects,
+ * so the caller can tell it apart.
+ */
+export async function getItineraryWeatherTips(
+  itineraryId: number,
+  options?: { accessToken?: string; signal?: AbortSignal },
+): Promise<WeatherTipsDto | null> {
+  if (!isValidItineraryId(itineraryId)) return null;
+
+  let response: Awaited<ReturnType<typeof requestJson>>;
+  try {
+    response = await requestJson(`${getApiBase()}/itineraries/${itineraryId}/weather-tips`, {
+      accessToken: options?.accessToken ?? AuthStorage.getContext()?.accessToken,
+      signal: options?.signal,
+      networkError: networkUnavailable,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    return null;
+  }
+  return response.status === 200 ? parseWeatherTipsResponse(response.body) : null;
 }
 
 export type ItineraryListSort = 'priority' | 'newest';
