@@ -16,6 +16,12 @@ export interface PoiOrigin {
   maxDistanceKm?: number;
 }
 
+export interface PoiCategoryOption {
+  id: number;
+  name: string;
+  poiCount?: number;
+}
+
 export interface PoiSummary {
   id: number;
   name: string;

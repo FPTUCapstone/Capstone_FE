@@ -11,6 +11,7 @@ import { FactChip, ServiceList } from './components/TourFacts';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
 import { tourModerationEn } from './resources/en';
 import { LiveTourContent } from './LiveTourContent';
+import { rememberApprovalOutcome, type ApprovalOutcome } from './services/approvalFeedback';
 import { fetchTourReview } from './services/tourModerationApi';
 import { getPendingTourPost } from './services/tourModerationService';
 import type { PendingTourPost } from './types';
@@ -139,7 +140,8 @@ export function TourReview({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const demo = isTourModerationDemoRequested(searchParams.get('demo'));
-  const backHref = buildTourQueueHref(parseTourQueueQuery(searchParams), demo);
+  const queueQuery = parseTourQueueQuery(searchParams);
+  const backHref = buildTourQueueHref(queueQuery, demo);
   const demoResult = demo ? getPendingTourPost(id, { demo }) : null;
   const { resource, retry } = useModerationResource((signal) => fetchTourReview(id, signal), [id], !demo);
   const liveCopy = tourModerationEn.live;
@@ -148,6 +150,13 @@ export function TourReview({ id }: { id: string }) {
   useEffect(() => {
     if (unauthorized) router.replace(ROUTES.admin.login);
   }, [unauthorized, router]);
+
+  function returnToQueue(outcome: ApprovalOutcome) {
+    const token = rememberApprovalOutcome(outcome);
+    // Returning to the first page avoids an empty last page when the decided tour was its only row.
+    const queueHref = buildTourQueueHref({ ...queueQuery, page: 1 }, false);
+    router.replace(`${queueHref}${queueHref.includes('?') ? '&' : '?'}decision=${token}`);
+  }
 
   let content: React.ReactNode;
   if (demoResult) {
@@ -165,7 +174,7 @@ export function TourReview({ id }: { id: string }) {
     content = (
       <>
         <TourHeader name={resource.data.tourName} operatorName={resource.data.operatorName} location={resource.data.location} />
-        <LiveTourContent tour={resource.data} />
+        <LiveTourContent tour={resource.data} onApprovalOutcome={returnToQueue} />
       </>
     );
   } else if (resource.status === 'failed') {

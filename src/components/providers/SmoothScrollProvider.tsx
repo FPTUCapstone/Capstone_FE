@@ -190,19 +190,19 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       return;
     }
 
-    // Initialize Shared Global Lenis Instance
+    // Initialize Shared Global Lenis Instance with light, responsive damping (low inertia)
     const instance = new Lenis({
-      duration: 1.05, // 1.05s continuous silky momentum deceleration
-      easing: (t: number) => 1 - Math.pow(1 - t, 3), // continuous cubic ease-out
+      lerp: 0.24, // crisp exponential damping (~200ms settle) — smooth without heavy inertia drag
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1.1, // natural comfortable wheel sensitivity
-      touchMultiplier: 1.5,
+      wheelMultiplier: 1, // natural 1:1 wheel distance without overshoot
+      touchMultiplier: 1,
       syncTouch: false, // Maintain native touch momentum on touchscreens
       infinite: false,
       autoResize: true,
       allowNestedScroll: true, // Native nested scrolling for operational tables, modals, dropdowns
+      stopInertiaOnNavigate: true,
       prevent: (node) => {
         // Protect nested scroll containers across Admin, Partner and Modals
         return (
@@ -243,7 +243,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
         const targetElement = document.querySelector(href);
         if (targetElement) {
           e.preventDefault();
-          instance.scrollTo(targetElement as HTMLElement, { offset: -80, duration: 0.9 });
+          instance.scrollTo(targetElement as HTMLElement, { offset: -80, duration: 0.6 });
         }
       }
     }

@@ -2,6 +2,7 @@ import { FactChip, ServiceList } from './components/TourFacts';
 import { tourModerationEn } from './resources/en';
 import type { TourReviewDetail } from './services/tourModerationApi';
 import { TourReviewDecisionPanel } from './TourReviewDecisionPanel';
+import type { ApprovalOutcome } from './services/approvalFeedback';
 import { formatDisplayDate, formatDisplayDateTime, formatVnd } from './utils/format';
 
 const copy = tourModerationEn.detail;
@@ -12,7 +13,10 @@ function optionalPrice(label: string, amount: number | null): string | null {
 }
 
 /** Screen 14 backed by the real review detail: shows every input of the five-item checklist. */
-export function LiveTourContent({ tour }: { tour: TourReviewDetail }) {
+export function LiveTourContent({ tour, onApprovalOutcome }: {
+  tour: TourReviewDetail;
+  onApprovalOutcome: (outcome: ApprovalOutcome) => void;
+}) {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
       <div className="space-y-8 lg:col-span-8">
@@ -171,7 +175,7 @@ export function LiveTourContent({ tour }: { tour: TourReviewDetail }) {
           <p className="text-sm font-bold text-[#1C2928]">{tour.operatorName}</p>
           <p className="mt-1 text-xs text-[#5B6E69]">{copy.submittedOn(formatDisplayDateTime(tour.submittedAtUtc))}</p>
         </section>
-        <TourReviewDecisionPanel liveTourId={tour.id} />
+        <TourReviewDecisionPanel liveTourId={tour.id} onApprovalOutcome={onApprovalOutcome} />
       </div>
     </div>
   );

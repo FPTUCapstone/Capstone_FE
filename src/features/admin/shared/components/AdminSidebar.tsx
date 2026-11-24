@@ -118,31 +118,66 @@ export function AdminSidebar({
   const sections = isStaff ? staffSections : adminSections;
   const allItemHrefs = sections.flatMap((s) => s.items.map((i) => i.href));
 
-  const renderNav = (isMobile = false) => (
-    <div className="flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#1C2928] text-[#F7F5EF] scrollbar-thin">
-      <div>
+  const renderNav = (isMobile = false) => {
+    const isCollapsedDesktop = collapsed && !isMobile;
+
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-[#1C2928] text-[#F7F5EF]">
         {/* Brand Header */}
-        <div className={`flex items-center border-b border-[#103B39] p-4 ${collapsed && !isMobile ? 'justify-center' : 'justify-start'}`}>
+        <div
+          className={`flex h-16 shrink-0 items-center border-b border-[#103B39] ${
+            isCollapsedDesktop
+              ? 'justify-center px-2'
+              : isMobile
+                ? 'justify-between gap-2 px-4'
+                : 'justify-start px-5'
+          }`}
+        >
           <Link
             href={isStaff ? ROUTES.admin.staffDashboard : ROUTES.admin.dashboard}
-            className="flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B6E69]"
+            className={`flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B6E69] ${
+              isCollapsedDesktop ? 'justify-center' : ''
+            }`}
             aria-label="TripMate Administration Home"
+            title={isCollapsedDesktop ? 'TripMate Admin' : undefined}
             onClick={isMobile ? onCloseMobile : undefined}
           >
-            <BrandLogo context="admin" inverse />
-            {(!collapsed || isMobile) && (
-              <span className="rounded bg-[#174B4A] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[#E8F0EA] border border-[#5B6E69]/40">
+            <BrandLogo
+              context="main"
+              inverse
+              size={isCollapsedDesktop ? 18 : 20}
+              variant={isCollapsedDesktop ? 'icon' : 'full'}
+              labelClassName="text-lg leading-none"
+            />
+            {!isCollapsedDesktop && (
+              <span className="inline-flex shrink-0 items-center rounded-md border border-[#5B6E69]/40 bg-[#174B4A] px-1.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider leading-none text-[#E8F0EA]">
                 Admin
               </span>
             )}
           </Link>
+
+          {isMobile && (
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              aria-label="Close navigation drawer"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#103B39] text-[#F7F5EF] transition hover:bg-[#174B4A]"
+            >
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                close
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Navigation Sections */}
-        <nav className="p-3 space-y-6" aria-label={isMobile ? 'Mobile Administration Navigation' : 'Administration Sidebar Navigation'}>
+        <nav
+          className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-6 scrollbar-thin"
+          aria-label={isMobile ? 'Mobile Administration Navigation' : 'Administration Sidebar Navigation'}
+        >
           {sections.map((section) => (
             <div key={section.title} className="space-y-1">
-              {(!collapsed || isMobile) && (
+              {!isCollapsedDesktop && (
                 <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6E69]">
                   {section.title}
                 </p>
@@ -170,12 +205,12 @@ export function AdminSidebar({
                       <Link
                         href={item.href}
                         onClick={isMobile ? onCloseMobile : undefined}
-                        title={collapsed && !isMobile ? item.label : undefined}
+                        title={isCollapsedDesktop ? item.label : undefined}
                         className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all ${
                           isActive
                             ? 'bg-[#174B4A] text-[#FFFFFF] shadow-xs'
                             : 'text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF]'
-                        } ${collapsed && !isMobile ? 'justify-center' : ''}`}
+                        } ${isCollapsedDesktop ? 'justify-center' : ''}`}
                       >
                         {isActive && (
                           <span
@@ -191,7 +226,7 @@ export function AdminSidebar({
                         >
                           {item.icon}
                         </span>
-                        {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
+                        {!isCollapsedDesktop && <span className="truncate">{item.label}</span>}
                       </Link>
                     </li>
                   );
@@ -200,45 +235,45 @@ export function AdminSidebar({
             </div>
           ))}
         </nav>
-      </div>
 
-      {/* Footer controls: Collapse, Security, Logout */}
-      <div className="border-t border-[#103B39] p-3 space-y-2 bg-[#17221D]">
-        <Link
-          href={ROUTES.admin.accountSecurity}
-          onClick={isMobile ? onCloseMobile : undefined}
-          title={collapsed && !isMobile ? 'Security & Password' : undefined}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition ${
-            collapsed && !isMobile ? 'justify-center' : ''
-          }`}
-        >
-          <span className="material-symbols-outlined text-[18px] text-[#5B6E69]" aria-hidden="true">
-            lock_reset
-          </span>
-          {(!collapsed || isMobile) && <span>Security & Password</span>}
-        </Link>
+        {/* Footer controls: Collapse, Security, Logout */}
+        <div className="shrink-0 border-t border-[#103B39] p-3 space-y-2 bg-[#17221D]">
+          <Link
+            href={ROUTES.admin.accountSecurity}
+            onClick={isMobile ? onCloseMobile : undefined}
+            title={isCollapsedDesktop ? 'Security & Password' : undefined}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition ${
+              isCollapsedDesktop ? 'justify-center' : ''
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px] text-[#5B6E69]" aria-hidden="true">
+              lock_reset
+            </span>
+            {!isCollapsedDesktop && <span>Security & Password</span>}
+          </Link>
 
-        <div className={`flex items-center gap-2 ${collapsed && !isMobile ? 'justify-center flex-col' : 'justify-between'}`}>
-          <div className={collapsed && !isMobile ? 'w-full flex justify-center' : ''}>
-            <AdminLogoutButton />
+          <div className={`flex items-center gap-2 ${isCollapsedDesktop ? 'justify-center flex-col' : 'justify-between'}`}>
+            <div className={isCollapsedDesktop ? 'w-full flex justify-center' : ''}>
+              <AdminLogoutButton />
+            </div>
+
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-[#103B39] bg-[#103B39] text-[#5B6E69] hover:bg-[#174B4A] hover:text-[#FFFFFF] transition"
+              >
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                  {collapsed ? 'chevron_right' : 'chevron_left'}
+                </span>
+              </button>
+            )}
           </div>
-
-          {!isMobile && (
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-[#103B39] bg-[#103B39] text-[#5B6E69] hover:bg-[#174B4A] hover:text-[#FFFFFF] transition"
-            >
-              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-                {collapsed ? 'chevron_right' : 'chevron_left'}
-              </span>
-            </button>
-          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -269,16 +304,6 @@ export function AdminSidebar({
           role="dialog"
           aria-modal="true"
         >
-          <div className="absolute right-3 top-3 z-10">
-            <button
-              type="button"
-              onClick={onCloseMobile}
-              aria-label="Close navigation drawer"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#103B39] text-[#F7F5EF] hover:bg-[#174B4A]"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          </div>
           {renderNav(true)}
         </div>
       )}

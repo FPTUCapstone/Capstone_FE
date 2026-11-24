@@ -10,6 +10,7 @@ export type BrandLogoProps = {
   size?: number;
   variant?: 'full' | 'icon';
   className?: string;
+  labelClassName?: string;
 };
 
 const labels = {
@@ -24,6 +25,7 @@ export function BrandLogo({
   size = 24,
   variant = 'full',
   className = '',
+  labelClassName = 'text-lg sm:text-xl md:text-2xl',
 }: BrandLogoProps) {
   const width = Math.round(size * TRIPMATE_SYMBOL_ASPECT_RATIO);
   const color = inverse ? 'text-white' : 'text-[#1C2928]';
@@ -43,7 +45,7 @@ export function BrandLogo({
         <path d={TRIPMATE_SYMBOL_PATH} />
       </svg>
       {variant !== 'icon' && (
-        <span className="text-lg font-extrabold tracking-tight sm:text-xl md:text-2xl whitespace-nowrap">
+        <span className={`font-extrabold tracking-tight whitespace-nowrap ${labelClassName}`}>
           {labels[context]}
         </span>
       )}

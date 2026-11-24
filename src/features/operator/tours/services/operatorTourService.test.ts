@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createTourPackage,
   evaluateTourCompleteness,
@@ -15,7 +15,13 @@ import type { CreateTourPackagePayload, TourPackageDto } from '../types/tourLife
 
 describe('operatorTourService', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
     resetDemoToursStore();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   const validPayload: CreateTourPackagePayload = {
