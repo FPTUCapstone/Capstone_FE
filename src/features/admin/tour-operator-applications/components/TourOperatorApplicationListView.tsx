@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ROUTES } from '@/lib/routes';
+import { formatDisplayDate } from '@/lib/displayDate';
 import { tourOperatorApplicationEn as copy } from '../resources/en';
 
 export interface OperatorApplicationSummary {
@@ -20,11 +21,40 @@ interface TourOperatorApplicationListViewProps {
   initialApplications?: OperatorApplicationSummary[];
 }
 
-export function TourOperatorApplicationListView({ initialApplications = [] }: TourOperatorApplicationListViewProps) {
+export function TourOperatorApplicationListView({ initialApplications }: TourOperatorApplicationListViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
+  const [applications, setApplications] = useState(initialApplications ?? []);
+  const [loading, setLoading] = useState(initialApplications === undefined);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (initialApplications !== undefined) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const query = new URLSearchParams({ page: String(page), status: statusFilter, search: searchTerm });
+        const response = await fetch(`/api/admin/tour-operator-applications?${query}`, { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error(response.status === 403 ? copy.errors.forbidden : response.status === 401 ? copy.errors.sessionExpired : copy.errors.serviceUnavailable);
+        const data = await response.json();
+        if (!Array.isArray(data.items) || !Number.isInteger(data.totalCount)) throw new Error(copy.errors.serviceUnavailable);
+        if (!controller.signal.aborted) { setApplications(data.items); setTotalCount(data.totalCount); }
+      } catch (reason) {
+        if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : copy.errors.network);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 200);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [initialApplications, page, searchTerm, statusFilter, attempt]);
 
   const filteredApplications = useMemo(() => {
+    if (initialApplications === undefined) return applications;
     return initialApplications.filter((app) => {
       const matchesStatus = statusFilter === 'All' || app.applicationStatus === statusFilter;
       const matchesSearch =
@@ -34,7 +64,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
         String(app.userId).includes(searchTerm);
       return matchesStatus && matchesSearch;
     });
-  }, [initialApplications, searchTerm, statusFilter]);
+  }, [initialApplications, applications, searchTerm, statusFilter]);
 
   return (
     <div className="pb-16 text-[#1C2928]">
@@ -77,7 +107,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
                   type="button"
                   role="tab"
                   aria-selected={statusFilter === status}
-                  onClick={() => setStatusFilter(status)}
+                  onClick={() => { setStatusFilter(status); setPage(1); }}
                   className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
                     statusFilter === status
                       ? 'bg-[#174B4A] text-white shadow-xs'
@@ -98,7 +128,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
             <input
               type="search"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               placeholder={copy.list.searchPlaceholder}
               aria-label={copy.list.searchAriaLabel}
               className="w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] py-2 pl-9 pr-3 text-xs text-[#1C2928] placeholder-[#5B6E69] transition focus:border-[#174B4A] focus:bg-white focus:outline-hidden"
@@ -107,7 +137,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
         </div>
 
         {/* Applications Queue Table */}
-        <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
+        {loading ? <p role="status">Loading applications…</p> : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}>{copy.errors.retry}</button></div> : <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs" aria-label={copy.list.tableAriaLabel}>
               <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[11px] font-bold uppercase tracking-wider text-[#5B6E69]">
@@ -139,7 +169,7 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
                         {app.contactPhone}
                       </td>
                       <td className="px-5 py-4 text-[#5B6E69]">
-                        {app.submittedAt}
+                        {formatDisplayDate(app.submittedAt)}
                       </td>
                       <td className="px-5 py-4">
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5B6E69]">
@@ -149,18 +179,15 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
                       </td>
                       <td className="px-5 py-4">
                         {app.applicationStatus === 'Pending' ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#F2D8B3] bg-[#FBF3E8] px-2.5 py-0.5 text-[11px] font-semibold text-[#8F5419]">
-                            <span className="material-symbols-outlined text-[12px]">{'hourglass_top'}</span>
+                          <span className="inline-flex h-8 w-32 items-center justify-center whitespace-nowrap rounded-full border border-[#F2D8B3] bg-[#FBF3E8] px-2.5 text-center text-[11px] font-semibold text-[#8F5419]">
                             <span>{copy.list.statusPending}</span>
                           </span>
                         ) : app.applicationStatus === 'Approved' ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#BCE0CD] bg-[#E7F2EC] px-2.5 py-0.5 text-[11px] font-semibold text-[#1B5E3C]">
-                            <span className="material-symbols-outlined text-[12px]">{'check_circle'}</span>
+                          <span className="inline-flex h-8 w-32 items-center justify-center whitespace-nowrap rounded-full border border-[#BCE0CD] bg-[#E7F2EC] px-2.5 text-center text-[11px] font-semibold text-[#1B5E3C]">
                             <span>{copy.list.statusApproved}</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#EAC4D5] bg-[#FBEFF4] px-2.5 py-0.5 text-[11px] font-semibold text-[#8C1D40]">
-                            <span className="material-symbols-outlined text-[12px]">{'cancel'}</span>
+                          <span className="inline-flex h-8 w-32 items-center justify-center whitespace-nowrap rounded-full border border-[#EAC4D5] bg-[#FBEFF4] px-2.5 text-center text-[11px] font-semibold text-[#8C1D40]">
                             <span>{copy.list.statusRejected}</span>
                           </span>
                         )}
@@ -192,7 +219,8 @@ export function TourOperatorApplicationListView({ initialApplications = [] }: To
               </tbody>
             </table>
           </div>
-        </div>
+        </div>}
+        {initialApplications === undefined && !loading && !error && totalCount > 50 && <nav aria-label="Application pages" className="mt-4 flex items-center justify-between"><button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button><span>{page} / {Math.ceil(totalCount / 50)}</span><button type="button" disabled={page * 50 >= totalCount} onClick={() => setPage(value => value + 1)}>Next</button></nav>}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { getTravelPreferences } from '@/features/account/preferences/travelPreferencesApi';
 import { getMapboxPublicToken } from '@/lib/mapboxToken';
 import { ROUTES } from '@/lib/routes';
+import { formatDisplayDate } from '@/lib/displayDate';
 
 import { getBrowserLocation, PlaceSearchError, SelectablePoi } from '../services/placeSearchApi';
 import { createSchedulingRequest, generateIdempotencyKey } from '../services/schedulingApi';
@@ -1272,7 +1273,7 @@ export function CreateSchedulingRequestForm({
               <dl className="mt-3.5 space-y-2.5 text-xs text-slate-600">
                 <div className="flex justify-between items-center py-1 border-b border-slate-100">
                   <dt className="text-slate-500">Thời gian bắt đầu</dt>
-                  <dd className="font-bold text-slate-800">{startTime} ({startDate})</dd>
+                  <dd className="font-bold text-slate-800">{startTime} ({formatDisplayDate(startDate)})</dd>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-100">
                   <dt className="text-slate-500">Thời lượng dự kiến</dt>

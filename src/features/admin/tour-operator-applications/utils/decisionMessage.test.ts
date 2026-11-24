@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { usableDecisionMessage } from './decisionMessage';
+import { approvalDecisionMessage, usableDecisionMessage } from './decisionMessage';
+
+it('never reports activation for an approval that is waiting for contract signature', () => {
+  expect(approvalDecisionMessage({ accountStatus: 'PendingContractSignature', message: 'Account activated.' }, 'Company'))
+    .toBe('Application approved. Waiting for the operator to sign the contract before account activation.');
+});
 
 describe('Backend decision message handling', () => {
   it('returns a trimmed plain-text Backend message', () => {

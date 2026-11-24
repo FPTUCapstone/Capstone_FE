@@ -194,7 +194,7 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
               <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
                 <tr>
                   {['Booking', 'Tour Operator', 'Run Date', 'Kind', 'Payout Amount', 'Status', 'Transfer Reference', 'Actions'].map((heading) => (
-                    <th key={heading} scope="col" className="px-4 py-3">
+                    <th key={heading} scope="col" className={`px-4 py-3${heading === 'Payout Amount' ? ' text-right' : ''}`}>
                       {heading}
                     </th>
                   ))}

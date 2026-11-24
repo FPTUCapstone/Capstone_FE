@@ -1,5 +1,7 @@
 'use client';
 
+import { formatDisplayDate } from '@/lib/displayDate';
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { AuthStorage } from '@/features/auth/session/authSession';
@@ -92,7 +94,10 @@ function PublicExploreToursPage() {
       });
     }
     if (filters.startDate || filters.endDate) {
-      const dateText = [filters.startDate, filters.endDate].filter(Boolean).join(' → ');
+      const dateText = [filters.startDate, filters.endDate]
+        .filter((value): value is string => Boolean(value))
+        .map(formatDisplayDate)
+        .join(' → ');
       list.push({
         id: 'date',
         label: dateText,

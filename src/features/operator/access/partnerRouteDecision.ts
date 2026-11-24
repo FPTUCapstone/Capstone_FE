@@ -1,7 +1,7 @@
 import { ROUTES } from '@/lib/routes';
 import type { WebAuthContext } from '@/features/auth/session/authSession';
 
-export type PartnerRoute = 'register' | 'dashboard' | 'application' | 'resubmit' | 'profile' | 'couponCreate';
+export type PartnerRoute = 'register' | 'dashboard' | 'application' | 'resubmit' | 'profile' | 'couponCreate' | 'contract';
 export type PartnerRouteDecision = { action: 'allow' } | { action: 'redirect'; href: string };
 
 /**
@@ -24,15 +24,19 @@ export function partnerRouteDecision(route: PartnerRoute, context: WebAuthContex
   if (context.role === 'Traveler') return { action: 'redirect', href: ROUTES.home };
   if (context.role === 'Administrator') return { action: 'redirect', href: ROUTES.admin.dashboard };
   if (context.role === 'Staff') return { action: 'redirect', href: ROUTES.admin.staffDashboard };
+  if (context.role !== 'TourOperator') return { action: 'redirect', href: ROUTES.provider.bookings };
+  if (context.onboardingState === 'AwaitingSignature') return route === 'contract' ? { action: 'allow' } : { action: 'redirect', href: ROUTES.partner.contract };
 
   // TourOperator (Active is guaranteed by the context validator). Approved is
   // the only state that may enter the workspace; every other application state
   // (PendingApproval/Rejected/unresolved-null) is confined to the application
   // projection, and registration is never offered to an existing operator.
-  const approved = context.applicationStatus === 'Approved';
+  const approved = context.applicationStatus === 'Approved' && !context.applicationUnresolved &&
+    (context.onboardingState === undefined || context.onboardingState === 'Active');
   const rejected = context.applicationStatus === 'Rejected';
   switch (route) {
     case 'dashboard':
+    case 'contract':
     case 'profile':
     case 'couponCreate':
       return approved ? { action: 'allow' } : { action: 'redirect', href: ROUTES.partner.application };

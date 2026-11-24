@@ -50,7 +50,7 @@ export function ApproveModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-4 z-50 flex items-center justify-center rounded-2xl bg-slate-900/40 p-4 backdrop-blur-[2px] animate-fade-in sm:inset-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="approve-application-title"

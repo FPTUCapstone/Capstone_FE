@@ -26,6 +26,10 @@ export interface AccountDetail {
   moderationHistory: { action: string; actorAttribution: string; reason: string | null; atUtc: string }[];
 }
 
+export function accountStatusLabel(status: string) {
+  return status === 'PendingContractSignature' ? 'Pending contract signature' : status;
+}
+
 export function canManageAccount(actor: string, target: string) {
   return actor === 'Staff'
     ? ['Traveler', 'TourOperator', 'ServiceProvider'].includes(target)

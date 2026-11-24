@@ -22,6 +22,21 @@ import {
   type TourItineraryDay,
   type TourValidationErrors,
 } from '../types/tourLifecycle';
+import { scrollToFirstError } from '@/lib/scrollUtils';
+
+const TOUR_FIELD_MAP: Record<string, string> = {
+  title: 'field-title',
+  destination: 'field-destination',
+  destinationIds: 'label-destination',
+  description: 'field-description',
+  cancellationPolicy: 'field-cancellation',
+  durationDays: 'field-duration',
+  basePrice: 'field-basePrice',
+  maxCapacity: 'field-capacity',
+  itinerary: 'section-itinerary',
+  schedules: 'section-schedules',
+  media: 'section-media',
+};
 
 interface CreateTourPackageViewProps {
   isDemo?: boolean;
@@ -274,6 +289,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       setErrors(validationErrors);
       revealErrors(validationErrors);
       showValidationToast('Không thể lưu gói tour. Vui lòng kiểm tra các trường được đánh dấu.');
+      scrollToFirstError(Object.keys(validationErrors), TOUR_FIELD_MAP);
       return;
     }
 
@@ -308,6 +324,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
         setErrors(err.errors);
         revealErrors(err.errors);
         showValidationToast('Không thể lưu gói tour. Vui lòng kiểm tra các trường được đánh dấu.');
+        scrollToFirstError(Object.keys(err.errors), TOUR_FIELD_MAP);
       } else {
         setErrorMessage(
           err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE

@@ -69,6 +69,13 @@ describe('UC-46 User Accounts Directory page route', () => {
     );
   });
 
+  it('offers the persisted waiting-signature status without changing its filter value', async () => {
+    mockSealedCookies();
+    render(await UserAccountsPage({ searchParams: Promise.resolve({ status: 'PendingContractSignature' }) }));
+    const option = screen.getByRole('option', { name: 'Pending contract signature' }) as HTMLOptionElement;
+    expect(option.value).toBe('PendingContractSignature');
+  });
+
   it('redirects unsealed or invalid token to login', async () => {
     mocks.getCookie.mockImplementation((name: string) =>
       name === ADMIN_ACCESS_TOKEN_COOKIE ? { value: 'unsealed-token' } : undefined,

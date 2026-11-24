@@ -101,10 +101,10 @@ export const tourOperatorApplicationEn = {
     question: (companyName: string) =>
       `Are you sure you want to approve the Tour Operator application for ${companyName}?`,
     effects: [
-      'The user account status will change to Active.',
+      'When contract signing is required, approval is followed by the operator reading and signing the published contract before activation.',
       'The operator approval status will change to Approved.',
       'Submitted documents will be marked as Approved.',
-      'An audit log entry and an activation notification will be generated.',
+      'The decision is recorded and the operator is notified of the next onboarding step.',
     ],
     cancel: 'Cancel',
     confirm: 'Confirm Approval',

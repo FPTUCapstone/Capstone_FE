@@ -27,6 +27,7 @@ const ROUTE_LABELS: Record<string, string> = {
   active: 'Active Trips',
   users: 'User Accounts',
   'landing-content': 'Landing Content',
+  'contract-templates': 'Contract Templates',
   settings: 'Settings',
   'algorithm-parameters': 'Algorithm Configuration',
   'audit-logs': 'Audit Logs',

@@ -3,12 +3,13 @@
 import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 
 /** Shared confirmation pattern: cancel first, contained focus, dismiss, then restore focus. */
-export function ConfirmationDialog({ title, children, pending, onCancel, onConfirm }: {
+export function ConfirmationDialog({ title, children, pending, onCancel, onConfirm, confirmLabel = 'Xác nhận gửi' }: {
   title: string;
   children: ReactNode;
   pending: boolean;
   onCancel: () => void;
   onConfirm: () => void;
+  confirmLabel?: string;
 }) {
   const titleId = useId();
   const descriptionId = useId();
@@ -70,7 +71,7 @@ export function ConfirmationDialog({ title, children, pending, onCancel, onConfi
         <div id={descriptionId} className="mt-2 space-y-2 text-xs leading-relaxed text-slate-600">{children}</div>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} disabled={pending} className="min-h-11 min-w-11 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">Hủy bỏ</button>
-          <button type="button" onClick={onConfirm} disabled={pending} className="min-h-11 min-w-11 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">{pending ? 'Đang gửi...' : 'Xác nhận gửi'}</button>
+          <button type="button" onClick={onConfirm} disabled={pending} className="min-h-11 min-w-11 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">{pending ? 'Đang gửi...' : confirmLabel}</button>
         </div>
       </div>
     </div>

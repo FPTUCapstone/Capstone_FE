@@ -108,7 +108,7 @@ export function OperatorRefundListScreen() {
               <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
                 <tr>
                   {['Booking', 'Requested', 'Refund Amount', 'Your Share', 'Return Deadline', 'Status'].map((heading) => (
-                    <th key={heading} scope="col" className="px-4 py-3">
+                    <th key={heading} scope="col" className={`px-4 py-3${heading === 'Refund Amount' || heading === 'Your Share' ? ' text-right' : ''}`}>
                       {heading}
                     </th>
                   ))}
@@ -123,8 +123,8 @@ export function OperatorRefundListScreen() {
                       </Link>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{formatVietnamDateTime(item.requestedAtUtc)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap font-bold">{formatVnd(item.amount)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap font-bold">{formatVnd(item.amount)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap">
                       {item.operatorReturnShare === null ? 'Set on confirmation' : formatVnd(item.operatorReturnShare)}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">

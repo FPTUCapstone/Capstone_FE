@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AccountModerationForm } from '@/features/admin/user-accounts/components/AccountModerationForm';
-import { accountDate, accountSession, accountTimestamp, canManageAccount, fetchAccounts, type AccountDetail } from '@/features/admin/user-accounts/server/accounts';
+import { accountDate, accountSession, accountStatusLabel, accountTimestamp, canManageAccount, fetchAccounts, type AccountDetail } from '@/features/admin/user-accounts/server/accounts';
 import { parseUserAccountRouteId } from '@/features/admin/user-accounts/server/userAccountRouteId';
 
 const actionLabels = new Map([
@@ -38,7 +38,7 @@ export default async function UserAccountDetailPage({ params }: { params: Promis
         <dl className="grid grid-cols-2 gap-2">
           <dt>Email</dt><dd>{detail.account.email ?? '—'}</dd>
           <dt>Role</dt><dd>{detail.account.role}</dd>
-          <dt>Status</dt><dd>{detail.account.status}</dd>
+          <dt>Status</dt><dd>{accountStatusLabel(detail.account.status)}</dd>
           <dt>Registered</dt><dd>{accountDate(detail.account.createdAtUtc)}</dd>
           <dt>Last sign-in</dt><dd>{accountDate(detail.account.lastLoginAtUtc)}</dd>
           <dt>Associated bookings</dt><dd>{detail.bookingCount ?? 'N/A'}</dd>
