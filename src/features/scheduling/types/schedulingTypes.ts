@@ -651,3 +651,74 @@ export function isValidItinerarySuggestionsDto(v: unknown): v is ItinerarySugges
     d.items.every(isValidSuggestion)
   );
 }
+
+// ---------- UC-10 weather packing tips (specs/UC-10-weather-packing-tips-web-spec.md) ----------
+
+export interface WeatherTipDto {
+  code: string;
+  severity: 'Info' | 'Warning';
+  text: string;
+}
+
+export interface WeatherTipsSummaryDto {
+  minTempC: number;
+  maxTempC: number;
+  maxRainProbabilityPercent: number;
+  maxUvIndex: number;
+}
+
+export interface WeatherTipsDto {
+  /** Local date of the plan, `yyyy-MM-dd`. */
+  date: string;
+  timeZoneId: string;
+  forecastAtUtc: string;
+  summary: WeatherTipsSummaryDto;
+  tips: WeatherTipDto[];
+}
+
+function isWeatherTip(value: unknown): value is WeatherTipDto {
+  return (
+    isRecord(value) &&
+    isString(value.code) &&
+    (value.severity === 'Info' || value.severity === 'Warning') &&
+    isString(value.text)
+  );
+}
+
+/**
+ * Reads `{ weatherTips: ... }` from GET /itineraries/{id}/weather-tips. Anything that is not a complete, correctly
+ * typed forecast (including the backend's own `null`) gives `null`, so the card stays hidden instead of half-showing.
+ */
+export function parseWeatherTipsResponse(body: unknown): WeatherTipsDto | null {
+  if (!isRecord(body) || !isRecord(body.weatherTips)) return null;
+  const tips = body.weatherTips;
+  const summary = tips.summary;
+  if (
+    !isString(tips.date) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(tips.date) ||
+    !isString(tips.timeZoneId) ||
+    !isString(tips.forecastAtUtc) ||
+    !isRecord(summary) ||
+    !isNumber(summary.minTempC) ||
+    !isNumber(summary.maxTempC) ||
+    !isNumber(summary.maxRainProbabilityPercent) ||
+    !isNumber(summary.maxUvIndex) ||
+    !Array.isArray(tips.tips) ||
+    !tips.tips.every(isWeatherTip)
+  ) {
+    return null;
+  }
+
+  return {
+    date: tips.date,
+    timeZoneId: tips.timeZoneId,
+    forecastAtUtc: tips.forecastAtUtc,
+    summary: {
+      minTempC: summary.minTempC,
+      maxTempC: summary.maxTempC,
+      maxRainProbabilityPercent: summary.maxRainProbabilityPercent,
+      maxUvIndex: summary.maxUvIndex,
+    },
+    tips: tips.tips.map((tip) => ({ code: tip.code, severity: tip.severity, text: tip.text })),
+  };
+}
