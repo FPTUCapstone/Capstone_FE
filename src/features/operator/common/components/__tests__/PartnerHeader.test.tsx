@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { PartnerHeader } from '../PartnerHeader';
+import * as useNotificationInboxModule from '@/features/operator/notifications/useNotificationInbox';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -9,7 +10,23 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('@/features/operator/notifications/useNotificationInbox');
+
+function mockInbox(overrides?: Partial<ReturnType<typeof useNotificationInboxModule.useNotificationInbox>>) {
+  vi.mocked(useNotificationInboxModule.useNotificationInbox).mockReturnValue({
+    items: [],
+    unreadCount: 0,
+    refresh: vi.fn(),
+    markRead: vi.fn(),
+    ...overrides,
+  });
+}
+
 describe('PartnerHeader', () => {
+  beforeEach(() => {
+    mockInbox();
+  });
+
   it('renders breadcrumb indicating current active tab', () => {
     render(<PartnerHeader activeTab="tours" />);
 
@@ -53,5 +70,55 @@ describe('PartnerHeader', () => {
     render(<PartnerHeader activeTab="dashboard" operatorName="Han River Travel Co." />);
 
     expect(screen.getByText('Han River Travel Co.')).toBeDefined();
+  });
+
+  it('renders the notification bell with an unread badge', () => {
+    mockInbox({
+      unreadCount: 2,
+      items: [
+        {
+          id: 1,
+          type: 'TourApproved',
+          title: 'Tour approved',
+          body: 'Your tour package was approved.',
+          relatedEntityType: 'Tour',
+          relatedEntityId: 196,
+          createdAtUtc: '2026-11-24T03:55:57.729Z',
+          isRead: false,
+        },
+      ],
+    });
+
+    render(<PartnerHeader activeTab="dashboard" />);
+
+    expect(screen.getByRole('button', { name: /thông báo/i })).toBeDefined();
+    expect(screen.getByTestId('notification-badge').textContent).toBe('2');
+  });
+
+  it('calls markRead when a notification item is clicked', () => {
+    const markRead = vi.fn();
+    mockInbox({
+      unreadCount: 1,
+      markRead,
+      items: [
+        {
+          id: 1,
+          type: 'TourApproved',
+          title: 'Tour approved',
+          body: 'Your tour package was approved.',
+          relatedEntityType: 'Tour',
+          relatedEntityId: 196,
+          createdAtUtc: '2026-11-24T03:55:57.729Z',
+          isRead: false,
+        },
+      ],
+    });
+
+    render(<PartnerHeader activeTab="dashboard" />);
+
+    fireEvent.click(screen.getByRole('button', { name: /thông báo/i }));
+    fireEvent.click(screen.getByText('Tour approved'));
+
+    expect(markRead).toHaveBeenCalledWith(1);
   });
 });
