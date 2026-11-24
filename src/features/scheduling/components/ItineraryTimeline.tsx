@@ -75,11 +75,8 @@ export function ItineraryTimeline({
 }: ItineraryTimelineProps) {
   if (!items || items.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
-        <span className="material-symbols-outlined text-4xl text-slate-300">
-          event_busy
-        </span>
-        <p className="mt-2 text-sm font-medium">Chưa có điểm dừng nào trong lịch trình này.</p>
+      <div className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-[#5B6E69] shadow-2xs">
+        <p className="text-sm font-medium">Chưa có điểm dừng nào trong lịch trình này.</p>
       </div>
     );
   }
@@ -128,18 +125,18 @@ export function ItineraryTimeline({
   };
 
   return (
-    <div className="relative space-y-6">
-      <div className="flex flex-col gap-1 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-base font-bold text-slate-900 sm:text-lg">
+    <div className="relative space-y-5">
+      <div className="flex flex-col gap-1 border-b border-[#DCE2DD] pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-base font-bold text-[#1C2928] sm:text-lg">
           Lộ trình tham quan chi tiết ({items.length} điểm dừng)
         </h2>
       </div>
 
       {hasMotorbikeLeg && (
-        <p className="text-xs text-slate-500">{MOTORBIKE_ESTIMATE_NOTE}</p>
+        <p className="text-xs text-[#5B6E69]">{MOTORBIKE_ESTIMATE_NOTE}</p>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {items.map((item, index) => {
           const isRest = (item.kind ?? (item as unknown as { itemKind?: string }).itemKind) === 'Rest';
           const isDining = item.costKind === 'AverageSpend' ||
@@ -162,6 +159,13 @@ export function ItineraryTimeline({
             (index === 0 ||
               vietnamDayKey(items[index - 1].plannedArrival) !==
                 vietnamDayKey(item.plannedArrival));
+          const badgeLabel = isDining
+            ? 'Ăn uống / Nghỉ ngơi'
+            : isRest
+              ? item.poiId === null
+                ? 'Nghỉ tự do — chưa chọn địa điểm'
+                : 'Nghỉ ngơi'
+              : 'Điểm tham quan';
 
           return (
             <div
@@ -175,10 +179,12 @@ export function ItineraryTimeline({
               onBlur={onHighlightItem ? () => onHighlightItem(null) : undefined}
             >
               {startsNewDay && (
-                <div id={`day-section-${vietnamDayKey(item.plannedArrival)}`} className="scroll-mt-28 mb-3">
-                  <p className="text-sm font-bold capitalize text-slate-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base text-[#103B39]">event</span>
-                    <span>{formatVietnamDayLabel(item.plannedArrival)}</span>
+                <div
+                  id={`day-section-${vietnamDayKey(item.plannedArrival)}`}
+                  className="relative z-10 mb-3 scroll-mt-28 bg-[#F7F5EF] py-1"
+                >
+                  <p className="text-sm font-bold capitalize text-[#174B4A]">
+                    {formatVietnamDayLabel(item.plannedArrival)}
                   </p>
                 </div>
               )}
@@ -200,6 +206,7 @@ export function ItineraryTimeline({
                     mode={legMode(item)}
                     disabled={busy}
                     showWalkHint={isBetweenVisits}
+                    showRail={!startsNewDay}
                     onChangeMode={
                       editable && onChangeLegMode && isBetweenVisits && previousVisitPoiId !== null
                         ? (mode) => onChangeLegMode(previousVisitPoiId, mode)
@@ -208,157 +215,148 @@ export function ItineraryTimeline({
                   />
                 )}
 
-              {/* Connecting line to next item */}
+              {/* Connecting vertical rail to the next item */}
               {!isLast && (
                 <div
-                  className="absolute left-5 top-12 -bottom-6 w-0.5 bg-slate-200 sm:left-6"
+                  className={`pointer-events-none absolute left-4 -bottom-4 w-0.5 bg-[#DCE2DD] ${
+                    index === 0 ? 'top-8' : startsNewDay ? 'top-12' : 'top-0'
+                  }`}
                   aria-hidden="true"
                 />
               )}
 
               {/* Stop Card */}
               <div
-                className={`relative flex items-start gap-3.5 rounded-2xl border p-4 shadow-2xs transition sm:gap-4 sm:p-5 ${
-                  highlightedItemId === item.itemId ? 'ring-2 ring-[#103B39]/50 ' : ''
+                className={`relative ml-11 sm:ml-12 rounded-2xl border p-4 shadow-2xs transition sm:p-5 ${
+                  highlightedItemId === item.itemId ? 'ring-2 ring-[#174B4A]/45 border-[#174B4A]/50 ' : ''
                 }${
                   item.isUnavailable
-                    ? 'border-rose-200 bg-rose-50/30'
+                    ? 'border-rose-200 bg-rose-50/40'
                     : isRestCard
-                    ? 'border-amber-200/80 bg-amber-50/40 hover:border-amber-300'
-                    : 'border-slate-200 bg-white hover:border-teal-300'
+                    ? 'border-[#D9A986]/60 bg-amber-50/40 hover:border-[#B96D4C]/70'
+                    : 'border-[#DCE2DD] bg-white hover:border-[#174B4A]/40'
                 }`}
               >
-                {/* Sequence circle badge */}
+                {/* Upper rail stub into the final stop pin */}
+                {isLast && index > 0 && !startsNewDay && (
+                  <div
+                    className="pointer-events-none absolute -left-7 sm:-left-8 -top-4 h-12 w-0.5 bg-[#DCE2DD]"
+                    aria-hidden="true"
+                  />
+                )}
+
+                {/* Circular numbered pin anchored to the left timeline rail */}
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black shadow-xs sm:h-12 sm:w-12 sm:text-base ${
+                  className={`absolute -left-11 sm:-left-12 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shadow-xs ring-4 ring-[#F7F5EF] ${
                     item.isUnavailable
-                      ? 'bg-rose-500 text-white'
+                      ? 'bg-rose-600'
                       : isRestCard
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-[#103B39] text-white'
+                      ? 'bg-[#B96D4C]'
+                      : 'bg-[#174B4A]'
                   }`}
                 >
                   {item.sequenceNo}
                 </div>
 
                 {/* Content body */}
-                <div className="min-w-0 flex-1">
-                  {/* Top row: Badges and Times */}
+                <div className="min-w-0">
+                  {/* Top row: Time-first schedule + quiet tags + actions */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      {(() => {
-                        const badgeLabel = isDining
-                          ? 'Ăn uống / Nghỉ ngơi'
-                          : isRest
-                            ? item.poiId === null ? 'Nghỉ tự do — chưa chọn địa điểm' : 'Nghỉ ngơi'
-                            : 'Điểm tham quan';
-                        const badgeIcon = isDining ? 'restaurant' : isRest ? 'beach_access' : 'tour';
-                        return (
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold ${
-                              isRestCard
-                                ? 'bg-amber-100 text-amber-900'
-                                : 'bg-teal-100 text-[#103B39]'
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-xs">
-                              {badgeIcon}
-                            </span>
-                            {badgeLabel}
-                          </span>
-                        );
-                      })()}
+                      <span className="text-xs font-bold tabular-nums text-[#1C2928] sm:text-sm">
+                        {arrivalTime} - {departureTime}
+                      </span>
 
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                          isRestCard
+                            ? 'bg-[#B96D4C]/15 text-[#995436]'
+                            : 'bg-[#E8F0EA] text-[#174B4A]'
+                        }`}
+                      >
+                        {badgeLabel}
+                      </span>
 
                       {item.category && (
-                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                        <span className="inline-flex items-center rounded-full border border-[#DCE2DD]/80 bg-[#F7F5EF] px-2.5 py-0.5 text-[11px] font-medium text-[#5B6E69]">
                           {item.category}
                         </span>
                       )}
 
                       {item.isMandatory && (
-                        <span className="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
+                        <span className="inline-flex items-center rounded-full border border-rose-200/80 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-800">
                           Bắt buộc
                         </span>
                       )}
 
                       {item.isUnavailable && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
-                          <span className="material-symbols-outlined text-xs">block</span>
+                        <span className="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-semibold text-rose-800">
                           Tạm ngưng hoạt động
                         </span>
                       )}
-                    </div>
 
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                      <span className="material-symbols-outlined text-sm text-slate-400">
-                        schedule
-                      </span>
-                      <span>
-                        {arrivalTime} - {departureTime}
-                      </span>
                       {shift !== undefined && (
-                        <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900">
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
                           {arrivalShiftLabel(shift)}
                         </span>
                       )}
-                      <ItineraryStopMenu
-                        stopName={stopDisplayName(item)}
-                        actions={stopActions(item)}
-                      />
                     </div>
+
+                    <ItineraryStopMenu
+                      stopName={stopDisplayName(item)}
+                      actions={stopActions(item)}
+                    />
                   </div>
 
                   {/* Stop title */}
-                  <h3 className="mt-2 text-base font-bold text-slate-900 sm:text-lg">
+                  <h3 className="mt-2 text-base font-bold text-[#1C2928] sm:text-[17px]">
                     {item.poiName || 'Điểm dừng chân theo lộ trình'}
                   </h3>
 
-                  {/* AI sentence, or the recommendation reason when there is none (UC-10) */}
+                  {/* Editorial explanation with subtle left accent bar (UC-10) */}
                   {stopExplanation(item) && (
-                    <p className="mt-1 flex items-start gap-1 text-xs text-slate-600 sm:text-sm">
-                      <span className="material-symbols-outlined text-sm text-teal-600 shrink-0 mt-0.5">
-                        tips_and_updates
-                      </span>
-                      <span>{stopExplanation(item)}</span>
+                    <p
+                      className={`mt-2 border-l-2 pl-3 text-xs leading-relaxed text-[#5B6E69] sm:text-sm ${
+                        isRestCard ? 'border-[#B96D4C]/60' : 'border-[#174B4A]/50'
+                      }`}
+                    >
+                      {stopExplanation(item)}
                     </p>
                   )}
 
-                  {/* Metadata chips */}
-                  <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-slate-400">
-                        timelapse
+                  {/* Bottom metadata row */}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[#DCE2DD]/60 pt-2.5 text-xs text-[#5B6E69]">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span>
+                        Thời gian dừng:{' '}
+                        <strong className="font-semibold text-[#1C2928]">
+                          {item.stayDurationMinutes} phút
+                        </strong>
                       </span>
-                      <span>Thời gian dừng: <strong>{item.stayDurationMinutes} phút</strong></span>
                       {item.isDurationCompressed && (
                         <span
-                          className="ml-1 inline-flex items-center gap-0.5 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700"
+                          className="inline-flex items-center rounded-full bg-[#E8F0EA] px-2 py-0.5 text-[10px] font-semibold text-[#174B4A]"
                           title="Đã tối ưu thời gian để vừa lịch trình"
                         >
-                          <span className="material-symbols-outlined text-xs">auto_fix_high</span>
                           Tối ưu lịch trình
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-slate-400">
-                        payments
-                      </span>
-                      <strong>{formatPriceLabel(item.estimatedCost, item.costKind)}</strong>
-                    </div>
+                    <span aria-hidden="true" className="text-[#DCE2DD]">•</span>
+
+                    <strong className="font-semibold text-[#1C2928]">
+                      {formatPriceLabel(item.estimatedCost, item.costKind)}
+                    </strong>
 
                     {/* Link to POI details (UC-12) if poiId exists */}
                     {item.poiId ? (
                       <Link
                         href={ROUTES.poi(item.poiId)}
-                        className="ml-auto inline-flex items-center gap-1 font-bold text-[#103B39] hover:underline"
+                        className="ml-auto inline-flex items-center gap-1 font-semibold text-[#174B4A] transition hover:text-[#103B39] hover:underline"
                       >
                         <span>Chi tiết địa điểm</span>
-                        <span className="material-symbols-outlined text-sm">
-                          arrow_outward
-                        </span>
+                        <span aria-hidden="true">→</span>
                       </Link>
                     ) : null}
                   </div>
@@ -366,13 +364,13 @@ export function ItineraryTimeline({
               </div>
 
               {lunchAfterIndex === index && onAddFood && (
-                <div className="ml-10 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 px-4 py-3 text-sm text-amber-900 sm:ml-12">
-                  <span className="font-bold">🍜 Bữa trưa?</span>
+                <div className="ml-11 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-[#B96D4C]/50 bg-[#FEF3E2]/60 px-4 py-3 text-sm text-[#1C2928] sm:ml-12">
+                  <span className="font-semibold">🍜 Bữa trưa?</span>
                   <button
                     type="button"
                     onClick={() => onAddFood(item)}
                     disabled={busy}
-                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-amber-600 disabled:opacity-60"
+                    className="rounded-lg bg-[#B96D4C] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#995436] disabled:opacity-60"
                   >
                     Chọn quán
                   </button>
@@ -388,7 +386,7 @@ export function ItineraryTimeline({
           type="button"
           onClick={() => onAddFood(lastItem)}
           disabled={busy}
-          className="w-full rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-[#103B39] hover:text-[#103B39] disabled:opacity-60"
+          className="ml-11 w-[calc(100%-2.75rem)] rounded-xl border border-dashed border-[#DCE2DD] bg-white/70 px-4 py-3 text-sm font-semibold text-[#174B4A] transition hover:border-[#174B4A] hover:bg-white disabled:opacity-60 sm:ml-12 sm:w-[calc(100%-3rem)]"
         >
           ＋ Thêm quán ăn
         </button>

@@ -48,6 +48,7 @@ import {
   withLegMode,
 } from '../utils/itineraryStops';
 import { buildItineraryMapModel, MARKER_COLORS, MapMarkerKind } from '../utils/mapGeometry';
+import { ItineraryReorderDialog } from './ItineraryReorderDialog';
 import { ItineraryReviewsDialog } from './ItineraryReviewsDialog';
 import { LazyItineraryMap } from './maps/LazyMaps';
 import { ROUTE_END_COLOR, ROUTE_LINE_COLOR, ROUTE_START_COLOR, STRAIGHT_LINE_OPACITY } from './maps/mapboxStyle';
@@ -78,16 +79,16 @@ interface ViewSuggestedItineraryPageProps {
   itineraryId: string;
 }
 
-function getErrorPresentation(status?: number): { heading: string; icon: string } {
+function getErrorPresentation(status?: number): { heading: string } {
   switch (status) {
     case 401:
-      return { heading: 'Phiên đăng nhập đã hết hạn', icon: 'login' };
+      return { heading: 'Phiên đăng nhập đã hết hạn' };
     case 403:
-      return { heading: 'Bạn không có quyền xem lịch trình này', icon: 'lock' };
+      return { heading: 'Bạn không có quyền xem lịch trình này' };
     case 404:
-      return { heading: 'Không tìm thấy lịch trình', icon: 'search_off' };
+      return { heading: 'Không tìm thấy lịch trình' };
     default:
-      return { heading: 'Không thể tải chi tiết lịch trình', icon: 'event_busy' };
+      return { heading: 'Không thể tải chi tiết lịch trình' };
   }
 }
 
@@ -102,7 +103,6 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   const [mutationPending, setMutationPending] = useState(false);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState(false);
-  const [orderedVisitPoiIds, setOrderedVisitPoiIds] = useState<number[]>([]);
   // Review 2 (D11-3/4): stops whose arrival moved in the last edit, and the stops to restore on undo.
   // Tied to the version they belong to, and handed over when the edit moves the page to a new id.
   const [lastEdit, setLastEdit] = useState<LastItineraryEdit | null>(null);
@@ -457,40 +457,26 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
   const startAdjustingOrder = () => {
     if (!itinerary) return;
-    setOrderedVisitPoiIds(
-      itinerary.items
-        .filter((item) => item.kind === 'Visit' && item.poiId !== null)
-        .map((item) => item.poiId!),
-    );
     setMutationError(null);
     setEditingOrder(true);
   };
 
-  const moveVisit = (index: number, direction: -1 | 1) => {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= orderedVisitPoiIds.length) return;
-    setOrderedVisitPoiIds((current) => {
-      const next = [...current];
-      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-      return next;
-    });
-  };
+  const reorderableVisitItems = useMemo(
+    () => itinerary?.items.filter((item) => item.kind === 'Visit' && item.poiId !== null) ?? [],
+    [itinerary],
+  );
 
-  const editVisitItems = itinerary
-    ? orderedVisitPoiIds
-        .map((poiId) => itinerary.items.find((item) => item.kind === 'Visit' && item.poiId === poiId))
-        .filter((item): item is ItineraryDetailDto['items'][number] => item !== undefined)
-    : [];
+  const showAcceptPrimary = Boolean(itinerary?.canManage && itinerary.status === 'Draft');
 
   if (status === 'restoring') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F5EF]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent"
             aria-hidden="true"
           />
-          <p className="text-xs font-semibold text-slate-500">Đang tải kế hoạch du lịch…</p>
+          <p className="text-xs font-semibold text-[#5B6E69]">Đang tải kế hoạch du lịch…</p>
         </div>
       </div>
     );
@@ -501,64 +487,58 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]">
 
-      <main className="px-4 py-8 sm:px-6 lg:px-8">
+      <main className="px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           {/* Breadcrumb */}
           <nav
             aria-label="Breadcrumb"
-            className="mb-4 flex items-center gap-2 text-xs text-slate-500"
+            className="mb-4 flex flex-wrap items-center gap-2 text-xs text-[#5B6E69]"
           >
-            <Link href={ROUTES.home} className="hover:text-[#103B39] transition">
+            <Link href={ROUTES.home} className="transition hover:text-[#174B4A]">
               Trang chủ
             </Link>
-            <span className="material-symbols-outlined text-xs">chevron_right</span>
-            <Link href={ROUTES.plan} className="hover:text-[#103B39] transition">
-              Lập lịch trình thông minh
+            <span aria-hidden="true" className="text-[#DCE2DD]">/</span>
+            <Link href={ROUTES.plan} className="transition hover:text-[#174B4A]">
+              Lập lịch trình
             </Link>
-            <span className="material-symbols-outlined text-xs">chevron_right</span>
-            <span className="font-semibold text-slate-800">
+            <span aria-hidden="true" className="text-[#DCE2DD]">/</span>
+            <span className="font-semibold text-[#1C2928]">
               Lịch trình #{itineraryId}
             </span>
           </nav>
 
           {/* Truthful Error Display */}
           {error && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                <span className="material-symbols-outlined text-3xl">{errorPresentation.icon}</span>
-              </div>
-              <h2 className="mt-4 text-lg font-bold text-slate-900">
+            <div className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center shadow-2xs">
+              <h2 className="text-lg font-bold text-[#1C2928]">
                 {errorPresentation.heading}
               </h2>
               <div className="mx-auto mt-2 max-w-lg space-y-2">
-                <p className="text-xs text-slate-600 sm:text-sm">{error.message}</p>
+                <p className="text-xs text-[#5B6E69] sm:text-sm">{error.message}</p>
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 {error.status === 401 ? (
                   <Link
                     href={signInHref}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
+                    className="inline-flex items-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-[#103B39]"
                   >
-                    <span className="material-symbols-outlined text-sm">login</span>
-                    <span>Đăng nhập lại</span>
+                    Đăng nhập lại
                   </Link>
                 ) : (
                   <Link
                     href={ROUTES.plan}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
+                    className="inline-flex items-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-[#103B39]"
                   >
-                    <span className="material-symbols-outlined text-sm">add_circle</span>
-                    <span>Tạo lịch trình mới</span>
+                    Tạo lịch trình mới
                   </Link>
                 )}
                 <Link
                   href={ROUTES.home}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+                  className="inline-flex items-center rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-xs font-semibold text-[#1C2928] shadow-2xs transition hover:border-[#174B4A]/40 hover:bg-[#F7F5EF]"
                 >
-                  <span className="material-symbols-outlined text-sm">home</span>
-                  <span>Về trang chủ</span>
+                  Về trang chủ
                 </Link>
               </div>
             </div>
@@ -567,8 +547,8 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           {/* Loading state */}
           {loading && !error && (
             <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
-              <div className="h-10 w-10 animate-spin rounded-full border-3 border-[#103B39] border-t-transparent" />
-              <p className="text-xs font-semibold text-slate-600 sm:text-sm">
+              <div className="h-10 w-10 animate-spin rounded-full border-3 border-[#174B4A] border-t-transparent" />
+              <p className="text-xs font-semibold text-[#5B6E69] sm:text-sm">
                 Đang tải kế hoạch lịch trình gợi ý…
               </p>
             </div>
@@ -576,14 +556,13 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
           {/* Main Itinerary Content */}
           {!loading && itinerary && (
-            <div className="space-y-8">
+            <div className="space-y-5">
               {/* Visible DEMO_ONLY Fixture Warning Banner */}
               {itinerary.status === 'DEMO_FIXTURE' && (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs font-medium text-amber-900 shadow-2xs">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
-                    <span className="material-symbols-outlined text-sm">science</span>
-                    <span>Bản mẫu thử nghiệm (DEMO_ONLY Fixture)</span>
-                  </div>
+                <div className="rounded-xl border border-amber-300/80 bg-[#FEF3E2] p-4 text-xs font-medium text-amber-950 shadow-2xs">
+                  <p className="font-bold text-amber-900">
+                    Bản mẫu thử nghiệm (DEMO_ONLY Fixture)
+                  </p>
                   <p className="mt-1">
                     Lịch trình này là bản mẫu phục vụ kiểm thử giao diện trong môi trường phát triển.
                   </p>
@@ -595,82 +574,66 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                 <div
                   data-testid="schedule-source-notice"
                   role="status"
-                  className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs font-medium text-amber-900 shadow-2xs"
+                  className="rounded-xl border border-amber-300/80 bg-[#FEF3E2] p-4 text-xs font-medium text-amber-950 shadow-2xs"
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
-                    <span className="material-symbols-outlined text-sm">bolt</span>
-                    <span>{scheduleSource.label}</span>
-                  </div>
+                  <p className="font-bold text-amber-900">{scheduleSource.label}</p>
                   <p className="mt-1">{scheduleSource.notice}</p>
                 </div>
               )}
 
               {/* Journey Header Card */}
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-7">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-2.5">
-                    {/* Meta Status Badges */}
-                    <div className="flex flex-wrap items-center gap-2">
+              <div className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-2xs sm:p-6">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    {/* Quiet Meta Status Row */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          itinerary.status === 'Active'
+                            ? 'bg-[#E8F0EA] text-[#174B4A]'
+                            : itinerary.status === 'Draft'
+                            ? 'bg-[#FEF3E2] text-[#995436]'
+                            : 'bg-[#F7F5EF] text-[#5B6E69]'
+                        }`}
+                      >
+                        {itinerary.status}
+                      </span>
+                      <span className="font-medium text-[#5B6E69]">#{itinerary.itineraryId}</span>
+                      <span aria-hidden="true" className="text-[#DCE2DD]">•</span>
+                      <span className="font-medium text-[#5B6E69]">v{itinerary.version}</span>
                       {scheduleSource && (
                         <span
                           data-testid="schedule-source-badge"
                           title={scheduleSource.detail}
-                          className={`inline-flex items-center gap-1 rounded-full border px-3 py-0.5 text-xs font-bold ${PROVENANCE_BADGE_CLASS[scheduleSource.tone]}`}
+                          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PROVENANCE_BADGE_CLASS[scheduleSource.tone]}`}
                         >
-                          <span className="material-symbols-outlined text-xs">
-                            {scheduleSource.tone === 'optimal' ? 'verified' : 'info'}
-                          </span>
                           {scheduleSource.label}
                         </span>
                       )}
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                        Mã: #{itinerary.itineraryId}
-                      </span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                        v{itinerary.version}
-                      </span>
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        itinerary.status === 'Active'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : itinerary.status === 'Draft'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {itinerary.status}
-                      </span>
                       {!itinerary.canManage && (
-                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                        <span className="rounded-full bg-[#FEF3E2] px-2.5 py-0.5 text-xs font-semibold text-[#995436]">
                           Chỉ xem
                         </span>
                       )}
                     </div>
 
                     {/* Itinerary Title */}
-                    <h1 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
+                    <h1 className="text-xl font-bold tracking-tight text-[#1C2928] sm:text-2xl">
                       {itinerary.title || 'Lịch trình khám phá'}
                     </h1>
 
                     {/* Destination & Date/Time Range Sub-meta */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 sm:text-sm">
-                      <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                        <span className="material-symbols-outlined text-base text-[#103B39]">location_on</span>
-                        <span>{destinationLabel}</span>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-[#5B6E69] sm:text-sm">
+                      <span>{destinationLabel}</span>
                       {scheduleDateLabel && (
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                          <span className="material-symbols-outlined text-base text-slate-400">calendar_today</span>
+                        <>
+                          <span aria-hidden="true" className="text-[#DCE2DD]">•</span>
                           <span className="capitalize">{scheduleDateLabel}</span>
-                        </div>
+                        </>
                       )}
                       {itinerary.transportMode && (
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                          <span className="material-symbols-outlined text-base text-slate-400">
-                            {itinerary.transportMode === 'Walking'
-                              ? 'directions_walk'
-                              : itinerary.transportMode === 'Car'
-                              ? 'directions_car'
-                              : 'two_wheeler'}
-                          </span>
+                        <>
+                          <span aria-hidden="true" className="text-[#DCE2DD]">•</span>
                           <span>
                             {itinerary.transportMode === 'Walking'
                               ? 'Đi bộ'
@@ -678,44 +641,34 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                               ? 'Ô tô / Taxi'
                               : 'Xe máy'}
                           </span>
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex flex-wrap items-center gap-2.5 pt-2 lg:pt-0">
-                    <button
-                      type="button"
-                      onClick={handlePrint}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
-                    >
-                      <span className="material-symbols-outlined text-sm">print</span>
-                      <span>In lịch trình</span>
-                    </button>
+                  <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end">
+                    {showAcceptPrimary && (
+                      <button
+                        type="button"
+                        onClick={() => void applyMutation(() => acceptItinerary(itinerary.itineraryId))}
+                        disabled={mutationPending}
+                        className="inline-flex items-center rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-[#103B39] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Chấp nhận lịch trình
+                      </button>
+                    )}
 
-                    <Link
-                      href={ROUTES.plan}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
-                    >
-                      <span className="material-symbols-outlined text-sm">tune</span>
-                      <span>Tùy chỉnh lại</span>
-                    </Link>
-                    {itinerary.canManage && (
+                    {itinerary.canManage && !itinerary.isNavigationInProgress && (
                       <>
-                        {itinerary.status === 'Draft' && (
-                          <button
-                            type="button"
-                            onClick={() => void applyMutation(() => acceptItinerary(itinerary.itineraryId))}
-                            disabled={mutationPending}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <span className="material-symbols-outlined text-sm">task_alt</span>
-                            <span>Chấp nhận lịch trình</span>
-                          </button>
-                        )}
-                        {!itinerary.isNavigationInProgress && (
-                        <>
+                        <button
+                          type="button"
+                          onClick={startAdjustingOrder}
+                          disabled={mutationPending || editingOrder}
+                          className="inline-flex items-center rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-semibold text-[#1C2928] transition hover:border-[#174B4A]/40 hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Chỉnh sửa thứ tự
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -727,24 +680,31 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                             }
                           }}
                           disabled={mutationPending}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-semibold text-[#1C2928] transition hover:border-[#174B4A]/40 hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          <span className="material-symbols-outlined text-sm">refresh</span>
-                          <span>Tạo lại lịch trình</span>
+                          Tạo lại lịch trình
                         </button>
-                        <button
-                          type="button"
-                          onClick={startAdjustingOrder}
-                          disabled={mutationPending || editingOrder}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <span className="material-symbols-outlined text-sm">reorder</span>
-                          <span>Chỉnh sửa thứ tự</span>
-                        </button>
-                        </>
-                        )}
                       </>
                     )}
+
+                    <Link
+                      href={ROUTES.plan}
+                      className={
+                        showAcceptPrimary
+                          ? 'inline-flex items-center rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-semibold text-[#1C2928] transition hover:border-[#174B4A]/40 hover:bg-[#F7F5EF]'
+                          : 'inline-flex items-center rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-[#103B39]'
+                      }
+                    >
+                      Tùy chỉnh lại
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={handlePrint}
+                      className="inline-flex items-center rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-semibold text-[#5B6E69] transition hover:border-[#174B4A]/40 hover:bg-[#F7F5EF] hover:text-[#1C2928]"
+                    >
+                      In lịch trình
+                    </button>
                   </div>
                 </div>
               </div>
@@ -752,41 +712,17 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
               {itinerary.isNavigationInProgress && (
                 <div
                   role="status"
-                  className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+                  className="rounded-xl border border-[#174B4A]/20 bg-[#E8F0EA]/70 px-4 py-3 text-sm text-[#174B4A]"
                 >
-                  <span className="material-symbols-outlined text-lg">smartphone</span>
-                  <span>
-                    Chuyến đi đang diễn ra trên ứng dụng TripMate. Lịch trình được khóa chỉnh sửa
-                    cho tới khi chuyến kết thúc trên app.
-                  </span>
+                  Chuyến đi đang diễn ra trên ứng dụng TripMate. Lịch trình được khóa chỉnh sửa
+                  cho tới khi chuyến kết thúc trên app.
                 </div>
               )}
 
-              {mutationError && (
+              {mutationError && !editingOrder && (
                 <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                   {mutationError}
                 </div>
-              )}
-
-              {editingOrder && itinerary.canManage && !itinerary.isNavigationInProgress && (
-                <section className="rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
-                  <h2 className="text-base font-bold text-slate-900">Sắp xếp lại các điểm tham quan</h2>
-                  <p className="mt-1 text-sm text-slate-600">Điểm nghỉ được hệ thống giữ nguyên; bạn chỉ thay đổi thứ tự các điểm tham quan.</p>
-                  <ol className="mt-4 space-y-2">
-                    {editVisitItems.map((item, index) => (
-                      <li key={item.itemId} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm shadow-2xs">
-                        <span className="w-5 font-bold text-[#103B39]">{index + 1}</span>
-                        <span className="min-w-0 flex-1 truncate font-medium text-slate-800">{item.poiName ?? 'Điểm tham quan'}</span>
-                        <button type="button" aria-label={`Di chuyển ${item.poiName ?? index + 1} lên`} onClick={() => moveVisit(index, -1)} disabled={index === 0 || mutationPending} className="rounded border px-2 py-1 disabled:opacity-40">↑</button>
-                        <button type="button" aria-label={`Di chuyển ${item.poiName ?? index + 1} xuống`} onClick={() => moveVisit(index, 1)} disabled={index === editVisitItems.length - 1 || mutationPending} className="rounded border px-2 py-1 disabled:opacity-40">↓</button>
-                      </li>
-                    ))}
-                  </ol>
-                  <div className="mt-4 flex gap-2">
-                    <button type="button" onClick={() => applyStops(reorderStops(currentStops(itinerary.items), orderedVisitPoiIds))} disabled={mutationPending || orderedVisitPoiIds.length === 0} className="rounded-xl bg-[#103B39] px-4 py-2 text-sm font-bold text-white disabled:opacity-60">Lưu thứ tự mới</button>
-                    <button type="button" onClick={() => setEditingOrder(false)} disabled={mutationPending} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">Hủy</button>
-                  </div>
-                </section>
               )}
 
               {/* Summary Stats Cards */}
@@ -796,44 +732,47 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
               {/* Day Navigation */}
               {uniqueDays.length > 0 && (
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-                  <span className="flex items-center gap-1 font-semibold text-slate-500 shrink-0">
-                    <span className="material-symbols-outlined text-sm text-[#103B39]">calendar_view_day</span>
+                  <span className="shrink-0 font-semibold text-[#5B6E69]">
                     Lộ trình theo ngày:
                   </span>
                   <button
-                      type="button"
-                      onClick={() => setActiveDayKey(null)}
-                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 font-bold shadow-2xs transition ${
-                        activeDayKey === null
-                          ? 'border-[#103B39] bg-teal-50 text-[#103B39]'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                      }`}
-                    >
-                      <span>Tất cả</span>
-                      <span className="text-[11px] font-normal text-slate-500">({itinerary.items.length} điểm)</span>
-                    </button>
-                    {uniqueDays.map((d, idx) => (
+                    type="button"
+                    onClick={() => setActiveDayKey(null)}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-semibold shadow-2xs transition ${
+                      activeDayKey === null
+                        ? 'border-[#174B4A] bg-[#174B4A] text-white'
+                        : 'border-[#DCE2DD] bg-white text-[#1C2928] hover:border-[#174B4A]/40 hover:bg-[#E8F0EA]/40'
+                    }`}
+                  >
+                    <span>Tất cả</span>
+                    <span className={`text-[11px] font-normal ${activeDayKey === null ? 'text-white/80' : 'text-[#5B6E69]'}`}>
+                      ({itinerary.items.length} điểm)
+                    </span>
+                  </button>
+                  {uniqueDays.map((d, idx) => (
                     <button
                       key={d.key}
                       type="button"
                       onClick={() => scrollToDay(d.key)}
-                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 font-bold shadow-2xs transition ${
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-semibold shadow-2xs transition ${
                         activeDayKey === d.key
-                          ? 'border-[#103B39] bg-teal-50 text-[#103B39]'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                          ? 'border-[#174B4A] bg-[#174B4A] text-white'
+                          : 'border-[#DCE2DD] bg-white text-[#1C2928] hover:border-[#174B4A]/40 hover:bg-[#E8F0EA]/40'
                       }`}
                     >
                       <span>Ngày {idx + 1}</span>
-                      <span className="text-[11px] font-normal text-slate-500">({d.count} điểm)</span>
+                      <span className={`text-[11px] font-normal ${activeDayKey === d.key ? 'text-white/80' : 'text-[#5B6E69]'}`}>
+                        ({d.count} điểm)
+                      </span>
                     </button>
                   ))}
                 </div>
               )}
 
               {/* 2-Column Main Content Layout: 60% Timeline + 40% Map */}
-              <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 items-start">
+              <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
                 {/* Left Column: Timeline of Stops (60%) */}
-                <div className="lg:col-span-3 min-w-0">
+                <div className="min-w-0 lg:col-span-3">
                   <ItineraryTimeline
                     items={itinerary.items}
                     tripStart={itinerary.validFrom}
@@ -858,20 +797,19 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                 </div>
 
                 {/* Right Column: Route Map Preview & Information (40%) */}
-                <aside className="space-y-6 lg:col-span-2 lg:sticky lg:top-24">
+                <aside className="space-y-4 lg:col-span-2 lg:sticky lg:top-24">
                   {/* Real Interactive Mapbox Map: "Bản đồ lộ trình" */}
                   <section
                     ref={mapSectionRef}
-                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs"
+                    className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-2xs"
                     aria-label="Bản đồ lộ trình"
                   >
                     <div className="mb-3 flex items-center justify-between">
-                      <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                        <span className="material-symbols-outlined text-lg text-[#103B39]">map</span>
+                      <h3 className="text-sm font-bold text-[#1C2928]">
                         Bản đồ lộ trình
                       </h3>
                       {mapModel && mapModel.markers.length > 0 && (
-                        <span className="rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-[#103B39]">
+                        <span className="rounded-full bg-[#E8F0EA] px-2.5 py-0.5 text-[11px] font-semibold text-[#174B4A]">
                           {mapModel.markers.length} điểm mốc
                         </span>
                       )}
@@ -881,27 +819,24 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                       /* State 1: Missing Mapbox Access Token */
                       <div
                         data-testid="itinerary-map-fallback-no-token"
-                        className="flex flex-col items-center justify-center rounded-xl border border-amber-200 bg-amber-50/70 p-6 text-center"
+                        className="flex flex-col items-center justify-center rounded-xl border border-amber-200 bg-[#FEF3E2]/70 p-6 text-center"
                       >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700 shadow-2xs">
-                          <span className="material-symbols-outlined text-2xl">location_off</span>
-                        </div>
-                        <h4 className="mt-3 text-sm font-bold text-slate-900">
+                        <h4 className="text-sm font-bold text-[#1C2928]">
                           Chưa cấu hình Mapbox Access Token
                         </h4>
-                        <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-600">
+                        <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#5B6E69]">
                           Bản đồ địa lý tương tác cần biến môi trường{' '}
-                          <code className="rounded bg-amber-100 px-1 py-0.5 text-[11px] font-mono text-amber-900">
+                          <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[11px] text-amber-900">
                             NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
                           </code>{' '}
                           trong tệp{' '}
-                          <code className="rounded bg-amber-100 px-1 py-0.5 text-[11px] font-mono text-amber-900">
+                          <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[11px] text-amber-900">
                             .env.local
                           </code>{' '}
                           để tải dữ liệu bản đồ số và đường nối các điểm dừng.
                         </p>
-                        <div className="mt-3 rounded-lg border border-amber-200/80 bg-white/90 p-2.5 text-left text-[11px] text-slate-600">
-                          <p className="font-semibold text-slate-800">Lưu ý hoạt động:</p>
+                        <div className="mt-3 rounded-lg border border-amber-200/80 bg-white/95 p-2.5 text-left text-[11px] text-[#5B6E69]">
+                          <p className="font-semibold text-[#1C2928]">Lưu ý hoạt động:</p>
                           <p className="mt-0.5">
                             Dòng thời gian các điểm dừng bên trái vẫn hoạt động đầy đủ với thông tin giờ đến, thứ tự và dự toán kinh phí.
                           </p>
@@ -913,13 +848,10 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                         data-testid="itinerary-map-fallback-error"
                         className="flex flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/70 p-6 text-center"
                       >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-700 shadow-2xs">
-                          <span className="material-symbols-outlined text-2xl">warning</span>
-                        </div>
-                        <h4 className="mt-3 text-sm font-bold text-slate-900">
+                        <h4 className="text-sm font-bold text-[#1C2928]">
                           Bản đồ lộ trình chưa khả dụng
                         </h4>
-                        <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-600">
+                        <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#5B6E69]">
                           Không thể khởi tạo bản đồ Mapbox. Token có thể không hợp lệ hoặc trình duyệt chưa hỗ trợ công nghệ WebGL.
                         </p>
                       </div>
@@ -927,15 +859,12 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                       /* State 3: Empty / No Coordinates */
                       <div
                         data-testid="itinerary-map-fallback-no-coords"
-                        className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/80 p-6 text-center"
+                        className="flex flex-col items-center justify-center rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] p-6 text-center"
                       >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-slate-600 shadow-2xs">
-                          <span className="material-symbols-outlined text-2xl">pin_drop</span>
-                        </div>
-                        <h4 className="mt-3 text-sm font-bold text-slate-900">
+                        <h4 className="text-sm font-bold text-[#1C2928]">
                           Chưa có tọa độ hiển thị
                         </h4>
-                        <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-600">
+                        <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#5B6E69]">
                           Các điểm dừng trong lịch trình này chưa có dữ liệu tọa độ GPS khả dụng để đặt điểm mốc trên bản đồ.
                         </p>
                       </div>
@@ -955,11 +884,8 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                             <button
                               type="button"
                               onClick={() => setSelectedLegId(null)}
-                              className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-[#103B39] shadow-md transition hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#103B39]"
+                              className="absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-[#DCE2DD] bg-white/95 px-3 py-1.5 text-xs font-semibold text-[#174B4A] shadow-md transition hover:bg-[#E8F0EA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
                             >
-                              <span className="material-symbols-outlined text-sm" aria-hidden="true">
-                                zoom_out_map
-                              </span>
                               Xem toàn bộ lộ trình
                             </button>
                           )}
@@ -969,14 +895,14 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                         {selectedItem && (
                           <div
                             data-testid="selected-map-stop-card"
-                            className="mt-3 rounded-xl border border-teal-200 bg-teal-50/70 p-3 shadow-xs transition-all"
+                            className="mt-3 rounded-xl border border-[#174B4A]/25 bg-[#F7F5EF] p-3.5 shadow-2xs transition-all"
                             role="region"
                             aria-label={`Chi tiết điểm dừng đã chọn: ${stopDisplayName(selectedItem)}`}
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-start gap-2.5 min-w-0">
+                              <div className="flex min-w-0 items-start gap-2.5">
                                 <span
-                                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-black text-white shadow-xs"
+                                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-2xs"
                                   style={{
                                     backgroundColor:
                                       selectedItem.costKind === 'AverageSpend'
@@ -987,38 +913,37 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                                   {selectedItem.sequenceNo}
                                 </span>
                                 <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#103B39] bg-teal-100/80 px-1.5 py-0.5 rounded">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="rounded-full bg-[#E8F0EA] px-2 py-0.5 text-[10px] font-semibold text-[#174B4A]">
                                       {selectedItem.costKind === 'AverageSpend' ? 'Quán ăn' : 'Điểm tham quan'}
                                     </span>
                                     {selectedItem.category && (
-                                      <span className="text-[10px] text-slate-500 font-medium truncate max-w-[150px]">
+                                      <span className="max-w-[150px] truncate text-[10px] font-medium text-[#5B6E69]">
                                         • {selectedItem.category}
                                       </span>
                                     )}
                                   </div>
-                                  <h4 className="mt-0.5 truncate text-xs font-bold text-slate-900 sm:text-sm">
+                                  <h4 className="mt-1 truncate text-xs font-bold text-[#1C2928] sm:text-sm">
                                     {stopDisplayName(selectedItem)}
                                   </h4>
                                   {selectedItem.address && (
-                                    <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                                    <p className="mt-0.5 truncate text-[11px] text-[#5B6E69]">
                                       {selectedItem.address}
                                     </p>
                                   )}
-                                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-600">
+                                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[#5B6E69]">
                                     {selectedItem.plannedArrival && (
-                                      <span className="flex items-center gap-1 font-medium">
-                                        <span className="material-symbols-outlined text-xs text-slate-400">schedule</span>
+                                      <span className="font-medium text-[#1C2928]">
                                         Đến: {formatVietnamTime(selectedItem.plannedArrival)}
                                       </span>
                                     )}
                                     {selectedItem.stayDurationMinutes && (
-                                      <span className="text-slate-500">
-                                        (Dừng {formatMinutes(selectedItem.stayDurationMinutes)})
+                                      <span>
+                                        Dừng {formatMinutes(selectedItem.stayDurationMinutes)}
                                       </span>
                                     )}
                                     {selectedItem.estimatedCost !== null && selectedItem.estimatedCost > 0 && (
-                                      <span className="font-semibold text-teal-800">
+                                      <span className="font-semibold text-[#174B4A]">
                                         ~{selectedItem.estimatedCost.toLocaleString('vi-VN')} đ
                                       </span>
                                     )}
@@ -1028,20 +953,20 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                               <button
                                 type="button"
                                 onClick={() => setHighlightedItemId(null)}
-                                className="rounded-lg p-1 text-slate-400 hover:bg-teal-100 hover:text-slate-600 transition"
+                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-[#5B6E69] transition hover:bg-[#DCE2DD]/50 hover:text-[#1C2928]"
                                 title="Đóng chi tiết điểm dừng"
                                 aria-label="Đóng chi tiết điểm dừng"
                               >
-                                <span className="material-symbols-outlined text-base">close</span>
+                                ×
                               </button>
                             </div>
                           </div>
                         )}
 
                         {/* Map Marker Legend */}
-                        <ul className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-600" aria-label="Chú thích bản đồ">
+                        <ul className="mt-3 flex flex-wrap gap-3 text-[11px] text-[#5B6E69]" aria-label="Chú thích bản đồ">
                           {MAP_LEGEND.map((entry) => (
-                            <li key={entry.kind} className="flex items-center gap-1">
+                            <li key={entry.kind} className="flex items-center gap-1.5">
                               <span
                                 className="h-2.5 w-2.5 rounded-full"
                                 style={{ backgroundColor: MARKER_COLORS[entry.kind] }}
@@ -1051,11 +976,11 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                           ))}
                         </ul>
                         {activeLegId !== null && (
-                          <p className="mt-2 text-[11px] text-slate-500">
+                          <p className="mt-2 text-[11px] font-medium text-[#995436]">
                             Đoạn đang xem được tô màu cam đất; các đoạn khác mờ đi.
                           </p>
                         )}
-                        <ul className="mt-2 space-y-1 text-[11px] text-slate-500" aria-label="Chú thích đường nối">
+                        <ul className="mt-2.5 space-y-1 border-t border-[#DCE2DD]/70 pt-2.5 text-[11px] text-[#5B6E69]" aria-label="Chú thích đường nối">
                           <li className="flex items-center gap-2">
                             <span
                               data-testid="road-swatch"
@@ -1091,32 +1016,25 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                   </section>
 
                   {/* Mobile App Sync / Live Navigation Note (UC-13 Mobile Feature) */}
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 shadow-2xs">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
-                        <span className="material-symbols-outlined text-xl">smartphone</span>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-sky-950 sm:text-sm">
-                          Điều hướng trực tiếp trên ứng dụng di động
-                        </h4>
-                        <p className="mt-1 text-xs text-sky-800">
-                          Tính năng dẫn đường GPS thời gian thực và Cảnh báo thay đổi lộ trình
-                          được tối ưu hóa trên ứng dụng di động <strong>TripMate</strong>.
-                        </p>
-                      </div>
-                    </div>
+                  <div className="rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-2xs">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#174B4A]">
+                      Ứng dụng di động
+                    </p>
+                    <h4 className="mt-1 text-xs font-bold text-[#1C2928] sm:text-sm">
+                      Điều hướng trực tiếp trên ứng dụng di động
+                    </h4>
+                    <p className="mt-1 text-xs leading-relaxed text-[#5B6E69]">
+                      Tính năng dẫn đường GPS thời gian thực và Cảnh báo thay đổi lộ trình
+                      được tối ưu hóa trên ứng dụng di động <strong className="text-[#1C2928]">TripMate</strong>.
+                    </p>
                   </div>
 
                   {/* Travel Tips Card */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-                    <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-900 sm:text-sm">
-                      <span className="material-symbols-outlined text-sm text-[#103B39]">
-                        info
-                      </span>
+                  <div className="rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-2xs">
+                    <h4 className="text-xs font-bold text-[#1C2928] sm:text-sm">
                       Lưu ý khi thực hiện chuyến đi
                     </h4>
-                    <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                    <ul className="mt-2.5 space-y-2 text-xs text-[#5B6E69]">
                       {(() => {
                         const firstPlannedArrival = itinerary.items[0]?.plannedArrival;
                         const firstArrivalTime = firstPlannedArrival
@@ -1130,7 +1048,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
                         return (
                           <li className="flex items-start gap-1.5">
-                            <span className="text-[#103B39] font-bold">•</span>
+                            <span className="font-bold text-[#174B4A]">•</span>
                             <span>
                               Nên xuất phát đúng giờ dự kiến ({firstArrivalTime}) để đảm bảo khớp giờ
                               mở cửa.
@@ -1139,11 +1057,11 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                         );
                       })()}
                       <li className="flex items-start gap-1.5">
-                        <span className="text-[#103B39] font-bold">•</span>
+                        <span className="font-bold text-[#174B4A]">•</span>
                         <span>Chuẩn bị nước uống, kem chống nắng và điện thoại đầy pin để chụp ảnh.</span>
                       </li>
                       <li className="flex items-start gap-1.5">
-                        <span className="text-[#103B39] font-bold">•</span>
+                        <span className="font-bold text-[#174B4A]">•</span>
                         <span>Bạn có thể xem chi tiết từng điểm tham quan bằng cách nhấp vào tên địa điểm.</span>
                       </li>
                     </ul>
@@ -1182,24 +1100,39 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
         />
       )}
 
+      {editingOrder && itinerary && itinerary.canManage && !itinerary.isNavigationInProgress && (
+        <ItineraryReorderDialog
+          items={reorderableVisitItems}
+          busy={mutationPending}
+          error={mutationError}
+          onSave={(orderedPoiIds) =>
+            applyStops(reorderStops(currentStops(itinerary.items), orderedPoiIds))
+          }
+          onClose={() => {
+            setEditingOrder(false);
+            setMutationError(null);
+          }}
+        />
+      )}
+
       {undoStops && itinerary && (
         <div
           role="status"
-          className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm text-white shadow-lg"
+          className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl bg-[#1C2928] px-4 py-3 text-sm text-white shadow-lg"
         >
           <span>Đã cập nhật lịch trình.</span>
           <button
             type="button"
             onClick={undoLastEdit}
             disabled={mutationPending}
-            className="rounded-lg px-2 py-1 font-bold text-teal-300 hover:bg-white/10 disabled:opacity-60"
+            className="rounded-lg px-2 py-1 font-bold text-[#E8F0EA] hover:bg-white/10 disabled:opacity-60"
           >
             Hoàn tác
           </button>
         </div>
       )}
 
-      <footer className="mt-16 border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+      <footer className="mt-14 border-t border-[#DCE2DD] bg-[#F7F5EF] py-6 text-center text-xs text-[#5B6E69]">
         <div className="mx-auto max-w-7xl px-4">
           <p>© 2026 TripMate AI Travel Planner. Nền tảng du lịch thông minh Việt Nam.</p>
         </div>

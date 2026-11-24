@@ -24,6 +24,8 @@ export interface PickedPlace extends GeoPoint {
 
 interface PlacePickerDialogProps {
   title: string;
+  /** Pre-fills and searches this query on open (e.g. from quick destination chips). */
+  initialQuery?: string;
   /** Addresses (Mapbox) are offered only for the starting point; other fields need catalog places. */
   allowAddresses: boolean;
   /** Ranks and limits catalog places around this point (e.g. must-see places within the radius). */
@@ -37,6 +39,7 @@ interface PlacePickerDialogProps {
 
 export function PlacePickerDialog({
   title,
+  initialQuery,
   allowAddresses,
   near,
   radiusKm,
@@ -45,7 +48,7 @@ export function PlacePickerDialog({
   onClose,
 }: PlacePickerDialogProps) {
   const showAddresses = allowAddresses && isAddressSearchAvailable();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery ?? '');
   const [hasSearched, setHasSearched] = useState(false);
   const [places, setPlaces] = useState<SelectablePoi[]>([]);
   const [addresses, setAddresses] = useState<AddressCandidate[]>([]);
@@ -110,14 +113,14 @@ export function PlacePickerDialog({
   };
 
   useEffect(() => {
-    if (!showAddresses) {
+    if (!showAddresses || Boolean(initialQuery?.trim())) {
       const timer = setTimeout(() => {
-        void search('');
+        void search(initialQuery ?? '');
       }, 0);
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAddresses]);
+  }, [showAddresses, initialQuery]);
 
   useEffect(() => {
     if (isFirstMount.current) {
@@ -158,15 +161,15 @@ export function PlacePickerDialog({
         aria-modal="true"
         aria-labelledby="place-picker-title"
         data-lenis-prevent
-        className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl bg-white p-5 shadow-xl m-auto"
+        className="m-auto flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xl"
       >
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
-            <h2 id="place-picker-title" className="text-base font-bold text-slate-900">
+            <h2 id="place-picker-title" className="text-base font-bold text-[#1C2928]">
               {title}
             </h2>
             {title === 'Chọn khu vực khám phá' && (
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-[#5B6E69]">
                 Địa điểm bạn chọn sẽ là tâm chính để tìm kiếm và lập lịch trình.
               </p>
             )}
@@ -175,7 +178,7 @@ export function PlacePickerDialog({
             type="button"
             onClick={onClose}
             aria-label="Đóng"
-            className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+            className="rounded-lg p-1 text-[#5B6E69] hover:bg-[#F7F5EF] hover:text-[#1C2928]"
           >
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
@@ -196,11 +199,11 @@ export function PlacePickerDialog({
             placeholder={showAddresses ? 'Địa chỉ, khách sạn, trường học hoặc địa điểm…' : 'Tên địa điểm…'}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-[#103B39] focus:outline-hidden focus:ring-2 focus:ring-[#103B39]/20"
+            className="w-full rounded-xl border border-[#DCE2DD] px-3.5 py-2.5 text-sm text-[#1C2928] focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
           />
           <button
             type="submit"
-            className="rounded-xl bg-[#103B39] px-4 text-sm font-bold text-white hover:bg-[#174B4A]"
+            className="rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white transition hover:bg-[#103B39]"
           >
             Tìm
           </button>
@@ -208,10 +211,10 @@ export function PlacePickerDialog({
 
         {!showAddresses && (
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5B6E69]">
               Gợi ý:
             </span>
-            {['Bà Nà Hills', 'Sơn Trà', 'Ngũ Hành Sơn', 'Cầu Rồng', 'Mỹ Khê', 'Hòa Phú Thành'].map((suggestion) => (
+            {['Bà Nà Hills', 'Sơn Trà', 'Ngũ Hành Sơn', 'Cầu Rồng', 'Mỹ Khê', 'Hội An'].map((suggestion) => (
               <button
                 key={suggestion}
                 type="button"
@@ -219,7 +222,7 @@ export function PlacePickerDialog({
                   setQuery(suggestion);
                   void search(suggestion);
                 }}
-                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-[#103B39] hover:bg-teal-50/50 hover:text-[#103B39]"
+                className="rounded-full border border-[#DCE2DD] bg-[#F7F5EF] px-2.5 py-1 text-xs font-medium text-[#1C2928] transition hover:border-[#174B4A] hover:bg-[#E8F0EA] hover:text-[#174B4A]"
               >
                 {suggestion}
               </button>
@@ -303,17 +306,17 @@ export function PlacePickerDialog({
                               longitude: poi.longitude,
                               poi,
                             })}
-                            className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+                            className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-[#E8F0EA]/45"
                           >
-                            <span className="material-symbols-outlined mt-0.5 text-lg text-[#103B39]">
+                            <span className="material-symbols-outlined mt-0.5 text-lg text-[#174B4A]">
                               place
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-semibold text-slate-800">{poi.name}</span>
-                              <span className="block text-xs text-slate-500">
+                              <span className="block text-sm font-semibold text-[#1C2928]">{poi.name}</span>
+                              <span className="block text-xs text-[#5B6E69]">
                                 {poi.address ?? poi.categoryName}
                                 {distKm !== null && (
-                                  <span className="ml-1.5 font-medium text-teal-700">
+                                  <span className="ml-1.5 font-medium text-[#174B4A]">
                                     • Cách bạn {distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1).replace('.', ',')} km`}
                                   </span>
                                 )}
