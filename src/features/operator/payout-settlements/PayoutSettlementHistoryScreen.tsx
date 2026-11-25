@@ -47,7 +47,7 @@ export function PayoutSettlementHistoryScreen() {
   const totalPages = data ? Math.max(1, Math.ceil(data.totalCount / data.pageSize)) : 1;
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-5 text-[#1C2928] md:px-8">
+    <section className="w-full text-[#1C2928]">
       <PageHeader
         className="mb-6"
         eyebrow="Payout Management"
@@ -126,7 +126,7 @@ export function PayoutSettlementHistoryScreen() {
           </footer>
         </>
       ) : null}
-    </main>
+    </section>
   );
 }
 

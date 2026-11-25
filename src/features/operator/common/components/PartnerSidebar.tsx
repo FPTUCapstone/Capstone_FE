@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
-import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
 
 export type PartnerWorkspaceTabKey =
@@ -127,24 +126,24 @@ export function PartnerSidebar({
 
   return (
     <aside
-      className={`flex w-64 flex-col border-r border-slate-800 bg-[#103B39] text-white shadow-xl ${className}`}
+      className={`flex w-64 flex-col border-r border-white/10 bg-[#103B39] text-white shadow-xl ${className}`}
       aria-label="Thanh bên không gian làm việc đối tác"
     >
       {/* Brand Header */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-800/80 px-5">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-4">
         <Link
           href={ROUTES.partner.dashboard}
           onClick={onCloseMobile}
           aria-label="TripMate Partner"
-          className="flex items-center gap-2 group"
+          className="flex min-w-0 items-center gap-2 group"
         >
-          <BrandLogo context="partner" inverse size={22} />
+          <BrandLogo context="partner" inverse size={20} labelClassName="text-[17px]" />
         </Link>
         {onCloseMobile && (
           <button
             type="button"
             onClick={onCloseMobile}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#9EB7B0] hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Đóng menu"
           >
             <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
@@ -157,11 +156,11 @@ export function PartnerSidebar({
       {/* Navigation list */}
       <nav
         aria-label="Điều hướng không gian làm việc đối tác"
-        className="flex-1 space-y-6 overflow-y-auto px-3 py-4 text-xs font-semibold"
+        className="flex-1 space-y-6 overflow-y-auto px-3 py-4 text-xs font-semibold [scrollbar-width:thin] [scrollbar-color:#2D4A47_transparent]"
       >
         {/* Main Operations Section */}
         <div>
-          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-[#9EB7B0]">
             Quản lý vận hành
           </div>
           <ul className="space-y-1" role="list">
@@ -173,7 +172,7 @@ export function PartnerSidebar({
                 return (
                   <li key={item.key}>
                     <span
-                      className="flex items-center justify-between rounded-xl px-3 py-2.5 text-slate-500 opacity-60 cursor-not-allowed select-none"
+                      className="flex items-center justify-between rounded-xl px-3 py-2.5 text-[#8FA8A0] opacity-60 cursor-not-allowed select-none"
                       title="Tính năng đang được phát triển"
                     >
                       <span className="flex items-center gap-2.5">
@@ -182,7 +181,7 @@ export function PartnerSidebar({
                         </span>
                         <span>{item.label}</span>
                       </span>
-                      <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[9px] font-bold text-slate-400">
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-[#9EB7B0]">
                         Sắp có
                       </span>
                     </span>
@@ -199,7 +198,7 @@ export function PartnerSidebar({
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
                       isActive
                         ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                        : 'text-[#C2D4CE] hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
@@ -220,7 +219,7 @@ export function PartnerSidebar({
 
         {/* Account Section */}
         <div>
-          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-[#9EB7B0]">
             Tài khoản đối tác
           </div>
           <ul className="space-y-1" role="list">
@@ -232,7 +231,7 @@ export function PartnerSidebar({
                 return (
                   <li key={item.key}>
                     <span
-                      className="flex items-center justify-between rounded-xl px-3 py-2.5 text-slate-500 opacity-60 cursor-not-allowed select-none"
+                      className="flex items-center justify-between rounded-xl px-3 py-2.5 text-[#8FA8A0] opacity-60 cursor-not-allowed select-none"
                       title="Tính năng đang được phát triển"
                     >
                       <span className="flex items-center gap-2.5">
@@ -241,7 +240,7 @@ export function PartnerSidebar({
                         </span>
                         <span>{item.label}</span>
                       </span>
-                      <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[9px] font-bold text-slate-400">
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-[#9EB7B0]">
                         Sắp có
                       </span>
                     </span>
@@ -258,7 +257,7 @@ export function PartnerSidebar({
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
                       isActive
                         ? 'bg-[#174B4A] font-bold text-white shadow-2xs'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                        : 'text-[#C2D4CE] hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
@@ -274,20 +273,17 @@ export function PartnerSidebar({
       </nav>
 
       {/* Footer Profile Preview */}
-      <div className="border-t border-slate-800 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#174B4A] text-xs font-black text-white">
-              {getInitials(operatorName)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold text-white">
-                {operatorName || 'Đối tác lữ hành'}
-              </p>
-              <p className="truncate text-[10px] text-slate-400">Tour Operator</p>
-            </div>
+      <div className="border-t border-white/10 px-4 py-3.5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#174B4A] text-xs font-black text-white">
+            {getInitials(operatorName)}
           </div>
-          <LogoutButton />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-bold text-white" title={operatorName || 'Đối tác lữ hành'}>
+              {operatorName || 'Đối tác lữ hành'}
+            </p>
+            <p className="truncate text-[10px] text-[#9EB7B0]">Tour Operator</p>
+          </div>
         </div>
       </div>
     </aside>

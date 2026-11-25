@@ -112,12 +112,12 @@ describe('Pending Tour Posts list (Screen #13) in demo mode', () => {
   it('keeps queue headers and rows on identical columns with right-aligned prices', () => {
     setQuery('demo=1');
     const { container } = render(<TourReviewQueue />);
-    const header = container.querySelector('[aria-hidden="true"].\\32xl\\:grid')!;
+    const header = container.querySelector('[aria-hidden="true"].lg\\:grid')!;
     const template = (element: Element) => Array.from(element.classList).find((value) => value.includes('grid-cols-['));
-    const headerTemplate = template(header)?.replace(/^2xl:/, '');
+    const headerTemplate = template(header)?.replace(/^lg:/, '');
     for (const row of queueItems()) {
-      expect(template(row)?.replace(/^2xl:/, '')).toBe(headerTemplate);
-      expect(row.querySelector('span')?.classList.contains('2xl:sr-only')).toBe(true);
+      expect(template(row)?.replace(/^lg:/, '')).toBe(headerTemplate);
+      expect(row.querySelector('span')?.classList.contains('lg:sr-only')).toBe(true);
       expect(row.children[4].classList.contains('text-right')).toBe(true);
     }
     expect(headerTemplate).not.toContain('auto');

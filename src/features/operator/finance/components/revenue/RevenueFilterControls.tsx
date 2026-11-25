@@ -13,7 +13,7 @@ interface RevenueFilterControlsProps {
   tours: DemoTourPackage[];
   onApplyFilters: (newFilters: RevenueFilterInput) => void;
   onResetFilters: () => void;
-  onOpenExport: () => void;
+  onOpenExport?: () => void;
   isLoading?: boolean;
   isToursLoading?: boolean;
 }
@@ -23,7 +23,6 @@ export function RevenueFilterControls({
   tours,
   onApplyFilters,
   onResetFilters,
-  onOpenExport,
   isLoading = false,
   isToursLoading = false,
 }: RevenueFilterControlsProps) {
@@ -181,7 +180,7 @@ export function RevenueFilterControls({
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[#174B4A] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#103B39] disabled:opacity-50"
+              className="inline-flex flex-1 sm:flex-initial cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#174B4A] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]">filter_list</span>
               <span>{financeEn.revenue.filters.applyBtn}</span>
@@ -191,19 +190,10 @@ export function RevenueFilterControls({
               type="button"
               onClick={handleReset}
               disabled={isLoading}
-              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#1C2928] disabled:opacity-50"
+              className="inline-flex flex-1 sm:flex-initial cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-semibold text-[#5B6E69] transition-colors hover:bg-[#F7F5EF] hover:text-[#1C2928] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]">restart_alt</span>
               <span>{financeEn.revenue.filters.resetBtn}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onOpenExport}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-[#1C2928]"
-            >
-              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">download</span>
-              <span>{financeEn.revenue.filters.exportBtn}</span>
             </button>
           </div>
         </div>

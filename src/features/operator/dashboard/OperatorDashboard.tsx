@@ -41,14 +41,14 @@ export function OperatorDashboard() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="group rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs transition hover:-translate-y-0.5 hover:border-[#174B4A]/40 hover:shadow-sm"
+                className="group flex flex-col rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs transition hover:-translate-y-0.5 hover:border-[#174B4A]/40 hover:shadow-sm"
               >
                 <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${action.iconTone}`}>
                   <span className="material-symbols-outlined" aria-hidden="true">{action.icon}</span>
                 </span>
                 <h3 className="mt-3.5 font-bold text-[#1C2928]">{action.title}</h3>
                 <p className="mt-1 text-sm leading-5 text-[#5B6E69]">{action.description}</p>
-                <span className="mt-3.5 inline-flex items-center text-xs font-bold text-[#174B4A]">
+                <span className="mt-auto pt-3.5 inline-flex items-center text-xs font-bold text-[#174B4A]">
                   Mở <span className="material-symbols-outlined ml-1 text-base transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span>
                 </span>
               </Link>

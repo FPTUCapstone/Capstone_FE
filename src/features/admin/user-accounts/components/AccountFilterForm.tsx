@@ -18,12 +18,12 @@ export function AccountFilterForm({ children, invalidRange }: { children: ReactN
 
   return (
     <form
-      className="rounded-2xl border border-[#DCE5E2] bg-white p-5 shadow-xs transition sm:p-6"
+      className="rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-xs transition sm:p-5"
       method="get"
       onSubmit={validate}
       aria-describedby={showDateError ? 'account-date-error' : undefined}
     >
-      <div className="flex flex-wrap items-end gap-3.5">
+      <div className="flex flex-wrap items-end gap-3">
         {children}
       </div>
       {showDateError && (

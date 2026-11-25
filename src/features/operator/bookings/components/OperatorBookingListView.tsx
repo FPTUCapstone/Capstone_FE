@@ -604,53 +604,53 @@ export function OperatorBookingListView({
           <div>
             {/* Desktop Table View */}
             <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600">
-                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <table className="w-full text-left text-xs text-[#5B6E69]">
+                <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[11px] font-bold uppercase tracking-wider text-[#5B6E69]">
                   <tr>
-                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.bookingCode}</th>
-                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.tourName}</th>
-                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.departureDate}</th>
-                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.contact}</th>
-                    <th scope="col" className="px-4 py-3.5 text-center">{bookingEn.list.tableHeaders.paxCount}</th>
-                    <th scope="col" className="px-4 py-3.5 text-right">{bookingEn.list.tableHeaders.totalAmount}</th>
-                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.status}</th>
-                    <th scope="col" className="px-4 py-3.5">{bookingEn.list.tableHeaders.checkIn}</th>
-                    <th scope="col" className="px-4 py-3.5 text-center">{bookingEn.list.tableHeaders.actions}</th>
+                    <th scope="col" className="px-3 py-3 whitespace-nowrap">{bookingEn.list.tableHeaders.bookingCode}</th>
+                    <th scope="col" className="px-3 py-3">{bookingEn.list.tableHeaders.tourName}</th>
+                    <th scope="col" className="px-3 py-3 whitespace-nowrap">{bookingEn.list.tableHeaders.departureDate}</th>
+                    <th scope="col" className="px-3 py-3">{bookingEn.list.tableHeaders.contact}</th>
+                    <th scope="col" className="px-2.5 py-3 text-center whitespace-nowrap">{bookingEn.list.tableHeaders.paxCount}</th>
+                    <th scope="col" className="px-3 py-3 text-right whitespace-nowrap">{bookingEn.list.tableHeaders.totalAmount}</th>
+                    <th scope="col" className="px-3 py-3 whitespace-nowrap">{bookingEn.list.tableHeaders.status}</th>
+                    <th scope="col" className="px-3 py-3 whitespace-nowrap">{bookingEn.list.tableHeaders.checkIn}</th>
+                    <th scope="col" className="px-3 py-3 text-center whitespace-nowrap">{bookingEn.list.tableHeaders.actions}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[#ECEEEB]">
                   {result.items.map((b) => (
-                    <tr key={b.bookingId} className="hover:bg-slate-50/70 transition">
-                      <td className="px-4 py-3.5 font-bold text-[#1C2928]">
+                    <tr key={b.bookingId} className="hover:bg-[#F7F5EF]/60 transition">
+                      <td className="px-3 py-3 font-mono font-bold text-[#1C2928] whitespace-nowrap">
                         {b.bookingCode}
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-slate-800 max-w-[200px] truncate">
+                      <td className="px-3 py-3 font-medium text-[#1C2928] max-w-[175px] truncate" title={b.tour.title}>
                         {b.tour.title}
                       </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         {formatVietnamDate(b.schedule.startAtUtc)}
                       </td>
-                      <td className="px-4 py-3.5">
-                        <div className="font-semibold text-slate-800">{b.booker.fullName}</div>
-                        <div className="text-[11px] text-slate-400">{b.booker.email ?? '-'}</div>
+                      <td className="px-3 py-3 max-w-[160px]">
+                        <div className="font-semibold text-[#1C2928] truncate" title={b.booker.fullName}>{b.booker.fullName}</div>
+                        <div className="text-[11px] text-[#5B6E69] truncate" title={b.booker.email ?? '-'}>{b.booker.email ?? '-'}</div>
                       </td>
-                      <td className="px-4 py-3.5 text-center font-bold text-slate-700">
+                      <td className="px-2.5 py-3 text-center font-bold text-[#1C2928] whitespace-nowrap">
                         {b.quantity}
                       </td>
-                      <td className="px-4 py-3.5 text-right font-bold text-[#174B4A] whitespace-nowrap">
+                      <td className="px-3 py-3 text-right font-mono font-bold text-[#174B4A] whitespace-nowrap">
                         {formatCurrencyVND(b.totalAmount)}
                       </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <BookingStatusBadge status={b.status} />
                       </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <CheckInStatusBadge status={b.checkInStatus} />
                       </td>
-                      <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                      <td className="px-3 py-3 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => handleViewDetail(b)}
-                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#174B4A] hover:bg-slate-50 transition"
+                          className="cursor-pointer rounded-lg border border-[#DCE2DD] bg-white px-2.5 py-1 text-xs font-bold text-[#174B4A] hover:bg-[#F7F5EF] transition"
                         >
                           {bookingEn.list.viewDetail}
                         </button>
