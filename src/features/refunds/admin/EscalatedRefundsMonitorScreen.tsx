@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { formatVnd, validateReturnReference, type RefundListItem, type RefundListResponse } from '../types/refundLifecycle';
@@ -43,14 +44,13 @@ export function EscalatedRefundsMonitorScreen() {
   }, [replace, reloadToken]);
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8">
-      <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Refund (Web Administration)</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Escalated Refunds Monitor</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[#486581]">
-          Refunds whose automatic gateway retries are exhausted, or whose amount could not be verified, for manual resolution.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-6xl px-4 py-5 text-[#1C2928] md:px-8">
+      <PageHeader
+        className="mb-6"
+        eyebrow="Refund (Web Administration)"
+        title="Escalated Refunds Monitor"
+        description="Refunds whose automatic gateway retries are exhausted, or whose amount could not be verified, for manual resolution."
+      />
 
       {state === 'loading' ? <div role="status" className={panel}>Loading escalated refunds…</div> : null}
       {state === 'forbidden' ? (
@@ -68,10 +68,10 @@ export function EscalatedRefundsMonitorScreen() {
       ) : null}
       {state === 'ready' && data?.items.length === 0 ? <FeedbackAlert>No refunds currently need manual resolution.</FeedbackAlert> : null}
       {state === 'ready' && data && data.items.length > 0 ? (
-        <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0}>
+        <div className="max-w-full overflow-x-auto rounded-2xl border border-[#DCE2DD] bg-white shadow-xs" tabIndex={0}>
           <table className="min-w-[900px] w-full text-left text-sm">
             <caption className="sr-only">Escalated and reconciliation refunds</caption>
-            <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
+            <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
               <tr>
                 {['Refund Code', 'Booking Code', 'Amount', 'Status', 'Attempt Count', 'Last Error', 'Actions'].map((heading) => (
                   <th key={heading} scope="col" className={`px-4 py-3${heading === 'Amount' ? ' text-right' : ''}`}>
@@ -115,8 +115,8 @@ function RefundRow({
   const isEscalated = item.status === 'Escalated';
   return (
     <>
-      <tr className="border-t border-[#e6edf5]">
-        <td className="px-4 py-3 font-mono font-bold text-[#00152a]">{item.refundId}</td>
+      <tr className="border-t border-[#ECEEEB] transition hover:bg-[#F7F5EF]/50">
+        <td className="px-4 py-3 font-mono font-bold text-[#1C2928]">{item.refundId}</td>
         <td className="px-4 py-3">{item.bookingCode}</td>
         <td className="px-4 py-3 text-right whitespace-nowrap font-bold">{formatVnd(item.amount)}</td>
         <td className="px-4 py-3">
@@ -129,14 +129,14 @@ function RefundRow({
             type="button"
             aria-expanded={isOpen}
             onClick={onToggle}
-            className="inline-flex whitespace-nowrap rounded-lg border border-[#006b5f] px-3 py-2 font-bold text-[#006b5f] hover:bg-[#e6f7f0]"
+            className="inline-flex whitespace-nowrap rounded-lg border border-[#174B4A] px-3 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#E8F0EA]"
           >
             View Details
           </button>
         </td>
       </tr>
       {isOpen ? (
-        <tr className="border-t border-[#e6edf5] bg-[#f8fafc]">
+        <tr className="border-t border-[#ECEEEB] bg-[#F7F5EF]/60">
           <td colSpan={7} className="px-4 py-4">
             <ResolveRefundForm refundId={item.refundId} onResolved={onResolved} />
           </td>
@@ -206,8 +206,8 @@ function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResol
           }}
           className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
             action === 'complete'
-              ? 'bg-[#006b5f] text-white'
-              : 'border border-[#bcccdc] bg-white text-[#334e68] hover:bg-[#f0f4f8]'
+              ? 'bg-[#103B39] text-white'
+              : 'border border-[#DCE2DD] bg-white text-[#5B6E69] hover:bg-[#F7F5EF]'
           }`}
         >
           Complete Refund
@@ -222,7 +222,7 @@ function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResol
           className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
             action === 'reject'
               ? 'bg-[#8c1030] text-white'
-              : 'border border-[#bcccdc] bg-white text-[#334e68] hover:bg-[#f0f4f8]'
+              : 'border border-[#DCE2DD] bg-white text-[#5B6E69] hover:bg-[#F7F5EF]'
           }`}
         >
           Reject Refund
@@ -231,7 +231,7 @@ function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResol
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-wrap items-end gap-3">
         {action === 'complete' ? (
-          <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">
+          <label className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">
             Gateway Reference
             <input
               type="text"
@@ -241,11 +241,11 @@ function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResol
                 setGatewayReference(event.target.value);
                 if (invalid) setInvalid(false);
               }}
-              className="mt-1 block w-64 rounded-xl border border-[#bcccdc] bg-white px-3 py-2 text-sm text-[#102a43] outline-none focus-visible:border-[#006b5f] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40"
+              className="mt-1 block w-64 rounded-xl border border-[#DCE2DD] bg-white px-3 py-2 text-sm text-[#1C2928] outline-none focus-visible:border-[#174B4A] focus-visible:ring-2 focus-visible:ring-[#174B4A]/20"
             />
           </label>
         ) : (
-          <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">
+          <label className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">
             Rejection Reason
             <input
               type="text"
@@ -256,7 +256,7 @@ function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResol
                 setReason(event.target.value);
                 if (invalid) setInvalid(false);
               }}
-              className="mt-1 block w-80 rounded-xl border border-[#bcccdc] bg-white px-3 py-2 text-sm text-[#102a43] outline-none focus-visible:border-[#8c1030] focus-visible:ring-2 focus-visible:ring-[#8c1030]/20"
+              className="mt-1 block w-80 rounded-xl border border-[#DCE2DD] bg-white px-3 py-2 text-sm text-[#1C2928] outline-none focus-visible:border-[#8c1030] focus-visible:ring-2 focus-visible:ring-[#8c1030]/20"
             />
           </label>
         )}
@@ -264,8 +264,8 @@ function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResol
         <button
           type="submit"
           disabled={submitting}
-          className={`rounded-xl px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 ${
-            action === 'complete' ? 'bg-[#006b5f] hover:bg-[#005048]' : 'bg-[#8c1030] hover:bg-[#6c0b24]'
+          className={`rounded-xl px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 ${
+            action === 'complete' ? 'bg-[#103B39] hover:bg-[#174B4A]' : 'bg-[#8c1030] hover:bg-[#6c0b24]'
           }`}
         >
           {submitting
@@ -290,7 +290,7 @@ function ResolveRefundForm({ refundId, onResolved }: { refundId: number; onResol
   );
 }
 
-const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
+const panel = 'rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-[#5B6E69]';
 
 function Badge({ children, tone }: { children: React.ReactNode; tone: 'rose' | 'amber' }) {
   const toneClass = tone === 'rose' ? 'bg-[#fdecef] text-[#8c1030]' : 'bg-[#fef3e2] text-[#7c4a03]';

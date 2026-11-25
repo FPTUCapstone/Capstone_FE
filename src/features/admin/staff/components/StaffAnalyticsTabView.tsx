@@ -46,31 +46,27 @@ export function StaffAnalyticsTabView({
 
   return (
     <section aria-labelledby="staff-analytics-title" className="space-y-6">
-      {/* Analytics Workspace Header */}
-      <header className="rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-white shadow-sm sm:p-8">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
-                Staff Operations Intelligence
-              </span>
-            </div>
-            <h2 id="staff-analytics-title" className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-              Operational Analytics
-            </h2>
-            <p className="mt-1 text-sm text-[#5B6E69]">
-              Task throughput, queue metrics, and operational performance
-            </p>
-          </div>
+      {/* Analytics Section Toolbar */}
+      <header className="flex flex-col justify-between gap-3 rounded-2xl border border-[#DCE2DD] bg-white px-5 py-4 shadow-xs lg:flex-row lg:items-center">
+        <div>
+          <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-[#174B4A]">
+            Staff Operations Intelligence
+          </p>
+          <h2 id="staff-analytics-title" className="mt-0.5 text-lg font-extrabold tracking-tight text-[#1C2928] sm:text-xl">
+            Operational Analytics
+          </h2>
+          <p className="mt-0.5 text-xs text-[#5B6E69] sm:text-sm">
+            Task throughput, queue metrics, and operational performance
+          </p>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-[#5B6E69]">Time Range:</span>
-            <AnalyticsDateRangeFilter
-              value={timeRange}
-              onChange={setTimeRange}
-              disabled={!hasConnectedData}
-            />
-          </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-xs font-semibold text-[#5B6E69]">Time Range:</span>
+          <AnalyticsDateRangeFilter
+            value={timeRange}
+            onChange={setTimeRange}
+            disabled={!hasConnectedData}
+          />
         </div>
       </header>
 

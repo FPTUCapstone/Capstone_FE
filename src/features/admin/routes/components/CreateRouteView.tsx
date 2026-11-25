@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { fieldClassName, TextField } from '@/components/ui/FormControls';
@@ -97,11 +98,11 @@ export function CreateRouteView() {
   );
 
   return <main className="mx-auto max-w-6xl space-y-6 pb-12 text-text-primary">
-    <header className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
-      <Link href="/admin/routes" className="text-sm text-text-secondary underline focus-visible:outline-2 focus-visible:outline-offset-4">Back to Routes List</Link>
-      <h1 className="mt-3 text-2xl font-bold">Create Route</h1>
-      <p className="mt-2 text-sm text-text-secondary">Connect two Active points of interest for itinerary planning and navigation.</p>
-    </header>
+    <PageHeader
+      backLink={{ href: '/admin/routes', label: 'Back to Routes List' }}
+      title="Create Route"
+      description="Connect two Active points of interest for itinerary planning and navigation."
+    />
     {loadError ? <div className="space-y-3"><FeedbackAlert tone="error">{loadError}</FeedbackAlert><ActionButton variant="outline" onClick={() => { setLoadError(null); setReload(value => value + 1); }}>Retry loading</ActionButton></div>
       : !options ? <p role="status">Loading Active points of interest…</p>
       : <>

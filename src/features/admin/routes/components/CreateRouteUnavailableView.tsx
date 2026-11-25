@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { adminRoutesEn } from '@/features/admin/routes/resources/en';
 
 export function CreateRouteUnavailableView() {
@@ -9,11 +10,11 @@ export function CreateRouteUnavailableView() {
   return (
     <div className="pb-16 text-[#1C2928]">
       <section className="mx-auto max-w-4xl">
-        <header className="rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm sm:p-8">
-          <p className="text-xs font-bold tracking-wider text-[#5B6E69] uppercase">{copy.eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">{copy.title}</h1>
-          <p className="mt-3 text-sm leading-relaxed text-[#5B6E69]">{copy.description}</p>
-        </header>
+        <PageHeader
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.description}
+        />
 
         <section className="mt-6 rounded-2xl border border-[#F2D8B3] bg-[#FBF3E8] p-5 sm:p-6 text-[#1C2928]">
           <span className="inline-flex rounded-full border border-[#F2D8B3] bg-[#F7EBE5] px-3 py-1 text-xs font-bold text-[#8F5419]">

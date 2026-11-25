@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { PageHeader } from '@/components/layout/PageHeader';
+
 import { BannerBlock } from './components/BannerBlock';
 import { DestinationsBlock } from './components/DestinationsBlock';
 import { FeaturedToursBlock } from './components/FeaturedToursBlock';
@@ -306,11 +308,11 @@ export function LandingContentScreen() {
     <UploadStatusContext.Provider value={uploadStatus}>
     <main className="min-h-screen bg-[#F7F5EF] px-4 py-8 text-[#1C2928] sm:px-6 md:px-8 md:py-10">
       <section className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-2xl border border-[#5B6E69] bg-[#103B39] p-6 text-white shadow-md sm:p-8">
-          <p className="text-xs font-bold tracking-wider text-[#71f8e4] uppercase">{copy.screen.eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{copy.screen.title}</h1>
-          <p className="mt-3 text-sm leading-relaxed text-[#d1e4ff]">{copy.screen.description}</p>
-        </header>
+        <PageHeader
+          eyebrow={copy.screen.eyebrow}
+          title={copy.screen.title}
+          description={copy.screen.description}
+        />
 
         {status === 'loading' && (
           <p role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-5 text-sm text-[#5B6E69]">

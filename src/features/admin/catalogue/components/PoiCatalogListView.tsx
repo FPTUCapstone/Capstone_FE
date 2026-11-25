@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ROUTES } from '@/lib/routes';
 import { poiManagementEn } from '../resources/en';
 import { loadPoiManagement, PoiManagementApiError } from '../services/poi-management-api';
@@ -101,31 +102,26 @@ export function PoiCatalogListView() {
   return (
     <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
-                <span aria-hidden="true" className="material-symbols-outlined text-[14px]">location_on</span>
-                <span>Master Data Management</span>
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                Points of Interest Catalog
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
-                Screen #16: Manage tourist attractions, geo-coordinates, and operating schedules powering the TripMate routing engine.
-              </p>
-            </div>
-
+        <PageHeader
+          className="mb-6"
+          eyebrow={
+            <>
+              <span aria-hidden="true" className="material-symbols-outlined text-[14px]">location_on</span>
+              <span>Master Data Management</span>
+            </>
+          }
+          title="Points of Interest Catalog"
+          description="Screen #16: Manage tourist attractions, geo-coordinates, and operating schedules powering the TripMate routing engine."
+          actions={
             <Link
               href={ROUTES.admin.createPoi}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#174B4A] border border-[#5B6E69] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#103B39] shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
             >
               <span aria-hidden="true" className="material-symbols-outlined text-[16px]">add_location_alt</span>
               <span>Create New POI</span>
             </Link>
-          </div>
-        </header>
+          }
+        />
 
         {/* Filters and Search Bar */}
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] p-4 shadow-xs lg:flex-row lg:items-end lg:justify-between">
