@@ -68,6 +68,11 @@ export function PublicFooter() {
                   </Link>
                 </li>
                 <li>
+                  <Link href={ROUTES.weather} className="hover:text-teal-300 transition">
+                    Dự báo thời tiết Miền Trung
+                  </Link>
+                </li>
+                <li>
                   <Link href={`${ROUTES.about}#weather`} className="hover:text-teal-300 transition">
                     Ứng phó thời tiết linh hoạt
                   </Link>

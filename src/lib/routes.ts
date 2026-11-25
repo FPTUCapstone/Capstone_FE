@@ -1,6 +1,7 @@
 export const ROUTES = {
   home: '/',
   about: '/about',
+  weather: '/weather',
   signIn: '/sign-in',
   register: '/register',
   verifyAccount: '/verify-account',
