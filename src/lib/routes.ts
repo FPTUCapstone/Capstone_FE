@@ -44,6 +44,7 @@ export const ROUTES = {
     dashboard: '/provider/bookings',
     bookings: '/provider/bookings',
     bookingDetail: (id: string | number) => `/provider/bookings/${encodeURIComponent(id)}`,
+    availability: '/provider/availability',
     statements: '/provider/statements',
   },
   account: {

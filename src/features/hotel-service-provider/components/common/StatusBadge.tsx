@@ -3,11 +3,14 @@
 import React from 'react';
 import type { BookingRequestStatus, StatementStatus } from '../../types';
 import { hotelProviderVi } from '../../resources/vi';
+import { hotelProviderEn } from '../../resources/en';
+import { useProviderLocale, type ProviderLocale } from './ProviderLocaleContext';
 
 interface StatusBadgeProps {
   status: BookingRequestStatus | StatementStatus | string;
   className?: string;
   size?: 'sm' | 'md';
+  locale?: ProviderLocale;
 }
 
 interface StatusConfig {
@@ -18,53 +21,57 @@ interface StatusConfig {
   icon: string;
 }
 
-export function StatusBadge({ status, className = '', size = 'md' }: StatusBadgeProps) {
+export function StatusBadge({ status, className = '', size = 'md', locale }: StatusBadgeProps) {
+  const contextLocale = useProviderLocale('vi').locale;
+  const activeLocale = locale ?? contextLocale;
+  const statuses = activeLocale === 'en' ? hotelProviderEn.statuses : hotelProviderVi.statuses;
+
   const configs: Record<string, StatusConfig> = {
     // Booking statuses
     PendingConfirmation: {
-      label: hotelProviderVi.statuses.pendingConfirmation,
+      label: statuses.pendingConfirmation,
       bg: 'bg-[#FEF3E2]',
       text: 'text-[#92400E]',
       border: 'border-[#FDE68A]',
       icon: 'schedule',
     },
     Confirmed: {
-      label: hotelProviderVi.statuses.confirmed,
+      label: statuses.confirmed,
       bg: 'bg-[#E6F7F0]',
       text: 'text-[#065F46]',
       border: 'border-[#A7F3D0]',
       icon: 'check_circle',
     },
     Rejected: {
-      label: hotelProviderVi.statuses.rejected,
+      label: statuses.rejected,
       bg: 'bg-[#FDECEF]',
       text: 'text-[#991B1B]',
       border: 'border-[#FECDD3]',
       icon: 'cancel',
     },
     Cancelled: {
-      label: hotelProviderVi.statuses.cancelled,
+      label: statuses.cancelled,
       bg: 'bg-[#F1F5F9]',
       text: 'text-[#475569]',
       border: 'border-[#CBD5E1]',
       icon: 'block',
     },
     Expired: {
-      label: hotelProviderVi.statuses.expired,
+      label: statuses.expired,
       bg: 'bg-[#F1F5F9]',
       text: 'text-[#64748B]',
       border: 'border-[#CBD5E1]',
       icon: 'timer_off',
     },
     Completed: {
-      label: hotelProviderVi.statuses.completed,
-      bg: 'bg-[#E8F7F4]',
+      label: statuses.completed,
+      bg: 'bg-[#E8F0EA]',
       text: 'text-[#103B39]',
-      border: 'border-[#B2DFDB]',
+      border: 'border-[#BDD8C5]',
       icon: 'verified',
     },
     NoShow: {
-      label: hotelProviderVi.statuses.noShow,
+      label: statuses.noShow,
       bg: 'bg-[#F1EBFE]',
       text: 'text-[#5B21B6]',
       border: 'border-[#DDD6FE]',
@@ -73,28 +80,28 @@ export function StatusBadge({ status, className = '', size = 'md' }: StatusBadge
 
     // Statement statuses
     Issued: {
-      label: hotelProviderVi.statuses.issued,
+      label: statuses.issued,
       bg: 'bg-[#EFF6FF]',
       text: 'text-[#1D4ED8]',
       border: 'border-[#BFDBFE]',
       icon: 'receipt_long',
     },
     PaymentReported: {
-      label: hotelProviderVi.statuses.paymentReported,
+      label: statuses.paymentReported,
       bg: 'bg-[#FEF3E2]',
       text: 'text-[#B45309]',
       border: 'border-[#FDE68A]',
       icon: 'hourglass_top',
     },
     Paid: {
-      label: hotelProviderVi.statuses.paid,
+      label: statuses.paid,
       bg: 'bg-[#E6F7F0]',
       text: 'text-[#065F46]',
       border: 'border-[#A7F3D0]',
       icon: 'task_alt',
     },
     Overdue: {
-      label: hotelProviderVi.statuses.overdue,
+      label: statuses.overdue,
       bg: 'bg-[#FDECEF]',
       text: 'text-[#B91C1C]',
       border: 'border-[#FECDD3]',
@@ -103,14 +110,14 @@ export function StatusBadge({ status, className = '', size = 'md' }: StatusBadge
 
     // POI & General statuses
     Active: {
-      label: hotelProviderVi.statuses.active,
+      label: statuses.active,
       bg: 'bg-[#E6F7F0]',
       text: 'text-[#065F46]',
       border: 'border-[#A7F3D0]',
       icon: 'check_circle',
     },
     Inactive: {
-      label: hotelProviderVi.statuses.inactive,
+      label: statuses.inactive,
       bg: 'bg-[#F1F5F9]',
       text: 'text-[#64748B]',
       border: 'border-[#CBD5E1]',

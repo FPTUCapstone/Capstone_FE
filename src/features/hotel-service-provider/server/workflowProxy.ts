@@ -35,7 +35,13 @@ export async function providerServerContext() {
   if (envelope?.success !== true || !data || (data.mustChangePassword !== undefined && typeof data.mustChangePassword !== 'boolean') || data.status !== 'Active' || typeof data.accessToken !== 'string' || !data.accessToken) {
     throw new Error('PROVIDER_SESSION_UNAVAILABLE');
   }
-  return { role: data.role as string, mustChangePassword: data.mustChangePassword === true, token: data.accessToken as string };
+  return {
+    role: data.role as string,
+    mustChangePassword: data.mustChangePassword === true,
+    token: data.accessToken as string,
+    fullName: typeof data.fullName === 'string' && data.fullName.trim() ? data.fullName.trim() : undefined,
+    email: typeof data.email === 'string' && data.email.trim() ? data.email.trim() : undefined,
+  };
 }
 
 async function readBody(request: Request): Promise<Record<string, unknown> | Response> {
