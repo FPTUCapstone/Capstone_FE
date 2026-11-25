@@ -44,57 +44,85 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
-describe('Tour moderation production boundary (NO_BACKEND)', () => {
-  it('renders no fixture rows in a production build even with ?demo=1', () => {
+describe('Tour moderation production boundary (live mode never shows fixtures)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+  });
+
+  it('renders no fixture rows in a production build even with ?demo=1, and asks the real endpoint', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'true');
     setQuery('demo=1');
 
     const { container } = render(<TourReviewQueue />);
 
-    expect(screen.getByRole('status').textContent).toContain(tourModerationEn.pendingIntegration.queueBody);
+    expect(screen.getByRole('status').textContent).toContain(tourModerationEn.live.loadingQueue);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain(tourModerationEn.live.unavailableTitle);
     expect(screen.queryByRole('list', { name: tourModerationEn.queue.listLabel })).toBeNull();
     expect(screen.queryByRole('search')).toBeNull();
     expect(screen.queryByText(tourModerationEn.demoBanner.body)).toBeNull();
     for (const tour of DEMO_PENDING_TOUR_POSTS) {
       expect(container.textContent).not.toContain(tour.tourName);
     }
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/admin/tours/pending');
   });
 
-  it('requires both the environment flag and the explicit demo parameter', () => {
+  it('requires both the environment flag and the explicit demo parameter to show fixtures', async () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'false');
     setQuery('demo=1');
     const first = render(<TourReviewQueue />);
-    expect(screen.getByText(tourModerationEn.pendingIntegration.title)).toBeTruthy();
+    expect(await screen.findByText(tourModerationEn.live.unavailableTitle)).toBeTruthy();
+    expect(screen.queryByText(tourModerationEn.demoBanner.body)).toBeNull();
     first.unmount();
 
     enableDemoBuild();
     setQuery('');
     render(<TourReviewQueue />);
-    expect(screen.getByText(tourModerationEn.pendingIntegration.title)).toBeTruthy();
+    expect(await screen.findByText(tourModerationEn.live.unavailableTitle)).toBeTruthy();
+    expect(screen.queryByText(tourModerationEn.demoBanner.body)).toBeNull();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
   });
 
-  it('renders no fake detail and no decision actions in production', () => {
+  it('renders no fake detail and no decision actions in production', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('NEXT_PUBLIC_ENABLE_DEMO_FIXTURES', 'true');
     setQuery('demo=1');
 
-    const { container } = render(<TourReview id={FIRST_TOUR.id} />);
+    const { container } = render(<TourReview id="12" />);
 
-    expect(screen.getByText(tourModerationEn.pendingIntegration.detailBody)).toBeTruthy();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain(tourModerationEn.live.unavailableDetailBody);
     expect(container.textContent).not.toContain(FIRST_TOUR.tourName);
     expect(screen.queryByRole('button', { name: tourModerationEn.decision.approveButton })).toBeNull();
     expect(screen.queryByRole('button', { name: tourModerationEn.decision.rejectButton })).toBeNull();
     expect(container.textContent).not.toContain(tourModerationEn.decision.approvedResult);
     expect(container.textContent).not.toContain(tourModerationEn.decision.rejectedResult);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/admin/tours/12/review');
   });
 });
 
 describe('Pending Tour Posts list (Screen #13) in demo mode', () => {
   beforeEach(enableDemoBuild);
+
+  it('keeps queue headers and rows on identical columns with right-aligned prices', () => {
+    setQuery('demo=1');
+    const { container } = render(<TourReviewQueue />);
+    const header = container.querySelector('[aria-hidden="true"].lg\\:grid')!;
+    const template = (element: Element) => Array.from(element.classList).find((value) => value.includes('grid-cols-['));
+    const headerTemplate = template(header)?.replace(/^lg:/, '');
+    for (const row of queueItems()) {
+      expect(template(row)?.replace(/^lg:/, '')).toBe(headerTemplate);
+      expect(row.querySelector('span')?.classList.contains('lg:sr-only')).toBe(true);
+      expect(row.children[4].classList.contains('text-right')).toBe(true);
+    }
+    expect(headerTemplate).not.toContain('auto');
+    expect(header.children[4].classList.contains('text-right')).toBe(true);
+  });
 
   it('shows 20 records per page with the total record count (CR-01)', () => {
     setQuery('demo=1');

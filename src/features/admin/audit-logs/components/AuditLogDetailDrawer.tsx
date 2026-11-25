@@ -1,5 +1,7 @@
 'use client';
 
+import { formatDisplayUtcTimestamp } from '@/lib/displayDate';
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuditLogDetailDto } from '../types/auditLogAdmin';
@@ -185,7 +187,7 @@ function AuditLogDetailSession({ logId, isOpen, onClose }: AuditLogDetailDrawerP
 
   const formatUtcTimestamp = (value: string): string => {
     const timestamp = new Date(value);
-    return Number.isNaN(timestamp.getTime()) ? '-' : timestamp.toISOString();
+    return Number.isNaN(timestamp.getTime()) ? '-' : formatDisplayUtcTimestamp(timestamp);
   };
 
   const getRoleBadgeClass = (role: string | null) => {

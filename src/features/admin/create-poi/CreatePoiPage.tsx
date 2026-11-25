@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ROUTES } from '@/lib/routes';
 import type { CreatePoiRequest, PoiCatalogue, PoiFormData, PoiResponse, ValidationErrors } from './types/poi';
 import { createEmptyPoiForm, mapPoiErrors, toCreatePoiRequest, validatePoiForm } from './services/poi-contract';
@@ -155,35 +156,30 @@ export function CreatePoiPage() {
   return (
     <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
-        {/* Workspace Header - Forest Charcoal Authority */}
-        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
-                <span className="material-symbols-outlined text-[14px]">add_location_alt</span>
-                <span>Spatial Operations — UC-52</span>
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                Create Point of Interest
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
-                Register a tourist attraction, coordinates, and operating schedule in the TripMate catalogue.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
+        <PageHeader
+          className="mb-6"
+          eyebrow={
+            <>
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">add_location_alt</span>
+              <span>Spatial Operations — UC-52</span>
+            </>
+          }
+          title="Create Point of Interest"
+          description="Register a tourist attraction, coordinates, and operating schedule in the TripMate catalogue."
+          actions={
+            <>
               <Link
                 href={ROUTES.admin.pois}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#5B6E69] bg-[#103B39] px-3.5 py-2 text-xs font-bold text-[#E8F0EA] hover:bg-[#2F443A] transition"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-bold text-[#1C2928] transition hover:bg-[#E8F0EA] hover:text-[#103B39]"
               >
-                <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
                 <span>Back to Catalog</span>
               </Link>
               <button
                 type="button"
                 disabled={busy}
                 onClick={handleReset}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-bold text-[#1C2928] hover:bg-[#F7F5EF] transition disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-bold text-[#5B6E69] transition hover:bg-[#F7F5EF] hover:text-[#1C2928] disabled:opacity-50"
               >
                 <span>Discard</span>
               </button>
@@ -191,14 +187,14 @@ export function CreatePoiPage() {
                 type="button"
                 disabled={saveDisabled || busy}
                 onClick={() => handleSubmit()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#174B4A] border border-[#5B6E69] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-[#5B6E69] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus-visible:outline-2 focus-visible:outline-[#174B4A] disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[16px]">save</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">save</span>
                 <span>{busy ? 'Saving POI...' : 'Save POI'}</span>
               </button>
-            </div>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         {/* Catalogue Status Bar */}
         <div

@@ -46,7 +46,7 @@ export const adminStaffEn = {
     eyebrow: 'Restricted Staff Module',
     title: 'Staff Access Required',
     description:
-      'This payout review queue is reserved for Staff. Administrator settlement processing is delivered separately in UC-65.',
+      'This operational module is reserved for Staff accounts. Please return to System Overview or sign in with a Staff account to continue.',
     poiDescription:
       'Creating Points of Interest is reserved for Staff accounts. Administrator accounts cannot create POIs.',
     returnToAdminButton: 'Return to System Overview',

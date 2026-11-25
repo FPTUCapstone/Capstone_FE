@@ -36,3 +36,21 @@ it('discards a malformed success without authenticating', async () => {
   await expect(webRefresh()).rejects.toThrow('INVALID_AUTH_CONTEXT');
   expect(AuthStorage.getContext()).toBeNull();
 });
+
+it('does not log out a valid chat session on a temporary refresh outage', async () => {
+ AuthStorage.accept(ctx,false);vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('{}',{status:503})));
+ await expect(webRefresh()).rejects.toMatchObject({status:503});expect(AuthStorage.getContext()?.userId).toBe(42);
+});
+it('does not resurrect a chat session when refresh completes after explicit logout',async()=>{
+ AuthStorage.accept(ctx,false);let finish!:(v:Response)=>void;vi.stubGlobal('fetch',vi.fn(()=>new Promise(r=>{finish=r;})));
+ const pending=webRefresh();AuthStorage.clear();finish(new Response(JSON.stringify({success:true,data:ctx})));
+ await expect(pending).rejects.toMatchObject({code:'SESSION_CHANGED'});expect(AuthStorage.getContext()).toBeNull();
+});
+it('serializes cookie refresh across tabs and cancels a queued refresh after logout',async()=>{
+ AuthStorage.accept(ctx,false);let enter:(()=>Promise<void>)|undefined;
+ const locks={request:vi.fn((_name:string,run:()=>Promise<unknown>)=>new Promise((resolve,reject)=>{enter=async()=>{try{resolve(await run());}catch(e){reject(e);}};}))};
+ vi.stubGlobal('navigator',{locks});const fetchMock=vi.fn().mockResolvedValue(new Response(JSON.stringify({success:true,data:ctx})));vi.stubGlobal('fetch',fetchMock);
+ const pending=webRefresh();const usedLock=locks.request.mock.calls.length>0;
+ if(enter){AuthStorage.clear();await enter();await expect(pending).rejects.toMatchObject({code:'SESSION_CHANGED'});expect(fetchMock).not.toHaveBeenCalled();}else{await pending;}
+ expect(usedLock).toBe(true);
+});

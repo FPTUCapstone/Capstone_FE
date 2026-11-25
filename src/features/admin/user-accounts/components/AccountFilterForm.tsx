@@ -17,10 +17,27 @@ export function AccountFilterForm({ children, invalidRange }: { children: ReactN
   }
 
   return (
-    <form className="flex flex-wrap items-end gap-3" method="get" onSubmit={validate}
-      aria-describedby={showDateError ? 'account-date-error' : undefined}>
-      {children}
-      {showDateError && <p id="account-date-error" role="alert" className="basis-full">{invalidAccountDateRange}</p>}
+    <form
+      className="rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-xs transition sm:p-5"
+      method="get"
+      onSubmit={validate}
+      aria-describedby={showDateError ? 'account-date-error' : undefined}
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        {children}
+      </div>
+      {showDateError && (
+        <div
+          id="account-date-error"
+          role="alert"
+          className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 sm:text-sm"
+        >
+          <span className="material-symbols-outlined text-base text-red-600" aria-hidden="true">
+            warning
+          </span>
+          <span>{invalidAccountDateRange}</span>
+        </div>
+      )}
     </form>
   );
 }

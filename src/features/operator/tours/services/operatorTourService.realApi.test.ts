@@ -96,11 +96,14 @@ describe('operatorTourService against the UC-35 backend contract', () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
     fetchMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it.each(['  Staff note  ', '', '😀'.repeat(2000)])('sends a trimmed optional submission note and keeps confirmed success without a detail reload', async (note) => {

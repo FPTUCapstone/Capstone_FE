@@ -39,6 +39,7 @@ function fillResetForm({ code = '012345', password = 'NewPassword1!', confirmPas
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.sessionStorage.clear();
 });
 
 describe('PasswordRecoveryFlow request step', () => {
@@ -50,8 +51,6 @@ describe('PasswordRecoveryFlow request step', () => {
 
   it('uses the branded recovery-card controls for the public email step', () => {
     render(<PasswordRecoveryFlow />);
-
-    expect(screen.getByText('mail')).toBeDefined();
     expect(screen.getByText('arrow_back')).toBeDefined();
     expect(screen.getByRole('button', { name: /send reset code/i }).className).toContain('bg-brand-teal');
   });
@@ -134,9 +133,6 @@ describe('PasswordRecoveryFlow reset form', () => {
     expect(screen.getByLabelText('Confirm New Password')).toBeDefined();
     expect(screen.getByLabelText('Reset Code').getAttribute('type')).toBe('text');
     expect(screen.getByLabelText('Reset Code').getAttribute('maxlength')).toBe('6');
-    expect(screen.getByText('pin')).toBeDefined();
-    expect(screen.getByText('lock')).toBeDefined();
-    expect(screen.getByText('lock_reset')).toBeDefined();
   });
 
   it('accepts a leading-zero OTP and passes it through verbatim', async () => {
@@ -458,5 +454,132 @@ describe('PasswordRecoveryFlow Backend-invalidated reset state', () => {
     expect(screen.getByLabelText('Reset Code')).toBeDefined();
     expect((screen.getByRole('button', { name: /resend code/i }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByRole('button', { name: /resend code/i }).textContent).not.toMatch(/attempt/i);
+  });
+});
+
+
+describe('PasswordRecoveryFlow redesigned UX affordances', () => {
+  it('renders 6 OTP visual slots reflecting entered digits including leading zero', async () => {
+    const { container } = render(<PasswordRecoveryFlow />);
+    mocks.requestWebPasswordReset.mockResolvedValue(REQUEST_SUCCESS);
+    fillEmail('user@example.com');
+    fireEvent.click(screen.getByRole('button', { name: /send reset code/i }));
+    await screen.findByLabelText('Reset Code');
+
+    fireEvent.change(screen.getByLabelText('Reset Code'), { target: { value: '048291' } });
+    const slots = Array.from(container.querySelectorAll('[data-otp-slot]'));
+    expect(slots).toHaveLength(6);
+    expect(slots.map((slot) => slot.textContent)).toEqual(['0', '4', '8', '2', '9', '1']);
+  });
+
+  it('allows changing email from step 2 and clears entered OTP and passwords', async () => {
+    await advanceToResetForm('user@example.com');
+    fillResetForm({ code: '123456', password: 'NewPassword1!' });
+
+    fireEvent.click(screen.getByRole('button', { name: /change email/i }));
+    expect(screen.getByLabelText('Email Address')).toBeDefined();
+    expect((screen.getByLabelText('Email Address') as HTMLInputElement).value).toBe('user@example.com');
+    expect(screen.queryByLabelText('Reset Code')).toBeNull();
+  });
+
+  it('updates live password requirement checklist and confirm match indicator', async () => {
+    await advanceToResetForm();
+    fireEvent.change(screen.getByLabelText(/^New Password/), { target: { value: 'StrongPass1!' } });
+    fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'StrongPass1!' } });
+
+    expect(screen.getByText('8+ characters')).toBeDefined();
+    expect(screen.getByText('Upper & lowercase')).toBeDefined();
+    expect(screen.getByText('1 number')).toBeDefined();
+    expect(screen.getByText('1 special symbol')).toBeDefined();
+    expect(screen.getByText('Passwords match')).toBeDefined();
+  });
+});
+
+describe('PasswordRecoveryFlow Change email cooldown protection', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('blocks re-requesting the same email via Change email during the 60s cooldown and lets user resume code entry', async () => {
+    vi.useFakeTimers();
+    mocks.requestWebPasswordReset.mockResolvedValue(REQUEST_SUCCESS);
+    render(<PasswordRecoveryFlow />);
+    fillEmail('user@example.com');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /send reset code/i }));
+    });
+    expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /change email/i }));
+    const sendButton = screen.getByRole('button', { name: /send reset code/i }) as HTMLButtonElement;
+    expect(sendButton.disabled).toBe(true);
+    expect(sendButton.textContent).toContain('(60s)');
+
+    fireEvent.click(sendButton);
+    expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /enter existing code/i }));
+    expect(screen.getByLabelText('Reset Code')).toBeDefined();
+  });
+
+  it('allows requesting immediately after Change email when switching to a different email', async () => {
+    vi.useFakeTimers();
+    mocks.requestWebPasswordReset.mockResolvedValue(REQUEST_SUCCESS);
+    render(<PasswordRecoveryFlow />);
+    fillEmail('typo@example.com');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /send reset code/i }));
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /change email/i }));
+    expect((screen.getByRole('button', { name: /send reset code/i }) as HTMLButtonElement).disabled).toBe(true);
+
+    fillEmail('correct@example.com');
+    const sendButton = screen.getByRole('button', { name: /send reset code/i }) as HTMLButtonElement;
+    expect(sendButton.disabled).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(sendButton);
+    });
+    expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(2);
+    expect(mocks.requestWebPasswordReset).toHaveBeenLastCalledWith('correct@example.com');
+  });
+
+  it('keeps active cooldown for the same email after navigating Back to Sign In (unmount + remount)', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-25T10:00:00.000Z'));
+    mocks.requestWebPasswordReset.mockResolvedValue(REQUEST_SUCCESS);
+
+    const { unmount } = render(<PasswordRecoveryFlow />);
+    fillEmail('user@example.com');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /send reset code/i }));
+    });
+    expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(1);
+
+    // 18 seconds pass, then user leaves via Back to Sign In (component unmounts).
+    await act(async () => {
+      vi.advanceTimersByTime(18_000);
+    });
+    unmount();
+
+    // User comes back to /forgot-password (fresh mount) and enters the same email.
+    render(<PasswordRecoveryFlow />);
+    expect(screen.getByLabelText('Email Address')).toBeDefined();
+    fillEmail('USER@example.com');
+
+    const sendButton = screen.getByRole('button', { name: /send reset code/i }) as HTMLButtonElement;
+    expect(sendButton.disabled).toBe(true);
+    expect(sendButton.textContent).toContain('(42s)');
+
+    fireEvent.click(sendButton);
+    expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(1);
+
+    // User can resume Step 2 with the remaining 42s countdown still intact.
+    fireEvent.click(screen.getByRole('button', { name: /enter existing code/i }));
+    expect(screen.getByLabelText('Reset Code')).toBeDefined();
+    const resendButton = screen.getByRole('button', { name: /resend code/i }) as HTMLButtonElement;
+    expect(resendButton.disabled).toBe(true);
+    expect(resendButton.textContent).toContain('(42s)');
   });
 });

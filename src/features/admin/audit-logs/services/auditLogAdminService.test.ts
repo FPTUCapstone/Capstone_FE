@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AuditLogServiceError, getAuditLogs } from './auditLogAdminService';
+import { AuditLogServiceError, getAuditLogDetail, getAuditLogs } from './auditLogAdminService';
 
 const validPage = {
   items: [{
@@ -30,6 +30,18 @@ afterEach(() => {
 });
 
 describe('UC-68 audit log service contract', () => {
+  it('accepts Staff actors from the real API in list and detail responses', async () => {
+    const staffPage = { ...validPage, totalCount: 2, items: [
+      { ...validPage.items[0], actorRole: 'Staff' },
+      { ...validPage.items[0], id: 2 },
+    ] };
+    const staffDetail = { ...staffPage.items[0], reason: null, beforeData: null, afterData: null };
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json(staffPage))
+      .mockResolvedValueOnce(Response.json(staffDetail)));
+    await expect(getAuditLogs({})).resolves.toEqual(staffPage);
+    await expect(getAuditLogDetail(1)).resolves.toEqual(staffDetail);
+  });
   it('accepts the BE result field and nullable actor name', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(validPage)));
 
@@ -40,6 +52,7 @@ describe('UC-68 audit log service contract', () => {
   it.each([
     { ...validPage, items: [{ ...validPage.items[0], id: Number.MAX_SAFE_INTEGER + 1 }] },
     { ...validPage, items: [{ ...validPage.items[0], result: 'Unknown' }] },
+    { ...validPage, items: [{ ...validPage.items[0], actorRole: 'Unknown' }] },
     { ...validPage, items: 'not-an-array' },
   ])('rejects a malformed success payload', async (payload) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(payload)));

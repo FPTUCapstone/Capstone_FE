@@ -57,6 +57,7 @@ describe('TourOperatorApplicationListView (Screen #10, UC-50/51)', () => {
     expect(screen.getByText('Saigon Eco Adventure Co., Ltd')).toBeTruthy();
     expect(screen.getByText('Hanoi Heritage Trails Travel')).toBeTruthy();
     expect(screen.getByText('Da Nang Sea Breeze Tours JSC')).toBeTruthy();
+    expect(screen.getByText('22/10/2026')).toBeTruthy();
   });
 
   it('renders honest empty queue state when no applications exist', () => {

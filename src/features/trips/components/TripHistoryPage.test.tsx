@@ -105,7 +105,7 @@ describe('TripHistoryPage Access Control (TRIP-2, TRIP-3, CR-09)', () => {
     expect(screen.getByRole('link', { name: publicNavigationEn.links.explore })).toBeDefined();
     expect(screen.getByRole('link', { name: publicNavigationEn.links.destinations })).toBeDefined();
     expect(screen.getByRole('link', { name: publicNavigationEn.links.smartItinerary })).toBeDefined();
-    expect(screen.getByRole('link', { name: publicNavigationEn.links.weatherRerouting })).toBeDefined();
+    expect(screen.queryByRole('link', { name: publicNavigationEn.links.weatherRerouting })).toBeNull();
     expect(screen.getByRole('link', { name: publicNavigationEn.links.localTours })).toBeDefined();
 
     // AccountWorkspaceNav rendered in English

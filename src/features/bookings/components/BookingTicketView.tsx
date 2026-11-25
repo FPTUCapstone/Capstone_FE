@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { formatTripDateTime } from '@/features/trips/utils/formatTripDate';
 import { ROUTES } from '@/lib/routes';
@@ -89,21 +89,33 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [confirming, setConfirming] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const cancelledTicketRef = useRef<string | null>(null);
+  const [cancellationOutcome, setCancellationOutcome] = useState<{ ticketId: string; message: string } | null>(null);
   const ticketId = 'ticketId' in ticketKey ? ticketKey.ticketId : null;
   const bookingId = 'bookingId' in ticketKey ? ticketKey.bookingId : null;
+
+  // Cancellation is authoritative even if an earlier refresh or stale read finishes later.
+  const showTicket = useCallback((ticket: TicketView, notice: string | null = null) => {
+    const cancelled = cancelledTicketRef.current === ticket.ticketId;
+    setState({
+      kind: 'ready',
+      ticket: cancelled ? { ...ticket, ticketStatus: 'Cancelled', qr: null } : ticket,
+      notice: cancelled ? null : notice,
+    });
+  }, []);
 
   // Only the promise callbacks set state, so the initial read in the effect never renders synchronously.
   const request = useCallback(
     (signal?: AbortSignal) => {
       const key: TicketKey = ticketId !== null ? { ticketId } : { bookingId: bookingId ?? '' };
       fetchTicket(key, { allowDemo, signal })
-        .then((ticket) => setState({ kind: 'ready', ticket, notice: null }))
+        .then((ticket) => showTicket(ticket))
         .catch((error: unknown) => {
           if (error instanceof DOMException && error.name === 'AbortError') return;
           setState({ kind: 'failed', error: asClientError(error) });
         });
     },
-    [allowDemo, ticketId, bookingId],
+    [allowDemo, ticketId, bookingId, showTicket],
   );
 
   useEffect(() => {
@@ -122,14 +134,14 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
     setRefreshing(true);
     try {
       const ticket = await refreshTicketQr(current.ticketId, { allowDemo });
-      setState({ kind: 'ready', ticket, notice: null });
+      showTicket(ticket);
     } catch {
       // The old QR may already be revoked on the server: never keep showing it as valid without re-reading.
       try {
         const ticket = await fetchTicket({ ticketId: current.ticketId }, { allowDemo });
-        setState({ kind: 'ready', ticket, notice: null });
+        showTicket(ticket);
       } catch {
-        setState({ kind: 'ready', ticket: current, notice: ticketMessages.staleQr });
+        showTicket(current, ticketMessages.staleQr);
       }
     } finally {
       setRefreshing(false);
@@ -225,6 +237,9 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-800" role="status">
         {statusMessage(ticket)}
       </div>
+      {cancellationOutcome?.ticketId === ticket.ticketId ? (
+        <p role="status" className="mb-6 text-sm font-semibold text-slate-700">{cancellationOutcome.message}</p>
+      ) : null}
 
       {notice ? (
         <div className="mb-6 space-y-1 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900" role="alert">
@@ -328,7 +343,7 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
             <span>{refreshing ? 'Đang làm mới…' : 'Làm mới mã QR'}</span>
           </button>
         ) : null}
-        <button
+        {ticket.ticketStatus !== 'Cancelled' ? <button
           type="button"
           onClick={() => window.print()}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-xs font-bold text-white shadow-md transition hover:bg-slate-800"
@@ -337,14 +352,23 @@ export function BookingTicketView({ ticketKey, returnPath }: BookingTicketViewPr
             print
           </span>
           <span>In vé</span>
-        </button>
+        </button> : null}
         <Link
           href={ROUTES.account.trips}
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
         >
           Về chuyến đi của tôi
         </Link>
-        <BookingCancelAction bookingId={ticket.bookingId} ticketStatus={ticket.ticketStatus} />
+        <BookingCancelAction bookingId={ticket.bookingId} ticketStatus={ticket.ticketStatus}
+          onCancelled={(_result, message) => {
+            cancelledTicketRef.current = ticket.ticketId;
+            setCancellationOutcome({ ticketId: ticket.ticketId, message });
+            setConfirming(false);
+            showTicket(ticket);
+            void fetchTicket({ ticketId: ticket.ticketId }, { allowDemo })
+              .then((updated) => showTicket(updated))
+              .catch(() => { /* Keep the authoritative cancelled view when reloading fails. */ });
+          }} />
       </div>
       {canRefresh && !online ? (
         <p className="mt-3 text-center text-xs text-slate-500 print:hidden">{ticketMessages.offline}</p>

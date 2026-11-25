@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
-import { TextField } from '@/components/ui/FormControls';
+import { fieldClassName, TextField } from '@/components/ui/FormControls';
 import {
   CONFIG_MESSAGES,
   WEATHER_SEVERITIES,
@@ -158,32 +159,47 @@ export function AlgorithmConfigForm() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl p-4 md:p-8">
-      <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#174B4A]">
-          Administrator Settings
-        </p>
-        <h1 className="mt-2 text-2xl font-extrabold text-[#1C2928] md:text-3xl">
-          Algorithm Parameters
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5B6E69]">
-          Store the four approved algorithm configuration values. This screen manages saved configuration only: the scheduling, rerouting, and weather services do not consume these values yet, so changes do not affect algorithm behavior until that integration is delivered.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-5xl p-4 md:p-6">
+      <PageHeader
+        className="mb-6"
+        eyebrow="Administrator Settings"
+        title="Algorithm Parameters"
+        description="Store the four approved algorithm configuration values. This screen manages saved configuration only: the scheduling, rerouting, and weather services do not consume these values yet, so changes do not affect algorithm behavior until that integration is delivered."
+      />
 
-      <form onSubmit={handleSubmit} className="rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-sm md:p-6" noValidate>
+      <form onSubmit={handleSubmit} className="rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs md:p-6" noValidate>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <TextField aria-label="Buffer Time Between Stops (minutes)" label="Buffer Time Between Stops (minutes)" type="number" min={5} max={60} step={1} value={values.bufferTimeMinutes} disabled={saving} error={errors.bufferTimeMinutes} help="Allowed range: 5–60 minutes." onChange={(event) => setValue('bufferTimeMinutes', event.target.value)} />
           <TextField aria-label="Default Motorbike Travel Speed (km/h)" label="Default Motorbike Travel Speed (km/h)" type="number" min={10} max={120} step="any" value={values.defaultTravelSpeedKmh} disabled={saving} error={errors.defaultTravelSpeedKmh} help="Allowed range: 10–120 km/h." onChange={(event) => setValue('defaultTravelSpeedKmh', event.target.value)} />
           <TextField aria-label="Rerouting Search Radius (km)" label="Rerouting Search Radius (km)" type="number" min={1} max={50} step="any" value={values.reroutingSearchRadiusKm} disabled={saving} error={errors.reroutingSearchRadiusKm} help="Allowed range: 1–50 km." onChange={(event) => setValue('reroutingSearchRadiusKm', event.target.value)} />
-          <label className="block text-[10px] font-bold uppercase tracking-[0.4px] text-[#5B6E69]">
-            Weather Alert Threshold
-            <select aria-label="Weather Alert Threshold" aria-invalid={Boolean(errors.weatherAlertThresholdSeverity)} aria-describedby={errors.weatherAlertThresholdSeverity ? 'weather-error' : 'weather-help'} className={`mt-1.5 w-full rounded-[11px] border bg-white px-3 py-2.5 text-[12.5px] text-[#1C2928] shadow-sm focus:border-[#174B4A] focus:outline-none disabled:bg-[#F7F5EF] ${errors.weatherAlertThresholdSeverity ? 'border-[#e02d4d]' : 'border-[#DCE2DD]'}`} value={values.weatherAlertThresholdSeverity} disabled={saving} onChange={(event) => setValue('weatherAlertThresholdSeverity', event.target.value)}>
-              {WEATHER_SEVERITIES.map((severity) => <option key={severity}>{severity}</option>)}
-            </select>
-            <span id="weather-help" className="mt-1 block text-[10.5px] font-normal normal-case tracking-normal text-[#5B6E69]">Minimum severity that triggers weather handling.</span>
-            {errors.weatherAlertThresholdSeverity ? <span id="weather-error" className="mt-1 block text-[10.5px] font-semibold normal-case tracking-normal text-[#e02d4d]">⚠ {errors.weatherAlertThresholdSeverity}</span> : null}
-          </label>
+          <div className="mb-1.5">
+            <label htmlFor="weather-threshold-select" className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Weather Alert Threshold
+            </label>
+            <div className="relative mt-1.5">
+              <select
+                id="weather-threshold-select"
+                aria-label="Weather Alert Threshold"
+                aria-invalid={Boolean(errors.weatherAlertThresholdSeverity)}
+                aria-describedby={errors.weatherAlertThresholdSeverity ? 'weather-error' : 'weather-help'}
+                className={`${fieldClassName} cursor-pointer ${errors.weatherAlertThresholdSeverity ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/30' : ''}`}
+                value={values.weatherAlertThresholdSeverity}
+                disabled={saving}
+                onChange={(event) => setValue('weatherAlertThresholdSeverity', event.target.value)}
+              >
+                {WEATHER_SEVERITIES.map((severity) => <option key={severity}>{severity}</option>)}
+              </select>
+            </div>
+            <span id="weather-help" className="mt-1.5 flex items-center gap-1 text-[11px] leading-snug text-brand-textSecondary">
+              <span className="material-symbols-outlined text-[14px] text-brand-teal" aria-hidden="true">info</span>
+              Minimum severity that triggers weather handling.
+            </span>
+            {errors.weatherAlertThresholdSeverity ? (
+              <span id="weather-error" role="alert" className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600">
+                <span aria-hidden="true">⚠</span> {errors.weatherAlertThresholdSeverity}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         {savedConfig?.updatedAtLocal ? <p className="mt-5 text-xs text-[#5B6E69]">Last updated (UTC+7): <span className="font-semibold text-[#5B6E69]">{savedConfig.updatedAtLocal}</span></p> : null}

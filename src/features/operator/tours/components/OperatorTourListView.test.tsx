@@ -67,6 +67,13 @@ const mockTours: TourPackageDto[] = [
 ];
 
 describe('OperatorTourListView', () => {
+  it('right-aligns adult prices and their column heading', () => {
+    render(<OperatorTourListView tours={mockTours} />);
+    expect(screen.getByRole('columnheader', { name: 'Giá người lớn' }).classList.contains('text-right')).toBe(true);
+    for (const row of screen.getAllByRole('row').slice(1)) {
+      expect(row.querySelectorAll('td')[3].classList.contains('text-right')).toBe(true);
+    }
+  });
   describe('Demo Mode (?demo=1 continuity)', () => {
     it('preserves demo=1 on all action and navigation links when isDemo is true', () => {
       render(<OperatorTourListView tours={mockTours} isDemo={true} />);

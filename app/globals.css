@@ -42,6 +42,15 @@
   --color-brand-textPrimary: #1C2928;
   --color-brand-textSecondary: #5B6E69;
 
+  /* Refined TripMate Administrative & Marketplace Palette */
+  --color-brand-deepTeal: #0D5754;
+  --color-brand-deepTealHover: #094743;
+  --color-brand-darkSidebar: #172B29;
+  --color-brand-primaryInk: #1D2D2B;
+  --color-brand-pageBg: #F5F7F6;
+  --color-brand-mutedText: #61736F;
+  --color-brand-subtleBorder: #DCE5E2;
+
   --color-surface-dim: #E8E6DF;
   --color-surface-bright: #FFFFFF;
   --color-surface-container-lowest: #FFFFFF;
@@ -1082,4 +1091,99 @@ textarea {
 .mapboxgl-canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+/* Dual-thumb price range slider */
+.dual-range-slider-track {
+  background-color: #DCE5E2;
+}
+.dual-range-slider-range {
+  background: linear-gradient(90deg, #1A6F6B 0%, #0D5754 100%);
+}
+.dual-range-slider input[type="range"] {
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  accent-color: #0D5754;
+}
+.dual-range-slider input[type="range"]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  background: transparent;
+  border: none;
+}
+.dual-range-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  cursor: grab;
+  box-sizing: border-box;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background-color: #FFFFFF;
+  border: 2.5px solid #0D5754;
+  box-shadow: 0 1px 4px rgba(13, 87, 84, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+.dual-range-slider input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+  background-color: #F4FAF8;
+  border-color: #094743;
+  box-shadow: 0 0 0 4px rgba(13, 87, 84, 0.14), 0 2px 6px rgba(13, 87, 84, 0.28);
+}
+.dual-range-slider input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+  background-color: #0D5754;
+  border-color: #094743;
+  box-shadow: 0 0 0 6px rgba(13, 87, 84, 0.18), 0 2px 8px rgba(13, 87, 84, 0.35);
+}
+.dual-range-slider input[type="range"]::-moz-range-track {
+  height: 18px;
+  background: transparent;
+  border: none;
+}
+.dual-range-slider input[type="range"]::-moz-range-thumb {
+  appearance: none;
+  pointer-events: auto;
+  cursor: grab;
+  box-sizing: border-box;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background-color: #FFFFFF;
+  border: 2.5px solid #0D5754;
+  box-shadow: 0 1px 4px rgba(13, 87, 84, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+.dual-range-slider input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.12);
+  background-color: #F4FAF8;
+  border-color: #094743;
+  box-shadow: 0 0 0 4px rgba(13, 87, 84, 0.14), 0 2px 6px rgba(13, 87, 84, 0.28);
+}
+.dual-range-slider input[type="range"]::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+  background-color: #0D5754;
+  border-color: #094743;
+  box-shadow: 0 0 0 6px rgba(13, 87, 84, 0.18), 0 2px 8px rgba(13, 87, 84, 0.35);
+}
+.dual-range-slider input[type="range"]:focus-visible {
+  outline: none;
+}
+.dual-range-slider input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #0D5754;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(13, 87, 84, 0.18);
+}
+.dual-range-slider input[type="range"]:focus-visible::-moz-range-thumb {
+  outline: 2px solid #0D5754;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(13, 87, 84, 0.18);
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { formatDepartureDate, formatVietnamDateTime, formatVnd, validateReturnReference, type RefundDetail } from '../types/refundLifecycle';
@@ -103,14 +104,13 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8">
-      <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Booking Management</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Confirm Booking Refund</h1>
-        <p className="mt-2 max-w-2xl text-sm text-[#486581]">
-          Confirm the refund, then — if your return share is non-zero — report the bank transfer once you have paid TripMate back.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-3xl px-4 py-5 text-[#1C2928] md:px-8">
+      <PageHeader
+        className="mb-6"
+        eyebrow="Booking Management"
+        title="Confirm Booking Refund"
+        description="Confirm the refund, then — if your return share is non-zero — report the bank transfer once you have paid TripMate back."
+      />
 
       {state === 'loading' ? <div role="status" className={panel}>Loading refund details…</div> : null}
       {state === 'forbidden' ? (
@@ -160,8 +160,8 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
         />
       ) : null}
 
-      <div className="mt-8 border-t border-[#e6edf5] pt-4">
-        <a href={ROUTES.partner.bookings} className="text-sm font-bold text-[#006b5f]">
+      <div className="mt-8 border-t border-[#DCE2DD] pt-4">
+        <a href={ROUTES.partner.bookings} className="text-sm font-bold text-[#174B4A] hover:text-[#103B39] hover:underline">
           ← Back
         </a>
       </div>
@@ -172,7 +172,7 @@ export function ConfirmBookingRefundScreen({ refundId }: { refundId: number }) {
 function RefundDetailView({ detail }: { detail: RefundDetail }) {
   return (
     <>
-      <section className="mb-6 grid gap-4 rounded-2xl border border-[#d7e2ef] bg-white p-6 shadow-sm sm:grid-cols-3">
+      <section className="mb-5 grid gap-3 rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs sm:grid-cols-3">
         <SummaryField label="Booking Code" value={detail.bookingCode} />
         <SummaryField label="Tour Name" value={detail.tourName} />
         <SummaryField label="Departure Date" value={formatDepartureDate(detail.departureDate)} />
@@ -180,7 +180,7 @@ function RefundDetailView({ detail }: { detail: RefundDetail }) {
         <SummaryField label="Cancellation / Complaint Reference" value={detail.referenceCode ?? 'Not available'} />
       </section>
 
-      <section className="mb-6 grid gap-4 rounded-2xl border border-[#d7e2ef] bg-white p-6 shadow-sm sm:grid-cols-3">
+      <section className="mb-5 grid gap-3 rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xs sm:grid-cols-3">
         <SummaryField label="Refund Amount" value={formatVnd(detail.refundAmount)} />
         <SummaryField label="Tour Operator Share" value={formatVnd(detail.operatorReturnShare)} />
         <SummaryField label="Return Deadline" value={detail.returnDeadlineAtUtc ? formatVietnamDateTime(detail.returnDeadlineAtUtc) : 'Not applicable'} />
@@ -217,19 +217,19 @@ function ReturnArea({
   const editable = detail.status === 'AwaitingPartnerReturn';
   if (!editable) {
     return (
-      <section className="mt-6 rounded-2xl border border-[#d7e2ef] bg-white p-6 shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-wide text-[#627d98]">Bank Transfer Reference</p>
-        <p className="mt-1 text-sm font-bold text-[#00152a]">{detail.returnReference ?? 'Not reported yet'}</p>
+      <section className="mt-6 rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs">
+        <p className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">Bank Transfer Reference</p>
+        <p className="mt-1 text-sm font-bold text-[#1C2928]">{detail.returnReference ?? 'Not reported yet'}</p>
         {detail.returnReportedAtUtc ? (
-          <p className="mt-1 text-xs text-[#486581]">Reported {formatVietnamDateTime(detail.returnReportedAtUtc)}</p>
+          <p className="mt-1 text-xs text-[#5B6E69]">Reported {formatVietnamDateTime(detail.returnReportedAtUtc)}</p>
         ) : null}
       </section>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mt-6 rounded-2xl border border-[#d7e2ef] bg-white p-6 shadow-sm">
-      <label htmlFor="return-reference" className="block text-xs font-bold uppercase tracking-wide text-[#334e68]">
+    <form onSubmit={onSubmit} noValidate className="mt-6 rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs">
+      <label htmlFor="return-reference" className="block text-xs font-bold uppercase tracking-wide text-[#5B6E69]">
         Bank Transfer Reference
       </label>
       <input
@@ -242,7 +242,7 @@ function ReturnArea({
           setReturnReference(event.target.value);
           if (referenceInvalid) setReferenceInvalid(false);
         }}
-        className="mt-1 w-full rounded-xl border border-[#bcccdc] bg-white px-3 py-2.5 text-sm text-[#102a43] outline-none focus-visible:border-[#006b5f] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40"
+        className="mt-1.5 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 px-3 py-2.5 text-sm text-[#1C2928] outline-none transition focus:bg-white focus-visible:border-[#174B4A] focus-visible:ring-2 focus-visible:ring-[#174B4A]/20"
       />
       {referenceInvalid ? (
         <p id="return-reference-error" role="alert" className="mt-2 text-xs font-semibold text-[#8c1030]">
@@ -252,7 +252,7 @@ function ReturnArea({
       <button
         type="submit"
         disabled={submitting}
-        className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-[#006b5f] px-5 py-2 text-sm font-bold text-white hover:bg-[#005048] disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? 'Submitting…' : 'Confirm Return'}
       </button>
@@ -260,17 +260,17 @@ function ReturnArea({
   );
 }
 
-const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
-const actionButton = 'rounded-xl border border-[#006b5f] px-4 py-2 text-sm font-bold text-[#006b5f] hover:bg-[#e6f7f0] disabled:cursor-not-allowed disabled:opacity-50';
+const panel = 'rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-[#5B6E69]';
+const actionButton = 'rounded-xl border border-[#174B4A] bg-white px-4 py-2 text-xs font-bold text-[#174B4A] transition hover:bg-[#E8F0EA] disabled:cursor-not-allowed disabled:opacity-50';
 function SummaryField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-xs font-bold uppercase tracking-wide text-[#627d98]">{label}</p>
-      <p className="mt-1 text-sm font-bold text-[#00152a]">{value}</p>
+    <div className="rounded-xl border border-[#ECEEEB] bg-[#F7F5EF]/60 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#5B6E69]">{label}</p>
+      <p className="mt-1 text-sm font-bold text-[#1C2928]">{value}</p>
     </div>
   );
 }
 
 function Badge({ status }: { status: RefundDetail['status'] }) {
-  return <span className="inline-flex rounded-full bg-[#e6f7f0] px-2.5 py-1 text-xs font-bold text-[#085b3e]">{status}</span>;
+  return <span className="inline-flex rounded-full border border-[#CBE0D4] bg-[#E8F0EA] px-2.5 py-0.5 text-xs font-bold text-[#103B39]">{status}</span>;
 }

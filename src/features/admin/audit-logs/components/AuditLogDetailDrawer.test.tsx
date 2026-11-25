@@ -186,6 +186,13 @@ describe('AuditLogDetailDrawer', () => {
     expect(await screen.findByText('-')).toBeDefined();
   });
 
+  it('uses numeric dates while preserving both labelled audit time zones', async () => {
+    vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
+    render(<AuditLogDetailDrawer logId={101} isOpen={true} onClose={mockOnClose} />);
+    expect(await screen.findByText('13/09/2026 17:00:00')).toBeDefined();
+    expect(screen.getByText('13/09/2026 10:00:00.000Z')).toBeDefined();
+  });
+
   it('only reports copied after the clipboard write succeeds', async () => {
     vi.mocked(service.getAuditLogDetail).mockResolvedValue(buildDetail());
 

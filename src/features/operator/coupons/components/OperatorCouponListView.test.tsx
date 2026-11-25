@@ -32,6 +32,13 @@ const coupons: CouponDto[] = [
 ];
 
 describe('OperatorCouponListView (UC-39)', () => {
+  it('aligns discount values with their right-aligned column heading', () => {
+    render(<OperatorCouponListView coupons={coupons} />);
+    expect(screen.getByRole('columnheader', { name: couponEn.list.table.discount }).classList.contains('text-right')).toBe(true);
+    const discountCells = screen.getAllByRole('row').slice(1).map((row) => row.querySelectorAll('td')[1]).filter(Boolean);
+    expect(discountCells.length).toBeGreaterThan(0);
+    for (const cell of discountCells) expect(cell.classList.contains('text-right')).toBe(true);
+  });
   it('renders coupon summaries without non-production notices', () => {
     render(<OperatorCouponListView coupons={coupons} />);
     expect(screen.getByText(couponEn.list.title)).toBeDefined();

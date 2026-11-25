@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ROUTES } from '@/lib/routes';
 import { DeactivatePoiDialog } from './DeactivatePoiDialog';
 import { poiManagementEn } from '../resources/en';
@@ -115,31 +116,26 @@ export function PoiCatalogListView({ role = 'Administrator' }: PoiCatalogListVie
   return (
     <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
-                <span aria-hidden="true" className="material-symbols-outlined text-[14px]">location_on</span>
-                <span>Master Data Management</span>
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                Points of Interest Catalog
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
-                Screen #16: Manage tourist attractions, geo-coordinates, and operating schedules powering the TripMate routing engine.
-              </p>
-            </div>
-
+        <PageHeader
+          className="mb-6"
+          eyebrow={
+            <>
+              <span aria-hidden="true" className="material-symbols-outlined text-[14px]">location_on</span>
+              <span>Master Data Management</span>
+            </>
+          }
+          title="Points of Interest Catalog"
+          description="Screen #16: Manage tourist attractions, geo-coordinates, and operating schedules powering the TripMate routing engine."
+          actions={
             <Link
               href={ROUTES.admin.createPoi}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#174B4A] border border-[#5B6E69] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#103B39] shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
             >
               <span aria-hidden="true" className="material-symbols-outlined text-[16px]">add_location_alt</span>
               <span>Create New POI</span>
             </Link>
-          </div>
-        </header>
+          }
+        />
 
         {/* Filters and Search Bar */}
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] p-4 shadow-xs lg:flex-row lg:items-end lg:justify-between">
@@ -245,16 +241,16 @@ export function PoiCatalogListView({ role = 'Administrator' }: PoiCatalogListVie
         {/* POI Data Table */}
         <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
           <div className="overflow-x-auto">
-            <table className="min-w-[980px] w-full text-left text-xs" aria-label="Points of Interest Data Table" aria-busy={state.kind === 'loading'}>
+            <table className="w-full min-w-[860px] text-left text-xs" aria-label="Points of Interest Data Table" aria-busy={state.kind === 'loading'}>
               <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[11px] font-bold uppercase tracking-wider text-[#5B6E69]">
                 <tr>
-                  <th scope="col" className="px-5 py-3.5">ID</th>
-                  <th scope="col" className="px-5 py-3.5">Point of Interest</th>
-                  <th scope="col" className="px-5 py-3.5">Category</th>
-                  <th scope="col" className="px-5 py-3.5">Spatial Coordinates</th>
-                  <th scope="col" className="px-5 py-3.5">Opening Schedule</th>
-                  <th scope="col" className="px-5 py-3.5">Status</th>
-                  <th scope="col" className="px-5 py-3.5 text-right">Actions</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">ID</th>
+                  <th scope="col" className="px-3.5 py-3">Point of Interest</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">Category</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">Spatial Coordinates</th>
+                  <th scope="col" className="px-3.5 py-3">Opening Schedule</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">Status</th>
+                  <th scope="col" className="px-3.5 py-3 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DCE2DD]">
@@ -292,29 +288,33 @@ export function PoiCatalogListView({ role = 'Administrator' }: PoiCatalogListVie
                     </td>
                   </tr>
                 ) : state.response.items.length > 0 ? (
-                  state.response.items.map((poi: PoiManagementItem) => (
+                  state.response.items.map((poi: PoiManagementItem) => {
+                    const hoursText = openingHoursSummary(poi.openingHours);
+                    return (
                     <tr key={poi.id} className="transition-colors hover:bg-[#F7F5EF]/70">
-                      <td className="px-5 py-4 font-mono font-bold text-[#1C2928]">
+                      <td className="px-3.5 py-3.5 font-mono font-bold text-[#1C2928] whitespace-nowrap">
                         #{poi.id}
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="font-bold text-[#1C2928]">{poi.name}</div>
-                        <div className="max-w-xs truncate text-[11px] text-[#5B6E69]">
+                      <td className="px-3.5 py-3.5 max-w-[240px]">
+                        <div className="font-bold text-[#1C2928] truncate" title={poi.name}>{poi.name}</div>
+                        <div className="truncate text-[11px] text-[#5B6E69]" title={poi.address ?? poiManagementEn.addressMissing}>
                           {poi.address ?? poiManagementEn.addressMissing}
                         </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-3.5 whitespace-nowrap">
                         <span className="inline-flex rounded-full bg-[#E8F0EA] px-2.5 py-0.5 text-[11px] font-semibold text-[#1C2928]">
                           {poi.categoryName}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-mono text-[11px] text-[#5B6E69]">
+                      <td className="px-3.5 py-3.5 font-mono text-[11px] text-[#5B6E69] whitespace-nowrap">
                         {poi.latitude.toFixed(4)}, {poi.longitude.toFixed(4)}
                       </td>
-                      <td className="px-5 py-4 text-[#5B6E69]">
-                        {openingHoursSummary(poi.openingHours)}
+                      <td className="px-3.5 py-3.5 text-[#5B6E69]">
+                        <div className="line-clamp-2 max-w-[220px] leading-relaxed" title={hoursText}>
+                          {hoursText}
+                        </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-3.5 whitespace-nowrap">
                         {poi.status === 'Active' ? (
                           <span className="inline-flex items-center gap-1 rounded-full border border-[#BCE0CD] bg-[#E7F2EC] px-2.5 py-0.5 text-[11px] font-semibold text-[#1B5E3C]">
                             <span aria-hidden="true" className="material-symbols-outlined text-[12px]">check_circle</span>
@@ -327,13 +327,13 @@ export function PoiCatalogListView({ role = 'Administrator' }: PoiCatalogListVie
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/pois/${poi.id}`}
                             target="_blank"
                             aria-label={`Preview ${poi.name}`}
-                            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-3 py-2 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
+                            className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
                           >
                             <span>Preview</span>
                             <span aria-hidden="true" className="material-symbols-outlined text-[14px]">open_in_new</span>
@@ -343,7 +343,7 @@ export function PoiCatalogListView({ role = 'Administrator' }: PoiCatalogListVie
                               type="button"
                               onClick={() => setSelectedPoiForDeactivation(poi)}
                               aria-label={`Deactivate ${poi.name}`}
-                              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-red-200 bg-red-50/70 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+                              className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50/70 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
                             >
                               <span aria-hidden="true" className="material-symbols-outlined text-[14px]">block</span>
                               <span>Deactivate</span>
@@ -352,7 +352,8 @@ export function PoiCatalogListView({ role = 'Administrator' }: PoiCatalogListVie
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={7} className="px-5 py-16 text-center text-[#5B6E69]">

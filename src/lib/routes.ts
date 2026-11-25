@@ -1,6 +1,7 @@
 export const ROUTES = {
   home: '/',
   about: '/about',
+  weather: '/weather',
   signIn: '/sign-in',
   register: '/register',
   verifyAccount: '/verify-account',
@@ -8,6 +9,7 @@ export const ROUTES = {
   pois: '/pois',
   poi: (id: string | number) => `/pois/${id}`,
   plan: '/plan',
+  messages: '/messages',
   myItineraries: '/itineraries',
   itinerary: (id: string | number) => `/itinerary/${id}`,
   tours: '/tours',
@@ -18,6 +20,7 @@ export const ROUTES = {
   bookingTicket: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/ticket`,
   bookingComplaint: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/complaint`,
   partner: {
+    contract: '/partner/contract',
     dashboard: '/partner',
     profile: '/partner/profile',
     coupons: '/partner/coupons',
@@ -58,6 +61,8 @@ export const ROUTES = {
       `/account/complaints/${encodeURIComponent(complaintId)}/partial-refund-proposal`,
   },
   admin: {
+    contractTemplates: '/admin/contract-templates',
+    contractTemplate: (id: string | number) => `/admin/contract-templates/${encodeURIComponent(id)}`,
     login: '/admin/login',
     forgotPassword: '/admin/forgot-password',
     accountSecurity: '/admin/account/security',

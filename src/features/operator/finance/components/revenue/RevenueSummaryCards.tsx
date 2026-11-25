@@ -12,6 +12,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
   const cards = [
     {
       title: financeEn.revenue.summary.grossRevenue,
+      monetary: true,
       value: formatVndCurrency(summary.grossRevenue),
       help: financeEn.revenue.summary.grossRevenueHelp,
       icon: 'payments',
@@ -19,6 +20,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
     },
     {
       title: financeEn.revenue.summary.platformCommission,
+      monetary: true,
       value: formatVndCurrency(summary.platformCommission),
       help: financeEn.revenue.summary.platformCommissionHelp.replace(
         '{rate}',
@@ -29,6 +31,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
     },
     {
       title: financeEn.revenue.summary.netAmount,
+      monetary: true,
       value: formatVndCurrency(summary.netAmount),
       help: financeEn.revenue.summary.netAmountHelp,
       icon: 'account_balance_wallet',
@@ -51,6 +54,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
     },
     {
       title: financeEn.revenue.summary.refundedAmount,
+      monetary: true,
       value: formatVndCurrency(summary.refundedAmount),
       help: financeEn.revenue.summary.refundedAmountHelp,
       icon: 'replay',
@@ -82,7 +86,7 @@ export function RevenueSummaryCards({ summary }: RevenueSummaryCardsProps) {
             </div>
           </div>
           <div className="mt-3 min-w-0">
-            <p className="text-base sm:text-lg font-bold text-[#1C2928] tracking-tight break-words min-w-0">
+            <p className={`text-base sm:text-lg font-bold text-[#1C2928] tracking-tight break-words min-w-0${card.monetary ? ' text-right tabular-nums' : ''}`}>
               {card.value}
             </p>
             <p className="mt-1 text-[10px] text-slate-400 leading-tight break-words">

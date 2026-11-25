@@ -194,6 +194,8 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
     ? 'pois'
     : pathname.startsWith('/plan')
     ? 'plan'
+    : pathname.startsWith('/weather')
+    ? 'weather'
     : pathname.startsWith('/tours')
     ? 'tours'
     : pathname.startsWith('/itinerar')
@@ -324,13 +326,9 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
     ...(context?.role === 'Traveler'
       ? [{ key: 'itineraries', href: ROUTES.myItineraries, label: strings.links.myItineraries }]
       : []),
-    {
-      key: 'weather',
-      href: `${ROUTES.about}#weather`,
-      label: strings.links.weatherRerouting,
-      isAnchor: false,
-    },
+    { key: 'weather', href: ROUTES.weather, label: strings.links.weatherForecast },
     { key: 'tours', href: ROUTES.tours, label: strings.links.localTours },
+    ...(context ? [{ key: 'messages', href: ROUTES.messages, label: locale === 'en' ? 'Messages' : 'Tin nhắn' }] : []),
   ];
 
   if (isNestedUnderPersistentLayout) {
@@ -721,16 +719,17 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                   </div>
                 </Link>
 
+
                 <Link
-                  href={`${ROUTES.about}#weather`}
+                  href={ROUTES.weather}
                   onClick={() => setIsDrawerOpen(false)}
                   className="flex items-center gap-3.5 p-3 rounded-xl text-sm font-bold text-[#1C2928] hover:bg-[#EFECE4] transition btn-press"
                 >
-                  <span className="material-symbols-outlined text-xl text-[#174B4A]">thunderstorm</span>
+                  <span className="material-symbols-outlined text-xl text-[#174B4A]">partly_cloudy_day</span>
                   <div>
-                    <div>{strings.links.weatherRerouting}</div>
+                    <div>{strings.links.weatherForecast}</div>
                     <div className="text-[10px] font-normal text-[#5B6E69]">
-                      {drawerStrings.weatherDesc}
+                      {drawerStrings.weatherForecastDesc}
                     </div>
                   </div>
                 </Link>
@@ -764,6 +763,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     </div>
                   </Link>
                 )}
+                {context && <Link href={ROUTES.messages} onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3.5 rounded-xl p-3 text-sm font-bold text-brand-textPrimary transition hover:bg-brand-lightTeal"><span className="material-symbols-outlined text-xl text-brand-teal" aria-hidden="true">forum</span>{locale === 'en' ? 'Messages' : 'Tin nhắn'}</Link>}
               </nav>
             </div>
 

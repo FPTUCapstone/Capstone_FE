@@ -45,8 +45,19 @@ test('correct /api/v1/tours list URL and query forwarding', async () => {
   assert.match(requestedPath, /maxPrice=1500000/);
   assert.match(requestedPath, /page=1/);
   assert.match(requestedPath, /pageSize=20/);
+  assert.match(requestedPath, /bookableOnly=true/);
   assert.equal(requestedInit?.headers?.Accept, 'application/json, application/problem+json');
   assert.equal(requestedInit?.headers?.Authorization, undefined);
+});
+
+test('public listing cannot opt out of booking eligibility filtering', async () => {
+  let requestedPath = '';
+  const { proxyTourRequest } = setup(async (path) => {
+    requestedPath = path;
+    return new Response(JSON.stringify({ items: [] }), { status: 200 });
+  });
+  await proxyTourRequest([], new URLSearchParams({ bookableOnly: 'false' }));
+  assert.equal(new URL(requestedPath, 'http://local').searchParams.get('bookableOnly'), 'true');
 });
 
 test('correct /api/v1/tours/{id} detail path without query', async () => {

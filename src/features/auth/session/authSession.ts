@@ -1,6 +1,7 @@
 export type AuthRole = 'Traveler' | 'TourOperator' | 'Administrator' | 'Staff' | 'ServiceProvider';
 export type AdministrationRole = 'Administrator' | 'Staff';
 export type ApplicationStatus = 'Approved' | 'PendingApproval' | 'Rejected';
+export type OperatorOnboardingState = 'AwaitingReview' | 'Rejected' | 'AwaitingSignature' | 'Active' | 'Unresolved';
 
 export function isAdministrationRole(role: unknown): role is AdministrationRole {
   return role === 'Administrator' || role === 'Staff';
@@ -27,6 +28,9 @@ export interface WebAuthContext {
   readonly status: 'Active';
   readonly applicationStatus: ApplicationStatus | null;
   readonly applicationUnresolved: boolean;
+  readonly onboardingState?: OperatorOnboardingState;
+  readonly contractStatus?: 'PendingSignature' | 'Signed' | 'Voided' | null;
+  readonly currentContractId?: string | null;
   readonly accessToken: string;
   readonly accessTokenExpiresAtUtc: string;
 }
@@ -47,16 +51,24 @@ export function parseWebAuthContext(value: unknown): WebAuthContext {
       !Number.isFinite(Date.parse(expiry)) || Date.parse(expiry) <= Date.now()) throw new InvalidAuthContextError();
   const operator = data.role === 'TourOperator';
   const known = typeof data.applicationStatus === 'string' && ['Approved', 'PendingApproval', 'Rejected'].includes(data.applicationStatus);
+  const onboardingProvided = operator && ['onboardingState', 'contractStatus', 'currentContractId'].some((key) => key in data);
+  const onboardingKnown = typeof data.onboardingState === 'string' && ['AwaitingReview', 'Rejected', 'AwaitingSignature', 'Active'].includes(data.onboardingState);
+  if (onboardingProvided && ((data.currentContractId != null && (typeof data.currentContractId !== 'string' || !/^[1-9]\d{0,18}$/.test(data.currentContractId))) ||
+      (data.contractStatus != null && !['PendingSignature', 'Signed', 'Voided'].includes(String(data.contractStatus))))) throw new InvalidAuthContextError();
   return Object.freeze({
     userId: data.userId as number, email: data.email, fullName: data.fullName,
     role: data.role as AuthRole, status: 'Active', mustChangePassword: data.mustChangePassword === true,
     applicationStatus: operator && known ? data.applicationStatus as ApplicationStatus : null,
-    applicationUnresolved: operator && !known,
+    applicationUnresolved: operator && (!known || (onboardingProvided && !onboardingKnown)),
+    ...(onboardingProvided ? { onboardingState: (onboardingKnown ? data.onboardingState : 'Unresolved') as OperatorOnboardingState,
+      contractStatus: (data.contractStatus ?? null) as 'PendingSignature' | 'Signed' | 'Voided' | null,
+      currentContractId: (data.currentContractId ?? null) as string | null } : {}),
     accessToken: data.accessToken, accessTokenExpiresAtUtc: expiry,
   });
 }
 
 let current: WebAuthContext | null = null;
+let credentialRevision = 0;
 const listeners = new Set<() => void>();
 function notify(): void { for (const listener of listeners) { try { listener(); } catch { /* A broken subscriber must not break the session. */ } } }
 // Display metadata is never used to restore authentication or authorize requests.
@@ -72,6 +84,7 @@ export const AuthStorage = {
     return () => { listeners.delete(listener); };
   },
   clear(): void {
+    credentialRevision++;
     current = null;
     storageOperation((storage) => {
       for (const key of ['tripmate_access_token', 'tripmate_refresh_token', 'tripmate_user']) storage.removeItem(key);
@@ -82,6 +95,7 @@ export const AuthStorage = {
     if (typeof window === 'undefined') throw new InvalidAuthContextError();
     let context: WebAuthContext;
     try { context = parseWebAuthContext(value); } catch (error) { this.clear(); throw error; }
+    credentialRevision++;
     current = context;
     storageOperation((storage) => {
       for (const key of ['tripmate_access_token', 'tripmate_refresh_token', 'tripmate_user']) storage.removeItem(key);
@@ -94,6 +108,9 @@ export const AuthStorage = {
     notify();
     return context;
   },
+  // Lifecycle checks only; never exposes an expired credential or authorizes a request.
+  getCredentialRevision(): number { return credentialRevision; },
+  getSessionOwner(): { userId: number; role: AuthRole; expiresAtUtc: string } | null { return current ? { userId: current.userId, role: current.role, expiresAtUtc: current.accessTokenExpiresAtUtc } : null; },
   getContext(): WebAuthContext | null { return current && Date.parse(current.accessTokenExpiresAtUtc) > Date.now() ? current : null; },
   getAccessToken(): string | null { return this.getContext()?.accessToken ?? null; },
 };

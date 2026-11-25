@@ -135,12 +135,12 @@ export function TripHistoryView() {
       )}
 
       {/* Segmented tabs (Report 3 §3.7.1) */}
-      <div className="flex items-center rounded-2xl bg-slate-200/70 p-1.5 shadow-2xs">
+      <div className="flex items-center rounded-2xl border border-[#DCE2DD] bg-[#EDEAE1] p-1 shadow-2xs">
         <button
           type="button"
           onClick={() => handleTabChange('Upcoming')}
-          className={`${TAB_BUTTON} ${
-            activeTab === 'Upcoming' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} cursor-pointer ${
+            activeTab === 'Upcoming' ? 'bg-white text-[#103B39] shadow-xs' : 'text-[#5B6E69] hover:text-[#1C2928]'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.upcoming}
@@ -149,14 +149,14 @@ export function TripHistoryView() {
         <button
           type="button"
           onClick={() => handleTabChange('Completed')}
-          className={`${TAB_BUTTON} flex items-center justify-center gap-1.5 ${
-            activeTab === 'Completed' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} cursor-pointer flex items-center justify-center gap-1.5 ${
+            activeTab === 'Completed' ? 'bg-white text-[#103B39] shadow-xs' : 'text-[#5B6E69] hover:text-[#1C2928]'
           }`}
         >
           <span className="inline-block h-2 w-2 rounded-full bg-[#174B4A]" />
           <span>{tripReviewEn.tripHistory.tabs.completed}</span>
           {activeTab === 'Completed' && totalCount > 0 && (
-            <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.5 text-[10px] font-extrabold text-[#174B4A]">
+            <span className="rounded-full bg-[#E8F0EA] px-1.5 py-0.5 text-[10px] font-extrabold text-[#103B39]">
               {totalCount}
             </span>
           )}
@@ -165,8 +165,8 @@ export function TripHistoryView() {
         <button
           type="button"
           onClick={() => handleTabChange('Cancelled')}
-          className={`${TAB_BUTTON} ${
-            activeTab === 'Cancelled' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} cursor-pointer ${
+            activeTab === 'Cancelled' ? 'bg-white text-[#103B39] shadow-xs' : 'text-[#5B6E69] hover:text-[#1C2928]'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.cancelled}

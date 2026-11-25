@@ -182,6 +182,22 @@ Admin sign-in and UC-52 now use backend authentication and authorization. Other 
 - Production environment configuration
 - Live platform services such as maps and payments
 
+## Contract onboarding deployment gate
+
+Contract template administration and `/partner/contract` require the matching Backend
+migrations, private artifact storage, isolated renderer and configured SMTP/Gmail
+sender. Keep Backend contract signing disabled until those dependencies and hosting
+limits have been verified.
+
+The private BFF buffers PDF downloads and uses base64 JSON for the signing preview.
+This is verified locally, not as a large-file Vercel integration. Vercel's 4.5 MB
+response limit means previews over approximately 3.3 MB and binary downloads over
+4.5 MB need a different private delivery strategy. The 10 MB DOCX upload limit also
+exceeds the default Vercel request limit. Production enablement requires compatible
+private delivery/upload or a host supporting the specified sizes. Increasing a
+request limit does not remove the response limit. See
+[Vercel response limits](https://vercel.com/docs/errors/function_response_payload_too_large).
+
 ## Git Repository
 
 Official repository: [https://github.com/FPTUCapstone/Capstone_FE](https://github.com/FPTUCapstone/Capstone_FE)

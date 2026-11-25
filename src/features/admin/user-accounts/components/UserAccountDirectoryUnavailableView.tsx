@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PageHeader } from '@/components/layout/PageHeader';
 import type { AdministrationRole } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
 
@@ -10,18 +11,19 @@ export function UserAccountDirectoryUnavailableView({ role = 'Administrator' }: 
   return (
     <div className="pb-16 text-[#1C2928]">
       <section className="mx-auto max-w-6xl">
-        <header className="rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm sm:p-8">
-          <p className="text-xs font-bold tracking-wider text-[#5B6E69] uppercase">{copy.eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">{copy.title}</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">{copy.description}</p>
-        </header>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link href={role === 'Administrator' ? ROUTES.admin.createStaff : ROUTES.admin.createServiceProvider}
-            className="inline-flex min-h-11 items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
-            {role === 'Administrator' ? 'Create Staff Account' : 'Create Service Provider Account'}
-          </Link>
-        </div>
+        <PageHeader
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.description}
+          actions={
+            <Link
+              href={role === 'Administrator' ? ROUTES.admin.createStaff : ROUTES.admin.createServiceProvider}
+              className="inline-flex min-h-10 items-center rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
+            >
+              {role === 'Administrator' ? 'Create Staff Account' : 'Create Service Provider Account'}
+            </Link>
+          }
+        />
 
         <section className="mt-6 rounded-2xl border border-[#F2D8B3] bg-[#FBF3E8] p-5 sm:p-6 text-[#1C2928]">
           <span className="inline-flex rounded-full border border-[#F2D8B3] bg-[#F7EBE5] px-3 py-1 text-xs font-bold text-[#8F5419]">

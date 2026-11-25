@@ -141,20 +141,11 @@ describe('ExploreToursPage', () => {
   });
 
   it('validates price range and displays error when minPrice > maxPrice (BR-53, MSG29)', async () => {
+    currentSearch = 'minPrice=2000000&maxPrice=1000000';
     render(<ExploreToursPage />);
-    await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
-
-    const minInput = await screen.findByLabelText('Giá tối thiểu');
-    const maxInput = await screen.findByLabelText('Giá tối đa');
-
-    fireEvent.change(minInput, { target: { value: '2000000' } });
-    fireEvent.change(maxInput, { target: { value: '1000000' } });
-
-    const submitBtn = screen.getByRole('button', { name: /Tìm kiếm tour/i });
-    fireEvent.click(submitBtn);
 
     expect(
-      screen.getByText(/Giá tối thiểu không được lớn hơn giá tối đa/i),
+      await screen.findByText(/Giá tối thiểu không được lớn hơn giá tối đa/i),
     ).toBeTruthy();
     expect(push).not.toHaveBeenCalled();
   });
@@ -240,6 +231,7 @@ describe('ExploreToursPage', () => {
 
     try {
       const { rerender } = render(<ExploreToursPage />);
+      expect(await screen.findByText('10/12/2026')).toBeTruthy();
       const recommendations = within(screen.getByRole('region', { name: 'Gợi ý tour cá nhân hóa' }));
       await recommendations.findByText('Recommended tour');
       await screen.findByText('Hành Trình Di Sản Phố Cổ Hội An');
@@ -381,7 +373,7 @@ describe('ExploreToursPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Xóa bộ lọc/i }));
 
     expect(keyword.value).toBe('biển');
-    expect(minPrice.value).toBe('');
+    expect(minPrice.value).toBe('0');
     expect(destination.value).toBe('');
     expect(push).not.toHaveBeenCalled();
   });

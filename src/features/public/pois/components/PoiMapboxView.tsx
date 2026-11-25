@@ -56,7 +56,7 @@ function buildMarkerContent(poi: PoiSummary, isSelected: boolean): HTMLElement {
   headerRow.className = 'flex items-center gap-1.5 text-[10px] font-bold';
 
   const categoryBadge = document.createElement('span');
-  categoryBadge.className = 'rounded-full bg-[#103B39] px-2 py-0.5 text-white';
+  categoryBadge.className = 'rounded-md bg-[#103B39] px-2 py-0.5 text-white';
   categoryBadge.textContent = poi.categoryName;
   headerRow.appendChild(categoryBadge);
 
@@ -197,7 +197,10 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
         'top-right'
       );
 
+      let disposed = false;
+
       map.on('load', () => {
+        if (disposed) return;
         setMapLoaded(true);
         map.resize();
       });
@@ -206,19 +209,27 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
       let resizeObserver: ResizeObserver | null = null;
       if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
         resizeObserver = new ResizeObserver(() => {
-          map.resize();
+          if (!disposed) map.resize();
         });
         resizeObserver.observe(mapContainerRef.current);
       }
 
       // Initial resize kicks to guarantee immediate 100% full coverage
+      let rafId: number | null = null;
       if (typeof window !== 'undefined') {
-        window.requestAnimationFrame(() => map.resize());
+        rafId = window.requestAnimationFrame(() => {
+          if (!disposed) map.resize();
+        });
       }
-      const t1 = setTimeout(() => map.resize(), 100);
-      const t2 = setTimeout(() => map.resize(), 400);
+      const t1 = setTimeout(() => {
+        if (!disposed) map.resize();
+      }, 100);
+      const t2 = setTimeout(() => {
+        if (!disposed) map.resize();
+      }, 400);
 
       map.on('error', (e) => {
+        if (disposed) return;
         if (e.error?.message?.includes('style') || e.error?.message?.includes('token')) {
           setRuntimeError('Không thể tải kiểu bản đồ Mapbox. Vui lòng kiểm tra quyền truy cập.');
         }
@@ -228,6 +239,10 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
 
       const markers = markersRef.current;
       return () => {
+        disposed = true;
+        if (rafId !== null && typeof window !== 'undefined') {
+          window.cancelAnimationFrame(rafId);
+        }
         resizeObserver?.disconnect();
         clearTimeout(t1);
         clearTimeout(t2);
@@ -330,14 +345,14 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
   return (
     <section
       data-lenis-prevent="true"
-      className="relative h-[560px] w-full overflow-hidden rounded-[28px] border border-[#DCE2DD] bg-[#EDEAE1] shadow-[0_14px_40px_rgba(0,21,42,.08)] lg:h-[720px] xl:h-[760px]"
+      className="relative h-[560px] w-full overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#EDEAE1] shadow-[0_10px_32px_rgba(16,59,57,.08)] lg:h-[720px] xl:h-[760px]"
       aria-label="Bản đồ địa lý khám phá địa điểm"
     >
       {/* Fallback state when token is missing, WebGL fails or map error occurs */}
       {mapError ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center p-8 text-center bg-[#F7F5EF]">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#F7F5EF] p-8 text-center">
           <div className="max-w-md rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-sm">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#fde8e8] text-2xl text-[#c81e1e]" aria-hidden="true">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#fde8e8] text-2xl text-[#c81e1e]" aria-hidden="true">
               ⌖
             </span>
             <p className="mt-4 text-base font-extrabold text-[#1C2928]">Bản đồ địa lý chưa khả dụng</p>
@@ -358,14 +373,14 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
       />
 
       {/* Map Header Status Badge */}
-      <div className="absolute left-4 top-4 z-20 max-w-[calc(100%-4rem)] rounded-xl border border-[#DCE2DD] bg-white/95 px-3 py-2 text-xs font-extrabold text-[#174B4A] shadow-sm backdrop-blur">
+      <div className="absolute left-4 top-4 z-20 max-w-[calc(100%-4rem)] rounded-lg border border-[#DCE2DD] bg-white/95 px-3 py-1.5 text-xs font-extrabold text-[#174B4A] shadow-sm backdrop-blur">
         Bản đồ địa lý tương tác (Mapbox)
       </div>
 
       {/* Empty Coordinates State */}
       {validItems.length === 0 && !mapError ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center p-8 text-center bg-white/60 backdrop-blur-xs">
-          <div className="max-w-sm rounded-2xl bg-white/95 p-6 shadow-sm border border-[#DCE2DD]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 p-8 text-center backdrop-blur-xs">
+          <div className="max-w-sm rounded-2xl border border-[#DCE2DD] bg-white/95 p-6 shadow-sm">
             <p className="text-base font-extrabold text-[#1C2928]">Chưa có tọa độ hiển thị</p>
             <p className="mt-2 text-xs leading-relaxed text-[#5B6E69]">
               Các địa điểm trong bộ lọc hiện tại chưa có tọa độ khả dụng để đặt điểm mốc trên bản đồ.
@@ -377,23 +392,27 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
       {/* Selected POI Floating Preview Card */}
       {selectedPoi ? (
         <article
-          className="absolute bottom-4 left-4 right-4 z-20 rounded-2xl border border-[#DCE2DD] bg-white p-3.5 shadow-[0_18px_50px_rgba(0,21,42,.2)] sm:p-4 transition-all duration-300"
+          className="absolute bottom-4 left-4 right-4 z-20 rounded-xl border border-[#DCE2DD] bg-white/98 p-3.5 shadow-[0_14px_40px_rgba(16,59,57,.18)] backdrop-blur-xs transition-all duration-300 sm:p-4"
           aria-label={`Chi tiết xem trước: ${selectedPoi.name}`}
         >
           <div className="flex min-w-0 items-center gap-3.5">
             <PoiImage
               src={selectedPoi.thumbnailUrl}
               alt={selectedPoi.name}
-              className="h-[74px] w-[74px] shrink-0 rounded-xl sm:h-[86px] sm:w-[86px]"
+              categoryName={selectedPoi.categoryName}
+              compact
+              className="h-[72px] w-[72px] shrink-0 rounded-xl sm:h-[82px] sm:w-[82px]"
             />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-[.08em] text-[#103B39] bg-[#E8F0EA] px-2 py-0.5 rounded-full">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-md bg-[#E8F0EA] px-2 py-0.5 text-[10px] font-black uppercase tracking-[.06em] text-[#103B39]">
                   Đang chọn trên bản đồ
                 </span>
-                <span className="text-xs font-extrabold text-[#e65100]">
-                  ★ {selectedPoi.averageRating?.toFixed(1) ?? 'Chưa có'}
-                </span>
+                {selectedPoi.averageRating !== null ? (
+                  <span className="rounded-md bg-[#FEF3C7] px-1.5 py-0.5 text-xs font-extrabold text-[#B45309]">
+                    ★ {selectedPoi.averageRating.toFixed(1)}
+                  </span>
+                ) : null}
               </div>
               <h2 className="mt-1 line-clamp-1 text-base font-black leading-tight text-[#1C2928]">
                 {selectedPoi.name}
@@ -407,7 +426,7 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
                   {selectedPoi.isOpenNow ? '● Đang mở cửa' : '○ Đã đóng'}
                 </span>
                 {selectedPoi.distanceKm !== null ? (
-                  <span className="text-[#174B4A] font-semibold">
+                  <span className="font-semibold text-[#174B4A]">
                     ⌖ Cách {selectedPoi.distanceKm.toFixed(2)} km
                   </span>
                 ) : null}
@@ -415,7 +434,7 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
             </div>
             <Link
               href={`/pois/${selectedPoi.id}`}
-              className="hidden min-h-11 shrink-0 items-center rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white hover:bg-[#103B39] transition sm:inline-flex"
+              className="hidden min-h-10 shrink-0 items-center rounded-lg bg-[#174B4A] px-3.5 text-sm font-bold text-white transition hover:bg-[#103B39] sm:inline-flex"
             >
               Xem chi tiết →
             </Link>
@@ -423,7 +442,7 @@ export function PoiMapboxView({ items, selectedId, onSelectPoi }: PoiMapboxViewP
           <div className="mt-3 flex sm:hidden">
             <Link
               href={`/pois/${selectedPoi.id}`}
-              className="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#103B39] px-4 text-sm font-bold text-white"
+              className="flex min-h-10 w-full items-center justify-center rounded-lg bg-[#103B39] px-4 text-sm font-bold text-white"
             >
               Xem chi tiết địa điểm →
             </Link>

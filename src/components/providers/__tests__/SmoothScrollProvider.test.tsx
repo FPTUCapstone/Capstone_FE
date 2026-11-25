@@ -86,8 +86,11 @@ describe('SmoothScrollProvider (Global Premium Motion & Accessibility System)', 
 
     expect(screen.getByRole('button', { name: 'Scroll to Target' })).toBeDefined();
 
-    // Verify global options: allowNestedScroll is true and duration is 1.05
-    expect(lastLenisOptions.duration).toBe(1.05);
+    // Verify global options: crisp low-inertia lerp damping, natural 1:1 wheel, nested scroll enabled
+    expect(lastLenisOptions.lerp).toBe(0.24);
+    expect(lastLenisOptions.duration).toBeUndefined();
+    expect(lastLenisOptions.wheelMultiplier).toBe(1);
+    expect(lastLenisOptions.stopInertiaOnNavigate).toBe(true);
     expect(lastLenisOptions.allowNestedScroll).toBe(true);
 
     // On unmount, single lenis instance is destroyed and RAF is cancelled

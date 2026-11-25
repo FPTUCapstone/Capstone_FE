@@ -22,6 +22,11 @@ vi.mock('../services/ticketClient', async (importOriginal) => ({
 vi.mock('./QrCodeDisplay', () => ({
   QrCodeDisplay: ({ value }: { value: string }) => <div data-testid="qr" data-value={value} />,
 }));
+vi.mock('./BookingCancelDialog', () => ({
+  BookingCancelDialog: ({ onCancelled }: { onCancelled: (result: { refundStatus: string }) => void }) => (
+    <button onClick={() => onCancelled({ refundStatus: 'NotRequired' })}>Confirm test cancellation</button>
+  ),
+}));
 
 import { TicketClientError } from '../services/ticketClient';
 import { BookingTicketView } from './BookingTicketView';
@@ -82,6 +87,45 @@ afterEach(() => {
 });
 
 describe('BookingTicketView (UC-29)', () => {
+  it('does not offer printing for a cancelled ticket', async () => {
+    fetchTicketMock.mockResolvedValue(ticket({ ticketStatus: 'Cancelled', qr: null }));
+    renderView();
+    await screen.findByText(ticketMessages.status.Cancelled);
+    expect(screen.queryByRole('button', { name: /In vé/ })).toBeNull();
+  });
+
+  it('cannot restore a usable QR when an in-flight refresh resolves after cancellation', async () => {
+    fetchTicketMock.mockResolvedValueOnce(ticket()).mockResolvedValueOnce(ticket({ ticketStatus: 'Cancelled', qr: null }));
+    let finishRefresh!: (value: TicketView) => void;
+    refreshTicketQrMock.mockImplementationOnce(() => new Promise<TicketView>((resolve) => { finishRefresh = resolve; }));
+    renderView();
+    await confirmRefresh();
+    fireEvent.click(screen.getByRole('button', { name: /hủy booking/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm test cancellation' }));
+    await screen.findByText(ticketMessages.status.Cancelled);
+    await act(async () => { finishRefresh(ticket()); });
+    expect(screen.getByText(ticketMessages.status.Cancelled)).toBeTruthy();
+    expect(screen.queryByTestId('qr')).toBeNull();
+    expect(screen.queryByRole('button', { name: /In vé|Làm mới mã QR/ })).toBeNull();
+    expect(screen.getByText(/Không tìm thấy thanh toán đã xác minh/)).toBeTruthy();
+  });
+
+  it.each(['pending', 'failed', 'stale'] as const)('revokes ticket immediately after cancellation even when reload is %s', async (reload) => {
+    fetchTicketMock.mockResolvedValueOnce(ticket());
+    if (reload === 'pending') fetchTicketMock.mockImplementationOnce(() => new Promise(() => {}));
+    if (reload === 'failed') fetchTicketMock.mockRejectedValueOnce(new TicketClientError('system', ticketMessages.msg127, 503));
+    if (reload === 'stale') fetchTicketMock.mockResolvedValueOnce(ticket());
+    renderView();
+    fireEvent.click(await screen.findByRole('button', { name: /hủy booking/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm test cancellation' }));
+    expect(await screen.findByText(ticketMessages.status.Cancelled)).toBeTruthy();
+    await waitFor(() => expect(fetchTicketMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId('qr')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Làm mới mã QR|In vé|hủy booking/i })).toBeNull();
+    expect(screen.getByText(/Không tìm thấy thanh toán đã xác minh/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Về chuyến đi của tôi' })).toBeTruthy();
+  });
+
   it('shows a loading state, then the ticket fields of the contract', async () => {
     fetchTicketMock.mockResolvedValue(ticket());
 

@@ -156,10 +156,10 @@ export function CommissionStatementsView() {
                     <th scope="col" className="py-3 px-3 text-center whitespace-nowrap">
                       {hotelProviderVi.w105.tableHeaders.completedCount}
                     </th>
-                    <th scope="col" className="py-3 px-3 whitespace-nowrap">
+                    <th scope="col" className="py-3 px-3 text-right whitespace-nowrap">
                       {hotelProviderVi.w105.tableHeaders.totalRevenue}
                     </th>
-                    <th scope="col" className="py-3 px-3 whitespace-nowrap">
+                    <th scope="col" className="py-3 px-3 text-right whitespace-nowrap">
                       {hotelProviderVi.w105.tableHeaders.commissionAmount}
                     </th>
                     <th scope="col" className="py-3 px-3 whitespace-nowrap">
@@ -192,10 +192,10 @@ export function CommissionStatementsView() {
                         <td className="py-3 px-3 text-center font-medium">
                           {stmt.completedCount}
                         </td>
-                        <td className="py-3 px-3 font-mono">
+                        <td className="py-3 px-3 text-right tabular-nums font-mono">
                           {formatVnd(stmt.totalRevenue)}
                         </td>
-                        <td className="py-3 px-3 font-mono font-bold text-[#174B4A]">
+                        <td className="py-3 px-3 text-right tabular-nums font-mono font-bold text-[#174B4A]">
                           {formatVnd(stmt.commissionAmount)}
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap text-[#5B6E69]">

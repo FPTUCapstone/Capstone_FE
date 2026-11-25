@@ -14,6 +14,29 @@ import { parseApplicationId } from '../utils/applicationId';
 
 type ApplicationAction = 'approve' | 'reject';
 
+export async function proxyTourOperatorApplicationList(request: Request) {
+  const cookieStore = await cookies();
+  const session = verifyAdminSessionFromCookies(cookieStore);
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!session || !token) return jsonNoStore({ title: 'Sign-in required.' }, 401);
+  if (session.role !== 'Staff') return jsonNoStore({ title: 'Staff access is required.' }, 403);
+  const input = new URL(request.url).searchParams;
+  const query = new URLSearchParams();
+  for (const name of ['page', 'status', 'search']) {
+    const value = input.get(name);
+    if (value) query.set(name, value);
+  }
+  try {
+    const upstream = await fetchBackend(`/api/v1/admin/tour-operator-applications?${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (upstream.status === 401) return clearAdminSession(jsonNoStore({ title: 'Sign-in required.' }, 401));
+    return jsonNoStore(await upstream.json(), upstream.status >= 500 ? 503 : upstream.status);
+  } catch {
+    return jsonNoStore({ title: 'The application service could not be reached.' }, 503);
+  }
+}
+
 export async function proxyTourOperatorApplication(
   request: Request,
   userId: string,

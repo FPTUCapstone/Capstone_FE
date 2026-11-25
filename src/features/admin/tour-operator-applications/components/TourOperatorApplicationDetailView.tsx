@@ -10,7 +10,7 @@ import { ROUTES } from '@/lib/routes';
 import { fetchOperatorApplicationDetail } from '../api/tourOperatorApplicationApi';
 import { tourOperatorApplicationEn as copy } from '../resources/en';
 import { ApplicationErrorView, describeApplicationError } from '../utils/applicationErrors';
-import { usableDecisionMessage } from '../utils/decisionMessage';
+import { approvalDecisionMessage } from '../utils/decisionMessage';
 import { hasUsableBusinessLicense } from '../utils/documents';
 import { ApplicationHeader } from './ApplicationHeader';
 import { CompanyInfoCard } from './CompanyInfoCard';
@@ -90,7 +90,7 @@ export function TourOperatorApplicationDetailView({ userId }: TourOperatorApplic
   function handleApproveSuccess(result: ApproveOperatorApplicationResponseDto) {
     setIsApproveOpen(false);
     reconcileAfterDecision(
-      usableDecisionMessage(result.message) ?? copy.approve.successFallback(detail?.companyName ?? ''),
+      approvalDecisionMessage(result, detail?.companyName ?? ''),
     );
   }
 

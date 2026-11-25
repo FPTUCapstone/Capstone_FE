@@ -173,7 +173,7 @@ export function CommissionReconciliationView() {
       {/* Breadcrumb & Header */}
       <div>
         <div className="flex items-center gap-2 text-xs text-[#5B6E69] mb-1">
-          <Link href={ROUTES.admin.dashboard} className="hover:text-[#174B4A] transition-colors">
+          <Link href={ROUTES.admin.staffDashboard} className="hover:text-[#174B4A] transition-colors">
             {hotelProviderVi.w106.breadcrumb}
           </Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -219,7 +219,7 @@ export function CommissionReconciliationView() {
           </div>
 
           {/* Status Filter */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <AccessibleSelect
               label={hotelProviderVi.w106.filters.statusLabel}
               options={statusOptions}
@@ -244,10 +244,10 @@ export function CommissionReconciliationView() {
           </div>
 
           {/* Action Buttons */}
-          <div className="lg:col-span-1 flex items-center gap-1.5">
+          <div className="lg:col-span-2 flex items-center gap-1.5">
             <button
               type="submit"
-              className="flex-1 py-2 px-3 text-xs font-semibold text-white bg-[#174B4A] hover:bg-[#103B39] rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
+              className="flex-1 whitespace-nowrap py-2 px-3 text-xs font-semibold text-white bg-[#174B4A] hover:bg-[#103B39] rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
             >
               <span className="material-symbols-outlined text-[15px]">search</span>
               <span>{hotelProviderVi.w106.filters.applyButton}</span>
@@ -255,11 +255,11 @@ export function CommissionReconciliationView() {
             <button
               type="button"
               onClick={handleReset}
-              className="p-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer border border-[#DCE2DD]"
+              className="shrink-0 p-2 text-xs font-semibold text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#F7F5EF] rounded-lg transition-colors cursor-pointer border border-[#DCE2DD]"
               title={hotelProviderVi.w106.filters.resetButton}
               aria-label={hotelProviderVi.w106.filters.resetButton}
             >
-              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              <span className="material-symbols-outlined text-[16px] block">refresh</span>
             </button>
           </div>
         </form>
@@ -297,7 +297,7 @@ export function CommissionReconciliationView() {
                   <th scope="col" className="py-3 px-3.5 w-[90px] whitespace-nowrap">
                     {hotelProviderVi.w106.tableHeaders.period}
                   </th>
-                  <th scope="col" className="py-3 px-3.5 w-[140px] whitespace-nowrap">
+                  <th scope="col" className="py-3 px-3.5 w-[140px] text-right whitespace-nowrap">
                     {hotelProviderVi.w106.tableHeaders.commissionAmount}
                   </th>
                   <th scope="col" className="py-3 px-3.5 w-[110px] whitespace-nowrap">
@@ -336,7 +336,7 @@ export function CommissionReconciliationView() {
                       </td>
 
                       {/* Commission Amount */}
-                      <td className="py-3 px-3.5 font-mono font-bold text-[#174B4A] whitespace-nowrap">
+                      <td className="py-3 px-3.5 text-right tabular-nums font-mono font-bold text-[#174B4A] whitespace-nowrap">
                         {formatVnd(item.commissionAmount)}
                       </td>
 

@@ -6,9 +6,13 @@ import { ModerationDialog } from './components/ModerationDialog';
 import { focusRing } from './components/ModerationNotices';
 import { RejectTourDialog, type RejectionReason } from './components/RejectTourDialog';
 import { tourModerationEn } from './resources/en';
+import type { ApprovalOutcome } from './services/approvalFeedback';
+import { submitApproval, submitRejection, type DecisionSender } from './services/tourModerationApi';
 import type { ReviewCriterionKey } from './types';
+import { classifyFailure, type ModerationFailure } from './useModerationResource';
 
 const copy = tourModerationEn.decision;
+const liveCopy = tourModerationEn.decisionLive;
 
 const CRITERIA: readonly ReviewCriterionKey[] = [
   'contentCompleteness',
@@ -26,22 +30,48 @@ const initialChecklist: Record<ReviewCriterionKey, boolean> = {
   itineraryFeasibility: false,
 };
 
-type DemoDecision =
+type Decision =
   | { readonly kind: 'approved' }
   | { readonly kind: 'rejected'; readonly reason: RejectionReason };
 
+const FAILURE_MESSAGE: Record<ModerationFailure, string> = {
+  unauthorized: liveCopy.sessionEnded,
+  forbidden: liveCopy.forbidden,
+  notFound: liveCopy.alreadyDecided,
+  conflict: liveCopy.alreadyDecided,
+  invalid: liveCopy.invalid,
+  unavailable: liveCopy.unavailable,
+};
+
+function composeReason(reason: RejectionReason): string {
+  return reason.categoryLabel ? `${reason.categoryLabel} — ${reason.detail}` : reason.detail;
+}
+
+interface TourReviewDecisionPanelProps {
+  /**
+   * Present only for a tour loaded from the backend: decisions are then really submitted.
+   * Absent in demo mode, where every decision stays a local simulation.
+   */
+  readonly liveTourId?: string;
+  readonly onApprovalOutcome?: (outcome: ApprovalOutcome) => void;
+}
+
 /**
- * Review decision panel. Rendered only behind the demo gate: there is no tour moderation
- * backend contract, so every decision here is a clearly labelled local simulation.
+ * Review decision panel. With `liveTourId` the decision is submitted to the backend (one request at a time,
+ * outcomes reported honestly); without it (demo mode) every decision is a clearly labelled local simulation.
  */
-export function TourReviewDecisionPanel() {
+export function TourReviewDecisionPanel({ liveTourId, onApprovalOutcome }: TourReviewDecisionPanelProps = {}) {
   const [checklist, setChecklist] = useState(initialChecklist);
   const [note, setNote] = useState('');
   const [checklistError, setChecklistError] = useState(false);
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
-  const [decision, setDecision] = useState<DemoDecision | null>(null);
+  const [decision, setDecision] = useState<Decision | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [lockedByConflict, setLockedByConflict] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const inFlight = useRef(false);
 
   // The decision controls become disabled, so move focus to the announced result.
   useEffect(() => {
@@ -50,6 +80,29 @@ export function TourReviewDecisionPanel() {
 
   const allPassed = CRITERIA.every((key) => checklist[key]);
   const decided = decision !== null;
+  const controlsDisabled = decided || submitting || lockedByConflict;
+  const isLive = liveTourId !== undefined;
+
+  /** Submits one live decision. The ref blocks a second click before React re-renders the disabled state. */
+  const submitLive = async (send: DecisionSender, recorded: Decision) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await send();
+      setDecision(recorded);
+      if (recorded.kind === 'approved') onApprovalOutcome?.('approved');
+    } catch (error) {
+      const failure = classifyFailure(error);
+      setSubmitError(FAILURE_MESSAGE[failure]);
+      if (failure === 'conflict' || failure === 'notFound') setLockedByConflict(true);
+      if (recorded.kind === 'approved' && failure === 'conflict') onApprovalOutcome?.('alreadyDecided');
+    } finally {
+      inFlight.current = false;
+      setSubmitting(false);
+    }
+  };
 
   const handleApproveClick = () => {
     if (!allPassed) {
@@ -74,12 +127,22 @@ export function TourReviewDecisionPanel() {
           ref={resultRef}
           tabIndex={-1}
           role="status"
-          className={`mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs font-semibold text-amber-900 ${focusRing}`}
+          className={`mb-4 rounded-xl border p-3 text-xs font-semibold ${
+            isLive ? 'border-emerald-300 bg-emerald-50 text-emerald-900' : 'border-amber-300 bg-amber-50 text-amber-900'
+          } ${focusRing}`}
         >
-          <p>{decision.kind === 'approved' ? copy.approvedResult : copy.rejectedResult}</p>
+          <p>
+            {decision.kind === 'approved'
+              ? isLive
+                ? liveCopy.approvedResult
+                : copy.approvedResult
+              : isLive
+                ? liveCopy.rejectedResult
+                : copy.rejectedResult}
+          </p>
           {decision.kind === 'rejected' ? (
             <p className="mt-2 font-normal">
-              <span className="font-bold">{copy.recordedReasonLabel}: </span>
+              <span className="font-bold">{isLive ? liveCopy.recordedReasonLabel : copy.recordedReasonLabel}: </span>
               {decision.reason.categoryLabel ? `${decision.reason.categoryLabel} — ` : ''}
               {decision.reason.detail}
             </p>
@@ -87,7 +150,18 @@ export function TourReviewDecisionPanel() {
         </div>
       ) : null}
 
-      <fieldset disabled={decided} aria-describedby="tour-checklist-hint">
+      {submitting ? (
+        <p role="status" className="mb-4 rounded-xl bg-[#F7F5EF] p-3 text-xs font-semibold text-[#5B6E69]">
+          {liveCopy.submitting}
+        </p>
+      ) : null}
+      {submitError ? (
+        <p role="alert" className="mb-4 rounded-xl bg-[#ffdad6] p-3 text-xs font-semibold text-[#93000a]">
+          {submitError}
+        </p>
+      ) : null}
+
+      <fieldset disabled={controlsDisabled} aria-describedby="tour-checklist-hint">
         <legend className="mb-1 text-xs font-bold uppercase tracking-wider text-[#5B6E69]">{copy.checklistLegend}</legend>
         <p id="tour-checklist-hint" className="mb-3 text-xs text-[#5B6E69]">
           {copy.checklistHint}
@@ -122,7 +196,7 @@ export function TourReviewDecisionPanel() {
           rows={3}
           maxLength={1000}
           value={note}
-          disabled={decided}
+          disabled={controlsDisabled}
           aria-describedby="tour-reviewer-note-hint"
           onChange={(event) => setNote(event.target.value)}
           className={`w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] p-3 text-sm ${focusRing}`}
@@ -139,7 +213,7 @@ export function TourReviewDecisionPanel() {
         <button
           type="button"
           onClick={handleApproveClick}
-          disabled={decided}
+          disabled={controlsDisabled}
           aria-describedby={checklistError ? 'tour-checklist-error' : undefined}
           className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[#174B4A] text-sm font-bold text-white hover:bg-[#103B39] disabled:opacity-60 ${focusRing}`}
         >
@@ -151,7 +225,7 @@ export function TourReviewDecisionPanel() {
         <button
           type="button"
           onClick={() => setRejectOpen(true)}
-          disabled={decided}
+          disabled={controlsDisabled}
           className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-[#DCE2DD] text-sm font-bold text-[#ba1a1a] hover:bg-[#ffdad6] disabled:opacity-60 ${focusRing}`}
         >
           <span className="material-symbols-outlined text-base" aria-hidden="true">
@@ -166,7 +240,7 @@ export function TourReviewDecisionPanel() {
         titleId="approve-tour-title"
         title={tourModerationEn.approveDialog.title}
         descriptionId="approve-tour-description"
-        description={tourModerationEn.approveDialog.description}
+        description={isLive ? liveCopy.approveDescription : tourModerationEn.approveDialog.description}
         onClose={() => setApproveOpen(false)}
       >
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -181,7 +255,11 @@ export function TourReviewDecisionPanel() {
             type="button"
             onClick={() => {
               setApproveOpen(false);
-              setDecision({ kind: 'approved' });
+              if (liveTourId === undefined) {
+                setDecision({ kind: 'approved' });
+                return;
+              }
+              void submitLive(() => submitApproval(liveTourId, checklist, note), { kind: 'approved' });
             }}
             className={`min-h-11 rounded-xl bg-[#174B4A] px-4 text-sm font-bold text-white hover:bg-[#103B39] ${focusRing}`}
           >
@@ -193,7 +271,14 @@ export function TourReviewDecisionPanel() {
       <RejectTourDialog
         open={rejectOpen}
         onClose={() => setRejectOpen(false)}
-        onConfirm={(reason) => setDecision({ kind: 'rejected', reason })}
+        live={isLive}
+        onConfirm={(reason) => {
+          if (liveTourId === undefined) {
+            setDecision({ kind: 'rejected', reason });
+            return;
+          }
+          void submitLive(() => submitRejection(liveTourId, composeReason(reason)), { kind: 'rejected', reason });
+        }}
       />
     </section>
   );

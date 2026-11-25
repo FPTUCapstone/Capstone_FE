@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { formatVietnamDateTime, formatVnd, type RefundListResponse } from '../types/refundLifecycle';
@@ -62,14 +63,13 @@ export function RefundReturnReconciliationScreen() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8">
-      <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Refund (Web Administration)</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Refund Return Reconciliation</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[#486581]">
-          Confirm receipt once a Tour Operator&apos;s reported return has been fully credited to the TripMate bank account.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-6xl px-4 py-5 text-[#1C2928] md:px-8">
+      <PageHeader
+        className="mb-6"
+        eyebrow="Refund (Web Administration)"
+        title="Refund Return Reconciliation"
+        description="Confirm receipt once a Tour Operator's reported return has been fully credited to the TripMate bank account."
+      />
 
       {state === 'loading' ? <div role="status" className={panel}>Loading returns awaiting reconciliation…</div> : null}
       {state === 'forbidden' ? (
@@ -87,13 +87,13 @@ export function RefundReturnReconciliationScreen() {
       ) : null}
       {state === 'ready' && data?.items.length === 0 ? <FeedbackAlert>No returns awaiting reconciliation.</FeedbackAlert> : null}
       {state === 'ready' && data && data.items.length > 0 ? (
-        <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0}>
+        <div className="max-w-full overflow-x-auto rounded-2xl border border-[#DCE2DD] bg-white shadow-xs" tabIndex={0}>
           <table className="min-w-[900px] w-full text-left text-sm">
             <caption className="sr-only">Returns awaiting reconciliation</caption>
-            <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
+            <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
               <tr>
                 {['Refund Code', 'Booking Code', 'Tour Operator', 'Operator Share Amount', 'Return Reference', 'Reported At', 'Actions'].map((heading) => (
-                  <th key={heading} scope="col" className="px-4 py-3">
+                  <th key={heading} scope="col" className={`px-4 py-3${heading === 'Operator Share Amount' ? ' text-right' : ''}`}>
                     {heading}
                   </th>
                 ))}
@@ -101,8 +101,8 @@ export function RefundReturnReconciliationScreen() {
             </thead>
             <tbody>
               {data.items.map((item) => (
-                <tr key={item.refundId} className="border-t border-[#e6edf5]">
-                  <td className="px-4 py-3 font-mono font-bold text-[#00152a]">{item.refundId}</td>
+                <tr key={item.refundId} className="border-t border-[#ECEEEB] transition hover:bg-[#F7F5EF]/50">
+                  <td className="px-4 py-3 font-mono font-bold text-[#1C2928]">{item.refundId}</td>
                   <td className="px-4 py-3">{item.bookingCode}</td>
                   <td className="px-4 py-3">{item.tourOperatorUserId}</td>
                   <td className="px-4 py-3 text-right whitespace-nowrap font-bold">{formatVnd(item.amount)}</td>
@@ -113,7 +113,7 @@ export function RefundReturnReconciliationScreen() {
                       type="button"
                       disabled={confirmingId === item.refundId}
                       onClick={() => void handleConfirmReceipt(item.refundId)}
-                      className="inline-flex whitespace-nowrap rounded-lg border border-[#006b5f] px-3 py-2 font-bold text-[#006b5f] hover:bg-[#e6f7f0] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex whitespace-nowrap rounded-lg border border-[#174B4A] px-3 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#E8F0EA] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {confirmingId === item.refundId ? 'Confirming…' : 'Confirm Receipt'}
                     </button>
@@ -133,4 +133,4 @@ export function RefundReturnReconciliationScreen() {
   );
 }
 
-const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
+const panel = 'rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-[#5B6E69]';
