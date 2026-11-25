@@ -92,28 +92,51 @@ interface PoiSelectProps {
 }
 
 export function PoiSelect({ options, value, currentName, onChange, disabled = false }: PoiSelectProps) {
+  const [query, setQuery] = React.useState('');
   const current = value === undefined || value === '' ? undefined : Number(value);
   const knownCurrent = current !== undefined && options.some((poi) => poi.id === current);
+  const normalized = query.trim().toLowerCase();
+  const filtered = normalized
+    ? options.filter(
+        (poi) =>
+          poi.id === current ||
+          poi.name.toLowerCase().includes(normalized) ||
+          (poi.address ?? '').toLowerCase().includes(normalized) ||
+          poi.categoryName.toLowerCase().includes(normalized),
+      )
+    : options;
   return (
-    <select
-      aria-label="Điểm tham quan"
-      disabled={disabled}
-      value={current ?? ''}
-      onChange={(event) => {
-        const id = Number(event.target.value);
-        const poi = options.find((candidate) => candidate.id === id);
-        onChange(poi ? { id: poi.id, name: poi.name } : null);
-      }}
-      className="h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs"
-    >
-      <option value="">Chọn POI đã xác minh</option>
-      {current !== undefined && !knownCurrent && <option value={current}>{currentName || `POI #${current}`}</option>}
-      {options.map((poi) => (
-        <option key={poi.id} value={poi.id}>
-          {poi.name}{poi.address ? ` — ${poi.address}` : ''}
-        </option>
-      ))}
-    </select>
+    <div className="space-y-1.5">
+      {!disabled && options.length > 6 && (
+        <input
+          type="search"
+          aria-label="Tìm kiếm điểm tham quan"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Lọc nhanh tên điểm hoặc địa chỉ..."
+          className="h-8 w-full rounded-lg border border-slate-200 px-2.5 text-[11px] text-slate-700 placeholder:text-slate-400 focus:border-[#174B4A] focus:outline-hidden"
+        />
+      )}
+      <select
+        aria-label="Điểm tham quan"
+        disabled={disabled}
+        value={current ?? ''}
+        onChange={(event) => {
+          const id = Number(event.target.value);
+          const poi = options.find((candidate) => candidate.id === id);
+          onChange(poi ? { id: poi.id, name: poi.name } : null);
+        }}
+        className="h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs"
+      >
+        <option value="">Chọn POI đã xác minh</option>
+        {current !== undefined && !knownCurrent && <option value={current}>{currentName || `POI #${current}`}</option>}
+        {filtered.map((poi) => (
+          <option key={poi.id} value={poi.id}>
+            {poi.name}{poi.address ? ` — ${poi.address}` : ''}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 

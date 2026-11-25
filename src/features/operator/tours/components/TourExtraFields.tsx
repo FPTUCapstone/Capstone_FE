@@ -47,18 +47,46 @@ export function TourTermsFields(props: TourTermsFieldsProps) {
 
 const toNumberOrNull = (value: string): number | null => (value.trim() === '' ? null : Number(value));
 
+const formatVndHint = (value: number | null | undefined) =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? `${value.toLocaleString('vi-VN')} đ`
+    : null;
+
 interface DepartureTermsFieldsProps {
   schedule: TourDepartureSchedule;
   onChange: (patch: Partial<TourDepartureSchedule>) => void;
   disabled?: boolean;
+  showCoordinates?: boolean;
 }
 
-/** Per-departure selling terms: minimum pax, prices and registration deadline (real mode). */
-export function DepartureTermsFields({ schedule, onChange, disabled = false }: DepartureTermsFieldsProps) {
+/** Per-departure selling terms: minimum pax, meeting point, optional coordinates, prices and registration deadline. */
+export function DepartureTermsFields({
+  schedule,
+  onChange,
+  disabled = false,
+  showCoordinates = false,
+}: DepartureTermsFieldsProps) {
   const id = schedule.id;
   const field = 'mt-1 w-full rounded-lg border border-slate-300 p-2 text-xs disabled:bg-slate-50';
+  const adultHint = formatVndHint(schedule.adultPrice);
+  const childHint = formatVndHint(schedule.childPrice);
+  const infantHint = formatVndHint(schedule.infantPrice);
   return (
     <div className="space-y-3">
+      <div>
+        <label htmlFor={`sch-meeting-${id}`} className="text-[11px] font-semibold text-slate-600">
+          Điểm tập trung / Đón khách
+        </label>
+        <input
+          id={`sch-meeting-${id}`}
+          type="text"
+          disabled={disabled}
+          value={schedule.meetingPoint ?? ''}
+          onChange={(event) => onChange({ meetingPoint: event.target.value })}
+          placeholder="Ví dụ: Cổng chính Sân bay Đà Nẵng hoặc sảnh khách sạn"
+          className={field}
+        />
+      </div>
       <div className="grid grid-cols-2 gap-2">
       <div>
         <label htmlFor={`sch-min-${id}`} className="text-[11px] font-semibold text-slate-600">Số khách tối thiểu</label>
@@ -84,6 +112,45 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
         />
       </div>
       </div>
+      {showCoordinates && (
+        <details className="text-xs">
+          <summary className="cursor-pointer font-medium text-slate-600 hover:text-[#174B4A]">
+            Tọa độ điểm tập trung (tùy chọn)
+          </summary>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <label htmlFor={`sch-lat-${id}`} className="text-[11px] font-semibold text-slate-600">Vĩ độ (Latitude)</label>
+              <input
+                id={`sch-lat-${id}`}
+                type="number"
+                step="0.000001"
+                min={-90}
+                max={90}
+                disabled={disabled}
+                value={schedule.meetingLatitude ?? ''}
+                onChange={(event) => onChange({ meetingLatitude: toNumberOrNull(event.target.value) })}
+                placeholder="16.054407"
+                className={field}
+              />
+            </div>
+            <div>
+              <label htmlFor={`sch-lng-${id}`} className="text-[11px] font-semibold text-slate-600">Kinh độ (Longitude)</label>
+              <input
+                id={`sch-lng-${id}`}
+                type="number"
+                step="0.000001"
+                min={-180}
+                max={180}
+                disabled={disabled}
+                value={schedule.meetingLongitude ?? ''}
+                onChange={(event) => onChange({ meetingLongitude: toNumberOrNull(event.target.value) })}
+                placeholder="108.202167"
+                className={field}
+              />
+            </div>
+          </div>
+        </details>
+      )}
       <details className="text-xs">
         <summary className="cursor-pointer font-medium text-slate-600 hover:text-[#174B4A]">
           Thiết lập giá riêng cho lịch này
@@ -100,6 +167,7 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
               onChange={(event) => onChange({ adultPrice: event.target.value === '' ? undefined : Number(event.target.value) })}
               className={field}
             />
+            {adultHint && <p className="mt-0.5 text-[10px] font-medium text-slate-500">{adultHint}</p>}
           </div>
           <div>
             <label htmlFor={`sch-child-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: trẻ em (VND)</label>
@@ -112,6 +180,7 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
               onChange={(event) => onChange({ childPrice: toNumberOrNull(event.target.value) })}
               className={field}
             />
+            {childHint && <p className="mt-0.5 text-[10px] font-medium text-slate-500">{childHint}</p>}
           </div>
           <div>
             <label htmlFor={`sch-infant-${id}`} className="text-[11px] font-semibold text-slate-600">Giá chuyến này: em bé (VND)</label>
@@ -124,6 +193,7 @@ export function DepartureTermsFields({ schedule, onChange, disabled = false }: D
               onChange={(event) => onChange({ infantPrice: toNumberOrNull(event.target.value) })}
               className={field}
             />
+            {infantHint && <p className="mt-0.5 text-[10px] font-medium text-slate-500">{infantHint}</p>}
           </div>
         </div>
       </details>

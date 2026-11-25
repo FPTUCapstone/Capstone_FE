@@ -289,4 +289,26 @@ describe('TourDetailView (demo data)', () => {
     const link = ctaLink(/Đăng nhập để đặt tour/);
     expect(link.getAttribute('href')).toContain('demo=1');
   });
+
+  it('renders category, highlights, traveller requirements, minimumCapacity and structured transport', () => {
+    const enriched = realTourDetailViewModel((wire) => {
+      wire.category = 'Di sản & Văn hóa';
+      wire.highlights = 'Check-in Cầu Vàng lúc bình minh';
+      wire.travellerRequirements = 'Mang theo CCCD';
+      const firstSchedule = (wire.schedules as Record<string, unknown>[])[0];
+      firstSchedule.minimumCapacity = 4;
+      const firstDay = (wire.itinerary as Record<string, unknown>[])[0];
+      const firstItem = (firstDay.items as Record<string, unknown>[])[0];
+      firstItem.notes = 'Cáp treo | Ngắm cảnh trên đỉnh núi';
+    });
+
+    renderView(enriched);
+
+    expect(screen.getByText('Di sản & Văn hóa')).toBeTruthy();
+    expect(screen.getByText('Check-in Cầu Vàng lúc bình minh')).toBeTruthy();
+    expect(screen.getByText('Mang theo CCCD')).toBeTruthy();
+    expect(screen.getByText(/Tối thiểu 4 khách/i)).toBeTruthy();
+    expect(screen.getByText('Cáp treo')).toBeTruthy();
+    expect(screen.getByText('Ngắm cảnh trên đỉnh núi')).toBeTruthy();
+  });
 });

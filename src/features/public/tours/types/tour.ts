@@ -62,6 +62,9 @@ export interface TourScheduleDto {
   registrationDeadline?: string;
   childPrice?: number;
   infantPrice?: number;
+  minimumCapacity?: number;
+  meetingLatitude?: number | null;
+  meetingLongitude?: number | null;
   /** Server decision: available capacity and registration still open (BR-59, BR-60). */
   bookable?: boolean;
 }
@@ -128,6 +131,11 @@ export interface TourDetailDto {
   isDemo?: boolean;
   /** Fields below come from the real API (UC-26); demo fixtures may omit them. */
   destinationSummary?: string;
+  category?: string | null;
+  highlights?: string | null;
+  travellerRequirements?: string | null;
+  timeZoneId?: string;
+  imageDetails?: { url: string; altText: string; caption?: string | null; isPrimary: boolean }[];
   rating?: TourRatingDto;
   cancellationRules?: TourCancellationRuleDto[];
   hasBookableSchedule?: boolean;

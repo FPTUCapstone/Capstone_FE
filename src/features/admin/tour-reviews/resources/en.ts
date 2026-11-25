@@ -160,6 +160,7 @@ export const tourModerationEn = {
     noCancellationRules: 'No cancellation rules were submitted.',
     stayMinutes: (minutes: number) => `${minutes} min`,
     noItinerary: 'No itinerary stops were submitted.',
+    submissionNoteLabel: 'Operator submission note',
   },
   decisionLive: {
     recordedReasonLabel: 'Recorded reason',

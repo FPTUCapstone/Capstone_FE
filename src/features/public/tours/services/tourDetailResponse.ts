@@ -49,9 +49,25 @@ export interface TourDetailWire {
     remainingSlots: number | null;
     availabilityStatus: TourAvailabilityStatus;
     bookable: boolean;
+    minimumCapacity?: number;
+    meetingLatitude?: number | null;
+    meetingLongitude?: number | null;
   }[];
   hasBookableSchedule: boolean;
   rating: { average: number | null; count: number };
+  reviews?: {
+    reviewId: string;
+    displayName: string;
+    rating: number;
+    title: string;
+    content: string;
+    createdAtUtc: string;
+    updatedAtUtc: string;
+  }[];
+  category?: string | null;
+  highlights?: string | null;
+  travellerRequirements?: string | null;
+  timeZoneId?: string;
   asOfUtc: string;
 }
 
@@ -189,10 +205,35 @@ export function parseTourDetailResponse(payload: unknown): TourDetailWire {
         remainingSlots: nullableNonNegativeInteger(schedule.remainingSlots),
         availabilityStatus: availability(schedule.availabilityStatus),
         bookable: bool(schedule.bookable),
+        ...(schedule.minimumCapacity !== undefined ? { minimumCapacity: nonNegativeInteger(schedule.minimumCapacity) } : {}),
+        ...(schedule.meetingLatitude !== undefined ? { meetingLatitude: nullableNumber(schedule.meetingLatitude) } : {}),
+        ...(schedule.meetingLongitude !== undefined ? { meetingLongitude: nullableNumber(schedule.meetingLongitude) } : {}),
       };
     }),
     hasBookableSchedule: bool(root.hasBookableSchedule),
     rating: { average: nullableNumber(rating.average), count: nonNegativeInteger(rating.count) },
+    ...(root.reviews !== undefined
+      ? {
+          reviews: asArray(root.reviews).map((entry) => {
+            const review = asRecord(entry);
+            return {
+              reviewId: text(review.reviewId, { allowEmpty: false }),
+              displayName: text(review.displayName),
+              rating: finiteNumber(review.rating),
+              title: text(review.title),
+              content: text(review.content),
+              createdAtUtc: text(review.createdAtUtc, { allowEmpty: false }),
+              updatedAtUtc: text(review.updatedAtUtc, { allowEmpty: false }),
+            };
+          }),
+        }
+      : {}),
+    ...(root.category !== undefined ? { category: nullableText(root.category) } : {}),
+    ...(root.highlights !== undefined ? { highlights: nullableText(root.highlights) } : {}),
+    ...(root.travellerRequirements !== undefined
+      ? { travellerRequirements: nullableText(root.travellerRequirements) }
+      : {}),
+    ...(root.timeZoneId !== undefined ? { timeZoneId: text(root.timeZoneId) } : {}),
     asOfUtc: text(root.asOfUtc, { allowEmpty: false }),
   };
 }
@@ -257,6 +298,9 @@ export function mapTourDetailResponse(wire: TourDetailWire): TourDetailDto {
     childPrice: schedule.childPrice ?? undefined,
     infantPrice: schedule.infantPrice ?? undefined,
     bookable: schedule.bookable,
+    minimumCapacity: schedule.minimumCapacity,
+    meetingLatitude: schedule.meetingLatitude ?? null,
+    meetingLongitude: schedule.meetingLongitude ?? null,
   }));
   const meetingSchedule = schedules.find((schedule) => schedule.bookable) ?? schedules[0];
   const itinerary: TourItineraryDayDto[] = wire.itinerary.map((day) => ({
@@ -291,6 +335,16 @@ export function mapTourDetailResponse(wire: TourDetailWire): TourDetailDto {
     reviewCount: wire.rating.count,
     rating: { average: wire.rating.average, count: wire.rating.count },
     images: wire.images.map((image) => image.url),
+    imageDetails: wire.images.map((image) => ({
+      url: image.url,
+      altText: image.altText,
+      caption: image.caption,
+      isPrimary: image.isPrimary,
+    })),
+    category: wire.category ?? undefined,
+    highlights: wire.highlights ?? undefined,
+    travellerRequirements: wire.travellerRequirements ?? undefined,
+    timeZoneId: wire.timeZoneId,
     inclusions: toLines(wire.inclusions),
     exclusions: toLines(wire.exclusions),
     cancellationPolicy: describeCancellationRules(rules).join('\n'),
@@ -299,7 +353,13 @@ export function mapTourDetailResponse(wire: TourDetailWire): TourDetailDto {
     schedules,
     hasBookableSchedule: wire.hasBookableSchedule,
     itinerary,
-    reviews: [],
+    reviews: (wire.reviews ?? []).map((rev) => ({
+      reviewId: rev.reviewId,
+      authorName: rev.displayName,
+      rating: rev.rating,
+      comment: rev.title ? `${rev.title}\n${rev.content}` : rev.content,
+      createdAt: rev.createdAtUtc,
+    })),
     asOfUtc: wire.asOfUtc,
   };
 }

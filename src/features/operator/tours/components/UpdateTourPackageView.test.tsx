@@ -80,7 +80,11 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
     vi.clearAllMocks();
+    // Keep the fixed November departure fixture in the future without faking async UI timers.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-01T00:00:00Z'));
   });
+  afterEach(() => { vi.useRealTimers(); });
 
   afterEach(() => {
     vi.useRealTimers();
@@ -260,5 +264,23 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
         expect(mocks.push).toHaveBeenCalledWith('/partner/tours?demo=1');
       });
     });
+  });
+
+  it('enforces read-only mode for Inactive tours and opens preview + add-departure modals', () => {
+    const { unmount } = render(
+      <UpdateTourPackageView initialTour={{ ...mockTourDraft, status: 'Inactive' }} isDemo={false} />,
+    );
+    expect(screen.getAllByText(/Ngừng hoạt động/i).length).toBeGreaterThanOrEqual(2);
+    expect((screen.getByLabelText(/Tên gói tour/i) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /Lưu thay đổi/i })).toBeNull();
+    unmount();
+
+    render(<UpdateTourPackageView initialTour={{ ...mockTourDraft, status: 'Published' }} isDemo={false} />);
+    fireEvent.click(screen.getByRole('button', { name: /Xem trước/i }));
+    expect(screen.getByRole('dialog', { name: /Xem trước hiển thị trên trang Du khách/i })).toBeDefined();
+    fireEvent.click(screen.getAllByRole('button', { name: /Đóng xem trước/i })[0]);
+
+    fireEvent.click(screen.getByRole('button', { name: /^\+ Mở bán đợt mới$/i }));
+    expect(screen.getByRole('dialog', { name: /Mở bán đợt khởi hành mới/i })).toBeDefined();
   });
 });

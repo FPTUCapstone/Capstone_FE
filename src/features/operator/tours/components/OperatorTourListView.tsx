@@ -17,6 +17,7 @@ interface OperatorTourListViewProps {
 
 export function OperatorTourListView({ tours, isDemo = false }: OperatorTourListViewProps) {
   const [filter, setFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [items, setItems] = useState(tours);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -54,9 +55,16 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
     }
   };
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredTours = items.filter((t) => {
-    if (filter === 'ALL') return true;
-    return t.status === filter;
+    const matchesStatus = filter === 'ALL' ? true : t.status === filter;
+    if (!matchesStatus) return false;
+    if (!normalizedQuery) return true;
+    return (
+      t.title.toLowerCase().includes(normalizedQuery) ||
+      t.tourCode.toLowerCase().includes(normalizedQuery) ||
+      t.destination.toLowerCase().includes(normalizedQuery)
+    );
   });
 
   const filterCounts = {
@@ -65,6 +73,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
     Pending: items.filter((t) => t.status === 'Pending').length,
     Approved: items.filter((t) => t.status === 'Approved').length,
     Published: items.filter((t) => t.status === 'Published').length,
+    Inactive: items.filter((t) => t.status === 'Inactive').length,
     Rejected: items.filter((t) => t.status === 'Rejected').length,
   };
 
@@ -113,40 +122,53 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
-        {[
-          { key: 'ALL', label: 'Tất cả' },
-          { key: 'Draft', label: 'Bản nháp' },
-          { key: 'Pending', label: 'Chờ duyệt' },
-          { key: 'Approved', label: 'Đã duyệt' },
-          { key: 'Published', label: 'Đã xuất bản' },
-          { key: 'Rejected', label: 'Bị từ chối' },
-        ].map((tab) => {
-          const isActive = filter === tab.key;
-          const count = filterCounts[tab.key as keyof typeof filterCounts] ?? 0;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setFilter(tab.key)}
-              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-                isActive
-                  ? 'bg-[#174B4A] text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+      {/* Filter Tabs & Search */}
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'ALL', label: 'Tất cả' },
+            { key: 'Draft', label: 'Bản nháp' },
+            { key: 'Pending', label: 'Chờ duyệt' },
+            { key: 'Approved', label: 'Đã duyệt' },
+            { key: 'Published', label: 'Đã xuất bản' },
+            { key: 'Inactive', label: 'Ngừng hoạt động' },
+            { key: 'Rejected', label: 'Bị từ chối' },
+          ].map((tab) => {
+            const isActive = filter === tab.key;
+            const count = filterCounts[tab.key as keyof typeof filterCounts] ?? 0;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setFilter(tab.key)}
+                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                  isActive
+                    ? 'bg-[#174B4A] text-white shadow-xs'
+                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                 }`}
               >
-                {count}
-              </span>
-            </button>
-          );
-        })}
+                <span>{tab.label}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="w-full sm:w-64">
+          <input
+            type="search"
+            aria-label="Tìm kiếm gói tour"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm theo tên tour, mã, điểm đến..."
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#174B4A] focus:outline-hidden"
+          />
+        </div>
       </div>
 
       {/* Tours List Table */}
@@ -196,6 +218,12 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                             <p className="font-mono text-[11px] text-slate-400">
                               {t.tourCode} · v{t.version}
                             </p>
+                            {(t.upcomingDepartureCount !== undefined || t.completedDepartureCount !== undefined) && (
+                              <p className="mt-0.5 text-[11px] text-slate-500">
+                                {t.upcomingDepartureCount ?? 0} đợt sắp mở bán
+                                {(t.completedDepartureCount ?? 0) > 0 ? ` · ${t.completedDepartureCount} đã hoàn thành` : ''}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -209,6 +237,14 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+                          {(t.status === 'Approved' || t.status === 'Published') && (
+                            <Link
+                              href={withTourDemoMode(`${OPERATOR_TOUR_ROUTES.edit(t.id)}?action=add-departure`, isDemo)}
+                              className="inline-flex shrink-0 rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-800 transition"
+                            >
+                              Mở bán đợt mới
+                            </Link>
+                          )}
                           {canEdit && (
                             <Link
                               href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(t.id), isDemo)}
@@ -217,7 +253,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                               Chỉnh sửa
                             </Link>
                           )}
-                          {t.status === 'Pending' && (
+                          {(t.status === 'Pending' || t.status === 'Inactive') && (
                             <Link
                               href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(t.id), isDemo)}
                               className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-50 transition"
@@ -253,7 +289,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
       </div>
       {deleteError && !tourPendingDeletion && <p role="alert" className="mt-3 text-sm font-medium text-rose-600">{deleteError}</p>}
       {tourPendingDeletion && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" role="presentation">
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 p-4" role="presentation">
           <section role="dialog" aria-modal="true" aria-labelledby="delete-tour-title" aria-describedby="delete-tour-description" className="w-full max-w-md rounded-2xl border-t-4 border-rose-500 bg-white p-6 shadow-2xl">
             <div>
               <h2 id="delete-tour-title" className="text-lg font-extrabold text-slate-900">Xóa gói tour?</h2>

@@ -121,7 +121,7 @@ export function SubmitTourApprovalView({
   };
 
   return (
-    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]" aria-busy={submitting}>
+    <div className="min-w-0 space-y-6 pb-20 [overflow-wrap:anywhere]" aria-busy={submitting}>
       {/* Header bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
@@ -320,7 +320,7 @@ export function SubmitTourApprovalView({
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:pr-48 shadow-xs">
         <button
           type="button"
           disabled={locked}
