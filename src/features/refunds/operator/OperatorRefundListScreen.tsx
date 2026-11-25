@@ -34,6 +34,18 @@ const STATUS_LABELS: Record<RefundStatus, string> = {
   Rejected: 'Rejected',
 };
 const ACTION_REQUIRED: readonly RefundStatus[] = ['PendingOperatorConfirmation', 'AwaitingPartnerReturn'];
+const NEGATIVE_STATUSES: readonly RefundStatus[] = ['Failed', 'Rejected'];
+const WARNING_STATUSES: readonly RefundStatus[] = ['Escalated', 'ManualReview', 'RetryPending'];
+
+function refundStatusBadgeClass(status: RefundStatus): string {
+  if (NEGATIVE_STATUSES.includes(status)) {
+    return 'border border-[#F7C9D3] bg-[#FDECEF] text-[#8C1030]';
+  }
+  if (ACTION_REQUIRED.includes(status) || WARNING_STATUSES.includes(status)) {
+    return 'border border-[#F2D8B3] bg-[#FBF3E8] text-[#8F5419]';
+  }
+  return 'border border-[#CBE0D4] bg-[#E8F0EA] text-[#103B39]';
+}
 
 /**
  * The Tour Operator's own refund requests (UC-42), each linking to its Confirm Booking Refund
@@ -130,13 +142,9 @@ export function OperatorRefundListScreen() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {item.returnDeadlineAtUtc ? formatVietnamDateTime(item.returnDeadlineAtUtc) : 'Not applicable'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                          ACTION_REQUIRED.includes(item.status)
-                            ? 'border border-[#F2D8B3] bg-[#FBF3E8] text-[#8F5419]'
-                            : 'border border-[#CBE0D4] bg-[#E8F0EA] text-[#103B39]'
-                        }`}
+                        className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${refundStatusBadgeClass(item.status)}`}
                       >
                         {STATUS_LABELS[item.status]}
                       </span>

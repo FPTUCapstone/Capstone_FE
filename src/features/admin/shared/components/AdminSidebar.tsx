@@ -172,13 +172,13 @@ export function AdminSidebar({
 
         {/* Navigation Sections */}
         <nav
-          className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-6 scrollbar-thin"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-5 [scrollbar-width:thin] [scrollbar-color:#2D4A47_transparent]"
           aria-label={isMobile ? 'Mobile Administration Navigation' : 'Administration Sidebar Navigation'}
         >
           {sections.map((section) => (
             <div key={section.title} className="space-y-1">
               {!isCollapsedDesktop && (
-                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6E69]">
+                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#8FA8A0]">
                   {section.title}
                 </p>
               )}
@@ -208,19 +208,19 @@ export function AdminSidebar({
                         title={isCollapsedDesktop ? item.label : undefined}
                         className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all ${
                           isActive
-                            ? 'bg-[#174B4A] text-[#FFFFFF] shadow-xs'
-                            : 'text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF]'
+                            ? 'bg-[#174B4A] text-[#FFFFFF] font-semibold shadow-xs'
+                            : 'text-[#C2D4CE] hover:bg-[#103B39] hover:text-[#FFFFFF]'
                         } ${isCollapsedDesktop ? 'justify-center' : ''}`}
                       >
                         {isActive && (
                           <span
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#5B6E69]"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#6EE7B7]"
                             aria-hidden="true"
                           />
                         )}
                         <span
                           className={`material-symbols-outlined text-[18px] transition-colors ${
-                            isActive ? 'text-[#F7F5EF]' : 'text-[#5B6E69] group-hover:text-[#F7F5EF]'
+                            isActive ? 'text-[#FFFFFF]' : 'text-[#8FA8A0] group-hover:text-[#FFFFFF]'
                           }`}
                           aria-hidden="true"
                         >
@@ -242,11 +242,11 @@ export function AdminSidebar({
             href={ROUTES.admin.accountSecurity}
             onClick={isMobile ? onCloseMobile : undefined}
             title={isCollapsedDesktop ? 'Security & Password' : undefined}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-[#5B6E69] hover:bg-[#103B39] hover:text-[#F7F5EF] transition ${
+            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-[#C2D4CE] hover:bg-[#103B39] hover:text-[#FFFFFF] transition ${
               isCollapsedDesktop ? 'justify-center' : ''
             }`}
           >
-            <span className="material-symbols-outlined text-[18px] text-[#5B6E69]" aria-hidden="true">
+            <span className="material-symbols-outlined text-[18px] text-[#8FA8A0]" aria-hidden="true">
               lock_reset
             </span>
             {!isCollapsedDesktop && <span>Security & Password</span>}
@@ -262,7 +262,7 @@ export function AdminSidebar({
                 type="button"
                 onClick={onToggleCollapse}
                 aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-[#103B39] bg-[#103B39] text-[#5B6E69] hover:bg-[#174B4A] hover:text-[#FFFFFF] transition"
+                className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-[#244744] bg-[#103B39] text-[#C2D4CE] hover:bg-[#174B4A] hover:text-[#FFFFFF] transition"
               >
                 <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                   {collapsed ? 'chevron_right' : 'chevron_left'}

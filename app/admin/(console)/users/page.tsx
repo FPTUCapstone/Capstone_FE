@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { isAccountDateRangeValid } from '@/features/admin/user-accounts/accountDateRange';
 import { AccountFilterForm } from '@/features/admin/user-accounts/components/AccountFilterForm';
 import { accountDate, accountSession, accountStatusLabel, canManageAccount, fetchAccounts, type AccountPage } from '@/features/admin/user-accounts/server/accounts';
@@ -81,75 +82,53 @@ export default async function UserAccountsPage(props: PageProps = {}) {
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6 text-[#1D2D2B]">
-      {/* Clean Breadcrumb */}
-      <nav aria-label="Breadcrumb">
-        <ol className="flex items-center gap-1.5 text-xs text-[#61736F]">
-          <li>
-            <Link href="/admin" className="transition hover:text-[#1D2D2B]">
-              Administration
-            </Link>
-          </li>
-          <li>
-            <span className="material-symbols-outlined text-xs" aria-hidden="true">
-              chevron_right
-            </span>
-          </li>
-          <li className="font-semibold text-[#1D2D2B]" aria-current="page">
-            User Accounts
-          </li>
-        </ol>
-      </nav>
-
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6 text-[#1C2928]">
       {/* Page Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D2D2B]">
-            User accounts
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-[#61736F]">
-            Manage platform accounts, monitor role assignments, and review authentication status.
-          </p>
-        </div>
-        <nav aria-label="Account provisioning" className="flex flex-wrap items-center gap-2.5">
-          {session.role === 'Administrator' && (
-            <Link
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0D5754] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#094743] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D5754]"
-              href={ROUTES.admin.createStaff}
-            >
-              <span className="material-symbols-outlined text-base" aria-hidden="true">
-                person_add
-              </span>
-              <span>Create Staff Account</span>
-            </Link>
-          )}
-          {session.role === 'Staff' && (
-            <Link
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0D5754] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#094743] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D5754]"
-              href={ROUTES.admin.createServiceProvider}
-            >
-              <span className="material-symbols-outlined text-base" aria-hidden="true">
-                domain_add
-              </span>
-              <span>Create Service Provider Account</span>
-            </Link>
-          )}
-        </nav>
-      </header>
+      <PageHeader
+        eyebrow="Account Governance"
+        title="User accounts"
+        description="Manage platform accounts, monitor role assignments, and review authentication status."
+        actions={
+          <nav aria-label="Account provisioning" className="flex flex-wrap items-center gap-2.5">
+            {session.role === 'Administrator' && (
+              <Link
+                className="inline-flex items-center gap-2 rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
+                href={ROUTES.admin.createStaff}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden="true">
+                  person_add
+                </span>
+                <span>Create Staff Account</span>
+              </Link>
+            )}
+            {session.role === 'Staff' && (
+              <Link
+                className="inline-flex items-center gap-2 rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
+                href={ROUTES.admin.createServiceProvider}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden="true">
+                  domain_add
+                </span>
+                <span>Create Service Provider Account</span>
+              </Link>
+            )}
+          </nav>
+        }
+      />
 
       {/* Filter Toolbar */}
       <AccountFilterForm key={filterParams.toString()} invalidRange={invalidRange}>
-        <label className="block flex-1 min-w-[200px] text-xs font-bold text-[#1D2D2B]">
+        <label className="block flex-1 min-w-[180px] text-xs font-bold text-[#1C2928]">
           Search
           <div className="relative mt-1.5">
             <span
-              className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-base text-[#61736F]"
+              className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-base text-[#5B6E69]"
               aria-hidden="true"
             >
               search
             </span>
             <input
-              className="w-full rounded-xl border border-[#DCE5E2] bg-white py-2.5 pr-3 pl-9 text-xs font-medium text-[#1D2D2B] placeholder:text-[#61736F] transition focus:border-[#0D5754] focus:ring-2 focus:ring-[#0D5754]/20 focus:outline-hidden"
+              className="h-9 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] pr-3 pl-9 text-xs font-medium text-[#1C2928] placeholder:text-[#5B6E69] transition focus:border-[#174B4A] focus:bg-white focus:ring-2 focus:ring-[#174B4A]/20 focus:outline-hidden"
               name="search"
               type="search"
               placeholder="Search by name or email..."
@@ -159,10 +138,10 @@ export default async function UserAccountsPage(props: PageProps = {}) {
           </div>
         </label>
 
-        <label className="block w-full sm:w-44 text-xs font-bold text-[#1D2D2B]">
+        <label className="block w-full sm:w-40 text-xs font-bold text-[#1C2928]">
           Role
           <select
-            className="mt-1.5 block w-full rounded-xl border border-[#DCE5E2] bg-white px-3 py-2.5 text-xs font-medium text-[#1D2D2B] transition focus:border-[#0D5754] focus:ring-2 focus:ring-[#0D5754]/20 focus:outline-hidden"
+            className="mt-1.5 block h-9 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-2.5 text-xs font-medium text-[#1C2928] transition focus:border-[#174B4A] focus:bg-white focus:ring-2 focus:ring-[#174B4A]/20 focus:outline-hidden"
             name="role"
             defaultValue={filters.role ?? ''}
           >
@@ -173,10 +152,10 @@ export default async function UserAccountsPage(props: PageProps = {}) {
           </select>
         </label>
 
-        <label className="block w-full sm:w-44 text-xs font-bold text-[#1D2D2B]">
+        <label className="block w-full sm:w-44 text-xs font-bold text-[#1C2928]">
           Status
           <select
-            className="mt-1.5 block w-full rounded-xl border border-[#DCE5E2] bg-white px-3 py-2.5 text-xs font-medium text-[#1D2D2B] transition focus:border-[#0D5754] focus:ring-2 focus:ring-[#0D5754]/20 focus:outline-hidden"
+            className="mt-1.5 block h-9 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-2.5 text-xs font-medium text-[#1C2928] transition focus:border-[#174B4A] focus:bg-white focus:ring-2 focus:ring-[#174B4A]/20 focus:outline-hidden"
             name="status"
             defaultValue={filters.status ?? ''}
           >
@@ -187,30 +166,30 @@ export default async function UserAccountsPage(props: PageProps = {}) {
           </select>
         </label>
 
-        <label className="block w-full sm:w-36 text-xs font-bold text-[#1D2D2B]">
+        <label className="block w-full sm:w-[144px] text-xs font-bold text-[#1C2928]">
           Registered from
           <input
-            className="mt-1.5 block w-full rounded-xl border border-[#DCE5E2] bg-white px-3 py-2.5 text-xs font-medium text-[#1D2D2B] transition focus:border-[#0D5754] focus:ring-2 focus:ring-[#0D5754]/20 focus:outline-hidden"
+            className="mt-1.5 block h-9 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-2.5 text-xs font-medium text-[#1C2928] transition focus:border-[#174B4A] focus:bg-white focus:ring-2 focus:ring-[#174B4A]/20 focus:outline-hidden"
             type="date"
             name="registeredFrom"
             defaultValue={filters.registeredFrom}
           />
         </label>
 
-        <label className="block w-full sm:w-36 text-xs font-bold text-[#1D2D2B]">
+        <label className="block w-full sm:w-[144px] text-xs font-bold text-[#1C2928]">
           Registered to
           <input
-            className="mt-1.5 block w-full rounded-xl border border-[#DCE5E2] bg-white px-3 py-2.5 text-xs font-medium text-[#1D2D2B] transition focus:border-[#0D5754] focus:ring-2 focus:ring-[#0D5754]/20 focus:outline-hidden"
+            className="mt-1.5 block h-9 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-2.5 text-xs font-medium text-[#1C2928] transition focus:border-[#174B4A] focus:bg-white focus:ring-2 focus:ring-[#174B4A]/20 focus:outline-hidden"
             type="date"
             name="registeredTo"
             defaultValue={filters.registeredTo}
           />
         </label>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="submit"
-            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#0D5754] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#094743] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D5754]"
+            className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-[#103B39] px-3.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
           >
             <span className="material-symbols-outlined text-base" aria-hidden="true">
               filter_list
@@ -220,7 +199,7 @@ export default async function UserAccountsPage(props: PageProps = {}) {
           {hasActiveFilters && (
             <Link
               href="/admin/users"
-              className="inline-flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-[#DCE5E2] bg-white px-3.5 py-2.5 text-xs font-bold text-[#61736F] transition hover:bg-[#F5F7F6] hover:text-[#1D2D2B]"
+              className="inline-flex h-9 cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-[#DCE2DD] bg-white px-3 text-xs font-bold text-[#5B6E69] transition hover:bg-[#F7F5EF] hover:text-[#1C2928]"
             >
               <span className="material-symbols-outlined text-base" aria-hidden="true">
                 restart_alt
@@ -283,14 +262,14 @@ export default async function UserAccountsPage(props: PageProps = {}) {
           </div>
         )
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[#DCE5E2] bg-white shadow-xs">
+        <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-white shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#DCE5E2] bg-[#F5F7F6]">
+                <tr className="border-b border-[#DCE2DD] bg-[#F7F5EF]">
                   {['Name', 'Email', 'Role', 'Status', 'Registered', 'Last sign-in'].map((label) => (
                     <th
-                      className="px-5 py-3.5 text-[11px] font-bold tracking-wider text-[#61736F] uppercase"
+                      className="px-4 py-3 text-[11px] font-bold tracking-wider text-[#5B6E69] uppercase whitespace-nowrap"
                       scope="col"
                       key={label}
                     >
@@ -298,31 +277,31 @@ export default async function UserAccountsPage(props: PageProps = {}) {
                     </th>
                   ))}
                   <th
-                    className="px-5 py-3.5 text-right text-[11px] font-bold tracking-wider text-[#61736F] uppercase"
+                    className="px-4 py-3 text-right text-[11px] font-bold tracking-wider text-[#5B6E69] uppercase whitespace-nowrap"
                     scope="col"
                   >
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#DCE5E2]">
+              <tbody className="divide-y divide-[#DCE2DD]">
                 {accounts.map((account) => (
                   <tr
-                    className="transition hover:bg-[#F5F7F6]/60 focus-within:bg-[#F5F7F6]/80"
+                    className="transition hover:bg-[#F7F5EF]/60 focus-within:bg-[#F7F5EF]/80"
                     key={account.userId}
                   >
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3.5">
                       <Link
-                        className="font-bold text-[#0D5754] transition hover:text-[#094743] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D5754]"
+                        className="font-bold text-[#174B4A] transition hover:text-[#103B39] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
                         href={`/admin/users/${encodeURIComponent(account.userId)}`}
                       >
                         {account.fullName}
                       </Link>
                     </td>
-                    <td className="px-5 py-4 text-xs text-[#61736F]">
+                    <td className="px-4 py-3.5 text-xs text-[#5B6E69]">
                       {account.email ?? '—'}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3.5 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${getRoleBadgeClass(
                           account.role,
@@ -331,7 +310,7 @@ export default async function UserAccountsPage(props: PageProps = {}) {
                         {account.role}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3.5 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${getStatusBadgeClass(
                           account.status,
@@ -340,16 +319,16 @@ export default async function UserAccountsPage(props: PageProps = {}) {
                         {accountStatusLabel(account.status)}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-xs font-medium text-[#61736F]">
+                    <td className="px-4 py-3.5 text-xs font-medium text-[#5B6E69] whitespace-nowrap">
                       {accountDate(account.createdAtUtc)}
                     </td>
-                    <td className="px-5 py-4 text-xs font-medium text-[#61736F]">
+                    <td className="px-4 py-3.5 text-xs font-medium text-[#5B6E69] whitespace-nowrap">
                       {accountDate(account.lastLoginAtUtc)}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
                       <Link
                         href={`/admin/users/${encodeURIComponent(account.userId)}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-[#0D5754] transition hover:text-[#094743] hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#174B4A] transition hover:text-[#103B39] hover:underline"
                         aria-label={`View details for ${account.fullName}`}
                       >
                         <span>Details</span>

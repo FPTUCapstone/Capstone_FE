@@ -321,16 +321,16 @@ export function LandingContentScreen() {
         )}
 
         {status === 'pending' && (
-          <section role="status" className="rounded-2xl border border-[#cfe2f3] bg-[#eef6ff] p-5 sm:p-6">
-            <span className="inline-flex rounded-full bg-[#d7f7f1] px-3 py-1 text-xs font-bold text-[#103B39]">
+          <section role="status" className="rounded-2xl border border-[#F2D8B3] bg-[#FBF3E8] p-5 sm:p-6">
+            <span className="inline-flex rounded-full bg-[#F5E2C3] px-3 py-1 text-xs font-bold text-[#7A4A12]">
               {copy.screen.pendingBadge}
             </span>
-            <h2 className="mt-2 text-base font-bold text-[#1d2939]">{copy.screen.pendingTitle}</h2>
+            <h2 className="mt-2 text-base font-bold text-[#1C2928]">{copy.screen.pendingTitle}</h2>
             <p className="mt-1 text-sm leading-relaxed text-[#5B6E69]">{copy.errors.unavailable}</p>
             <button
               type="button"
               onClick={reload}
-              className="mt-3 rounded-lg border border-[#103B39] px-3 py-1.5 text-xs font-bold text-[#103B39]"
+              className="mt-3 cursor-pointer rounded-xl border border-[#174B4A] bg-white px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#F7F5EF]"
             >
               {copy.screen.retry}
             </button>

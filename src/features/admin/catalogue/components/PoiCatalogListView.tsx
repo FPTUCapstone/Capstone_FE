@@ -227,16 +227,16 @@ export function PoiCatalogListView() {
         {/* POI Data Table */}
         <div className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] shadow-xs">
           <div className="overflow-x-auto">
-            <table className="min-w-[980px] w-full text-left text-xs" aria-label="Points of Interest Data Table" aria-busy={state.kind === 'loading'}>
+            <table className="w-full min-w-[860px] text-left text-xs" aria-label="Points of Interest Data Table" aria-busy={state.kind === 'loading'}>
               <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[11px] font-bold uppercase tracking-wider text-[#5B6E69]">
                 <tr>
-                  <th scope="col" className="px-5 py-3.5">ID</th>
-                  <th scope="col" className="px-5 py-3.5">Point of Interest</th>
-                  <th scope="col" className="px-5 py-3.5">Category</th>
-                  <th scope="col" className="px-5 py-3.5">Spatial Coordinates</th>
-                  <th scope="col" className="px-5 py-3.5">Opening Schedule</th>
-                  <th scope="col" className="px-5 py-3.5">Status</th>
-                  <th scope="col" className="px-5 py-3.5 text-right">Actions</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">ID</th>
+                  <th scope="col" className="px-3.5 py-3">Point of Interest</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">Category</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">Spatial Coordinates</th>
+                  <th scope="col" className="px-3.5 py-3">Opening Schedule</th>
+                  <th scope="col" className="px-3.5 py-3 whitespace-nowrap">Status</th>
+                  <th scope="col" className="px-3.5 py-3 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DCE2DD]">
@@ -274,29 +274,33 @@ export function PoiCatalogListView() {
                     </td>
                   </tr>
                 ) : state.response.items.length > 0 ? (
-                  state.response.items.map((poi: PoiManagementItem) => (
+                  state.response.items.map((poi: PoiManagementItem) => {
+                    const hoursText = openingHoursSummary(poi.openingHours);
+                    return (
                     <tr key={poi.id} className="transition-colors hover:bg-[#F7F5EF]/70">
-                      <td className="px-5 py-4 font-mono font-bold text-[#1C2928]">
+                      <td className="px-3.5 py-3.5 font-mono font-bold text-[#1C2928] whitespace-nowrap">
                         #{poi.id}
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="font-bold text-[#1C2928]">{poi.name}</div>
-                        <div className="max-w-xs truncate text-[11px] text-[#5B6E69]">
+                      <td className="px-3.5 py-3.5 max-w-[240px]">
+                        <div className="font-bold text-[#1C2928] truncate" title={poi.name}>{poi.name}</div>
+                        <div className="truncate text-[11px] text-[#5B6E69]" title={poi.address ?? poiManagementEn.addressMissing}>
                           {poi.address ?? poiManagementEn.addressMissing}
                         </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-3.5 whitespace-nowrap">
                         <span className="inline-flex rounded-full bg-[#E8F0EA] px-2.5 py-0.5 text-[11px] font-semibold text-[#1C2928]">
                           {poi.categoryName}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-mono text-[11px] text-[#5B6E69]">
+                      <td className="px-3.5 py-3.5 font-mono text-[11px] text-[#5B6E69] whitespace-nowrap">
                         {poi.latitude.toFixed(4)}, {poi.longitude.toFixed(4)}
                       </td>
-                      <td className="px-5 py-4 text-[#5B6E69]">
-                        {openingHoursSummary(poi.openingHours)}
+                      <td className="px-3.5 py-3.5 text-[#5B6E69]">
+                        <div className="line-clamp-2 max-w-[220px] leading-relaxed" title={hoursText}>
+                          {hoursText}
+                        </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-3.5 whitespace-nowrap">
                         {poi.status === 'Active' ? (
                           <span className="inline-flex items-center gap-1 rounded-full border border-[#BCE0CD] bg-[#E7F2EC] px-2.5 py-0.5 text-[11px] font-semibold text-[#1B5E3C]">
                             <span aria-hidden="true" className="material-symbols-outlined text-[12px]">check_circle</span>
@@ -309,19 +313,20 @@ export function PoiCatalogListView() {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
                         <Link
                           href={`/pois/${poi.id}`}
                           target="_blank"
                           aria-label={`Preview ${poi.name}`}
-                          className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-3 py-2 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
+                          className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
                         >
                           <span>Preview</span>
                           <span aria-hidden="true" className="material-symbols-outlined text-[14px]">open_in_new</span>
                         </Link>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={7} className="px-5 py-16 text-center text-[#5B6E69]">
