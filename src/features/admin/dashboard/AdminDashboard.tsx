@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { adminDashboardEn, type AdminDashboardModule, type AdminModuleStatus } from './resources/en';
 import { AdminAnalyticsTabView } from '@/features/admin/shared/components/analytics/AdminAnalyticsTabView';
 import { DashboardMainTabs, type DashboardTab } from '@/features/admin/shared/components/tabs/DashboardMainTabs';
@@ -77,21 +78,12 @@ export function AdminDashboard() {
   return (
     <div className="pb-24 text-[#1C2928] md:pb-12">
       <main className="mx-auto max-w-7xl">
-        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <p className="mb-1 font-mono text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
-                {adminDashboardEn.eyebrow}
-              </p>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
-                {adminDashboardEn.title}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
-                {adminDashboardEn.subtitle}
-              </p>
-            </div>
-          </div>
-        </header>
+        <PageHeader
+          className="mb-6"
+          eyebrow={adminDashboardEn.eyebrow}
+          title={adminDashboardEn.title}
+          description={adminDashboardEn.subtitle}
+        />
 
         {/* Dashboard Main Tabs (Overview | Analytics) */}
         <DashboardMainTabs
