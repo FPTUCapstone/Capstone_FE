@@ -20,6 +20,7 @@ export function useNotificationInbox({ enabled = true, consoleSessionKey }: {
   const readInSession = useRef(new Set<number>());
   const requestInFlight = useRef(false);
   const hasLoadedMore = useRef(false);
+  const unreadOverflow = useRef(false);
   const sessionUnavailable = useRef(false);
 
   const reportError = useCallback((failure: unknown) => {
@@ -40,23 +41,26 @@ export function useNotificationInbox({ enabled = true, consoleSessionKey }: {
     const preservePages = polling && hasLoadedMore.current;
     try {
       const [page, unread] = await Promise.all([
-        preservePages
-          ? null
-          : getNotificationInbox({ limit: PAGE_SIZE, beforeId, unreadOnly, signal, consoleSessionKey }),
+        getNotificationInbox({ limit: PAGE_SIZE, beforeId, unreadOnly, signal, consoleSessionKey }),
         getNotificationInbox({ limit: 11, unreadOnly: true, signal, consoleSessionKey }),
       ]);
       if (signal.aborted || revision.current !== request) return;
-      if (page) {
-        const items = page.items
+      const items = page.items
           .map((item) => readInSession.current.has(item.id) ? { ...item, isRead: true } : item)
           .filter((item) => !unreadOnly || !item.isRead);
-        hasLoadedMore.current = Boolean(beforeId);
-        setInbox((current) => ({
-          items: beforeId ? [...current.items, ...items] : items,
-          nextBeforeId: page.nextBeforeId,
-        }));
-      }
-      setUnreadCount(unread.items.filter((item) => !readInSession.current.has(item.id)).length);
+      const oldestFetchedId = page.items.at(-1)?.id;
+      const canKeepTail = preservePages && page.nextBeforeId !== null && oldestFetchedId !== undefined;
+      if (!canKeepTail) hasLoadedMore.current = Boolean(beforeId);
+      setInbox((current) => {
+        if (canKeepTail && current.items.some((item) => item.id === oldestFetchedId)) {
+          return { items: [...items, ...current.items.filter((item) => item.id < oldestFetchedId)],
+            nextBeforeId: current.nextBeforeId };
+        }
+        return { items: beforeId ? [...current.items, ...items] : items, nextBeforeId: page.nextBeforeId };
+      });
+      unreadOverflow.current = unread.nextBeforeId !== null;
+      const unreadVisible = unread.items.filter((item) => !readInSession.current.has(item.id)).length;
+      setUnreadCount(Math.max(unreadVisible, unreadOverflow.current ? 10 : 0));
       sessionUnavailable.current = false;
       setError(null);
     } catch (failure) {
@@ -98,7 +102,7 @@ export function useNotificationInbox({ enabled = true, consoleSessionKey }: {
             ? current.items.filter((item) => item.id !== notificationId)
             : current.items.map((item) => item.id === notificationId ? { ...item, isRead: true } : item),
         }));
-        setUnreadCount((count) => Math.max(0, count - 1));
+        setUnreadCount((count) => Math.max(unreadOverflow.current ? 10 : 0, count - 1));
       }
       setError(null);
       return true;

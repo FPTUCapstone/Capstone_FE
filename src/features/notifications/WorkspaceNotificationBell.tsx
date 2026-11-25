@@ -18,7 +18,11 @@ function destination(role: AuthRole, item: NotificationInboxItem): string | unde
   if (role === 'TourOperator' && item.relatedEntityType === 'PostTripComplaint' && id) return ROUTES.partner.postTripComplaint(id);
   if (role === 'ServiceProvider' && item.relatedEntityType === 'ServiceBooking' && id) return ROUTES.provider.bookingDetail(id);
   if (role === 'Staff' && item.type === 'RefundReturnReported') return ROUTES.admin.refundReconciliation;
-  if (role === 'Administrator' && item.type === 'EmergencyRefundReviewRequired') return ROUTES.admin.escalatedRefunds;
+  if (role === 'Administrator' && item.type === 'EmergencyRefundReviewRequired') {
+    return item.relatedEntityType === 'TourSchedule' && id
+      ? `${ROUTES.admin.escalatedRefunds}?emergencyScheduleId=${id}`
+      : ROUTES.admin.escalatedRefunds;
+  }
 }
 
 export function WebSessionNotificationBell({ role }: { role: 'TourOperator' | 'ServiceProvider' }) {

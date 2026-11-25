@@ -99,7 +99,10 @@ try {
       await unread.click();
       assert.equal((await readResponse).status(), 204, actor.role + ' mark-read failed');
       if (actor.destination) {
-        await page.waitForURL(url => url.pathname === actor.destination, { timeout: 25000 });
+        await page.waitForURL(url => url.pathname + url.search === actor.destination, { timeout: 25000 });
+        if (actor.role === 'Administrator') {
+          await page.getByText('Awaiting manual review', { exact: false }).first().waitFor({ timeout: 25000 });
+        }
       }
       if (await bell.getAttribute('aria-expanded') !== 'true') await bell.click();
       await page.getByRole('button', { name: actor.title + ' · Đã đọc', exact: true }).waitFor({ timeout: 15000 });

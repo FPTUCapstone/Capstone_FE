@@ -16,7 +16,7 @@ type LoadState = 'loading' | 'ready' | 'forbidden' | 'unavailable';
  * kept visually distinct — only `Escalated` rows carry Attempt Count / Last Error, since those
  * fields describe exhausted gateway retries and never apply to a `Reconciliation` row (an
  * amount-mismatch or unverifiable-transaction case that never reached the gateway). */
-export function EscalatedRefundsMonitorScreen() {
+export function EscalatedRefundsMonitorScreen({ emergencyScheduleId }: { emergencyScheduleId?: string } = {}) {
   const { replace } = useRouter();
   const [data, setData] = useState<RefundListResponse | null>(null);
   const [state, setState] = useState<LoadState>('loading');
@@ -52,6 +52,7 @@ export function EscalatedRefundsMonitorScreen() {
         description="Refunds whose automatic gateway retries are exhausted, or whose amount could not be verified, for manual resolution."
       />
 
+      {emergencyScheduleId ? <EmergencyRefundReview key={emergencyScheduleId} scheduleId={emergencyScheduleId} /> : null}
       {state === 'loading' ? <div role="status" className={panel}>Loading escalated refunds…</div> : null}
       {state === 'forbidden' ? (
         <FeedbackAlert tone="error" title="Access denied">
@@ -98,6 +99,47 @@ export function EscalatedRefundsMonitorScreen() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+type EmergencyReviewBooking = {
+  bookingId: number;
+  bookingCode: string;
+  bookingAmount: number;
+  paymentStatus: string;
+  refundStatus: string | null;
+};
+
+function EmergencyRefundReview({ scheduleId }: { scheduleId: string }) {
+  const [items, setItems] = useState<EmergencyReviewBooking[] | null>(null);
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/admin/refunds/emergency-review/${scheduleId}`, { cache: 'no-store', signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Emergency review unavailable.');
+        const data: EmergencyReviewBooking[] = await response.json();
+        if (!controller.signal.aborted) setItems(data);
+      })
+      .catch(() => { if (!controller.signal.aborted) setError(true); });
+    return () => controller.abort();
+  }, [scheduleId, retry]);
+
+  return (
+    <section className="mb-6 rounded-2xl border border-border bg-surface p-4" aria-labelledby="emergency-review-title">
+      <h2 id="emergency-review-title" className="font-bold">Emergency refund review · Departure #{scheduleId}</h2>
+      {error ? <p role="alert">Unable to load affected bookings. <button type="button" className="underline" onClick={() => {
+        setError(false);
+        setRetry((value) => value + 1);
+      }}>Retry</button></p> : items === null ? <p role="status">Loading affected bookings…</p> :
+        items.length === 0 ? <p>No bookings were recorded for manual review.</p> :
+          <ul className="mt-2 space-y-2">
+            {items.map((item) => <li key={item.bookingId}>
+              <strong>{item.bookingCode}</strong> · {formatVnd(item.bookingAmount)} · {item.paymentStatus} · {item.refundStatus ?? 'Awaiting manual review'}
+            </li>)}
+          </ul>}
+    </section>
   );
 }
 
