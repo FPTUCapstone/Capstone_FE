@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import AdminLogoutButton from '@/features/admin/auth/AdminLogoutButton';
+import { WorkspaceNotificationBell } from '@/features/notifications/WorkspaceNotificationBell';
 import type { AdministrationRole } from '@/features/auth/session/authSession';
 import { ROUTES } from '@/lib/routes';
 import { AdminBreadcrumbs } from './AdminBreadcrumbs';
@@ -9,10 +10,11 @@ import { AdminRoleBadge } from './AdminRoleBadge';
 
 interface AdminTopbarProps {
   role: AdministrationRole;
+  notificationSessionKey?: number;
   onOpenMobileSidebar: () => void;
 }
 
-export function AdminTopbar({ role, onOpenMobileSidebar }: AdminTopbarProps) {
+export function AdminTopbar({ role, notificationSessionKey, onOpenMobileSidebar }: AdminTopbarProps) {
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-[#DCE2DD] bg-[#FFFFFF]/90 px-4 sm:px-6 md:px-8 backdrop-blur-md">
       <div className="flex items-center gap-3">
@@ -33,6 +35,9 @@ export function AdminTopbar({ role, onOpenMobileSidebar }: AdminTopbarProps) {
       <div className="flex items-center gap-3">
         {/* Contextual Role Badge */}
         <AdminRoleBadge role={role} size="sm" />
+        {notificationSessionKey !== undefined && (
+          <WorkspaceNotificationBell key={notificationSessionKey} role={role} consoleSessionKey={notificationSessionKey} />
+        )}
 
         {/* Quick Security Settings link */}
         <Link

@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { PartnerHeader } from '../PartnerHeader';
-import * as useNotificationInboxModule from '@/features/operator/notifications/useNotificationInbox';
+import * as useNotificationInboxModule from '@/features/notifications/useNotificationInbox';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -10,12 +10,20 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@/features/operator/notifications/useNotificationInbox');
+vi.mock('@/features/notifications/useNotificationInbox');
+vi.mock('@/features/auth/session/useWebSession', () => ({
+  useWebSession: () => ({ status: 'authenticated', context: { role: 'TourOperator', userId: 1 } }),
+}));
 
 function mockInbox(overrides?: Partial<ReturnType<typeof useNotificationInboxModule.useNotificationInbox>>) {
   vi.mocked(useNotificationInboxModule.useNotificationInbox).mockReturnValue({
     items: [],
     unreadCount: 0,
+    unreadOnly: false,
+    setUnreadOnly: vi.fn(),
+    error: null,
+    loading: false,
+    loadMore: undefined,
     refresh: vi.fn(),
     markRead: vi.fn(),
     ...overrides,

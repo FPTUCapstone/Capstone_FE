@@ -10,6 +10,7 @@ import LogoutDialog from '@/components/LogoutDialog';
 import { webLogout } from '@/lib/authApi';
 import { AuthStorage } from '@/features/auth/session/authSession';
 import { useWebSession } from '@/features/auth/session/useWebSession';
+import { WorkspaceNotificationBell } from '@/features/notifications/WorkspaceNotificationBell';
 import {
   getTravelerProfile,
   TRAVELER_PROFILE_UPDATED_EVENT,
@@ -453,6 +454,10 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
         </nav>
 
         {/* Desktop Account / Session Actions */}
+        <div className="flex shrink-0 items-center gap-2">
+          {context?.role === 'Traveler' && !context.mustChangePassword && (
+            <WorkspaceNotificationBell key={context.userId} role="Traveler" />
+          )}
         <div className="hidden sm:flex items-center gap-3">
           {status === 'authenticated' ? (
             <div className="flex items-center justify-end gap-2">
@@ -637,6 +642,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
           >
             <span className="material-symbols-outlined text-2xl">menu</span>
           </button>
+        </div>
         </div>
       </div>
 
