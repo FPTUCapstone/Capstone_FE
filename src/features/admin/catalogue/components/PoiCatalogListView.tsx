@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ROUTES } from '@/lib/routes';
+import { DeactivatePoiDialog } from './DeactivatePoiDialog';
 import { poiManagementEn } from '../resources/en';
 import { loadPoiManagement, PoiManagementApiError } from '../services/poi-management-api';
 import type {
@@ -44,13 +45,26 @@ function isBeyondPage(response: PoiManagementResponse) {
   return response.page > Math.max(1, response.totalPages);
 }
 
-export function PoiCatalogListView() {
+interface PoiCatalogListViewProps {
+  role?: string;
+}
+
+export function PoiCatalogListView({ role = 'Administrator' }: PoiCatalogListViewProps = {}) {
   const [draftSearch, setDraftSearch] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState<PoiManagementQuery>({ page: 1, pageSize: PAGE_SIZE });
   const [categories, setCategories] = useState<PoiManagementCategory[]>([]);
   const [state, setState] = useState<ViewState>({ kind: 'loading' });
   const [retryVersion, setRetryVersion] = useState(0);
+  const [selectedPoiForDeactivation, setSelectedPoiForDeactivation] = useState<PoiManagementItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const requestSequence = useRef(0);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   useEffect(() => {
     const sequence = ++requestSequence.current;
@@ -314,15 +328,28 @@ export function PoiCatalogListView() {
                         )}
                       </td>
                       <td className="px-3.5 py-3.5 text-right whitespace-nowrap">
-                        <Link
-                          href={`/pois/${poi.id}`}
-                          target="_blank"
-                          aria-label={`Preview ${poi.name}`}
-                          className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
-                        >
-                          <span>Preview</span>
-                          <span aria-hidden="true" className="material-symbols-outlined text-[14px]">open_in_new</span>
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/pois/${poi.id}`}
+                            target="_blank"
+                            aria-label={`Preview ${poi.name}`}
+                            className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-[#DCE2DD] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]/30"
+                          >
+                            <span>Preview</span>
+                            <span aria-hidden="true" className="material-symbols-outlined text-[14px]">open_in_new</span>
+                          </Link>
+                          {role === 'Administrator' && poi.status === 'Active' && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPoiForDeactivation(poi)}
+                              aria-label={`Deactivate ${poi.name}`}
+                              className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50/70 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+                            >
+                              <span aria-hidden="true" className="material-symbols-outlined text-[14px]">block</span>
+                              <span>Deactivate</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                     );
@@ -417,6 +444,32 @@ export function PoiCatalogListView() {
             </div>
           </nav>
         ) : null}
+
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[#1C2928] px-4 py-3 text-xs font-bold text-white shadow-lg border border-[#103B39] animate-in slide-in-from-bottom"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-green-400 text-base">
+              check_circle
+            </span>
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {/* Deactivate POI Dialog */}
+        <DeactivatePoiDialog
+          poi={selectedPoiForDeactivation}
+          isOpen={selectedPoiForDeactivation !== null}
+          onClose={() => setSelectedPoiForDeactivation(null)}
+          onSuccess={(msg) => {
+            setToastMessage(msg);
+            setSelectedPoiForDeactivation(null);
+            setRetryVersion((version) => version + 1);
+          }}
+        />
       </div>
     </div>
   );

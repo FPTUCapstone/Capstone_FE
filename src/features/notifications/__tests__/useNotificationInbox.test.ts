@@ -52,13 +52,13 @@ describe('useNotificationInbox', () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       vi.advanceTimersByTime(30000);
       await Promise.resolve();
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
   });
 
   it('stops polling after unmount', async () => {
@@ -82,6 +82,48 @@ describe('useNotificationInbox', () => {
     expect(fetchSpy.mock.calls.length).toBe(callsBeforeUnmount);
   });
 
+  it('polls new inbox items after pagination without discarding older pages', async () => {
+    const older = { ...mockItem, id: 1 };
+    const first = { ...mockItem, id: 2 };
+    const latest = { ...mockItem, id: 3 };
+    let hasNewNotice = false;
+    vi.spyOn(notificationsApi, 'getNotificationInbox').mockImplementation(async (options) => {
+      if (options?.limit === 11) return { items: [], nextBeforeId: null };
+      if (options?.beforeId === 2) return { items: [older], nextBeforeId: null };
+      return { items: hasNewNotice ? [latest, first] : [first], nextBeforeId: 2 };
+    });
+    const { result } = renderHook(() => useNotificationInbox());
+    await act(async () => {});
+    await act(async () => { await result.current.loadMore?.(); });
+    hasNewNotice = true;
+    await act(async () => { vi.advanceTimersByTime(30000); });
+    expect(result.current.items.map((item) => item.id)).toEqual([3, 2, 1]);
+    expect(result.current.loadMore).toBeUndefined();
+  });
+
+  it('keeps the overflow badge while unread items exist beyond the fetched page', async () => {
+    const items = Array.from({ length: 11 }, (_, i) => ({ ...mockItem, id: 100 - i }));
+    vi.spyOn(notificationsApi, 'getNotificationInbox').mockResolvedValue({ items, nextBeforeId: 90 });
+    vi.spyOn(notificationsApi, 'markNotificationRead').mockResolvedValue(undefined);
+    const { result } = renderHook(() => useNotificationInbox());
+    await act(async () => {});
+    await act(async () => {
+      for (const item of items.slice(0, 3)) await result.current.markRead(item.id);
+    });
+    expect(result.current.unreadCount).toBeGreaterThan(9);
+  });
+
+  it('aborts a pending inbox request when the workspace session unmounts', async () => {
+    const fetchSpy = vi.spyOn(notificationsApi, 'getNotificationInbox')
+      .mockImplementation(() => new Promise(() => {}));
+    const { unmount } = renderHook(() => useNotificationInbox());
+    await act(async () => {});
+    const signal = fetchSpy.mock.calls[0][0]?.signal;
+    expect(signal?.aborted).toBe(false);
+    unmount();
+    expect(signal?.aborted).toBe(true);
+  });
+
   it('does not poll when disabled', async () => {
     const fetchSpy = vi.spyOn(notificationsApi, 'getNotificationInbox').mockResolvedValue({
       items: [],
@@ -95,6 +137,24 @@ describe('useNotificationInbox', () => {
     });
 
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('pauses polling after the session expires and allows a manual retry', async () => {
+    const fetchSpy = vi.spyOn(notificationsApi, 'getNotificationInbox')
+      .mockRejectedValue(new notificationsApi.NotificationsApiError('Expired', 401));
+    const { result } = renderHook(() => useNotificationInbox());
+    await act(async () => {});
+    expect(result.current.error).toBe('Expired');
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    await act(async () => { vi.advanceTimersByTime(60000); });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    fetchSpy.mockResolvedValue({ items: [], nextBeforeId: null });
+    await act(async () => { await result.current.refresh(); });
+    expect(result.current.error).toBeNull();
+    await act(async () => { vi.advanceTimersByTime(30000); });
+    expect(fetchSpy).toHaveBeenCalledTimes(6);
   });
 
   it('swallows fetch errors without throwing and keeps previous state', async () => {
@@ -126,7 +186,7 @@ describe('useNotificationInbox', () => {
       await result.current.markRead(1);
     });
 
-    expect(markReadSpy).toHaveBeenCalledWith(1);
+    expect(markReadSpy).toHaveBeenCalledWith(1, expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(result.current.unreadCount).toBe(0);
     expect(result.current.items[0].isRead).toBe(true);
   });

@@ -85,6 +85,13 @@ export async function proxyAdminRefundsList(request: Request): Promise<Response>
   return forward(`/api/v1/admin/refunds?${query}`, session.token, { method: 'GET' });
 }
 
+export async function proxyEmergencyRefundReview(scheduleId: string): Promise<Response> {
+  if (!/^[1-9]\d{0,18}$/.test(scheduleId)) return jsonNoStore({ title: 'A valid schedule ID is required.' }, 400);
+  const session = await requireSession(false);
+  if (!session.ok) return session.response;
+  return forward(`/api/v1/admin/refunds/emergency-review/${scheduleId}`, session.token, { method: 'GET' });
+}
+
 /** Screen 3's `[View Details]`: `GET /api/v1/admin/refunds/{refundId}`. Administrator only
  * (Staff acts from the list row directly and never opens this detail). */
 export async function proxyAdminRefundDetail(request: Request, refundId: string): Promise<Response> {

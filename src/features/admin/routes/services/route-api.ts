@@ -13,7 +13,7 @@ export const transportLabels: Record<RouteTransportMode, string> = { Walking: 'W
 export interface RoutePoi { id: number; name: string; latitude: number; longitude: number }
 export interface RouteOptions { pois: RoutePoi[]; transportModes: RouteTransportMode[] }
 export interface CreateRouteInput { fromPoiId: number | null; toPoiId: number | null; distanceKm: number | null; estimatedDurationMinutes: number | null; transportMode: RouteTransportMode | ''; routeNote: string | null }
-export interface RouteDto { id: number; fromPoiId: number; toPoiId: number; fromPoiName: string; toPoiName: string; distanceKm: number; estimatedDurationMinutes: number; transportMode: RouteTransportMode; routeNote: string | null; status: 'Active' | 'Inactive'; createdAtUtc: string; messageCode?: string; message?: string }
+export interface RouteDto { id: number; fromPoiId: number; toPoiId: number; fromPoiName: string; toPoiName: string; distanceKm: number; estimatedDurationMinutes: number; transportMode: RouteTransportMode; routeNote: string | null; status: 'Active' | 'Inactive'; createdAtUtc: string; messageCode?: string; message?: string; requiresReview?: boolean; reviewFlaggedAtUtc?: string | null; reviewFlagReason?: string | null }
 export interface RouteList { items: RouteDto[]; page: number; pageSize: number; totalCount: number }
 export type RouteFieldErrors = Partial<Record<keyof CreateRouteInput, string>>;
 

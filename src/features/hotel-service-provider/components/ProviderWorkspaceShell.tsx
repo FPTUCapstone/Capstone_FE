@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { webLogout } from '@/lib/authApi';
 import { AuthStorage } from '@/features/auth/session/authSession';
+import { WebSessionNotificationBell } from '@/features/notifications/WorkspaceNotificationBell';
 import { ToastProvider } from './common/Toast';
 
 export function ProviderWorkspaceShell({ children }: { children: ReactNode }) {
@@ -23,7 +24,9 @@ export function ProviderWorkspaceShell({ children }: { children: ReactNode }) {
           <Link href="/provider/bookings" className="inline-flex min-h-11 items-center text-lg font-bold">TripMate <span className="ml-3 text-sm font-normal text-[#5B6E69]">Service Provider</span></Link>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/provider/bookings" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">Booking Requests</Link>
+            <Link href="/provider/availability" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">Lịch dịch vụ</Link>
             <Link href="/provider/statements" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700">Commission Statements</Link>
+            {!busy && <WebSessionNotificationBell role="ServiceProvider" />}
             <button type="button" onClick={logout} disabled={busy} className="min-h-11 rounded-lg border border-[#DCE2DD] px-4 text-sm font-semibold disabled:opacity-50">{busy ? 'Signing out…' : 'Sign out'}</button>
           </div>
         </nav>

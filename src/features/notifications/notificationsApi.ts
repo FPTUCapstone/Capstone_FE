@@ -24,13 +24,13 @@ function getAuthToken(): string {
   return token;
 }
 
-function handleFailure(status: number, body: unknown): never {
+function handleFailure(status: number, body: unknown, token?: string): never {
   const record = bodyRecord(body);
   const code = typeof record.code === 'string' ? record.code : (typeof record.detail === 'string' ? record.detail : undefined);
   const title = typeof record.title === 'string' ? record.title : 'Không thể kết nối dịch vụ thông báo. Vui lòng thử lại.';
 
   if (status === 401) {
-    AuthStorage.clear();
+    if (token && AuthStorage.getAccessToken() === token) AuthStorage.clear();
     throw new NotificationsApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 401, code ?? 'UNAUTHORIZED');
   }
   if (status === 403) {
@@ -51,32 +51,37 @@ export interface GetNotificationInboxOptions {
   limit?: number;
   beforeId?: number;
   signal?: AbortSignal;
+  consoleSessionKey?: number;
 }
 
 export async function getNotificationInbox(
   options?: GetNotificationInboxOptions
 ): Promise<NotificationInboxResponse> {
-  const token = getAuthToken();
-  const apiBase = getApiBase();
+  const sessionKey = options?.consoleSessionKey;
+  const token = sessionKey === undefined ? getAuthToken() : undefined;
+  const endpoint = sessionKey === undefined ? `${getApiBase()}/notifications` : '/api/admin/notifications';
 
   const params = new URLSearchParams();
   if (options?.unreadOnly) params.set('unreadOnly', 'true');
   params.set('limit', String(options?.limit ?? 20));
   if (options?.beforeId) params.set('beforeId', String(options.beforeId));
 
-  const url = `${apiBase}/notifications?${params.toString()}`;
+  const url = `${endpoint}?${params.toString()}`;
 
   const response = await requestJson(url, {
     method: 'GET',
     accessToken: token,
     signal: options?.signal,
     cache: 'no-store',
-    headers: { 'Cache-Control': 'no-store' },
+    headers: {
+      'Cache-Control': 'no-store',
+      ...(sessionKey === undefined ? {} : { 'X-Notification-Session': String(sessionKey) }),
+    },
     networkError: () => new NotificationsApiError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.', 0, 'NETWORK_ERROR'),
   });
 
   if (response.status !== 200) {
-    handleFailure(response.status, response.body);
+    handleFailure(response.status, response.body, token);
   }
 
   try {
@@ -91,20 +96,22 @@ export async function getNotificationInbox(
 
 export async function markNotificationRead(
   notificationId: number,
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal; consoleSessionKey?: number }
 ): Promise<void> {
-  const token = getAuthToken();
-  const apiBase = getApiBase();
-  const url = `${apiBase}/notifications/${notificationId}/read`;
+  const sessionKey = options?.consoleSessionKey;
+  const token = sessionKey === undefined ? getAuthToken() : undefined;
+  const endpoint = sessionKey === undefined ? `${getApiBase()}/notifications` : '/api/admin/notifications';
+  const url = `${endpoint}/${notificationId}/read`;
 
   const response = await requestJson(url, {
     method: 'POST',
     accessToken: token,
     signal: options?.signal,
+    headers: sessionKey === undefined ? undefined : { 'X-Notification-Session': String(sessionKey) },
     networkError: () => new NotificationsApiError('Không thể gửi yêu cầu đến máy chủ.', 0, 'NETWORK_ERROR'),
   });
 
   if (response.status !== 204) {
-    handleFailure(response.status, response.body);
+    handleFailure(response.status, response.body, token);
   }
 }

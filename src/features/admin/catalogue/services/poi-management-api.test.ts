@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PoiManagementQuery } from '../types/poi-management';
-import { loadPoiManagement, parsePoiManagementResponse, PoiManagementApiError, serializePoiManagementQuery } from './poi-management-api';
+import { loadPoiManagement, parsePoiManagementResponse, PoiManagementApiError, serializePoiManagementQuery, parsePoiDeactivationReferences, parseDeactivatePoiResponse, loadPoiDeactivationReferences, deactivatePoi } from './poi-management-api';
 
 function payload() {
   return {
@@ -167,5 +167,186 @@ describe('management list browser GET client', () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(payload())));
       await expect(loadPoiManagement(query as Parameters<typeof loadPoiManagement>[0])).rejects.toMatchObject({ status: 503 });
     }
+  });
+});
+
+describe('POI deactivation references and deactivate API client', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  describe('parsePoiDeactivationReferences contract', () => {
+    const validReferences = {
+      poiId: 12345,
+      poiName: 'Marble Mountains',
+      status: 'Active',
+      activeItinerariesCount: 2,
+      activeRoutesCount: 3,
+      openCommercialBookingsCount: 1,
+      hasActiveReferences: true,
+      referenceSnapshotToken: 'token_123',
+      messageCode: 'MSG194',
+      message: 'The point of interest is referenced by itineraries, routes or bookings.',
+    };
+
+    it('accepts canonical references DTO', () => {
+      expect(parsePoiDeactivationReferences(validReferences)).toEqual(validReferences);
+    });
+
+    it('accepts null messageCode when references are 0', () => {
+      const clean = {
+        ...validReferences,
+        activeItinerariesCount: 0,
+        activeRoutesCount: 0,
+        openCommercialBookingsCount: 0,
+        hasActiveReferences: false,
+        messageCode: null,
+        message: null,
+      };
+      expect(parsePoiDeactivationReferences(clean)).toEqual(clean);
+    });
+
+    it.each([
+      null,
+      undefined,
+      'not an object',
+      { ...validReferences, poiId: 0 },
+      { ...validReferences, activeItinerariesCount: -1 },
+      { ...validReferences, activeRoutesCount: 'many' },
+      { ...validReferences, referenceSnapshotToken: '' },
+    ])('rejects invalid payload: %j', (invalid) => {
+      expect(() => parsePoiDeactivationReferences(invalid)).toThrow(PoiManagementApiError);
+    });
+  });
+
+  describe('parseDeactivatePoiResponse contract', () => {
+    const validResponse = {
+      poiId: 12345,
+      status: 'Inactive',
+      deactivatedConnectingRoutesCount: 2,
+      deactivatedAtUtc: '2026-11-19T01:00:00Z',
+      messageCode: 'MSG193',
+      message: 'Point of interest deactivated.',
+    };
+
+    it('accepts canonical deactivate result DTO', () => {
+      expect(parseDeactivatePoiResponse(validResponse)).toEqual(validResponse);
+    });
+
+    it.each([
+      null,
+      undefined,
+      { ...validResponse, status: 'Active' },
+      { ...validResponse, poiId: 0 },
+      { ...validResponse, deactivatedConnectingRoutesCount: -1 },
+      { ...validResponse, messageCode: '' },
+    ])('rejects invalid deactivate payload: %j', (invalid) => {
+      expect(() => parseDeactivatePoiResponse(invalid)).toThrow(PoiManagementApiError);
+    });
+  });
+
+  describe('loadPoiDeactivationReferences browser GET client', () => {
+    it('fetches references for valid ID', async () => {
+      const refData = {
+        poiId: 123,
+        poiName: 'Test POI',
+        status: 'Active',
+        activeItinerariesCount: 1,
+        activeRoutesCount: 0,
+        openCommercialBookingsCount: 0,
+        hasActiveReferences: true,
+        referenceSnapshotToken: 'token_abc',
+        messageCode: 'MSG194',
+        message: 'Active references found.',
+      };
+      const fetchMock = vi.fn().mockResolvedValue(Response.json(refData));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const result = await loadPoiDeactivationReferences('123');
+      expect(result).toEqual(refData);
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/pois/123/deactivation-references', {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        signal: undefined,
+      });
+    });
+
+    it('rejects invalid POI ID before fetching', async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(loadPoiDeactivationReferences('invalid-id')).rejects.toMatchObject({
+        status: 503,
+        code: 'POI_MANAGEMENT_UNAVAILABLE',
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deactivatePoi browser POST client', () => {
+    it('posts deactivation request with reason and referenceSnapshotToken', async () => {
+      const resultData = {
+        poiId: 123,
+        status: 'Inactive',
+        deactivatedAtUtc: '2026-11-19T01:00:00Z',
+        deactivatedConnectingRoutesCount: 1,
+        messageCode: 'MSG193',
+        message: 'Point of interest deactivated.',
+      };
+      const fetchMock = vi.fn().mockResolvedValue(Response.json(resultData));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const res = await deactivatePoi({
+        poiId: 123,
+        reason: 'Renovation closure',
+        referenceSnapshotToken: 'token_abc',
+      });
+      expect(res).toEqual(resultData);
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/pois/123/deactivate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          poiId: 123,
+          reason: 'Renovation closure',
+          referenceSnapshotToken: 'token_abc',
+        }),
+      });
+    });
+
+    it('rejects empty reason before calling fetch', async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        deactivatePoi({
+          poiId: 123,
+          reason: '   ',
+          referenceSnapshotToken: 'token_abc',
+        }),
+      ).rejects.toMatchObject({
+        status: 400,
+        code: 'POI_MANAGEMENT_INVALID_QUERY',
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('maps 409 Conflict when references changed', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        Response.json({ messageCode: 'MSG194' }, { status: 409 }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        deactivatePoi({
+          poiId: 123,
+          reason: 'Valid reason',
+          referenceSnapshotToken: 'token_abc',
+        }),
+      ).rejects.toMatchObject({
+        status: 409,
+        code: 'POI_MANAGEMENT_INVALID_QUERY',
+      });
+    });
   });
 });
