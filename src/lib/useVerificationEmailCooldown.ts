@@ -21,19 +21,24 @@ export function useVerificationEmailCooldown(cooldownSeconds = 60) {
     }
   }, []);
 
-  const startCooldown = useCallback(() => {
-    clearTimer();
-    setSecondsLeft(cooldownSeconds);
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearTimer();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, [clearTimer, cooldownSeconds]);
+  const startCooldown = useCallback(
+    (overrideSeconds?: number) => {
+      const initial = Math.max(0, Math.ceil(overrideSeconds ?? cooldownSeconds));
+      clearTimer();
+      setSecondsLeft(initial);
+      if (initial <= 0) return;
+      timerRef.current = setInterval(() => {
+        setSecondsLeft((prev) => {
+          if (prev <= 1) {
+            clearTimer();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    },
+    [clearTimer, cooldownSeconds],
+  );
 
   useEffect(() => () => clearTimer(), [clearTimer]);
 

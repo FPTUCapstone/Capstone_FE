@@ -39,6 +39,7 @@ function fillResetForm({ code = '012345', password = 'NewPassword1!', confirmPas
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.sessionStorage.clear();
 });
 
 describe('PasswordRecoveryFlow request step', () => {
@@ -542,5 +543,43 @@ describe('PasswordRecoveryFlow Change email cooldown protection', () => {
     });
     expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(2);
     expect(mocks.requestWebPasswordReset).toHaveBeenLastCalledWith('correct@example.com');
+  });
+
+  it('keeps active cooldown for the same email after navigating Back to Sign In (unmount + remount)', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-25T10:00:00.000Z'));
+    mocks.requestWebPasswordReset.mockResolvedValue(REQUEST_SUCCESS);
+
+    const { unmount } = render(<PasswordRecoveryFlow />);
+    fillEmail('user@example.com');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /send reset code/i }));
+    });
+    expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(1);
+
+    // 18 seconds pass, then user leaves via Back to Sign In (component unmounts).
+    await act(async () => {
+      vi.advanceTimersByTime(18_000);
+    });
+    unmount();
+
+    // User comes back to /forgot-password (fresh mount) and enters the same email.
+    render(<PasswordRecoveryFlow />);
+    expect(screen.getByLabelText('Email Address')).toBeDefined();
+    fillEmail('USER@example.com');
+
+    const sendButton = screen.getByRole('button', { name: /send reset code/i }) as HTMLButtonElement;
+    expect(sendButton.disabled).toBe(true);
+    expect(sendButton.textContent).toContain('(42s)');
+
+    fireEvent.click(sendButton);
+    expect(mocks.requestWebPasswordReset).toHaveBeenCalledTimes(1);
+
+    // User can resume Step 2 with the remaining 42s countdown still intact.
+    fireEvent.click(screen.getByRole('button', { name: /enter existing code/i }));
+    expect(screen.getByLabelText('Reset Code')).toBeDefined();
+    const resendButton = screen.getByRole('button', { name: /resend code/i }) as HTMLButtonElement;
+    expect(resendButton.disabled).toBe(true);
+    expect(resendButton.textContent).toContain('(42s)');
   });
 });

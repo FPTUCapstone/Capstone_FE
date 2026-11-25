@@ -45,6 +45,70 @@ const OTP_SLOTS = [0, 1, 2, 3, 4, 5] as const;
 
 // Backend rule: a new OTP may be requested 60 seconds after the previous one.
 const RESEND_COOLDOWN_SECONDS = 60;
+const COOLDOWN_STORAGE_KEY = 'tripmate:password-recovery-cooldowns';
+
+type CooldownScope = 'public' | 'admin';
+
+function cooldownKey(scope: CooldownScope, email: string): string {
+  return `${scope}:${email}`;
+}
+
+function readStoredCooldowns(): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.sessionStorage.getItem(COOLDOWN_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    const now = Date.now();
+    const active: Record<string, number> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof value === 'number' && value > now) active[key] = value;
+    }
+    return active;
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredCooldowns(map: Record<string, number>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (Object.keys(map).length === 0) {
+      window.sessionStorage.removeItem(COOLDOWN_STORAGE_KEY);
+    } else {
+      window.sessionStorage.setItem(COOLDOWN_STORAGE_KEY, JSON.stringify(map));
+    }
+  } catch {
+    // Ignore storage quota or private-mode access errors.
+  }
+}
+
+function getStoredCooldownSeconds(scope: CooldownScope, normalizedEmail: string): number {
+  if (!normalizedEmail) return 0;
+  const map = readStoredCooldowns();
+  const expiresAt = map[cooldownKey(scope, normalizedEmail)];
+  if (!expiresAt) return 0;
+  return Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+}
+
+function setStoredCooldown(
+  scope: CooldownScope,
+  normalizedEmail: string,
+  seconds = RESEND_COOLDOWN_SECONDS,
+): void {
+  if (!normalizedEmail || seconds <= 0) return;
+  const map = readStoredCooldowns();
+  map[cooldownKey(scope, normalizedEmail)] = Date.now() + seconds * 1000;
+  writeStoredCooldowns(map);
+}
+
+function clearStoredCooldown(scope: CooldownScope, normalizedEmail: string): void {
+  if (!normalizedEmail) return;
+  const map = readStoredCooldowns();
+  delete map[cooldownKey(scope, normalizedEmail)];
+  writeStoredCooldowns(map);
+}
 
 function evaluatePasswordChecks(password: string) {
   const checks = [
@@ -104,6 +168,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     { id: 'success', label: 'Done' },
   ];
 
+  const cooldownScope: CooldownScope = admin ? 'admin' : 'public';
   const signInRoute = admin ? ROUTES.admin.login : ROUTES.signIn;
   const backLinkClass =
     'mx-auto flex w-fit items-center justify-center gap-1.5 py-1 text-sm font-medium text-brand-textSecondary transition-colors hover:text-brand-teal';
@@ -128,6 +193,17 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
   const passwordsMatch =
     confirmPassword.length > 0 && confirmPassword === password && !errors.confirmPassword;
 
+  function handleEmailChange(nextValue: string) {
+    setEmail(nextValue);
+    const nextNormalized = nextValue.trim().toLowerCase();
+    if (!nextNormalized) return;
+    const remaining = getStoredCooldownSeconds(cooldownScope, nextNormalized);
+    if (remaining > 0 && (lastRequestedEmail !== nextNormalized || !resendOnCooldown)) {
+      setLastRequestedEmail(nextNormalized);
+      startResendCooldown(remaining);
+    }
+  }
+
   async function submitRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading || sameEmailOnCooldown) return;
@@ -141,14 +217,22 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     if (nextErrors.email) return;
 
     const targetEmail = trimmedEmail.toLowerCase();
+    const storedRemaining = getStoredCooldownSeconds(cooldownScope, targetEmail);
+    if (storedRemaining > 0) {
+      setLastRequestedEmail(targetEmail);
+      startResendCooldown(storedRemaining);
+      return;
+    }
+
     setLoading(true);
     try {
       // The Backend answers enumeration-safely; this UX is deliberately
       // identical whether or not the account exists.
       await requestWebPasswordReset(targetEmail);
-      // Track the last successfully requested email so returning via
-      // "Change email" cannot re-fire requests during the active cooldown.
+      // Track the last successfully requested email across both "Change email"
+      // and "Back to Sign In" so an active cooldown cannot be bypassed.
       setLastRequestedEmail(targetEmail);
+      setStoredCooldown(cooldownScope, targetEmail);
       startResendCooldown();
       setStep('reset');
       setFeedback({
@@ -158,6 +242,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     } catch (error: unknown) {
       if ((error as { status?: number } | null)?.status === 429) {
         setLastRequestedEmail(targetEmail);
+        setStoredCooldown(cooldownScope, targetEmail);
         startResendCooldown();
       }
       setFeedback({ tone: 'error', message: mapPasswordResetError(error) });
@@ -189,6 +274,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
       await confirmWebPasswordReset({ email: normalizedEmail, code, newPassword: password });
       // Recovery state is dead the moment the reset succeeds; nothing about it
       // may authenticate the user or survive into the next screen.
+      clearStoredCooldown(cooldownScope, normalizedEmail);
       setLastRequestedEmail(null);
       setCode('');
       setPassword('');
@@ -217,6 +303,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     try {
       await requestWebPasswordReset(normalizedEmail);
       setLastRequestedEmail(normalizedEmail);
+      setStoredCooldown(cooldownScope, normalizedEmail);
       startResendCooldown();
       setFeedback({
         tone: 'info',
@@ -225,7 +312,10 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
     } catch (error: unknown) {
       // A Backend rate limit keeps the local cooldown running so the user
       // cannot spam the endpoint; no automatic retry is attempted.
-      if ((error as { status?: number } | null)?.status === 429) startResendCooldown();
+      if ((error as { status?: number } | null)?.status === 429) {
+        setStoredCooldown(cooldownScope, normalizedEmail);
+        startResendCooldown();
+      }
       setFeedback({ tone: 'error', message: mapPasswordResetError(error) });
     } finally {
       resendInFlightRef.current = false;
@@ -330,7 +420,7 @@ export function PasswordRecoveryFlow({ admin = false }: PasswordRecoveryFlowProp
             value={email}
             disabled={loading}
             error={errors.email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => handleEmailChange(event.target.value)}
           />
 
           <ActionButton
