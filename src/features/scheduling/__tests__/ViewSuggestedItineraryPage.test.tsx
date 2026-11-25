@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ViewSuggestedItineraryPage } from '../components/ViewSuggestedItineraryPage';
 import * as schedulingApi from '../services/schedulingApi';
@@ -379,12 +379,12 @@ describe('ViewSuggestedItineraryPage (UC-11)', () => {
           schedulingApi.NAVIGATION_IN_PROGRESS_CODE,
         ),
       );
-      vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
-
       render(<ViewSuggestedItineraryPage itineraryId="789" />);
 
       await waitFor(() => expect(screen.getByRole('button', { name: /Tạo lại lịch trình/i })).toBeDefined());
       fireEvent.click(screen.getByRole('button', { name: /Tạo lại lịch trình/i }));
+      const confirmDialog = screen.getByRole('dialog', { name: 'Tạo phương án lịch trình khác?' });
+      fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Tạo lại lịch trình' }));
 
       await waitFor(() =>
         expect(screen.getByText(schedulingApi.NAVIGATION_IN_PROGRESS_MESSAGE)).toBeDefined(),

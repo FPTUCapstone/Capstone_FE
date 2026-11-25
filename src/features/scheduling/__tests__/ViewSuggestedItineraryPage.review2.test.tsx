@@ -291,8 +291,8 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
     );
   });
 
-  it('asks before removing a stop the traveler chose', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+  it('asks in an in-app confirmation dialog before removing a stop the traveler chose', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm');
     const update = vi.spyOn(schedulingApi, 'updateItineraryStops').mockResolvedValue({ ...itinerary, version: 2 });
     await renderLoaded();
 
@@ -301,12 +301,19 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
       fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Bỏ khỏi lịch' }));
     };
     removeMandatory();
-    expect(confirm).toHaveBeenCalledWith('Đây là điểm bạn đã chọn, chắc chắn bỏ?');
+    const confirmDialog = screen.getByRole('dialog', { name: 'Bỏ điểm đã chọn bắt buộc?' });
+    expect(confirmDialog.textContent).toContain('Bảo tàng Chăm');
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Giữ lại' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(update).not.toHaveBeenCalled();
 
     // Confirmed: the reason picker follows (UC-10 feedback, D10), and the stop goes once a reason is picked.
     removeMandatory();
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Bỏ điểm đã chọn bắt buộc?' })).getByRole('button', {
+        name: 'Tiếp tục bỏ điểm',
+      }),
+    );
     expect(update).not.toHaveBeenCalled();
     fireEvent.click(
       within(screen.getByRole('dialog', { name: 'Vì sao bạn bỏ điểm này?' })).getByRole('button', {
@@ -320,6 +327,80 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
         { removedStops: [{ poiId: 12, reason: 'NotInterested' }] },
       ),
     );
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('asks before replacing a mandatory stop and opens suggestions only after confirming', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    const suggestions = vi.spyOn(schedulingApi, 'getItinerarySuggestions').mockResolvedValueOnce({
+      itineraryId: 789,
+      kind: 'Replace',
+      searchRadiusKm: 15,
+      items: [{ ...restaurant, poiId: 601, name: 'Chùa Linh Ứng', costKind: 'AdmissionTicket' as const }],
+    });
+    await renderLoaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Thao tác với Bảo tàng Chăm' }));
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Thay địa điểm' }));
+
+    const confirmDialog = screen.getByRole('dialog', { name: 'Thay điểm đã chọn bắt buộc?' });
+    expect(suggestions).not.toHaveBeenCalled();
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Tiếp tục thay điểm' }));
+
+    expect(suggestions).toHaveBeenCalledWith(789, { kind: 'Replace', replaceItemId: 11 }, expect.anything());
+    expect(await screen.findByRole('button', { name: 'Chọn Chùa Linh Ứng' })).toBeDefined();
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('confirms overtime restaurant additions in-app with extended end time and preserves suggestions on back', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    const overtimeRestaurant = {
+      ...restaurant,
+      poiId: 509,
+      name: 'Cơm gà Bà Buội',
+      estimatedCost: 55000,
+      closesAt: '14:00',
+      fitsItinerary: false,
+      unfitReason: 'ExceedsEndTime' as const,
+      unfitPoiId: 509,
+      overflowMinutes: 51,
+    };
+    const suggestions = vi
+      .spyOn(schedulingApi, 'getItinerarySuggestions')
+      .mockResolvedValueOnce({ itineraryId: 789, kind: 'Food', searchRadiusKm: 15, items: [overtimeRestaurant] });
+    const update = vi.spyOn(schedulingApi, 'updateItineraryStops').mockResolvedValueOnce({ ...itinerary, version: 2 });
+    await renderLoaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chọn quán' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Chọn Cơm gà Bà Buội' }));
+
+    const confirmDialog = screen.getByRole('dialog', { name: 'Kéo dài lịch trình thêm 51 phút?' });
+    expect(confirmDialog.textContent).toContain('17:00');
+    expect(confirmDialog.textContent).toContain('17:51');
+    expect(confirmDialog.textContent).toContain('Cơm gà Bà Buội');
+    expect(update).not.toHaveBeenCalled();
+
+    // Going back returns to the already-loaded suggestions without refetching.
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Quay lại' }));
+    expect(suggestions).toHaveBeenCalledTimes(1);
+    const chooseAgain = screen.getByRole('button', { name: 'Chọn Cơm gà Bà Buội' });
+
+    fireEvent.click(chooseAgain);
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Kéo dài lịch trình thêm 51 phút?' })).getByRole('button', {
+        name: 'Tiếp tục thêm quán',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith(789, [
+        { poiId: 12, transportModeToNext: 'Motorbike' },
+        { poiId: 88, transportModeToNext: 'Motorbike' },
+        { poiId: 509 },
+        { poiId: 35 },
+      ]),
+    );
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it('removes an ordinary stop without the "stop you chose" confirmation', async () => {
@@ -356,8 +437,9 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
     expect(within(dialog).getByTestId('tripadvisor-reviews').textContent).toBe('88');
   });
 
-  it('warns before regenerating when a restaurant would be dropped', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+  it('warns in an in-app dialog before regenerating when a restaurant would be dropped', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    const regenerate = vi.spyOn(schedulingApi, 'regenerateItinerary');
     await renderLoaded({
       ...itinerary,
       items: [...itinerary.items, item({ itemId: 14, sequenceNo: 4, poiId: 501, poiName: 'Bếp Hến', costKind: 'AverageSpend' })],
@@ -365,7 +447,12 @@ describe('ViewSuggestedItineraryPage — Review 2 stop actions (D4, D6, D11)', (
 
     fireEvent.click(screen.getByRole('button', { name: /Tạo lại lịch trình/ }));
 
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('quán ăn bạn đã thêm sẽ không được giữ lại'));
+    const dialog = screen.getByRole('dialog', { name: 'Tạo phương án lịch trình khác?' });
+    expect(dialog.textContent).toContain('quán ăn bạn đã thêm sẽ không được giữ lại');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(regenerate).not.toHaveBeenCalled();
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it('offers no stop edits while the trip is navigated', async () => {
@@ -595,16 +682,19 @@ describe('ViewSuggestedItineraryPage — review fixes (findings 1, 4, 5)', () =>
   });
 
   it('asks before replacing a stop the traveler chose', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+    const confirmSpy = vi.spyOn(window, 'confirm');
     const suggestions = vi.spyOn(schedulingApi, 'getItinerarySuggestions');
     await renderLoaded();
 
     fireEvent.click(screen.getByRole('button', { name: 'Thao tác với Bảo tàng Chăm' }));
     fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Thay địa điểm' }));
 
-    expect(confirm).toHaveBeenCalledWith('Đây là điểm bạn đã chọn, chắc chắn bỏ?');
+    const confirmDialog = screen.getByRole('dialog', { name: 'Thay điểm đã chọn bắt buộc?' });
+    expect(suggestions).not.toHaveBeenCalled();
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Giữ lại' }));
     expect(suggestions).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 });
 
