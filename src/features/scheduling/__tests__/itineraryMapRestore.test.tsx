@@ -229,6 +229,49 @@ describe('TripMate Itinerary Map Restoration Verification', () => {
     expect(screen.queryByTestId('selected-map-stop-card')).toBeNull();
   });
 
+  it('2b. Hovering a timeline stop highlights it without inserting the preview card (no layout shift)', async () => {
+    vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test_real_token');
+    vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItineraryWithCoords);
+
+    render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Bảo tàng Điêu khắc Chăm')).toBeDefined();
+    });
+
+    const timelineItem = document.querySelector('[data-item-id="101"]') as HTMLElement;
+    fireEvent.mouseEnter(timelineItem);
+
+    // The hovered stop is highlighted on the timeline and the map...
+    expect(timelineItem.getAttribute('data-highlighted')).toBe('true');
+    expect(screen.getByTestId('itinerary-map').getAttribute('data-highlighted-id')).toBe('101');
+    // ...but the card is not inserted: it changed the page height, so at the bottom of a short itinerary
+    // the page jumped under the cursor and the hover toggled in a loop.
+    expect(screen.queryByTestId('selected-map-stop-card')).toBeNull();
+
+    fireEvent.mouseLeave(timelineItem);
+    expect(screen.getByTestId('itinerary-map').getAttribute('data-highlighted-id')).toBe('none');
+  });
+
+  it('2c. A card opened from a map marker stays while the pointer moves over the timeline', async () => {
+    vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test_real_token');
+    vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItineraryWithCoords);
+
+    render(<ViewSuggestedItineraryPage itineraryId="789" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Bảo tàng Điêu khắc Chăm')).toBeDefined();
+    });
+
+    fireEvent.click(within(screen.getByTestId('itinerary-map')).getByRole('button', { name: 'marker 1' }));
+    const otherItem = document.querySelector('[data-item-id="102"]') as HTMLElement;
+    fireEvent.mouseEnter(otherItem);
+    fireEvent.mouseLeave(otherItem);
+
+    const card = screen.getByTestId('selected-map-stop-card');
+    expect(within(card).getByText('Bảo tàng Điêu khắc Chăm')).toBeDefined();
+  });
+
   it('3. Filtering by Day Navigation updates map markers and route line dynamically', async () => {
     vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'pk.test_real_token');
     vi.spyOn(schedulingApi, 'getItineraryById').mockResolvedValueOnce(mockItineraryWithCoords);

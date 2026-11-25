@@ -133,6 +133,43 @@ describe('ItinerarySuggestionsDialog (D6, D11-2/8)', () => {
     expect(onChoose).toHaveBeenCalledWith(expect.objectContaining({ poiId: 502 }));
   });
 
+  it('locks the select button when a suggestion exceeds end time without a known overflowMinutes', async () => {
+    vi.spyOn(schedulingApi, 'getItinerarySuggestions').mockResolvedValueOnce({
+      ...response,
+      items: [
+        suggestion({
+          poiId: 506,
+          name: 'Quán Chay Không Rõ Giờ Dư',
+          fitsItinerary: false,
+          unfitReason: 'ExceedsEndTime',
+          unfitPoiId: 506,
+          overflowMinutes: null,
+          tripadvisor: null,
+        }),
+      ],
+    });
+    const onChoose = vi.fn();
+    render(
+      <ItinerarySuggestionsDialog
+        itineraryId={789}
+        query={{ kind: 'Food', afterItemId: 11 }}
+        title="t"
+        nameOf={() => null}
+        onChoose={onChoose}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const unknownOverflow = await screen.findByTestId('suggestion-506');
+    expect(unknownOverflow.textContent).toContain('Vượt giờ kết thúc');
+    const selectButton = within(unknownOverflow).getByRole('button', {
+      name: 'Chọn Quán Chay Không Rõ Giờ Dư',
+    }) as HTMLButtonElement;
+    expect(selectButton.disabled).toBe(true);
+    fireEvent.click(selectButton);
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
   it('shows the reviews of a suggestion on demand', async () => {
     vi.spyOn(schedulingApi, 'getItinerarySuggestions').mockResolvedValueOnce(response);
     render(
