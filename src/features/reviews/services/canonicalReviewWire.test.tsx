@@ -49,16 +49,16 @@ describe('canonical review UI through browser API and BFF wire boundary', () => 
   async function submit() {
     render(<CanonicalTripReviewPage reference={reference} />);
     await screen.findByText('Hoi An wire fixture');
-    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
-    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
+    fireEvent.click(screen.getByRole('radio', { name: '5 sao' }));
+    fireEvent.change(screen.getByLabelText('Tiêu đề đánh giá'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Chia sẻ trải nghiệm'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đánh giá' }));
   }
   function onlyOnePost() {
     expect(mocks.backend.mock.calls.filter(([path, options]) => path !== '/api/v1/auth/web/refresh' && options.method === 'POST')).toHaveLength(1);
     expect(mocks.backend.mock.calls.filter(([path]) => path !== '/api/v1/auth/web/refresh').every(([path]) => path === `/api/v1/bookings/${id}/review`)).toBe(true);
     expect(mocks.push).not.toHaveBeenCalled();
-    expect(screen.queryByText('Review published. Returning to Trip History…')).toBeNull();
+    expect(screen.queryByText('Đã đăng đánh giá. Đang quay lại Lịch sử chuyến đi…')).toBeNull();
   }
 
   it('preserves raw maximum Int64 Backend identity across BFF and browser API', async () => {
@@ -66,18 +66,18 @@ describe('canonical review UI through browser API and BFF wire boundary', () => 
   });
   it('opens the existing review after duplicate with exact maximum Int64 identity', async () => {
     await submit();
-    expect(await screen.findByText('A review already exists. The existing review is shown below.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Update review' })).toBeTruthy();
-    expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Existing review');
+    expect(await screen.findByText('Đánh giá đã tồn tại. Nội dung đánh giá hiện tại được hiển thị bên dưới.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cập nhật đánh giá' })).toBeTruthy();
+    expect((screen.getByLabelText('Tiêu đề đánh giá') as HTMLInputElement).value).toBe('Existing review');
     expect(reads).toBe(2); onlyOnePost();
   });
   it.each(['failed', 'wrong'] as const)('fails duplicate recovery safely on %s GET', async mode => {
     recovery = mode;
     await submit();
-    expect(await screen.findByText('The existing review could not be loaded. Please try again.')).toBeTruthy();
+    expect(await screen.findByText('Không thể tải đánh giá hiện có. Vui lòng thử lại.')).toBeTruthy();
     await waitFor(() => expect(reads).toBe(2));
-    expect(screen.queryByText('A review already exists. The existing review is shown below.')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Update review' })).toBeNull();
+    expect(screen.queryByText('Đánh giá đã tồn tại. Nội dung đánh giá hiện tại được hiển thị bên dưới.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cập nhật đánh giá' })).toBeNull();
     onlyOnePost();
   });
   it('retains booking_not_found while stripping Backend diagnostic fields', async () => {
