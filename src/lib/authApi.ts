@@ -3,7 +3,7 @@
  * Communicates with TripMate backend using Firebase ID tokens.
  */
 
-import { AuthStorage, InvalidAuthContextError, type WebAuthContext } from '@/features/auth/session/authSession';
+import { AuthStorage, InvalidAuthContextError, parseWebAuthContext, type WebAuthContext } from '@/features/auth/session/authSession';
 import { extractFieldErrors } from './authErrorMapper';
 import { getApiBase } from './apiBase';
 
@@ -273,26 +273,46 @@ export async function webGoogleAuth(idToken: string, keepMeSignedIn = false): Pr
  * rejected or malformed response leaves the session genuinely unauthenticated;
  * it never authenticates from persisted display metadata.
  */
-export async function webRefresh(): Promise<WebAuthContext> {
+let webRefreshPromise: Promise<WebAuthContext> | null = null;
+export function webRefresh(): Promise<WebAuthContext> {
+  if (!webRefreshPromise) {
+    const revision = AuthStorage.getCredentialRevision();
+    const restore = () => restoreWebContext(revision);
+    // The refresh cookie is shared by tabs. Serialize its rotation without storing credentials.
+    webRefreshPromise = (typeof navigator !== 'undefined' && navigator.locks
+      ? navigator.locks.request('tripmate-web-refresh', restore) : restore())
+      .finally(() => { webRefreshPromise = null; });
+  }
+  return webRefreshPromise;
+}
+async function restoreWebContext(revision: number): Promise<WebAuthContext> {
+  const owner = AuthStorage.getSessionOwner();
+  const changed = () => ({ status: 409, code: 'SESSION_CHANGED', message: 'The account session changed.' } satisfies ApiError);
+  if (AuthStorage.getCredentialRevision() !== revision) throw changed();
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/auth/web/refresh`, { method: 'POST', credentials: 'include' });
+    res = await fetch(`${API_BASE}/auth/web/refresh`, { method: 'POST', credentials: 'include', signal: AbortSignal.timeout(15000) });
   } catch {
     // Network/timeout is recoverable state, not proof of an invalid session:
     // an existing in-memory context must survive; the caller retries later.
     throw { code: 'NETWORK', message: 'Session restore unavailable.', status: 0 } satisfies ApiError;
   }
+  if (AuthStorage.getCredentialRevision() !== revision) throw changed();
   if (!res.ok) {
     // Definitive invalid/blocked session (401/403): genuinely unauthenticated.
-    AuthStorage.clear();
+    if (res.status === 401 || res.status === 403) AuthStorage.clear();
     return handleResponse<never>(res);
   }
   try {
     const envelope: unknown = await res.json();
+    if (AuthStorage.getCredentialRevision() !== revision) throw changed();
     if (!envelope || typeof envelope !== 'object' || !('success' in envelope) || envelope.success !== true || !('data' in envelope)) throw new InvalidAuthContextError();
+    const context = parseWebAuthContext(envelope.data);
+    if (owner && (context.userId !== owner.userId || context.role !== owner.role)) { AuthStorage.clear(); throw changed(); }
     return AuthStorage.accept(envelope.data, false);
-  } catch {
-    AuthStorage.clear();
+  } catch (error) {
+    if (isApiError(error) && error.code === 'SESSION_CHANGED') throw error;
+    if (AuthStorage.getCredentialRevision() === revision) AuthStorage.clear();
     throw new InvalidAuthContextError();
   }
 }

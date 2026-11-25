@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStorage } from './authSession';
 
@@ -47,4 +47,15 @@ describe('WebSessionProvider (shared S01 bootstrap)', () => {
     await waitFor(() => expect(screen.getByText('unauthenticated:none')).toBeDefined());
     expect(AuthStorage.getContext()).toBeNull();
   });
+});
+
+it('renews an expiring session without unmounting an entered chat draft', async () => {
+ vi.useFakeTimers();
+ try {
+  AuthStorage.accept({...ctx,accessTokenExpiresAtUtc:new Date(Date.now()+60000).toISOString()},false);
+  mocks.webRefresh.mockImplementation(async()=>AuthStorage.accept({...ctx,accessToken:'renewed',accessTokenExpiresAtUtc:new Date(Date.now()+60000).toISOString()},false));
+  function Form(){const {status}=useWebSession();return status==='authenticated'?<input aria-label="Chat draft" defaultValue=""/>:<p>signed out</p>;}
+  render(<WebSessionProvider><Form/></WebSessionProvider>);fireEvent.change(screen.getByLabelText('Chat draft'),{target:{value:'KEEP'}});
+  await act(async()=>{await vi.advanceTimersByTimeAsync(31000);});expect(mocks.webRefresh).toHaveBeenCalledTimes(1);expect(AuthStorage.getAccessToken()).toBe('renewed');expect((screen.getByLabelText('Chat draft') as HTMLInputElement).value).toBe('KEEP');
+ }finally{cleanup();vi.useRealTimers();}
 });
