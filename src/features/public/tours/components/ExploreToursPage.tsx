@@ -176,37 +176,37 @@ function PublicExploreToursPage() {
   if (recommendationPage) detailParams.set('recommendationPage', recommendationPage);
 
   return (
-    <div className="min-h-screen bg-[#F5F7F6] text-[#1D2D2B]">
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6" lang={locale}>
-        <TourEditorialHero locale={locale} />
-
-        {/* Language selector & top toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#61736F]">
-            {copy.language}
-            <select
-              value={locale}
-              aria-label={copy.language}
-              className="min-h-10 rounded-xl border border-[#DCE5E2] bg-white px-3 text-xs sm:text-sm text-[#1D2D2B] focus-visible:ring-2 focus-visible:ring-[#0D5754]"
-              onChange={(event) => {
-                const selected = event.target.value === 'vi' ? 'vi' : 'en';
-                setLocale(selected);
-                try {
-                  window.localStorage.setItem(searchLocaleKey, selected);
-                } catch {
-                  /* storage unavailable */
-                }
-              }}
-            >
-              <option value="vi" lang="vi">
-                Tiếng Việt
-              </option>
-              <option value="en" lang="en">
-                English
-              </option>
-            </select>
-          </label>
-        </div>
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]">
+      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 space-y-5" lang={locale}>
+        <TourEditorialHero
+          locale={locale}
+          actionsSlot={
+            <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#DCE2DD] bg-white px-3 text-xs font-semibold text-[#5B6E69] transition hover:border-[#174B4A]/40">
+              <span className="shrink-0">{copy.language}</span>
+              <select
+                value={locale}
+                aria-label={copy.language}
+                className="cursor-pointer border-0 bg-transparent py-1 pr-1 text-xs font-bold leading-5 text-[#1C2928] outline-none focus-visible:ring-2 focus-visible:ring-[#174B4A]"
+                onChange={(event) => {
+                  const selected = event.target.value === 'vi' ? 'vi' : 'en';
+                  setLocale(selected);
+                  try {
+                    window.localStorage.setItem(searchLocaleKey, selected);
+                  } catch {
+                    /* storage unavailable */
+                  }
+                }}
+              >
+                <option value="vi" lang="vi">
+                  Tiếng Việt
+                </option>
+                <option value="en" lang="en">
+                  English
+                </option>
+              </select>
+            </label>
+          }
+        />
 
         {categoryError && (
           <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs sm:text-sm text-amber-800">

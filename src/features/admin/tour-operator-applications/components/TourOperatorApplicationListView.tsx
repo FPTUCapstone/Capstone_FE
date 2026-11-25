@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ROUTES } from '@/lib/routes';
 import { formatDisplayDate } from '@/lib/displayDate';
 import { tourOperatorApplicationEn as copy } from '../resources/en';
@@ -69,23 +70,17 @@ export function TourOperatorApplicationListView({ initialApplications }: TourOpe
   return (
     <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm md:p-8">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
-                <span className="material-symbols-outlined text-[14px]">{'assignment_ind'}</span>
-                <span>{copy.list.eyebrow}</span>
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                {copy.list.title}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
-                {copy.list.subtitle}
-              </p>
-            </div>
-          </div>
-        </header>
+        <PageHeader
+          className="mb-6"
+          eyebrow={
+            <>
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">{'assignment_ind'}</span>
+              <span>{copy.list.eyebrow}</span>
+            </>
+          }
+          title={copy.list.title}
+          description={copy.list.subtitle}
+        />
 
         {/* Filters and Controls */}
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#DCE2DD] bg-[#FFFFFF] p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">

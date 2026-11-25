@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ROUTES } from '@/lib/routes';
 
 import {
@@ -283,33 +284,28 @@ export function StatisticalReportsView({
         {liveAnnouncement}
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:px-8 md:py-10">
-        {/* Top Page Header */}
-        <header className="mb-4 rounded-2xl border border-[#5B6E69] bg-[#103B39] px-5 py-4 text-white shadow-md sm:px-6 sm:py-5">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#71f8e4] uppercase">
-                <span className="h-2 w-2 rounded-full bg-[#71f8e4]" aria-hidden="true" />
-                <span>{copy.header.eyebrow}</span>
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                {copy.header.title}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#d1e4ff]">
-                {copy.header.subtitle}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-xl border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-[#d1e4ff]">
+      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:px-8 md:py-6">
+        <PageHeader
+          className="mb-5"
+          eyebrow={
+            <>
+              <span className="h-2 w-2 rounded-full bg-[#174B4A]" aria-hidden="true" />
+              <span>{copy.header.eyebrow}</span>
+            </>
+          }
+          title={copy.header.title}
+          description={copy.header.subtitle}
+          actions={
+            <>
+              <span className="rounded-full border border-[#DCE2DD] bg-white px-3 py-1 text-xs font-semibold text-[#5B6E69]">
                 {copy.header.timezoneBadge}
               </span>
-              <span className="rounded-xl border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-[#71f8e4]">
+              <span className="rounded-full border border-[#CBE0D4] bg-[#E8F0EA] px-3 py-1 text-xs font-bold text-[#103B39]">
                 {copy.header.currencyBadge}
               </span>
-            </div>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         {/* Criteria Form Panel */}
         <section

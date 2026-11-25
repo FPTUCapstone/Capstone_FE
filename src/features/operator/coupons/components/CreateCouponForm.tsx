@@ -206,15 +206,14 @@ export function CreateCouponForm() {
   const inputClass = 'mt-1.5 w-full rounded-lg bg-[#F7F5EF] px-3.5 py-2.5 text-sm text-[#1C2928] outline-none ring-1 ring-transparent transition placeholder:text-[#5B6E69] focus:bg-white focus:ring-[#174B4A]';
   const fieldErrorsForDiscount = Object.entries(fieldErrors).filter(([key]) => ['discountValue', 'maxDiscountAmount', 'minOrderAmount'].includes(key));
 
-  return <form ref={formRef} onSubmit={submit} className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-[#DCE2DD] bg-white shadow-[0_24px_72px_rgba(0,21,42,0.12)]" noValidate>
-    <header className="relative overflow-hidden bg-[#103B39] px-5 py-6 text-white sm:px-8 sm:py-7">
-      <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#174B4A]/30 blur-2xl" aria-hidden="true" />
-      <div className="relative flex gap-3.5">
-        <span className="material-symbols-outlined flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#174B4A]/35 text-[24px] text-[#9ff2e2]" aria-hidden="true">confirmation_number</span>
+  return <form ref={formRef} onSubmit={submit} className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-[#DCE2DD] bg-white shadow-xs" noValidate>
+    <header className="border-b border-[#DCE2DD] bg-[#F7F5EF]/60 px-5 py-4 sm:px-8 sm:py-5">
+      <div className="flex items-start gap-3">
+        <span className="material-symbols-outlined flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8F0EA] text-[22px] text-[#103B39]" aria-hidden="true">confirmation_number</span>
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9ff2e2]">Partner promotion</p>
-          <h2 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Create a new promotional coupon</h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-[#d1e4ff]">Set a clear discount rule for your approved tours. Customers can only use it during the period you publish.</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#174B4A]">Partner promotion</p>
+          <h2 className="mt-0.5 text-lg font-extrabold tracking-tight text-[#1C2928] sm:text-xl">Create a new promotional coupon</h2>
+          <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#5B6E69] sm:text-sm">Set a clear discount rule for your approved tours. Customers can only use it during the period you publish.</p>
         </div>
       </div>
     </header>
