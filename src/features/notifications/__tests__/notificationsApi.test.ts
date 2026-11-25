@@ -69,6 +69,20 @@ describe('Notifications API', () => {
     );
   });
 
+  it('uses the HttpOnly console session without attaching the public bearer', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ items: [], nextBeforeId: null }), { status: 200 })
+    );
+
+    await getNotificationInbox({ consoleSessionKey: 19 });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin/notifications?limit=20',
+      expect.objectContaining({ method: 'GET', headers: expect.not.objectContaining({ Authorization: expect.anything() }) })
+    );
+    expect(fetchSpy.mock.calls[0][1]?.headers).toMatchObject({ 'X-Notification-Session': '19' });
+  });
+
   it('throws NotificationsApiError with AUTH_REQUIRED when no access token is present', async () => {
     vi.spyOn(AuthStorage, 'getAccessToken').mockReturnValue(null);
     await expect(getNotificationInbox()).rejects.toThrow(NotificationsApiError);
@@ -82,6 +96,16 @@ describe('Notifications API', () => {
 
     await expect(getNotificationInbox()).rejects.toThrow(NotificationsApiError);
     expect(clearSpy).toHaveBeenCalled();
+  });
+
+  it('preserves a new Web session when the previous bearer gets a late 401', async () => {
+    const token = vi.mocked(AuthStorage.getAccessToken);
+    token.mockReturnValueOnce('previous-token').mockReturnValue('new-token');
+    const clearSpy = vi.spyOn(AuthStorage, 'clear').mockImplementation(() => {});
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 401 }));
+
+    await expect(getNotificationInbox()).rejects.toThrow(NotificationsApiError);
+    expect(clearSpy).not.toHaveBeenCalled();
   });
 
   it('throws NotificationsApiError on 403', async () => {

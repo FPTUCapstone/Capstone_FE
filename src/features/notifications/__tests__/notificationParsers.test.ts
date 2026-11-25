@@ -32,8 +32,13 @@ describe('parseNotificationInboxItem', () => {
     expect(() => parseNotificationInboxItem({ ...mockItem, id: -1 })).toThrow(NotificationParseError);
   });
 
-  it('throws NotificationParseError when title is missing', () => {
-    expect(() => parseNotificationInboxItem({ ...mockItem, title: '' })).toThrow(NotificationParseError);
+  it('shows legacy rows whose saved title and body are null', () => {
+    const result = parseNotificationInboxItem({ ...mockItem, title: null, body: null });
+    expect(result).toMatchObject({ title: 'Thông báo', body: '' });
+  });
+
+  it('throws NotificationParseError when title has an invalid type', () => {
+    expect(() => parseNotificationInboxItem({ ...mockItem, title: 17 })).toThrow(NotificationParseError);
   });
 
   it('throws NotificationParseError when createdAtUtc is not a valid date', () => {

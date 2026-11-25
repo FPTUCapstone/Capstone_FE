@@ -36,11 +36,11 @@ export function parseNotificationInboxItem(data: unknown): NotificationInboxItem
   if (typeof type !== 'string' || !type.trim()) {
     throw new NotificationParseError('type must be a non-empty string.');
   }
-  if (typeof title !== 'string' || !title.trim()) {
-    throw new NotificationParseError('title must be a non-empty string.');
+  if (title !== null && typeof title !== 'string') {
+    throw new NotificationParseError('title must be a string or null.');
   }
-  if (typeof body !== 'string') {
-    throw new NotificationParseError('body must be a string.');
+  if (body !== null && typeof body !== 'string') {
+    throw new NotificationParseError('body must be a string or null.');
   }
   if (relatedEntityType !== null && typeof relatedEntityType !== 'string') {
     throw new NotificationParseError('relatedEntityType must be a string or null.');
@@ -58,8 +58,8 @@ export function parseNotificationInboxItem(data: unknown): NotificationInboxItem
   return {
     id,
     type,
-    title,
-    body,
+    title: title?.trim() || 'Thông báo',
+    body: body ?? '',
     relatedEntityType: relatedEntityType ?? null,
     relatedEntityId: relatedEntityId ?? null,
     createdAtUtc,
