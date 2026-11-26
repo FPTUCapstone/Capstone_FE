@@ -596,7 +596,7 @@ describe('reviewApi Service (REVIEW-4, REVIEW-5, REVIEW-6, REVIEW-8, REVIEW-9)',
       expect(result.isDemo).toBe(true);
       expect(result.reviewId).toBeDefined();
       expect(result.message).toBe(tripReviewEn.tripReview.demoSubmitSuccess);
-      expect(result.message).toContain('DEMO Preview');
+      expect(result.message).toContain('Chế độ xem thử');
     });
   });
 });

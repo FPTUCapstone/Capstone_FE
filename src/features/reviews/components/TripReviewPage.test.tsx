@@ -153,7 +153,7 @@ describe('TripReviewPage Eligibility (REVIEW-1, CR-09)', () => {
         screen.getByText(tripReviewEn.reviewPage.pendingTitle)
       ).toBeDefined();
       expect(
-        screen.getByText(/Trip history service is pending backend integration/i)
+        screen.getByText(tripReviewEn.bff.tripHistoryPendingDetail)
       ).toBeDefined();
     });
   });
@@ -174,7 +174,7 @@ describe('TripReviewPage Eligibility (REVIEW-1, CR-09)', () => {
         screen.getByText(tripReviewEn.reviewPage.networkErrorTitle)
       ).toBeDefined();
       expect(
-        screen.getByText(/TripMate is temporarily unable to process your request/i)
+        screen.getByText(tripReviewEn.errors.systemError)
       ).toBeDefined();
     });
   });

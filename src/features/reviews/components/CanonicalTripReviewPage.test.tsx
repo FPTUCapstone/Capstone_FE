@@ -45,12 +45,12 @@ describe('CanonicalTripReviewPage', () => {
   it('offers star rating and Cancel, then returns to Trip History after create', async () => {
     render(<CanonicalTripReviewPage reference={reference} />);
     await screen.findByText('Hoi An');
-    expect(screen.getByRole('link', { name: 'Cancel' }).getAttribute('href')).toBe('/account/trips');
-    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
-    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
-    expect(await screen.findByText('Review published. Returning to Trip History…')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Hủy' }).getAttribute('href')).toBe('/account/trips');
+    fireEvent.click(screen.getByRole('radio', { name: '5 sao' }));
+    fireEvent.change(screen.getByLabelText('Tiêu đề đánh giá'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Chia sẻ trải nghiệm'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đánh giá' }));
+    expect(await screen.findByText('Đã đăng đánh giá. Đang quay lại Lịch sử chuyến đi…')).toBeTruthy();
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/account/trips'));
   });
 
@@ -62,12 +62,12 @@ describe('CanonicalTripReviewPage', () => {
     });
     render(<CanonicalTripReviewPage reference={reference} />);
     await screen.findByText('Hoi An');
-    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
-    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
-    expect(await screen.findByText('A review already exists. The existing review is shown below.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Update review' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: '5 sao' }));
+    fireEvent.change(screen.getByLabelText('Tiêu đề đánh giá'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Chia sẻ trải nghiệm'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đánh giá' }));
+    expect(await screen.findByText('Đánh giá đã tồn tại. Nội dung đánh giá hiện tại được hiển thị bên dưới.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cập nhật đánh giá' })).toBeTruthy();
     expect(mocks.createReview).toHaveBeenCalledTimes(1);
     expect(mocks.getReviewContext).toHaveBeenCalledTimes(2);
     expect(mocks.push).not.toHaveBeenCalled();
@@ -80,12 +80,12 @@ describe('CanonicalTripReviewPage', () => {
     );
     render(<CanonicalTripReviewPage reference={reference} />);
     await screen.findByText('Hoi An');
-    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
-    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
-    expect(await screen.findByText('The existing review could not be loaded. Please try again.')).toBeTruthy();
-    expect(screen.queryByText('A review already exists. The existing review is shown below.')).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: '5 sao' }));
+    fireEvent.change(screen.getByLabelText('Tiêu đề đánh giá'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Chia sẻ trải nghiệm'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đánh giá' }));
+    expect(await screen.findByText('Không thể tải đánh giá hiện có. Vui lòng thử lại.')).toBeTruthy();
+    expect(screen.queryByText('Đánh giá đã tồn tại. Nội dung đánh giá hiện tại được hiển thị bên dưới.')).toBeNull();
     expect(screen.queryByText('Hoi An')).toBeNull();
     expect(mocks.createReview).toHaveBeenCalledTimes(1);
     expect(mocks.getReviewContext).toHaveBeenCalledTimes(2);
@@ -100,12 +100,12 @@ describe('CanonicalTripReviewPage', () => {
     });
     render(<CanonicalTripReviewPage reference={reference} />);
     await screen.findByText('Hoi An');
-    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
-    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
-    expect(await screen.findByText('The existing review could not be loaded. Please try again.')).toBeTruthy();
-    expect(screen.queryByText('A review already exists. The existing review is shown below.')).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: '5 sao' }));
+    fireEvent.change(screen.getByLabelText('Tiêu đề đánh giá'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Chia sẻ trải nghiệm'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đánh giá' }));
+    expect(await screen.findByText('Không thể tải đánh giá hiện có. Vui lòng thử lại.')).toBeTruthy();
+    expect(screen.queryByText('Đánh giá đã tồn tại. Nội dung đánh giá hiện tại được hiển thị bên dưới.')).toBeNull();
     expect(screen.queryByText('Hoi An')).toBeNull();
     expect(mocks.createReview).toHaveBeenCalledTimes(1);
     expect(mocks.getReviewContext).toHaveBeenCalledTimes(2);
@@ -118,24 +118,24 @@ describe('CanonicalTripReviewPage', () => {
     });
     mocks.updateReview.mockResolvedValue(existingReview);
     render(<CanonicalTripReviewPage reference={reference} />);
-    await screen.findByRole('button', { name: 'Update review' });
-    fireEvent.click(screen.getByRole('button', { name: 'Update review' }));
-    expect(await screen.findByText('Review updated.')).toBeTruthy();
+    await screen.findByRole('button', { name: 'Cập nhật đánh giá' });
+    fireEvent.click(screen.getByRole('button', { name: 'Cập nhật đánh giá' }));
+    expect(await screen.findByText('Đã cập nhật đánh giá.')).toBeTruthy();
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it.each([
-    ['trip_review.stale_version', 'This review changed elsewhere. Reload it before saving again.'],
-    ['trip_review.policy_rejected', 'The review was rejected by the content policy.'],
-    ['trip_review.policy_unavailable', 'Content screening is temporarily unavailable. Please try again.'],
+    ['trip_review.stale_version', 'Đánh giá này vừa được cập nhật ở nơi khác. Vui lòng tải lại trước khi lưu.'],
+    ['trip_review.policy_rejected', 'Nội dung đánh giá vi phạm chính sách cộng đồng và không thể đăng.'],
+    ['trip_review.policy_unavailable', 'Hệ thống kiểm duyệt nội dung tạm thời gián đoạn. Vui lòng thử lại.'],
   ])('renders safe copy for %s without navigation', async (code, copy) => {
     mocks.createReview.mockRejectedValue(new CanonicalReviewApiError(409, code));
     render(<CanonicalTripReviewPage reference={reference} />);
     await screen.findByText('Hoi An');
-    fireEvent.click(screen.getByRole('radio', { name: '5 stars' }));
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Great' } });
-    fireEvent.change(screen.getByLabelText('Review'), { target: { value: 'Excellent' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Publish review' }));
+    fireEvent.click(screen.getByRole('radio', { name: '5 sao' }));
+    fireEvent.change(screen.getByLabelText('Tiêu đề đánh giá'), { target: { value: 'Great' } });
+    fireEvent.change(screen.getByLabelText('Chia sẻ trải nghiệm'), { target: { value: 'Excellent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đánh giá' }));
     expect(await screen.findByText(copy)).toBeTruthy();
     expect(screen.queryByText(code)).toBeNull();
     expect(mocks.push).not.toHaveBeenCalled();
@@ -146,9 +146,9 @@ describe('CanonicalTripReviewPage', () => {
       ...emptyContext, existingReviewKind: 'new', review: existingReview, canSubmit: false, editableFields: [],
     });
     render(<CanonicalTripReviewPage reference={reference} />);
-    expect(await screen.findByText('The seven-day edit window has expired. This review is read-only.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Update review' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Cancel' }).getAttribute('href')).toBe('/account/trips');
+    expect(await screen.findByText('Đã hết thời hạn 7 ngày chỉnh sửa. Đánh giá này hiện chỉ có thể xem.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Cập nhật đánh giá' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Hủy' }).getAttribute('href')).toBe('/account/trips');
     expect(mocks.createReview).not.toHaveBeenCalled();
     expect(mocks.updateReview).not.toHaveBeenCalled();
   });

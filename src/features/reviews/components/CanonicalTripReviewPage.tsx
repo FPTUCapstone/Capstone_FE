@@ -12,8 +12,16 @@ import { canonicalReviewMessage } from '../resources/canonicalReviewMessages';
 import { isPositiveInt64 } from '../types/reviewableRecordId';
 
 const MAX_FILE_BYTES = 5_000_000;
-const DUPLICATE_RECOVERY_ERROR = 'The existing review could not be loaded. Please try again.';
+const DUPLICATE_RECOVERY_ERROR = 'Không thể tải đánh giá hiện có. Vui lòng thử lại.';
 const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+const RATING_LABELS: Record<number, string> = {
+  1: '1/5 · Không hài lòng',
+  2: '2/5 · Cần cải thiện',
+  3: '3/5 · Tạm ổn',
+  4: '4/5 · Rất hài lòng',
+  5: '5/5 · Tuyệt vời',
+};
 
 function hasUsableRecoveredReview(value: TripReviewContext, reference: ReviewableRecordRef): boolean {
   const review = value?.review;
@@ -75,7 +83,7 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (rating < 1 || rating > 5 || !title.trim() || !content.trim()) {
-      setMessage('Please provide a rating, title, and review.'); return;
+      setMessage('Vui lòng chọn số sao, nhập tiêu đề và nội dung đánh giá.'); return;
     }
     setBusy(true); setMessage(null);
     try {
@@ -83,9 +91,9 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
         version: current?.version };
       await (current ? updateReview(reference, input) : createReview(reference, input));
       setFiles([]);
-      if (current) { await load(); setMessage('Review updated.'); }
+      if (current) { await load(); setMessage('Đã cập nhật đánh giá.'); }
       else {
-        setMessage('Review published. Returning to Trip History…');
+        setMessage('Đã đăng đánh giá. Đang quay lại Lịch sử chuyến đi…');
         window.setTimeout(() => router.push(ROUTES.account.trips), 800);
       }
     } catch (error) {
@@ -106,81 +114,192 @@ export function CanonicalTripReviewPage({ reference }: { reference: ReviewableRe
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="en">
-      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
+      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
+        <nav aria-label="Đường dẫn điều hướng" className="mb-5 flex items-center gap-2 text-xs text-[#5B6E69]">
           <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
-            Home
+            Trang chủ
           </Link>
           <span aria-hidden="true">/</span>
           <Link href={ROUTES.account.trips} className="hover:text-[#174B4A] hover:underline">
-            My Trips
+            Lịch sử chuyến đi
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-[#1C2928]">Trip Review</span>
+          <span className="font-semibold text-[#1C2928]">Đánh giá chuyến đi</span>
         </nav>
 
         <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <span className="rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#174B4A]">
-              UC-33
-            </span>
-            <span className="text-xs font-semibold text-slate-500">
-              Review &amp; Rating
-            </span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-[#1C2928] sm:text-3xl">Trip review</h1>
-          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Share your travel experience to help future travelers and improve services.
+          <h1 className="text-2xl font-bold tracking-tight text-[#1C2928] sm:text-3xl">
+            Đánh giá chuyến đi
+          </h1>
+          <p className="mt-1 text-sm text-[#5B6E69]">
+            Chia sẻ trải nghiệm thực tế của bạn để giúp du khách khác chọn lựa tốt hơn.
           </p>
         </div>
 
-        <Link href={ROUTES.account.trips} className="inline-flex items-center gap-1 text-xs font-bold text-[#174B4A] hover:underline">
-          ← Back to trip history
+        <Link
+          href={ROUTES.account.trips}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-[#174B4A] hover:underline"
+        >
+          ← Quay lại Lịch sử chuyến đi
         </Link>
-      {busy && !context ? <p className="mt-6" role="status">Loading review…</p> : null}
-      {message ? <p className="mt-4 rounded-xl border bg-white p-3 text-sm" role="status">{message}</p> : null}
-      {context ? <>
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="font-extrabold">{context.summary?.name ?? 'Review subject'}</h2>
-          <p className="mt-1 text-sm text-slate-600">{context.summary?.bookingReference}</p>
-          <p className="text-sm text-slate-600">{context.summary?.departureAtUtc ? formatTripDateTime(context.summary.departureAtUtc) : ''}</p>
-        </section>
-        {context.existingReviewKind === 'legacy' ? <p className="mt-5 rounded-xl bg-amber-50 p-4">This legacy review is read-only.</p>
-        : !current && !context.canSubmit ? <p className="mt-5 rounded-xl bg-amber-50 p-4">Review unavailable: {context.submitUnavailableReason}</p>
-        : <form onSubmit={submit} className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-          {readOnly ? <p className="rounded-lg bg-slate-100 p-3 text-sm">The seven-day edit window has expired. This review is read-only.</p> : null}
-          <fieldset disabled={readOnly || busy} className="space-y-4">
-            <legend className="sr-only">Review details</legend>
-            <fieldset><legend className="block text-sm font-bold">Rating</legend>
-              <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Rating">
-                {[1,2,3,4,5].map(v => <button key={v} type="button" role="radio" aria-checked={rating === v}
-                  aria-label={`${v} star${v === 1 ? '' : 's'}`} onClick={() => setRating(v)}
-                  className={`text-3xl ${v <= rating ? 'text-amber-500' : 'text-slate-300'}`}>★</button>)}
+
+        {busy && !context ? (
+          <p className="mt-6 text-sm text-[#5B6E69]" role="status">
+            Đang tải thông tin đánh giá…
+          </p>
+        ) : null}
+
+        {message ? (
+          <p
+            className="mt-4 rounded-xl border border-[#F2D8B3] bg-[#FEF3E2] px-4 py-3 text-sm font-medium text-[#8F5419]"
+            role="status"
+          >
+            {message}
+          </p>
+        ) : null}
+
+        {context ? (
+          <>
+            <section className="mt-5 rounded-2xl border border-[#DCE2DD] bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="font-semibold text-[#995436]">Tour đã hoàn thành</span>
+                <span className="text-[#5B6E69]">
+                  {context.summary?.departureAtUtc ? formatTripDateTime(context.summary.departureAtUtc) : ''}
+                </span>
               </div>
-            </fieldset>
-            <label className="block text-sm font-bold">Title
-              <input value={title} onChange={e => setTitle(e.target.value)} maxLength={200} required className="mt-1 block w-full rounded-lg border p-2" />
-            </label>
-            <label className="block text-sm font-bold">Review
-              <textarea value={content} onChange={e => setContent(e.target.value)} maxLength={1000} required rows={6} className="mt-1 block w-full rounded-lg border p-2" />
-            </label>
-            {!current ? <label className="block text-sm font-bold">Photos (optional, up to 5)
-              <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={e => {
-                const selected = Array.from(e.target.files ?? []);
-                const valid = selected.length <= 5 && selected.every(file => file.size > 0 && file.size <= MAX_FILE_BYTES && allowedTypes.has(file.type));
-                if (!valid) { setMessage('Select up to five JPEG, PNG, or WebP images, each no larger than 5,000,000 bytes.'); e.target.value = ''; return; }
-                setFiles(selected); setMessage(null);
-              }} className="mt-1 block w-full text-sm" />
-            </label> : null}
-            <label className="flex gap-2 text-sm"><input type="checkbox" checked={publishDisplayName} onChange={e => setPublishDisplayName(e.target.checked)} /> Publish my display name</label>
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Link href={ROUTES.account.trips} className="inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-3 font-bold">Cancel</Link>
-              {!readOnly ? <button className="rounded-xl bg-[#174B4A] px-4 py-3 font-bold text-white" type="submit">{current ? 'Update review' : 'Publish review'}</button> : null}
-            </div>
-          </fieldset>
-        </form>}
-      </> : null}
+              <h2 className="mt-1.5 text-base font-bold text-[#1C2928]">
+                {context.summary?.name ?? 'Chuyến đi'}
+              </h2>
+              {context.summary?.bookingReference ? (
+                <p className="mt-1 text-xs text-[#5B6E69]">{context.summary.bookingReference}</p>
+              ) : null}
+            </section>
+
+            {context.existingReviewKind === 'legacy' ? (
+              <p className="mt-5 rounded-xl border border-[#F2D8B3] bg-[#FEF3E2] p-4 text-sm text-[#8F5419]">
+                Đánh giá cũ này hiện chỉ có thể xem.
+              </p>
+            ) : !current && !context.canSubmit ? (
+              <p className="mt-5 rounded-xl border border-[#F2D8B3] bg-[#FEF3E2] p-4 text-sm text-[#8F5419]">
+                Chưa thể đánh giá: {context.submitUnavailableReason}
+              </p>
+            ) : (
+              <form onSubmit={submit} className="mt-4 space-y-5 rounded-2xl border border-[#DCE2DD] bg-white p-6">
+                {readOnly ? (
+                  <p className="rounded-xl border border-[#EDEAE1] bg-[#F7F5EF] px-4 py-3 text-xs font-medium text-[#5B6E69]">
+                    Đã hết thời hạn 7 ngày chỉnh sửa. Đánh giá này hiện chỉ có thể xem.
+                  </p>
+                ) : null}
+
+                <fieldset disabled={readOnly || busy} className="space-y-5">
+                  <legend className="sr-only">Nội dung đánh giá</legend>
+
+                  <fieldset>
+                    <legend className="block text-xs font-semibold text-[#1C2928]">
+                      Mức độ hài lòng của bạn
+                    </legend>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Đánh giá">
+                      {[1, 2, 3, 4, 5].map(v => (
+                        <button
+                          key={v}
+                          type="button"
+                          role="radio"
+                          aria-checked={rating === v}
+                          aria-label={`${v} sao`}
+                          onClick={() => setRating(v)}
+                          className={`text-3xl transition ${v <= rating ? 'text-[#D97706]' : 'text-[#DCE2DD] hover:text-[#D97706]/60'}`}
+                        >
+                          ★
+                        </button>
+                      ))}
+                      {rating > 0 && (
+                        <span className="ml-2 text-xs font-semibold text-[#1C2928]">
+                          {RATING_LABELS[rating]}
+                        </span>
+                      )}
+                    </div>
+                  </fieldset>
+
+                  <label className="block text-xs font-semibold text-[#1C2928]">
+                    Tiêu đề đánh giá
+                    <input
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      maxLength={200}
+                      required
+                      placeholder="Tóm tắt ngắn gọn trải nghiệm của bạn"
+                      className="mt-1.5 block w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/50 px-3.5 py-2.5 text-sm font-normal text-[#1C2928] focus:border-[#174B4A] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/15"
+                    />
+                  </label>
+
+                  <label className="block text-xs font-semibold text-[#1C2928]">
+                    Chia sẻ trải nghiệm
+                    <textarea
+                      value={content}
+                      onChange={e => setContent(e.target.value)}
+                      maxLength={1000}
+                      required
+                      rows={5}
+                      placeholder="Chia sẻ cảm nhận về lịch trình, hướng dẫn viên, dịch vụ…"
+                      className="mt-1.5 block w-full resize-none rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/50 px-3.5 py-2.5 text-sm font-normal leading-relaxed text-[#1C2928] focus:border-[#174B4A] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/15"
+                    />
+                  </label>
+
+                  {!current ? (
+                    <label className="block text-xs font-semibold text-[#1C2928]">
+                      Ảnh thực tế (không bắt buộc, tối đa 5 ảnh)
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={e => {
+                          const selected = Array.from(e.target.files ?? []);
+                          const valid = selected.length <= 5 && selected.every(file => file.size > 0 && file.size <= MAX_FILE_BYTES && allowedTypes.has(file.type));
+                          if (!valid) {
+                            setMessage('Chỉ chọn tối đa 5 ảnh định dạng JPEG, PNG hoặc WebP, mỗi ảnh không quá 5 MB.');
+                            e.target.value = '';
+                            return;
+                          }
+                          setFiles(selected);
+                          setMessage(null);
+                        }}
+                        className="mt-1.5 block w-full rounded-xl border border-dashed border-[#DCE2DD] bg-[#F7F5EF]/50 p-3 text-xs font-normal text-[#5B6E69] file:mr-3 file:rounded-lg file:border-0 file:bg-[#E8F0EA] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#174B4A]"
+                      />
+                    </label>
+                  ) : null}
+
+                  <label className="flex items-center gap-2.5 border-t border-[#EDEAE1] pt-4 text-xs font-medium text-[#1C2928]">
+                    <input
+                      type="checkbox"
+                      checked={publishDisplayName}
+                      onChange={e => setPublishDisplayName(e.target.checked)}
+                      className="h-4 w-4 rounded border-[#DCE2DD] accent-[#174B4A]"
+                    />
+                    <span>Hiển thị tên của bạn trên đánh giá</span>
+                  </label>
+
+                  <div className="flex flex-col-reverse gap-2.5 border-t border-[#EDEAE1] pt-4 sm:flex-row sm:justify-end">
+                    <Link
+                      href={ROUTES.account.trips}
+                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF]"
+                    >
+                      Hủy
+                    </Link>
+                    {!readOnly ? (
+                      <button
+                        className="rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#103B39] disabled:opacity-50"
+                        type="submit"
+                      >
+                        {current ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}
+                      </button>
+                    ) : null}
+                  </div>
+                </fieldset>
+              </form>
+            )}
+          </>
+        ) : null}
       </main>
     </div>
   );
