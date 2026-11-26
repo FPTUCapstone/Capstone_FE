@@ -44,6 +44,9 @@ export const tourModerationEn = {
     emptyTitle: 'No pending tours match the applied criteria.',
     emptyBody: 'Adjust the search and submit again, or reset the search.',
     totalCount: (count: number) => (count === 1 ? '1 pending tour post' : `${count} pending tour posts`),
+    /** TM-82 §5.6: row subtitle distinguishing a draft-version change from a first-time submission in the combined queue. */
+    draftVersionLabel: 'Draft version of a published tour',
+    newSubmissionLabel: 'New tour submission',
   },
   pagination: {
     label: 'Pending tour posts pages',
@@ -180,5 +183,39 @@ export const tourModerationEn = {
   format: {
     currency: (amount: string) => `${amount} VND`,
     unavailable: 'Not available',
+  },
+  /** TM-82 §5.4: Staff's review of a draft version of a published tour (no 5-criterion checklist). */
+  draftVersion: {
+    eyebrow: 'Draft version review',
+    loading: 'Loading the draft version…',
+    notFoundTitle: 'Draft version not found',
+    notFoundBody: 'This draft version no longer exists, or has already been decided.',
+    diffTitle: 'Proposed changes',
+    diffHint: 'Comparing the live tour against the operator’s proposed changes.',
+    liveColumnLabel: 'Live tour',
+    proposedColumnLabel: 'Proposed',
+    schedulesTitle: 'Departure schedules',
+    newScheduleLabel: 'New schedule (not yet live)',
+    capacityLabel: 'Capacity',
+    scheduleInconsistencyWarning: 'This live schedule is missing from the proposal. Review before deciding.',
+    fields: {
+      title: 'Title',
+      description: 'Description',
+      basePrice: 'Price',
+      inclusions: 'Included',
+      exclusions: 'Excluded',
+      destinations: 'Destinations',
+    },
+    decision: {
+      title: 'Decision',
+      approveButton: 'Approve',
+      rejectButton: 'Reject',
+      approveDialogTitle: 'Approve this draft version?',
+      approveDialogDescription: 'The proposed changes will be applied to the live tour immediately. The tour’s own status does not change.',
+      approvedResult: 'Draft version approved and applied to the live tour.',
+      rejectedResult: 'Draft version rejected. The reason was recorded.',
+      submitting: 'Saving your decision…',
+      staleDecision: 'This draft version was already decided or withdrawn. Refresh the queue to continue.',
+    },
   },
 } as const;

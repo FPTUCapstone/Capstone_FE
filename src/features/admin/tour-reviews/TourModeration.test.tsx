@@ -68,7 +68,7 @@ describe('Tour moderation production boundary (live mode never shows fixtures)',
     for (const tour of DEMO_PENDING_TOUR_POSTS) {
       expect(container.textContent).not.toContain(tour.tourName);
     }
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/admin/tours/pending');
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/admin/tours/moderation-queue');
   });
 
   it('requires both the environment flag and the explicit demo parameter to show fixtures', async () => {

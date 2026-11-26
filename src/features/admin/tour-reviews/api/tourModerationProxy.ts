@@ -22,14 +22,15 @@ const CHECKLIST_KEYS = [
   'itineraryFeasibility',
 ] as const;
 const MAX_NOTE_LENGTH = 1000;
-const MAX_REASON_LENGTH = 500;
-const MAX_BODY_BYTES = 8 * 1024;
+/** BR-115: a rejection reason is 1..500 characters, shared by both the first-time-submission and draft-version reject endpoints. */
+export const MAX_REASON_LENGTH = 500;
+export const MAX_BODY_BYTES = 8 * 1024;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const SAFE_ERROR_CODE = /^[a-z0-9._-]{1,100}$/i;
 
-type SessionCheck = { ok: true; token: string } | { ok: false; response: Response };
+export type SessionCheck = { ok: true; token: string } | { ok: false; response: Response };
 
-function safeProblem(value: unknown, fallback: string): { title: string; errorCode?: string } {
+export function safeProblem(value: unknown, fallback: string): { title: string; errorCode?: string } {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return { title: fallback };
   const body = value as Record<string, unknown>;
   const title = typeof body.title === 'string' && body.title.length <= 500 ? body.title : fallback;
@@ -39,7 +40,7 @@ function safeProblem(value: unknown, fallback: string): { title: string; errorCo
 }
 
 /** Tour moderation is a Staff function (UC-60/61); an Administrator session is refused. */
-async function requireStaff(): Promise<SessionCheck> {
+export async function requireStaff(): Promise<SessionCheck> {
   const store = await cookies();
   const token = store.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
   const session = token ? verifyAdminSessionFromCookies(store) : null;
@@ -52,7 +53,7 @@ async function requireStaff(): Promise<SessionCheck> {
   return { ok: true, token };
 }
 
-async function forward(
+export async function forward(
   backendPath: string,
   token: string,
   init: { method: 'GET' | 'POST'; body?: string; signal?: AbortSignal },
@@ -88,9 +89,12 @@ async function forward(
   }
 }
 
-function isValidTourId(value: string): boolean {
+/** A positive integer path id, shared across every tour/pending-change id this feature validates. */
+export function isValidPositiveIntegerId(value: string): boolean {
   return POSITIVE_INTEGER.test(value) && Number.isSafeInteger(Number(value));
 }
+
+const isValidTourId = isValidPositiveIntegerId;
 
 /**
  * Screen 13: the Staff review queue (backend `GET /api/v1/admin/tours`). Only `keyword` and `pageNumber` are
@@ -120,7 +124,7 @@ export async function proxyTourReview(request: Request, tourId: string): Promise
   return forward(`/api/v1/admin/tours/${tourId}/review`, session.token, { method: 'GET', signal: request.signal });
 }
 
-async function readJsonObject(request: Request): Promise<Record<string, unknown> | null> {
+export async function readJsonObject(request: Request): Promise<Record<string, unknown> | null> {
   const declared = Number(request.headers.get('content-length') ?? 0);
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return null;
   try {
