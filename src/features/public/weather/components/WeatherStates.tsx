@@ -3,15 +3,6 @@
 export function WeatherPageSkeleton() {
   return (
     <div className="space-y-5 animate-pulse" aria-label="Đang tải dữ liệu dự báo thời tiết" role="status">
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="h-24 rounded-2xl border border-[#DCE2DD] bg-white/80 p-3.5"
-          />
-        ))}
-      </div>
-
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         <div className="h-80 rounded-3xl bg-[#103B39]/20 lg:col-span-7" />
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:col-span-5">

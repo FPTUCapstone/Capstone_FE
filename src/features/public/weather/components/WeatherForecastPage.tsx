@@ -1,37 +1,48 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
+import { AuthStorage } from '@/features/auth/session/authSession';
 import { PublicFooter } from '@/features/public/landing/components/PublicFooter';
 import { ROUTES } from '@/lib/routes';
 
+import { SUGGESTED_LOCATIONS } from '../data/suggestedLocations';
 import {
-  DEFAULT_WEATHER_LOCATION_ID,
-  resolveWeatherLocation,
-} from '../data/mockWeatherFixtures';
-import {
+  getUpcomingTripWeather,
   getWeatherForecast,
   getWeatherLocationPreviews,
   WeatherForecastApiError,
 } from '../services/weatherForecastApi';
 import type {
+  UpcomingTripWeatherDto,
   WeatherForecastResponseDto,
-  WeatherLocationPreview,
+  WeatherLocation,
 } from '../types/weatherForecast';
 import {
   formatDailyLabel,
   formatLocalTime,
   getLocalDateKey,
 } from '../utils/weatherFormat';
+import {
+  buildWeatherLocationQuery,
+  parseWeatherLocationFromSearchParams,
+  weatherCoordinateKey,
+} from '../utils/weatherLocation';
 import { CurrentWeatherHero } from './CurrentWeatherHero';
 import { DailyForecastList } from './DailyForecastList';
 import { HourlyForecastSection } from './HourlyForecastSection';
+import { UpcomingTripWeatherSection } from './UpcomingTripWeatherSection';
+import { WeatherLocationSearch } from './WeatherLocationSearch';
 import { WeatherLocationStrip } from './WeatherLocationStrip';
 import { WeatherMetricsGrid } from './WeatherMetricsGrid';
 import { WeatherErrorState, WeatherPageSkeleton } from './WeatherStates';
+
+const subscribeAuth = (onChange: () => void) => AuthStorage.subscribe(onChange);
+const getAuthSnapshot = () => AuthStorage.getContext();
+const getServerAuthSnapshot = () => null;
 
 type ForecastLoadState =
   | { key: string; status: 'success'; data: WeatherForecastResponseDto }
@@ -40,30 +51,104 @@ type ForecastLoadState =
 export function WeatherForecastPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const locationParam = searchParams.get('location');
-  const activeLocation = useMemo(
-    () => resolveWeatherLocation(locationParam ?? DEFAULT_WEATHER_LOCATION_ID),
-    [locationParam],
+  const authContext = useSyncExternalStore(
+    subscribeAuth,
+    getAuthSnapshot,
+    getServerAuthSnapshot,
   );
+  const travelerUserId = authContext?.role === 'Traveler' ? authContext.userId : null;
+
+  const urlLocation = useMemo(
+    () => parseWeatherLocationFromSearchParams(searchParams),
+    [searchParams],
+  );
+  const urlCoordKey = weatherCoordinateKey(urlLocation);
+
+  const [selectedMetaOverride, setSelectedMetaOverride] = useState<{
+    coordKey: string;
+    location: WeatherLocation;
+  } | null>(null);
+
+  const activeLocation = useMemo(() => {
+    if (
+      selectedMetaOverride &&
+      selectedMetaOverride.coordKey === urlCoordKey &&
+      selectedMetaOverride.location.name === urlLocation.name
+    ) {
+      return selectedMetaOverride.location;
+    }
+    return urlLocation;
+  }, [selectedMetaOverride, urlCoordKey, urlLocation]);
 
   const [refreshTick, setRefreshTick] = useState(0);
+  const [previewRetryTick, setPreviewRetryTick] = useState(0);
   const [forecastState, setForecastState] = useState<ForecastLoadState | null>(null);
-  const [previews, setPreviews] = useState<WeatherLocationPreview[]>([]);
+  const [upcomingTripsState, setUpcomingTripsState] = useState<{
+    userId: number;
+    trips: UpcomingTripWeatherDto[];
+  } | null>(null);
+  const [temperaturesById, setTemperaturesById] = useState<Record<string, number>>({});
   const [selectedDateOverride, setSelectedDateOverride] = useState<{
-    locationId: string;
+    coordKey: string;
     date: string;
   } | null>(null);
 
-  const requestKey = `${activeLocation.id}:${refreshTick}`;
+  const initialActiveIdRef = useRef<string | undefined>(activeLocation.id);
+  const previewsLoadedRef = useRef(false);
+
+  const requestKey = `${urlCoordKey}:${refreshTick}`;
+
+  // Fetch upcoming confirmed tour departures for signed-in Travelers only; errors stay silent.
+  useEffect(() => {
+    if (travelerUserId === null) {
+      return;
+    }
+    const accessToken = AuthStorage.getAccessToken();
+    if (!accessToken) {
+      return;
+    }
+
+    let active = true;
+    const controller = new AbortController();
+
+    getUpcomingTripWeather(accessToken, { signal: controller.signal })
+      .then((trips) => {
+        if (!active) return;
+        setUpcomingTripsState({ userId: travelerUserId, trips });
+      })
+      .catch(() => {
+        // Personal upcoming trips are non-blocking and must never disrupt the public forecast.
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [travelerUserId]);
+
+  const upcomingTrips =
+    travelerUserId !== null && upcomingTripsState?.userId === travelerUserId
+      ? upcomingTripsState.trips
+      : [];
 
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
 
-    getWeatherForecast(activeLocation.id, { signal: controller.signal })
+    getWeatherForecast(
+      { latitude: activeLocation.latitude, longitude: activeLocation.longitude },
+      { signal: controller.signal },
+    )
       .then((data) => {
         if (!active) return;
         setForecastState({ key: requestKey, status: 'success', data });
+        if (activeLocation.id) {
+          const matchedId = activeLocation.id;
+          setTemperaturesById((prev) => ({
+            ...prev,
+            [matchedId]: data.current.temperatureC,
+          }));
+        }
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -79,40 +164,66 @@ export function WeatherForecastPage() {
       active = false;
       controller.abort();
     };
-  }, [activeLocation.id, requestKey]);
+  }, [activeLocation.id, activeLocation.latitude, activeLocation.longitude, requestKey]);
 
+  // Load suggested chip temperatures once on mount (excluding the initial active location to save quota).
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
+    const locationsToFetch = SUGGESTED_LOCATIONS.filter(
+      (loc) => loc.id !== initialActiveIdRef.current,
+    );
 
-    getWeatherLocationPreviews({ signal: controller.signal })
+    getWeatherLocationPreviews({
+      locations: locationsToFetch,
+      signal: controller.signal,
+    })
       .then((items) => {
-        if (!active) return;
-        setPreviews(items);
+        if (!active || items.length === 0) return;
+        previewsLoadedRef.current = true;
+        setTemperaturesById((prev) => {
+          const next = { ...prev };
+          for (const item of items) {
+            if (item.location.id) {
+              next[item.location.id] = item.temperatureC;
+            }
+          }
+          return next;
+        });
       })
       .catch(() => {
-        // Preview strip is non-blocking; ignore background refresh abort/error
+        // Quick-suggestion temperatures are progressive and non-blocking.
       });
 
     return () => {
       active = false;
       controller.abort();
     };
-  }, [refreshTick]);
+  }, [previewRetryTick]);
 
   const handleSelectLocation = useCallback(
-    (nextLocationId: string) => {
-      const resolved = resolveWeatherLocation(nextLocationId);
-      if (resolved.id === activeLocation.id) return;
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('location', resolved.id);
-      router.replace(`${ROUTES.weather}?${params.toString()}`, { scroll: false });
+    (nextLocation: WeatherLocation) => {
+      const nextCoordKey = weatherCoordinateKey(nextLocation);
+      if (nextCoordKey === urlCoordKey && nextLocation.name === activeLocation.name) {
+        return;
+      }
+
+      setSelectedMetaOverride({
+        coordKey: nextCoordKey,
+        location: nextLocation,
+      });
+
+      const query = buildWeatherLocationQuery(nextLocation);
+      router.replace(`${ROUTES.weather}?${query}`, { scroll: false });
     },
-    [activeLocation.id, router, searchParams],
+    [activeLocation.name, router, urlCoordKey],
   );
 
   const handleRefresh = useCallback(() => {
     setRefreshTick((prev) => prev + 1);
+    if (!previewsLoadedRef.current) {
+      setPreviewRetryTick((prev) => prev + 1);
+    }
   }, []);
 
   const currentResult = forecastState?.key === requestKey ? forecastState : null;
@@ -122,13 +233,14 @@ export function WeatherForecastPage() {
       : forecastState?.status === 'success'
         ? forecastState.data
         : null;
-  const isInitialLoading = forecastState === null;
+  const isError = currentResult?.status === 'error';
+  const isLoading = !isError && forecast === null;
   const isRefreshing = currentResult === null && forecast !== null;
 
   const todayDateKey = forecast?.daily[0]?.date ?? '';
   const selectedDate =
     selectedDateOverride &&
-    selectedDateOverride.locationId === activeLocation.id &&
+    selectedDateOverride.coordKey === urlCoordKey &&
     forecast?.daily.some((d) => d.date === selectedDateOverride.date)
       ? selectedDateOverride.date
       : todayDateKey;
@@ -184,7 +296,6 @@ export function WeatherForecastPage() {
   }, [forecast, hourlyByDate, selectedDate, todayDateKey]);
 
   const todaySummary = forecast?.daily[0];
-  const isMockSource = forecast?.source !== 'api';
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F5EF]" lang="vi">
@@ -194,27 +305,8 @@ export function WeatherForecastPage() {
             { label: 'Trang chủ', href: ROUTES.home },
             { label: 'Dự báo thời tiết' },
           ]}
-          title={
-            <>
-              Dự báo thời tiết <span className="text-[#174B4A]">Miền Trung</span>
-            </>
-          }
-          badge={
-            <span
-              data-testid="weather-source-badge"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#CBE0D4] bg-[#E8F0EA] px-2.5 py-0.5 text-xs font-bold text-[#103B39]"
-            >
-              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
-                {isMockSource ? 'science' : 'sensors'}
-              </span>
-              <span>
-                {isMockSource
-                  ? 'Chuẩn Tomorrow.io · Dữ liệu mẫu FE'
-                  : 'Tomorrow.io · Dữ liệu trực tiếp'}
-              </span>
-            </span>
-          }
-          description="Theo dõi thời tiết hiện tại, diễn biến từng giờ và dự báo 5 ngày tới tại các điểm đến Miền Trung để chủ động lên kế hoạch du lịch."
+          title="Dự báo thời tiết"
+          description="Theo dõi thời tiết hiện tại, diễn biến từng giờ và dự báo 5 ngày tới tại mọi địa điểm ở Việt Nam để chủ động lên kế hoạch du lịch."
           actions={
             <>
               <button
@@ -233,7 +325,7 @@ export function WeatherForecastPage() {
                 </span>
                 <span>
                   {forecast
-                    ? `Cập nhật ${formatLocalTime(forecast.fetchedAtUtc, forecast.timeZoneId)}`
+                    ? `Cập nhật lúc ${formatLocalTime(forecast.fetchedAtUtc, forecast.timeZoneId)}`
                     : 'Làm mới'}
                 </span>
               </button>
@@ -252,17 +344,27 @@ export function WeatherForecastPage() {
         />
 
         <div className="mt-5 space-y-5">
-          {previews.length > 0 ? (
+          {/* Personalized Upcoming Tour Warnings & Trip Strip (Traveler only) */}
+          <UpcomingTripWeatherSection
+            trips={upcomingTrips}
+            activeCoordKey={urlCoordKey}
+            onSelectLocation={handleSelectLocation}
+          />
+
+          {/* Quick Suggestions + Vietnam Mapbox Search */}
+          <div className="space-y-3">
             <WeatherLocationStrip
-              previews={previews}
-              selectedLocationId={activeLocation.id}
+              locations={SUGGESTED_LOCATIONS}
+              temperaturesById={temperaturesById}
+              selectedLocationId={activeLocation.id ?? null}
               onSelectLocation={handleSelectLocation}
             />
-          ) : null}
+            <WeatherLocationSearch onSelectLocation={handleSelectLocation} />
+          </div>
 
-          {isInitialLoading ? (
+          {isLoading ? (
             <WeatherPageSkeleton />
-          ) : currentResult?.status === 'error' ? (
+          ) : isError ? (
             <WeatherErrorState message={currentResult.message} onRetry={handleRefresh} />
           ) : forecast ? (
             <>
@@ -270,7 +372,7 @@ export function WeatherForecastPage() {
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
                 <div className="lg:col-span-7">
                   <CurrentWeatherHero
-                    location={forecast.location}
+                    location={activeLocation}
                     current={forecast.current}
                     todaySummary={todaySummary}
                     timeZoneId={forecast.timeZoneId}
@@ -299,7 +401,7 @@ export function WeatherForecastPage() {
                 daily={forecast.daily}
                 selectedDate={selectedDate}
                 onSelectDate={(date) =>
-                  setSelectedDateOverride({ locationId: activeLocation.id, date })
+                  setSelectedDateOverride({ coordKey: urlCoordKey, date })
                 }
                 hourlyAvailableDates={hourlyAvailableDates}
               />
@@ -317,7 +419,7 @@ export function WeatherForecastPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-extrabold text-[#1C2928]">
-                      Sẵn sàng lên lịch trình cho {forecast.location.name}?
+                      Sẵn sàng lên lịch trình cho {activeLocation.name}?
                     </h3>
                     <p className="mt-0.5 text-xs text-[#5B6E69]">
                       Kết hợp dự báo thời tiết theo giờ với bộ lập lịch thông minh của TripMate để chọn điểm tham quan phù hợp.
@@ -325,7 +427,7 @@ export function WeatherForecastPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <Link
                     href={ROUTES.pois}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-3.5 py-2 text-xs font-bold text-[#1C2928] transition hover:border-[#174B4A] hover:bg-[#E8F0EA]"

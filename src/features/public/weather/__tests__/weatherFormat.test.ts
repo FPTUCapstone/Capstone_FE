@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { HourlyForecastPointDto } from '../types/weatherForecast';
 import {
   classifyRainIntensity,
   classifyUvIndex,
@@ -8,7 +9,6 @@ import {
   formatDailyLabel,
   formatDecimalVi,
 } from '../utils/weatherFormat';
-import { buildMockWeatherForecast } from '../data/mockWeatherFixtures';
 
 describe('weatherFormat', () => {
   it('maps Tomorrow.io weather codes and thunderstorm flag accurately', () => {
@@ -54,8 +54,23 @@ describe('weatherFormat', () => {
   });
 
   it('computes a best daylight outdoor window from hourly data', () => {
-    const forecast = buildMockWeatherForecast('danang', new Date('2026-11-25T02:00:00Z'));
-    const best = findBestOutdoorWindow(forecast.hourly.slice(0, 24), forecast.timeZoneId);
+    const startMs = Date.parse('2026-11-25T01:00:00Z'); // 08:00 GMT+7
+    const hourly: HourlyForecastPointDto[] = Array.from({ length: 8 }, (_, idx) => ({
+      startUtc: new Date(startMs + idx * 3600_000).toISOString(),
+      temperatureC: 26 + (idx % 3),
+      apparentTemperatureC: 27 + (idx % 3),
+      rainProbabilityPercent: idx >= 4 ? 70 : 10,
+      rainMmPerHour: idx >= 4 ? 3.5 : 0,
+      uvIndex: 4,
+      windSpeedMps: 3.2,
+      thunderstorm: false,
+      weatherCode: idx >= 4 ? 4001 : 1100,
+      humidityPercent: 72,
+      cloudCoverPercent: 35,
+      visibilityKm: 15,
+    }));
+
+    const best = findBestOutdoorWindow(hourly, 'Asia/Ho_Chi_Minh');
     expect(best).not.toBeNull();
     expect(best?.rangeLabel).toMatch(/^\d{2}:\d{2} – \d{2}:\d{2}$/);
   });
