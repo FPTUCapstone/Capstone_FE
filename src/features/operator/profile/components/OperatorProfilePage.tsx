@@ -9,7 +9,7 @@ import { PartnerWorkspaceLayout } from '@/features/operator/common/components/Pa
 import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { PageHeader } from '@/features/operator/common/components/PageHeader';
 import { getOperatorProfile } from '../services/operatorProfileService';
-import type { OperatorProfileDto } from '../types/operatorProfile';
+import { OPERATOR_PROFILE_MESSAGES, type OperatorProfileDto } from '../types/operatorProfile';
 import { OperatorProfileView } from './OperatorProfileView';
 
 export function OperatorProfilePage() {
@@ -20,12 +20,20 @@ export function OperatorProfilePage() {
   const { status: authStatus, context } = useWebSession();
   const [profile, setProfile] = useState<OperatorProfileDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
+    if (!isDemoRequested && authStatus === 'restoring') {
+      return;
+    }
+
     let isMounted = true;
 
     async function loadProfile() {
+      setLoading(true);
+      setLoadError(null);
       try {
         const result = await getOperatorProfile({
           allowDemo: isDemoRequested,
@@ -37,6 +45,12 @@ export function OperatorProfilePage() {
           setProfile(result.profile);
         }
         setIsDemo(Boolean(result.isDemo));
+      } catch (err) {
+        if (!isMounted) return;
+        setProfile(null);
+        setLoadError(
+          err instanceof Error ? err.message : OPERATOR_PROFILE_MESSAGES.SYSTEM_FAILURE
+        );
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -47,7 +61,7 @@ export function OperatorProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, [isDemoRequested, context?.email]);
+  }, [isDemoRequested, authStatus, context?.email, reloadTick]);
 
   const operatorName = profile?.businessName || context?.fullName;
 
@@ -69,8 +83,16 @@ export function OperatorProfilePage() {
           }
         />
 
-        {context?.currentContractId && <Link href={ROUTES.partner.contract} className="mb-5 inline-flex min-h-11 items-center rounded-xl border border-brand-border bg-white px-4 text-sm font-semibold text-primary">Xem hợp đồng đối tác</Link>}
-        {loading || authStatus === 'restoring' ? (
+        {context?.currentContractId && (
+          <Link
+            href={ROUTES.partner.contract}
+            className="mb-5 inline-flex min-h-11 items-center rounded-xl border border-brand-border bg-white px-4 text-sm font-semibold text-primary"
+          >
+            Xem hợp đồng đối tác
+          </Link>
+        )}
+
+        {loading || (!isDemoRequested && authStatus === 'restoring') ? (
           <div
             role="status"
             aria-label="Đang tải dữ liệu hồ sơ"
@@ -84,6 +106,30 @@ export function OperatorProfilePage() {
               <p className="text-xs font-semibold text-slate-500">
                 Đang tải thông tin hồ sơ doanh nghiệp…
               </p>
+            </div>
+          </div>
+        ) : loadError ? (
+          <div
+            role="alert"
+            className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900 shadow-xs"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-2.5">
+                <span
+                  className="material-symbols-outlined text-[22px] text-rose-600 shrink-0"
+                  aria-hidden="true"
+                >
+                  error
+                </span>
+                <p className="font-semibold">{loadError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReloadTick((prev) => prev + 1)}
+                className="self-start sm:self-auto rounded-xl border border-rose-300 bg-white px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+              >
+                Thử lại
+              </button>
             </div>
           </div>
         ) : profile ? (
