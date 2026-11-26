@@ -337,6 +337,7 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
 
     expect(screen.getByText('v2 · Đã duyệt')).toBeDefined();
     expect(screen.getByText('v1 · Đã lưu trữ')).toBeDefined();
+    expect(screen.getByText(/10\/10\/2026/)).toBeDefined();
     const reviewLink = screen.getByRole('link', { name: 'Xem lại' });
     expect(reviewLink.getAttribute('href')).toBe('/partner/tours/tour-v1/edit');
     expect((screen.getByLabelText(/Tỉ lệ đặt cọc/i) as HTMLInputElement).value).toBe('30');

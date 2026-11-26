@@ -77,6 +77,21 @@ function clearAddDepartureQuery(): void {
   }
 }
 
+function formatVersionTimestamp(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return formatDisplayDate(value.slice(0, 10));
+  }
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed);
+}
+
 export function UpdateTourPackageView({
   initialTour,
   isDemo = false,
@@ -1095,7 +1110,7 @@ export function UpdateTourPackageView({
                         {isCurrent
                           ? 'Phiên bản đang mở'
                           : timestamp
-                            ? formatDisplayDate(timestamp)
+                            ? formatVersionTimestamp(timestamp)
                             : 'Phiên bản trước'}
                       </p>
                       {!isCurrent && item.status === 'Rejected' && item.rejectionReason && (
