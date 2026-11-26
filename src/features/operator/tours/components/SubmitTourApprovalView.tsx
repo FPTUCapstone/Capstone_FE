@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { OperatorTourApiError } from '../services/operatorTourApi';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
-import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
+import { isLivePublishedTour, OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import {
   evaluateTourCompleteness,
   submitTourForApproval,
@@ -39,6 +39,8 @@ export function SubmitTourApprovalView({
   let nonSubmittableReason = '';
   if (tour.status === 'Pending') {
     nonSubmittableReason = 'Gói tour đã ở trạng thái chờ duyệt.';
+  } else if (isLivePublishedTour(tour.status, tour.publishedAtUtc)) {
+    nonSubmittableReason = 'Gói tour đã được xuất bản. Thay đổi cần được lưu thành phiên bản mới.';
   } else if (tour.status === 'Approved') {
     nonSubmittableReason = 'Gói tour đã được phê duyệt. Vui lòng tạo phiên bản nháp mới nếu muốn chỉnh sửa.';
   } else if (tour.status === 'Published') {
@@ -203,7 +205,7 @@ export function SubmitTourApprovalView({
               </p>
             </div>
           </div>
-          <OperatorTourStatusBadge status={tour.status} />
+          <OperatorTourStatusBadge status={tour.status} publishedAtUtc={tour.publishedAtUtc} />
         </div>
       </div>
 

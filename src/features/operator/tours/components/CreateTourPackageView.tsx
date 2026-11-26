@@ -30,13 +30,17 @@ const TOUR_FIELD_MAP: Record<string, string> = {
   destination: 'field-destination',
   destinationIds: 'label-destination',
   description: 'field-description',
+  inclusions: 'field-inclusions',
+  exclusions: 'field-exclusions',
+  highlights: 'field-highlights',
+  travellerRequirements: 'field-requirements',
   cancellationPolicy: 'field-cancellation',
   durationDays: 'field-duration',
   basePrice: 'field-basePrice',
   maxCapacity: 'field-capacity',
-  itinerary: 'section-itinerary',
-  schedules: 'section-schedules',
-  media: 'section-media',
+  itinerary: 'tour-itinerary',
+  schedules: 'tour-schedules',
+  media: 'media-upload',
 };
 
 interface CreateTourPackageViewProps {
@@ -153,10 +157,12 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const revealErrors = (nextErrors: TourValidationErrors) => {
     const targets: Record<string, string> = {
       title: '#field-title', destination: '#field-destination', category: '#field-category',
-      description: '#field-description', itinerary: '#tour-itinerary',
+      description: '#field-description', inclusions: '#field-inclusions', exclusions: '#field-exclusions',
+      highlights: '#field-highlights', travellerRequirements: '#field-requirements',
+      itinerary: '#tour-itinerary',
       cancellationPolicy: '#field-cancellation', basePrice: '#field-basePrice',
       childPrice: '#field-childPrice', maxCapacity: '#field-capacity', durationDays: '#field-duration',
-      schedules: '#tour-schedules', media: '#media-upload',
+      schedules: '#tour-schedules, #tour-schedules-section', media: '#media-upload',
     };
     focusValidationError(viewRef.current, Object.keys(nextErrors).map((key) => targets[key]).filter(Boolean));
   };
@@ -167,8 +173,47 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [validationToast, setValidationToast] = useState<string | null>(null);
   const validationToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const hasUnsavedChanges =
-    Boolean(title.trim() || description.trim() || destinationIds.length > 0 || highlights.trim() || travellerRequirements.trim());
+  const [initialSnapshot] = useState(() =>
+    JSON.stringify({
+      title: '',
+      destination: '',
+      destinationIds: [] as number[],
+      category: isDemo ? 'Di sản & Thiên nhiên' : '',
+      highlights: '',
+      travellerRequirements: '',
+      durationDays: 1,
+      basePrice: 1000000,
+      childPrice: undefined as number | undefined,
+      maxCapacity: 20,
+      description: '',
+      inclusions: '',
+      exclusions: '',
+      cancellationPolicy: isDemo ? 'Hoàn tiền 100% khi hủy trước ngày khởi hành ít nhất 24 giờ.' : '',
+      itinerary,
+      schedules,
+    }),
+  );
+
+  const currentSnapshot = JSON.stringify({
+    title,
+    destination,
+    destinationIds,
+    category,
+    highlights,
+    travellerRequirements,
+    durationDays,
+    basePrice,
+    childPrice,
+    maxCapacity,
+    description,
+    inclusions,
+    exclusions,
+    cancellationPolicy,
+    itinerary,
+    schedules,
+  });
+
+  const hasUnsavedChanges = currentSnapshot !== initialSnapshot || mediaFiles.length > 0;
 
   useEffect(() => {
     if (!hasUnsavedChanges || submitting || successMessage) return;
@@ -312,9 +357,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     setPendingMessage(null);
     setSuccessMessage(null);
 
-    const selectedDestinationNames = catalogues.destinations
-      .filter((option) => destinationIds.includes(option.destinationId))
-      .map((option) => option.name);
+    const selectedDestinationNames = destinationIds
+      .map((id) => catalogues.destinations.find((option) => option.destinationId === id)?.name)
+      .filter((name): name is string => Boolean(name));
     const payload: CreateTourPackagePayload = {
       title,
       destination: isDemo ? destination : selectedDestinationNames.join(', '),
@@ -465,9 +510,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       )}
 
       {/* 2-Column Responsive Layout (Report 3 Screen #41) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Left Column (2/3 width on desktop): Basic Info, Itinerary, Policies */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 xl:col-span-2">
           {/* Card 1: Basic Information */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
@@ -670,6 +715,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                     placeholder="Xe đưa đón, hướng dẫn viên, vé tham quan..."
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
                   />
+                  {errors.inclusions && (
+                    <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">{errors.inclusions}</p>
+                  )}
                 </div>
 
                 <div>
@@ -684,6 +732,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                     placeholder="Chi phí cá nhân, tiền tip..."
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20"
                   />
+                  {errors.exclusions && (
+                    <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">{errors.exclusions}</p>
+                  )}
                 </div>
               </div>
 
@@ -721,7 +772,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
         {/* Right column: departure schedules, optional terms and media */}
         <div className="space-y-6">
           {/* Card: Departure Schedules */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+          <section id="tour-schedules-section" tabIndex={-1} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-extrabold text-[#1C2928]">Lịch khởi hành <span className="text-rose-500" aria-hidden="true">*</span></h3>
               <button
@@ -788,9 +839,10 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                         type="date"
                         value={sch.returnDate}
                         onChange={(e) => {
-                          const updated = [...schedules];
-                          updated[sIdx].returnDate = e.target.value;
-                          setSchedules(updated);
+                          const returnDate = e.target.value;
+                          setSchedules((current) =>
+                            current.map((item, idx) => (idx === sIdx ? { ...item, returnDate } : item)),
+                          );
                         }}
                         className="w-full rounded-lg border border-slate-200 p-1 text-xs"
                       />
@@ -803,20 +855,22 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                       min="1"
                       value={sch.totalCapacity}
                       onChange={(e) => {
-                        const updated = [...schedules];
-                        updated[sIdx].totalCapacity = Number(e.target.value);
-                        setSchedules(updated);
+                        const totalCapacity = Number(e.target.value);
+                        setSchedules((current) =>
+                          current.map((item, idx) => (idx === sIdx ? { ...item, totalCapacity } : item)),
+                        );
                       }}
                       className="w-full rounded-lg border border-slate-200 p-1 text-xs"
                     />
                   </div>
                   {!isDemo && (
                     <DepartureTermsFields
+                      showCoordinates
                       schedule={sch}
                       onChange={(patch) => {
-                        const updated = [...schedules];
-                        updated[sIdx] = { ...updated[sIdx], ...patch };
-                        setSchedules(updated);
+                        setSchedules((current) =>
+                          current.map((item, idx) => (idx === sIdx ? { ...item, ...patch } : item)),
+                        );
                       }}
                     />
                   )}
@@ -834,6 +888,8 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   travellerRequirements={travellerRequirements}
                   onHighlights={setHighlights}
                   onTravellerRequirements={setTravellerRequirements}
+                  highlightsError={errors.highlights}
+                  travellerRequirementsError={errors.travellerRequirements}
                 />
               </div>
             </section>
@@ -952,9 +1008,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           title,
           destination: isDemo
             ? destination
-            : catalogues.destinations
-                .filter((d) => destinationIds.includes(d.destinationId))
-                .map((d) => d.name)
+            : destinationIds
+                .map((id) => catalogues.destinations.find((d) => d.destinationId === id)?.name)
+                .filter((name): name is string => Boolean(name))
                 .join(', '),
           category: isDemo
             ? category
@@ -967,7 +1023,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           travellerRequirements,
           inclusions,
           exclusions,
-          cancellationPolicy,
+          cancellationPolicy: isDemo
+            ? cancellationPolicy
+            : catalogues.policies.find((p) => String(p.id) === cancellationPolicy)?.name ?? cancellationPolicy,
           itinerary,
           schedules,
           mediaUrls: mediaPreviews,

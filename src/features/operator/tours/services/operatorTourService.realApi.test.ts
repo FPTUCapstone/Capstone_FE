@@ -11,6 +11,7 @@ import {
   evaluateTourCompleteness,
   getOperatorTourById,
   getOperatorTours,
+  OperatorTourValidationError,
   removeTourImage,
   reorderTourImages,
   setPrimaryTourImage,
@@ -501,5 +502,95 @@ describe('operatorTourService against the UC-35 backend contract', () => {
 
     expect(detailMapped.itinerary[0].activities[0].poiName).toBe('Cầu Vàng');
     expect(listMapped[0]).toMatchObject({ upcomingDepartureCount: 2, completedDepartureCount: 1, totalDepartureCount: 3 });
+  });
+
+  it('maps BE 400 ValidationProblemDetails fieldErrors to OperatorTourValidationError on create and update (DH-06)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          title: 'One or more validation errors occurred.',
+          errors: {
+            Title: ['Title is too long.'],
+            BasePrice: ['BasePrice must be positive.'],
+            'Schedules[0].StartAtUtc': ['StartAtUtc must be in the future.'],
+            'ItineraryItems[0].PlannedTime': ['Invalid time.'],
+          },
+        },
+        400,
+      ),
+    );
+
+    await expect(createTourPackage(payload, { idempotencyKey: 'key-dh06' })).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof OperatorTourValidationError &&
+        err.errors.title === 'Title is too long.' &&
+        err.errors.basePrice === 'BasePrice must be positive.' &&
+        err.errors.schedules === 'StartAtUtc must be in the future.' &&
+        err.errors.itinerary === 'Invalid time.',
+    );
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(detail)).mockResolvedValueOnce(jsonResponse([]));
+    const loaded = (await getOperatorTourById('42', { allowDemo: false })).data!;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          title: 'One or more validation errors occurred.',
+          errors: {
+            CancellationPolicyTemplateId: ['Invalid policy.'],
+          },
+        },
+        400,
+      ),
+    );
+
+    await expect(
+      updateTourPackage({ ...loaded, id: '42', schedules: loaded.schedules }, { currentTour: loaded }),
+    ).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof OperatorTourValidationError &&
+        err.errors.cancellationPolicy === 'Invalid policy.',
+    );
+  });
+
+  it('preserves meetingLatitude and meetingLongitude on create and update', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ tourId: 42, status: 'Draft' }, 201))
+      .mockResolvedValueOnce(jsonResponse(detail))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    const payloadWithCoords: CreateTourPackagePayload = {
+      ...payload,
+      schedules: [
+        {
+          ...payload.schedules[0],
+          meetingLatitude: 16.0544,
+          meetingLongitude: 108.2022,
+        },
+      ],
+    };
+
+    await createTourPackage(payloadWithCoords, { idempotencyKey: 'key-coords-1' });
+    const createBody = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(createBody.schedules[0]).toMatchObject({
+      meetingLatitude: 16.0544,
+      meetingLongitude: 108.2022,
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ ...detail, departures: [{ ...detail.departures[0], meetingLatitude: 16.0544, meetingLongitude: 108.2022 }] }))
+      .mockResolvedValueOnce(jsonResponse([]));
+    const loaded = (await getOperatorTourById('42', { allowDemo: false })).data!;
+
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ tourId: 42, status: 'Draft' }))
+      .mockResolvedValueOnce(jsonResponse(detail))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    await updateTourPackage({ ...loaded, id: '42', schedules: loaded.schedules }, { currentTour: loaded });
+    const updateBody = JSON.parse((fetchMock.mock.calls[5] as [string, RequestInit])[1].body as string);
+    expect(updateBody.schedules[0]).toMatchObject({
+      meetingLatitude: 16.0544,
+      meetingLongitude: 108.2022,
+    });
   });
 });

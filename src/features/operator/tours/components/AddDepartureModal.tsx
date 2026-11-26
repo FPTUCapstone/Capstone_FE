@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
   addOperatorTourDeparture,
+  OperatorTourApiError,
   OperatorTourValidationError,
 } from '../services/operatorTourService';
 import type { TourDepartureSchedule, TourPackageDto } from '../types/tourLifecycle';
@@ -46,9 +47,21 @@ function AddDepartureModalContent({
 }: Omit<AddDepartureModalProps, 'open'>) {
   const today = todayVietnamYmd();
   const minFuture = addDaysYmd(today, 7);
+
+  // DH-10: Prefill from non-cancelled schedules (latest active departure for defaults)
+  const lastActiveSchedule = useMemo(() => {
+    const active = tour.schedules.filter((s) => s.status !== 'Cancelled');
+    if (active.length === 0) return null;
+    return [...active].sort((a, b) => a.departureDate < b.departureDate ? 1 : -1)[0];
+  }, [tour.schedules]);
+
   const latestDeparture = useMemo(() => {
-    const dates = tour.schedules.map((s) => s.departureDate).filter(Boolean).sort();
-    return dates.length > 0 ? dates[dates.length - 1] : '';
+    const activeDates = tour.schedules
+      .filter((s) => s.status !== 'Cancelled')
+      .map((s) => s.departureDate)
+      .filter(Boolean)
+      .sort();
+    return activeDates.length > 0 ? activeDates[activeDates.length - 1] : '';
   }, [tour.schedules]);
 
   const initialDeparture =
@@ -63,14 +76,15 @@ function AddDepartureModalContent({
     id: 'new-departure',
     departureDate: initialDeparture,
     returnDate: addDaysYmd(initialDeparture, Math.max(0, tour.durationDays - 1)),
-    totalCapacity: tour.maxCapacity > 0 ? tour.maxCapacity : 20,
+    // DH-10: prefill capacity & prices from latest active schedule when available
+    totalCapacity: lastActiveSchedule?.totalCapacity ?? (tour.maxCapacity > 0 ? tour.maxCapacity : 20),
     reservedCapacity: 0,
-    minimumCapacity: 1,
-    adultPrice: tour.basePrice,
-    childPrice: tour.childPrice ?? null,
-    infantPrice: null,
+    minimumCapacity: lastActiveSchedule?.minimumCapacity ?? 1,
+    adultPrice: lastActiveSchedule?.adultPrice ?? tour.basePrice,
+    childPrice: lastActiveSchedule?.childPrice ?? (tour.childPrice ?? null),
+    infantPrice: lastActiveSchedule?.infantPrice ?? null,
     registrationDeadlineDate:
-      addDaysYmd(initialDeparture, -2) >= today ? addDaysYmd(initialDeparture, -2) : today,
+      addDaysYmd(initialDeparture, -2) >= addDaysYmd(today, 1) ? addDaysYmd(initialDeparture, -2) : addDaysYmd(today, 1),
     meetingPoint: lastMeetingPoint,
     meetingLatitude: null,
     meetingLongitude: null,
@@ -128,7 +142,9 @@ function AddDepartureModalContent({
         setError(res.message || 'Không thể mở bán đợt khởi hành mới.');
       }
     } catch (err) {
-      if (err instanceof OperatorTourValidationError) {
+      if (err instanceof OperatorTourApiError && err.code === 'operator_tour.departure_itinerary_mismatch') {
+        setError('Lịch trình tour cũ thiếu giờ dự kiến cho một hoặc nhiều điểm dừng. Hãy tạo phiên bản nháp mới, bổ sung giờ và gửi duyệt lại trước khi mở bán ngày đi mới.');
+      } else if (err instanceof OperatorTourValidationError) {
         setError(err.errors.schedules || err.message);
       } else {
         setError(err instanceof Error ? err.message : 'Không thể mở bán đợt khởi hành mới.');
@@ -180,7 +196,7 @@ function AddDepartureModalContent({
               <input
                 id="add-dep-start"
                 type="date"
-                min={today}
+                min={addDaysYmd(today, 1)}
                 required
                 value={schedule.departureDate}
                 onChange={(e) => patchSchedule({ departureDate: e.target.value })}

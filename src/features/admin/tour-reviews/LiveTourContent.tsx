@@ -71,8 +71,8 @@ export function LiveTourContent({ tour, onApprovalOutcome }: {
             <p className="text-sm text-[#5B6E69]">{live.noImages}</p>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {tour.images.map((image) => (
-                <li key={image.url} className="overflow-hidden rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]">
+              {tour.images.map((image, index) => (
+                <li key={`${image.url}-${index}`} className="overflow-hidden rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={image.url}

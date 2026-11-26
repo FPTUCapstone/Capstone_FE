@@ -100,6 +100,7 @@ export interface TourPackageDto {
   rejectionReason?: string;
   submissionNote?: string | null;
   submittedAtUtc?: string | null;
+  publishedAtUtc?: string | null;
   version: number;
   itinerary: TourItineraryDay[];
   schedules: TourDepartureSchedule[];
@@ -147,6 +148,10 @@ export interface TourValidationErrors {
   childPrice?: string;
   maxCapacity?: string;
   description?: string;
+  inclusions?: string;
+  exclusions?: string;
+  highlights?: string;
+  travellerRequirements?: string;
   cancellationPolicy?: string;
   itinerary?: string;
   schedules?: string;

@@ -13,6 +13,8 @@ interface TourTermsFieldsProps {
   onHighlights: (value: string) => void;
   onTravellerRequirements: (value: string) => void;
   disabled?: boolean;
+  highlightsError?: string;
+  travellerRequirementsError?: string;
 }
 
 /** Optional package terms that the backend stores with the package (spec Amendment B). */
@@ -29,6 +31,9 @@ export function TourTermsFields(props: TourTermsFieldsProps) {
           onChange={(event) => props.onHighlights(event.target.value)}
           className={inputClass}
         />
+        {props.highlightsError && (
+          <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">{props.highlightsError}</p>
+        )}
       </div>
       <div>
         <label htmlFor="field-requirements" className="block text-xs font-bold text-[#1C2928]">Yêu cầu đối với du khách</label>
@@ -40,6 +45,9 @@ export function TourTermsFields(props: TourTermsFieldsProps) {
           onChange={(event) => props.onTravellerRequirements(event.target.value)}
           className={inputClass}
         />
+        {props.travellerRequirementsError && (
+          <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">{props.travellerRequirementsError}</p>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
+import { isLivePublishedTour, OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import { removeOperatorTour } from '../services/operatorTourService';
 import {
@@ -56,9 +56,21 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
   };
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  /**
+   * DH-01: "Published" tab = isLivePublishedTour (status=Published OR Approved+publishedAtUtc≤now)
+   * "Approved" tab = status=Approved AND NOT yet live
+   * This keeps tab counts and filtered rows 100% consistent with the badge text.
+   */
+  const matchesFilter = (t: TourPackageDto): boolean => {
+    if (filter === 'ALL') return true;
+    if (filter === 'Published') return isLivePublishedTour(t.status, t.publishedAtUtc);
+    if (filter === 'Approved') return t.status === 'Approved' && !isLivePublishedTour(t.status, t.publishedAtUtc);
+    return t.status === filter;
+  };
+
   const filteredTours = items.filter((t) => {
-    const matchesStatus = filter === 'ALL' ? true : t.status === filter;
-    if (!matchesStatus) return false;
+    if (!matchesFilter(t)) return false;
     if (!normalizedQuery) return true;
     return (
       t.title.toLowerCase().includes(normalizedQuery) ||
@@ -71,8 +83,8 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
     ALL: items.length,
     Draft: items.filter((t) => t.status === 'Draft').length,
     Pending: items.filter((t) => t.status === 'Pending').length,
-    Approved: items.filter((t) => t.status === 'Approved').length,
-    Published: items.filter((t) => t.status === 'Published').length,
+    Approved: items.filter((t) => t.status === 'Approved' && !isLivePublishedTour(t.status, t.publishedAtUtc)).length,
+    Published: items.filter((t) => isLivePublishedTour(t.status, t.publishedAtUtc)).length,
     Inactive: items.filter((t) => t.status === 'Inactive').length,
     Rejected: items.filter((t) => t.status === 'Rejected').length,
   };
@@ -233,7 +245,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                         {t.basePrice.toLocaleString()} đ
                       </td>
                       <td className="p-4">
-                        <OperatorTourStatusBadge status={t.status as TourLifecycleStatus} />
+                        <OperatorTourStatusBadge status={t.status as TourLifecycleStatus} publishedAtUtc={t.publishedAtUtc} />
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">

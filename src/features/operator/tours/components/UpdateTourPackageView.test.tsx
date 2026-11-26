@@ -283,4 +283,38 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
     fireEvent.click(screen.getByRole('button', { name: /^\+ Mở bán đợt mới$/i }));
     expect(screen.getByRole('dialog', { name: /Mở bán đợt khởi hành mới/i })).toBeDefined();
   });
+
+  it('asks for review of a future departure before cloning an approved tour with only past dates', () => {
+    const pastTour: TourPackageDto = {
+      ...mockTourDraft,
+      status: 'Approved',
+      schedules: mockTourDraft.schedules.map((schedule) => ({
+        ...schedule,
+        departureDate: '2020-01-01',
+        returnDate: '2020-01-02',
+      })),
+    };
+    const { container } = render(<UpdateTourPackageView initialTour={pastTour} isDemo={false} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thành bản nháp mới/i }));
+
+    expect(screen.getByText(/Hệ thống vừa thêm ngày đi mới để bạn kiểm tra/i)).toBeTruthy();
+    expect((container.querySelector<HTMLInputElement>('input[type="date"]')?.value ?? '') > '2020-01-01').toBe(true);
+  });
+
+  it('clears action=add-departure from the URL when AddDepartureModal closes', () => {
+    window.history.replaceState(null, '', '/partner/tours/tour-ba-na/edit?action=add-departure&demo=1');
+    render(
+      <UpdateTourPackageView
+        initialTour={{ ...mockTourDraft, status: 'Approved' }}
+        isDemo={true}
+        initialOpenAddDeparture={true}
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: /Mở bán đợt khởi hành mới/i })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /Đóng hộp thoại/i }));
+
+    expect(window.location.search).toBe('?demo=1');
+  });
 });

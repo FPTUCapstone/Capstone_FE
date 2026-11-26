@@ -1,11 +1,31 @@
 import type { TourLifecycleStatus } from '../types/tourLifecycle';
 
+/**
+ * Returns true if the tour is effectively live/published for visitors.
+ * A status=Published tour is always live.
+ * A status=Approved tour is live once its publishedAtUtc has passed.
+ */
+export function isLivePublishedTour(
+  status: TourLifecycleStatus | string,
+  publishedAtUtc: string | null | undefined,
+): boolean {
+  if (status === 'Published') return true;
+  if (status !== 'Approved') return false;
+  return (
+    Boolean(publishedAtUtc) &&
+    Number.isFinite(Date.parse(publishedAtUtc!)) &&
+    Date.parse(publishedAtUtc!) <= Date.now()
+  );
+}
+
 interface OperatorTourStatusBadgeProps {
   status: TourLifecycleStatus;
+  publishedAtUtc?: string | null;
   className?: string;
 }
 
-export function OperatorTourStatusBadge({ status, className = '' }: OperatorTourStatusBadgeProps) {
+export function OperatorTourStatusBadge({ status, publishedAtUtc, className = '' }: OperatorTourStatusBadgeProps) {
+  const isPublic = isLivePublishedTour(status, publishedAtUtc);
   switch (status) {
     case 'Draft':
       return (
@@ -31,7 +51,7 @@ export function OperatorTourStatusBadge({ status, className = '' }: OperatorTour
           className={`inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200 ${className}`}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-          Đã duyệt (chưa xuất bản)
+          {isPublic ? 'Đã xuất bản' : 'Đã duyệt (chưa xuất bản)'}
         </span>
       );
     case 'Published':

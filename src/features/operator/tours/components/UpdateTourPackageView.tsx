@@ -1,6 +1,7 @@
 'use client';
 
 import { formatDisplayDate } from '@/lib/displayDate';
+import { scrollToFirstError } from '@/lib/scrollUtils';
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -67,6 +68,15 @@ function normalizeItineraryDays(days: TourItineraryDay[], durationDays: number):
   })];
 }
 
+function clearAddDepartureQuery(): void {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('action') === 'add-departure') {
+    url.searchParams.delete('action');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+  }
+}
+
 export function UpdateTourPackageView({
   initialTour,
   isDemo = false,
@@ -92,8 +102,8 @@ export function UpdateTourPackageView({
   const [category, setCategory] = useState(tour.category || (isDemo ? 'Di sản & Thiên nhiên' : ''));
   const [durationDays, setDurationDays] = useState(tour.durationDays);
   const [basePrice, setBasePrice] = useState(tour.basePrice);
-  const [childPrice, setChildPrice] = useState(tour.childPrice);
-  const [maxCapacity, setMaxCapacity] = useState(tour.maxCapacity);
+  const [childPrice] = useState(tour.childPrice);
+  const [maxCapacity] = useState(tour.maxCapacity);
   const [description, setDescription] = useState(tour.description);
   const [inclusions, setInclusions] = useState(tour.inclusions || '');
   const [exclusions, setExclusions] = useState(tour.exclusions || '');
@@ -114,6 +124,26 @@ export function UpdateTourPackageView({
 
   // UI & Validation states
   const [errors, setErrors] = useState<TourValidationErrors>({});
+  const revealErrors = (nextErrors: TourValidationErrors) => scrollToFirstError(
+    [
+      ...Object.keys(nextErrors),
+      ...(nextErrors.schedules ? ['tour-schedules-section'] : []),
+    ],
+    {
+      title: 'field-title',
+      destination: 'field-destination',
+      description: 'field-description',
+      inclusions: 'field-inclusions',
+      exclusions: 'field-exclusions',
+      highlights: 'field-highlights',
+      travellerRequirements: 'field-requirements',
+      itinerary: 'tour-itinerary',
+      schedules: 'schedule-validation',
+      basePrice: 'field-basePrice',
+      durationDays: 'field-duration',
+      cancellationPolicy: isDemo ? 'field-policy' : 'field-cancellation',
+    },
+  );
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -300,13 +330,36 @@ export function UpdateTourPackageView({
     setPendingMessage(null);
     setSuccessMessage(null);
 
-    const selectedDestinationNames = catalogues.destinations
-      .filter((option) => destinationIds.includes(option.destinationId))
-      .map((option) => option.name);
+    if (isApproved && !schedules.some((schedule) =>
+      !schedule.isCompleted && schedule.status === 'Scheduled' &&
+      schedule.departureDate >= defaultFutureYmd(1))) {
+      const departureDate = defaultFutureYmd();
+      const template = schedules[0];
+      setSchedules((current) => [...current, {
+        id: `new-version-schedule-${++scheduleSequence.current}`,
+        departureDate,
+        returnDate: addDaysYmd(departureDate, Math.max(0, durationDays - 1)),
+        totalCapacity: Math.max(1, template?.totalCapacity ?? 20),
+        reservedCapacity: 0,
+        minimumCapacity: template?.minimumCapacity ?? 1,
+        adultPrice: template?.adultPrice ?? basePrice,
+        childPrice: template?.childPrice ?? null,
+        infantPrice: template?.infantPrice ?? null,
+        meetingPoint: template?.meetingPoint ?? '',
+        status: 'Scheduled',
+      }]);
+      setPendingMessage('Lịch khởi hành cũ đã kết thúc. Hệ thống vừa thêm ngày đi mới để bạn kiểm tra; hãy chỉnh lịch rồi bấm lưu lần nữa.');
+      scrollToFirstError(['schedules'], { schedules: 'tour-schedules-section' });
+      return;
+    }
+
+    const selectedDestinationNames = destinationIds
+      .map((id) => catalogues.destinations.find((option) => option.destinationId === id)?.name)
+      .filter((name): name is string => Boolean(name));
     const activeFutureSchedules = isApproved
-      ? schedules.filter((s) => !s.isCompleted && s.status === 'Scheduled')
+      ? schedules.filter((s) => !s.isCompleted && s.status === 'Scheduled' && s.departureDate >= defaultFutureYmd(1))
       : schedules;
-    const schedulesForSave = activeFutureSchedules.length > 0 ? activeFutureSchedules : schedules;
+    const schedulesForSave = activeFutureSchedules;
     const payload: UpdateTourPackagePayload = {
       id: tour.id,
       title,
@@ -316,7 +369,7 @@ export function UpdateTourPackageView({
       durationDays,
       basePrice,
       childPrice,
-      maxCapacity,
+      maxCapacity: schedulesForSave[0]?.totalCapacity || maxCapacity,
       description,
       inclusions,
       exclusions,
@@ -332,6 +385,7 @@ export function UpdateTourPackageView({
     const validationErrors = validateUpdateTourPackage(payload, tour);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      revealErrors(validationErrors);
       showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       return;
     }
@@ -365,6 +419,7 @@ export function UpdateTourPackageView({
     } catch (err) {
       if (err instanceof OperatorTourValidationError) {
         setErrors(err.errors);
+        revealErrors(err.errors);
         showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       } else {
         setErrorMessage(
@@ -376,8 +431,8 @@ export function UpdateTourPackageView({
     }
   };
 
-  const upcomingSchedules = schedules.filter((s) => !s.isCompleted && s.status === 'Scheduled');
-  const historicalSchedules = schedules.filter((s) => s.isCompleted || s.status !== 'Scheduled');
+  const upcomingSchedules = schedules.filter((s) => !s.isCompleted && s.status === 'Scheduled' && s.departureDate >= defaultFutureYmd(1));
+  const historicalSchedules = schedules.filter((s) => s.isCompleted || s.status !== 'Scheduled' || s.departureDate < defaultFutureYmd(1));
 
   return (
     <div className="space-y-6 pb-20">
@@ -391,7 +446,7 @@ export function UpdateTourPackageView({
             <span className="rounded-md bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-bold text-slate-700 shrink-0">
               {tour.tourCode}
             </span>
-            <OperatorTourStatusBadge status={tour.status} />
+            <OperatorTourStatusBadge status={tour.status} publishedAtUtc={tour.publishedAtUtc} />
             {isApproved && (
               <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 shrink-0">
                 Phiên bản {tour.version}
@@ -530,9 +585,9 @@ export function UpdateTourPackageView({
       )}
 
       {/* 2-Column Responsive Layout (Screen #42) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Main Column (2/3) */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 xl:col-span-2">
           {/* Card 1: Editable Fields with Diff Indicator */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -643,6 +698,7 @@ export function UpdateTourPackageView({
                     onChange={(e) => setInclusions(e.target.value)}
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                   />
+                  {errors.inclusions && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.inclusions}</p>}
                 </div>
 
                 <div>
@@ -657,6 +713,7 @@ export function UpdateTourPackageView({
                     onChange={(e) => setExclusions(e.target.value)}
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                   />
+                  {errors.exclusions && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.exclusions}</p>}
                 </div>
               </div>
 
@@ -690,7 +747,7 @@ export function UpdateTourPackageView({
           </section>
 
           {/* Card 2: Itinerary Changes comparison table (Screen #42) */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+          <section id="tour-itinerary" tabIndex={-1} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-extrabold text-[#1C2928]">Lịch trình & Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></h3>
@@ -765,7 +822,7 @@ export function UpdateTourPackageView({
         {/* Right Sidebar Column (1/3) */}
         <div className="space-y-6">
           {/* Card: Departure Schedules with Sold Slots (BR-61) */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+          <section id="tour-schedules-section" tabIndex={-1} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <h3 className="text-base font-extrabold text-[#1C2928]">
                 Lịch khởi hành & Chỗ đã bán <span className="text-rose-500" aria-hidden="true">*</span>
@@ -794,8 +851,7 @@ export function UpdateTourPackageView({
 
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div><label htmlFor="field-basePrice" className="block text-[11px] font-semibold text-slate-600">Giá người lớn (VNĐ) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-basePrice" type="number" disabled={isReadOnly} value={basePrice} onChange={(e) => setBasePrice(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900 disabled:bg-slate-50" />{errors.basePrice && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.basePrice}</p>}</div>
-              <div><label htmlFor="field-childPrice" className="block text-[11px] font-semibold text-slate-600">Giá trẻ em (VNĐ)</label><input id="field-childPrice" type="number" disabled={isReadOnly} value={childPrice ?? ''} onChange={(e) => setChildPrice(e.target.value ? Number(e.target.value) : undefined)} placeholder="Tùy chọn" className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900 disabled:bg-slate-50" />{errors.childPrice && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.childPrice}</p>}</div>
-              <div><label htmlFor="field-maxCapacity" className="block text-[11px] font-semibold text-slate-600">Sức chứa tối đa <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-maxCapacity" type="number" disabled={isReadOnly} value={maxCapacity} onChange={(e) => setMaxCapacity(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900 disabled:bg-slate-50" />{errors.maxCapacity && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.maxCapacity}</p>}</div>
+              <p className="text-xs text-slate-600 sm:col-span-2">Giá trẻ em và sức chứa được lưu riêng cho từng lịch khởi hành. Hãy chỉnh trong từng lịch ở bên dưới.</p>
               <div><label htmlFor="field-duration" className="block text-[11px] font-semibold text-slate-600">Thời lượng (ngày) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-duration" type="number" min="1" disabled={isReadOnly} value={durationDays} onChange={(e) => handleDurationChange(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900 disabled:bg-slate-50" />{errors.durationDays && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.durationDays}</p>}</div>
             </div>
 
@@ -833,7 +889,7 @@ export function UpdateTourPackageView({
                         )}
                       </div>
                     </div>
-                    {!isApproved && !isReadOnly && (
+                    {(!isApproved || sch.id.startsWith('new-version-schedule-')) && !isReadOnly && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <span className="text-[10px] text-slate-500">Ngày đi *</span>
@@ -877,7 +933,7 @@ export function UpdateTourPackageView({
                       <input
                         id={`sch-cap-${sch.id}`}
                         type="number"
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || (isApproved && !sch.id.startsWith('new-version-schedule-'))}
                         min={sch.reservedCapacity}
                         value={sch.totalCapacity}
                         onChange={(e) => {
@@ -892,7 +948,7 @@ export function UpdateTourPackageView({
                     {!isDemo && (
                       <DepartureTermsFields
                         schedule={sch}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || (isApproved && !sch.id.startsWith('new-version-schedule-'))}
                         onChange={(patch) => {
                           setSchedules((current) =>
                             current.map((item, idx) => (idx === sIdx ? { ...item, ...patch } : item)),
@@ -937,6 +993,8 @@ export function UpdateTourPackageView({
                   onHighlights={setHighlights}
                   onTravellerRequirements={setTravellerRequirements}
                   disabled={isReadOnly}
+                  highlightsError={errors.highlights}
+                  travellerRequirementsError={errors.travellerRequirements}
                 />
               </div>
             </section>
@@ -1032,12 +1090,16 @@ export function UpdateTourPackageView({
         open={addDepartureOpen}
         tour={{ ...tour, schedules }}
         isDemo={isDemo}
-        onClose={() => setAddDepartureOpen(false)}
+        onClose={() => {
+          setAddDepartureOpen(false);
+          clearAddDepartureQuery();
+        }}
         onSuccess={(updatedTour, msg) => {
           setTour(updatedTour);
           setSchedules(JSON.parse(JSON.stringify(updatedTour.schedules || [])));
           setSuccessMessage(msg);
           setErrorMessage(null);
+          clearAddDepartureQuery();
         }}
       />
 
@@ -1048,9 +1110,9 @@ export function UpdateTourPackageView({
           title,
           destination: isDemo
             ? destination
-            : catalogues.destinations
-                .filter((d) => destinationIds.includes(d.destinationId))
-                .map((d) => d.name)
+            : destinationIds
+                .map((id) => catalogues.destinations.find((d) => d.destinationId === id)?.name)
+                .filter((name): name is string => Boolean(name))
                 .join(', ') || destination,
           category: isDemo
             ? category
@@ -1063,7 +1125,9 @@ export function UpdateTourPackageView({
           travellerRequirements,
           inclusions,
           exclusions,
-          cancellationPolicy,
+          cancellationPolicy: isDemo
+            ? cancellationPolicy
+            : catalogues.policies.find((p) => String(p.id) === cancellationPolicy)?.name ?? cancellationPolicy,
           itinerary,
           schedules,
           mediaUrls: media.map((m) => m.url),
@@ -1071,7 +1135,7 @@ export function UpdateTourPackageView({
       />
 
       {validationToast && (
-        <div role="alert" className="fixed bottom-5 right-5 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-900 shadow-lg">
+        <div role="alert" className="fixed bottom-24 right-5 z-[60] flex max-w-sm items-start gap-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-900 shadow-lg">
           <span className="material-symbols-outlined shrink-0 text-[20px] text-rose-600" aria-hidden="true">error</span>
           <p className="flex-1 font-medium leading-5">{validationToast}</p>
           <button type="button" aria-label="Đóng thông báo" onClick={() => setValidationToast(null)} className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700">

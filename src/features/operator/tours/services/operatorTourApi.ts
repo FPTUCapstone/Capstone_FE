@@ -6,6 +6,7 @@ export class OperatorTourApiError extends Error {
     public readonly status: number,
     public readonly code: string | undefined,
     message: string,
+    public readonly fieldErrors?: Record<string, string[]>,
   ) {
     super(message);
     this.name = 'OperatorTourApiError';
@@ -18,10 +19,21 @@ function headers(extra?: HeadersInit): HeadersInit {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...extra };
 }
 
-function firstValidationMessage(errors: unknown): string | undefined {
-  if (!errors || typeof errors !== 'object') return undefined;
-  for (const messages of Object.values(errors as Record<string, unknown>)) {
-    if (Array.isArray(messages) && typeof messages[0] === 'string' && messages[0]) return messages[0];
+function extractFieldErrors(errors: unknown): Record<string, string[]> | undefined {
+  if (!errors || typeof errors !== 'object' || Array.isArray(errors)) return undefined;
+  const result: Record<string, string[]> = {};
+  for (const [key, rawMessages] of Object.entries(errors as Record<string, unknown>)) {
+    if (!Array.isArray(rawMessages)) continue;
+    const messages = rawMessages.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+    if (messages.length > 0) result[key] = messages;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+function firstValidationMessage(fieldErrors: Record<string, string[]> | undefined): string | undefined {
+  if (!fieldErrors) return undefined;
+  for (const messages of Object.values(fieldErrors)) {
+    if (messages[0]) return messages[0];
   }
   return undefined;
 }
@@ -32,6 +44,7 @@ function isGenericServerMessage(message: string): boolean {
 
 async function fail(response: Response): Promise<never> {
   let code: string | undefined;
+  let fieldErrors: Record<string, string[]> | undefined;
   let message = response.status === 401
     ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
     : response.status === 403
@@ -56,11 +69,12 @@ async function fail(response: Response): Promise<never> {
             : undefined;
       if (typeof value.title === 'string' && !isGenericServerMessage(value.title)) message = value.title;
       if (typeof value.detail === 'string' && !isGenericServerMessage(value.detail)) message = value.detail;
-      const firstFieldError = firstValidationMessage(value.errors);
+      fieldErrors = extractFieldErrors(value.errors);
+      const firstFieldError = firstValidationMessage(fieldErrors);
       if (firstFieldError) message = firstFieldError;
     }
   } catch { /* Preserve safe fallback. */ }
-  throw new OperatorTourApiError(response.status, code, message);
+  throw new OperatorTourApiError(response.status, code, message, fieldErrors);
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -75,13 +89,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return await response.json() as T;
 }
 
-export interface ApiTourListItem { id: number; title: string; status: string; basePrice: number; durationDays: number; versionNo?: number; updatedAtUtc: string; nextDepartureAtUtc: string | null; destination: string; upcomingDepartureCount?: number; completedDepartureCount?: number; totalDepartureCount?: number; }
+export interface ApiTourListItem { id: number; title: string; status: string; basePrice: number; durationDays: number; versionNo?: number; updatedAtUtc: string; publishedAtUtc?: string | null; nextDepartureAtUtc: string | null; destination: string; upcomingDepartureCount?: number; completedDepartureCount?: number; totalDepartureCount?: number; }
 export interface ApiTourListPage { items: ApiTourListItem[]; page: number; pageSize: number; totalCount: number; }
 export interface ApiItineraryItem { dayNo: number; sequenceNo: number; poiId: number; poiName?: string | null; plannedTime: string | null; stayDurationMinutes: number; notes: string | null; }
 export interface ApiDeparture { id: number; startAtUtc: string; endAtUtc: string; meetingPoint: string | null; minimumCapacity: number; totalCapacity: number; reservedCapacity: number; registrationDeadlineAtUtc: string | null; adultPrice: number | null; childPrice: number | null; infantPrice: number | null; status: string; meetingLatitude?: number | null; meetingLongitude?: number | null; isCompleted?: boolean; }
 export interface ApiDestination { destinationId: number; name: string; }
 export interface ApiTourDetail {
-  submissionNote?: string | null; submittedAtUtc?: string | null;
+  submissionNote?: string | null; submittedAtUtc?: string | null; publishedAtUtc?: string | null;
   id: number; title: string; destination: string; description: string; categoryId: number | null;
   basePrice: number; durationDays: number; versionNo?: number; status: string; rejectionReason: string | null;
   inclusions: string | null; exclusions: string | null; destinations: ApiDestination[];
@@ -98,7 +112,7 @@ export interface ApiCreateTour {
   title: string; description: string; categoryId?: number; basePrice: number; durationDays: number;
   destinationIds: number[]; cancellationPolicyTemplateId: number; inclusions?: string; exclusions?: string;
   highlights?: string; travellerRequirements?: string; timeZoneId?: string;
-  itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status' | 'meetingLatitude' | 'meetingLongitude' | 'isCompleted'>[]; sourceTourId?: number;
+  itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status' | 'isCompleted'>[]; sourceTourId?: number;
 }
 export interface ApiAddDepartureRequest {
   startAtUtc: string;

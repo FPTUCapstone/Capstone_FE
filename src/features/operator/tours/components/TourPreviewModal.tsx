@@ -160,20 +160,55 @@ export function TourPreviewModal({ open, onClose, preview }: TourPreviewModalPro
           <div>
             <h4 className="text-sm font-bold text-[#1C2928]">Lịch khởi hành ({preview.schedules.length} đợt)</h4>
             <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {preview.schedules.map((sch) => (
-                <div key={sch.id} className="rounded-xl border border-slate-200 p-3 text-xs">
-                  <p className="font-bold text-slate-900">
-                    {sch.departureDate} → {sch.returnDate}
-                  </p>
-                  <p className="mt-0.5 text-slate-600">
-                    Sức chứa: {sch.totalCapacity} khách (tối thiểu {sch.minimumCapacity ?? 1})
-                  </p>
-                  {sch.meetingPoint && (
-                    <p className="mt-0.5 text-slate-600">Điểm đón: {sch.meetingPoint}</p>
-                  )}
-                </div>
-              ))}
+              {preview.schedules.map((sch) => {
+                const hasPerSchedulePrice =
+                  sch.adultPrice !== undefined ||
+                  (sch.childPrice !== undefined && sch.childPrice !== null) ||
+                  (sch.infantPrice !== undefined && sch.infantPrice !== null);
+                const hasCoordinates =
+                  sch.meetingLatitude !== undefined &&
+                  sch.meetingLatitude !== null &&
+                  sch.meetingLongitude !== undefined &&
+                  sch.meetingLongitude !== null;
+                return (
+                  <div key={sch.id} className="rounded-xl border border-slate-200 p-3 text-xs">
+                    <p className="font-bold text-slate-900">
+                      {sch.departureDate} → {sch.returnDate}
+                    </p>
+                    <p className="mt-0.5 text-slate-600">
+                      Sức chứa: {sch.totalCapacity} khách (tối thiểu {sch.minimumCapacity ?? 1})
+                    </p>
+                    {hasPerSchedulePrice && (
+                      <p className="mt-0.5 text-slate-700">
+                        {[
+                          sch.adultPrice !== undefined ? `Người lớn: ${formatVnd(sch.adultPrice)}` : null,
+                          sch.childPrice !== undefined && sch.childPrice !== null ? `Trẻ em: ${formatVnd(sch.childPrice)}` : null,
+                          sch.infantPrice !== undefined && sch.infantPrice !== null ? `Em bé: ${formatVnd(sch.infantPrice)}` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                    {sch.registrationDeadlineDate && (
+                      <p className="mt-0.5 text-slate-600">Hạn đăng ký: {sch.registrationDeadlineDate}</p>
+                    )}
+                    {sch.meetingPoint && (
+                      <p className="mt-0.5 text-slate-600">Điểm đón: {sch.meetingPoint}</p>
+                    )}
+                    {hasCoordinates && (
+                      <p className="mt-0.5 font-mono text-[11px] text-slate-500">
+                        Tọa độ: {sch.meetingLatitude}, {sch.meetingLongitude}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs">
+            <h4 className="font-bold text-[#1C2928]">Chính sách hoàn hủy</h4>
+            <p className="mt-1 whitespace-pre-line text-slate-700">
+              {preview.cancellationPolicy || 'Chưa chọn chính sách hoàn hủy.'}
+            </p>
           </div>
 
           {(preview.inclusions || preview.exclusions || preview.travellerRequirements) && (
