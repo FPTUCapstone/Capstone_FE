@@ -30,6 +30,10 @@ describe('isPublicNavigationRoute (Strict Positive Whitelist)', () => {
     expect(isPublicNavigationRoute('/tours/101/book')).toBe(true);
     expect(isPublicNavigationRoute('/pois')).toBe(true);
     expect(isPublicNavigationRoute('/pois/202')).toBe(true);
+    expect(isPublicNavigationRoute('/stays')).toBe(true);
+    expect(isPublicNavigationRoute('/stays/')).toBe(true);
+    expect(isPublicNavigationRoute('/stays/367')).toBe(true);
+    expect(isPublicNavigationRoute('/stays/requests')).toBe(true);
     expect(isPublicNavigationRoute('/plan')).toBe(true);
     expect(isPublicNavigationRoute('/itineraries')).toBe(true);
     expect(isPublicNavigationRoute('/itinerary/303')).toBe(true);
