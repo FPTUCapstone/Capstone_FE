@@ -6,7 +6,12 @@ export type TourLifecycleStatus =
   | 'Approved'
   | 'Rejected'
   | 'Published'
-  | 'Inactive';
+  | 'Inactive'
+  /** A draft version's own status while Staff reviews it (TM-82 / UC-36) — distinct from the
+   * live tour's own `Pending`, which is the first-time-submission flow (UC-37). The live tour
+   * stays `Approved`/`Published` throughout; only the draft version's `TourPackageDto` carries
+   * this status. */
+  | 'PendingReview';
 
 export interface TourItineraryActivity {
   id: string;
