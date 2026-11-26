@@ -16,10 +16,16 @@ describe('AccountWorkspaceNav', () => {
     expect(nav).toBeDefined();
 
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(5);
+    expect(tabs.length).toBe(6);
 
     const profileTab = screen.getByRole('tab', { name: new RegExp(accountCommonEn.navigation.tabs.profile, 'i') });
     expect(profileTab.getAttribute('aria-selected')).toBe('true');
+
+    const favoritesTab = screen.getByRole('tab', {
+      name: new RegExp(accountCommonEn.navigation.tabs.favorites, 'i'),
+    });
+    expect(favoritesTab.getAttribute('aria-selected')).toBe('false');
+    expect(favoritesTab.getAttribute('href')).toBe('/account/favorites');
 
     const tripsTab = screen.getByRole('tab', { name: new RegExp(accountCommonEn.navigation.tabs.trips, 'i') });
     expect(tripsTab.getAttribute('aria-selected')).toBe('false');

@@ -8,6 +8,7 @@ export const accountCommonEn = {
     tabs: {
       profile: 'Personal Profile',
       preferences: 'Travel Preferences',
+      favorites: 'Favorite Places',
       security: 'Security & Password',
       trips: 'My Trips',
       complaints: 'My Complaints',

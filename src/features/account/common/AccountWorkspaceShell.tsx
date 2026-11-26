@@ -40,6 +40,12 @@ const TAB_METADATA: Record<
     enTitle: accountCommonEn.navigation.tabs.preferences,
     icon: 'tune',
   },
+  favorites: {
+    viTitle: 'Địa điểm yêu thích',
+    viSubtitle: 'Xem lại danh sách các địa điểm (POI) bạn đã đánh dấu yêu thích để dễ dàng lên lịch trình.',
+    enTitle: accountCommonEn.navigation.tabs.favorites,
+    icon: 'favorite',
+  },
   security: {
     viTitle: 'Bảo mật & Mật khẩu',
     viSubtitle: 'Cập nhật mật khẩu định kỳ và bảo vệ tài khoản của bạn trên nền tảng TripMate.',
@@ -63,6 +69,7 @@ const TAB_METADATA: Record<
 function resolveAccountTab(pathname: string | null): AccountTabKey {
   if (!pathname) return 'profile';
   if (pathname.startsWith(ROUTES.account.preferences)) return 'preferences';
+  if (pathname.startsWith(ROUTES.account.favorites)) return 'favorites';
   if (pathname.startsWith(ROUTES.account.security)) return 'security';
   if (pathname.startsWith(ROUTES.account.trips)) return 'trips';
   if (pathname.startsWith(ROUTES.account.complaints)) return 'complaints';

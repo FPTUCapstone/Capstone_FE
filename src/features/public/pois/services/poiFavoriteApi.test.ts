@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getPoiFavorite, PoiFavoriteError, setPoiFavorite } from './poiFavoriteApi';
+import {
+  getPoiFavorite,
+  listFavoritePois,
+  PoiFavoriteError,
+  setPoiFavorite,
+} from './poiFavoriteApi';
 
 function respondWith(status: number, body: unknown) {
   global.fetch = vi.fn().mockResolvedValueOnce({ status, ok: status < 400, json: async () => body });
@@ -99,5 +104,81 @@ describe('POI favorite API (UC-10 feedback, §3.2)', () => {
 
     expect(failure).toBeInstanceOf(DOMException);
     expect(failure).not.toBeInstanceOf(PoiFavoriteError);
+  });
+
+  it('lists favorite POIs with pagination, no-store cache, and traveler token', async () => {
+    const payload = {
+      page: 2,
+      pageSize: 6,
+      totalCount: 7,
+      totalPages: 2,
+      items: [
+        {
+          id: 15,
+          name: 'Cầu Rồng',
+          categoryId: 2,
+          categoryName: 'Địa danh',
+          latitude: 16.0611,
+          longitude: 108.2275,
+          address: 'Đường Nguyễn Văn Linh, Đà Nẵng',
+          indoorOutdoor: 'Outdoor',
+          averageVisitDurationMinutes: 45,
+          hasShelter: false,
+          averageRating: 4.8,
+          reviewCount: 120,
+          thumbnailUrl: 'https://cdn.tripmate.vn/dragon.jpg',
+          isOpenNow: true,
+          favoritedAtUtc: '2026-11-26T06:00:00Z',
+        },
+        {
+          id: 16,
+          name: 'Bãi biển Mỹ Khê',
+          categoryId: 3,
+          categoryName: 'Bãi biển',
+          latitude: 16.0598,
+          longitude: 108.2464,
+          address: null,
+          indoorOutdoor: 'Outdoor',
+          averageVisitDurationMinutes: 120,
+          hasShelter: true,
+          averageRating: null,
+          reviewCount: 0,
+          thumbnailUrl: null,
+          isOpenNow: false,
+          favoritedAtUtc: '2026-11-25T10:30:00Z',
+        },
+      ],
+    };
+    respondWith(200, payload);
+
+    const result = await listFavoritePois({ page: 2, pageSize: 6, accessToken: 'traveler-token' });
+
+    expect(result).toEqual(payload);
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/pois\/favorites\?page=2&pageSize=6$/),
+      expect.objectContaining({
+        method: 'GET',
+        cache: 'no-store',
+        headers: expect.objectContaining({ Authorization: 'Bearer traveler-token' }),
+      }),
+    );
+  });
+
+  it('rejects a malformed favorite POIs list response with 502', async () => {
+    respondWith(200, {
+      page: 1,
+      pageSize: 12,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 'bad' }],
+    });
+
+    await expect(listFavoritePois()).rejects.toMatchObject({ name: 'PoiFavoriteError', status: 502 });
+  });
+
+  it('reports HTTP 401 when listing favorite POIs without valid auth', async () => {
+    respondWith(401, null);
+
+    await expect(listFavoritePois()).rejects.toMatchObject({ name: 'PoiFavoriteError', status: 401 });
   });
 });
