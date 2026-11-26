@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
@@ -22,7 +23,7 @@ import { buildTourDetailHref, buildTourQueueHref, parseTourQueueQuery } from './
 const copy = tourModerationEn.queue;
 // A fixed action track prevents each independent row from sizing columns
 // differently according to its button/status content.
-const queueColumns = '2xl:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_15rem]';
+const queueColumns = 'lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_13.5rem]';
 
 interface SearchFormProps {
   readonly appliedKeyword: string;
@@ -40,7 +41,11 @@ function QueueSearchForm({ appliedKeyword, onSubmit, onReset }: SearchFormProps)
   };
 
   return (
-    <form role="search" onSubmit={handleSubmit} className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+    <form
+      role="search"
+      onSubmit={handleSubmit}
+      className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-xs sm:flex-row sm:items-end"
+    >
       <div className="flex-1">
         <label htmlFor="tour-queue-search" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
           {copy.searchLabel}
@@ -52,13 +57,13 @@ function QueueSearchForm({ appliedKeyword, onSubmit, onReset }: SearchFormProps)
           maxLength={100}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={copy.searchPlaceholder}
-          className={`min-h-11 w-full rounded-xl border border-[#DCE2DD] bg-white px-3 text-sm text-[#1C2928] ${focusRing}`}
+          className={`min-h-10 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] px-3 text-sm text-[#1C2928] focus:bg-white ${focusRing}`}
         />
       </div>
       <div className="flex gap-2">
         <button
           type="submit"
-          className={`min-h-11 rounded-xl bg-[#174B4A] px-5 text-sm font-bold text-white hover:bg-[#103B39] ${focusRing}`}
+          className={`min-h-10 cursor-pointer rounded-xl bg-[#103B39] px-5 text-xs font-bold text-white hover:bg-[#174B4A] ${focusRing}`}
         >
           {copy.searchButton}
         </button>
@@ -68,7 +73,7 @@ function QueueSearchForm({ appliedKeyword, onSubmit, onReset }: SearchFormProps)
             setDraft('');
             onReset();
           }}
-          className={`min-h-11 rounded-xl border border-[#DCE2DD] bg-white px-5 text-sm font-bold text-[#1C2928] hover:bg-[#DCE2DD] ${focusRing}`}
+          className={`min-h-10 cursor-pointer rounded-xl border border-[#DCE2DD] bg-white px-4 text-xs font-bold text-[#1C2928] hover:bg-[#F7F5EF] ${focusRing}`}
         >
           {copy.resetButton}
         </button>
@@ -90,34 +95,34 @@ interface QueueRowTour {
 
 function QueueRow({ tour, href }: { tour: QueueRowTour; href: string }) {
   return (
-    <li className={`grid gap-3 px-5 py-5 2xl:items-center 2xl:gap-4 ${queueColumns}`}>
-      <div>
-        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.tour}</span>
-        <h2 className="text-sm font-bold text-[#1C2928]">{tour.tourName}</h2>
-        <p className="text-xs text-[#5B6E69]">{tour.location}</p>
+    <li className={`grid gap-2.5 px-4 py-3.5 transition-colors hover:bg-[#F7F5EF]/60 lg:items-center lg:gap-3 ${queueColumns}`}>
+      <div className="min-w-0">
+        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.tour}</span>
+        <h2 className="truncate text-sm font-bold text-[#1C2928]" title={tour.tourName}>{tour.tourName}</h2>
+        <p className="truncate text-xs text-[#5B6E69]" title={tour.location}>{tour.location}</p>
+      </div>
+      <div className="min-w-0">
+        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.operator}</span>
+        <p className="truncate text-xs font-semibold text-[#174B4A]" title={tour.operatorName}>{tour.operatorName}</p>
       </div>
       <div>
-        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.operator}</span>
-        <p className="text-sm font-semibold text-[#174B4A]">{tour.operatorName}</p>
+        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.submitted}</span>
+        <p className="font-mono text-xs text-[#1C2928] whitespace-nowrap">{tour.submittedAtUtc ? formatDisplayDateTime(tour.submittedAtUtc) : tourModerationEn.format.unavailable}</p>
       </div>
       <div>
-        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.submitted}</span>
-        <p className="font-mono text-xs text-[#1C2928]">{tour.submittedAtUtc ? formatDisplayDateTime(tour.submittedAtUtc) : tourModerationEn.format.unavailable}</p>
-      </div>
-      <div>
-        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.departure}</span>
-        <p className="font-mono text-xs text-[#1C2928]">{tour.departureAtUtc ? formatDisplayDate(tour.departureAtUtc) : tourModerationEn.live.noDeparture}</p>
+        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.departure}</span>
+        <p className="font-mono text-xs text-[#1C2928] whitespace-nowrap">{tour.departureAtUtc ? formatDisplayDate(tour.departureAtUtc) : tourModerationEn.live.noDeparture}</p>
       </div>
       <div className="text-right">
-        <span className="text-xs font-semibold text-[#5B6E69] 2xl:sr-only">{copy.columns.price}</span>
-        <p className="font-mono text-xs font-bold tabular-nums text-[#1C2928]">{formatVnd(tour.priceVnd)}</p>
+        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.price}</span>
+        <p className="font-mono text-xs font-bold tabular-nums text-[#1C2928] whitespace-nowrap">{formatVnd(tour.priceVnd)}</p>
       </div>
-      <div className="flex flex-wrap items-center gap-3 2xl:justify-end">
+      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
         <StatusBadge tone="coral">{copy.pendingStatus}</StatusBadge>
         <Link
           href={href}
           aria-label={copy.viewDetailsFor(tour.tourName)}
-          className={`inline-flex min-h-11 items-center rounded-xl border border-[#174B4A] px-4 text-xs font-bold text-[#174B4A] hover:bg-[#174B4A] hover:text-white ${focusRing}`}
+          className={`inline-flex min-h-9 items-center whitespace-nowrap rounded-lg border border-[#174B4A] px-3 text-xs font-bold text-[#174B4A] transition hover:bg-[#174B4A] hover:text-white ${focusRing}`}
         >
           {copy.viewDetails}
         </Link>
@@ -272,13 +277,14 @@ export function TourReviewQueue() {
   }, [view, router]);
 
   return (
-    <main className="min-h-[calc(100vh-65px)] bg-[#F7F5EF] px-4 py-8 md:px-8 md:py-10">
+    <main className="min-h-[calc(100vh-65px)] bg-[#F7F5EF] px-4 py-6 md:px-8">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-6 border-b border-[#DCE2DD] pb-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-[#174B4A]">{copy.eyebrow}</p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#1C2928]">{copy.title}</h1>
-          <p className="mt-2 text-sm text-[#5B6E69]">{copy.subtitle}</p>
-        </header>
+        <PageHeader
+          className="mb-6"
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.subtitle}
+        />
 
         {outcome && (
           <div className="mb-4">
@@ -323,7 +329,7 @@ export function TourReviewQueue() {
               <section className="overflow-hidden rounded-2xl border border-[#DCE2DD] bg-white shadow-xs">
                 <div
                   aria-hidden="true"
-                  className={`hidden gap-4 border-b border-[#DCE2DD] bg-[#DCE2DD] px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#5B6E69] 2xl:grid ${queueColumns}`}
+                  className={`hidden gap-3 border-b border-[#DCE2DD] bg-[#F7F5EF] px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#5B6E69] lg:grid ${queueColumns}`}
                 >
                   <span>{copy.columns.tour}</span>
                   <span>{copy.columns.operator}</span>

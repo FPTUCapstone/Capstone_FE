@@ -70,16 +70,26 @@ export function AccountModerationForm({ accountId, locked }: { accountId: string
         setError('');
         setConfirmationOpen(true);
       }}>
-        <label className="block">
+        <label className="block text-xs font-semibold text-[#1C2928]">
           {actionCopy.reasonLabel}
-          <textarea className="mt-1 block w-full rounded border p-2" required maxLength={200}
+          <textarea
+            className="mt-1.5 block w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/70 px-3 py-2.5 text-sm font-normal text-[#1C2928] placeholder:text-[#5B6E69]/70 transition focus:border-[#174B4A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#174B4A]/20 disabled:cursor-not-allowed disabled:opacity-60"
+            rows={3}
+            placeholder="Enter reason for this moderation action..."
+            required
+            maxLength={200}
             ref={reasonInput}
             disabled={busy || confirmationOpen}
-            value={reason} onChange={(event) => setReason(event.target.value)} />
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
         </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" className="rounded bg-teal-800 px-4 py-2 text-white disabled:opacity-50"
-          disabled={busy || !validReason}>
+        {error && <p role="alert" className="text-xs font-semibold text-[#8C1030]">{error}</p>}
+        <button
+          type="submit"
+          className="inline-flex w-full cursor-pointer items-center justify-center rounded-xl bg-[#103B39] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={busy || !validReason}
+        >
           {busy ? copy.updatingLabel : actionCopy.label}
         </button>
       </form>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
@@ -61,14 +62,14 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-8">
-      <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Payout Management</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Failed Payout Settlement</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[#486581]">
-          Review the gateway failure history for this batch. The amount is never recalculated here.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-5xl px-4 py-5 text-[#1C2928] md:px-8">
+      <PageHeader
+        className="mb-6"
+        backLink={{ href: ROUTES.admin.payoutSettlements, label: 'Payout Settlements' }}
+        eyebrow="Payout Management"
+        title="Failed Payout Settlement"
+        description="Review the gateway failure history for this batch. The amount is never recalculated here."
+      />
 
       {state === 'loading' ? (
         <div role="status" className={panel}>
@@ -102,7 +103,7 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
       ) : null}
       {state === 'ready' && detail ? (
         <>
-          <section className="mb-6 grid gap-4 rounded-2xl border border-[#d7e2ef] bg-white p-6 shadow-sm sm:grid-cols-3">
+          <section className="mb-6 grid gap-4 rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs sm:grid-cols-3">
             <SummaryField label="Batch ID" value={String(detail.batchId)} />
             <SummaryField label="Tour Operator" value={String(detail.tourOperatorUserId)} />
             <SummaryField label="Run Date" value={formatRunDate(detail.runDate)} />
@@ -122,10 +123,10 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
             </div>
           ) : null}
 
-          <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0}>
+          <div className="max-w-full overflow-x-auto rounded-2xl border border-[#DCE2DD] bg-white shadow-xs" tabIndex={0}>
             <table className="min-w-[700px] w-full text-left text-sm">
               <caption className="sr-only">Attempt history</caption>
-              <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
+              <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
                 <tr>
                   {['Attempt Number', 'Sent At', 'Outcome', 'Failure Reason'].map((heading) => (
                     <th key={heading} scope="col" className="px-4 py-3">
@@ -136,8 +137,8 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
               </thead>
               <tbody>
                 {detail.attempts.map((attempt) => (
-                  <tr key={attempt.attemptNumber} className="border-t border-[#e6edf5]">
-                    <td className="px-4 py-3">{attempt.attemptNumber}</td>
+                  <tr key={attempt.attemptNumber} className="border-t border-[#ECEEEB]">
+                    <td className="px-4 py-3 font-semibold text-[#1C2928]">{attempt.attemptNumber}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{formatVietnamDateTime(attempt.sentAtUtc)}</td>
                     <td className="px-4 py-3">{attempt.outcome}</td>
                     <td className="px-4 py-3">{attempt.failureReason ?? 'Not available'}</td>
@@ -168,14 +169,14 @@ export function FailedPayoutSettlementScreen({ batchId }: { batchId: number }) {
   );
 }
 
-const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
-const actionButton = 'rounded-xl border border-[#006b5f] px-4 py-2 text-sm font-bold text-[#006b5f] hover:bg-[#e6f7f0]';
+const panel = 'rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-[#5B6E69]';
+const actionButton = 'rounded-xl border border-[#174B4A] bg-white px-4 py-2 text-xs font-bold text-[#174B4A] transition hover:bg-[#E8F0EA]';
 
 function SummaryField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-xs font-bold uppercase tracking-wide text-[#627d98]">{label}</p>
-      <p className="mt-1 text-sm font-bold text-[#00152a]">{value}</p>
+    <div className="rounded-xl border border-[#ECEEEB] bg-[#F7F5EF]/60 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#5B6E69]">{label}</p>
+      <p className="mt-1 text-sm font-bold text-[#1C2928]">{value}</p>
     </div>
   );
 }

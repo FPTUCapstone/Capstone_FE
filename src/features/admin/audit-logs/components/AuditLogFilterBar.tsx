@@ -132,15 +132,15 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
   const fromDateMax = toDateValue && toDateValue < todayStr ? toDateValue : todayStr;
 
   return (
-    <div className="rounded-xl border border-[#5B6E69] bg-[#103B39] p-4 text-slate-100 shadow-md">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="rounded-2xl border border-[#DCE2DD] bg-white p-4 text-[#1C2928] shadow-xs sm:p-5">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {/* Search Keyword */}
-        <div className="xl:col-span-2">
-          <label htmlFor="audit-search-keyword" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
+        <div>
+          <label htmlFor="audit-search-keyword" className="mb-1 block text-xs font-bold text-[#5B6E69]">
             Search Keyword
           </label>
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-base text-[#5B6E69]">
               search
             </span>
             <input
@@ -148,22 +148,22 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
               type="text"
               value={keywordInput}
               onChange={(e) => handleKeywordChange(e.target.value)}
-              placeholder="Search by keyword, email, or entity ID..."
-              className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] py-2 pl-9 pr-3 text-xs text-[#d1e4ff] placeholder-slate-400 focus:border-[#71f8e4] focus:outline-none"
+              placeholder="Keyword, email, or entity ID..."
+              className="w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 py-2 pl-9 pr-3 text-xs font-medium text-[#1C2928] placeholder-[#8A9C96] transition focus:border-[#174B4A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15"
             />
           </div>
         </div>
 
         {/* Action Type */}
         <div>
-          <label htmlFor="audit-filter-action-type" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
+          <label htmlFor="audit-filter-action-type" className="mb-1 block text-xs font-bold text-[#5B6E69]">
             Action Type
           </label>
           <select
             id="audit-filter-action-type"
             value={filters.actionType || ''}
             onChange={(e) => onChange({ actionType: e.target.value || undefined })}
-            className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
+            className="w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 px-3 py-2 text-xs font-medium text-[#1C2928] transition focus:border-[#174B4A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15"
           >
             <option value="">All Action Types</option>
             {ACTION_TYPES.map((actionType) => (
@@ -174,14 +174,14 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
 
         {/* Actor Role */}
         <div>
-          <label htmlFor="audit-filter-actor-role" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
+          <label htmlFor="audit-filter-actor-role" className="mb-1 block text-xs font-bold text-[#5B6E69]">
             Actor Role
           </label>
           <select
             id="audit-filter-actor-role"
             value={filters.actorRole || ''}
             onChange={(e) => onChange({ actorRole: (e.target.value as UserRole) || undefined })}
-            className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
+            className="w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 px-3 py-2 text-xs font-medium text-[#1C2928] transition focus:border-[#174B4A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15"
           >
             <option value="">All Roles</option>
             <option value="Administrator">Administrator</option>
@@ -193,14 +193,14 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
 
         {/* Affected Entity */}
         <div>
-          <label htmlFor="audit-filter-affected-entity" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
+          <label htmlFor="audit-filter-affected-entity" className="mb-1 block text-xs font-bold text-[#5B6E69]">
             Affected Entity
           </label>
           <select
             id="audit-filter-affected-entity"
             value={filters.affectedEntity || ''}
             onChange={(e) => onChange({ affectedEntity: e.target.value || undefined })}
-            className="w-full rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] focus:border-[#71f8e4] focus:outline-none"
+            className="w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 px-3 py-2 text-xs font-medium text-[#1C2928] transition focus:border-[#174B4A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#174B4A]/15"
           >
             <option value="">All Entities</option>
             {AFFECTED_ENTITIES.map((entity) => (
@@ -211,14 +211,14 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
 
         {/* Date From */}
         <div>
-          <label htmlFor="audit-filter-from-date" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
+          <label htmlFor="audit-filter-from-date" className="mb-1 block text-xs font-bold text-[#5B6E69]">
             From Date
           </label>
           <div
             onClick={() => handleContainerClick(fromDateRef)}
-            className="group relative flex cursor-pointer items-center rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
+            className="group relative flex cursor-pointer items-center rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 px-3 py-2 text-xs text-[#1C2928] transition focus-within:border-[#174B4A] focus-within:bg-white"
           >
-            <span className="material-symbols-outlined mr-2 text-base text-[#71f8e4] transition-colors group-hover:text-white">
+            <span className="material-symbols-outlined mr-2 text-base text-[#5B6E69] group-hover:text-[#174B4A]">
               calendar_month
             </span>
             <input
@@ -228,7 +228,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
               max={fromDateMax}
               value={fromDateValue}
               onChange={(e) => handleFromDateChange(e.target.value)}
-              className="w-full cursor-pointer bg-transparent text-xs text-[#d1e4ff] focus:outline-none [color-scheme:dark]"
+              className="w-full cursor-pointer bg-transparent text-xs font-medium text-[#1C2928] focus:outline-none"
             />
             {filters.fromDateUtc && (
               <button
@@ -237,7 +237,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
                   e.stopPropagation();
                   onChange({ fromDateUtc: undefined });
                 }}
-                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#5B6E69] hover:text-white"
+                className="ml-1 rounded-full p-0.5 text-[#5B6E69] hover:bg-[#E8F0EA] hover:text-[#1C2928]"
                 title="Clear From Date"
                 aria-label="Clear From Date"
               >
@@ -249,14 +249,14 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
 
         {/* Date To */}
         <div>
-          <label htmlFor="audit-filter-to-date" className="mb-1 block text-xs font-semibold text-[#9edbd2]">
+          <label htmlFor="audit-filter-to-date" className="mb-1 block text-xs font-bold text-[#5B6E69]">
             To Date
           </label>
           <div
             onClick={() => handleContainerClick(toDateRef)}
-            className="group relative flex cursor-pointer items-center rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-2 text-xs text-[#d1e4ff] transition-all hover:border-[#71f8e4]/70 hover:shadow-xs focus-within:border-[#71f8e4]"
+            className="group relative flex cursor-pointer items-center rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 px-3 py-2 text-xs text-[#1C2928] transition focus-within:border-[#174B4A] focus-within:bg-white"
           >
-            <span className="material-symbols-outlined mr-2 text-base text-[#71f8e4] transition-colors group-hover:text-[#71f8e4]">
+            <span className="material-symbols-outlined mr-2 text-base text-[#5B6E69] group-hover:text-[#174B4A]">
               event
             </span>
             <input
@@ -267,7 +267,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
               max={todayStr}
               value={toDateValue}
               onChange={(e) => handleToDateChange(e.target.value)}
-              className="w-full cursor-pointer bg-transparent text-xs text-[#d1e4ff] focus:outline-none [color-scheme:dark]"
+              className="w-full cursor-pointer bg-transparent text-xs font-medium text-[#1C2928] focus:outline-none"
             />
             {filters.toDateUtc && (
               <button
@@ -276,7 +276,7 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
                   e.stopPropagation();
                   onChange({ toDateUtc: undefined });
                 }}
-                className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-[#5B6E69] hover:text-white"
+                className="ml-1 rounded-full p-0.5 text-[#5B6E69] hover:bg-[#E8F0EA] hover:text-[#1C2928]"
                 title="Clear To Date"
                 aria-label="Clear To Date"
               >
@@ -288,11 +288,11 @@ export function AuditLogFilterBar({ filters, onChange, onReset }: AuditLogFilter
       </div>
 
       {/* Reset Button Action Bar */}
-      <div className="mt-4 flex items-center justify-end border-t border-[#5B6E69]/50 pt-3">
+      <div className="mt-3.5 flex items-center justify-end border-t border-[#ECEEEB] pt-3">
         <button
           type="button"
           onClick={handleReset}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[#5B6E69] bg-[#103B39] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#5B6E69] hover:text-white transition-colors"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#DCE2DD] bg-white px-3 py-1.5 text-xs font-bold text-[#5B6E69] transition hover:bg-[#F7F5EF] hover:text-[#1C2928]"
         >
           <span className="material-symbols-outlined text-sm">restart_alt</span>
           Reset Filters

@@ -9,22 +9,30 @@ export const metadata: Metadata = {
 
 export default function ProviderStatementsPage() {
   return (
-    <>
-      <p role="status" className="mb-6 rounded-xl border border-[#FFD8C2] bg-[#FFF2EB] p-4 text-sm text-[#995436]">
-        Bảng kê hoa hồng đang chờ tích hợp Backend. Dữ liệu và thao tác trên màn hình này chỉ phục vụ minh họa.
-      </p>
-    <Suspense
-      fallback={
-        <div className="p-12 text-center text-xs text-[#5B6E69]">
-          <span className="material-symbols-outlined text-[28px] animate-spin text-[#174B4A] mb-2 block mx-auto">
-            progress_activity
-          </span>
-          Đang tải bảng kê hoa hồng...
-        </div>
-      }
-    >
-      <CommissionStatementsView />
-    </Suspense>
-    </>
+    <div className="space-y-5">
+      <div
+        role="status"
+        className="flex items-start gap-2.5 rounded-xl border border-[#F2D4BE] bg-[#FFF8F2] px-4 py-3 text-xs text-[#854629]"
+      >
+        <span className="material-symbols-outlined mt-0.5 shrink-0 text-[18px] text-[#B96D4C]" aria-hidden="true">
+          info
+        </span>
+        <p className="leading-relaxed">
+          Bảng kê hoa hồng đang chờ tích hợp Backend đầy đủ. Khi máy chủ chưa phản hồi dữ liệu thực, màn hình hiển thị dữ liệu mô phỏng để đối chiếu giao diện.
+        </p>
+      </div>
+      <Suspense
+        fallback={
+          <div className="rounded-2xl border border-[#DCE2DD] bg-white p-12 text-center text-xs text-[#5B6E69] shadow-xs">
+            <span className="material-symbols-outlined mx-auto mb-2 block animate-spin text-[28px] text-[#174B4A]">
+              progress_activity
+            </span>
+            Đang tải bảng kê hoa hồng...
+          </div>
+        }
+      >
+        <CommissionStatementsView />
+      </Suspense>
+    </div>
   );
 }

@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
-import { NotificationBell } from '@/features/operator/notifications/NotificationBell';
-import { useNotificationInbox } from '@/features/operator/notifications/useNotificationInbox';
+import { WebSessionNotificationBell } from '@/features/notifications/WorkspaceNotificationBell';
 import type { PartnerWorkspaceTabKey } from './PartnerSidebar';
 
 export interface BreadcrumbItem {
@@ -43,7 +42,6 @@ export function PartnerHeader({
   breadcrumbs,
 }: PartnerHeaderProps) {
   const currentTabLabel = TAB_LABELS[activeTab] || 'Không gian làm việc';
-  const { items: notificationItems, unreadCount, markRead } = useNotificationInbox({ enabled: !isDemo });
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 sm:px-6 py-3.5 backdrop-blur-md shadow-2xs">
@@ -118,7 +116,7 @@ export function PartnerHeader({
           </div>
         )}
 
-        <NotificationBell items={notificationItems} unreadCount={unreadCount} onMarkRead={markRead} />
+        {!isDemo && <WebSessionNotificationBell role="TourOperator" />}
 
         <div className="h-5 w-px bg-slate-200" aria-hidden="true" />
 

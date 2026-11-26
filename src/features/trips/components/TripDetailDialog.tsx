@@ -11,6 +11,7 @@ import type {
   TripListItem,
 } from '../types/tripHistoryContract';
 import { formatTripDate, formatTripDateTime, formatTripTime } from '../utils/formatTripDate';
+import { formatTripDisplayTitle } from '../utils/formatTripDisplayTitle';
 import type { TripDetailFocus } from './TripCard';
 import { useModalFocusTrap } from './useModalFocusTrap';
 import { ComplaintEntryAction } from '@/features/complaints/submit/components/ComplaintEntryAction';
@@ -40,10 +41,10 @@ function formatVnd(amount: number): string {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <p className="flex flex-wrap gap-x-2">
-      <span className="font-semibold text-slate-700">{label}</span>
-      <span className="text-slate-600">{children}</span>
-    </p>
+    <div className="flex items-start justify-between gap-4 py-1.5">
+      <span className="shrink-0 text-[#5B6E69]">{label}</span>
+      <span className="text-right font-semibold text-[#1C2928]">{children}</span>
+    </div>
   );
 }
 
@@ -65,15 +66,27 @@ function Section({
     <section
       ref={ref}
       data-highlighted={highlighted ? 'true' : undefined}
-      className={`rounded-xl border p-3 ${highlighted ? 'border-[#174B4A] bg-[#E6F4F1]/60' : 'border-slate-100 bg-slate-50'}`}
+      className={`rounded-xl border px-4 py-3 ${
+        highlighted
+          ? 'border-[#174B4A] bg-[#E8F0EA]/70'
+          : 'border-[#EDEAE1] bg-[#F7F5EF]'
+      }`}
     >
-      <h5 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{heading}</h5>
-      <div className="mt-2 space-y-1 text-xs">{children}</div>
+      <h5 className="text-xs font-semibold text-[#5B6E69]">{heading}</h5>
+      <div className="mt-2 divide-y divide-[#EDEAE1]/80 text-xs">{children}</div>
     </section>
   );
 }
 
-function BookingSections({ detail, focus, allowDemo }: { detail: BookingTripDetail; focus?: TripDetailFocus; allowDemo: boolean }) {
+function BookingSections({
+  detail,
+  focus,
+  allowDemo,
+}: {
+  detail: BookingTripDetail;
+  focus?: TripDetailFocus;
+  allowDemo: boolean;
+}) {
   const { adult, child, infant } = detail.participants;
   const counts = [
     adult > 0 ? copy.adults(adult) : null,
@@ -95,11 +108,13 @@ function BookingSections({ detail, focus, allowDemo }: { detail: BookingTripDeta
         )}
       </Section>
       <Section heading={copy.participantsHeading}>
-        {counts.map((text) => (
-          <p key={text} className="text-slate-600">
-            {text}
-          </p>
-        ))}
+        <div className="space-y-1 py-1">
+          {counts.map((text) => (
+            <p key={text} className="font-semibold text-[#1C2928]">
+              {text}
+            </p>
+          ))}
+        </div>
       </Section>
       {detail.cancellation && (
         <Section heading={copy.cancellationHeading}>
@@ -135,36 +150,49 @@ function ItinerarySections({ detail }: { detail: ItineraryTripDetail }) {
   return (
     <>
       {detail.visitedCount !== undefined && (
-        <p className="text-xs font-semibold text-slate-600">
+        <p className="text-xs font-semibold text-[#5B6E69]">
           {tripReviewEn.tripHistory.card.visitedOf(detail.visitedCount, detail.stopCount)}
         </p>
       )}
-      <section className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-        <h5 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{copy.stopsHeading}</h5>
-        <ol className="mt-2 space-y-2 text-xs">
-          {detail.stops.map((stop) => (
-            <li key={stop.sequenceNo} className="rounded-lg border border-slate-200 bg-white p-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span data-stop-name className="font-bold text-[#1C2928]">
-                  {stop.poiName}
-                </span>
-                {stop.visitStatus && (
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
-                    {copy.stopStatus[stop.visitStatus]}
+      <section className="space-y-2">
+        <h5 className="text-xs font-semibold text-[#5B6E69]">{copy.stopsHeading}</h5>
+        <ol className="divide-y divide-[#EDEAE1] rounded-xl border border-[#DCE2DD] bg-white text-xs">
+          {detail.stops.map((stop, index) => (
+            <li key={stop.sequenceNo} className="flex items-start gap-3 px-4 py-3">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#174B4A] text-[11px] font-bold text-white">
+                {index + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span data-stop-name className="font-bold text-[#1C2928]">
+                    {stop.poiName}
                   </span>
+                  {stop.visitStatus && (
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+                        stop.visitStatus === 'Reached'
+                          ? 'bg-[#E8F0EA] text-[#174B4A]'
+                          : stop.visitStatus === 'Skipped'
+                            ? 'bg-[#FEF3E2] text-[#B45309]'
+                            : 'bg-[#F7F5EF] text-[#5B6E69]'
+                      }`}
+                    >
+                      {copy.stopStatus[stop.visitStatus]}
+                    </span>
+                  )}
+                </div>
+                {stop.plannedArrivalUtc && stop.plannedDepartureUtc && (
+                  <p className="mt-1 text-[#5B6E69]">
+                    {copy.plannedWindow(formatTripTime(stop.plannedArrivalUtc), formatTripTime(stop.plannedDepartureUtc))}
+                  </p>
+                )}
+                {stop.reachedAtUtc && (
+                  <p className="mt-0.5 text-[#5B6E69]">{copy.reachedAt(formatTripDateTime(stop.reachedAtUtc))}</p>
+                )}
+                {stop.skippedAtUtc && (
+                  <p className="mt-0.5 text-[#5B6E69]">{copy.skippedAt(formatTripDateTime(stop.skippedAtUtc))}</p>
                 )}
               </div>
-              {stop.plannedArrivalUtc && stop.plannedDepartureUtc && (
-                <p className="mt-0.5 text-slate-500">
-                  {copy.plannedWindow(formatTripTime(stop.plannedArrivalUtc), formatTripTime(stop.plannedDepartureUtc))}
-                </p>
-              )}
-              {stop.reachedAtUtc && (
-                <p className="text-slate-500">{copy.reachedAt(formatTripDateTime(stop.reachedAtUtc))}</p>
-              )}
-              {stop.skippedAtUtc && (
-                <p className="text-slate-500">{copy.skippedAt(formatTripDateTime(stop.skippedAtUtc))}</p>
-              )}
             </li>
           ))}
         </ol>
@@ -191,6 +219,10 @@ export function TripDetailDialog({ item, focus, allowDemo, onClose }: TripDetail
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
   const [attempt, setAttempt] = useState(0);
+
+  const displayTitle = item.kind === 'itinerary'
+    ? formatTripDisplayTitle(item.title, item.departureAtUtc)
+    : item.title;
 
   const dialogRef = useModalFocusTrap<HTMLDivElement>({
     isOpen: true,
@@ -226,19 +258,19 @@ export function TripDetailDialog({ item, focus, allowDemo, onClose }: TripDetail
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C2928]/45 p-4 backdrop-blur-xs"
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
-        <div className="flex items-start justify-between gap-3">
-          <h4 id={titleId} className="text-base font-extrabold text-[#1C2928]">
-            {item.title}
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#DCE2DD] bg-white shadow-xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#EDEAE1] px-6 py-4">
+          <h4 id={titleId} className="text-base font-bold text-[#1C2928]">
+            {displayTitle}
           </h4>
           <button
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label={tripReviewEn.actions.close}
-            className="text-slate-400 hover:text-slate-600"
+            className="rounded-lg p-1 text-[#5B6E69] transition hover:bg-[#F7F5EF] hover:text-[#1C2928]"
           >
             <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
               close
@@ -246,21 +278,21 @@ export function TripDetailDialog({ item, focus, allowDemo, onClose }: TripDetail
           </button>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="space-y-4 px-6 py-5">
           {state.phase === 'loading' && (
-            <p role="status" className="text-xs font-semibold text-slate-500">
+            <p role="status" className="py-4 text-center text-xs font-medium text-[#5B6E69]">
               {copy.loading}
             </p>
           )}
 
           {state.phase === 'error' && (
-            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
+            <div role="alert" className="rounded-xl border border-[#F5C2CC] bg-[#FDECEF] p-4 text-xs text-[#8C1030]">
               <p>{state.message}</p>
               {state.retryable && (
                 <button
                   type="button"
                   onClick={retry}
-                  className="mt-3 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700"
+                  className="mt-3 rounded-xl bg-[#174B4A] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#103B39]"
                 >
                   {tripReviewEn.actions.retry}
                 </button>
@@ -275,7 +307,6 @@ export function TripDetailDialog({ item, focus, allowDemo, onClose }: TripDetail
               <ItinerarySections detail={state.detail} />
             ))}
         </div>
-
       </div>
     </div>
   );

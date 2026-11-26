@@ -7,10 +7,11 @@ import { AdminTopbar } from './AdminTopbar';
 
 interface AdminConsoleShellProps {
   role: AdministrationRole;
+  notificationSessionKey?: number;
   children: ReactNode;
 }
 
-export function AdminConsoleShell({ role, children }: AdminConsoleShellProps) {
+export function AdminConsoleShell({ role, notificationSessionKey, children }: AdminConsoleShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -30,6 +31,7 @@ export function AdminConsoleShell({ role, children }: AdminConsoleShellProps) {
         {/* Dynamic Contextual Topbar */}
         <AdminTopbar
           role={role}
+          notificationSessionKey={notificationSessionKey}
           onOpenMobileSidebar={() => setMobileOpen(true)}
         />
 

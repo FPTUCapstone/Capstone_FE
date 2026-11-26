@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { adminStaffEn } from '@/features/admin/staff/resources/en';
 import { ROUTES } from '@/lib/routes';
 import { StaffAnalyticsTabView } from './StaffAnalyticsTabView';
@@ -26,41 +27,31 @@ export function StaffDashboardView() {
   return (
     <div className="pb-16 text-[#1C2928]">
       <div className="mx-auto max-w-7xl">
-        {/* Workspace Header - Forest Charcoal Authority */}
-        <header className="mb-6 rounded-2xl border border-[#103B39] bg-[#1C2928] p-6 text-[#F7F5EF] shadow-sm sm:p-8">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#5B6E69] bg-[#103B39] px-3 py-1 text-xs font-bold tracking-wider text-[#E8F0EA] uppercase">
-                <span className="h-2 w-2 rounded-full bg-[#5B6E69]" aria-hidden="true" />
-                <span>{copy.eyebrow}</span>
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-[#FFFFFF] sm:text-3xl">
-                {copy.title}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5B6E69]">
-                {copy.subtitle}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#5B6E69] bg-[#103B39] px-3.5 py-2 text-xs font-bold text-[#E8F0EA]">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-                  badge
-                </span>
-                <span>{copy.roleBadge}</span>
+        <PageHeader
+          className="mb-6"
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.subtitle}
+          badge={
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#CBE0D4] bg-[#E8F0EA] px-2.5 py-0.5 text-xs font-bold text-[#103B39]">
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
+                badge
               </span>
-              <Link
-                href={ROUTES.admin.accountSecurity}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#174B4A] border border-[#5B6E69] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#103B39] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B6E69]"
-              >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-                  lock_reset
-                </span>
-                <span>{copy.securityActionLabel}</span>
-              </Link>
-            </div>
-          </div>
-        </header>
+              <span>{copy.roleBadge}</span>
+            </span>
+          }
+          actions={
+            <Link
+              href={ROUTES.admin.accountSecurity}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
+            >
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                lock_reset
+              </span>
+              <span>{copy.securityActionLabel}</span>
+            </Link>
+          }
+        />
 
         {/* Dashboard Main Tabs (Overview | Analytics) */}
         <DashboardMainTabs

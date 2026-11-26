@@ -34,3 +34,32 @@ export interface PoiManagementResponse {
   metadata: { categories: PoiManagementCategory[] };
   items: PoiManagementItem[];
 }
+
+export interface PoiDeactivationReferences {
+  poiId: number | string;
+  poiName: string;
+  status: string;
+  activeItinerariesCount: number;
+  activeRoutesCount: number;
+  openCommercialBookingsCount: number;
+  hasActiveReferences: boolean;
+  referenceSnapshotToken: string;
+  messageCode: string | null;
+  message: string | null;
+}
+
+export interface DeactivatePoiRequest {
+  poiId: number | string;
+  reason: string;
+  referenceSnapshotToken: string;
+  idempotencyKey?: string;
+}
+
+export interface DeactivatePoiResponse {
+  poiId: number | string;
+  status: string;
+  deactivatedConnectingRoutesCount: number;
+  deactivatedAtUtc: string;
+  messageCode: string;
+  message: string;
+}

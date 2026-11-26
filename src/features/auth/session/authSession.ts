@@ -68,6 +68,7 @@ export function parseWebAuthContext(value: unknown): WebAuthContext {
 }
 
 let current: WebAuthContext | null = null;
+let credentialRevision = 0;
 const listeners = new Set<() => void>();
 function notify(): void { for (const listener of listeners) { try { listener(); } catch { /* A broken subscriber must not break the session. */ } } }
 // Display metadata is never used to restore authentication or authorize requests.
@@ -83,6 +84,7 @@ export const AuthStorage = {
     return () => { listeners.delete(listener); };
   },
   clear(): void {
+    credentialRevision++;
     current = null;
     storageOperation((storage) => {
       for (const key of ['tripmate_access_token', 'tripmate_refresh_token', 'tripmate_user']) storage.removeItem(key);
@@ -93,6 +95,7 @@ export const AuthStorage = {
     if (typeof window === 'undefined') throw new InvalidAuthContextError();
     let context: WebAuthContext;
     try { context = parseWebAuthContext(value); } catch (error) { this.clear(); throw error; }
+    credentialRevision++;
     current = context;
     storageOperation((storage) => {
       for (const key of ['tripmate_access_token', 'tripmate_refresh_token', 'tripmate_user']) storage.removeItem(key);
@@ -105,6 +108,9 @@ export const AuthStorage = {
     notify();
     return context;
   },
+  // Lifecycle checks only; never exposes an expired credential or authorizes a request.
+  getCredentialRevision(): number { return credentialRevision; },
+  getSessionOwner(): { userId: number; role: AuthRole; expiresAtUtc: string } | null { return current ? { userId: current.userId, role: current.role, expiresAtUtc: current.accessTokenExpiresAtUtc } : null; },
   getContext(): WebAuthContext | null { return current && Date.parse(current.accessTokenExpiresAtUtc) > Date.now() ? current : null; },
   getAccessToken(): string | null { return this.getContext()?.accessToken ?? null; },
 };

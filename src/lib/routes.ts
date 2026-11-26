@@ -1,6 +1,7 @@
 export const ROUTES = {
   home: '/',
   about: '/about',
+  weather: '/weather',
   signIn: '/sign-in',
   register: '/register',
   verifyAccount: '/verify-account',
@@ -8,6 +9,7 @@ export const ROUTES = {
   pois: '/pois',
   poi: (id: string | number) => `/pois/${id}`,
   plan: '/plan',
+  messages: '/messages',
   myItineraries: '/itineraries',
   itinerary: (id: string | number) => `/itinerary/${id}`,
   tours: '/tours',
@@ -42,6 +44,7 @@ export const ROUTES = {
     dashboard: '/provider/bookings',
     bookings: '/provider/bookings',
     bookingDetail: (id: string | number) => `/provider/bookings/${encodeURIComponent(id)}`,
+    availability: '/provider/availability',
     statements: '/provider/statements',
   },
   account: {

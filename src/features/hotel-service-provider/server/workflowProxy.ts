@@ -35,7 +35,13 @@ export async function providerServerContext() {
   if (envelope?.success !== true || !data || (data.mustChangePassword !== undefined && typeof data.mustChangePassword !== 'boolean') || data.status !== 'Active' || typeof data.accessToken !== 'string' || !data.accessToken) {
     throw new Error('PROVIDER_SESSION_UNAVAILABLE');
   }
-  return { role: data.role as string, mustChangePassword: data.mustChangePassword === true, token: data.accessToken as string };
+  return {
+    role: data.role as string,
+    mustChangePassword: data.mustChangePassword === true,
+    token: data.accessToken as string,
+    fullName: typeof data.fullName === 'string' && data.fullName.trim() ? data.fullName.trim() : undefined,
+    email: typeof data.email === 'string' && data.email.trim() ? data.email.trim() : undefined,
+  };
 }
 
 async function readBody(request: Request): Promise<Record<string, unknown> | Response> {
@@ -70,6 +76,46 @@ function validateMutation(body: Record<string, unknown>, operation: 'decision' |
     return body.decision === 'Confirmed' || (body.decision === 'Rejected' && typeof body.reason === 'string' && !!body.reason.trim());
   }
   return body.outcome === 'NoShow' || (body.outcome === 'Completed' && typeof body.actualAmount === 'number' && Number.isFinite(body.actualAmount) && body.actualAmount > 0);
+}
+
+export async function proxyProviderAvailability(request: Request, serviceId?: string, startsAt?: string): Promise<Response> {
+  const publishing = startsAt !== undefined;
+  const utcTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+  if (serviceId !== undefined && !/^[1-9]\d{0,18}$/.test(serviceId)) return failure(400);
+  if (publishing && (!serviceId || !isSameOriginRequest(request))) return failure(403);
+  if (publishing && !utcTimestamp.test(startsAt)) return failure(400);
+  try {
+    const session = await providerServerContext();
+    if (!session) return failure(401);
+    if (session.role !== 'ServiceProvider' || session.mustChangePassword) return failure(403);
+    const headers: Record<string, string> = { Authorization: `Bearer ${session.token}` };
+    const base = '/api/v1/provider/commercial-services';
+    let path = serviceId ? `${base}/${serviceId}/availability` : base;
+    let body: string | undefined;
+    if (publishing) {
+      const input = await readBody(request);
+      if (input instanceof Response) return input;
+      if (!Number.isSafeInteger(input.quantity) || (input.quantity as number) < 0 || (input.quantity as number) > 2147483647) return failure(400);
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({ quantity: input.quantity });
+      path += `/${encodeURIComponent(startsAt)}`;
+    } else if (serviceId) {
+      const incoming = new URL(request.url).searchParams;
+      const query = new URLSearchParams();
+      for (const key of ['from', 'to']) {
+        const value = incoming.get(key);
+        if (value === null) continue;
+        if (!utcTimestamp.test(value)) return failure(400);
+        query.set(key, value);
+      }
+      if (query.size) path += `?${query}`;
+    }
+    const response = await fetchBackend(path, { method: publishing ? 'PUT' : 'GET', headers, body, signal: request.signal });
+    if (!response.ok) return failure(response.status);
+    return json(await response.json(), response.status);
+  } catch {
+    return failure(503);
+  }
 }
 
 export async function proxyProviderWorkflow(request: Request, id?: string, operation?: 'decision' | 'outcome'): Promise<Response> {

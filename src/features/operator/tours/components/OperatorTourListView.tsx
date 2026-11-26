@@ -196,17 +196,17 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50/75 text-slate-600">
+              <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-[#5B6E69]">
                 <tr>
-                  <th className="p-4 font-bold">Gói tour</th>
-                  <th className="p-4 font-bold">Điểm đến</th>
-                  <th className="p-4 font-bold">Thời lượng</th>
-                  <th className="p-4 text-right font-bold">Giá người lớn</th>
-                  <th className="p-4 font-bold">Trạng thái</th>
-                  <th className="p-4 font-bold text-right">Thao tác</th>
+                  <th className="p-3.5 font-bold">Gói tour</th>
+                  <th className="p-3.5 font-bold whitespace-nowrap">Điểm đến</th>
+                  <th className="p-3.5 font-bold whitespace-nowrap">Thời lượng</th>
+                  <th className="p-3.5 text-right font-bold whitespace-nowrap">Giá người lớn</th>
+                  <th className="p-3.5 font-bold whitespace-nowrap">Trạng thái</th>
+                  <th className="p-3.5 font-bold text-right whitespace-nowrap">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#ECEEEB]">
                 {filteredTours.map((t) => {
                   const canEdit =
                     t.status === 'Draft' || t.status === 'Rejected' || t.status === 'Approved' || t.status === 'Published';
@@ -214,10 +214,10 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                   const canDelete = canSubmit;
 
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50/50 transition">
-                      <td className="p-4">
+                    <tr key={t.id} className="hover:bg-[#F7F5EF]/60 transition">
+                      <td className="p-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#174B4A] font-bold">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8F0EA] text-[#174B4A] font-bold">
                             <span className="material-symbols-outlined text-[20px]">tour</span>
                           </div>
                           <div>
@@ -227,7 +227,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                             >
                               {t.title}
                             </Link>
-                            <p className="font-mono text-[11px] text-slate-400">
+                            <p className="font-mono text-[11px] text-[#5B6E69]">
                               {t.tourCode} · v{t.version}
                             </p>
                             {(t.upcomingDepartureCount !== undefined || t.completedDepartureCount !== undefined) && (
@@ -239,15 +239,15 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 font-medium text-slate-700">{t.destination}</td>
-                      <td className="p-4 text-slate-600">{t.durationDays} ngày</td>
-                      <td className="p-4 text-right tabular-nums font-mono font-bold text-[#1C2928]">
+                      <td className="p-3.5 font-medium text-[#1C2928] whitespace-nowrap">{t.destination}</td>
+                      <td className="p-3.5 text-[#5B6E69] whitespace-nowrap">{t.durationDays} ngày</td>
+                      <td className="p-3.5 text-right tabular-nums font-mono font-bold text-[#1C2928] whitespace-nowrap">
                         {t.basePrice.toLocaleString()} đ
                       </td>
-                      <td className="p-4">
+                      <td className="p-3.5 whitespace-nowrap">
                         <OperatorTourStatusBadge status={t.status as TourLifecycleStatus} publishedAtUtc={t.publishedAtUtc} />
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-3.5 text-right">
                         <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                           {(t.status === 'Approved' || t.status === 'Published') && (
                             <Link

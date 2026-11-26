@@ -10,7 +10,10 @@ const nextConfig: NextConfig = {
     .filter(Boolean),
   // Proxy unmatched /api/v1/* requests to the backend so browser auth calls are same-origin.
   async rewrites() {
-    return { beforeFiles: [], afterFiles: [], fallback: getApiProxyRewrites(process.env.TRIPMATE_API_BASE_URL) };
+    const api = getApiProxyRewrites(process.env.TRIPMATE_API_BASE_URL);
+    const origin = api[0]?.destination.split('/api/v1/')[0];
+    const hubs = origin ? ['group-chat', 'direct-chat'].map(name => ({ source: `/hubs/${name}/:path*`, destination: `${origin}/hubs/${name}/:path*` })) : [];
+    return { beforeFiles: [], afterFiles: [], fallback: [...api, ...hubs] };
   },
 };
 

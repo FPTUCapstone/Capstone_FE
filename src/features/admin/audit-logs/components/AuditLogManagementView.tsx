@@ -8,6 +8,7 @@ import { AuditLogFilterBar } from './AuditLogFilterBar';
 import { AuditLogTable } from './AuditLogTable';
 import { AuditLogPagination } from './AuditLogPagination';
 import { AuditLogDetailDrawer } from './AuditLogDetailDrawer';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 
@@ -109,21 +110,12 @@ export function AuditLogManagementView() {
   };
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-6">
-      {/* Header Banner */}
-      <div className="flex flex-col gap-1 border-b border-[#DCE2DD] pb-5">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-2xl text-[#174B4A]">
-            find_in_page
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#1C2928]">
-            System Audit Logs
-          </h1>
-        </div>
-        <p className="text-sm text-[#5B6E69]">
-          Operational, security, and administrative event trail for auditability and compliance.
-        </p>
-      </div>
+    <div className="mx-auto flex max-w-7xl flex-col gap-5 pb-12 text-[#1C2928]">
+      <PageHeader
+        eyebrow="Security & Compliance"
+        title="System Audit Logs"
+        description="Operational, security, and administrative event trail for auditability and compliance."
+      />
 
       {/* Error Alert Display */}
       {error && (

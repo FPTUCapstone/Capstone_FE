@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   POI_CATEGORY_PREVIEW_ENABLED,
   POI_CATEGORY_PREVIEW_FIXTURES,
@@ -178,31 +179,25 @@ export function ExplorePoisPage() {
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
       <main>
-        <section className="border-b border-[#174B4A]/40 bg-[#0C2423] px-4 py-5 text-white sm:px-6 sm:py-6 lg:px-8">
-          <div className="mx-auto max-w-[1440px]">
-            <nav aria-label="Đường dẫn điều hướng" className="mb-1.5 text-xs font-semibold text-[#DCE2DD]">
-              <Link href="/" className="transition hover:text-white">Trang chủ</Link>{' '}
-              <span aria-hidden="true">/</span>{' '}
-              <span aria-current="page" className="text-white">Khám phá địa điểm</span>
-            </nav>
-            <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
-              <div>
-                <h1 className="text-2xl font-black tracking-[-.035em] text-white sm:text-3xl">
-                  Khám phá địa điểm
-                </h1>
-                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[#E8F0EA]/85 sm:text-sm">
-                  Tìm kiếm và định vị các điểm tham quan đang hoạt động, lọc theo danh mục và xem trực tiếp trên bản đồ địa lý Mapbox.
-                </p>
-              </div>
-              <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#174B4A] bg-white/10 px-3 py-1.5 text-xs font-bold text-[#E8F0EA]">
-                <span className="h-2 w-2 rounded-full bg-[#6EE7B7]" aria-hidden="true" />
-                {data ? `${countFormatter.format(data.totalCount)} địa điểm phù hợp` : 'Đang cập nhật dữ liệu'}
-              </div>
-            </div>
-          </div>
-        </section>
-
         <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+          <PageHeader
+            bordered={false}
+            className="mb-4"
+            title="Khám phá địa điểm"
+            badge={
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#CBE0D4] bg-[#E8F0EA] px-2.5 py-0.5 text-xs font-bold text-[#103B39]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" aria-hidden="true" />
+                {data ? `${countFormatter.format(data.totalCount)} địa điểm phù hợp` : 'Đang cập nhật dữ liệu'}
+              </span>
+            }
+            actions={
+              <nav aria-label="Đường dẫn điều hướng" className="text-xs font-semibold text-[#5B6E69]">
+                <Link href="/" className="transition hover:text-[#174B4A]">Trang chủ</Link>{' '}
+                <span aria-hidden="true" className="text-[#94A59F]">/</span>{' '}
+                <span aria-current="page" className="text-[#1C2928]">Khám phá địa điểm</span>
+              </nav>
+            }
+          />
           {locationMessage ? (
             <div className="mb-4 rounded-xl border border-[#B2D6C4] bg-[#E8F0EA] px-4 py-2.5 text-sm font-semibold text-[#103B39]" role="status">
               {locationMessage}
