@@ -40,32 +40,6 @@ function mockBackend(routes: Record<string, Handler | Handler[]>) {
   return mock;
 }
 
-/** One row of the TM-83 Staff queue (GET /api/v1/admin/tours) with the Screen 13 columns. */
-const summary = (id: number, name: string, extra: Record<string, unknown> = {}) => ({
-  id,
-  operatorUserId: 101,
-  title: name,
-  status: 'Pending',
-  submittedAtUtc: '2026-11-10T08:00:00+00:00',
-  submissionNote: null,
-  operatorName: 'Sunrise Travel',
-  location: 'Hoi An',
-  category: null,
-  durationDays: 2,
-  priceVnd: 1500000,
-  nextDepartureAtUtc: '2026-11-20T01:00:00+00:00',
-  nextDepartureCapacity: 8,
-  imageCount: 2,
-  ...extra,
-});
-
-const page = (items: unknown[], totalCount = items.length, pageNumber = 1) => ({
-  items,
-  totalCount,
-  page: pageNumber,
-  pageSize: 20,
-});
-
 const detail = () => ({
   tourId: 12,
   tourName: 'Hoi An lantern night',
@@ -118,9 +92,31 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('Pending queue backed by the backend (Screen #13)', () => {
-  it('renders backend rows, the total, the page indicator and context-preserving links', async () => {
-    mockBackend({ 'GET /api/admin/tours/pending': () => json(page([summary(12, 'Hoi An lantern night'), summary(13, 'Mountain trek')], 25, 1)) });
+/** One row of the TM-82 combined moderation queue (GET /api/v1/admin/tours/moderation-queue). */
+const moderationQueueItem = (id: number, title: string, kind: 'NewSubmission' | 'DraftVersion' = 'NewSubmission', extra: Record<string, unknown> = {}) => ({
+  id,
+  tourId: kind === 'DraftVersion' ? 42 : id,
+  kind,
+  operatorUserId: 101,
+  title,
+  status: kind === 'DraftVersion' ? 'PendingReview' : 'Pending',
+  submittedAtUtc: '2026-11-10T08:00:00+00:00',
+  ...extra,
+});
+
+const moderationPage = (items: unknown[], totalCount = items.length, pageNumber = 1) => ({
+  items,
+  totalCount,
+  page: pageNumber,
+  pageSize: 20,
+});
+
+describe('Pending queue backed by the backend (Screen #13 / TM-82 §5.6 combined queue)', () => {
+  it('renders both kinds, the total, the page indicator and context-preserving links', async () => {
+    mockBackend({
+      'GET /api/admin/tours/moderation-queue': () =>
+        json(moderationPage([moderationQueueItem(12, 'Hoi An lantern night'), moderationQueueItem(55, 'Tour Bà Nà (draft)', 'DraftVersion')], 25, 1)),
+    });
 
     render(<TourReviewQueue />);
 
@@ -129,14 +125,19 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
     expect(rows).toHaveLength(2);
     expect(within(rows[0]).getByText('Hoi An lantern night')).toBeTruthy();
     expect(within(rows[0]).getByRole('link').getAttribute('href')).toBe('/admin/tours/reviews/12');
+    expect(within(rows[1]).getByText('Tour Bà Nà (draft)')).toBeTruthy();
+    expect(within(rows[1]).getByText(copy.queue.draftVersionLabel)).toBeTruthy();
+    expect(within(rows[1]).getByRole('link').getAttribute('href')).toBe('/admin/tours/reviews/55?kind=draft-change');
     expect(screen.getByText(copy.queue.totalCount(25))).toBeTruthy();
     expect(screen.getByText(copy.pagination.pageOf(1, 2))).toBeTruthy();
     expect(screen.getByRole('link', { name: copy.pagination.next }).getAttribute('href')).toBe('/admin/tours/reviews?page=2');
     expect(screen.queryByText(copy.demoBanner.body)).toBeNull();
   });
 
-  it('shows "Not available" for a legacy row that has no submission time instead of a made-up date', async () => {
-    mockBackend({ 'GET /api/admin/tours/pending': () => json(page([summary(12, 'Legacy tour', { submittedAtUtc: null })])) });
+  it('shows "Not available" for a row that has no submission time instead of a made-up date', async () => {
+    mockBackend({
+      'GET /api/admin/tours/moderation-queue': () => json(moderationPage([moderationQueueItem(12, 'Legacy tour', 'NewSubmission', { submittedAtUtc: null })])),
+    });
 
     render(<TourReviewQueue />);
 
@@ -144,20 +145,17 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
     expect(within(row).getByText(copy.format.unavailable)).toBeTruthy();
   });
 
-  it('says so when a tour has no departure instead of inventing a date', async () => {
-    mockBackend({
-      'GET /api/admin/tours/pending': () =>
-        json(page([summary(12, 'No schedule tour', { nextDepartureAtUtc: null, nextDepartureCapacity: null })])),
-    });
-
+  it('does not show a search box live — the combined queue endpoint has no keyword parameter', async () => {
+    mockBackend({ 'GET /api/admin/tours/moderation-queue': () => json(moderationPage([moderationQueueItem(12, 'A')])) });
     render(<TourReviewQueue />);
+    await screen.findByRole('list', { name: copy.queue.listLabel });
 
-    expect(await screen.findByText(copy.live.noDeparture)).toBeTruthy();
+    expect(screen.queryByRole('searchbox', { name: copy.queue.searchLabel })).toBeNull();
   });
 
-  it('sends the applied page and keyword to the backend', async () => {
-    navigation.params = new URLSearchParams('page=2&q=lantern');
-    const fetchMock = mockBackend({ 'GET /api/admin/tours/pending?pageNumber=2&keyword=lantern': () => json(page([], 0, 2)) });
+  it('sends only the applied page to the backend (no keyword)', async () => {
+    navigation.params = new URLSearchParams('page=2');
+    const fetchMock = mockBackend({ 'GET /api/admin/tours/moderation-queue?page=2': () => json(moderationPage([], 0, 2)) });
 
     render(<TourReviewQueue />);
 
@@ -165,19 +163,8 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('applies a search only on explicit submit', async () => {
-    mockBackend({ 'GET /api/admin/tours/pending': () => json(page([summary(12, 'A')])) });
-    render(<TourReviewQueue />);
-    await screen.findByRole('list', { name: copy.queue.listLabel });
-
-    fireEvent.change(screen.getByRole('searchbox', { name: copy.queue.searchLabel }), { target: { value: 'Ba Na' } });
-    expect(navigation.push).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: copy.queue.searchButton }));
-    expect(navigation.push).toHaveBeenCalledWith('/admin/tours/reviews?q=Ba+Na');
-  });
-
   it('explains a forbidden response without offering a pointless retry', async () => {
-    mockBackend({ 'GET /api/admin/tours/pending': () => json({ title: 'no' }, 403) });
+    mockBackend({ 'GET /api/admin/tours/moderation-queue': () => json({ title: 'no' }, 403) });
 
     render(<TourReviewQueue />);
 
@@ -186,7 +173,7 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
   });
 
   it('sends the reviewer back to sign-in when the session has ended', async () => {
-    mockBackend({ 'GET /api/admin/tours/pending': () => json({ title: 'expired' }, 401) });
+    mockBackend({ 'GET /api/admin/tours/moderation-queue': () => json({ title: 'expired' }, 401) });
 
     render(<TourReviewQueue />);
 
@@ -198,7 +185,7 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
 
   it('shows a retryable error on a temporary failure and recovers', async () => {
     mockBackend({
-      'GET /api/admin/tours/pending': [() => json({ title: 'down' }, 503), () => json(page([summary(12, 'Recovered tour')]))],
+      'GET /api/admin/tours/moderation-queue': [() => json({ title: 'down' }, 503), () => json(moderationPage([moderationQueueItem(12, 'Recovered tour')]))],
     });
 
     render(<TourReviewQueue />);
@@ -209,7 +196,7 @@ describe('Pending queue backed by the backend (Screen #13)', () => {
   });
 
   it('refuses to render a malformed backend payload', async () => {
-    mockBackend({ 'GET /api/admin/tours/pending': () => json({ items: [{ tourId: 'x' }], totalCount: 1 }) });
+    mockBackend({ 'GET /api/admin/tours/moderation-queue': () => json({ items: [{ id: 'x' }], totalCount: 1 }) });
 
     render(<TourReviewQueue />);
 

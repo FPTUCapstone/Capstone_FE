@@ -104,6 +104,115 @@ export interface ApiPolicy { id: number; name: string; description: string | nul
 export interface ApiCategory { categoryId: number; code: string; name: string; }
 export interface ApiPoi { id: number; name: string; categoryName: string; address: string | null; averageVisitDurationMinutes: number; }
 
+/**
+ * A proposed departure inside a pending change's schedule list (TM-82 / UC-36). A distinct,
+ * superset shape from `ApiDeparture`/`ApiCreateTour['schedules']`: `scheduleId: null` means a
+ * newly proposed schedule, a non-null id must match an existing live `TourSchedule.Id` on the same
+ * tour and is updated in place by the backend, never replaced (spec TM-82 §4).
+ */
+export interface ApiPendingChangeScheduleItem {
+  scheduleId: number | null;
+  startAtUtc: string;
+  endAtUtc: string;
+  meetingPoint: string | null;
+  totalCapacity: number;
+  minimumCapacity: number;
+  registrationDeadlineAtUtc: string | null;
+  adultPrice: number | null;
+  childPrice: number | null;
+  infantPrice: number | null;
+  meetingLatitude?: number | null;
+  meetingLongitude?: number | null;
+}
+
+/** `GetCurrentPendingChangeResponse` field-for-field (Capstone_BE PendingChanges/Get). */
+export interface ApiPendingChange {
+  id: number;
+  tourId: number;
+  status: string;
+  categoryId: number | null;
+  title: string;
+  description: string;
+  basePrice: number;
+  durationDays: number;
+  inclusions: string | null;
+  exclusions: string | null;
+  highlights: string | null;
+  travellerRequirements: string | null;
+  timeZoneId: string;
+  destinationIds: number[];
+  destinationSummary: string;
+  cancellationPolicyTemplateId: number;
+  itineraryItems: ApiItineraryItem[];
+  schedules: ApiPendingChangeScheduleItem[];
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  submittedAtUtc: string | null;
+  reviewedAtUtc: string | null;
+  rejectionReason: string | null;
+}
+
+export interface ApiPendingChangeCreateResult { id: number; tourId: number; status: string; isNew: boolean; }
+export interface ApiPendingChangeSaveResult { id: number; tourId: number; status: string; }
+
+/** Body for `PUT .../pending-changes/{id}` (`SavePendingChangeCommand`'s own fields). */
+export interface ApiPendingChangeSaveBody {
+  categoryId?: number;
+  title: string;
+  description: string;
+  basePrice: number;
+  durationDays: number;
+  destinationIds: number[];
+  cancellationPolicyTemplateId: number;
+  inclusions?: string;
+  exclusions?: string;
+  itineraryItems: ApiItineraryItem[];
+  schedules: ApiPendingChangeScheduleItem[];
+  timeZoneId?: string;
+  highlights?: string;
+  travellerRequirements?: string;
+}
+
+const pendingChangesPath = (tourId: number) => `/operator/tours/${tourId}/pending-changes`;
+
+export const createOrResumePendingChange = (tourId: number) =>
+  request<ApiPendingChangeCreateResult>(pendingChangesPath(tourId), { method: 'POST' });
+
+/** `404 operator_tour.pending_change_not_found` means "no open draft yet", not a failure. */
+export async function getCurrentPendingChange(tourId: number): Promise<ApiPendingChange | null> {
+  try {
+    return await request<ApiPendingChange>(`${pendingChangesPath(tourId)}/current`);
+  } catch (error) {
+    if (error instanceof OperatorTourApiError && error.code === 'operator_tour.pending_change_not_found') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export const savePendingChange = (tourId: number, pendingChangeId: number, body: ApiPendingChangeSaveBody) =>
+  request<ApiPendingChangeSaveResult>(`${pendingChangesPath(tourId)}/${pendingChangeId}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+
+export async function discardPendingChange(tourId: number, pendingChangeId: number): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBase()}${pendingChangesPath(tourId)}/${pendingChangeId}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+  } catch (error) {
+    if (error instanceof OperatorTourApiError) throw error;
+    throw new OperatorTourApiError(0, 'NETWORK', 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.');
+  }
+  if (!response.ok) await fail(response);
+}
+
+export const submitPendingChange = (tourId: number, pendingChangeId: number) =>
+  request<ApiPendingChangeSaveResult>(`${pendingChangesPath(tourId)}/${pendingChangeId}/submit`, { method: 'POST' });
+
 export const listToursPage = (page: number, pageSize = 100) =>
   request<ApiTourListPage>(`/operator/tours?page=${page}&pageSize=${pageSize}`);
 
