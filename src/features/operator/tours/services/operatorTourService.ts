@@ -13,7 +13,10 @@ import {
   type UpdateTourPackagePayload,
 } from '../types/tourLifecycle';
 import {
+  createOrResumePendingChange,
   createTour,
+  discardPendingChange,
+  getCurrentPendingChange,
   getTour,
   listTourMedia,
   uploadTourMedia,
@@ -23,11 +26,17 @@ import {
   listCancellationPolicies,
   listDestinations,
   listCategories,
+  savePendingChange,
   searchSelectablePois,
   listTours,
+  submitPendingChange,
   submitTour,
   updateTour,
   type ApiCreateTour,
+  type ApiItineraryItem,
+  type ApiPendingChange,
+  type ApiPendingChangeSaveBody,
+  type ApiPendingChangeScheduleItem,
   type ApiTourDetail,
   type ApiTourListItem,
   type ApiTourMedia,
@@ -165,7 +174,7 @@ function vietnamToday(): string {
 }
 
 const API_TOUR_STATUSES: readonly TourPackageDto['status'][] = [
-  'Draft', 'Pending', 'Approved', 'Rejected', 'Published', 'Inactive',
+  'Draft', 'Pending', 'Approved', 'Rejected', 'Published', 'Inactive', 'PendingReview',
 ];
 
 /** An unknown status is a contract error: never present it as an editable Draft. */
@@ -687,15 +696,19 @@ export async function createTourPackage(
  * Editing an Approved tour creates a distinct Draft vN+1 record while keeping
  * the original Approved version intact in the demo store.
  */
+/**
+ * UC-36 direct edit. Only for `Draft`/`Rejected` tours — an `Approved`/`Published` tour is edited
+ * through a draft version instead (`createOrResumeDraftVersion`/`saveDraftVersion`/
+ * `submitDraftVersion` below), never through this function.
+ */
 export async function updateTourPackage(
   payload: UpdateTourPackagePayload,
   options: {
     allowDemo?: boolean;
     currentTour: TourPackageDto;
-    createNewVersion?: boolean;
   }
 ): Promise<TourActionResult<TourPackageDto>> {
-  const { currentTour, createNewVersion } = options;
+  const { currentTour } = options;
 
   // Validation
   const errors = validateUpdateTourPackage(payload, currentTour);
@@ -712,131 +725,9 @@ export async function updateTourPackage(
   }
 
   if (currentTour.status === 'Approved' || currentTour.status === 'Published') {
-    if (!createNewVersion) {
-      return {
-        status: 'ERROR',
-        message: OPERATOR_TOUR_MESSAGES.APPROVED_DIRECT_EDIT,
-      };
-    }
-
-    const allowDemo = Boolean(options?.allowDemo) && isTourDemoAllowedInCurrentEnv();
-
-    if (allowDemo) {
-      // BR-103 Lineage Resolution:
-      // An Approved tour must NEVER be edited in place. Retain the original Approved record unchanged.
-      if (!demoToursStore.some((t) => t.id === currentTour.id)) {
-        demoToursStore = [...demoToursStore, currentTour];
-      }
-
-      // Search the store for all records belonging to the same tourCode lineage.
-      const lineage = demoToursStore.filter((t) => t.tourCode === currentTour.tourCode);
-      const successors = lineage.filter((t) => t.version > currentTour.version);
-
-      // 1. Fail closed if any successor is currently Pending approval (MSG122)
-      const pendingSuccessor = successors.find((t) => t.status === 'Pending');
-      if (pendingSuccessor) {
-        return {
-          status: 'ERROR',
-          message: OPERATOR_TOUR_MESSAGES.PENDING_READ_ONLY,
-          isDemo: true,
-        };
-      }
-
-      // 2. Reuse / update existing editable Draft or Rejected successor if one exists
-      const editableSuccessor = successors.find(
-        (t) => t.status === 'Draft' || t.status === 'Rejected'
-      );
-      if (editableSuccessor) {
-        const updatedSuccessor: TourPackageDto = {
-          ...editableSuccessor,
-          title: payload.title,
-          destination: payload.destination,
-          category: payload.category || editableSuccessor.category,
-          durationDays: payload.durationDays,
-          basePrice: payload.basePrice,
-          childPrice: payload.childPrice,
-          maxCapacity: payload.maxCapacity,
-          description: payload.description,
-          inclusions: payload.inclusions,
-          exclusions: payload.exclusions,
-          cancellationPolicy: payload.cancellationPolicy,
-          itinerary: payload.itinerary,
-          schedules: payload.schedules,
-          status: 'Draft',
-          updatedAt: new Date().toISOString(),
-          isDemo: true,
-        };
-
-        demoToursStore = demoToursStore.map((t) =>
-          t.id === editableSuccessor.id ? updatedSuccessor : t
-        );
-
-        return {
-          status: 'SUCCESS',
-          data: updatedSuccessor,
-          message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
-          isDemo: true,
-        };
-      }
-
-      // 3. Otherwise allocate maxVersion + 1 with guaranteed store-wide unique record ID
-      const maxVersion = lineage.reduce(
-        (max, t) => Math.max(max, t.version),
-        currentTour.version
-      );
-      const nextVersion = maxVersion + 1;
-
-      let candidateId = `${currentTour.id}-draft-v${nextVersion}`;
-      let counter = 1;
-      while (demoToursStore.some((t) => t.id === candidateId)) {
-        candidateId = `${currentTour.id}-draft-v${nextVersion}-${counter++}`;
-      }
-      const newDraftId = candidateId;
-
-      const draftTour: TourPackageDto = {
-        ...currentTour,
-        id: newDraftId,
-        tourCode: currentTour.tourCode, // preserve logical tour/package identity
-        version: nextVersion,
-        status: 'Draft',
-        title: payload.title,
-        destination: payload.destination,
-        category: payload.category || currentTour.category,
-        durationDays: payload.durationDays,
-        basePrice: payload.basePrice,
-        childPrice: payload.childPrice,
-        maxCapacity: payload.maxCapacity,
-        description: payload.description,
-        inclusions: payload.inclusions,
-        exclusions: payload.exclusions,
-        cancellationPolicy: payload.cancellationPolicy,
-        itinerary: payload.itinerary,
-        schedules: payload.schedules,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isDemo: true,
-      };
-
-      // Add the new Draft version to the demo store without replacing the Approved tour
-      demoToursStore = [draftTour, ...demoToursStore];
-
-      return {
-        status: 'SUCCESS',
-        data: draftTour,
-        message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
-        isDemo: true,
-      };
-    }
-
-    const created = await createTour({
-      ...toBackendPayload(payload),
-      sourceTourId: asBackendId(currentTour.id, 'Mã gói tour nguồn'),
-    }, crypto.randomUUID());
     return {
-      status: 'SUCCESS',
-      data: await loadTourDetail(created.tourId),
-      message: 'Đã tạo bản nháp mới từ tour đã duyệt. Hãy kiểm tra và gửi xét duyệt lại để thay đổi có hiệu lực.',
-      isDemo: false,
+      status: 'ERROR',
+      message: OPERATOR_TOUR_MESSAGES.APPROVED_DIRECT_EDIT,
     };
   }
 
@@ -878,6 +769,202 @@ export async function updateTourPackage(
   const tourId = asBackendId(payload.id, 'Mã gói tour');
   await updateTour(tourId, toBackendPayload(payload));
   return { status: 'SUCCESS', data: await loadTourDetail(tourId), message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS, isDemo: false };
+}
+
+/**
+ * A client-only schedule row's id (e.g. `sch-user-3`) is never a plain positive integer; a row
+ * loaded from the server (draft or live) always is. `scheduleId: null` tells the backend this is
+ * a newly proposed schedule rather than an update to an existing `TourSchedule` row (spec TM-82 §4
+ * — the backend updates a matched id in place and never replaces a past-departure schedule, so
+ * losing an existing id here would silently create a duplicate instead of updating it).
+ */
+function toPendingChangeScheduleId(id: string): number | null {
+  return /^\d+$/.test(id) ? Number(id) : null;
+}
+
+function toPendingChangeSchedule(
+  schedule: CreateTourPackagePayload['schedules'][number],
+  payload: CreateTourPackagePayload,
+): ApiPendingChangeScheduleItem {
+  const base = toBackendSchedule(schedule, payload);
+  return { scheduleId: toPendingChangeScheduleId(schedule.id), ...base };
+}
+
+/** Mirrors `toBackendPayload`, but for `PUT .../pending-changes/{id}` (TM-82 §4 — a distinct DTO). */
+function toPendingChangeSaveBody(payload: UpdateTourPackagePayload): ApiPendingChangeSaveBody {
+  const backend = toBackendPayload(payload);
+  return {
+    title: backend.title,
+    description: backend.description,
+    categoryId: backend.categoryId,
+    basePrice: backend.basePrice,
+    durationDays: backend.durationDays,
+    destinationIds: backend.destinationIds,
+    cancellationPolicyTemplateId: backend.cancellationPolicyTemplateId,
+    inclusions: backend.inclusions,
+    exclusions: backend.exclusions,
+    highlights: backend.highlights,
+    travellerRequirements: backend.travellerRequirements,
+    timeZoneId: backend.timeZoneId,
+    itineraryItems: backend.itineraryItems,
+    schedules: payload.schedules.map((schedule) => toPendingChangeSchedule(schedule, payload)),
+  };
+}
+
+function mapPendingChangeItineraryItem(item: ApiItineraryItem, index: number): TourPackageDto['itinerary'][number]['activities'][number] {
+  const [transport = '', ...noteParts] = (item.notes ?? '').split(' | ');
+  return {
+    id: `${item.dayNo}-${item.sequenceNo}-${index}`,
+    time: item.plannedTime?.slice(0, 5) ?? '',
+    poiId: item.poiId,
+    poiName: `POI #${item.poiId}`,
+    stayDurationMinutes: item.stayDurationMinutes,
+    transport,
+    notes: noteParts.join(' | ') || undefined,
+  };
+}
+
+function mapPendingChangeSchedule(schedule: ApiPendingChangeScheduleItem): TourPackageDto['schedules'][number] {
+  return {
+    // A new proposed schedule (scheduleId: null) has no server id yet; give it a stable
+    // client-only one so the form can track it until the next save assigns a real id.
+    id: schedule.scheduleId === null ? `sch-pending-${crypto.randomUUID()}` : String(schedule.scheduleId),
+    departureDate: dateOnly(schedule.startAtUtc),
+    returnDate: dateOnly(schedule.endAtUtc),
+    totalCapacity: schedule.totalCapacity,
+    reservedCapacity: 0, // Pending changes never carry a reserved-capacity figure of their own (spec §4).
+    meetingPoint: schedule.meetingPoint ?? undefined,
+    status: 'Scheduled',
+    minimumCapacity: schedule.minimumCapacity,
+    adultPrice: schedule.adultPrice ?? undefined,
+    childPrice: schedule.childPrice,
+    infantPrice: schedule.infantPrice,
+    registrationDeadlineDate: schedule.registrationDeadlineAtUtc ? dateOnly(schedule.registrationDeadlineAtUtc) : '',
+    serverTerms: {
+      startAtUtc: schedule.startAtUtc,
+      endAtUtc: schedule.endAtUtc,
+      minimumCapacity: schedule.minimumCapacity,
+      registrationDeadlineAtUtc: schedule.registrationDeadlineAtUtc,
+      adultPrice: schedule.adultPrice,
+      childPrice: schedule.childPrice,
+      infantPrice: schedule.infantPrice,
+    },
+  };
+}
+
+/**
+ * Maps a draft version (`TourPendingChangeSet`, read via `GetCurrentPendingChangeResponse`) onto
+ * the same `TourPackageDto` shape the Operator UI already renders for a live tour, so
+ * `UpdateTourPackageView` does not need two separate rendering code paths. `id`/`status` on the
+ * returned DTO describe the **draft version itself** (e.g. `status: 'PendingReview'` while Staff
+ * is reviewing it), not the live tour, which is the entire point of this flow (spec TM-82 §5.3).
+ */
+function mapPendingChangeToDto(pendingChange: ApiPendingChange, liveTour: TourPackageDto): TourPackageDto {
+  const itinerary = new Map<number, TourPackageDto['itinerary'][number]>();
+  pendingChange.itineraryItems.forEach((item, index) => {
+    const day = itinerary.get(item.dayNo) ?? { dayNo: item.dayNo, activities: [] };
+    day.activities.push(mapPendingChangeItineraryItem(item, index));
+    itinerary.set(item.dayNo, day);
+  });
+  return {
+    ...liveTour,
+    id: String(pendingChange.id),
+    tourCode: liveTour.tourCode,
+    operatorUserId: liveTour.operatorUserId,
+    title: pendingChange.title,
+    destination: pendingChange.destinationSummary,
+    destinationIds: pendingChange.destinationIds,
+    category: pendingChange.categoryId ? String(pendingChange.categoryId) : '',
+    durationDays: pendingChange.durationDays,
+    basePrice: pendingChange.basePrice,
+    childPrice: pendingChange.schedules[0]?.childPrice ?? undefined,
+    maxCapacity: pendingChange.schedules[0]?.totalCapacity ?? 0,
+    description: pendingChange.description,
+    inclusions: pendingChange.inclusions ?? undefined,
+    exclusions: pendingChange.exclusions ?? undefined,
+    highlights: pendingChange.highlights ?? undefined,
+    travellerRequirements: pendingChange.travellerRequirements ?? undefined,
+    timeZoneId: pendingChange.timeZoneId,
+    cancellationPolicy: pendingChange.cancellationPolicyTemplateId
+      ? String(pendingChange.cancellationPolicyTemplateId) : '',
+    status: statusFromApi(pendingChange.status),
+    rejectionReason: pendingChange.rejectionReason ?? undefined,
+    submittedAtUtc: pendingChange.submittedAtUtc,
+    itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo),
+    schedules: pendingChange.schedules.map(mapPendingChangeSchedule),
+    createdAt: pendingChange.createdAtUtc,
+    updatedAt: pendingChange.updatedAtUtc,
+    isDemo: false,
+  };
+}
+
+/**
+ * Creates (or resumes, idempotently) the open draft version for an `Approved`/`Published` tour,
+ * then loads its full proposed content (spec TM-82 §5.1/§5.3, edge cases 1-2). Call this — never
+ * `updateTourPackage` — to start editing such a tour.
+ */
+export async function createOrResumeDraftVersion(
+  tourId: string,
+  liveTour: TourPackageDto,
+): Promise<TourPackageDto> {
+  const id = asBackendId(tourId, 'Mã gói tour');
+  await createOrResumePendingChange(id);
+  const pendingChange = await getCurrentPendingChange(id);
+  if (!pendingChange) {
+    throw new Error('Không tìm thấy bản nháp vừa tạo hoặc tiếp tục. Vui lòng tải lại trang.');
+  }
+  return mapPendingChangeToDto(pendingChange, liveTour);
+}
+
+/** Saves a draft version's content. Only valid while the draft is `Draft`/`Rejected` (spec §5.1). */
+export async function saveDraftVersion(
+  tourId: string,
+  pendingChangeId: string,
+  payload: UpdateTourPackagePayload,
+  liveTour: TourPackageDto,
+): Promise<TourActionResult<TourPackageDto>> {
+  const errors = validateUpdateTourPackage(payload, liveTour);
+  if (Object.keys(errors).length > 0) {
+    throw new OperatorTourValidationError(errors);
+  }
+  const tId = asBackendId(tourId, 'Mã gói tour');
+  const pcId = asBackendId(pendingChangeId, 'Mã bản nháp');
+  await savePendingChange(tId, pcId, toPendingChangeSaveBody(payload));
+  const pendingChange = await getCurrentPendingChange(tId);
+  if (!pendingChange) {
+    throw new Error('Không tìm thấy bản nháp sau khi lưu. Vui lòng tải lại trang.');
+  }
+  return {
+    status: 'SUCCESS',
+    data: mapPendingChangeToDto(pendingChange, liveTour),
+    message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
+    isDemo: false,
+  };
+}
+
+/** Discards (deletes) a draft version outright. Only valid while `Draft`/`Rejected` (spec §5.1). */
+export async function discardDraftVersion(tourId: string, pendingChangeId: string): Promise<void> {
+  await discardPendingChange(asBackendId(tourId, 'Mã gói tour'), asBackendId(pendingChangeId, 'Mã bản nháp'));
+}
+
+/** Submits a draft version for Staff review. Only valid while `Draft`/`Rejected` (spec §5.1). */
+export async function submitDraftVersion(
+  tourId: string,
+  pendingChangeId: string,
+  liveTour: TourPackageDto,
+): Promise<TourActionResult<TourPackageDto>> {
+  const tId = asBackendId(tourId, 'Mã gói tour');
+  await submitPendingChange(tId, asBackendId(pendingChangeId, 'Mã bản nháp'));
+  const pendingChange = await getCurrentPendingChange(tId);
+  if (!pendingChange) {
+    throw new Error('Không tìm thấy bản nháp sau khi gửi duyệt. Vui lòng tải lại trang.');
+  }
+  return {
+    status: 'SUCCESS',
+    data: mapPendingChangeToDto(pendingChange, liveTour),
+    message: OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS,
+    isDemo: false,
+  };
 }
 
 /**
