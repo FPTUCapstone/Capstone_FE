@@ -8,19 +8,20 @@ import { useWebSession } from '@/features/auth/session/useWebSession';
 import { ROUTES } from '@/lib/routes';
 import { CreateSchedulingRequestForm } from './CreateSchedulingRequestForm';
 
-export function CreateSchedulingRequestPage() {
+export function CreateSchedulingRequestPage({ stayPoiId }: { stayPoiId?: number } = {}) {
   const router = useRouter();
   const { status, context } = useWebSession();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(ROUTES.plan)}`);
+      const returnUrl = stayPoiId ? `${ROUTES.plan}?stayPoiId=${stayPoiId}` : ROUTES.plan;
+      router.replace(`${ROUTES.signIn}?returnUrl=${encodeURIComponent(returnUrl)}`);
     } else if (status === 'authenticated' && context?.role === 'TourOperator') {
       router.replace(ROUTES.partner.dashboard);
     } else if (status === 'authenticated' && context?.role === 'Administrator') {
       router.replace(ROUTES.admin.dashboard);
     }
-  }, [status, context, router]);
+  }, [status, context, router, stayPoiId]);
 
   if (status === 'restoring') {
     return (
@@ -70,6 +71,7 @@ export function CreateSchedulingRequestPage() {
           {/* Form */}
           <CreateSchedulingRequestForm
             userId={context.userId}
+            stayPoiId={stayPoiId}
             onSuccess={(itinerary) => router.push(ROUTES.itinerary(itinerary.itineraryId))}
           />
         </div>

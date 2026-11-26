@@ -33,6 +33,7 @@ interface PlacePickerDialogProps {
   radiusKm?: number | null;
   /** Leave restaurants out (must-see places, Review 2 D2). */
   excludeFoodAndDrink?: boolean;
+  excludeAccommodation?: boolean;
   onSelect: (place: PickedPlace) => void;
   onClose: () => void;
 }
@@ -44,6 +45,7 @@ export function PlacePickerDialog({
   near,
   radiusKm,
   excludeFoodAndDrink = false,
+  excludeAccommodation = false,
   onSelect,
   onClose,
 }: PlacePickerDialogProps) {
@@ -91,6 +93,7 @@ export function PlacePickerDialog({
         near: radiusKm ? near : null,
         radiusKm,
         ...(excludeFoodAndDrink ? { excludeFoodAndDrink: true } : {}),
+        ...(excludeAccommodation ? { excludeAccommodation: true } : {}),
       }),
       showAddresses
         ? suggestAddresses(q, sessionRef.current, near)

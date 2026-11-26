@@ -61,6 +61,7 @@ import { ItineraryWeatherTipsCard } from './ItineraryWeatherTipsCard';
 import { ItineraryTimeline } from './ItineraryTimeline';
 import { StopRemovalReasonDialog } from './StopRemovalReasonDialog';
 import { BookedServices } from './BookedServices';
+import { ItineraryStays } from '@/features/stays/TravelerStays';
 
 /** How long the Undo toast stays after an edit (Review 2, D11-4). */
 const UNDO_VISIBLE_MS = 8000;
@@ -845,8 +846,10 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                   />
                 </div>
 
-                {/* Right Column: Route Map Preview & Information (40%) */}
+                {/* Right Column: Dedicated Stays Block + Route Map Preview (40%) */}
                 <aside className="space-y-4 lg:col-span-2 lg:sticky lg:top-24">
+                  <ItineraryStays itineraryId={itinerary.itineraryId} />
+
                   {/* Real Interactive Mapbox Map: "Bản đồ lộ trình" */}
                   <section
                     ref={mapSectionRef}

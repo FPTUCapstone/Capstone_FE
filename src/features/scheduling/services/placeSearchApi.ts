@@ -47,11 +47,13 @@ export async function searchSelectablePois(params: {
   pageSize?: number;
   /** Must-see places cannot be restaurants (Review 2, D2): the traveler adds food after generation. */
   excludeFoodAndDrink?: boolean;
+  excludeAccommodation?: boolean;
 }): Promise<SelectablePoi[]> {
   const search = new URLSearchParams({ page: '1', pageSize: String(params.pageSize ?? 30) });
   const query = params.query?.trim();
   if (query) search.set('query', query);
   if (params.excludeFoodAndDrink) search.set('excludeFoodAndDrink', 'true');
+  if (params.excludeAccommodation) search.set('excludeAccommodation', 'true');
   if (params.near && params.radiusKm) {
     search.set('latitude', String(params.near.latitude));
     search.set('longitude', String(params.near.longitude));

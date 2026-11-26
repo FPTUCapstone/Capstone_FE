@@ -193,6 +193,8 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
     ? null
     : pathname.startsWith('/pois')
     ? 'pois'
+    : pathname.startsWith('/stays')
+    ? 'stays'
     : pathname.startsWith('/plan')
     ? 'plan'
     : pathname.startsWith('/weather')
@@ -317,6 +319,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
   // Primary navigation tabs (matching the approved header visual reference)
   const navItems: DesktopNavItem[] = [
     { key: 'pois', href: ROUTES.pois, label: strings.links.explore },
+    { key: 'stays', href: '/stays', label: locale === 'en' ? 'Stays' : 'Lưu trú' },
     {
       key: 'destinations',
       href: isLanding ? '#destinations' : `${ROUTES.home}#destinations`,

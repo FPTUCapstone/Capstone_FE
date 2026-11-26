@@ -17,6 +17,8 @@ function destination(role: AuthRole, item: NotificationInboxItem): string | unde
   }
   if (role === 'TourOperator' && item.relatedEntityType === 'PostTripComplaint' && id) return ROUTES.partner.postTripComplaint(id);
   if (role === 'ServiceProvider' && item.relatedEntityType === 'ServiceBooking' && id) return ROUTES.provider.bookingDetail(id);
+  if (role === 'ServiceProvider' && item.relatedEntityType === 'StayInquiry' && id) return `/provider/stays?requestId=${id}`;
+  if (role === 'Traveler' && item.relatedEntityType === 'StayInquiry' && id) return `/stays/requests?requestId=${id}`;
   if (role === 'Staff' && item.type === 'RefundReturnReported') return ROUTES.admin.refundReconciliation;
   if (role === 'Administrator' && item.type === 'EmergencyRefundReviewRequired') {
     return item.relatedEntityType === 'TourSchedule' && id

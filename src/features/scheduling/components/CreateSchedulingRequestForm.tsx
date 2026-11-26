@@ -1,5 +1,7 @@
 'use client';
 
+import { stayRequest, type StayFacility } from '@/features/stays/stayApi';
+
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -88,6 +90,7 @@ type PickerTarget = 'start' | 'exploration' | 'end' | 'mandatory';
 interface CreateSchedulingRequestFormProps {
   /** Kept for callers; preferences are resolved for the signed-in Traveler by the API. */
   userId?: string | number | null;
+  stayPoiId?: number;
   onSuccess?: (itinerary: SchedulingResponseDto) => void;
 }
 
@@ -98,9 +101,31 @@ type PendingSchedulingAttempt = {
 
 export function CreateSchedulingRequestForm({
   onSuccess,
+  stayPoiId,
 }: CreateSchedulingRequestFormProps) {
   // Where: the same choices as the mobile app.
   const [startPoint, setStartPoint] = useState<PickedPlace | null>(null);
+  const [hotelStartLabel, setHotelStartLabel] = useState<string | null>(null);
+  const [unavailableStayId, setUnavailableStayId] = useState<number>();
+  useEffect(() => {
+    if (!stayPoiId) return;
+    const controller = new AbortController();
+    stayRequest<StayFacility>(`/stays/${stayPoiId}`, { signal: controller.signal })
+      .then((stay) => {
+        setHotelStartLabel(stay.name);
+        setStartPoint((current) =>
+          current ?? {
+            label: stay.name,
+            latitude: stay.latitude,
+            longitude: stay.longitude,
+          },
+        );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setUnavailableStayId(stayPoiId);
+      });
+    return () => controller.abort();
+  }, [stayPoiId]);
   const [explorationPoi, setExplorationPoi] = useState<PickedPlace | null>(null);
   const [endPoi, setEndPoi] = useState<PickedPlace | null>(null);
   const [mandatoryPois, setMandatoryPois] = useState<SelectablePoi[]>([]);
@@ -671,7 +696,14 @@ export function CreateSchedulingRequestForm({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-bold text-[#1C2928] sm:text-sm">Điểm xuất phát</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-bold text-[#1C2928] sm:text-sm">Điểm xuất phát</p>
+                        {hotelStartLabel && startPoint?.label === hotelStartLabel && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#EECAB7] bg-[#FDF2EC] px-2.5 py-0.5 text-[11px] font-bold text-[#995436]">
+                            Đã điền từ khách sạn
+                          </span>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => void locateStartPoint()}
@@ -681,12 +713,24 @@ export function CreateSchedulingRequestForm({
                         {isLocating ? 'Đang lấy vị trí…' : 'Dùng vị trí hiện tại'}
                       </button>
                     </div>
+                    {stayPoiId && stayPoiId === unavailableStayId && !startPoint && (
+                      <p
+                        role="alert"
+                        className="mt-1.5 rounded-xl border border-[#FECDD3] bg-[#FDECEF] px-3 py-2 text-xs font-semibold text-[#991B1B]"
+                      >
+                        Chưa tải được khách sạn. Vui lòng chọn điểm xuất phát.
+                      </p>
+                    )}
                     <button
                       id="start-point-picker"
                       type="button"
                       onClick={() => openPicker('start')}
                       disabled={isSubmitting}
-                      className="mt-1.5 flex w-full items-center justify-between gap-3 rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/50 px-3.5 py-2.5 text-left text-sm transition hover:border-[#174B4A] disabled:opacity-60"
+                      className={`mt-1.5 flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm transition hover:border-[#174B4A] disabled:opacity-60 ${
+                        hotelStartLabel && startPoint?.label === hotelStartLabel
+                          ? 'border-[#B96D4C] bg-[#FDF2EC]'
+                          : 'border-[#DCE2DD] bg-[#F7F5EF]/50'
+                      }`}
                     >
                       <span
                         className={`truncate ${startPoint ? 'font-semibold text-[#1C2928]' : 'text-[#5B6E69]'}`}
@@ -1408,6 +1452,35 @@ export function CreateSchedulingRequestForm({
               </div>
             </section>
 
+            {/* Dedicated Stay Section — Separated from Sightseeing Stops */}
+            <section className="overflow-hidden rounded-2xl border border-[#C2D6CC] bg-white shadow-[0_4px_20px_-2px_rgba(0,21,42,0.045)]">
+              <div className="flex items-center justify-between gap-2 border-b border-[#C2D6CC] bg-[#E8F0EA] px-5 py-3">
+                <div className="flex items-center gap-2 text-sm font-bold text-[#174B4A]">
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                    hotel
+                  </span>
+                  <span>Lưu trú</span>
+                </div>
+                <span className="rounded-full border border-[#C2D6CC] bg-white px-2.5 py-0.5 text-[10.5px] font-bold text-[#5B6E69]">
+                  Khu vực riêng
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+                <p className="max-w-md text-xs leading-relaxed text-[#5B6E69]">
+                  Tìm nơi ở hoặc chọn khách sạn làm <strong>Điểm xuất phát</strong> mà không thêm khách sạn vào danh sách điểm dừng tham quan.
+                </p>
+                <Link
+                  href="/stays"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#C2D6CC] bg-[#E8F0EA] px-3.5 py-2 text-xs font-bold text-[#174B4A] transition hover:border-[#174B4A] hover:bg-[#DAE8DF]"
+                >
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                    hotel
+                  </span>
+                  Tìm nơi ở
+                </Link>
+              </div>
+            </section>
+
             {/* Sticky Compact Summary & Always-Visible CTA */}
             <section className={CARD_CLASS}>
               <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -1496,6 +1569,7 @@ export function CreateSchedulingRequestForm({
           title={PICKER_TITLES[pickerTarget]}
           initialQuery={pickerInitialQuery}
           allowAddresses={pickerTarget === 'start'}
+          excludeAccommodation={pickerTarget === 'mandatory' || pickerTarget === 'exploration'}
           near={pickerTarget === 'mandatory' ? explorationPoi ?? startPoint : startPoint}
           radiusKm={
             pickerTarget === 'mandatory'
