@@ -95,11 +95,11 @@ export function LiveTourContent({ tour, onApprovalOutcome }: {
           <ServiceList title={copy.includedTitle} items={tour.includedServices} emptyLabel={live.noneListed} />
           <ServiceList title={copy.excludedTitle} items={tour.excludedServices} emptyLabel={live.noneListed} />
           <div className="sm:col-span-2">
-            <h3 className="mb-2 text-sm font-bold text-[#1C2928]">Payment &amp; Deposit Policy</h3>
+            <h3 className="mb-2 text-sm font-bold text-[#1C2928]">{live.paymentPolicyTitle}</h3>
             <p className="mb-4 text-sm text-[#5B6E69]">
               {tour.allowDeposit && tour.depositPercent && tour.balanceDueDaysBeforeDeparture
-                ? `Deposit allowed: ${tour.depositPercent}% upfront upon booking; remaining balance due ${tour.balanceDueDaysBeforeDeparture} days before departure (full payment required for bookings after this cutoff).`
-                : 'Full 100% upfront payment upon booking.'}
+                ? live.depositPolicySummary(tour.depositPercent, tour.balanceDueDaysBeforeDeparture)
+                : live.fullPaymentSummary}
             </p>
             <h3 className="mb-2 text-sm font-bold text-[#1C2928]">{copy.cancellationTitle}</h3>
             {tour.cancellationRules.length === 0 ? (
