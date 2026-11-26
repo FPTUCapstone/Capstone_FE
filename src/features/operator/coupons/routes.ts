@@ -31,11 +31,13 @@ export function withCouponDemoMode(href: string, isDemo = false): string {
 }
 
 /**
- * Builds a coupon list URL preserving page, status, and demo context per CR-01.
+ * Builds a coupon list URL preserving the active search and filters.
  */
 export function buildCouponListUrl(options?: {
   page?: number;
   status?: string;
+  keyword?: string;
+  discountType?: string;
   isDemo?: boolean;
 }): string {
   const params = new URLSearchParams();
@@ -44,6 +46,12 @@ export function buildCouponListUrl(options?: {
   }
   if (options?.status && options.status !== 'ALL') {
     params.set('status', options.status);
+  }
+  if (options?.keyword) {
+    params.set('q', options.keyword);
+  }
+  if (options?.discountType) {
+    params.set('discountType', options.discountType);
   }
   if (options?.isDemo) {
     params.set('demo', '1');

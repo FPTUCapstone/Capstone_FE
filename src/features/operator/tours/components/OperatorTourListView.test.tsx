@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { OperatorTourListView } from './OperatorTourListView';
 import type { TourPackageDto } from '../types/tourLifecycle';
@@ -67,6 +67,36 @@ const mockTours: TourPackageDto[] = [
 ];
 
 describe('OperatorTourListView', () => {
+  it('filters by a destination found in the tour data', () => {
+    render(<OperatorTourListView tours={mockTours} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Điểm đến' }), {
+      target: { value: 'Hội An' },
+    });
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    expect(screen.getByText('Tour Đã Xuất Bản')).toBeDefined();
+    expect(screen.queryByText('Tour Chờ Duyệt')).toBeNull();
+  });
+
+  it('searches tour names, codes and destinations and combines the search with status', () => {
+    render(<OperatorTourListView tours={mockTours} />);
+    const search = screen.getByRole('searchbox', { name: 'Tìm gói tour' });
+
+    fireEvent.change(search, { target: { value: ' da nang ' } });
+    fireEvent.submit(search.closest('form')!);
+    expect(screen.getByText('Tour Bản Nháp Mẫu')).toBeDefined();
+    expect(screen.queryByText('Tour Đã Xuất Bản')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Chờ duyệt/ }));
+    expect(screen.getByText('Không tìm thấy gói tour phù hợp.')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa bộ lọc' }));
+    expect(screen.getAllByRole('row')).toHaveLength(4);
+
+    fireEvent.change(search, { target: { value: 'tp-002' } });
+    fireEvent.submit(search.closest('form')!);
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    expect(screen.getByText('Tour Đã Xuất Bản')).toBeDefined();
+  });
+
   it('right-aligns adult prices and their column heading', () => {
     render(<OperatorTourListView tours={mockTours} />);
     expect(screen.getByRole('columnheader', { name: 'Giá người lớn' }).classList.contains('text-right')).toBe(true);
