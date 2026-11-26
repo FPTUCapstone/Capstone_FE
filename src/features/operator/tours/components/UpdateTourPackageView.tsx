@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { AddDepartureModal } from './AddDepartureModal';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect, TransportSelect } from './TourCataloguePickers';
-import { DepartureTermsFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
+import { DepartureTermsFields, TourDepositFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
 import { TourMediaManager } from './TourMediaManager';
 import { TourPreviewModal } from './TourPreviewModal';
 import { useTourCatalogues } from './useTourCatalogues';
@@ -93,6 +93,11 @@ export function UpdateTourPackageView({
   const [destinationIds, setDestinationIds] = useState<number[]>(tour.destinationIds ?? []);
   const [highlights, setHighlights] = useState(tour.highlights ?? '');
   const [travellerRequirements, setTravellerRequirements] = useState(tour.travellerRequirements ?? '');
+  const [allowDeposit, setAllowDeposit] = useState(Boolean(tour.allowDeposit));
+  const [depositPercent, setDepositPercent] = useState<number | null>(tour.depositPercent ?? null);
+  const [balanceDueDaysBeforeDeparture, setBalanceDueDaysBeforeDeparture] = useState<number | null>(
+    tour.balanceDueDaysBeforeDeparture ?? null,
+  );
   const [timeZoneId] = useState(tour.timeZoneId ?? 'Asia/Ho_Chi_Minh');
   const [media, setMedia] = useState<TourMediaItem[]>(tour.media ?? []);
 
@@ -137,6 +142,8 @@ export function UpdateTourPackageView({
       exclusions: 'field-exclusions',
       highlights: 'field-highlights',
       travellerRequirements: 'field-requirements',
+      depositPercent: 'field-deposit-percent',
+      balanceDueDaysBeforeDeparture: 'field-balance-due-days',
       itinerary: 'tour-itinerary',
       schedules: 'schedule-validation',
       basePrice: 'field-basePrice',
@@ -169,6 +176,9 @@ export function UpdateTourPackageView({
       exclusions: initialTour.exclusions || '',
       highlights: initialTour.highlights ?? '',
       travellerRequirements: initialTour.travellerRequirements ?? '',
+      allowDeposit: Boolean(initialTour.allowDeposit),
+      depositPercent: initialTour.depositPercent ?? null,
+      balanceDueDaysBeforeDeparture: initialTour.balanceDueDaysBeforeDeparture ?? null,
       cancellationPolicy: initialTour.cancellationPolicy,
       itinerary: normalizeItineraryDays(
         JSON.parse(JSON.stringify(initialTour.itinerary || [])),
@@ -192,6 +202,9 @@ export function UpdateTourPackageView({
     exclusions,
     highlights,
     travellerRequirements,
+    allowDeposit,
+    depositPercent,
+    balanceDueDaysBeforeDeparture,
     cancellationPolicy,
     itinerary,
     schedules,
@@ -376,6 +389,9 @@ export function UpdateTourPackageView({
       highlights: isDemo ? undefined : highlights,
       travellerRequirements: isDemo ? undefined : travellerRequirements,
       timeZoneId: isDemo ? undefined : timeZoneId,
+      allowDeposit,
+      depositPercent: allowDeposit ? depositPercent : null,
+      balanceDueDaysBeforeDeparture: allowDeposit ? balanceDueDaysBeforeDeparture : null,
       cancellationPolicy,
       itinerary,
       schedules: schedulesForSave,
@@ -743,6 +759,23 @@ export function UpdateTourPackageView({
                   <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.cancellationPolicy}</p>
                 )}
               </div>
+
+              <TourDepositFields
+                allowDeposit={allowDeposit}
+                depositPercent={depositPercent}
+                balanceDueDaysBeforeDeparture={balanceDueDaysBeforeDeparture}
+                basePrice={basePrice}
+                disabled={isReadOnly}
+                depositPercentError={errors.depositPercent}
+                balanceDueDaysError={errors.balanceDueDaysBeforeDeparture}
+                onChange={(patch) => {
+                  if (patch.allowDeposit !== undefined) setAllowDeposit(patch.allowDeposit);
+                  if (patch.depositPercent !== undefined) setDepositPercent(patch.depositPercent);
+                  if (patch.balanceDueDaysBeforeDeparture !== undefined) {
+                    setBalanceDueDaysBeforeDeparture(patch.balanceDueDaysBeforeDeparture);
+                  }
+                }}
+              />
             </div>
           </section>
 
@@ -1018,24 +1051,74 @@ export function UpdateTourPackageView({
               Lịch sử phiên bản
             </h3>
             <div className="mt-3 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 border border-slate-200">
-                <div>
-                  <p className="font-bold text-slate-900">v{tour.version} · {tour.status}</p>
-                  <p className="text-[10px] text-slate-500">Phiên bản hiện hành</p>
-                </div>
-                <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
-                  Hiện tại
-                </span>
-              </div>
-              {tour.version > 1 && (
-                <div className="flex items-center justify-between rounded-xl p-2.5 border border-slate-100 text-slate-600">
-                  <div>
-                    <p className="font-medium">v1 · Đã duyệt</p>
-                    <p className="text-[10px] text-slate-400">Đã lưu trữ</p>
+              {(tour.versions && tour.versions.length > 0
+                ? tour.versions
+                : [
+                    {
+                      tourId: tour.id,
+                      versionNo: tour.version,
+                      status: tour.status,
+                      createdAtUtc: tour.createdAt || null,
+                      publishedAtUtc: tour.publishedAtUtc ?? null,
+                      rejectionReason: tour.rejectionReason ?? null,
+                    },
+                  ]
+              ).map((item) => {
+                const isCurrent = item.tourId === tour.id;
+                const statusLabel =
+                  item.status === 'Draft'
+                    ? 'Bản nháp'
+                    : item.status === 'Pending'
+                      ? 'Chờ duyệt'
+                      : item.status === 'Approved'
+                        ? 'Đã duyệt'
+                        : item.status === 'Published'
+                          ? 'Đang mở bán'
+                          : item.status === 'Rejected'
+                            ? 'Bị từ chối'
+                            : 'Đã lưu trữ';
+                const timestamp = item.publishedAtUtc ?? item.createdAtUtc;
+                return (
+                  <div
+                    key={item.tourId}
+                    className={`flex items-center justify-between gap-2 rounded-xl p-2.5 border ${
+                      isCurrent
+                        ? 'bg-slate-50 border-slate-200'
+                        : 'border-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className={isCurrent ? 'font-bold text-slate-900' : 'font-medium text-slate-800'}>
+                        v{item.versionNo} · {statusLabel}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        {isCurrent
+                          ? 'Phiên bản đang mở'
+                          : timestamp
+                            ? formatDisplayDate(timestamp)
+                            : 'Phiên bản trước'}
+                      </p>
+                      {!isCurrent && item.status === 'Rejected' && item.rejectionReason && (
+                        <p className="mt-0.5 truncate text-[10px] text-rose-600" title={item.rejectionReason}>
+                          Lý do: {item.rejectionReason}
+                        </p>
+                      )}
+                    </div>
+                    {isCurrent ? (
+                      <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                        Hiện tại
+                      </span>
+                    ) : (
+                      <Link
+                        href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(item.tourId), isDemo)}
+                        className="shrink-0 text-[11px] font-bold text-[#174B4A] hover:underline"
+                      >
+                        {item.status === 'Draft' || item.status === 'Rejected' ? 'Mở sửa' : 'Xem lại'}
+                      </Link>
+                    )}
                   </div>
-                  <span className="text-[11px] text-[#174B4A] font-bold">Xem lại</span>
-                </div>
-              )}
+                );
+              })}
             </div>
           </section>
         </div>
@@ -1125,6 +1208,9 @@ export function UpdateTourPackageView({
           travellerRequirements,
           inclusions,
           exclusions,
+          allowDeposit,
+          depositPercent,
+          balanceDueDaysBeforeDeparture,
           cancellationPolicy: isDemo
             ? cancellationPolicy
             : catalogues.policies.find((p) => String(p.id) === cancellationPolicy)?.name ?? cancellationPolicy,

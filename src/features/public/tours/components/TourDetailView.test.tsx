@@ -290,11 +290,14 @@ describe('TourDetailView (demo data)', () => {
     expect(link.getAttribute('href')).toContain('demo=1');
   });
 
-  it('renders category, highlights, traveller requirements, minimumCapacity and structured transport', () => {
+  it('renders category, highlights, traveller requirements, deposit terms, minimumCapacity and structured transport', () => {
     const enriched = realTourDetailViewModel((wire) => {
       wire.category = 'Di sản & Văn hóa';
       wire.highlights = 'Check-in Cầu Vàng lúc bình minh';
       wire.travellerRequirements = 'Mang theo CCCD';
+      wire.allowDeposit = true;
+      wire.depositPercent = 30;
+      wire.balanceDueDaysBeforeDeparture = 7;
       const firstSchedule = (wire.schedules as Record<string, unknown>[])[0];
       firstSchedule.minimumCapacity = 4;
       const firstDay = (wire.itinerary as Record<string, unknown>[])[0];
@@ -307,6 +310,8 @@ describe('TourDetailView (demo data)', () => {
     expect(screen.getByText('Di sản & Văn hóa')).toBeTruthy();
     expect(screen.getByText('Check-in Cầu Vàng lúc bình minh')).toBeTruthy();
     expect(screen.getByText('Mang theo CCCD')).toBeTruthy();
+    expect(screen.getByText(/Hỗ trợ đặt cọc giữ chỗ 30%/i)).toBeTruthy();
+    expect(screen.getByText(/Đặt cọc 30% · Tất toán trước 7 ngày/i)).toBeTruthy();
     expect(screen.getByText(/Tối thiểu 4 khách/i)).toBeTruthy();
     expect(screen.getByText('Cáp treo')).toBeTruthy();
     expect(screen.getByText('Ngắm cảnh trên đỉnh núi')).toBeTruthy();

@@ -12,7 +12,7 @@ import {
   validateCreateTourPackage,
 } from '../services/operatorTourService';
 import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect, TransportSelect } from './TourCataloguePickers';
-import { DepartureTermsFields, TourTermsFields } from './TourExtraFields';
+import { DepartureTermsFields, TourDepositFields, TourTermsFields } from './TourExtraFields';
 import { TourPreviewModal } from './TourPreviewModal';
 import { useTourCatalogues } from './useTourCatalogues';
 import {
@@ -34,6 +34,8 @@ const TOUR_FIELD_MAP: Record<string, string> = {
   exclusions: 'field-exclusions',
   highlights: 'field-highlights',
   travellerRequirements: 'field-requirements',
+  depositPercent: 'field-deposit-percent',
+  balanceDueDaysBeforeDeparture: 'field-balance-due-days',
   cancellationPolicy: 'field-cancellation',
   durationDays: 'field-duration',
   basePrice: 'field-basePrice',
@@ -99,6 +101,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
   const [category, setCategory] = useState(isDemo ? 'Di sản & Thiên nhiên' : '');
   const [highlights, setHighlights] = useState('');
   const [travellerRequirements, setTravellerRequirements] = useState('');
+  const [allowDeposit, setAllowDeposit] = useState(false);
+  const [depositPercent, setDepositPercent] = useState<number | null>(null);
+  const [balanceDueDaysBeforeDeparture, setBalanceDueDaysBeforeDeparture] = useState<number | null>(null);
   const [durationDays, setDurationDays] = useState<number>(1);
   const [basePrice, setBasePrice] = useState<number>(1000000);
   const [childPrice, setChildPrice] = useState<number | undefined>(undefined);
@@ -159,6 +164,7 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       title: '#field-title', destination: '#field-destination', category: '#field-category',
       description: '#field-description', inclusions: '#field-inclusions', exclusions: '#field-exclusions',
       highlights: '#field-highlights', travellerRequirements: '#field-requirements',
+      depositPercent: '#field-deposit-percent', balanceDueDaysBeforeDeparture: '#field-balance-due-days',
       itinerary: '#tour-itinerary',
       cancellationPolicy: '#field-cancellation', basePrice: '#field-basePrice',
       childPrice: '#field-childPrice', maxCapacity: '#field-capacity', durationDays: '#field-duration',
@@ -181,6 +187,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       category: isDemo ? 'Di sản & Thiên nhiên' : '',
       highlights: '',
       travellerRequirements: '',
+      allowDeposit: false,
+      depositPercent: null as number | null,
+      balanceDueDaysBeforeDeparture: null as number | null,
       durationDays: 1,
       basePrice: 1000000,
       childPrice: undefined as number | undefined,
@@ -201,6 +210,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
     category,
     highlights,
     travellerRequirements,
+    allowDeposit,
+    depositPercent,
+    balanceDueDaysBeforeDeparture,
     durationDays,
     basePrice,
     childPrice,
@@ -375,6 +387,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
       highlights: isDemo ? undefined : highlights,
       travellerRequirements: isDemo ? undefined : travellerRequirements,
       timeZoneId: isDemo ? undefined : 'Asia/Ho_Chi_Minh',
+      allowDeposit,
+      depositPercent: allowDeposit ? depositPercent : null,
+      balanceDueDaysBeforeDeparture: allowDeposit ? balanceDueDaysBeforeDeparture : null,
       cancellationPolicy,
       itinerary,
       schedules,
@@ -765,6 +780,22 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
                   </p>
                 )}
               </div>
+
+              <TourDepositFields
+                allowDeposit={allowDeposit}
+                depositPercent={depositPercent}
+                balanceDueDaysBeforeDeparture={balanceDueDaysBeforeDeparture}
+                basePrice={basePrice}
+                depositPercentError={errors.depositPercent}
+                balanceDueDaysError={errors.balanceDueDaysBeforeDeparture}
+                onChange={(patch) => {
+                  if (patch.allowDeposit !== undefined) setAllowDeposit(patch.allowDeposit);
+                  if (patch.depositPercent !== undefined) setDepositPercent(patch.depositPercent);
+                  if (patch.balanceDueDaysBeforeDeparture !== undefined) {
+                    setBalanceDueDaysBeforeDeparture(patch.balanceDueDaysBeforeDeparture);
+                  }
+                }}
+              />
             </div>
           </section>
         </div>
@@ -1023,6 +1054,9 @@ export function CreateTourPackageView({ isDemo = false }: CreateTourPackageViewP
           travellerRequirements,
           inclusions,
           exclusions,
+          allowDeposit,
+          depositPercent,
+          balanceDueDaysBeforeDeparture,
           cancellationPolicy: isDemo
             ? cancellationPolicy
             : catalogues.policies.find((p) => String(p.id) === cancellationPolicy)?.name ?? cancellationPolicy,

@@ -135,6 +135,9 @@ export interface TourDetailDto {
   highlights?: string | null;
   travellerRequirements?: string | null;
   timeZoneId?: string;
+  allowDeposit?: boolean;
+  depositPercent?: number | null;
+  balanceDueDaysBeforeDeparture?: number | null;
   imageDetails?: { url: string; altText: string; caption?: string | null; isPrimary: boolean }[];
   rating?: TourRatingDto;
   cancellationRules?: TourCancellationRuleDto[];

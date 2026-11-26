@@ -15,6 +15,9 @@ export interface TourPreviewData {
   travellerRequirements?: string;
   inclusions?: string;
   exclusions?: string;
+  allowDeposit?: boolean;
+  depositPercent?: number | null;
+  balanceDueDaysBeforeDeparture?: number | null;
   cancellationPolicy: string;
   itinerary: TourItineraryDay[];
   schedules: TourDepartureSchedule[];
@@ -204,11 +207,21 @@ export function TourPreviewModal({ open, onClose, preview }: TourPreviewModalPro
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs">
-            <h4 className="font-bold text-[#1C2928]">Chính sách hoàn hủy</h4>
-            <p className="mt-1 whitespace-pre-line text-slate-700">
-              {preview.cancellationPolicy || 'Chưa chọn chính sách hoàn hủy.'}
-            </p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-3">
+            <div>
+              <h4 className="font-bold text-[#1C2928]">Chính sách thanh toán &amp; đặt cọc</h4>
+              <p className="mt-1 text-slate-700">
+                {preview.allowDeposit && preview.depositPercent && preview.balanceDueDaysBeforeDeparture
+                  ? `Cho phép đặt cọc ${preview.depositPercent}% khi đăng ký và tất toán phần còn lại chậm nhất trước ngày khởi hành ${preview.balanceDueDaysBeforeDeparture} ngày (đặt muộn hơn mốc tất toán thanh toán 100%).`
+                  : 'Thanh toán toàn bộ 100% giá trị đơn khi đặt tour.'}
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold text-[#1C2928]">Chính sách hoàn hủy</h4>
+              <p className="mt-1 whitespace-pre-line text-slate-700">
+                {preview.cancellationPolicy || 'Chưa chọn chính sách hoàn hủy.'}
+              </p>
+            </div>
           </div>
 
           {(preview.inclusions || preview.exclusions || preview.travellerRequirements) && (

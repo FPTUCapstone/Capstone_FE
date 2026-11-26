@@ -94,6 +94,14 @@ export interface ApiTourListPage { items: ApiTourListItem[]; page: number; pageS
 export interface ApiItineraryItem { dayNo: number; sequenceNo: number; poiId: number; poiName?: string | null; plannedTime: string | null; stayDurationMinutes: number; notes: string | null; }
 export interface ApiDeparture { id: number; startAtUtc: string; endAtUtc: string; meetingPoint: string | null; minimumCapacity: number; totalCapacity: number; reservedCapacity: number; registrationDeadlineAtUtc: string | null; adultPrice: number | null; childPrice: number | null; infantPrice: number | null; status: string; meetingLatitude?: number | null; meetingLongitude?: number | null; isCompleted?: boolean; }
 export interface ApiDestination { destinationId: number; name: string; }
+export interface ApiTourVersion {
+  tourId: number;
+  versionNo: number;
+  status: string;
+  createdAtUtc: string;
+  publishedAtUtc?: string | null;
+  rejectionReason?: string | null;
+}
 export interface ApiTourDetail {
   submissionNote?: string | null; submittedAtUtc?: string | null; publishedAtUtc?: string | null;
   id: number; title: string; destination: string; description: string; categoryId: number | null;
@@ -102,6 +110,8 @@ export interface ApiTourDetail {
   cancellationPolicyTemplateId: number | null;
   itineraryItems: ApiItineraryItem[]; departures: ApiDeparture[];
   timeZoneId: string; highlights: string | null; travellerRequirements: string | null;
+  allowDeposit?: boolean; depositPercent?: number | null; balanceDueDaysBeforeDeparture?: number | null;
+  versions?: ApiTourVersion[];
   mediaCount: number; hasPrimaryImage: boolean; canSubmitForReview: boolean;
   reviewBlockers: string[]; warnings: ApiTourWarning[];
 }
@@ -112,6 +122,7 @@ export interface ApiCreateTour {
   title: string; description: string; categoryId?: number; basePrice: number; durationDays: number;
   destinationIds: number[]; cancellationPolicyTemplateId: number; inclusions?: string; exclusions?: string;
   highlights?: string; travellerRequirements?: string; timeZoneId?: string;
+  allowDeposit?: boolean; depositPercent?: number | null; balanceDueDaysBeforeDeparture?: number | null;
   itineraryItems: ApiItineraryItem[]; schedules: Omit<ApiDeparture, 'id' | 'reservedCapacity' | 'status' | 'isCompleted'>[]; sourceTourId?: number;
 }
 export interface ApiAddDepartureRequest {

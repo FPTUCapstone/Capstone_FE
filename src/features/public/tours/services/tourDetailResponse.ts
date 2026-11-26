@@ -68,6 +68,9 @@ export interface TourDetailWire {
   highlights?: string | null;
   travellerRequirements?: string | null;
   timeZoneId?: string;
+  allowDeposit?: boolean;
+  depositPercent?: number | null;
+  balanceDueDaysBeforeDeparture?: number | null;
   asOfUtc: string;
 }
 
@@ -234,6 +237,13 @@ export function parseTourDetailResponse(payload: unknown): TourDetailWire {
       ? { travellerRequirements: nullableText(root.travellerRequirements) }
       : {}),
     ...(root.timeZoneId !== undefined ? { timeZoneId: text(root.timeZoneId) } : {}),
+    ...(typeof root.allowDeposit === 'boolean' ? { allowDeposit: root.allowDeposit } : {}),
+    ...(root.depositPercent === null || typeof root.depositPercent === 'number'
+      ? { depositPercent: root.depositPercent }
+      : {}),
+    ...(root.balanceDueDaysBeforeDeparture === null || typeof root.balanceDueDaysBeforeDeparture === 'number'
+      ? { balanceDueDaysBeforeDeparture: root.balanceDueDaysBeforeDeparture }
+      : {}),
     asOfUtc: text(root.asOfUtc, { allowEmpty: false }),
   };
 }
@@ -345,6 +355,11 @@ export function mapTourDetailResponse(wire: TourDetailWire): TourDetailDto {
     highlights: wire.highlights ?? undefined,
     travellerRequirements: wire.travellerRequirements ?? undefined,
     timeZoneId: wire.timeZoneId,
+    ...(wire.allowDeposit !== undefined ? { allowDeposit: wire.allowDeposit } : {}),
+    ...(wire.depositPercent !== undefined ? { depositPercent: wire.depositPercent } : {}),
+    ...(wire.balanceDueDaysBeforeDeparture !== undefined
+      ? { balanceDueDaysBeforeDeparture: wire.balanceDueDaysBeforeDeparture }
+      : {}),
     inclusions: toLines(wire.inclusions),
     exclusions: toLines(wire.exclusions),
     cancellationPolicy: describeCancellationRules(rules).join('\n'),

@@ -65,6 +65,9 @@ export interface TourReviewDetail extends Omit<QueueTour, 'submittedAtUtc'> {
   readonly includedServices: readonly string[];
   readonly excludedServices: readonly string[];
   readonly travellerRequirements: string | null;
+  readonly allowDeposit?: boolean;
+  readonly depositPercent?: number | null;
+  readonly balanceDueDaysBeforeDeparture?: number | null;
   readonly cancellationRules: readonly CancellationRule[];
   readonly schedules: readonly TourSchedule[];
   readonly itinerary: readonly ItineraryStop[];
@@ -205,6 +208,11 @@ export function parseTourReview(payload: unknown): TourReviewDetail {
     includedServices: list(body.includedServices).map(text),
     excludedServices: list(body.excludedServices).map(text),
     travellerRequirements: textOrNull(body.travellerRequirements),
+    ...(typeof body.allowDeposit === 'boolean' ? { allowDeposit: body.allowDeposit } : {}),
+    ...(body.depositPercent !== undefined ? { depositPercent: numOrNull(body.depositPercent) } : {}),
+    ...(body.balanceDueDaysBeforeDeparture !== undefined
+      ? { balanceDueDaysBeforeDeparture: numOrNull(body.balanceDueDaysBeforeDeparture) }
+      : {}),
     cancellationRules: list(body.cancellationPolicy).map((item) => {
       const rule = record(item);
       return { daysBeforeDeparture: num(rule.daysBeforeDeparture), feePercent: num(rule.feePercent) };

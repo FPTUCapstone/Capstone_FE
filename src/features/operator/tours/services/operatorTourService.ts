@@ -157,6 +157,9 @@ function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
     highlights: payload.highlights?.trim() || undefined,
     travellerRequirements: payload.travellerRequirements?.trim() || undefined,
     timeZoneId: payload.timeZoneId?.trim() || undefined,
+    allowDeposit: Boolean(payload.allowDeposit),
+    depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+    balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
     ...(payload.category && /^\d+$/.test(payload.category.trim())
       ? { categoryId: asBackendId(payload.category, 'Mã danh mục') }
       : {}),
@@ -274,6 +277,19 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
     highlights: detail.highlights ?? undefined,
     travellerRequirements: detail.travellerRequirements ?? undefined,
     timeZoneId: detail.timeZoneId,
+    allowDeposit: Boolean(detail.allowDeposit),
+    depositPercent: detail.depositPercent ?? null,
+    balanceDueDaysBeforeDeparture: detail.balanceDueDaysBeforeDeparture ?? null,
+    versions: Array.isArray(detail.versions)
+      ? detail.versions.map((item) => ({
+          tourId: String(item.tourId),
+          versionNo: item.versionNo,
+          status: statusFromApi(item.status),
+          createdAtUtc: item.createdAtUtc,
+          publishedAtUtc: item.publishedAtUtc ?? null,
+          rejectionReason: item.rejectionReason ?? null,
+        }))
+      : undefined,
     reviewBlockers: detail.reviewBlockers,
     canSubmitForReview: detail.canSubmitForReview,
     warnings: detail.warnings.map((warning) => ({
@@ -349,6 +365,8 @@ function mapApiFieldKey(rawKey: string): keyof TourValidationErrors | null {
   if (normalized === 'inclusions') return 'inclusions';
   if (normalized === 'exclusions') return 'exclusions';
   if (normalized === 'travellerrequirements') return 'travellerRequirements';
+  if (normalized === 'depositpercent') return 'depositPercent';
+  if (normalized === 'balanceduedaysbeforedeparture') return 'balanceDueDaysBeforeDeparture';
   if (normalized.startsWith('itineraryitems') || normalized.startsWith('itinerary')) return 'itinerary';
   if (normalized.startsWith('schedules')) return 'schedules';
   return null;
@@ -485,6 +503,23 @@ export function validateCreateTourPackage(
   }
   if (payload.travellerRequirements && payload.travellerRequirements.trim().length > 4000) {
     errors.travellerRequirements = 'Yêu cầu đối với du khách không được vượt quá 4.000 ký tự.';
+  }
+  if (payload.allowDeposit) {
+    const percent = payload.depositPercent;
+    if (percent === undefined || percent === null || !Number.isFinite(percent) || percent < 10 || percent > 90) {
+      errors.depositPercent = 'Tỉ lệ đặt cọc phải từ 10% đến 90%.';
+    }
+    const dueDays = payload.balanceDueDaysBeforeDeparture;
+    if (
+      dueDays === undefined ||
+      dueDays === null ||
+      !Number.isInteger(dueDays) ||
+      dueDays < 4 ||
+      dueDays > 180
+    ) {
+      errors.balanceDueDaysBeforeDeparture =
+        'Hạn tất toán phần còn lại phải từ 4 đến 180 ngày trước ngày khởi hành (trước mốc khóa 72 giờ).';
+    }
   }
 
   // Duration, Price & Capacity (BR-79, BR-101 -> MSG143)
@@ -839,6 +874,11 @@ export async function createTourPackage(
       description: payload.description,
       inclusions: payload.inclusions,
       exclusions: payload.exclusions,
+      highlights: payload.highlights,
+      travellerRequirements: payload.travellerRequirements,
+      allowDeposit: Boolean(payload.allowDeposit),
+      depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+      balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
       cancellationPolicy: payload.cancellationPolicy,
       status: 'Draft',
       version: 1,
@@ -966,6 +1006,11 @@ export async function updateTourPackage(
           description: payload.description,
           inclusions: payload.inclusions,
           exclusions: payload.exclusions,
+          highlights: payload.highlights,
+          travellerRequirements: payload.travellerRequirements,
+          allowDeposit: Boolean(payload.allowDeposit),
+          depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+          balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
           cancellationPolicy: payload.cancellationPolicy,
           itinerary: payload.itinerary,
           schedules: payload.schedules,
@@ -1016,6 +1061,11 @@ export async function updateTourPackage(
         description: payload.description,
         inclusions: payload.inclusions,
         exclusions: payload.exclusions,
+        highlights: payload.highlights,
+        travellerRequirements: payload.travellerRequirements,
+        allowDeposit: Boolean(payload.allowDeposit),
+        depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+        balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
         cancellationPolicy: payload.cancellationPolicy,
         itinerary: payload.itinerary,
         schedules: payload.schedules,
@@ -1063,6 +1113,11 @@ export async function updateTourPackage(
       description: payload.description,
       inclusions: payload.inclusions,
       exclusions: payload.exclusions,
+      highlights: payload.highlights,
+      travellerRequirements: payload.travellerRequirements,
+      allowDeposit: Boolean(payload.allowDeposit),
+      depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+      balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
       cancellationPolicy: payload.cancellationPolicy,
       status: currentTour.status,
       version: currentTour.version,

@@ -71,6 +71,15 @@ export interface TourWarning {
   poiId?: number;
 }
 
+export interface TourVersionHistoryItem {
+  tourId: string;
+  versionNo: number;
+  status: TourLifecycleStatus;
+  createdAtUtc?: string | null;
+  publishedAtUtc?: string | null;
+  rejectionReason?: string | null;
+}
+
 export interface TourPackageDto {
   id: string;
   tourCode: string; // e.g. "TP-0142"
@@ -90,6 +99,10 @@ export interface TourPackageDto {
   highlights?: string;
   travellerRequirements?: string;
   timeZoneId?: string;
+  allowDeposit?: boolean;
+  depositPercent?: number | null;
+  balanceDueDaysBeforeDeparture?: number | null;
+  versions?: TourVersionHistoryItem[];
   /** Server-computed readiness (real mode only). Undefined for demo fixtures. */
   reviewBlockers?: string[];
   canSubmitForReview?: boolean;
@@ -129,6 +142,9 @@ export interface CreateTourPackagePayload {
   highlights?: string;
   travellerRequirements?: string;
   timeZoneId?: string;
+  allowDeposit?: boolean;
+  depositPercent?: number | null;
+  balanceDueDaysBeforeDeparture?: number | null;
   cancellationPolicy: string;
   itinerary: TourItineraryDay[];
   schedules: TourDepartureSchedule[];
@@ -152,6 +168,8 @@ export interface TourValidationErrors {
   exclusions?: string;
   highlights?: string;
   travellerRequirements?: string;
+  depositPercent?: string;
+  balanceDueDaysBeforeDeparture?: string;
   cancellationPolicy?: string;
   itinerary?: string;
   schedules?: string;

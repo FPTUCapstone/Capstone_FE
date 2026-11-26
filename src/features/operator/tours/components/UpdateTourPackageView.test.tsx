@@ -317,4 +317,29 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
 
     expect(window.location.search).toBe('?demo=1');
   });
+
+  it('renders clickable version history links and deposit setup state', () => {
+    const tourWithHistory: TourPackageDto = {
+      ...mockTourDraft,
+      id: 'tour-v2',
+      version: 2,
+      status: 'Approved',
+      allowDeposit: true,
+      depositPercent: 30,
+      balanceDueDaysBeforeDeparture: 7,
+      versions: [
+        { tourId: 'tour-v2', versionNo: 2, status: 'Approved', createdAtUtc: '2026-10-20T00:00:00Z' },
+        { tourId: 'tour-v1', versionNo: 1, status: 'Inactive', createdAtUtc: '2026-10-10T00:00:00Z' },
+      ],
+    };
+
+    render(<UpdateTourPackageView initialTour={tourWithHistory} isDemo={false} />);
+
+    expect(screen.getByText('v2 · Đã duyệt')).toBeDefined();
+    expect(screen.getByText('v1 · Đã lưu trữ')).toBeDefined();
+    const reviewLink = screen.getByRole('link', { name: 'Xem lại' });
+    expect(reviewLink.getAttribute('href')).toBe('/partner/tours/tour-v1/edit');
+    expect((screen.getByLabelText(/Tỉ lệ đặt cọc/i) as HTMLInputElement).value).toBe('30');
+    expect((screen.getByLabelText(/Hạn tất toán trước khởi hành/i) as HTMLInputElement).value).toBe('7');
+  });
 });

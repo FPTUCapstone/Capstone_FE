@@ -548,15 +548,32 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             </div>
           </section>
 
-          {/* Section 4: Cancellation Policy */}
+          {/* Section 4: Cancellation Policy & Deposit */}
           <section
             id="section-policy"
             aria-labelledby="heading-policy"
-            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
+            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-4"
           >
-            <h2 id="heading-policy" className="mb-4 text-lg sm:text-xl font-bold text-[#1C2928]">
+            <h2 id="heading-policy" className="text-lg sm:text-xl font-bold text-[#1C2928]">
               Chính Sách Hoàn Hủy Tour
             </h2>
+            {tour.allowDeposit && tour.depositPercent && tour.balanceDueDaysBeforeDeparture && (
+              <div className="flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50/60 p-4">
+                <span className="material-symbols-outlined text-xl text-[#103B39] mt-0.5">
+                  payments
+                </span>
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  <strong className="block text-[#103B39]">
+                    Hỗ trợ đặt cọc giữ chỗ {tour.depositPercent}%
+                  </strong>
+                  <p className="mt-1">
+                    Du khách đặt cọc <strong>{tour.depositPercent}%</strong> khi đăng ký và tất toán phần còn lại{' '}
+                    <strong>{100 - tour.depositPercent}%</strong> chậm nhất trước ngày khởi hành{' '}
+                    <strong>{tour.balanceDueDaysBeforeDeparture} ngày</strong>. Các đơn đặt sau mốc này áp dụng thanh toán 100%.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4 border border-slate-200">
               <span className="material-symbols-outlined text-xl text-slate-600 mt-0.5">
                 policy
@@ -665,6 +682,11 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
               {selectedSchedule?.minimumCapacity !== undefined && selectedSchedule.minimumCapacity > 1 && (
                 <p className="mt-1 text-[11px] font-medium text-teal-800">
                   Yêu cầu tối thiểu {selectedSchedule.minimumCapacity} khách để khởi hành
+                </p>
+              )}
+              {tour.allowDeposit && tour.depositPercent && tour.balanceDueDaysBeforeDeparture && (
+                <p className="mt-2 inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-[#103B39]">
+                  Đặt cọc {tour.depositPercent}% · Tất toán trước {tour.balanceDueDaysBeforeDeparture} ngày
                 </p>
               )}
             </div>
