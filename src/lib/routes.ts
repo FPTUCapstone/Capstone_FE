@@ -50,6 +50,7 @@ export const ROUTES = {
   account: {
     profile: '/account/profile',
     preferences: '/account/preferences',
+    favorites: '/account/favorites',
     security: '/account/security',
     trips: '/account/trips',
     complaints: '/account/complaints',

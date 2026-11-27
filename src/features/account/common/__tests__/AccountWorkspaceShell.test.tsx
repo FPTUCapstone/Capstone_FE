@@ -212,4 +212,36 @@ describe('AccountWorkspaceShell', () => {
     expect(screen.queryByText('Hồ sơ cá nhân')).toBeNull();
     expect(screen.getByTestId('proposal-content')).toBeDefined();
   });
+
+  it('activates the favorites tab and breadcrumb on /account/favorites', () => {
+    vi.spyOn(useWebSessionModule, 'useWebSession').mockReturnValue({
+      status: 'authenticated',
+      context: {
+        userId: 10,
+        email: 'traveler@tripmate.vn',
+        fullName: 'Hoang Van Traveler',
+        role: 'Traveler',
+        status: 'Active',
+        applicationStatus: null,
+        applicationUnresolved: false,
+        accessToken: 'token',
+        accessTokenExpiresAtUtc: '2099-01-01T00:00:00Z',
+      },
+    });
+    vi.spyOn(useSafePathnameModule, 'useSafePathname').mockReturnValue('/account/favorites');
+
+    render(
+      <AccountWorkspaceShell>
+        <div data-testid="favorites-content">Favorite POIs</div>
+      </AccountWorkspaceShell>
+    );
+
+    expect(screen.getByText('Địa điểm yêu thích')).toBeDefined();
+    const favoriteTabs = screen.getAllByRole('tab', { name: /Favorite Places/i });
+    expect(favoriteTabs.length).toBeGreaterThan(0);
+    favoriteTabs.forEach((tab) => {
+      expect(tab.getAttribute('aria-selected')).toBe('true');
+    });
+    expect(screen.getByTestId('favorites-content')).toBeDefined();
+  });
 });
