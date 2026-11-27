@@ -98,6 +98,12 @@ function ProviderWorkspaceShellInner({
 
   const navItems = [
     {
+      href: '/provider/stays',
+      label: locale === 'vi' ? 'Lưu trú' : 'Stays',
+      icon: 'hotel',
+      isActive: pathname.startsWith('/provider/stays'),
+    },
+    {
       href: ROUTES.provider.bookings,
       label: copy.bookingsLabel,
       icon: 'inbox',
@@ -150,10 +156,14 @@ function ProviderWorkspaceShellInner({
   const displayName = userName || copy.defaultAccountName;
   const initials = getInitials(userName, userEmail);
 
+  const isStays = pathname.startsWith('/provider/stays');
   const isBookingDetail =
     pathname.startsWith(`${ROUTES.provider.bookings}/`) && pathname !== ROUTES.provider.bookings;
   const isAvailability = pathname.startsWith(ROUTES.provider.availability);
   const isStatements = pathname.startsWith(ROUTES.provider.statements);
+  const staysLabel = isVi ? 'Lưu trú' : 'Stays';
+  const roleBadge = isStays ? 'Hotel Operator' : copy.providerTag;
+  const roleSubtitle = isStays ? 'Hotel Operator · ServiceProvider' : copy.accountRole;
 
   const renderSidebar = (isMobile = false) => {
     const isCollapsedDesktop = collapsed && !isMobile;
@@ -182,7 +192,7 @@ function ProviderWorkspaceShellInner({
             />
             {!isCollapsedDesktop && (
               <span className="inline-flex shrink-0 items-center rounded-md border border-[#B96D4C]/45 bg-[#B96D4C]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider leading-none text-[#F4CBB8]">
-                {copy.providerTag}
+                {roleBadge}
               </span>
             )}
           </Link>
@@ -346,7 +356,11 @@ function ProviderWorkspaceShellInner({
                     chevron_right
                   </span>
                 </li>
-                {isAvailability ? (
+                {isStays ? (
+                  <li className="truncate font-bold text-[#1C2928]" aria-current="page">
+                    {staysLabel}
+                  </li>
+                ) : isAvailability ? (
                   <li className="truncate font-bold text-[#1C2928]" aria-current="page">
                     {copy.availabilityLabel}
                   </li>
@@ -433,7 +447,7 @@ function ProviderWorkspaceShellInner({
                 <span className="max-w-[160px] truncate text-xs font-bold text-[#1C2928]">
                   {displayName}
                 </span>
-                <span className="text-[11px] text-[#5B6E69]">{copy.accountRole}</span>
+                <span className="text-[11px] text-[#5B6E69]">{roleSubtitle}</span>
               </div>
             </div>
 
