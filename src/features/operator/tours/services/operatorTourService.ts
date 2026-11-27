@@ -298,9 +298,16 @@ export class OperatorTourValidationError extends Error {
 
 /**
  * Validates Tour Package creation payload per Report 3 §3.8.2.1 and BR-101, BR-22, BR-79.
+ *
+ * `pastDepartureScheduleIds`, when given, exempts those schedule ids from BR-22's "not in the
+ * past" check (TM-82 backend spec §0/§6 — a past-departure schedule carried over unchanged by a
+ * draft version of an Approved/Published tour is never re-validated against BR-22, since it is
+ * neither new nor a future schedule being edited; §9 AC 8). Creation never passes this, since a
+ * brand-new tour has no existing schedule to exempt.
  */
 export function validateCreateTourPackage(
-  payload: CreateTourPackagePayload
+  payload: CreateTourPackagePayload,
+  pastDepartureScheduleIds?: ReadonlySet<string>,
 ): TourValidationErrors {
   const errors: TourValidationErrors = {};
 
@@ -382,7 +389,9 @@ export function validateCreateTourPackage(
         errors.schedules = OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
         break;
       }
-      // BR-22 Departure date in past or return precedes departure
+      // BR-22 Departure date in past or return precedes departure — exempt a schedule the
+      // draft version carries over unchanged from an already-past departure (TM-82 §9 AC 8).
+      if (pastDepartureScheduleIds?.has(schedule.id)) continue;
       if (schedule.departureDate < today || schedule.returnDate < schedule.departureDate) {
         errors.schedules = OPERATOR_TOUR_MESSAGES.INVALID_SCHEDULE_DATE;
         break;
@@ -411,7 +420,13 @@ export function validateUpdateTourPackage(
   payload: UpdateTourPackagePayload,
   currentTour: TourPackageDto
 ): TourValidationErrors {
-  const errors = validateCreateTourPackage(payload);
+  const today = vietnamToday();
+  const pastDepartureScheduleIds = new Set(
+    (currentTour.schedules ?? [])
+      .filter((schedule) => schedule.departureDate < today)
+      .map((schedule) => schedule.id),
+  );
+  const errors = validateCreateTourPackage(payload, pastDepartureScheduleIds);
 
   // BR-61: Capacity of a schedule must not be reduced below sold slots
   if (payload.schedules && currentTour.schedules) {

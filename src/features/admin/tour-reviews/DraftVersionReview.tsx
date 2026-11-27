@@ -69,6 +69,59 @@ function DiffRow({ label, live, proposed }: { label: string; live: string; propo
   );
 }
 
+// Staff's admin tour detail / pending-change payload carries catalogue ids only, not their
+// display names — showing the id plainly is more honest than inventing a name lookup this
+// screen has no catalogue fetch for.
+function categoryDisplay(categoryId: number | null): string {
+  return categoryId === null ? copy.noneLabel : `${copy.categoryIdPrefix}${categoryId}`;
+}
+
+function policyDisplay(policyTemplateId: number | null): string {
+  return policyTemplateId === null ? copy.noneLabel : `${copy.policyIdPrefix}${policyTemplateId}`;
+}
+
+function itineraryKey(item: { dayNo: number; sequenceNo: number }): string {
+  return `${item.dayNo}-${item.sequenceNo}`;
+}
+
+function byDayNo(left: { dayNo: number }, right: { dayNo: number }): number {
+  return left.dayNo - right.dayNo;
+}
+
+function itineraryStopLabel(item: { poiId: number; plannedTime: string | null; stayDurationMinutes: number }): string {
+  return `${copy.poiIdPrefix}${item.poiId} · ${item.plannedTime ?? copy.noneLabel} · ${item.stayDurationMinutes}min`;
+}
+
+function ItineraryDiff({ draft, liveTour }: { draft: ApiPendingChange; liveTour: ApiTourDetail }) {
+  const liveByKey = new Map(liveTour.itineraryItems.map((item) => [itineraryKey(item), item]));
+  const draftKeys = new Set(draft.itineraryItems.map(itineraryKey));
+  const rows = [
+    ...draft.itineraryItems.map((item) => {
+      const key = itineraryKey(item);
+      const live = liveByKey.get(key);
+      return {
+        key,
+        dayNo: item.dayNo,
+        live: live ? itineraryStopLabel(live) : copy.newItineraryStopLabel,
+        proposed: itineraryStopLabel(item),
+      };
+    }),
+    ...liveTour.itineraryItems
+      .filter((item) => !draftKeys.has(itineraryKey(item)))
+      .map((item) => ({ key: itineraryKey(item), dayNo: item.dayNo, live: itineraryStopLabel(item), proposed: copy.removedItineraryStopLabel })),
+  ].sort(byDayNo);
+
+  if (rows.length === 0) return <p className="text-sm text-[#5B6E69]">{copy.noItinerary}</p>;
+
+  return (
+    <div className="space-y-1.5">
+      {rows.map((row) => (
+        <DiffRow key={row.key} label={copy.dayLabel(row.dayNo)} live={row.live} proposed={row.proposed} />
+      ))}
+    </div>
+  );
+}
+
 function matchedLiveScheduleIds(draft: ApiPendingChange): Set<number> {
   const ids = new Set<number>();
   for (const schedule of draft.schedules) {
@@ -181,10 +234,20 @@ export function DraftVersionReview({
             <DiffRow label={copy.fields.title} live={liveTour.title} proposed={draft.title} />
             <DiffRow label={copy.fields.description} live={liveTour.description} proposed={draft.description} />
             <DiffRow label={copy.fields.basePrice} live={String(liveTour.basePrice)} proposed={String(draft.basePrice)} />
+            <DiffRow label={copy.fields.durationDays} live={String(liveTour.durationDays)} proposed={String(draft.durationDays)} />
+            <DiffRow label={copy.fields.category} live={categoryDisplay(liveTour.categoryId)} proposed={categoryDisplay(draft.categoryId)} />
+            <DiffRow label={copy.fields.cancellationPolicy} live={policyDisplay(liveTour.cancellationPolicyTemplateId)} proposed={policyDisplay(draft.cancellationPolicyTemplateId)} />
             <DiffRow label={copy.fields.inclusions} live={liveTour.inclusions ?? ''} proposed={draft.inclusions ?? ''} />
             <DiffRow label={copy.fields.exclusions} live={liveTour.exclusions ?? ''} proposed={draft.exclusions ?? ''} />
+            <DiffRow label={copy.fields.highlights} live={liveTour.highlights ?? ''} proposed={draft.highlights ?? ''} />
+            <DiffRow label={copy.fields.travellerRequirements} live={liveTour.travellerRequirements ?? ''} proposed={draft.travellerRequirements ?? ''} />
             <DiffRow label={copy.fields.destinations} live={liveTour.destinations.map((d) => d.name).join(', ')} proposed={draft.destinationSummary} />
           </div>
+        </section>
+
+        <section aria-labelledby="itinerary-diff-title" className="rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs">
+          <h2 id="itinerary-diff-title" className="mb-4 text-base font-bold text-[#1C2928]">{copy.itineraryTitle}</h2>
+          <ItineraryDiff draft={draft} liveTour={liveTour} />
         </section>
 
         <section aria-labelledby="schedule-diff-title" className="rounded-2xl border border-[#DCE2DD] bg-white p-6 shadow-xs">

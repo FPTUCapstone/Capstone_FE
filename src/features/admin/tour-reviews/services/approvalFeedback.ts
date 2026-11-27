@@ -1,4 +1,9 @@
-export type ApprovalOutcome = 'approved' | 'alreadyDecided';
+/**
+ * `draft*` variants are TM-82 §5.4 outcomes (a DraftVersion row's own decision) — kept distinct
+ * from the first-time-submission `approved`/`alreadyDecided` so the queue banner never claims
+ * "Tour approved" for a decision that only applied a draft version's changes.
+ */
+export type ApprovalOutcome = 'approved' | 'alreadyDecided' | 'draftApproved' | 'draftAlreadyDecided';
 
 let pending: { token: string; outcome: ApprovalOutcome; expires: number } | undefined;
 

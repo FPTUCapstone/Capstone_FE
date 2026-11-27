@@ -124,6 +124,38 @@ describe('DraftVersionReview (TM-82 §5.4)', () => {
     expect(screen.getByText('1200000')).toBeTruthy();
   });
 
+  // 2026-11-26 E2E finding (item 2.5): the diff was missing itinerary, category and
+  // cancellation policy entirely — fixed to show every field per spec §9.2.
+  it('shows itinerary, category, duration and cancellation-policy rows, not just title/price/destinations', async () => {
+    mockBackend({
+      [DETAIL_URL]: () => json(draft({
+        categoryId: 5,
+        durationDays: 2,
+        cancellationPolicyTemplateId: 9,
+        itineraryItems: [{ dayNo: 1, sequenceNo: 1, poiId: 11, plannedTime: '08:00:00', stayDurationMinutes: 60, notes: null }],
+      })),
+      [LIVE_URL]: () => json(liveTour({
+        categoryId: 3,
+        durationDays: 1,
+        cancellationPolicyTemplateId: 7,
+        itineraryItems: [],
+      })),
+    });
+
+    render(<DraftVersionReview pendingChangeId="55" onDecision={() => {}} />);
+
+    await screen.findByText(copy.schedulesTitle);
+    expect(screen.getByText(copy.fields.category)).toBeTruthy();
+    expect(screen.getByText(`${copy.categoryIdPrefix}3`)).toBeTruthy();
+    expect(screen.getByText(`${copy.categoryIdPrefix}5`)).toBeTruthy();
+    expect(screen.getByText(copy.fields.cancellationPolicy)).toBeTruthy();
+    expect(screen.getByText(`${copy.policyIdPrefix}7`)).toBeTruthy();
+    expect(screen.getByText(`${copy.policyIdPrefix}9`)).toBeTruthy();
+    expect(screen.getByText(copy.fields.durationDays)).toBeTruthy();
+    expect(screen.getByText(copy.itineraryTitle)).toBeTruthy();
+    expect(screen.getByText(copy.newItineraryStopLabel)).toBeTruthy();
+  });
+
   it('shows a matched schedule change and a new schedule separately', async () => {
     mockBackend({ [DETAIL_URL]: () => json(draft()), [LIVE_URL]: () => json(liveTour()) });
 
@@ -170,7 +202,7 @@ describe('DraftVersionReview (TM-82 §5.4)', () => {
     fireEvent.click(await screen.findByRole('button', { name: tourModerationEn.approveDialog.confirm }));
 
     await waitFor(() => expect(screen.getByText(copy.decision.approvedResult)).toBeTruthy());
-    expect(onDecision).toHaveBeenCalledWith('approved');
+    expect(onDecision).toHaveBeenCalledWith('draftApproved');
     // The success copy must describe the draft version, never claim the live tour's own status changed.
     expect(copy.decision.approvedResult).not.toMatch(/tour (is|was) approved/i);
   });

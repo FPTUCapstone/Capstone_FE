@@ -64,12 +64,12 @@ export function DraftVersionDecisionPanel({
     try {
       await send();
       setDecision(recorded);
-      if (recorded.kind === 'approved') onDecision('approved');
+      if (recorded.kind === 'approved') onDecision('draftApproved');
     } catch (error) {
       const failure = classifyFailure(error);
       setSubmitError(FAILURE_MESSAGE[failure]);
       if (failure === 'conflict' || failure === 'notFound') setLockedByConflict(true);
-      if (recorded.kind === 'approved' && failure === 'conflict') onDecision('alreadyDecided');
+      if (recorded.kind === 'approved' && failure === 'conflict') onDecision('draftAlreadyDecided');
     } finally {
       inFlight.current = false;
       setSubmitting(false);

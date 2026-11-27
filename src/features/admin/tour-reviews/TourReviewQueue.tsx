@@ -361,8 +361,13 @@ export function TourReviewQueue() {
 
         {outcome && (
           <div className="mb-4">
-            <FeedbackAlert tone={outcome === 'approved' ? 'success' : 'warning'}>
-              {tourModerationEn.decisionLive[outcome === 'approved' ? 'approvedResult' : 'alreadyDecided']}
+            <FeedbackAlert tone={outcome === 'approved' || outcome === 'draftApproved' ? 'success' : 'warning'}>
+              {tourModerationEn.decisionLive[
+                outcome === 'approved' ? 'approvedResult'
+                  : outcome === 'draftApproved' ? 'draftApprovedResult'
+                    : outcome === 'draftAlreadyDecided' ? 'draftAlreadyDecided'
+                      : 'alreadyDecided'
+              ]}
             </FeedbackAlert>
           </div>
         )}
