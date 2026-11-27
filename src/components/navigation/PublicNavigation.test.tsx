@@ -231,6 +231,8 @@ describe('PublicNavigation Partner Navigation v2.0 & Role dropdowns', () => {
     render(<PublicNavigation locale="en" />);
     const explore = await screen.findByRole('link', { name: publicNavigationEn.links.explore });
     expect(explore.getAttribute('href')).toBe('/pois');
+    const weather = screen.getByRole('link', { name: publicNavigationEn.links.weatherForecast });
+    expect(weather.getAttribute('href')).toBe('/weather');
   });
 
   it('does NOT render For Partners link in primary nav for unauthenticated guests', async () => {

@@ -52,10 +52,9 @@ export function TripHistoryPage() {
       {!isInsideShell && (
         <>
           <PublicNavigation locale="en" />
-          {/* Breadcrumb Navigation */}
           <nav
             aria-label={tripReviewEn.accessibility.breadcrumbAria}
-            className="mb-6 flex items-center gap-2 text-xs font-semibold text-[#5B6E69]"
+            className="mb-5 flex items-center gap-2 text-xs text-[#5B6E69]"
           >
             <Link href={ROUTES.home} className="hover:text-[#174B4A] hover:underline">
               {tripReviewEn.tripHistory.breadcrumbHome}
@@ -65,27 +64,24 @@ export function TripHistoryPage() {
               {tripReviewEn.tripHistory.breadcrumbAccount}
             </Link>
             <span aria-hidden="true">/</span>
-            <span className="text-[#1C2928]">
+            <span className="font-semibold text-[#1C2928]">
               {tripReviewEn.tripHistory.breadcrumbTrips}
             </span>
           </nav>
         </>
       )}
 
-      {/* Account Workspace Navigation Tabs (suppressed automatically inside shell) */}
       <AccountWorkspaceNav activeTab="trips" />
 
-      {/* Header Title Section */}
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-[#1C2928] sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-[#1C2928] sm:text-3xl">
           {tripReviewEn.tripHistory.pageTitle}
         </h1>
-        <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+        <p className="mt-1 text-sm text-[#5B6E69]">
           {tripReviewEn.tripHistory.pageSubtitle}
         </p>
       </div>
 
-      {/* Trip History Content View */}
       <TripHistoryView />
     </>
   );
@@ -95,8 +91,8 @@ export function TripHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="en">
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#1C2928]" lang="vi">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
         {content}
       </main>
     </div>

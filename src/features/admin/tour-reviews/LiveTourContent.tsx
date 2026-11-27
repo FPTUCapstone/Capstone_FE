@@ -71,8 +71,8 @@ export function LiveTourContent({ tour, onApprovalOutcome }: {
             <p className="text-sm text-[#5B6E69]">{live.noImages}</p>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {tour.images.map((image) => (
-                <li key={image.url} className="overflow-hidden rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]">
+              {tour.images.map((image, index) => (
+                <li key={`${image.url}-${index}`} className="overflow-hidden rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={image.url}
@@ -95,6 +95,12 @@ export function LiveTourContent({ tour, onApprovalOutcome }: {
           <ServiceList title={copy.includedTitle} items={tour.includedServices} emptyLabel={live.noneListed} />
           <ServiceList title={copy.excludedTitle} items={tour.excludedServices} emptyLabel={live.noneListed} />
           <div className="sm:col-span-2">
+            <h3 className="mb-2 text-sm font-bold text-[#1C2928]">{live.paymentPolicyTitle}</h3>
+            <p className="mb-4 text-sm text-[#5B6E69]">
+              {tour.allowDeposit && tour.depositPercent && tour.balanceDueDaysBeforeDeparture
+                ? live.depositPolicySummary(tour.depositPercent, tour.balanceDueDaysBeforeDeparture)
+                : live.fullPaymentSummary}
+            </p>
             <h3 className="mb-2 text-sm font-bold text-[#1C2928]">{copy.cancellationTitle}</h3>
             {tour.cancellationRules.length === 0 ? (
               <p className="text-sm text-[#5B6E69]">{live.noCancellationRules}</p>
@@ -174,6 +180,12 @@ export function LiveTourContent({ tour, onApprovalOutcome }: {
           </h2>
           <p className="text-sm font-bold text-[#1C2928]">{tour.operatorName}</p>
           <p className="mt-1 text-xs text-[#5B6E69]">{copy.submittedOn(formatDisplayDateTime(tour.submittedAtUtc))}</p>
+          {tour.submissionNote && (
+            <div className="mt-3 rounded-xl border border-[#DCE2DD] bg-[#F7F5EF] p-3 text-xs text-[#1C2928]">
+              <p className="font-bold text-[#5B6E69]">{live.submissionNoteLabel}</p>
+              <p className="mt-1 whitespace-pre-line">{tour.submissionNote}</p>
+            </div>
+          )}
         </section>
         <TourReviewDecisionPanel liveTourId={tour.id} onApprovalOutcome={onApprovalOutcome} />
       </div>

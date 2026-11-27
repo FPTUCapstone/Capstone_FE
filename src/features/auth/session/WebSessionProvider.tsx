@@ -1,6 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { webRefresh } from '@/lib/authApi';
+import { AuthStorage } from './authSession';
 
 import { useWebSession } from './useWebSession';
 
@@ -19,5 +21,41 @@ import { useWebSession } from './useWebSession';
  */
 export function WebSessionProvider({ children }: { children: ReactNode }) {
   useWebSession();
+  useEffect(() => {
+    let disposed = false;
+    let renewing = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const renew = async () => {
+      if (disposed || renewing || !AuthStorage.getSessionOwner()) return;
+      renewing = true;
+      const revision = AuthStorage.getCredentialRevision();
+      try { await webRefresh(); }
+      catch {
+        if (!disposed && AuthStorage.getCredentialRevision() === revision && AuthStorage.getSessionOwner()) {
+          clearTimeout(timer); timer = setTimeout(() => { void renew(); }, 5000);
+        }
+      } finally {
+        renewing = false;
+        if (!disposed && AuthStorage.getCredentialRevision() !== revision) schedule();
+      }
+    };
+    function schedule() {
+      clearTimeout(timer);
+      const owner = AuthStorage.getSessionOwner();
+      if (!owner || disposed) return;
+      const remaining = Date.parse(owner.expiresAtUtc) - Date.now();
+      const delay = Math.min(2147483647, Math.max(0, remaining - Math.min(30000, remaining / 2)));
+      timer = setTimeout(() => { void renew(); }, delay);
+    }
+    const resume = () => {
+      if (document.visibilityState === 'hidden') return;
+      const owner = AuthStorage.getSessionOwner();
+      if (owner && Date.parse(owner.expiresAtUtc) - Date.now() <= 30000) { clearTimeout(timer); void renew(); }
+      else schedule();
+    };
+    const unsubscribe = AuthStorage.subscribe(schedule);
+    schedule(); window.addEventListener('focus', resume); document.addEventListener('visibilitychange', resume);
+    return () => { disposed = true; clearTimeout(timer); unsubscribe(); window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume); };
+  }, []);
   return <>{children}</>;
 }

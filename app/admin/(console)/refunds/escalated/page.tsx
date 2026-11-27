@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   description: 'Resolve refunds whose gateway retries are exhausted or whose amount could not be verified.',
 };
 
-export default async function EscalatedRefundsMonitorPage() {
+export default async function EscalatedRefundsMonitorPage({
+  searchParams,
+}: { searchParams: Promise<{ emergencyScheduleId?: string | string[] }> }) {
   let session: ReturnType<typeof verifyAdminSessionFromCookies> = null;
   try {
     session = verifyAdminSessionFromCookies(await cookies());
@@ -29,5 +31,6 @@ export default async function EscalatedRefundsMonitorPage() {
     return <AdminAccessDeniedView />;
   }
 
-  return <EscalatedRefundsMonitorScreen />;
+  const scheduleId = (await searchParams).emergencyScheduleId;
+  return <EscalatedRefundsMonitorScreen emergencyScheduleId={typeof scheduleId === 'string' && /^[1-9]\d{0,18}$/.test(scheduleId) ? scheduleId : undefined} />;
 }

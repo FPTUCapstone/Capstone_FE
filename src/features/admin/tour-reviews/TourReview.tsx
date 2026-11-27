@@ -10,6 +10,7 @@ import { DemoModeBanner, focusRing } from './components/ModerationNotices';
 import { FactChip, ServiceList } from './components/TourFacts';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
 import { tourModerationEn } from './resources/en';
+import { DraftVersionReview } from './DraftVersionReview';
 import { LiveTourContent } from './LiveTourContent';
 import { rememberApprovalOutcome, type ApprovalOutcome } from './services/approvalFeedback';
 import { fetchTourReview } from './services/tourModerationApi';
@@ -140,10 +141,15 @@ export function TourReview({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const demo = isTourModerationDemoRequested(searchParams.get('demo'));
+  // TM-82 §5.6: a DraftVersion queue row links here with `kind=draft-change`, so this screen loads
+  // the pending-change/diff view instead of the existing first-time-submission one. Demo mode has
+  // no draft-version fixtures (spec §2 — out of scope to extend demo fixtures for this), so the
+  // param is only ever honored live.
+  const isDraftChange = !demo && searchParams.get('kind') === 'draft-change';
   const queueQuery = parseTourQueueQuery(searchParams);
   const backHref = buildTourQueueHref(queueQuery, demo);
   const demoResult = demo ? getPendingTourPost(id, { demo }) : null;
-  const { resource, retry } = useModerationResource((signal) => fetchTourReview(id, signal), [id], !demo);
+  const { resource, retry } = useModerationResource((signal) => fetchTourReview(id, signal), [id], !demo && !isDraftChange);
   const liveCopy = tourModerationEn.live;
 
   const unauthorized = resource.status === 'failed' && resource.failure === 'unauthorized';
@@ -156,6 +162,25 @@ export function TourReview({ id }: { id: string }) {
     // Returning to the first page avoids an empty last page when the decided tour was its only row.
     const queueHref = buildTourQueueHref({ ...queueQuery, page: 1 }, false);
     router.replace(`${queueHref}${queueHref.includes('?') ? '&' : '?'}decision=${token}`);
+  }
+
+  if (isDraftChange) {
+    return (
+      <div className="min-h-screen bg-[#F7F5EF] pb-24 text-[#1C2928] md:pb-12">
+        <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
+          <Link
+            href={backHref}
+            className={`mb-6 inline-flex min-h-11 items-center gap-1 rounded-lg text-sm font-bold text-[#174B4A] hover:underline ${focusRing}`}
+          >
+            <span className="material-symbols-outlined text-base" aria-hidden="true">
+              arrow_back
+            </span>
+            {copy.backToQueue}
+          </Link>
+          <DraftVersionReview pendingChangeId={id} onDecision={returnToQueue} />
+        </main>
+      </div>
+    );
   }
 
   let content: React.ReactNode;

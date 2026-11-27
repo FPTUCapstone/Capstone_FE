@@ -11,8 +11,14 @@ import { getFirebaseAuth } from '@/lib/firebase';
 import { type ApiError, webGoogleAuth, isApiError } from '@/lib/authApi';
 import { mapGoogleSignInError, mapWebRecoveryError } from '@/lib/authErrorMapper';
 import { useVerificationEmailCooldown } from '@/lib/useVerificationEmailCooldown';
-import { signInDestination, partnerUnresolvedMessage } from '@/features/auth/routing/signInDestination';
+import { resolveSignInDestination, partnerUnresolvedMessage } from '@/features/auth/routing/signInDestination';
 import { loginWithWebRecovery, resendWebVerification } from '@/features/auth/recovery/webRecovery';
+
+function readReturnTarget(): string | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('returnTo') ?? params.get('returnUrl');
+}
 
 export type SignInFeedback = {
   message: string;
@@ -113,12 +119,12 @@ export function useSignInEngine({
     try {
       const res = await loginWithWebRecovery({ email: email.trim().toLowerCase(), password, keepMeSignedIn: remember }, false);
 
+      const destination = resolveSignInDestination(res, readReturnTarget());
       setFeedback({
         tone: 'success',
-        message: signInDestination(res) ? 'Signed in successfully! Redirecting...' : partnerUnresolvedMessage,
+        message: destination ? 'Signed in successfully! Redirecting...' : partnerUnresolvedMessage,
       });
 
-      const destination = signInDestination(res);
       if (destination) router.replace(destination);
     } catch (err: unknown) {
       const apiErr = err as ApiError;
@@ -156,7 +162,7 @@ export function useSignInEngine({
       const idToken = await result.user.getIdToken();
 
       const res = await webGoogleAuth(idToken, remember);
-      const destination = signInDestination(res);
+      const destination = resolveSignInDestination(res, readReturnTarget());
       setFeedback({ tone: 'success', message: destination ? 'Signed in with Google successfully! Redirecting...' : partnerUnresolvedMessage });
       if (destination) router.replace(destination);
 

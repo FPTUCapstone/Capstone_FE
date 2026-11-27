@@ -17,33 +17,33 @@ export function PoiSummaryReadinessCard({ formData }: PoiSummaryReadinessCardPro
       </div>
 
       {/* Initial State */}
-      <div className="p-3.5 rounded-xl bg-[#F7F5EF] border border-[#DCE2DD] flex items-center justify-between mt-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-3 h-3 rounded-full bg-[#174B4A]"></div>
+      <div className="p-3.5 rounded-xl bg-[#F7F5EF] border border-[#DCE2DD] flex items-center justify-between gap-2 mt-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-3 h-3 shrink-0 rounded-full bg-[#174B4A]"></div>
           <span className="text-xs font-semibold text-[#1C2928]">Initial State</span>
         </div>
-        <span className="px-2.5 py-0.5 rounded-full bg-[#E8F0EA] text-[#174B4A] text-xs font-semibold border border-[#D0DFD6]">
+        <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 rounded-full bg-[#E8F0EA] text-[#174B4A] text-xs font-semibold border border-[#D0DFD6]">
           Active upon creation
         </span>
       </div>
 
       {/* Scores Note */}
       <div className="mt-4 space-y-3">
-        <div className="flex items-center justify-between p-3 rounded-lg bg-[#F7F5EF] border border-[#DCE2DD]">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-[#F7F5EF] border border-[#DCE2DD]">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="material-symbols-outlined text-[18px] text-[#5B6E69]">landscape</span>
             <span className="text-sm text-[#1C2928]">Scenic Score</span>
           </div>
-          <span className="text-xs italic bg-[#DCE2DD] px-2 py-0.5 rounded text-[#5B6E69] font-medium">
+          <span className="shrink-0 whitespace-nowrap text-xs italic bg-[#DCE2DD] px-2 py-0.5 rounded text-[#5B6E69] font-medium">
             Not available yet
           </span>
         </div>
-        <div className="flex items-center justify-between p-3 rounded-lg bg-[#F7F5EF] border border-[#DCE2DD]">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-[#F7F5EF] border border-[#DCE2DD]">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="material-symbols-outlined text-[18px] text-[#5B6E69]">photo_camera</span>
             <span className="text-sm text-[#1C2928]">Photo Rating</span>
           </div>
-          <span className="text-xs italic bg-[#DCE2DD] px-2 py-0.5 rounded text-[#5B6E69] font-medium">
+          <span className="shrink-0 whitespace-nowrap text-xs italic bg-[#DCE2DD] px-2 py-0.5 rounded text-[#5B6E69] font-medium">
             Not available yet
           </span>
         </div>

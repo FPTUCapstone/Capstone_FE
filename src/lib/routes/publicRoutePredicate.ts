@@ -29,8 +29,10 @@
 const PUBLIC_WHITELIST_PATTERNS: RegExp[] = [
   /^\/$/,                                // Home
   /^\/about(?:\/.*)?$/,                  // About TripMate
+  /^\/weather(?:\/.*)?$/,                // Public Weather Forecast
   /^\/tours(?:\/.*)?$/,                  // Explore Tours & Detail & Book
   /^\/pois(?:\/.*)?$/,                   // Explore POIs & Detail
+  /^\/stays(?:\/.*)?$/,                  // Stays Catalog, Detail & Stay Inquiries
   /^\/plan(?:\/.*)?$/,                   // Smart Scheduling Request
   /^\/itineraries(?:\/.*)?$/,            // My Itineraries List
   /^\/itinerary(?:\/.*)?$/,              // Suggested Itinerary Detail

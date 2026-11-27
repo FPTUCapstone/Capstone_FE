@@ -6,7 +6,14 @@ import { useAccountWorkspace } from './AccountWorkspaceContext';
 import { accountCommonEn } from './resources/en';
 import { ROUTES } from '@/lib/routes';
 
-export type AccountTabKey = 'profile' | 'preferences' | 'security' | 'trips' | 'complaints' | 'refundAccount';
+export type AccountTabKey =
+  | 'profile'
+  | 'preferences'
+  | 'favorites'
+  | 'security'
+  | 'trips'
+  | 'complaints'
+  | 'refundAccount';
 
 export interface AccountWorkspaceNavProps {
   activeTab: AccountTabKey;
@@ -40,6 +47,12 @@ export const ACCOUNT_WORKSPACE_TABS: NavTabItem[] = [
     label: accountCommonEn.navigation.tabs.preferences,
     href: ROUTES.account.preferences,
     icon: 'tune',
+  },
+  {
+    key: 'favorites',
+    label: accountCommonEn.navigation.tabs.favorites,
+    href: ROUTES.account.favorites,
+    icon: 'favorite',
   },
   {
     key: 'security',

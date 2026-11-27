@@ -32,3 +32,15 @@ export function buildTourQueueHref(query: TourQueueQuery, demo: boolean): string
 export function buildTourDetailHref(id: string, query: TourQueueQuery, demo: boolean): string {
   return `${ROUTES.admin.tourReview(encodeURIComponent(id))}${toQueryString(query, demo)}`;
 }
+
+/**
+ * TM-82 §5.6: a `DraftVersion` queue row links to the same detail route, with `kind=draft-change`
+ * added so the detail screen knows to load the pending-change/diff view instead of the existing
+ * first-time-submission one. A `NewSubmission` row never carries this param, so its href and
+ * behavior stay provably unchanged.
+ */
+export function buildDraftVersionDetailHref(pendingChangeId: number, query: TourQueueQuery, demo: boolean): string {
+  const base = buildTourDetailHref(String(pendingChangeId), query, demo);
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}kind=draft-change`;
+}

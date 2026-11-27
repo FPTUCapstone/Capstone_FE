@@ -226,9 +226,9 @@ describe('TripHistoryView — summary, counts and pages', () => {
   it('derives the page count from totalCount and a page size of 20', async () => {
     await renderLoaded([booking('1')], { totalCount: 45 });
 
-    expect(screen.getByText(/\(45 total trips\)/)).toBeDefined();
+    expect(screen.getByText(/\(45 chuyến đi\)/)).toBeDefined();
     expect(screen.getByText('1 / 3')).toBeDefined();
-    expect(screen.getByText(/Showing/).textContent).toContain('45');
+    expect(screen.getByText(/Hiển thị/).textContent).toContain('45');
   });
 
   it('moves between pages and disables the buttons at both ends', async () => {

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
 import {
@@ -89,16 +90,15 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
   const totalPages = data ? Math.max(1, Math.ceil(data.totalCount / data.pageSize)) : 1;
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
-      <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Payout Management</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Payout Settlements</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[#486581]">
-          View scheduled and completed settlements per booking. Read-only — amounts and statuses are never computed in the browser.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-7xl px-4 py-5 text-[#1C2928] md:px-8">
+      <PageHeader
+        className="mb-6"
+        eyebrow="Payout Management"
+        title="Payout Settlements"
+        description="View scheduled and completed settlements per booking. Read-only — amounts and statuses are never computed in the browser."
+      />
 
-      <form role="search" onSubmit={submit} className="mb-6 rounded-2xl border border-[#d7e2ef] bg-white p-4 shadow-sm">
+      <form role="search" onSubmit={submit} className="mb-6 rounded-2xl border border-[#DCE2DD] bg-white p-4 shadow-xs">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Status">
             <select
@@ -188,10 +188,10 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
       {state === 'ready' && data?.items.length === 0 ? <FeedbackAlert>No payout settlements match the filters</FeedbackAlert> : null}
       {state === 'ready' && data && data.items.length > 0 ? (
         <>
-          <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0}>
+          <div className="max-w-full overflow-x-auto rounded-2xl border border-[#DCE2DD] bg-white shadow-xs" tabIndex={0}>
             <table className="min-w-[1100px] w-full text-left text-sm">
               <caption className="sr-only">Payout settlements</caption>
-              <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
+              <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
                 <tr>
                   {['Booking', 'Tour Operator', 'Run Date', 'Kind', 'Payout Amount', 'Status', 'Transfer Reference', 'Actions'].map((heading) => (
                     <th key={heading} scope="col" className={`px-4 py-3${heading === 'Payout Amount' ? ' text-right' : ''}`}>
@@ -202,8 +202,8 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
               </thead>
               <tbody>
                 {data.items.map((item) => (
-                  <tr key={item.settlementId ?? `awaiting-${item.bookingId}-${item.kind}`} className="border-t border-[#e6edf5]">
-                    <td className="px-4 py-3 font-mono font-bold text-[#00152a]">{item.bookingId}</td>
+                  <tr key={item.settlementId ?? `awaiting-${item.bookingId}-${item.kind}`} className="border-t border-[#ECEEEB] transition hover:bg-[#F7F5EF]/50">
+                    <td className="px-4 py-3 font-mono font-bold text-[#1C2928]">{item.bookingId}</td>
                     <td className="px-4 py-3">{item.tourOperatorUserId}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{item.runDate ? formatRunDate(item.runDate) : 'Not yet scheduled'}</td>
                     <td className="px-4 py-3">{item.kind}</td>
@@ -216,7 +216,7 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
                       {item.status === 'SettlementFailed' && viewerRole === 'Administrator' ? (
                         <Link
                           href={ROUTES.admin.payoutSettlementDetail(item.batchId!)}
-                          className="inline-flex whitespace-nowrap rounded-lg border border-[#006b5f] px-3 py-2 font-bold text-[#006b5f] hover:bg-[#e6f7f0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b5f]"
+                          className="inline-flex whitespace-nowrap rounded-lg border border-[#174B4A] px-3 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#E8F0EA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174B4A]"
                         >
                           View Details
                         </Link>
@@ -227,7 +227,7 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
               </tbody>
             </table>
           </div>
-          <footer className="mt-4 flex flex-col gap-3 text-sm text-[#486581] sm:flex-row sm:items-center sm:justify-between">
+          <footer className="mt-4 flex flex-col gap-3 text-sm text-[#5B6E69] sm:flex-row sm:items-center sm:justify-between">
             <p>
               {data.totalCount} settlement{data.totalCount === 1 ? '' : 's'} · Page {data.pageNumber} of {totalPages}
             </p>
@@ -247,14 +247,14 @@ function PayoutSettlementsContent({ queryKey, viewerRole }: { queryKey: string; 
 }
 
 const inputClass =
-  'mt-1 w-full rounded-xl border border-[#bcccdc] bg-white px-3 py-2.5 text-sm text-[#102a43] outline-none focus-visible:border-[#006b5f] focus-visible:ring-2 focus-visible:ring-[#71f8e4]/40';
-const primaryButton = 'rounded-xl bg-[#006b5f] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#005048]';
-const secondaryButton = 'rounded-xl border border-[#9fb3c8] px-4 py-2 text-sm font-bold text-[#243b53] hover:bg-[#edf2f7] disabled:cursor-not-allowed disabled:opacity-40';
-const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
+  'mt-1 w-full rounded-xl border border-[#DCE2DD] bg-[#F7F5EF]/60 px-3 py-2.5 text-sm text-[#1C2928] outline-none transition focus:bg-white focus-visible:border-[#174B4A] focus-visible:ring-2 focus-visible:ring-[#174B4A]/20';
+const primaryButton = 'rounded-xl bg-[#103B39] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]';
+const secondaryButton = 'rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-bold text-[#1C2928] transition hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-40';
+const panel = 'rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-[#5B6E69]';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="text-xs font-bold uppercase tracking-wide text-[#334e68]">
+    <label className="text-xs font-bold uppercase tracking-wide text-[#5B6E69]">
       {label}
       {children}
     </label>
@@ -262,7 +262,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function Badge({ children }: { children: React.ReactNode }) {
-  return <span className="inline-flex rounded-full bg-[#e6f7f0] px-2.5 py-1 text-xs font-bold text-[#085b3e]">{children}</span>;
+  return <span className="inline-flex rounded-full border border-[#CBE0D4] bg-[#E8F0EA] px-2.5 py-0.5 text-xs font-bold text-[#103B39]">{children}</span>;
 }
 
 function PageButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {

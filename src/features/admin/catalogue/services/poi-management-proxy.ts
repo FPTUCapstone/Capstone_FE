@@ -9,6 +9,8 @@ import {
   verifyAdminSessionFromCookies,
 } from '@/lib/server/adminSession';
 import {
+  parseDeactivatePoiResponse,
+  parsePoiDeactivationReferences,
   parsePoiManagementResponse,
   PoiManagementApiError,
   serializePoiManagementQuery,
@@ -132,6 +134,121 @@ export async function proxyPoiManagementList(request: Request): Promise<Response
     if (body === null) return unavailable();
     try {
       return jsonNoStore(parsePoiManagementResponse(body));
+    } catch {
+      return unavailable();
+    }
+  } catch {
+    return unavailable();
+  }
+}
+
+export async function proxyPoiDeactivationReferences(request: Request, id: string): Promise<Response> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return accessRequired(401);
+
+  const session = verifyAdminSessionFromCookies(cookieStore);
+  if (!session) return clearAdminSession(accessRequired(401));
+  if (session.role !== 'Administrator') return accessRequired(403);
+
+  if (!/^[1-9]\d*$/.test(id)) {
+    return jsonNoStore({ errorCode: 'POI_MANAGEMENT_INVALID_QUERY' }, 400);
+  }
+
+  try {
+    const upstream = await fetchBackend(`/api/v1/admin/pois/${id}/deactivation-references`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+      signal: request.signal,
+    });
+
+    if (upstream.status === 401) return clearAdminSession(accessRequired(401));
+    if (upstream.status === 403) return accessRequired(403);
+    if (upstream.status === 404) return jsonNoStore({ errorCode: 'POI.NotFound' }, 404);
+    if (upstream.status === 409) {
+      const body = await readJson(upstream);
+      return jsonNoStore(body ?? { errorCode: 'POI.AlreadyInactive' }, 409);
+    }
+    if (upstream.status !== 200) return unavailable();
+
+    const body = await readJson(upstream);
+    if (body === null) return unavailable();
+    try {
+      return jsonNoStore(parsePoiDeactivationReferences(body, id));
+    } catch {
+      return unavailable();
+    }
+  } catch {
+    return unavailable();
+  }
+}
+
+export async function proxyDeactivatePoi(request: Request, id: string): Promise<Response> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  if (!token) return accessRequired(401);
+
+  const session = verifyAdminSessionFromCookies(cookieStore);
+  if (!session) return clearAdminSession(accessRequired(401));
+  if (session.role !== 'Administrator') return accessRequired(403);
+
+  if (!/^[1-9]\d*$/.test(id)) {
+    return jsonNoStore({ errorCode: 'POI_MANAGEMENT_INVALID_QUERY' }, 400);
+  }
+
+  let bodyJson: unknown;
+  try {
+    bodyJson = await request.json();
+  } catch {
+    return jsonNoStore({ errorCode: 'POI_MANAGEMENT_INVALID_QUERY' }, 400);
+  }
+
+  if (typeof bodyJson !== 'object' || bodyJson === null || Array.isArray(bodyJson)) {
+    return jsonNoStore({ errorCode: 'POI_MANAGEMENT_INVALID_QUERY' }, 400);
+  }
+
+  const { reason, referenceSnapshotToken } = bodyJson as Record<string, unknown>;
+  if (typeof reason !== 'string' || !reason.trim()) {
+    return jsonNoStore({ errorCode: 'MSG123', message: 'Deactivation reason is required.' }, 400);
+  }
+  if (typeof referenceSnapshotToken !== 'string' || !referenceSnapshotToken.trim()) {
+    return jsonNoStore({ errorCode: 'POI_MANAGEMENT_INVALID_QUERY' }, 400);
+  }
+
+  const idempotencyKey = request.headers.get('Idempotency-Key');
+  try {
+    const upstream = await fetchBackend(`/api/v1/admin/pois/${id}/deactivate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+      },
+      body: JSON.stringify({
+        poiId: Number.isSafeInteger(Number(id)) ? Number(id) : id,
+        reason: reason.trim(),
+        referenceSnapshotToken: referenceSnapshotToken.trim(),
+      }),
+      signal: request.signal,
+    });
+
+    if (upstream.status === 401) return clearAdminSession(accessRequired(401));
+    if (upstream.status === 403) return accessRequired(403);
+    if (upstream.status === 400) {
+      const body = await readJson(upstream);
+      return jsonNoStore(body ?? { errorCode: 'MSG123' }, 400);
+    }
+    if (upstream.status === 404) return jsonNoStore({ errorCode: 'POI.NotFound' }, 404);
+    if (upstream.status === 409) {
+      const body = await readJson(upstream);
+      return jsonNoStore(body ?? { errorCode: 'POI.ReferenceMismatch' }, 409);
+    }
+    if (upstream.status !== 200) return unavailable();
+
+    const body = await readJson(upstream);
+    if (body === null) return unavailable();
+    try {
+      return jsonNoStore(parseDeactivatePoiResponse(body, id));
     } catch {
       return unavailable();
     }

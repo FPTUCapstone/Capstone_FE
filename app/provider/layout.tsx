@@ -10,5 +10,9 @@ export default async function ProviderLayout({ children }: { children: ReactNode
   if (!context) redirect('/sign-in');
   if (context.role !== 'ServiceProvider') return <p role="alert" className="p-8">Access denied. A Service Provider account is required.</p>;
   if (context.mustChangePassword) redirect('/first-password');
-  return <ProviderWorkspaceShell>{children}</ProviderWorkspaceShell>;
+  return (
+    <ProviderWorkspaceShell userName={context.fullName} userEmail={context.email}>
+      {children}
+    </ProviderWorkspaceShell>
+  );
 }

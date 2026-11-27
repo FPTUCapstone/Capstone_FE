@@ -14,18 +14,25 @@ export function useDialogFocus(
   dialogRef: RefObject<HTMLElement | null>,
   initialFocusRef: RefObject<HTMLElement | null>,
   onClose: () => void,
+  paused = false,
 ) {
   const onCloseRef = useRef(onClose);
+  const pausedRef = useRef(paused);
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
   useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
+  useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     initialFocusRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (pausedRef.current) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         onCloseRef.current();

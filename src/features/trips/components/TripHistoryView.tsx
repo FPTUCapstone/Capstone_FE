@@ -26,7 +26,7 @@ interface OpenDetail {
 }
 
 const TAB_BUTTON =
-  'flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-all sm:text-sm';
+  'flex-1 rounded-xl py-2.5 text-center text-xs font-semibold transition-colors sm:text-sm';
 
 export function TripHistoryView() {
   const searchParams = useSearchParams();
@@ -116,31 +116,28 @@ export function TripHistoryView() {
   const totalPages = Math.max(1, Math.ceil(totalCount / TRIP_HISTORY_PAGE_SIZE));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {showDemoBanner && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-amber-600" aria-hidden="true">
-              science
-            </span>
-            <span>
-              <strong>{tripReviewEn.demo.tripHistoryBannerPrefix}</strong>{' '}
-              {tripReviewEn.demo.tripHistoryBannerText}
-            </span>
-          </div>
-          <span className="rounded bg-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-[#F2D8B3] bg-[#FEF3E2] px-4 py-2.5 text-xs text-[#8F5419]">
+          <span>
+            <strong>{tripReviewEn.demo.tripHistoryBannerPrefix}</strong>{' '}
+            {tripReviewEn.demo.tripHistoryBannerText}
+          </span>
+          <span className="shrink-0 rounded-md bg-white/80 px-2 py-0.5 text-[10px] font-bold text-[#8F5419]">
             {tripReviewEn.demo.badgeLabel}
           </span>
         </div>
       )}
 
-      {/* Segmented tabs (Report 3 §3.7.1) */}
-      <div className="flex items-center rounded-2xl bg-slate-200/70 p-1.5 shadow-2xs">
+      {/* Segmented tabs (Coastal Heritage) */}
+      <div className="grid grid-cols-3 rounded-2xl border border-[#DCE2DD] bg-[#EDEAE1] p-1">
         <button
           type="button"
           onClick={() => handleTabChange('Upcoming')}
-          className={`${TAB_BUTTON} ${
-            activeTab === 'Upcoming' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} cursor-pointer ${
+            activeTab === 'Upcoming'
+              ? 'bg-[#174B4A] text-white shadow-xs'
+              : 'text-[#5B6E69] hover:text-[#1C2928]'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.upcoming}
@@ -149,14 +146,15 @@ export function TripHistoryView() {
         <button
           type="button"
           onClick={() => handleTabChange('Completed')}
-          className={`${TAB_BUTTON} flex items-center justify-center gap-1.5 ${
-            activeTab === 'Completed' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} cursor-pointer flex items-center justify-center gap-1.5 ${
+            activeTab === 'Completed'
+              ? 'bg-[#174B4A] text-white shadow-xs'
+              : 'text-[#5B6E69] hover:text-[#1C2928]'
           }`}
         >
-          <span className="inline-block h-2 w-2 rounded-full bg-[#174B4A]" />
           <span>{tripReviewEn.tripHistory.tabs.completed}</span>
           {activeTab === 'Completed' && totalCount > 0 && (
-            <span className="rounded-full bg-[#E6F4F1] px-1.5 py-0.5 text-[10px] font-extrabold text-[#174B4A]">
+            <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold text-white">
               {totalCount}
             </span>
           )}
@@ -165,15 +163,15 @@ export function TripHistoryView() {
         <button
           type="button"
           onClick={() => handleTabChange('Cancelled')}
-          className={`${TAB_BUTTON} ${
-            activeTab === 'Cancelled' ? 'bg-white text-[#1C2928] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          className={`${TAB_BUTTON} cursor-pointer ${
+            activeTab === 'Cancelled'
+              ? 'bg-[#174B4A] text-white shadow-xs'
+              : 'text-[#5B6E69] hover:text-[#1C2928]'
           }`}
         >
           {tripReviewEn.tripHistory.tabs.cancelled}
         </button>
       </div>
-
-      {data?.summary && <TripSummaryBanner summary={data.summary} isDemo={showDemoBanner} />}
 
       <TripFiltersBar
         tripType={tripType}
@@ -183,65 +181,65 @@ export function TripHistoryView() {
         onDateRangeChange={handleDateRangeChange}
       />
 
+      {data?.summary && <TripSummaryBanner summary={data.summary} isDemo={showDemoBanner} />}
+
       {loading ? (
-        <div aria-label={tripReviewEn.accessibility.loadingTripsAria} className="space-y-4">
-          <div className="h-32 animate-pulse rounded-2xl bg-slate-200" />
-          <div className="h-40 animate-pulse rounded-2xl bg-slate-200" />
-          <div className="h-40 animate-pulse rounded-2xl bg-slate-200" />
+        <div aria-label={tripReviewEn.accessibility.loadingTripsAria} className="space-y-3">
+          <div className="h-28 animate-pulse rounded-2xl bg-[#EDEAE1]" />
+          <div className="h-28 animate-pulse rounded-2xl bg-[#EDEAE1]" />
+          <div className="h-28 animate-pulse rounded-2xl bg-[#EDEAE1]" />
         </div>
       ) : errorMessage ? (
-        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 sm:p-8">
-          <span className="material-symbols-outlined mx-auto mb-2 text-[32px] text-rose-600" aria-hidden="true">
-            error
-          </span>
-          <h3 className="text-base font-bold text-rose-900">{tripReviewEn.tripHistory.error.title}</h3>
+        <div
+          role="alert"
+          className="rounded-2xl border border-[#F5C2CC] bg-[#FDECEF] p-6 text-center text-[#8C1030] sm:p-8"
+        >
+          <h3 className="text-base font-bold text-[#8C1030]">{tripReviewEn.tripHistory.error.title}</h3>
           <p className="mt-1 text-xs">{errorMessage}</p>
           <button
             type="button"
             onClick={handleRetry}
-            className="mt-4 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-700"
+            className="mt-4 rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#103B39]"
           >
             {tripReviewEn.actions.retry}
           </button>
         </div>
       ) : items.length === 0 ? (
-        <div role="status" className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center sm:p-12">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-            <span className="material-symbols-outlined text-[28px]" aria-hidden="true">
-              luggage
-            </span>
-          </div>
+        <div
+          role="status"
+          className="rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center sm:p-12"
+        >
           <h3 className="text-base font-bold text-[#1C2928]">{tripReviewEn.tripHistory.empty.title}</h3>
-          <p className="mt-1 text-xs text-slate-500">{tripReviewEn.tripHistory.empty.description}</p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <p className="mt-1 text-xs text-[#5B6E69]">{tripReviewEn.tripHistory.empty.description}</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
             <Link
               href={ROUTES.plan}
-              className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#103B39]"
+              className="rounded-xl bg-[#174B4A] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#103B39]"
             >
               {tripReviewEn.actions.planSmartItinerary}
             </Link>
             <Link
               href={ROUTES.tours}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+              className="rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF]"
             >
               {tripReviewEn.actions.exploreLocalTours}
             </Link>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-[#5B6E69]">
             <span>
               {tripReviewEn.tripHistory.showingPrefix}{' '}
-              <strong className="text-slate-800">{items.length}</strong>{' '}
+              <strong className="font-semibold text-[#1C2928]">{items.length}</strong>{' '}
               {tripReviewEn.tripHistory.showingSeparator}{' '}
-              <strong className="text-slate-800">{totalCount}</strong>{' '}
+              <strong className="font-semibold text-[#1C2928]">{totalCount}</strong>{' '}
               {tripReviewEn.tripHistory.showingSuffix}
             </span>
-            <span className="text-[11px] text-slate-400">{tripReviewEn.tripHistory.timezoneNotice}</span>
+            <span className="text-[11px] text-[#5B6E69]">{tripReviewEn.tripHistory.timezoneNotice}</span>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {items.map((item) => (
               <TripCard
                 key={`${item.kind}:${item.id}`}
@@ -252,11 +250,12 @@ export function TripHistoryView() {
             ))}
           </div>
 
-          <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
-            <p className="text-xs text-slate-500">
-              {tripReviewEn.pagination.pagePrefix} <span className="font-bold text-slate-800">{page}</span>{' '}
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-[#EDEAE1] pt-4 sm:flex-row">
+            <p className="text-xs text-[#5B6E69]">
+              {tripReviewEn.pagination.pagePrefix}{' '}
+              <span className="font-semibold text-[#1C2928]">{page}</span>{' '}
               {tripReviewEn.pagination.pageSeparator}{' '}
-              <span className="font-bold text-slate-800">{totalPages}</span>{' '}
+              <span className="font-semibold text-[#1C2928]">{totalPages}</span>{' '}
               {tripReviewEn.pagination.totalTripsSuffix(totalCount)}
             </p>
             <div
@@ -268,7 +267,7 @@ export function TripHistoryView() {
                 type="button"
                 onClick={() => handlePageChange(Math.max(1, page - 1))}
                 disabled={page <= 1}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-xl border border-[#DCE2DD] bg-white px-3 py-1.5 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label={tripReviewEn.accessibility.previousPageAria}
               >
                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
@@ -276,14 +275,14 @@ export function TripHistoryView() {
                 </span>
                 <span>{tripReviewEn.pagination.previous}</span>
               </button>
-              <span className="px-2 text-xs font-bold text-slate-800">
+              <span className="px-2 text-xs font-bold text-[#1C2928]">
                 {page} / {totalPages}
               </span>
               <button
                 type="button"
                 onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 disabled={page >= totalPages}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-xl border border-[#DCE2DD] bg-white px-3 py-1.5 text-xs font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label={tripReviewEn.accessibility.nextPageAria}
               >
                 <span>{tripReviewEn.pagination.next}</span>
@@ -300,7 +299,7 @@ export function TripHistoryView() {
         <TripDetailDialog
           item={openDetail.item}
           focus={openDetail.focus}
-          allowDemo={isDemo}
+          allowDemo={showDemoBanner}
           onClose={() => setOpenDetail(null)}
         />
       )}

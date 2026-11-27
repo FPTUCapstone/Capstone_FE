@@ -109,3 +109,55 @@ export function isDateInPast(dateString: string): boolean {
     return false;
   }
 }
+
+/**
+ * Formats remaining time until a UTC ISO deadline for SLA countdown indicators.
+ * Returns null if deadline is missing or unparseable.
+ */
+export function formatRemainingSla(
+  deadlineUtc: string | null | undefined,
+  nowMs: number,
+  locale: 'vi' | 'en' = 'vi'
+): { text: string; isUrgent: boolean; isExpired: boolean } | null {
+  if (!deadlineUtc) return null;
+  const targetMs = Date.parse(deadlineUtc);
+  if (!Number.isFinite(targetMs)) return null;
+
+  const diffMs = targetMs - nowMs;
+  if (diffMs <= 0) {
+    return {
+      text: locale === 'vi' ? 'Đã hết hạn phản hồi' : 'Response window expired',
+      isUrgent: true,
+      isExpired: true,
+    };
+  }
+
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  let text: string;
+  if (days > 0) {
+    text =
+      locale === 'vi'
+        ? `Còn ${days} ngày ${hours}g`
+        : `${days}d ${hours}h left`;
+  } else if (hours > 0) {
+    text =
+      locale === 'vi'
+        ? `Còn ${hours}g ${minutes}p`
+        : `${hours}h ${minutes}m left`;
+  } else {
+    text =
+      locale === 'vi'
+        ? `Còn ${Math.max(1, minutes)} phút`
+        : `${Math.max(1, minutes)}m left`;
+  }
+
+  return {
+    text,
+    isUrgent: diffMs <= 6 * 60 * 60 * 1000,
+    isExpired: false,
+  };
+}

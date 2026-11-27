@@ -56,9 +56,30 @@ export function MyPostTripComplaintsPage() {
         </p>
       </div>
       {state.complaints.length === 0 ? (
-        <p className="mt-6 rounded-xl bg-brand-lightTeal p-4 text-sm text-brand-textPrimary">
-          You have not submitted any post-trip complaints.
-        </p>
+        <div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-2xl border border-dashed border-[#DCE2DD] bg-[#F7F5EF]/70 p-6 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3.5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8F0EA] text-[#174B4A]">
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                task_alt
+              </span>
+            </span>
+            <div>
+              <p className="text-sm font-bold text-[#1C2928]">
+                You have not submitted any post-trip complaints.
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-[#5B6E69]">
+                If something went wrong on a completed tour booking, open the booking from your trip history to submit a complaint.
+              </p>
+            </div>
+          </div>
+          <Link
+            href={ROUTES.account.trips}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#103B39] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#174B4A]"
+          >
+            <span>View my trips</span>
+            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
+          </Link>
+        </div>
       ) : (
         <ul className="mt-6 space-y-3">
           {state.complaints.map((complaint) => (

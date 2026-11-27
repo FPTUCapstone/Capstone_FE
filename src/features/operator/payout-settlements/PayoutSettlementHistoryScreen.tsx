@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { formatRunDate, formatVnd, type PayoutSettlementsResponse } from './payoutSettlements';
@@ -46,12 +47,13 @@ export function PayoutSettlementHistoryScreen() {
   const totalPages = data ? Math.max(1, Math.ceil(data.totalCount / data.pageSize)) : 1;
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-8">
-      <header className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#006b5f]">Payout Management</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-[#00152a]">Payout Settlement History</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[#486581]">Your scheduled and settled payouts, per booking.</p>
-      </header>
+    <section className="w-full text-[#1C2928]">
+      <PageHeader
+        className="mb-6"
+        eyebrow="Payout Management"
+        title="Payout Settlement History"
+        description="Your scheduled and settled payouts, per booking."
+      />
 
       {state === 'loading' ? (
         <div role="status" className={panel}>
@@ -81,10 +83,10 @@ export function PayoutSettlementHistoryScreen() {
       {state === 'ready' && ownItems.length === 0 ? <FeedbackAlert>No payout settlements to show.</FeedbackAlert> : null}
       {state === 'ready' && ownItems.length > 0 ? (
         <>
-          <div className="max-w-full overflow-x-auto rounded-2xl border border-[#d7e2ef] bg-white shadow-sm" tabIndex={0}>
+          <div className="max-w-full overflow-x-auto rounded-2xl border border-[#DCE2DD] bg-white shadow-xs" tabIndex={0}>
             <table className="min-w-[800px] w-full text-left text-sm">
               <caption className="sr-only">Payout settlement history</caption>
-              <thead className="bg-[#00152a] text-xs uppercase tracking-wide text-white">
+              <thead className="border-b border-[#DCE2DD] bg-[#F7F5EF] text-xs font-bold uppercase tracking-wider text-[#5B6E69]">
                 <tr>
                   {['Booking', 'Run Date', 'Kind', 'Payout Amount', 'Status', 'Transfer Reference'].map((heading) => (
                     <th key={heading} scope="col" className={`px-4 py-3${heading === 'Payout Amount' ? ' text-right' : ''}`}>
@@ -95,8 +97,8 @@ export function PayoutSettlementHistoryScreen() {
               </thead>
               <tbody>
                 {ownItems.map((item) => (
-                  <tr key={item.settlementId ?? `awaiting-${item.bookingId}-${item.kind}`} className="border-t border-[#e6edf5]">
-                    <td className="px-4 py-3 font-mono font-bold text-[#00152a]">{item.bookingId}</td>
+                  <tr key={item.settlementId ?? `awaiting-${item.bookingId}-${item.kind}`} className="border-t border-[#ECEEEB] transition hover:bg-[#F7F5EF]/50">
+                    <td className="px-4 py-3 font-mono font-bold text-[#1C2928]">{item.bookingId}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{item.runDate ? formatRunDate(item.runDate) : 'Not yet scheduled'}</td>
                     <td className="px-4 py-3">{item.kind}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap font-bold">{formatVnd(item.payoutAmount)}</td>
@@ -109,7 +111,7 @@ export function PayoutSettlementHistoryScreen() {
               </tbody>
             </table>
           </div>
-          <footer className="mt-4 flex flex-col gap-3 text-sm text-[#486581] sm:flex-row sm:items-center sm:justify-between">
+          <footer className="mt-4 flex flex-col gap-3 text-sm text-[#5B6E69] sm:flex-row sm:items-center sm:justify-between">
             <p>
               {data!.totalCount} settlement{data!.totalCount === 1 ? '' : 's'} · Page {data!.pageNumber} of {totalPages}
             </p>
@@ -124,14 +126,14 @@ export function PayoutSettlementHistoryScreen() {
           </footer>
         </>
       ) : null}
-    </main>
+    </section>
   );
 }
 
-const panel = 'rounded-2xl border border-[#d7e2ef] bg-white p-8 text-center text-[#486581]';
+const panel = 'rounded-2xl border border-[#DCE2DD] bg-white p-8 text-center text-[#5B6E69]';
 
 function Badge({ children }: { children: React.ReactNode }) {
-  return <span className="inline-flex rounded-full bg-[#e6f7f0] px-2.5 py-1 text-xs font-bold text-[#085b3e]">{children}</span>;
+  return <span className="inline-flex rounded-full border border-[#CBE0D4] bg-[#E8F0EA] px-2.5 py-0.5 text-xs font-bold text-[#103B39]">{children}</span>;
 }
 
 function PageButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -139,7 +141,7 @@ function PageButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButto
     <button
       type="button"
       {...props}
-      className="rounded-xl border border-[#9fb3c8] px-4 py-2 text-sm font-bold text-[#243b53] hover:bg-[#edf2f7] disabled:cursor-not-allowed disabled:opacity-40"
+      className="rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-xs font-bold text-[#1C2928] transition hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>

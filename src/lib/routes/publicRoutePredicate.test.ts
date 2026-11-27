@@ -12,6 +12,11 @@ describe('isPublicNavigationRoute (Strict Positive Whitelist)', () => {
     expect(isPublicNavigationRoute('/about/')).toBe(true);
   });
 
+  it('returns true for weather forecast page', () => {
+    expect(isPublicNavigationRoute('/weather')).toBe(true);
+    expect(isPublicNavigationRoute('/weather/')).toBe(true);
+  });
+
   it('returns false for empty, null, or undefined', () => {
     expect(isPublicNavigationRoute('')).toBe(false);
     expect(isPublicNavigationRoute(null)).toBe(false);
@@ -25,6 +30,10 @@ describe('isPublicNavigationRoute (Strict Positive Whitelist)', () => {
     expect(isPublicNavigationRoute('/tours/101/book')).toBe(true);
     expect(isPublicNavigationRoute('/pois')).toBe(true);
     expect(isPublicNavigationRoute('/pois/202')).toBe(true);
+    expect(isPublicNavigationRoute('/stays')).toBe(true);
+    expect(isPublicNavigationRoute('/stays/')).toBe(true);
+    expect(isPublicNavigationRoute('/stays/367')).toBe(true);
+    expect(isPublicNavigationRoute('/stays/requests')).toBe(true);
     expect(isPublicNavigationRoute('/plan')).toBe(true);
     expect(isPublicNavigationRoute('/itineraries')).toBe(true);
     expect(isPublicNavigationRoute('/itinerary/303')).toBe(true);

@@ -156,11 +156,11 @@ export function TourPriceRangeSlider({
       {/* Dual slider track container */}
       <div className="dual-range-slider relative flex h-7 items-center">
         {/* Background track */}
-        <div className="absolute h-2 w-full rounded-full bg-[#DCE5E2]" />
+        <div className="dual-range-slider-track absolute h-1.5 w-full rounded-full bg-[#DCE5E2]" />
 
         {/* Active range bar between min and max */}
         <div
-          className="absolute h-2 rounded-full bg-[#0D5754] transition-all"
+          className="dual-range-slider-range absolute h-1.5 rounded-full bg-[#0D5754] transition-[left,width] duration-75"
           style={{
             left: `${Math.min(minPercent, maxPercent)}%`,
             width: `${Math.abs(maxPercent - minPercent)}%`,
@@ -186,7 +186,7 @@ export function TourPriceRangeSlider({
               : (locale === 'vi' ? 'Không giới hạn dưới' : 'No minimum')
           }
           onChange={handleMinInput}
-          className="pointer-events-none absolute h-2 w-full appearance-none bg-transparent focus:outline-hidden"
+          className="pointer-events-none absolute inset-0 h-full w-full appearance-none bg-transparent focus:outline-hidden"
           style={{ zIndex: minZIndex }}
         />
 
@@ -211,7 +211,7 @@ export function TourPriceRangeSlider({
               : (locale === 'vi' ? 'Không giới hạn trên' : 'No maximum')
           }
           onChange={handleMaxInput}
-          className="pointer-events-none absolute h-2 w-full appearance-none bg-transparent focus:outline-hidden"
+          className="pointer-events-none absolute inset-0 h-full w-full appearance-none bg-transparent focus:outline-hidden"
           style={{ zIndex: maxZIndex }}
         />
       </div>

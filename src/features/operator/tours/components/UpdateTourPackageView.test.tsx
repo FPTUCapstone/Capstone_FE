@@ -6,6 +6,10 @@ import type { TourPackageDto } from '../types/tourLifecycle';
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
+  createOrResumeDraftVersion: vi.fn(),
+  saveDraftVersion: vi.fn(),
+  submitDraftVersion: vi.fn(),
+  discardDraftVersion: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -14,6 +18,17 @@ vi.mock('next/navigation', () => ({
     replace: mocks.replace,
   }),
 }));
+
+vi.mock('../services/operatorTourService', async () => {
+  const actual = await vi.importActual<typeof import('../services/operatorTourService')>('../services/operatorTourService');
+  return {
+    ...actual,
+    createOrResumeDraftVersion: mocks.createOrResumeDraftVersion,
+    saveDraftVersion: mocks.saveDraftVersion,
+    submitDraftVersion: mocks.submitDraftVersion,
+    discardDraftVersion: mocks.discardDraftVersion,
+  };
+});
 
 vi.mock('./useTourCatalogues', () => ({
   useTourCatalogues: () => ({
@@ -75,11 +90,28 @@ const mockTourDraft: TourPackageDto = {
   updatedAt: '2026-10-01',
 };
 
+const approvedTourBase: TourPackageDto = {
+  ...mockTourDraft,
+  status: 'Approved',
+  schedules: [
+    { id: 'sch-1', departureDate: '2026-11-20', returnDate: '2026-11-20', totalCapacity: 30, reservedCapacity: 12, meetingPoint: 'Khách sạn trung tâm', status: 'Scheduled' },
+  ],
+};
+
+function draftFor(liveTour: TourPackageDto, overrides: Partial<TourPackageDto> = {}): TourPackageDto {
+  return { ...liveTour, id: `${liveTour.id}-pending-change`, status: 'Draft', ...overrides };
+}
+
 describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
   beforeEach(() => {
+    // Keep the fixed November departure fixture in the future without faking async UI timers.
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
+    vi.setSystemTime(new Date('2026-11-01T00:00:00Z'));
     vi.clearAllMocks();
+    mocks.createOrResumeDraftVersion.mockReset();
+    mocks.saveDraftVersion.mockReset();
+    mocks.submitDraftVersion.mockReset();
+    mocks.discardDraftVersion.mockReset();
   });
 
   afterEach(() => {
@@ -126,28 +158,84 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
     expect(titleInput.disabled).toBe(true);
   });
 
-  it('displays approved version notification and sold seats (BR-103, BR-61)', () => {
-    const approvedTour: TourPackageDto = {
-      ...mockTourDraft,
-      status: 'Approved',
-      version: 1,
-      schedules: [
-        {
-          id: 'sch-1',
-          departureDate: '2026-11-20',
-          returnDate: '2026-11-20',
-          totalCapacity: 30,
-          reservedCapacity: 12, // 12 sold!
-          meetingPoint: 'Khách sạn trung tâm',
-          status: 'Scheduled',
-        },
-      ],
-    };
+  describe('Approved/Published tour → draft version (TM-82 / UC-36)', () => {
+    it('edge case 1: creates a draft version on mount and shows the live-bookings notice', async () => {
+      const draft = draftFor(approvedTourBase);
+      mocks.createOrResumeDraftVersion.mockResolvedValue(draft);
 
-    render(<UpdateTourPackageView initialTour={approvedTour} isDemo={false} />);
+      render(<UpdateTourPackageView initialTour={approvedTourBase} isDemo={false} />);
 
-    expect(screen.getByText(/12 chỗ đã xác nhận đặt chỗ/i)).toBeDefined();
-    expect(screen.getByText(/Sẽ tạo v2/i)).toBeDefined();
+      await waitFor(() => expect(mocks.createOrResumeDraftVersion).toHaveBeenCalledWith(approvedTourBase.id, approvedTourBase));
+      await waitFor(() => expect(screen.getByText(/12 chỗ đã xác nhận đặt chỗ/i)).toBeDefined());
+      expect(screen.getByText(/Lưu vào bản nháp/i)).toBeDefined();
+      // The live tour's own status never changes to reflect the draft being edited.
+      expect(screen.getAllByText('Approved').length).toBeGreaterThan(0);
+    });
+
+    it('edge case 2: resuming an already-open draft calls create-or-resume exactly once, not twice', async () => {
+      const draft = draftFor(approvedTourBase, { status: 'PendingReview' });
+      mocks.createOrResumeDraftVersion.mockResolvedValue(draft);
+
+      render(<UpdateTourPackageView initialTour={approvedTourBase} isDemo={false} />);
+
+      await waitFor(() => expect(mocks.createOrResumeDraftVersion).toHaveBeenCalledTimes(1));
+    });
+
+    it('edge case 3: a draft in PendingReview locks the form read-only', async () => {
+      const draft = draftFor(approvedTourBase, { status: 'PendingReview' });
+      mocks.createOrResumeDraftVersion.mockResolvedValue(draft);
+
+      render(<UpdateTourPackageView initialTour={approvedTourBase} isDemo={false} />);
+
+      await waitFor(() => expect(screen.getByText(/Gói tour đang chờ kiểm duyệt/i)).toBeDefined());
+      const titleInput = screen.getByLabelText(/Tên gói tour/i) as HTMLInputElement;
+      expect(titleInput.disabled).toBe(true);
+    });
+
+    it('edge case 4: discarding a Draft/Rejected draft version calls discardDraftVersion and returns to the list', async () => {
+      const draft = draftFor(approvedTourBase, { status: 'Rejected', rejectionReason: 'Thiếu ảnh' });
+      mocks.createOrResumeDraftVersion.mockResolvedValue(draft);
+      mocks.discardDraftVersion.mockResolvedValue(undefined);
+
+      render(<UpdateTourPackageView initialTour={approvedTourBase} isDemo={false} />);
+
+      const discardBtn = await screen.findByRole('button', { name: /Bỏ bản nháp/i });
+      fireEvent.click(discardBtn);
+
+      await waitFor(() => expect(mocks.discardDraftVersion).toHaveBeenCalledWith(approvedTourBase.id, draft.id));
+      await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/partner/tours'));
+    });
+
+    it('edge case 7: a Rejected draft version shows its own rejection reason, and submit resubmits the same draft', async () => {
+      const draft = draftFor(approvedTourBase, { status: 'Rejected', rejectionReason: 'Thiếu thông tin xe đưa đón.' });
+      mocks.createOrResumeDraftVersion.mockResolvedValue(draft);
+      mocks.submitDraftVersion.mockResolvedValue({ status: 'SUCCESS', data: { ...draft, status: 'PendingReview' } });
+
+      render(<UpdateTourPackageView initialTour={approvedTourBase} isDemo={false} />);
+
+      await waitFor(() => expect(screen.getByText(/Thiếu thông tin xe đưa đón\./i)).toBeDefined());
+      const submitBtn = screen.getByRole('button', { name: /Gửi xét duyệt/i });
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => expect(mocks.submitDraftVersion).toHaveBeenCalledWith(approvedTourBase.id, draft.id, approvedTourBase));
+      // Never routes to the old UC-37 first-time-submission page.
+      expect(mocks.push).not.toHaveBeenCalledWith(expect.stringContaining('/submit'));
+    });
+
+    it('save button calls saveDraftVersion, never the old createTour(sourceTourId) path', async () => {
+      const draft = draftFor(approvedTourBase);
+      mocks.createOrResumeDraftVersion.mockResolvedValue(draft);
+      mocks.saveDraftVersion.mockResolvedValue({ status: 'SUCCESS', data: draft });
+
+      render(<UpdateTourPackageView initialTour={approvedTourBase} isDemo={false} />);
+
+      const saveBtn = await screen.findByRole('button', { name: /Lưu bản nháp/i });
+      fireEvent.click(saveBtn);
+
+      await waitFor(() => expect(mocks.saveDraftVersion).toHaveBeenCalledWith(
+        approvedTourBase.id, draft.id, expect.anything(), approvedTourBase,
+      ));
+    });
   });
 
   it('displays rejection notice if tour status is Rejected', () => {
@@ -260,5 +348,83 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
         expect(mocks.push).toHaveBeenCalledWith('/partner/tours?demo=1');
       });
     });
+  });
+
+  it('enforces read-only mode for Inactive tours and opens preview + add-departure modals', () => {
+    const { unmount } = render(
+      <UpdateTourPackageView initialTour={{ ...mockTourDraft, status: 'Inactive' }} isDemo={false} />,
+    );
+    expect(screen.getAllByText(/Ngừng hoạt động/i).length).toBeGreaterThanOrEqual(2);
+    expect((screen.getByLabelText(/Tên gói tour/i) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /Lưu thay đổi/i })).toBeNull();
+    unmount();
+
+    render(<UpdateTourPackageView initialTour={{ ...mockTourDraft, status: 'Published' }} isDemo={false} />);
+    fireEvent.click(screen.getByRole('button', { name: /Xem trước/i }));
+    expect(screen.getByRole('dialog', { name: /Xem trước hiển thị trên trang Du khách/i })).toBeDefined();
+    fireEvent.click(screen.getAllByRole('button', { name: /Đóng xem trước/i })[0]);
+
+    fireEvent.click(screen.getByRole('button', { name: /^\+ Mở bán đợt mới$/i }));
+    expect(screen.getByRole('dialog', { name: /Mở bán đợt khởi hành mới/i })).toBeDefined();
+  });
+
+  it('asks for review of a future departure before cloning an approved tour with only past dates', () => {
+    const pastTour: TourPackageDto = {
+      ...mockTourDraft,
+      status: 'Approved',
+      schedules: mockTourDraft.schedules.map((schedule) => ({
+        ...schedule,
+        departureDate: '2020-01-01',
+        returnDate: '2020-01-02',
+      })),
+    };
+    const { container } = render(<UpdateTourPackageView initialTour={pastTour} isDemo={false} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thành bản nháp mới/i }));
+
+    expect(screen.getByText(/Hệ thống vừa thêm ngày đi mới để bạn kiểm tra/i)).toBeTruthy();
+    expect((container.querySelector<HTMLInputElement>('input[type="date"]')?.value ?? '') > '2020-01-01').toBe(true);
+  });
+
+  it('clears action=add-departure from the URL when AddDepartureModal closes', () => {
+    window.history.replaceState(null, '', '/partner/tours/tour-ba-na/edit?action=add-departure&demo=1');
+    render(
+      <UpdateTourPackageView
+        initialTour={{ ...mockTourDraft, status: 'Approved' }}
+        isDemo={true}
+        initialOpenAddDeparture={true}
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: /Mở bán đợt khởi hành mới/i })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /Đóng hộp thoại/i }));
+
+    expect(window.location.search).toBe('?demo=1');
+  });
+
+  it('renders clickable version history links and deposit setup state', () => {
+    const tourWithHistory: TourPackageDto = {
+      ...mockTourDraft,
+      id: 'tour-v2',
+      version: 2,
+      status: 'Approved',
+      allowDeposit: true,
+      depositPercent: 30,
+      balanceDueDaysBeforeDeparture: 7,
+      versions: [
+        { tourId: 'tour-v2', versionNo: 2, status: 'Approved', createdAtUtc: '2026-10-20T00:00:00Z' },
+        { tourId: 'tour-v1', versionNo: 1, status: 'Inactive', createdAtUtc: '2026-10-10T00:00:00Z' },
+      ],
+    };
+
+    render(<UpdateTourPackageView initialTour={tourWithHistory} isDemo={false} />);
+
+    expect(screen.getByText('v2 · Đã duyệt')).toBeDefined();
+    expect(screen.getByText('v1 · Đã lưu trữ')).toBeDefined();
+    expect(screen.getByText(/10\/10\/2026/)).toBeDefined();
+    const reviewLink = screen.getByRole('link', { name: 'Xem lại' });
+    expect(reviewLink.getAttribute('href')).toBe('/partner/tours/tour-v1/edit');
+    expect((screen.getByLabelText(/Tỉ lệ đặt cọc/i) as HTMLInputElement).value).toBe('30');
+    expect((screen.getByLabelText(/Hạn tất toán trước khởi hành/i) as HTMLInputElement).value).toBe('7');
   });
 });

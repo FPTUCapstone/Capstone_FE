@@ -97,7 +97,7 @@ export function DashboardMainTabs({
           onClick={() => handleSelectTab('analytics')}
           className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'analytics'
-              ? 'bg-[#174B4A] text-white shadow-xs'
+              ? 'bg-[#FFFFFF] text-[#103B39] shadow-xs'
               : 'text-[#5B6E69] hover:text-[#1C2928] hover:bg-[#FFFFFF]/50'
           }`}
         >
@@ -108,7 +108,7 @@ export function DashboardMainTabs({
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
               activeTab === 'analytics'
-                ? 'bg-[#1C2928] text-[#A3D2BA]'
+                ? 'bg-[#E8F0EA] text-[#103B39]'
                 : 'bg-[#DFDBD1] text-[#174B4A]'
             }`}
           >

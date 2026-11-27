@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { useWebSession } from '@/features/auth/session/useWebSession';
 import { getMapboxPublicToken } from '@/lib/mapboxToken';
+import { formatVnd } from '@/lib/priceLabel';
 import { ROUTES } from '@/lib/routes';
 
 import {
@@ -59,11 +61,10 @@ import { ItineraryWeatherTipsCard } from './ItineraryWeatherTipsCard';
 import { ItineraryTimeline } from './ItineraryTimeline';
 import { StopRemovalReasonDialog } from './StopRemovalReasonDialog';
 import { BookedServices } from './BookedServices';
+import { ItineraryStays } from '@/features/stays/TravelerStays';
 
 /** How long the Undo toast stays after an edit (Review 2, D11-4). */
 const UNDO_VISIBLE_MS = 8000;
-
-const REMOVE_MANDATORY_CONFIRM = 'Đây là điểm bạn đã chọn, chắc chắn bỏ?';
 
 const NO_SHIFTS: ReadonlyMap<number, number> = new Map();
 
@@ -76,6 +77,31 @@ const MAP_LEGEND: Array<{ kind: MapMarkerKind; label: string }> = [
 
 /** Where a chosen suggestion goes: after an item (food) or in place of a stop (replace). */
 type SuggestionTarget = { query: SuggestionQuery; title: string; item: ItineraryDetailItemDto };
+
+type PendingConfirmation =
+  | {
+      kind: 'overtime';
+      target: SuggestionTarget;
+      suggestion: ItinerarySuggestionDto;
+      overflowMinutes: number;
+    }
+  | { kind: 'remove-mandatory'; item: ItineraryDetailItemDto }
+  | { kind: 'replace-mandatory'; item: ItineraryDetailItemDto }
+  | { kind: 'regenerate' };
+
+function computeExtendedEndTime(
+  itinerary: ItineraryDetailDto,
+  overflowMinutes: number,
+): { currentEnd: string; extendedEnd: string } | null {
+  const baseIso = itinerary.validTo ?? itinerary.items[itinerary.items.length - 1]?.plannedDeparture ?? null;
+  if (!baseIso) return null;
+  const baseMs = Date.parse(baseIso);
+  if (!Number.isFinite(baseMs)) return null;
+  const currentEnd = formatVietnamTime(baseIso);
+  const extendedEnd = formatVietnamTime(new Date(baseMs + overflowMinutes * 60_000).toISOString());
+  if (currentEnd === '--:--' || extendedEnd === '--:--') return null;
+  return { currentEnd, extendedEnd };
+}
 
 interface ViewSuggestedItineraryPageProps {
   itineraryId: string;
@@ -115,8 +141,13 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   const [suggestionTarget, setSuggestionTarget] = useState<SuggestionTarget | null>(null);
   const [reviewsFor, setReviewsFor] = useState<ItineraryDetailItemDto | null>(null);
   const [removalFor, setRemovalFor] = useState<ItineraryDetailItemDto | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirmation | null>(null);
   // Map ↔ timeline synchronization and active marker selection
   const [highlightedItemId, setHighlightedItemId] = useState<number | null>(null);
+  // The preview card opens only from a map marker. Opening it on hover changed the page height under the
+  // pointer, so at the bottom of a short itinerary the page jumped and the hover toggled in a loop.
+  const [pinnedItemId, setPinnedItemId] = useState<number | null>(null);
+  const activeItemId = highlightedItemId ?? pinnedItemId;
   const [mapFailed, setMapFailed] = useState(false);
   // Leg shown on its own on the map (id from the map model); null = the whole route.
   const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
@@ -167,8 +198,8 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
   }, [activeLegId]);
 
   const selectedItem =
-    highlightedItemId !== null && itineraryItems
-      ? itineraryItems.find((item) => item.itemId === highlightedItemId) ?? null
+    pinnedItemId !== null && itineraryItems
+      ? itineraryItems.find((item) => item.itemId === pinnedItemId) ?? null
       : null;
 
   // ADR-002 (G3): where the schedule came from; null for itineraries saved before provenance existed.
@@ -226,6 +257,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
 
   const selectFromMap = (itemId: number) => {
     setHighlightedItemId(itemId);
+    setPinnedItemId(itemId);
     document.querySelector(`[data-item-id="${itemId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
@@ -406,23 +438,25 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
       item: afterItem,
     });
 
-  const openReplaceSuggestions = (target: ItineraryDetailItemDto) => {
-    // D4: replacing a stop the traveler chose drops it, so it needs the same confirmation as removing it.
-    if (target.isMandatory && !window.confirm(REMOVE_MANDATORY_CONFIRM)) return;
+  const openReplaceSuggestionsDialog = (target: ItineraryDetailItemDto) =>
     setSuggestionTarget({
       query: { kind: 'Replace', replaceItemId: target.itemId },
       title: `Thay ${stopDisplayName(target)}`,
       item: target,
     });
+
+  const openReplaceSuggestions = (target: ItineraryDetailItemDto) => {
+    // D4: replacing a stop the traveler chose drops it, so it needs the same confirmation as removing it.
+    if (target.isMandatory) {
+      setPendingConfirm({ kind: 'replace-mandatory', item: target });
+      return;
+    }
+    openReplaceSuggestionsDialog(target);
   };
 
-  const chooseSuggestion = (suggestion: ItinerarySuggestionDto) => {
-    if (!itinerary || !suggestionTarget) return;
-    if (suggestion.overflowMinutes && suggestion.overflowMinutes > 0) {
-      const confirmMessage = `Địa điểm này cần thêm thời gian di chuyển/ăn uống. Lịch trình sẽ tự động kéo dài thêm ${formatMinutes(suggestion.overflowMinutes)}. Bạn có muốn tiếp tục?`;
-      if (!window.confirm(confirmMessage)) return;
-    }
-    const { query, item } = suggestionTarget;
+  const commitChosenSuggestion = (target: SuggestionTarget, suggestion: ItinerarySuggestionDto) => {
+    if (!itinerary) return;
+    const { query, item } = target;
     setSuggestionTarget(null);
     let stops: ItineraryStopInput[];
     if (query.kind === 'Food') {
@@ -434,10 +468,27 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
     applyStops(stops, new Map([[suggestion.poiId, suggestion.name]]));
   };
 
+  const chooseSuggestion = (suggestion: ItinerarySuggestionDto) => {
+    if (!itinerary || !suggestionTarget) return;
+    if (suggestion.overflowMinutes && suggestion.overflowMinutes > 0) {
+      setPendingConfirm({
+        kind: 'overtime',
+        target: suggestionTarget,
+        suggestion,
+        overflowMinutes: suggestion.overflowMinutes,
+      });
+      return;
+    }
+    commitChosenSuggestion(suggestionTarget, suggestion);
+  };
+
   const removeItem = (item: ItineraryDetailItemDto) => {
     if (!itinerary || item.poiId === null) return;
     // D4: a stop the traveler chose is removed only after confirmation.
-    if (item.isMandatory && !window.confirm(REMOVE_MANDATORY_CONFIRM)) return;
+    if (item.isMandatory) {
+      setPendingConfirm({ kind: 'remove-mandatory', item });
+      return;
+    }
     // UC-10 feedback (D10, D14): picking a reason removes the stop; closing the picker removes nothing.
     setRemovalFor(item);
   };
@@ -676,14 +727,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            const message = hasAddedRestaurant
-                              ? 'Tạo phương án khác? Các quán ăn bạn đã thêm sẽ không được giữ lại vì lịch trình được tạo lại từ yêu cầu ban đầu.'
-                              : 'Tạo phương án khác? TripMate sẽ ưu tiên những địa điểm chưa có trong lịch trình hiện tại; các điểm bạn muốn ghé được giữ nguyên.';
-                            if (window.confirm(message)) {
-                              void applyMutation(() => regenerateItinerary(itinerary.itineraryId));
-                            }
-                          }}
+                          onClick={() => setPendingConfirm({ kind: 'regenerate' })}
                           disabled={mutationPending}
                           className="inline-flex items-center rounded-xl border border-[#DCE2DD] bg-white px-3.5 py-2 text-xs font-semibold text-[#1C2928] transition hover:border-[#174B4A]/40 hover:bg-[#F7F5EF] disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -794,7 +838,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                     onRemoveStop={removeItem}
                     onViewReviews={setReviewsFor}
                     onAddFood={openFoodSuggestions}
-                    highlightedItemId={highlightedItemId}
+                    highlightedItemId={activeItemId}
                     onHighlightItem={setHighlightedItemId}
                     selectableLegIds={selectableLegIds}
                     selectedLegId={activeLegId}
@@ -802,8 +846,10 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                   />
                 </div>
 
-                {/* Right Column: Route Map Preview & Information (40%) */}
+                {/* Right Column: Dedicated Stays Block + Route Map Preview (40%) */}
                 <aside className="space-y-4 lg:col-span-2 lg:sticky lg:top-24">
+                  <ItineraryStays itineraryId={itinerary.itineraryId} />
+
                   {/* Real Interactive Mapbox Map: "Bản đồ lộ trình" */}
                   <section
                     ref={mapSectionRef}
@@ -881,7 +927,7 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                           <LazyItineraryMap
                             token={mapboxToken}
                             model={mapModel}
-                            highlightedItemId={highlightedItemId}
+                            highlightedItemId={activeItemId}
                             onSelectItem={selectFromMap}
                             selectedLegId={activeLegId}
                             onUnavailable={() => setMapFailed(true)}
@@ -958,7 +1004,10 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
                               </div>
                               <button
                                 type="button"
-                                onClick={() => setHighlightedItemId(null)}
+                                onClick={() => {
+                                  setPinnedItemId(null);
+                                  setHighlightedItemId(null);
+                                }}
                                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-[#5B6E69] transition hover:bg-[#DCE2DD]/50 hover:text-[#1C2928]"
                                 title="Đóng chi tiết điểm dừng"
                                 aria-label="Đóng chi tiết điểm dừng"
@@ -1085,10 +1134,148 @@ export function ViewSuggestedItineraryPage({ itineraryId }: ViewSuggestedItinera
           query={suggestionTarget.query}
           title={suggestionTarget.title}
           nameOf={(poiId) => itinerary.items.find((entry) => entry.poiId === poiId)?.poiName ?? null}
+          suspended={pendingConfirm?.kind === 'overtime'}
           onChoose={chooseSuggestion}
           onClose={() => setSuggestionTarget(null)}
         />
       )}
+
+      {pendingConfirm && itinerary && (() => {
+        if (pendingConfirm.kind === 'overtime') {
+          const { target, suggestion, overflowMinutes } = pendingConfirm;
+          const endTimeShift = computeExtendedEndTime(itinerary, overflowMinutes);
+          const isFood = target.query.kind === 'Food';
+          const costText =
+            suggestion.estimatedCost === null || suggestion.estimatedCost === undefined
+              ? null
+              : suggestion.estimatedCost <= 0
+              ? 'Miễn phí'
+              : formatVnd(suggestion.estimatedCost);
+          const detailParts = [
+            costText,
+            suggestion.closesAt ? `Đóng ${suggestion.closesAt}` : null,
+          ].filter((part): part is string => Boolean(part));
+
+          return (
+            <ConfirmationDialog
+              title={`Kéo dài lịch trình thêm ${formatMinutes(overflowMinutes)}?`}
+              cancelLabel="Quay lại"
+              confirmLabel={isFood ? 'Tiếp tục thêm quán' : 'Tiếp tục thay điểm'}
+              pending={mutationPending}
+              onCancel={() => setPendingConfirm(null)}
+              onConfirm={() => {
+                setPendingConfirm(null);
+                commitChosenSuggestion(target, suggestion);
+              }}
+            >
+              <p>
+                {isFood ? 'Thêm ' : 'Thay bằng '}
+                <span className="font-semibold text-[#1C2928]">{suggestion.name}</span>
+                {isFood
+                  ? ` sau ${stopDisplayName(target.item)}`
+                  : ` thay cho ${stopDisplayName(target.item)}`}{' '}
+                cần thêm thời gian di chuyển và dừng chân.
+              </p>
+              <div className="rounded-xl bg-[#F7F5EF] px-4 py-3 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#5B6E69]">
+                    {endTimeShift ? 'Giờ kết thúc dự kiến' : 'Thời gian kéo dài thêm'}
+                  </span>
+                  {endTimeShift ? (
+                    <span className="font-semibold tabular-nums text-[#1C2928]">
+                      <span className="font-normal text-[#5B6E69] line-through">
+                        {endTimeShift.currentEnd}
+                      </span>
+                      <span className="mx-1.5 text-[#5B6E69]">→</span>
+                      <span className="text-[13.5px] font-bold text-[#174B4A]">
+                        {endTimeShift.extendedEnd}
+                      </span>
+                      <span className="ml-1.5 font-semibold text-[#995436]">
+                        (+{formatMinutes(overflowMinutes)})
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-[#995436]">
+                      +{formatMinutes(overflowMinutes)}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#DCE2DD]/70 pt-2 text-[#5B6E69]">
+                  <span className="truncate font-medium text-[#1C2928]">{suggestion.name}</span>
+                  {detailParts.length > 0 && (
+                    <span className="shrink-0">{detailParts.join(' · ')}</span>
+                  )}
+                </div>
+              </div>
+            </ConfirmationDialog>
+          );
+        }
+
+        if (pendingConfirm.kind === 'remove-mandatory') {
+          const { item } = pendingConfirm;
+          return (
+            <ConfirmationDialog
+              title="Bỏ điểm đã chọn bắt buộc?"
+              cancelLabel="Giữ lại"
+              confirmLabel="Tiếp tục bỏ điểm"
+              variant="danger"
+              pending={mutationPending}
+              onCancel={() => setPendingConfirm(null)}
+              onConfirm={() => {
+                setPendingConfirm(null);
+                setRemovalFor(item);
+              }}
+            >
+              <p>
+                <span className="font-semibold text-[#1C2928]">{stopDisplayName(item)}</span> là điểm bạn đã đánh dấu bắt buộc khi lập lịch. Bỏ điểm này sẽ gỡ khỏi danh sách bắt buộc của chuyến đi.
+              </p>
+            </ConfirmationDialog>
+          );
+        }
+
+        if (pendingConfirm.kind === 'replace-mandatory') {
+          const { item } = pendingConfirm;
+          return (
+            <ConfirmationDialog
+              title="Thay điểm đã chọn bắt buộc?"
+              cancelLabel="Giữ lại"
+              confirmLabel="Tiếp tục thay điểm"
+              variant="danger"
+              pending={mutationPending}
+              onCancel={() => setPendingConfirm(null)}
+              onConfirm={() => {
+                setPendingConfirm(null);
+                openReplaceSuggestionsDialog(item);
+              }}
+            >
+              <p>
+                <span className="font-semibold text-[#1C2928]">{stopDisplayName(item)}</span> là điểm bạn đã đánh dấu bắt buộc khi lập lịch. Thay bằng địa điểm khác sẽ bỏ điểm này khỏi danh sách bắt buộc.
+              </p>
+            </ConfirmationDialog>
+          );
+        }
+
+        return (
+          <ConfirmationDialog
+            title="Tạo phương án lịch trình khác?"
+            cancelLabel="Hủy"
+            confirmLabel="Tạo lại lịch trình"
+            pendingLabel="Đang tạo lại..."
+            pending={mutationPending}
+            onCancel={() => setPendingConfirm(null)}
+            onConfirm={() => {
+              setPendingConfirm(null);
+              void applyMutation(() => regenerateItinerary(itinerary.itineraryId));
+            }}
+          >
+            <p>
+              {hasAddedRestaurant
+                ? 'Các quán ăn bạn đã thêm sẽ không được giữ lại vì lịch trình được tạo lại từ yêu cầu ban đầu.'
+                : 'TripMate sẽ ưu tiên những địa điểm chưa có trong lịch trình hiện tại; các điểm bạn đã chọn bắt buộc vẫn được giữ nguyên.'}
+            </p>
+          </ConfirmationDialog>
+        );
+      })()}
 
       {reviewsFor && reviewsFor.poiId !== null && (
         <ItineraryReviewsDialog

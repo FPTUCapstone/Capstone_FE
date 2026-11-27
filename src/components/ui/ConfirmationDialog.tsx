@@ -3,13 +3,26 @@
 import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 
 /** Shared confirmation pattern: cancel first, contained focus, dismiss, then restore focus. */
-export function ConfirmationDialog({ title, children, pending, onCancel, onConfirm, confirmLabel = 'Xác nhận gửi' }: {
+export function ConfirmationDialog({
+  title,
+  children,
+  pending,
+  onCancel,
+  onConfirm,
+  confirmLabel = 'Xác nhận gửi',
+  cancelLabel = 'Hủy bỏ',
+  pendingLabel = 'Đang gửi...',
+  variant = 'primary',
+}: {
   title: string;
   children: ReactNode;
   pending: boolean;
   onCancel: () => void;
   onConfirm: () => void;
   confirmLabel?: string;
+  cancelLabel?: string;
+  pendingLabel?: string;
+  variant?: 'primary' | 'danger';
 }) {
   const titleId = useId();
   const descriptionId = useId();
@@ -62,16 +75,46 @@ export function ConfirmationDialog({ title, children, pending, onCancel, onConfi
     };
   }, [pending, onCancel]);
 
+  const confirmButtonClass =
+    variant === 'danger'
+      ? 'min-h-10 min-w-11 rounded-xl bg-rose-700 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-rose-800 focus-visible:ring-2 focus-visible:ring-rose-700 disabled:opacity-50'
+      : 'min-h-10 min-w-11 rounded-xl bg-[#174B4A] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#103B39] focus-visible:ring-2 focus-visible:ring-[#174B4A] disabled:opacity-50';
+
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={pending}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
-      onClick={(event) => { if (event.target === event.currentTarget && !pending) onCancel(); }}>
-      <div ref={panel} tabIndex={-1} className="max-h-[90dvh] w-full min-w-0 max-w-md overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl outline-none [overflow-wrap:anywhere] sm:p-6">
-        <h2 id={titleId} className="text-base font-extrabold text-brand-textPrimary">{title}</h2>
-        <div id={descriptionId} className="mt-2 space-y-2 text-xs leading-relaxed text-slate-600">{children}</div>
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onCancel} disabled={pending} className="min-h-11 min-w-11 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">Hủy bỏ</button>
-          <button type="button" onClick={onConfirm} disabled={pending} className="min-h-11 min-w-11 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">{pending ? 'Đang gửi...' : confirmLabel}</button>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      aria-busy={pending}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[#1C2928]/40 p-4 backdrop-blur-[2px]"
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !pending) onCancel();
+      }}
+    >
+      <div
+        ref={panel}
+        tabIndex={-1}
+        className="max-h-[90dvh] w-full min-w-0 max-w-[430px] overflow-y-auto rounded-2xl border border-[#DCE2DD] bg-white p-5 shadow-xl outline-none [overflow-wrap:anywhere] sm:p-6"
+      >
+        <h2 id={titleId} className="text-[16.5px] font-bold leading-snug text-[#1C2928]">
+          {title}
+        </h2>
+        <div id={descriptionId} className="mt-2 space-y-3 text-[13.5px] leading-relaxed text-[#5B6E69]">
+          {children}
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={pending}
+            className="min-h-10 min-w-11 rounded-xl border border-[#DCE2DD] bg-white px-4 py-2 text-[13px] font-semibold text-[#1C2928] transition hover:bg-[#F7F5EF] focus-visible:ring-2 focus-visible:ring-[#174B4A] disabled:opacity-50"
+          >
+            {cancelLabel}
+          </button>
+          <button type="button" onClick={onConfirm} disabled={pending} className={confirmButtonClass}>
+            {pending ? pendingLabel : confirmLabel}
+          </button>
         </div>
       </div>
     </div>

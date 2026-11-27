@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { PageHeader } from '@/components/layout/PageHeader';
+
 import { BannerBlock } from './components/BannerBlock';
 import { DestinationsBlock } from './components/DestinationsBlock';
 import { FeaturedToursBlock } from './components/FeaturedToursBlock';
@@ -306,11 +308,11 @@ export function LandingContentScreen() {
     <UploadStatusContext.Provider value={uploadStatus}>
     <main className="min-h-screen bg-[#F7F5EF] px-4 py-8 text-[#1C2928] sm:px-6 md:px-8 md:py-10">
       <section className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-2xl border border-[#5B6E69] bg-[#103B39] p-6 text-white shadow-md sm:p-8">
-          <p className="text-xs font-bold tracking-wider text-[#71f8e4] uppercase">{copy.screen.eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{copy.screen.title}</h1>
-          <p className="mt-3 text-sm leading-relaxed text-[#d1e4ff]">{copy.screen.description}</p>
-        </header>
+        <PageHeader
+          eyebrow={copy.screen.eyebrow}
+          title={copy.screen.title}
+          description={copy.screen.description}
+        />
 
         {status === 'loading' && (
           <p role="status" className="rounded-2xl border border-[#DCE2DD] bg-white p-5 text-sm text-[#5B6E69]">
@@ -319,16 +321,16 @@ export function LandingContentScreen() {
         )}
 
         {status === 'pending' && (
-          <section role="status" className="rounded-2xl border border-[#cfe2f3] bg-[#eef6ff] p-5 sm:p-6">
-            <span className="inline-flex rounded-full bg-[#d7f7f1] px-3 py-1 text-xs font-bold text-[#103B39]">
+          <section role="status" className="rounded-2xl border border-[#F2D8B3] bg-[#FBF3E8] p-5 sm:p-6">
+            <span className="inline-flex rounded-full bg-[#F5E2C3] px-3 py-1 text-xs font-bold text-[#7A4A12]">
               {copy.screen.pendingBadge}
             </span>
-            <h2 className="mt-2 text-base font-bold text-[#1d2939]">{copy.screen.pendingTitle}</h2>
+            <h2 className="mt-2 text-base font-bold text-[#1C2928]">{copy.screen.pendingTitle}</h2>
             <p className="mt-1 text-sm leading-relaxed text-[#5B6E69]">{copy.errors.unavailable}</p>
             <button
               type="button"
               onClick={reload}
-              className="mt-3 rounded-lg border border-[#103B39] px-3 py-1.5 text-xs font-bold text-[#103B39]"
+              className="mt-3 cursor-pointer rounded-xl border border-[#174B4A] bg-white px-3.5 py-1.5 text-xs font-bold text-[#174B4A] transition hover:bg-[#F7F5EF]"
             >
               {copy.screen.retry}
             </button>

@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import {
   removeTourImage,
+  reorderTourImages,
   setPrimaryTourImage,
   uploadTourImage,
   validateTourImage,
@@ -15,12 +16,23 @@ interface TourMediaManagerProps {
   media: TourMediaItem[];
   onChange: (media: TourMediaItem[]) => void;
   disabled?: boolean;
+  onReadinessChange?: () => void;
+  confirmOnDelete?: boolean;
 }
 
 /** Cover photo management for an existing tour. */
-export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled = false }: TourMediaManagerProps) {
+export function TourMediaManager({
+  tourId,
+  tourTitle,
+  media,
+  onChange,
+  disabled = false,
+  onReadinessChange,
+  confirmOnDelete = false,
+}: TourMediaManagerProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   // One key per picked file: retrying the same file after a lost response replays the same upload.
   const pendingKeys = useRef(new Map<string, string>());
 
@@ -29,8 +41,10 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
     setBusy(true);
     try {
       onChange(await action());
-    } catch {
-      setError('Không thể cập nhật hình ảnh lúc này. Vui lòng thử lại sau.');
+      setConfirmDeleteId(null);
+      onReadinessChange?.();
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Không thể cập nhật hình ảnh lúc này. Vui lòng thử lại sau.');
     } finally {
       setBusy(false);
     }
@@ -58,13 +72,25 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
         });
         pendingKeys.current.delete(fingerprint);
         onChange(current);
-      } catch {
-        setError('Không thể tải ảnh lên lúc này. Vui lòng thử lại sau.');
+        onReadinessChange?.();
+      } catch (err) {
+        setError(err instanceof Error && err.message ? err.message : 'Không thể tải ảnh lên lúc này. Vui lòng thử lại sau.');
         setBusy(false);
         return;
       }
     }
     setBusy(false);
+  };
+
+  const handleMove = (index: number, delta: -1 | 1) => {
+    const target = index + delta;
+    if (target < 0 || target >= media.length) return;
+    const reordered = [...media];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(target, 0, moved);
+    const primary = reordered.find((m) => m.isPrimary) ?? reordered[0];
+    if (!primary) return;
+    void run(() => reorderTourImages(tourId, reordered.map((m) => m.id), primary.id));
   };
 
   return (
@@ -104,11 +130,11 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
         <p className="mt-3 text-xs text-slate-500">Chưa có hình ảnh nào.</p>
       ) : (
         <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {media.map((item) => (
+          {media.map((item, idx) => (
             <li key={item.id} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={item.url} alt={item.caption ?? tourTitle} className="aspect-[4/3] w-full rounded-lg object-cover" />
-              <div className="flex min-h-9 items-center justify-between gap-1 px-1 pt-1.5 text-[11px]">
+              <div className="flex min-h-9 flex-wrap items-center justify-between gap-1 px-1 pt-1.5 text-[11px]">
                 {item.isPrimary ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800">Ảnh đại diện</span>
                 ) : (
@@ -122,16 +148,69 @@ export function TourMediaManager({ tourId, tourTitle, media, onChange, disabled 
                   </button>
                 )}
                 {!disabled && (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label="Xóa ảnh"
-                    onClick={() => void run(() => removeTourImage(tourId, item.id))}
-                    className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
-                    title="Xóa ảnh"
-                  >
-                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
-                  </button>
+                  <div className="flex items-center gap-0.5">
+                    {media.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={busy || idx === 0}
+                          aria-label="Di chuyển ảnh lên"
+                          onClick={() => handleMove(idx, -1)}
+                          className="grid h-7 w-6 place-items-center rounded text-slate-600 hover:bg-slate-200/70 disabled:opacity-30"
+                          title="Di chuyển lên"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy || idx === media.length - 1}
+                          aria-label="Di chuyển ảnh xuống"
+                          onClick={() => handleMove(idx, 1)}
+                          className="grid h-7 w-6 place-items-center rounded text-slate-600 hover:bg-slate-200/70 disabled:opacity-30"
+                          title="Di chuyển xuống"
+                        >
+                          ↓
+                        </button>
+                      </>
+                    )}
+                    {confirmOnDelete && confirmDeleteId === item.id ? (
+                      <span className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void run(() => removeTourImage(tourId, item.id))}
+                          className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white hover:bg-rose-700"
+                        >
+                          Xóa
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="rounded border border-slate-300 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700"
+                        >
+                          Hủy
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label="Xóa ảnh"
+                        onClick={() => {
+                          if (confirmOnDelete) {
+                            setConfirmDeleteId(item.id);
+                          } else {
+                            void run(() => removeTourImage(tourId, item.id));
+                          }
+                        }}
+                        className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                        title="Xóa ảnh"
+                      >
+                        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </li>

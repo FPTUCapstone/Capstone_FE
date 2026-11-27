@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { DepartureTermsFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
+import { DepartureTermsFields, TourDepositFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
 import type { TourDepartureSchedule } from '../types/tourLifecycle';
 
 const schedule: TourDepartureSchedule = {
@@ -69,5 +69,73 @@ describe('TourTermsFields', () => {
 
     expect(props.onHighlights).toHaveBeenCalledWith('Cáp treo');
     expect(props.onTravellerRequirements).toHaveBeenCalledWith('Hộ chiếu');
+  });
+
+  it('inserts and toggles packing checklist quick tags cleanly', () => {
+    const onTravellerRequirements = vi.fn();
+    const { rerender } = render(
+      <TourTermsFields
+        highlights=""
+        travellerRequirements=""
+        onHighlights={vi.fn()}
+        onTravellerRequirements={onTravellerRequirements}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Giày thể thao/ }));
+    expect(onTravellerRequirements).toHaveBeenLastCalledWith('- Giày thể thao');
+
+    rerender(
+      <TourTermsFields
+        highlights=""
+        travellerRequirements="- Giày thể thao"
+        onHighlights={vi.fn()}
+        onTravellerRequirements={onTravellerRequirements}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Áo mưa \/ Dù che nắng/ }));
+    expect(onTravellerRequirements).toHaveBeenLastCalledWith('- Giày thể thao\n- Áo mưa / Dù che nắng');
+
+    fireEvent.click(screen.getByRole('button', { name: /Giày thể thao/ }));
+    expect(onTravellerRequirements).toHaveBeenLastCalledWith('');
+  });
+});
+
+describe('TourDepositFields', () => {
+  it('switches between full payment and deposit with presets and preview', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <TourDepositFields
+        allowDeposit={false}
+        depositPercent={null}
+        balanceDueDaysBeforeDeparture={null}
+        basePrice={5000000}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Cho phép đặt cọc giữ chỗ/ }));
+    expect(onChange).toHaveBeenCalledWith({
+      allowDeposit: true,
+      depositPercent: 30,
+      balanceDueDaysBeforeDeparture: 7,
+    });
+
+    rerender(
+      <TourDepositFields
+        allowDeposit={true}
+        depositPercent={30}
+        balanceDueDaysBeforeDeparture={7}
+        basePrice={5000000}
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByText(/1\.500\.000 đ\/khách/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /50% · Lễ Tết/ }));
+    expect(onChange).toHaveBeenCalledWith({ depositPercent: 50 });
+
+    fireEvent.click(screen.getByRole('button', { name: /14 ngày/ }));
+    expect(onChange).toHaveBeenCalledWith({ balanceDueDaysBeforeDeparture: 14 });
   });
 });

@@ -5,6 +5,7 @@ import { CreateSchedulingRequestForm } from '../components/CreateSchedulingReque
 import * as schedulingApi from '../services/schedulingApi';
 import * as placeSearchApi from '../services/placeSearchApi';
 import * as preferencesApi from '@/features/account/preferences/travelPreferencesApi';
+import * as stayApi from '@/features/stays/stayApi';
 import {
   TRIPMATE_TIME_ZONE,
   getVietnamCalendarDate,
@@ -432,6 +433,23 @@ describe('CreateSchedulingRequestForm (UC-10)', () => {
       expect(payload.returnToStart).toBe(false);
       expect(payload.endPoiId).toBe(MY_KHE.id);
       expect(payload.mandatoryPoiIds).toEqual([CHAM_MUSEUM.id, MY_KHE.id]);
+    });
+
+    it('uses a hotel as the origin without adding it to the must-see places', async () => {
+      const hotel = { poiId: 352, name: 'Khách sạn Biển Xanh', latitude: 16.05, longitude: 108.23 };
+      const lookup = vi.spyOn(stayApi, 'stayRequest').mockResolvedValueOnce(hotel);
+      const create = vi.spyOn(schedulingApi, 'createSchedulingRequest').mockResolvedValueOnce(mockSuccessResponse);
+      render(<CreateSchedulingRequestForm stayPoiId={hotel.poiId} />);
+      await screen.findByRole('button', { name: /Khách sạn Biển Xanh/ });
+      await pickPlace(/Khu vực khám phá:/, CHAM_MUSEUM.name);
+
+      fireEvent.click(screen.getByRole('button', { name: /Tạo lịch trình tối ưu/i }));
+      await waitFor(() => expect(create).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      expect(lookup).toHaveBeenCalledWith('/stays/352', expect.anything());
+      const payload = create.mock.calls[0][0];
+      expect(payload.startLatitude).toBe(hotel.latitude);
+      expect(payload.startLongitude).toBe(hotel.longitude);
+      expect(payload.mandatoryPoiIds).not.toContain(hotel.poiId);
     });
 
     it('requires a finish place when not returning to the start', async () => {
