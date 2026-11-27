@@ -3,10 +3,13 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { OperatorListSearch } from '../../common/components/OperatorListSearch';
+import { normalizeListSearch } from '../../common/listSearch';
 import {
   OPERATOR_COUPON_DEFAULT_PAGE_SIZE,
   type CouponDto,
   type CouponStatus,
+  type DiscountType,
 } from '../types/couponLifecycle';
 import {
   OPERATOR_COUPON_ROUTES,
@@ -22,6 +25,10 @@ interface OperatorCouponListViewProps {
 type FilterTab = 'ALL' | CouponStatus;
 
 const VALID_STATUSES: FilterTab[] = ['ALL', 'Active', 'Scheduled', 'Inactive'];
+
+function parseDiscountType(value: string | null | undefined): DiscountType | '' {
+  return value === 'Percentage' || value === 'Flat' ? value : '';
+}
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
@@ -62,12 +69,21 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
 
   const [activeTab, setActiveTab] = useState<FilterTab>(initialStatus);
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
+  const [keyword, setKeyword] = useState(() => searchParams?.get('q')?.trim() ?? '');
+  const [discountType, setDiscountType] = useState(() => parseDiscountType(searchParams?.get('discountType')));
+  const searchTerm = normalizeListSearch(keyword);
+  const hasFilters = Boolean(searchTerm || discountType) || activeTab !== 'ALL';
 
-  // Filter coupons by activeTab
+  // Filter before slicing so a match can be found on any page.
   const filteredCoupons = useMemo(() => {
-    if (activeTab === 'ALL') return coupons;
-    return coupons.filter((c) => c.status === activeTab);
-  }, [coupons, activeTab]);
+    return coupons.filter((coupon) =>
+      (activeTab === 'ALL' || coupon.status === activeTab) &&
+      (!discountType || coupon.discountType === discountType) &&
+      (!searchTerm || [coupon.couponCode, coupon.name].some((field) =>
+        normalizeListSearch(field).includes(searchTerm),
+      )),
+    );
+  }, [coupons, activeTab, discountType, searchTerm]);
 
   // Pagination calculation (CR-01: 20 per page)
   const totalItems = filteredCoupons.length;
@@ -84,24 +100,24 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
   const endIndexDisplay = Math.min(safePage * pageSize, totalItems);
 
   // Update URL on filter or page change.
-  const updateUrl = (newPage: number, newStatus: FilterTab) => {
-    const url = buildCouponListUrl({
-      page: newPage,
-      status: newStatus,
-    });
-    router.replace(url, { scroll: false });
-  };
-
-  const handleTabChange = (tab: FilterTab) => {
+  const applyFilters = (tab: FilterTab, nextKeyword: string, nextDiscountType: DiscountType | '') => {
     setActiveTab(tab);
+    setKeyword(nextKeyword);
+    setDiscountType(nextDiscountType);
     setCurrentPage(1); // CR-01: changing filter resets page to 1
-    updateUrl(1, tab);
+    router.replace(buildCouponListUrl({
+      status: tab,
+      keyword: nextKeyword,
+      discountType: nextDiscountType,
+    }), { scroll: false });
   };
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
-    updateUrl(newPage, activeTab);
+    router.replace(buildCouponListUrl({ page: newPage, status: activeTab, keyword, discountType }), {
+      scroll: false,
+    });
   };
 
   const stats = useMemo(() => {
@@ -115,12 +131,14 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
   const currentListUrl = buildCouponListUrl({
     page: safePage,
     status: activeTab,
+    keyword,
+    discountType,
   });
 
   const createHref = `${OPERATOR_COUPON_ROUTES.create}?returnUrl=${encodeURIComponent(currentListUrl)}`;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Workspace Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -140,7 +158,7 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="order-last grid grid-cols-1 gap-4 sm:order-none sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {couponEn.list.kpi.total}
@@ -168,6 +186,28 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
         </div>
       </div>
 
+      <OperatorListSearch
+        keyword={keyword}
+        hasFilters={hasFilters}
+        label={couponEn.list.search.label}
+        placeholder={couponEn.list.search.placeholder}
+        searchLabel={couponEn.list.search.submit}
+        clearLabel={couponEn.list.search.clear}
+        onSearch={(nextKeyword) => applyFilters(activeTab, nextKeyword, discountType)}
+        onClear={() => applyFilters('ALL', '', '')}
+      >
+        <select
+          aria-label={couponEn.list.search.discountType}
+          value={discountType}
+          onChange={(event) => applyFilters(activeTab, keyword, parseDiscountType(event.target.value))}
+          className="h-11 min-w-0 max-w-full rounded-xl border border-brand-border bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-brand-teal"
+        >
+          <option value="">{couponEn.list.search.allDiscountTypes}</option>
+          <option value="Percentage">{couponEn.list.search.percentage}</option>
+          <option value="Flat">{couponEn.list.search.flat}</option>
+        </select>
+      </OperatorListSearch>
+
       {/* Filter Tabs */}
       <div className="border-b border-slate-200">
         <nav
@@ -187,7 +227,8 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => handleTabChange(tab.key)}
+                aria-pressed={isActive}
+                onClick={() => applyFilters(tab.key, keyword, discountType)}
                 className={`whitespace-nowrap border-b-2 px-3 py-2 text-xs font-bold transition ${
                   isActive
                     ? 'border-[#174B4A] text-[#174B4A]'
@@ -208,11 +249,8 @@ export function OperatorCouponListView({ coupons }: OperatorCouponListViewProps)
             confirmation_number
           </span>
           <h3 className="mt-2 text-sm font-bold text-slate-700">
-            {couponEn.list.empty.title}
+            {hasFilters ? couponEn.list.search.noResults : couponEn.list.empty.title}
           </h3>
-          <p className="mt-1 text-xs text-slate-400">
-            {couponEn.list.empty.description}
-          </p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">

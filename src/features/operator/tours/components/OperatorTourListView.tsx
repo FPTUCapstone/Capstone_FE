@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { OperatorListSearch } from '../../common/components/OperatorListSearch';
+import { normalizeListSearch } from '../../common/listSearch';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import { removeOperatorTour } from '../services/operatorTourService';
@@ -17,6 +19,8 @@ interface OperatorTourListViewProps {
 
 export function OperatorTourListView({ tours, isDemo = false }: OperatorTourListViewProps) {
   const [filter, setFilter] = useState<string>('ALL');
+  const [keyword, setKeyword] = useState('');
+  const [destination, setDestination] = useState('');
   const [items, setItems] = useState(tours);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -54,18 +58,26 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
     }
   };
 
-  const filteredTours = items.filter((t) => {
-    if (filter === 'ALL') return true;
-    return t.status === filter;
-  });
+  const searchTerm = normalizeListSearch(keyword);
+  const destinations = Array.from(new Set(items.map((tour) => tour.destination?.trim()).filter(Boolean)))
+    .sort((first, second) => first.localeCompare(second, 'vi'));
+  const activeDestination = destinations.includes(destination) ? destination : '';
+  const matchingTours = items.filter((tour) =>
+    (!activeDestination || tour.destination?.trim() === activeDestination) &&
+    (!searchTerm || [tour.title, tour.tourCode, tour.destination].some((field) =>
+      normalizeListSearch(field).includes(searchTerm),
+    )),
+  );
+  const filteredTours = matchingTours.filter((tour) => filter === 'ALL' || tour.status === filter);
+  const hasFilters = Boolean(searchTerm || activeDestination) || filter !== 'ALL';
 
   const filterCounts = {
-    ALL: items.length,
-    Draft: items.filter((t) => t.status === 'Draft').length,
-    Pending: items.filter((t) => t.status === 'Pending').length,
-    Approved: items.filter((t) => t.status === 'Approved').length,
-    Published: items.filter((t) => t.status === 'Published').length,
-    Rejected: items.filter((t) => t.status === 'Rejected').length,
+    ALL: matchingTours.length,
+    Draft: matchingTours.filter((t) => t.status === 'Draft').length,
+    Pending: matchingTours.filter((t) => t.status === 'Pending').length,
+    Approved: matchingTours.filter((t) => t.status === 'Approved').length,
+    Published: matchingTours.filter((t) => t.status === 'Published').length,
+    Rejected: matchingTours.filter((t) => t.status === 'Rejected').length,
   };
 
   return (
@@ -113,6 +125,33 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
         </div>
       )}
 
+      <OperatorListSearch
+        keyword={keyword}
+        hasFilters={hasFilters}
+        label="Tìm gói tour"
+        placeholder="Tên tour, mã tour hoặc điểm đến"
+        searchLabel="Tìm kiếm"
+        clearLabel="Xóa bộ lọc"
+        onSearch={setKeyword}
+        onClear={() => {
+          setKeyword('');
+          setFilter('ALL');
+          setDestination('');
+        }}
+      >
+        {destinations.length > 0 && (
+          <select
+            aria-label="Điểm đến"
+            value={activeDestination}
+            onChange={(event) => setDestination(event.target.value)}
+            className="h-11 min-w-0 max-w-full rounded-xl border border-brand-border bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-brand-teal"
+          >
+            <option value="">Tất cả điểm đến</option>
+            {destinations.map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        )}
+      </OperatorListSearch>
+
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
         {[
@@ -129,6 +168,7 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
             <button
               key={tab.key}
               type="button"
+              aria-pressed={isActive}
               onClick={() => setFilter(tab.key)}
               className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                 isActive
@@ -149,15 +189,20 @@ export function OperatorTourListView({ tours, isDemo = false }: OperatorTourList
         })}
       </div>
 
+      <p role="status" className="text-sm text-slate-600">{filteredTours.length} gói tour</p>
       {/* Tours List Table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
         {filteredTours.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
             <span className="material-symbols-outlined text-[48px] text-slate-300">tour</span>
-            <p className="mt-2 text-sm font-bold">Chưa có gói tour nào trong danh mục này</p>
-            <p className="mt-1 text-xs text-slate-400">
-              Hãy bấm &quot;Tạo gói tour mới&quot; để thiết lập chương trình tour đầu tiên của bạn.
+            <p className="mt-2 text-sm font-bold">
+              {hasFilters ? 'Không tìm thấy gói tour phù hợp.' : 'Chưa có gói tour nào'}
             </p>
+            {!hasFilters && (
+              <p className="mt-1 text-xs text-slate-500">
+                Hãy bấm &quot;Tạo gói tour mới&quot; để thiết lập chương trình tour đầu tiên của bạn.
+              </p>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

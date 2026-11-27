@@ -60,6 +60,40 @@ describe('OperatorCouponListView (UC-39)', () => {
     expect(screen.queryByText('BANA15')).toBeNull();
   });
 
+  it('searches across pages by coupon code and preserves the query in edit links', () => {
+    const manyCoupons = Array.from({ length: 25 }, (_, index): CouponDto => ({
+      ...coupons[0], id: String(index + 1), couponCode: `CODE${index + 1}`,
+    }));
+    render(<OperatorCouponListView coupons={manyCoupons} />);
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(couponEn.list.pagination.next, 'i') }));
+    const search = screen.getByRole('searchbox', { name: 'Search coupons' });
+    fireEvent.change(search, { target: { value: ' code25 ' } });
+    fireEvent.submit(search.closest('form')!);
+
+    expect(screen.getByText('Showing 1 to 1 of 1 coupons')).toBeDefined();
+    expect(screen.getAllByText('CODE25').length).toBeGreaterThan(0);
+    const editLink = screen.getAllByRole('link', { name: new RegExp(couponEn.list.table.editAction, 'i') })[0];
+    expect(new URL(editLink.getAttribute('href')!, 'https://example.test').searchParams.get('returnUrl'))
+      .toBe('/partner/coupons?q=code25');
+
+    fireEvent.click(screen.getByRole('button', { name: couponEn.list.filterTabs.scheduled }));
+    expect(screen.getByText('No coupons match your search or filters.')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByText('Showing 1 to 20 of 25 coupons')).toBeDefined();
+  });
+
+  it('filters by discount type and clears it with the other filters', () => {
+    render(<OperatorCouponListView coupons={[
+      coupons[0], { ...coupons[1], discountType: 'Flat', discountValue: 100000 },
+    ]} />);
+    const discountType = screen.getByRole('combobox', { name: 'Discount type' });
+    fireEvent.change(discountType, { target: { value: 'Flat' } });
+    expect(screen.queryByText('BANA15')).toBeNull();
+    expect(screen.getAllByText('FALLVIP20').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getAllByText('BANA15').length).toBeGreaterThan(0);
+  });
+
   it('renders unlimited usage without dividing by zero', () => {
     render(<OperatorCouponListView coupons={[coupons[1]]} />);
     expect(screen.getAllByText(couponEn.list.table.unlimited).length).toBeGreaterThan(0);

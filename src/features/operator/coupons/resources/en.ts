@@ -12,6 +12,17 @@ export const couponEn = {
     title: 'Coupon Management',
     description: 'Create and manage promotional coupons for your tour packages.',
     createButton: 'Create Coupon',
+    search: {
+      label: 'Search coupons',
+      placeholder: 'Coupon code or campaign name',
+      submit: 'Search',
+      clear: 'Clear filters',
+      noResults: 'No coupons match your search or filters.',
+      discountType: 'Discount type',
+      allDiscountTypes: 'All discount types',
+      percentage: 'Percentage',
+      flat: 'Fixed amount',
+    },
     kpi: {
       total: 'Total Coupons',
       totalSubtext: 'Across all statuses',
