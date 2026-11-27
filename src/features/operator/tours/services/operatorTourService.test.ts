@@ -235,6 +235,79 @@ describe('operatorTourService', () => {
       const errors = validateUpdateTourPackage(updatePayload, existingTour);
       expect(errors.schedules).toBeUndefined();
     });
+
+    // TM-82 §9 AC 8 / backend spec §0/§6: a schedule carried over unchanged from an
+    // already-past departure is never re-validated against BR-22, even though its date is in
+    // the past — it is neither new nor a future schedule being edited. Fixed after E2E found
+    // the Web validator still blocked this (2026-11-26 Codex E2E report, items 2.2/8).
+    const tourWithPastAndFutureSchedule: TourPackageDto = {
+      ...existingTour,
+      schedules: [
+        {
+          id: 'sch-past',
+          departureDate: '2026-09-01', // before the 2026-10-15 fake system time
+          returnDate: '2026-09-01',
+          totalCapacity: 16,
+          reservedCapacity: 3,
+          status: 'Completed',
+        },
+        {
+          id: 'sch-future',
+          departureDate: '2026-12-16',
+          returnDate: '2026-12-16',
+          totalCapacity: 20,
+          reservedCapacity: 2,
+          status: 'Scheduled',
+        },
+      ],
+    };
+
+    it('does not re-validate BR-22 against a past-departure schedule carried over unchanged', () => {
+      const updatePayload = {
+        ...validPayload,
+        id: 'tour-test-1',
+        schedules: [
+          // Past schedule, carried over with its original id and dates — must not trip BR-22.
+          { id: 'sch-past', departureDate: '2026-09-01', returnDate: '2026-09-01', totalCapacity: 16, reservedCapacity: 3, status: 'Completed' as const },
+          // Future schedule, edited.
+          { id: 'sch-future', departureDate: '2026-12-16', returnDate: '2026-12-16', totalCapacity: 23, reservedCapacity: 2, status: 'Scheduled' as const },
+        ],
+      };
+
+      const errors = validateUpdateTourPackage(updatePayload, tourWithPastAndFutureSchedule);
+      expect(errors.schedules).toBeUndefined();
+    });
+
+    it('still rejects a genuinely new schedule dated in the past (BR-22 applies to new schedules)', () => {
+      const updatePayload = {
+        ...validPayload,
+        id: 'tour-test-1',
+        schedules: [
+          { id: 'sch-past', departureDate: '2026-09-01', returnDate: '2026-09-01', totalCapacity: 16, reservedCapacity: 3, status: 'Completed' as const },
+          { id: 'sch-future', departureDate: '2026-12-16', returnDate: '2026-12-16', totalCapacity: 20, reservedCapacity: 2, status: 'Scheduled' as const },
+          // A brand-new schedule row (no matching id in currentTour) dated in the past.
+          { id: 'sch-user-1', departureDate: '2026-09-02', returnDate: '2026-09-02', totalCapacity: 10, reservedCapacity: 0, status: 'Scheduled' as const },
+        ],
+      };
+
+      const errors = validateUpdateTourPackage(updatePayload, tourWithPastAndFutureSchedule);
+      expect(errors.schedules).toBe(OPERATOR_TOUR_MESSAGES.INVALID_SCHEDULE_DATE);
+    });
+
+    it('still rejects an existing future schedule edited into the past (BR-22 applies to edited future schedules)', () => {
+      const updatePayload = {
+        ...validPayload,
+        id: 'tour-test-1',
+        schedules: [
+          { id: 'sch-past', departureDate: '2026-09-01', returnDate: '2026-09-01', totalCapacity: 16, reservedCapacity: 3, status: 'Completed' as const },
+          // sch-future existed as a future schedule; editing its date into the past must still fail.
+          { id: 'sch-future', departureDate: '2026-09-03', returnDate: '2026-09-03', totalCapacity: 20, reservedCapacity: 2, status: 'Scheduled' as const },
+        ],
+      };
+
+      const errors = validateUpdateTourPackage(updatePayload, tourWithPastAndFutureSchedule);
+      expect(errors.schedules).toBe(OPERATOR_TOUR_MESSAGES.INVALID_SCHEDULE_DATE);
+    });
   });
 
   describe('evaluateTourCompleteness (UC-37 Screen #43)', () => {

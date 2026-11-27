@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { tourModerationEn } from './resources/en';
+import { rememberApprovalOutcome } from './services/approvalFeedback';
 import { TourReview } from './TourReview';
 import { TourReviewQueue } from './TourReviewQueue';
 
@@ -423,5 +424,49 @@ describe('Live decisions', () => {
     await approve();
     expect(await screen.findByText(copy.decisionLive.approvedResult)).toBeTruthy();
     expect(postsTo(fetchMock, APPROVE_URL)).toHaveLength(2);
+  });
+});
+
+// 2026-11-26 E2E finding (item 2.6): the queue banner said "Tour approved" for a DraftVersion
+// decision, wrongly implying the live tour itself changed status rather than a draft version
+// being applied to it. Fixed by giving draft-version outcomes their own banner copy.
+describe('Queue banner after a decision (TM-82 §5.6)', () => {
+  // The component reads the decision token from window.location.href directly (not the mocked
+  // useSearchParams), so the URL bar itself must carry it, same as a real post-decision redirect.
+  const withDecisionUrl = (token: string) => {
+    window.history.pushState(null, '', `/admin/tours/reviews?decision=${token}`);
+    navigation.params = new URLSearchParams(`decision=${token}`);
+  };
+
+  afterEach(() => {
+    window.history.pushState(null, '', '/admin/tours/reviews');
+  });
+
+  it('shows draft-specific copy for a draftApproved outcome, never the first-time-submission copy', async () => {
+    withDecisionUrl(rememberApprovalOutcome('draftApproved'));
+    mockBackend({ 'GET /api/admin/tours/moderation-queue': () => json(moderationPage([])) });
+
+    render(<TourReviewQueue />);
+
+    expect(await screen.findByText(copy.decisionLive.draftApprovedResult)).toBeTruthy();
+    expect(screen.queryByText(copy.decisionLive.approvedResult)).toBeNull();
+  });
+
+  it('shows draft-specific copy for a draftAlreadyDecided outcome', async () => {
+    withDecisionUrl(rememberApprovalOutcome('draftAlreadyDecided'));
+    mockBackend({ 'GET /api/admin/tours/moderation-queue': () => json(moderationPage([])) });
+
+    render(<TourReviewQueue />);
+
+    expect(await screen.findByText(copy.decisionLive.draftAlreadyDecided)).toBeTruthy();
+  });
+
+  it('still shows the first-time-submission copy for a plain approved outcome', async () => {
+    withDecisionUrl(rememberApprovalOutcome('approved'));
+    mockBackend({ 'GET /api/admin/tours/moderation-queue': () => json(moderationPage([])) });
+
+    render(<TourReviewQueue />);
+
+    expect(await screen.findByText(copy.decisionLive.approvedResult)).toBeTruthy();
   });
 });
