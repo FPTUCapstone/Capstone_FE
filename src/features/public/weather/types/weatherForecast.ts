@@ -1,5 +1,5 @@
 /**
- * Public Weather Forecast DTO contract aligned with Capstone_BE Tomorrow.io integration.
+ * Public Weather Forecast DTO contract aligned with Capstone_BE `GET /api/v1/weather/forecast`.
  *
  * Field names and units mirror:
  * - `TripMate.Application.Features.Itineraries.WeatherTips.HourlyForecast`
@@ -7,27 +7,36 @@
  * - `TripMate.Infrastructure.Weather.TomorrowDayForecastProvider` (Tomorrow.io v4 metric units)
  */
 
-export type WeatherDataSource = 'mock' | 'api';
+export type WeatherDataSource = 'api';
 
 export type WeatherConditionGroup = 'clear' | 'cloudy' | 'fog' | 'rain' | 'storm';
 
 export type WeatherMetricTab = 'temperature' | 'rain' | 'uv' | 'wind';
 
-export interface WeatherLocationDto {
-  /** Stable slug used in URL `?location=<id>` and API query parameters. */
-  id: string;
-  name: string;
-  region: string;
-  subtitle: string;
+export interface WeatherCoordinates {
   latitude: number;
   longitude: number;
-  elevationM: number;
+}
+
+/** Coordinates and time zone returned by Capstone_BE (display names live on FE). */
+export interface WeatherApiLocationDto extends WeatherCoordinates {
+  timeZoneId: string;
+}
+
+/** FE display location built from suggested destinations, Mapbox search, URL params, or geolocation. */
+export interface WeatherLocation extends WeatherCoordinates {
+  /** Optional slug for matching one of the quick-suggestion chips (FE-only, never sent to BE). */
+  id?: string;
+  name: string;
+  region?: string;
+  subtitle?: string;
+  elevationM?: number;
   timeZoneId: string;
 }
 
 /**
  * Mirrors Capstone_BE `HourlyForecast` (Tomorrow.io `timesteps=1h&units=metric`)
- * with optional atmospheric fields that Tomorrow.io also exposes in `values`.
+ * with atmospheric fields that Tomorrow.io exposes in `values`.
  */
 export interface HourlyForecastPointDto {
   /** ISO-8601 UTC start of the whole hour (matches `HourlyForecast.StartUtc`). */
@@ -49,7 +58,7 @@ export interface HourlyForecastPointDto {
 }
 
 /**
- * Daily aggregation compatible with Tomorrow.io `timesteps=1d` (5-day window on Free tier)
+ * Daily aggregation compatible with Tomorrow.io `timesteps=1d` (up to 5-day window on Free tier)
  * and Capstone_BE `WeatherTipsSummaryDto`.
  */
 export interface DailyForecastPointDto {
@@ -88,21 +97,52 @@ export interface CurrentWeatherDto {
 export interface WeatherForecastResponseDto {
   source: WeatherDataSource;
   provider: 'Tomorrow.io';
-  location: WeatherLocationDto;
+  location: WeatherApiLocationDto;
   timeZoneId: string;
   fetchedAtUtc: string;
   current: CurrentWeatherDto;
-  /** Up to 48 hourly entries (Today + Tomorrow) in ascending `startUtc` order. */
+  /** Up to 24 hourly entries in ascending `startUtc` order (sparse points are dropped by BE). */
   hourly: HourlyForecastPointDto[];
-  /** 5 daily entries matching Tomorrow.io Free plan forecast window. */
+  /** Up to 5 daily entries matching Tomorrow.io Free plan forecast window. */
   daily: DailyForecastPointDto[];
 }
 
 export interface WeatherLocationPreview {
-  location: WeatherLocationDto;
+  location: WeatherLocation;
   temperatureC: number;
   rainProbabilityPercent: number;
   rainMmPerHour: number;
   weatherCode: number;
   thunderstorm: boolean;
+}
+
+/** Coordinates where an upcoming tour departure's daily forecast is sampled. */
+export interface UpcomingTripPointDto extends WeatherCoordinates {
+  name: string | null;
+}
+
+/** Open UC-66 Weather Safety Review attached to an upcoming tour departure (read-only for Traveler). */
+export interface UpcomingTripWarningDto {
+  reviewStatus: string;
+  eventType: string | null;
+  severity: string | null;
+  description: string | null;
+  validFromUtc: string | null;
+  validToUtc: string | null;
+  operatorInstructions: string | null;
+}
+
+/** Confirmed Traveler tour departure returned by `GET /api/v1/traveler/upcoming-trip-weather`. */
+export interface UpcomingTripWeatherDto {
+  bookingId: number;
+  bookingCode: string;
+  tourScheduleId: number;
+  tourTitle: string;
+  startAtUtc: string;
+  endAtUtc: string;
+  inProgress: boolean;
+  point: UpcomingTripPointDto | null;
+  forecastDate: string;
+  forecast: DailyForecastPointDto | null;
+  warning: UpcomingTripWarningDto | null;
 }

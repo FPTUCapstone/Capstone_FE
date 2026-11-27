@@ -3,7 +3,7 @@
 import type {
   CurrentWeatherDto,
   DailyForecastPointDto,
-  WeatherLocationDto,
+  WeatherLocation,
 } from '../types/weatherForecast';
 import {
   classifyRainIntensity,
@@ -18,7 +18,7 @@ import {
 } from '../utils/weatherFormat';
 
 interface CurrentWeatherHeroProps {
-  location: WeatherLocationDto;
+  location: WeatherLocation;
   current: CurrentWeatherDto;
   todaySummary: DailyForecastPointDto | undefined;
   timeZoneId: string;
@@ -76,12 +76,15 @@ export function CurrentWeatherHero({
             <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
               {location.name}
             </h2>
-            <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#E8F0EA]">
-              {location.region}
-            </span>
+            {location.region ? (
+              <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#E8F0EA]">
+                {location.region}
+              </span>
+            ) : null}
           </div>
           <p className="mt-1 text-xs text-[#CBE0D4]/90">
-            {location.subtitle} · {location.latitude.toFixed(2)}°B, {location.longitude.toFixed(2)}°Đ
+            {location.subtitle ? `${location.subtitle} · ` : ''}
+            {location.latitude.toFixed(2)}°B, {location.longitude.toFixed(2)}°Đ
           </p>
         </div>
 
@@ -90,7 +93,7 @@ export function CurrentWeatherHero({
             {formatLocalFullDate(current.observedAtUtc, timeZoneId)}
           </p>
           <p className="mt-0.5 text-[11px] text-[#CBE0D4]/85 tabular-nums">
-            Quan trắc lúc {formatLocalTime(current.observedAtUtc, timeZoneId)} (GMT+7)
+            Dự báo cho giờ hiện tại · {formatLocalTime(current.observedAtUtc, timeZoneId)} (GMT+7)
           </p>
         </div>
       </div>

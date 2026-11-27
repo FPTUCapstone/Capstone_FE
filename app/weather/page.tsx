@@ -6,9 +6,9 @@ import { WeatherForecastPage } from '@/features/public/weather/components/Weathe
 import { WeatherPageSkeleton } from '@/features/public/weather/components/WeatherStates';
 
 export const metadata: Metadata = {
-  title: 'Dự báo thời tiết Miền Trung',
+  title: 'Dự báo thời tiết',
   description:
-    'Xem dự báo thời tiết hiện tại, theo giờ và 5 ngày tới tại Đà Nẵng, Hội An, Huế, Bà Nà Hills và Sơn Trà theo chuẩn Tomorrow.io cùng TripMate.',
+    'Xem dự báo thời tiết hiện tại, theo giờ và 5 ngày tới tại mọi địa điểm ở Việt Nam theo chuẩn Tomorrow.io cùng TripMate.',
 };
 
 export default function WeatherPage() {
@@ -21,7 +21,7 @@ export default function WeatherPage() {
             lang="vi"
           >
             <h1 className="mb-4 text-xl font-black tracking-tight text-[#1C2928] sm:text-2xl">
-              Dự báo thời tiết Miền Trung
+              Dự báo thời tiết
             </h1>
             <WeatherPageSkeleton />
           </main>
