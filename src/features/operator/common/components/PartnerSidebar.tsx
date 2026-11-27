@@ -6,6 +6,8 @@ import LogoutButton from '@/components/LogoutButton';
 import { ROUTES } from '@/lib/routes';
 
 export type PartnerWorkspaceTabKey =
+  | 'paymentSettings'
+  | 'contract'
   | 'dashboard'
   | 'weatherSafety'
   | 'profile'
@@ -14,7 +16,9 @@ export type PartnerWorkspaceTabKey =
   | 'bookings'
   | 'complaints'
   | 'revenue'
-  | 'payouts';
+  | 'payouts'
+  | 'commissions'
+  | 'refunds';
 
 export interface PartnerSidebarProps {
   activeTab: PartnerWorkspaceTabKey;
@@ -78,13 +82,22 @@ const WORKSPACE_NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'payouts',
-    label: 'Thanh toán',
+    label: 'Đối soát cũ',
     icon: 'payments',
     baseHref: ROUTES.partner.payouts,
+  },
+  { key: 'commissions', label: 'Hoa hồng & Thanh toán', icon: 'payments', baseHref: ROUTES.partner.commissions },
+  {
+    key: 'refunds',
+    label: 'Hoàn tiền trực tiếp',
+    icon: 'account_balance_wallet',
+    baseHref: ROUTES.partner.refunds,
   },
 ];
 
 const ACCOUNT_NAV_ITEMS: NavItem[] = [
+  { key: 'paymentSettings', label: 'Kết nối payOS', icon: 'account_balance', baseHref: ROUTES.partner.paymentSettings },
+  { key: 'contract', label: 'Hợp đồng đối tác', icon: 'description', baseHref: ROUTES.partner.contract },
   {
     key: 'profile',
     label: 'Hồ sơ doanh nghiệp',

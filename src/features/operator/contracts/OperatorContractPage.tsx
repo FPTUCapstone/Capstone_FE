@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { PartnerShell } from '@/components/layout/PartnerShell';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { useWebSession } from '@/features/auth/session/useWebSession';
+import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
+import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { webRefresh } from '@/lib/authApi';
 import { ROUTES } from '@/lib/routes';
 import { SignaturePad } from './SignaturePad';
@@ -12,6 +15,8 @@ import { contractDateTime, contractDocumentUrl, getContractPdf, getCurrentContra
 function message(reason: unknown) { return reason instanceof OperatorContractError ? reason.message : 'Chưa thể xử lý hợp đồng. Vui lòng thử lại.'; }
 
 export function OperatorContractPage() {
+  const { context } = useWebSession();
+  const isWorkspace = context?.onboardingState === undefined || context?.onboardingState === 'Active';
   const [contract, setContract] = useState<OperatorContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -160,7 +165,7 @@ export function OperatorContractPage() {
   }
   function reload() { setError(''); pollCount.current = 0; setPollPaused(false); void load(); }
 
-  return <PartnerShell title="Hợp đồng đối tác" description="Kiểm tra nội dung hợp đồng và xác nhận chữ ký của người có thẩm quyền.">
+  const pageContent = (
     <div className="space-y-6">
       {loading && <p role="status">Đang tải hợp đồng…</p>}
       {error && <div role="alert" className="rounded-xl border border-error bg-white p-4 text-error">{error}</div>}
@@ -207,5 +212,18 @@ export function OperatorContractPage() {
         {contract.status === 'Signed' && <section className="space-y-3 rounded-2xl border border-brand-border bg-white p-5">{sessionError && <p role="alert">{sessionError}</p>}{sessionReady ? <Link href={ROUTES.partner.dashboard} className="inline-flex min-h-11 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-white">Vào trang quản lý</Link> : <ActionButton variant="outline" onClick={() => void refreshSession()}>Làm mới phiên đăng nhập</ActionButton>}</section>}
       </>}
     </div>
-  </PartnerShell>;
+  );
+
+  if (isWorkspace) {
+    return (
+      <PartnerWorkspaceLayout activeTab="contract" operatorName={context?.fullName ?? undefined}>
+        <PageContentContainer>{pageContent}</PageContentContainer>
+      </PartnerWorkspaceLayout>
+    );
+  }
+  return (
+    <PartnerShell title="Hợp đồng đối tác" description="Kiểm tra nội dung hợp đồng và xác nhận chữ ký của người có thẩm quyền.">
+      {pageContent}
+    </PartnerShell>
+  );
 }

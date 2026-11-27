@@ -11,8 +11,10 @@ interface AdminBreadcrumbsProps {
 }
 
 const ROUTE_LABELS: Record<string, string> = {
+  'operator-payment-channels': 'Kênh thanh toán TO',
   admin: 'Administration',
   staff: 'Staff Operations',
+  'post-trip-complaints': 'Khiếu nại sau tour',
   'tour-operator-applications': 'Tour Operator Applications',
   tours: 'Tours',
   reviews: 'Moderation Queue',

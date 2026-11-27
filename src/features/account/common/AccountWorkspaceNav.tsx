@@ -6,7 +6,7 @@ import { useAccountWorkspace } from './AccountWorkspaceContext';
 import { accountCommonEn } from './resources/en';
 import { ROUTES } from '@/lib/routes';
 
-export type AccountTabKey = 'profile' | 'preferences' | 'security' | 'trips' | 'complaints';
+export type AccountTabKey = 'profile' | 'preferences' | 'security' | 'trips' | 'complaints' | 'refundAccount';
 
 export interface AccountWorkspaceNavProps {
   activeTab: AccountTabKey;
@@ -28,6 +28,12 @@ export const ACCOUNT_WORKSPACE_TABS: NavTabItem[] = [
     label: accountCommonEn.navigation.tabs.profile,
     href: ROUTES.account.profile,
     icon: 'account_circle',
+  },
+  {
+    key: 'refundAccount',
+    label: 'Tài khoản nhận hoàn tiền',
+    href: ROUTES.account.refundAccount,
+    icon: 'account_balance',
   },
   {
     key: 'preferences',

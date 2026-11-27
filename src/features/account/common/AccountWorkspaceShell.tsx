@@ -28,6 +28,12 @@ const TAB_METADATA: Record<
   AccountTabKey,
   { viTitle: string; viSubtitle: string; enTitle: string; icon: string }
 > = {
+  refundAccount: {
+    viTitle: 'Tài khoản nhận hoàn tiền',
+    viSubtitle: 'Quản lý tài khoản ngân hàng mặc định dùng cho các lần hoàn tiền.',
+    enTitle: 'Tài khoản nhận hoàn tiền',
+    icon: 'account_balance',
+  },
   profile: {
     viTitle: 'Hồ sơ cá nhân',
     viSubtitle: 'Quản lý thông tin định danh và thông tin liên lạc của bạn trên TripMate.',
@@ -62,6 +68,7 @@ const TAB_METADATA: Record<
 
 function resolveAccountTab(pathname: string | null): AccountTabKey {
   if (!pathname) return 'profile';
+  if (pathname.startsWith(ROUTES.account.refundAccount)) return 'refundAccount';
   if (pathname.startsWith(ROUTES.account.preferences)) return 'preferences';
   if (pathname.startsWith(ROUTES.account.security)) return 'security';
   if (pathname.startsWith(ROUTES.account.trips)) return 'trips';

@@ -26,6 +26,7 @@ const STAFF_ALLOWED_EXACT_ROUTES = new Set<string>([
 ]);
 
 export function isAdministratorOnlyPathname(pathname: string): boolean {
+  if (pathname === ROUTES.admin.staffPostTripComplaints || /^\/admin\/staff\/post-trip-complaints\/[1-9]\d*$/.test(pathname)) return false;
   if (STAFF_ALLOWED_EXACT_ROUTES.has(pathname)) return false;
   if (pathname === ROUTES.admin.login || pathname === ROUTES.admin.forgotPassword) return false;
   return pathname === ROUTES.admin.dashboard || pathname.startsWith('/admin/');
@@ -57,7 +58,7 @@ export function getSafeAdminReturnUrl(
       return ROUTES.admin.staffDashboard;
     }
     // Creating a POI is a Staff action; an Administrator is not sent to a page that would deny access.
-    if (role === 'Administrator' && candidate.pathname === ROUTES.admin.createPoi) {
+    if (role === 'Administrator' && (candidate.pathname === ROUTES.admin.createPoi || candidate.pathname === ROUTES.admin.staffPostTripComplaints || candidate.pathname.startsWith(`${ROUTES.admin.staffPostTripComplaints}/`))) {
       return defaultDestination;
     }
     return `${candidate.pathname}${candidate.search}${candidate.hash}`;

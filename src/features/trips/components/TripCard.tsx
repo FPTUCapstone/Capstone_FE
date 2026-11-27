@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { LegalModal } from '@/components/ui/LegalModal';
+import { InlineBookingRefund } from '@/features/bookings/components/InlineBookingRefund';
 
 import { ROUTES } from '@/lib/routes';
 import { tripReviewEn } from '../resources/en';
@@ -34,6 +37,8 @@ const LINK_ACTION =
 
 export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) {
   const titleId = useId();
+  const refundPanelId = useId();
+  const [refundExpanded, setRefundExpanded] = useState(false);
   const isItinerary = item.kind === 'itinerary';
   const isCancelled = item.tab === 'Cancelled';
   const isCompleted = item.tab === 'Completed';
@@ -171,12 +176,12 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
 
         {item.actions.canViewRefund &&
           (!isDemo && item.kind === 'commerceBooking' ? (
-            <Link href={`/bookings/${encodeURIComponent(item.id)}/refund`} className={LINK_ACTION}>
+            <button type="button" aria-haspopup="dialog" aria-expanded={refundExpanded} aria-controls={refundExpanded ? refundPanelId : undefined} onClick={() => setRefundExpanded(true)} className={LINK_ACTION}>
               <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
                 receipt_long
               </span>
               <span>{tripReviewEn.actions.refundDetails}</span>
-            </Link>
+            </button>
           ) : (
             <button type="button" onClick={() => onOpenDetail(item, 'refund')} className={LINK_ACTION}>
               <span className="material-symbols-outlined text-[16px] text-slate-500" aria-hidden="true">
@@ -193,6 +198,12 @@ export function TripCard({ item, onOpenDetail, isDemo = false }: TripCardProps) 
           <span>{tripReviewEn.actions.viewDetails}</span>
         </button>
       </div>
+      {!isDemo && item.kind === 'commerceBooking' && item.actions.canViewRefund && refundExpanded && createPortal(
+        <LegalModal title="Chi tiết hoàn tiền" size="wide" onClose={() => setRefundExpanded(false)} showDismissAction={false}>
+          <div id={refundPanelId}><InlineBookingRefund bookingId={item.id} /></div>
+        </LegalModal>,
+        document.body,
+      )}
     </article>
   );
 }

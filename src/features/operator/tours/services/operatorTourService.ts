@@ -50,6 +50,7 @@ export async function getDestinationOptions() {
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per BR-16
 
 export const REVIEW_BLOCKER_MESSAGES: Record<string, string> = {
+  payment_channel_not_ready: 'Cần kết nối và xác minh kênh payOS trước khi gửi tour xét duyệt',
   required_fields_missing: 'Cần hoàn tất thông tin bắt buộc của tour',
   itinerary_missing: 'Cần ít nhất 1 ngày lịch trình có hoạt động',
   primary_image_missing: 'Cần có ảnh đại diện đang hoạt động',
@@ -518,8 +519,8 @@ export function evaluateTourCompleteness(
         item.isMandatory = true;
         item.summaryText = REVIEW_BLOCKER_MESSAGES[blocker] ?? item.summaryText;
       } else {
-        items.push({ key: blocker, label: 'Điều kiện gửi duyệt từ máy chủ', isComplete: false,
-          summaryText: 'Vui lòng tải lại tour và kiểm tra thông tin trước khi gửi duyệt.', isMandatory: true });
+        items.push({ key: blocker, label: blocker === 'payment_channel_not_ready' ? 'Kênh thanh toán payOS' : 'Điều kiện gửi duyệt từ máy chủ', isComplete: false,
+          summaryText: REVIEW_BLOCKER_MESSAGES[blocker] ?? 'Vui lòng tải lại tour và kiểm tra thông tin trước khi gửi duyệt.', isMandatory: true });
       }
     }
   }

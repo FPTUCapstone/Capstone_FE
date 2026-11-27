@@ -3,19 +3,19 @@ import type { Metadata } from 'next';
 import { BookingRouteGuard } from '@/features/operator/bookings/guards/BookingRouteGuard';
 import { PageContentContainer } from '@/features/operator/common/components/PageContentContainer';
 import { PartnerWorkspaceLayout } from '@/features/operator/common/components/PartnerWorkspaceLayout';
-import { OperatorRefundListScreen } from '@/features/refunds/operator/OperatorRefundListScreen';
+import { DirectRefundCaseListScreen } from '@/features/refunds/components/DirectRefundCaseListScreen';
 
 export const metadata: Metadata = {
-  title: 'Refund Requests | TripMate',
-  description: 'Refund requests of your cancelled bookings awaiting confirmation or return.',
+  title: 'Hoàn tiền trực tiếp | TripMate',
+  description: 'Theo dõi hồ sơ hoàn tiền trực tiếp và tranh chấp của khách hàng.',
 };
 
 export default function OperatorRefundListPage() {
   return (
     <BookingRouteGuard>
-      <PartnerWorkspaceLayout activeTab="bookings">
+      <PartnerWorkspaceLayout activeTab="refunds">
         <PageContentContainer>
-          <OperatorRefundListScreen />
+          <DirectRefundCaseListScreen scope="operator" />
         </PageContentContainer>
       </PartnerWorkspaceLayout>
     </BookingRouteGuard>
