@@ -13,12 +13,12 @@ import { DemoModeBanner, focusRing } from './components/ModerationNotices';
 import { isTourModerationDemoRequested } from './demo/tourModerationDemoMode';
 import { tourModerationEn } from './resources/en';
 import { takeApprovalOutcome, type ApprovalOutcome } from './services/approvalFeedback';
-import { fetchPendingTourPage } from './services/tourModerationApi';
+import { fetchModerationQueue, type ModerationQueueItem } from './services/pendingChangeModerationApi';
 import { getPendingTourPosts } from './services/tourModerationService';
 import type { TourQueueQuery } from './types';
 import { useModerationResource, type ModerationFailure } from './useModerationResource';
 import { formatDisplayDate, formatDisplayDateTime, formatVnd } from './utils/format';
-import { buildTourDetailHref, buildTourQueueHref, parseTourQueueQuery } from './utils/queueQuery';
+import { buildDraftVersionDetailHref, buildTourDetailHref, buildTourQueueHref, parseTourQueueQuery } from './utils/queueQuery';
 
 const copy = tourModerationEn.queue;
 // A fixed action track prevents each independent row from sizing columns
@@ -82,8 +82,9 @@ function QueueSearchForm({ appliedKeyword, onSubmit, onReset }: SearchFormProps)
   );
 }
 
-/** The fields a queue row needs; satisfied by both demo fixtures and live backend rows. */
+/** The fields a first-time-submission queue row needs; satisfied by demo fixtures only (TM-82's combined queue uses the reduced shape below for every row). */
 interface QueueRowTour {
+  readonly source: 'demo';
   readonly id: string;
   readonly tourName: string;
   readonly operatorName: string;
@@ -93,7 +94,56 @@ interface QueueRowTour {
   readonly priceVnd: number;
 }
 
-function QueueRow({ tour, href }: { tour: QueueRowTour; href: string }) {
+/**
+ * TM-82 §5.6: a row from the combined moderation queue (either kind). Deliberately reduced
+ * columns — the backend's `ModerationQueueItem` carries no location/price/departure for either
+ * kind (spec TM-82 §4: title, operator id, status, submission time only), and fetching each row's
+ * full tour summary individually to fill richer columns would mean one extra request per row in a
+ * list, an anti-pattern this codebase avoids elsewhere.
+ */
+interface QueueRowCombinedItem {
+  readonly source: 'combined';
+  readonly kind: 'NewSubmission' | 'DraftVersion';
+  readonly id: string;
+  readonly tourId: number;
+  readonly title: string;
+  readonly submittedAtUtc: string | null;
+}
+
+type QueueRowItem = QueueRowTour | QueueRowCombinedItem;
+
+function CombinedQueueRow({ item, href }: { item: QueueRowCombinedItem; href: string }) {
+  return (
+    <li className={`grid gap-2.5 px-4 py-3.5 transition-colors hover:bg-[#F7F5EF]/60 lg:items-center lg:gap-3 ${queueColumns}`}>
+      <div className="min-w-0 lg:col-span-3">
+        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.tour}</span>
+        <h2 className="truncate text-sm font-bold text-[#1C2928]" title={item.title}>{item.title}</h2>
+        <p className="text-xs text-[#5B6E69]">{item.kind === 'DraftVersion' ? copy.draftVersionLabel : copy.newSubmissionLabel}</p>
+      </div>
+      <div>
+        <span className="text-xs font-semibold text-[#5B6E69] lg:sr-only">{copy.columns.submitted}</span>
+        <p className="font-mono text-xs text-[#1C2928] whitespace-nowrap">{item.submittedAtUtc ? formatDisplayDateTime(item.submittedAtUtc) : tourModerationEn.format.unavailable}</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 lg:col-span-2 lg:justify-end">
+        <StatusBadge tone="coral">{copy.pendingStatus}</StatusBadge>
+        <Link
+          href={href}
+          aria-label={copy.viewDetailsFor(item.title)}
+          className={`inline-flex min-h-9 items-center whitespace-nowrap rounded-lg border border-[#174B4A] px-3 text-xs font-bold text-[#174B4A] transition hover:bg-[#174B4A] hover:text-white ${focusRing}`}
+        >
+          {copy.viewDetails}
+        </Link>
+      </div>
+    </li>
+  );
+}
+
+function QueueRow({ item, href }: { item: QueueRowItem; href: string }) {
+  if (item.source === 'combined') {
+    return <CombinedQueueRow item={item} href={href} />;
+  }
+
+  const tour = item;
   return (
     <li className={`grid gap-2.5 px-4 py-3.5 transition-colors hover:bg-[#F7F5EF]/60 lg:items-center lg:gap-3 ${queueColumns}`}>
       <div className="min-w-0">
@@ -177,31 +227,54 @@ type QueueView =
   | { readonly kind: 'failed'; readonly failure: ModerationFailure; readonly retry: () => void }
   | {
       readonly kind: 'ready';
-      readonly items: readonly QueueRowTour[];
+      readonly items: readonly QueueRowItem[];
       readonly totalCount: number;
       readonly page: number;
       readonly totalPages: number;
     };
 
-/** Demo mode stays synchronous and local; otherwise the queue is loaded from the backend. */
+function toQueueRowItem(item: ModerationQueueItem): QueueRowCombinedItem {
+  return {
+    source: 'combined',
+    kind: item.kind,
+    id: String(item.id),
+    tourId: item.tourId,
+    title: item.title,
+    submittedAtUtc: item.submittedAtUtc,
+  };
+}
+
+/** Demo mode stays synchronous and local; otherwise the combined queue (TM-82 §5.6) is loaded from the backend. */
 function useQueueView(query: TourQueueQuery, demo: boolean): QueueView {
   const { resource, retry } = useModerationResource(
-    (signal) => fetchPendingTourPage(query, signal),
-    [query.page, query.keyword],
+    (signal) => fetchModerationQueue(query.page, signal),
+    [query.page],
     !demo,
   );
 
   if (demo) {
     const result = getPendingTourPosts(query, { demo });
     if (result.status === 'DEMO') {
-      return { kind: 'ready', items: result.items, totalCount: result.totalCount, page: result.page, totalPages: result.totalPages };
+      return {
+        kind: 'ready',
+        items: result.items.map((tour) => ({ source: 'demo' as const, ...tour })),
+        totalCount: result.totalCount,
+        page: result.page,
+        totalPages: result.totalPages,
+      };
     }
     return { kind: 'failed', failure: 'unavailable', retry };
   }
 
   if (resource.status === 'ready') {
-    const { items, totalCount, page, totalPages } = resource.data;
-    return { kind: 'ready', items, totalCount, page, totalPages };
+    const { items, totalCount, page, pageSize } = resource.data;
+    return {
+      kind: 'ready',
+      items: items.map(toQueueRowItem),
+      totalCount,
+      page,
+      totalPages: totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize),
+    };
   }
   if (resource.status === 'failed') return { kind: 'failed', failure: resource.failure, retry };
   return { kind: 'loading' };
@@ -288,8 +361,13 @@ export function TourReviewQueue() {
 
         {outcome && (
           <div className="mb-4">
-            <FeedbackAlert tone={outcome === 'approved' ? 'success' : 'warning'}>
-              {tourModerationEn.decisionLive[outcome === 'approved' ? 'approvedResult' : 'alreadyDecided']}
+            <FeedbackAlert tone={outcome === 'approved' || outcome === 'draftApproved' ? 'success' : 'warning'}>
+              {tourModerationEn.decisionLive[
+                outcome === 'approved' ? 'approvedResult'
+                  : outcome === 'draftApproved' ? 'draftApprovedResult'
+                    : outcome === 'draftAlreadyDecided' ? 'draftAlreadyDecided'
+                      : 'alreadyDecided'
+              ]}
             </FeedbackAlert>
           </div>
         )}
@@ -303,18 +381,22 @@ export function TourReviewQueue() {
         ) : (
           <>
             {demo ? <DemoModeBanner /> : null}
-            <QueueSearchForm
-              key={query.keyword}
-              appliedKeyword={query.keyword}
-              onSubmit={(keyword) => {
-                setOutcome(null);
-                router.push(buildTourQueueHref({ page: 1, keyword }, demo));
-              }}
-              onReset={() => {
-                setOutcome(null);
-                router.push(buildTourQueueHref({ page: 1, keyword: '' }, demo));
-              }}
-            />
+            {/* TM-82 §5.6: the combined queue's backend endpoint has no keyword parameter, so the
+                search box — meaningful only for the legacy demo-mode queue — is not shown live. */}
+            {demo ? (
+              <QueueSearchForm
+                key={query.keyword}
+                appliedKeyword={query.keyword}
+                onSubmit={(keyword) => {
+                  setOutcome(null);
+                  router.push(buildTourQueueHref({ page: 1, keyword }, demo));
+                }}
+                onReset={() => {
+                  setOutcome(null);
+                  router.push(buildTourQueueHref({ page: 1, keyword: '' }, demo));
+                }}
+              />
+            ) : null}
 
             <p className="mb-3 text-sm font-semibold text-[#1C2928]" aria-live="polite">
               {copy.totalCount(view.totalCount)}
@@ -339,11 +421,19 @@ export function TourReviewQueue() {
                   <span className="text-right">{copy.columns.action}</span>
                 </div>
                 <ul aria-label={copy.listLabel} className="divide-y divide-[#DCE2DD]">
-                  {view.items.map((tour) => (
+                  {view.items.map((item) => (
                     <QueueRow
-                      key={tour.id}
-                      tour={tour}
-                      href={buildTourDetailHref(tour.id, { page: view.page, keyword: query.keyword }, demo)}
+                      key={item.source === 'combined' ? `${item.kind}-${item.id}` : item.id}
+                      item={item}
+                      href={
+                        item.source === 'combined' && item.kind === 'DraftVersion'
+                          ? buildDraftVersionDetailHref(Number(item.id), { page: view.page, keyword: query.keyword }, demo)
+                          : buildTourDetailHref(
+                              item.source === 'combined' ? String(item.tourId) : item.id,
+                              { page: view.page, keyword: query.keyword },
+                              demo,
+                            )
+                      }
                     />
                   ))}
                 </ul>

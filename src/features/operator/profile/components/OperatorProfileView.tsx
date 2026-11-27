@@ -25,7 +25,6 @@ export function OperatorProfileView({
   isDemo = false,
   onProfileUpdated,
 }: OperatorProfileViewProps) {
-  // Form input states
   const [businessName, setBusinessName] = useState(initialProfile.businessName || '');
   const [businessDescription, setBusinessDescription] = useState(
     initialProfile.businessDescription || ''
@@ -38,29 +37,39 @@ export function OperatorProfileView({
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(
     initialProfile.logoUrl || null
   );
+  const [removeLogo, setRemoveLogo] = useState(false);
 
-  // Status & error states
   const [errors, setErrors] = useState<OperatorProfileValidationErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const [pendingIntegrationMessage, setPendingIntegrationMessage] = useState<string | null>(null);
   const [serverErrorMessage, setServerErrorMessage] = useState<string | null>(null);
 
-  // Single editability invariant (P2 Remediation: production profile is read-only)
-  const canEdit = isDemo && !submitting;
+  const canEdit = !submitting;
 
   const handleLogoChange = (file: File | null, previewUrl: string | null) => {
     if (!canEdit) return;
     setLogoFile(file);
     setLogoPreviewUrl(previewUrl);
-    if (errors.logo) {
-      setErrors((prev) => ({ ...prev, logo: undefined }));
+    if (file) {
+      setRemoveLogo(false);
+    }
+    if (errors.logo || errors.removeLogo) {
+      setErrors((prev) => ({ ...prev, logo: undefined, removeLogo: undefined }));
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    if (!canEdit) return;
+    setLogoFile(null);
+    setLogoPreviewUrl(null);
+    setRemoveLogo(true);
+    if (errors.logo || errors.removeLogo) {
+      setErrors((prev) => ({ ...prev, logo: undefined, removeLogo: undefined }));
     }
   };
 
   const handleCancel = () => {
     if (!canEdit) return;
-    // Restores last loaded baseline values (Section 22)
     setBusinessName(initialProfile.businessName || '');
     setBusinessDescription(initialProfile.businessDescription || '');
     setBusinessAddress(initialProfile.businessAddress || '');
@@ -69,40 +78,34 @@ export function OperatorProfileView({
     setWebsite(initialProfile.website || '');
     setLogoFile(null);
     setLogoPreviewUrl(initialProfile.logoUrl || null);
+    setRemoveLogo(false);
     setErrors({});
     setSaveSuccessMessage(null);
-    setPendingIntegrationMessage(null);
     setServerErrorMessage(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isDemo) {
-      // Production mutation unavailable while Backend is NO_BACKEND
-      // Defensive guard: fail closed without validating or executing service mutations
-      return;
-    }
+    if (submitting) return;
 
     setSaveSuccessMessage(null);
-    setPendingIntegrationMessage(null);
     setServerErrorMessage(null);
 
     const payload: UpdateOperatorProfilePayload = {
-      businessName,
-      businessDescription,
-      businessAddress,
-      contactPhone,
-      contactEmail,
-      website,
+      businessName: businessName.trim(),
+      businessDescription: businessDescription.trim(),
+      businessAddress: businessAddress.trim(),
+      contactPhone: contactPhone.trim(),
+      contactEmail: contactEmail.trim(),
+      website: website.trim(),
       logoFile,
       logoPreviewUrl,
+      removeLogo: logoFile ? false : removeLogo,
     };
 
-    // Pre-validate locally
     const validationErrors = validateOperatorProfile(payload);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      // Accessibility: focus first invalid field
       const firstInvalidId = Object.keys(validationErrors)[0];
       const el = document.getElementById(`field-${firstInvalidId}`);
       if (el) el.focus();
@@ -119,18 +122,25 @@ export function OperatorProfileView({
       });
 
       if (result.status === 'SUCCESS' && result.profile) {
-        setSaveSuccessMessage(
-          result.message || OPERATOR_PROFILE_MESSAGES.UPDATE_SUCCESS
-        );
-        if (onProfileUpdated) onProfileUpdated(result.profile);
-      } else if (result.status === 'PENDING_BE_INTEGRATION') {
-        setPendingIntegrationMessage(
-          result.message || OPERATOR_PROFILE_MESSAGES.PENDING_BE_INTEGRATION
-        );
+        const next = result.profile;
+        setBusinessName(next.businessName || '');
+        setBusinessDescription(next.businessDescription || '');
+        setBusinessAddress(next.businessAddress || '');
+        setContactPhone(next.contactPhone || '');
+        setContactEmail(next.contactEmail || '');
+        setWebsite(next.website || '');
+        setLogoFile(null);
+        setRemoveLogo(false);
+        setLogoPreviewUrl(next.logoUrl || null);
+        setSaveSuccessMessage(result.message || OPERATOR_PROFILE_MESSAGES.UPDATE_SUCCESS);
+        if (onProfileUpdated) onProfileUpdated(next);
       }
     } catch (err) {
       if (err instanceof OperatorProfileValidationError) {
         setErrors(err.errors);
+        const firstInvalidId = Object.keys(err.errors)[0];
+        const el = document.getElementById(`field-${firstInvalidId}`);
+        if (el) el.focus();
       } else {
         setServerErrorMessage(
           err instanceof Error ? err.message : OPERATOR_PROFILE_MESSAGES.SYSTEM_FAILURE
@@ -160,28 +170,6 @@ export function OperatorProfileView({
         </div>
       )}
 
-      {/* Real Mode Pending Backend Integration Banner */}
-      {!isDemo && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[24px] text-amber-600 shrink-0" aria-hidden="true">
-              pending_actions
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-amber-950">
-                Tính năng hồ sơ đối tác đang chờ kết nối máy chủ
-              </h3>
-              <p className="mt-1 leading-relaxed text-amber-900">
-                Giao diện và các quy tắc kiểm tra tính hợp lệ đã được xác thực (định dạng email liên hệ, tệp hình ảnh logo dung lượng tối đa 5MB) đã sẵn sàng. Dữ liệu hiện tại chưa được lưu trữ vào hệ thống máy chủ (Capstone_BE).
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Success Notification */}
       {saveSuccessMessage && (
         <div
@@ -193,21 +181,6 @@ export function OperatorProfileView({
               check_circle
             </span>
             <span>{saveSuccessMessage}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Pending Save Banner */}
-      {pendingIntegrationMessage && (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs font-bold text-amber-900 shadow-xs"
-        >
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[20px] text-amber-600" aria-hidden="true">
-              info
-            </span>
-            <span>{pendingIntegrationMessage}</span>
           </div>
         </div>
       )}
@@ -227,7 +200,7 @@ export function OperatorProfileView({
         </div>
       )}
 
-      {/* 2-Column Responsive Layout (Report 3 Screen #76 gr23) */}
+      {/* 2-Column Responsive Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main Column (2/3 width on desktop): Company Information Form */}
         <div className="space-y-6 lg:col-span-2">
@@ -250,22 +223,26 @@ export function OperatorProfileView({
             </div>
 
             <div className="mt-5 space-y-4">
-              {/* Business Name (Editable) */}
+              {/* Business Name (Required) */}
               <div>
                 <label
                   htmlFor="field-businessName"
                   className="block text-xs font-bold text-[#1C2928]"
                 >
-                  Tên doanh nghiệp lữ hành
+                  Tên doanh nghiệp lữ hành <span className="text-rose-600">*</span>
                 </label>
                 <input
                   id="field-businessName"
                   type="text"
+                  required
+                  maxLength={200}
                   value={businessName}
                   onChange={(e) => {
                     if (!canEdit) return;
                     setBusinessName(e.target.value);
-                    if (errors.businessName) setErrors((prev) => ({ ...prev, businessName: undefined }));
+                    if (errors.businessName) {
+                      setErrors((prev) => ({ ...prev, businessName: undefined }));
+                    }
                   }}
                   disabled={!canEdit}
                   placeholder="Ví dụ: Han River Travel Co., Ltd"
@@ -284,9 +261,8 @@ export function OperatorProfileView({
                 )}
               </div>
 
-              {/* Grid 2 Columns: Contact Phone & Business Email */}
+              {/* Grid 2 Columns: Contact Email & Contact Phone */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Contact Email (Editable per §3.8.1 -> MSG02 format check) */}
                 <div>
                   <label
                     htmlFor="field-contactEmail"
@@ -297,11 +273,14 @@ export function OperatorProfileView({
                   <input
                     id="field-contactEmail"
                     type="email"
+                    maxLength={200}
                     value={contactEmail}
                     onChange={(e) => {
                       if (!canEdit) return;
                       setContactEmail(e.target.value);
-                      if (errors.contactEmail) setErrors((prev) => ({ ...prev, contactEmail: undefined }));
+                      if (errors.contactEmail) {
+                        setErrors((prev) => ({ ...prev, contactEmail: undefined }));
+                      }
                     }}
                     disabled={!canEdit}
                     placeholder="contact@hanrivertravel.vn"
@@ -320,7 +299,6 @@ export function OperatorProfileView({
                   )}
                 </div>
 
-                {/* Contact Phone (Editable) */}
                 <div>
                   <label
                     htmlFor="field-contactPhone"
@@ -331,14 +309,17 @@ export function OperatorProfileView({
                   <input
                     id="field-contactPhone"
                     type="tel"
+                    maxLength={10}
                     value={contactPhone}
                     onChange={(e) => {
                       if (!canEdit) return;
                       setContactPhone(e.target.value);
-                      if (errors.contactPhone) setErrors((prev) => ({ ...prev, contactPhone: undefined }));
+                      if (errors.contactPhone) {
+                        setErrors((prev) => ({ ...prev, contactPhone: undefined }));
+                      }
                     }}
                     disabled={!canEdit}
-                    placeholder="0236 388 1234"
+                    placeholder="0905388123"
                     aria-invalid={Boolean(errors.contactPhone)}
                     aria-describedby={errors.contactPhone ? 'err-contactPhone' : undefined}
                     className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
@@ -355,7 +336,7 @@ export function OperatorProfileView({
                 </div>
               </div>
 
-              {/* Head office address (Editable) */}
+              {/* Head office address */}
               <div>
                 <label
                   htmlFor="field-businessAddress"
@@ -366,11 +347,14 @@ export function OperatorProfileView({
                 <input
                   id="field-businessAddress"
                   type="text"
+                  maxLength={300}
                   value={businessAddress}
                   onChange={(e) => {
                     if (!canEdit) return;
                     setBusinessAddress(e.target.value);
-                    if (errors.businessAddress) setErrors((prev) => ({ ...prev, businessAddress: undefined }));
+                    if (errors.businessAddress) {
+                      setErrors((prev) => ({ ...prev, businessAddress: undefined }));
+                    }
                   }}
                   disabled={!canEdit}
                   placeholder="02 Nguyễn Văn Linh, Hải Châu, Đà Nẵng"
@@ -389,7 +373,7 @@ export function OperatorProfileView({
                 )}
               </div>
 
-              {/* Website: listed as UC-34 input data, but Report 3 does not explicitly identify it as a required field (SRS_AMBIGUITY_REQUIRED_FIELDS) */}
+              {/* Website */}
               <div>
                 <label
                   htmlFor="field-website"
@@ -399,20 +383,34 @@ export function OperatorProfileView({
                 </label>
                 <input
                   id="field-website"
-                  type="text"
+                  type="url"
+                  maxLength={300}
                   value={website}
                   onChange={(e) => {
                     if (!canEdit) return;
                     setWebsite(e.target.value);
-                    if (errors.website) setErrors((prev) => ({ ...prev, website: undefined }));
+                    if (errors.website) {
+                      setErrors((prev) => ({ ...prev, website: undefined }));
+                    }
                   }}
                   disabled={!canEdit}
                   placeholder="https://hanrivertravel.vn"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#174B4A] focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+                  aria-invalid={Boolean(errors.website)}
+                  aria-describedby={errors.website ? 'err-website' : undefined}
+                  className={`mt-1.5 w-full rounded-xl border p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#174B4A]/20 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
+                    errors.website
+                      ? 'border-rose-400 focus:border-rose-500'
+                      : 'border-slate-300 focus:border-[#174B4A]'
+                  }`}
                 />
+                {errors.website && (
+                  <p id="err-website" role="alert" className="mt-1.5 text-xs font-semibold text-rose-600">
+                    {errors.website}
+                  </p>
+                )}
               </div>
 
-              {/* Company description (Editable) */}
+              {/* Company description */}
               <div>
                 <div className="flex items-center justify-between">
                   <label
@@ -422,17 +420,20 @@ export function OperatorProfileView({
                     Mô tả giới thiệu doanh nghiệp
                   </label>
                   <span className="text-xs font-semibold text-slate-400">
-                    {businessDescription.trim().length} ký tự
+                    {businessDescription.trim().length}/2000 ký tự
                   </span>
                 </div>
                 <textarea
                   id="field-businessDescription"
                   rows={4}
+                  maxLength={2000}
                   value={businessDescription}
                   onChange={(e) => {
                     if (!canEdit) return;
                     setBusinessDescription(e.target.value);
-                    if (errors.businessDescription) setErrors((prev) => ({ ...prev, businessDescription: undefined }));
+                    if (errors.businessDescription) {
+                      setErrors((prev) => ({ ...prev, businessDescription: undefined }));
+                    }
                   }}
                   disabled={!canEdit}
                   placeholder="Giới thiệu kinh nghiệm, lĩnh vực thế mạnh và cam kết chất lượng tour của doanh nghiệp..."
@@ -456,16 +457,15 @@ export function OperatorProfileView({
 
         {/* Secondary Column (1/3 width on desktop): Logo & Read-Only Legal Identity */}
         <div className="space-y-6">
-          {/* Logo Upload Component (BR-16) */}
           <OperatorLogoUpload
             logoUrl={logoPreviewUrl || undefined}
             onLogoChange={handleLogoChange}
+            onRemoveLogo={handleRemoveLogo}
             disabled={!canEdit}
             isDemo={isDemo}
-            error={errors.logo}
+            error={errors.logo || errors.removeLogo}
           />
 
-          {/* Legal Documents Card (Read-only per BR-08, BR-17 & Screen #76) */}
           <section
             aria-labelledby="section-legal-docs"
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"
@@ -480,36 +480,34 @@ export function OperatorProfileView({
             </div>
 
             <div className="mt-4 space-y-3.5 text-xs">
-              {/* Business Licence Number (Read-only, BR-08) */}
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <span className="text-slate-500">Số GPKD lữ hành:</span>
                 <span className="font-mono font-bold text-[#1C2928]">
                   {initialProfile.businessLicenceNumber || (
-                    <span className="italic text-slate-400 font-sans">Chờ tích hợp máy chủ</span>
+                    <span className="italic text-slate-400 font-sans">Chưa có dữ liệu</span>
                   )}
                 </span>
               </div>
 
-              {/* Tax Code (Read-only, BR-08) */}
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <span className="text-slate-500">Mã số thuế:</span>
                 <span className="font-mono font-bold text-[#1C2928]">
                   {initialProfile.taxCode || (
-                    <span className="italic text-slate-400 font-sans">Chờ tích hợp máy chủ</span>
+                    <span className="italic text-slate-400 font-sans">Chưa có dữ liệu</span>
                   )}
                 </span>
               </div>
 
-              {/* Approval Status (Read-only) */}
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <span className="text-slate-500">Trạng thái đối tác:</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  {initialProfile.approvalStatus === 'Approved' ? 'Đã duyệt (Hoạt động)' : initialProfile.approvalStatus}
+                  {initialProfile.approvalStatus === 'Approved'
+                    ? 'Đã duyệt (Hoạt động)'
+                    : initialProfile.approvalStatus}
                 </span>
               </div>
 
-              {/* Account Email (Read-only per BR-17) */}
               <div className="flex flex-col gap-1 border-b border-slate-50 pb-2">
                 <span className="text-slate-500">Email tài khoản đăng nhập (BR-17):</span>
                 <span className="font-medium text-slate-700 break-all">
@@ -520,7 +518,6 @@ export function OperatorProfileView({
               </div>
             </div>
 
-            {/* Legal Notice note from Screen #76 */}
             <p className="mt-4 rounded-xl bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-600 border border-slate-100">
               <span className="font-bold text-[#1C2928]">Lưu ý:</span> Số giấy phép kinh doanh và mã số thuế là duy nhất và không thể chỉnh sửa qua chức năng này (BR-08). Các thay đổi pháp lý cần xác minh lại phải tuân theo quy trình và quy tắc nghiệp vụ tương ứng của TripMate.
             </p>
@@ -542,14 +539,9 @@ export function OperatorProfileView({
         <button
           type="submit"
           disabled={!canEdit}
-          title={!isDemo ? 'Tính năng lưu đang chờ kết nối dịch vụ máy chủ' : undefined}
-          className={`w-full sm:w-auto text-center rounded-xl px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 ${
-            !isDemo
-              ? 'bg-slate-400 cursor-not-allowed opacity-60'
-              : 'bg-[#174B4A] hover:bg-[#103B39] disabled:opacity-50'
-          }`}
+          className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-6 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#103B39] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? 'Đang lưu...' : !isDemo ? 'Lưu thông tin (Chờ máy chủ)' : 'Lưu thông tin'}
+          {submitting ? 'Đang lưu...' : 'Lưu thông tin'}
         </button>
       </div>
     </form>

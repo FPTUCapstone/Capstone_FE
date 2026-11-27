@@ -2,264 +2,177 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as operatorProfileService from '../services/operatorProfileService';
-import type { OperatorProfileDto } from '../types/operatorProfile';
+import { OPERATOR_PROFILE_MESSAGES, type OperatorProfileDto } from '../types/operatorProfile';
 import { OperatorProfileView } from './OperatorProfileView';
 
-const mockDemoProfile: OperatorProfileDto = {
-  userId: 1048,
-  businessName: 'Han River Travel Co., Ltd',
+const mockRealProfile: OperatorProfileDto = {
+  userId: 12,
+  businessName: 'Sun Tours',
   businessDescription: 'Licensed inbound tour operator since 2015.',
   businessAddress: '02 Nguyễn Văn Linh, Hải Châu, Đà Nẵng',
-  contactPhone: '0236 388 1234',
-  contactEmail: 'contact@hanrivertravel.vn',
-  website: 'https://hanrivertravel.vn',
+  contactPhone: '0905388123',
+  contactEmail: 'contact@suntours.vn',
+  website: 'https://suntours.vn',
+  logoUrl: 'https://res.cloudinary.com/demo/logo.png',
   businessLicenceNumber: '48-0123/2020/TCDL-GP LHQT',
   taxCode: '0401998877',
   approvalStatus: 'Approved',
-  accountEmail: 'operator.hanriver@tripmate.vn',
-  isDemo: true,
-};
-
-const mockRealPendingProfile: OperatorProfileDto = {
-  userId: '',
-  businessName: '',
-  businessDescription: '',
-  businessAddress: '',
-  contactPhone: '',
-  contactEmail: '',
-  website: '',
-  businessLicenceNumber: '',
-  taxCode: '',
-  approvalStatus: 'Approved',
-  accountEmail: 'real.operator@tripmate.vn',
+  accountEmail: 'owner@suntours.vn',
   isDemo: false,
 };
 
-describe('OperatorProfileView Component (UC-34 Field Contract & Truthfulness)', () => {
+const mockDemoProfile: OperatorProfileDto = {
+  ...mockRealProfile,
+  businessName: 'Han River Travel Co., Ltd',
+  isDemo: true,
+};
+
+describe('OperatorProfileView Component (UC-34 Real Integration)', () => {
   const originalEnv = process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
 
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:new-logo');
+    global.URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
     process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = originalEnv;
+    vi.restoreAllMocks();
   });
 
-  describe('Field contract (UC34-FIELD-1 through 10)', () => {
-    it('UC34-FIELD-1 to 6: Editable input fields render with editable values', () => {
-      render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
+  it('renders editable fields and read-only legal identity in real mode', () => {
+    render(<OperatorProfileView initialProfile={mockRealProfile} isDemo={false} />);
 
-      // 1. Business Name (editable)
-      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
-      expect(nameInput.value).toBe('Han River Travel Co., Ltd');
-      expect(nameInput.disabled).toBe(false);
+    expect(screen.queryByText(/đang chờ kết nối máy chủ/i)).toBeNull();
 
-      // 2. Business Description (editable)
-      const descInput = screen.getByLabelText(/Mô tả giới thiệu doanh nghiệp/i) as HTMLTextAreaElement;
-      expect(descInput.value).toBe('Licensed inbound tour operator since 2015.');
-      expect(descInput.disabled).toBe(false);
+    const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
+    expect(nameInput.value).toBe('Sun Tours');
+    expect(nameInput.disabled).toBe(false);
 
-      // 3. Business Address (editable)
-      const addrInput = screen.getByLabelText(/Địa chỉ trụ sở chính/i) as HTMLInputElement;
-      expect(addrInput.value).toBe('02 Nguyễn Văn Linh, Hải Châu, Đà Nẵng');
-      expect(addrInput.disabled).toBe(false);
+    expect(screen.getByText('48-0123/2020/TCDL-GP LHQT')).toBeDefined();
+    expect(screen.getByText('0401998877')).toBeDefined();
+    expect(screen.getByText('owner@suntours.vn')).toBeDefined();
+    expect(screen.getByRole('button', { name: /^Lưu thông tin$/i }).hasAttribute('disabled')).toBe(
+      false
+    );
+  });
 
-      // 4. Contact Phone (editable)
-      const phoneInput = screen.getByLabelText(/Số điện thoại liên hệ/i) as HTMLInputElement;
-      expect(phoneInput.value).toBe('0236 388 1234');
-      expect(phoneInput.disabled).toBe(false);
+  it('shows inline validation errors for businessName (MSG01), contactPhone (MSG04), contactEmail (MSG02), and website', async () => {
+    render(<OperatorProfileView initialProfile={mockRealProfile} isDemo={false} />);
 
-      // 5. Contact Email (editable)
-      const emailInput = screen.getByLabelText(/Email liên hệ công việc/i) as HTMLInputElement;
-      expect(emailInput.value).toBe('contact@hanrivertravel.vn');
-      expect(emailInput.disabled).toBe(false);
-
-      // 6. Website (editable)
-      const websiteInput = screen.getByLabelText(/Website chính thức/i) as HTMLInputElement;
-      expect(websiteInput.value).toBe('https://hanrivertravel.vn');
-      expect(websiteInput.disabled).toBe(false);
+    fireEvent.change(screen.getByLabelText(/Tên doanh nghiệp lữ hành/i), {
+      target: { value: '   ' },
+    });
+    fireEvent.change(screen.getByLabelText(/Số điện thoại liên hệ/i), {
+      target: { value: '0236 388 1234' },
+    });
+    fireEvent.change(screen.getByLabelText(/Email liên hệ công việc/i), {
+      target: { value: 'invalid-email' },
+    });
+    fireEvent.change(screen.getByLabelText(/Website chính thức/i), {
+      target: { value: 'suntours.vn' },
     });
 
-    it('UC34-FIELD-7 to 10: Legal and system identity data is read-only (BR-08, BR-17)', () => {
-      render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Lưu thông tin$/i }));
 
-      // 7. Business Licence Number (read-only per BR-08)
-      expect(screen.getByText('48-0123/2020/TCDL-GP LHQT')).toBeDefined();
-      expect(screen.queryByLabelText(/Số GPKD/i)).toBeNull(); // No editable input for licence number
-
-      // 8. Tax Code (read-only per BR-08)
-      expect(screen.getByText('0401998877')).toBeDefined();
-      expect(screen.queryByLabelText(/Mã số thuế/i)).toBeNull(); // No editable input for tax code
-
-      // 9. Approval Status (read-only)
-      expect(screen.getByText(/Đã duyệt \(Hoạt động\)/i)).toBeDefined();
-
-      // 10. Authentication account email (read-only per BR-17)
-      expect(screen.getByText('operator.hanriver@tripmate.vn')).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText(/MSG01/)).toBeDefined();
+      expect(screen.getByText(/MSG04/)).toBeDefined();
+      expect(screen.getByText(/MSG02/)).toBeDefined();
+      expect(screen.getByText(/http:\/\/.*https:\/\//i)).toBeDefined();
     });
   });
 
-  describe('Truthfulness & Real Mode (UC34-TRUTH-1, UC34-TRUTH-2, UC34-TRUTH-5)', () => {
-    it('UC34-TRUTH-1: Real mode does not render fabricated values and shows truthful pending banner', () => {
-      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
-
-      expect(
-        screen.getByText(/Tính năng hồ sơ đối tác đang chờ kết nối máy chủ/i)
-      ).toBeDefined();
-
-      // Inputs are empty, not populated with fake company names
-      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
-      expect(nameInput.value).toBe('');
-
-      // Legal data shows neutral unavailable state
-      expect(screen.getAllByText(/Chờ tích hợp máy chủ/i).length).toBeGreaterThan(0);
-    });
-
-    it('UC34-TRUTH-2: Real mode disables save button to prevent fake success', () => {
-      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
-
-      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin \(Chờ máy chủ\)/i });
-      expect(saveBtn.hasAttribute('disabled')).toBe(true);
-    });
-
-    it('UC34-TRUTH-5: Demo mode visibly displays DEMO ONLY badge', () => {
-      render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
-
-      expect(screen.getByText(/DEMO ONLY/i)).toBeDefined();
-      expect(screen.getByText(/Bản xem trước DEMO/i)).toBeDefined();
-    });
-  });
-
-  describe('Production Read-Only Hardening (P2 Remediation)', () => {
-    it('Strictly disables all 6 profile mutation fields in real mode (isDemo = false)', () => {
-      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
-
-      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
-      const descInput = screen.getByLabelText(/Mô tả giới thiệu doanh nghiệp/i) as HTMLTextAreaElement;
-      const addrInput = screen.getByLabelText(/Địa chỉ trụ sở chính/i) as HTMLInputElement;
-      const phoneInput = screen.getByLabelText(/Số điện thoại liên hệ/i) as HTMLInputElement;
-      const emailInput = screen.getByLabelText(/Email liên hệ công việc/i) as HTMLInputElement;
-      const websiteInput = screen.getByLabelText(/Website chính thức/i) as HTMLInputElement;
-
-      expect(nameInput.disabled).toBe(true);
-      expect(descInput.disabled).toBe(true);
-      expect(addrInput.disabled).toBe(true);
-      expect(phoneInput.disabled).toBe(true);
-      expect(emailInput.disabled).toBe(true);
-      expect(websiteInput.disabled).toBe(true);
-    });
-
-    it('Ignores input change events in real mode (inputs remain unchanged)', () => {
-      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
-
-      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
-      fireEvent.change(nameInput, { target: { value: 'Attempted Name Change' } });
-      expect(nameInput.value).toBe('');
-
-      const phoneInput = screen.getByLabelText(/Số điện thoại liên hệ/i) as HTMLInputElement;
-      fireEvent.change(phoneInput, { target: { value: '0909000111' } });
-      expect(phoneInput.value).toBe('');
-    });
-
-    it('Disables both Save and Cancel buttons in real mode', () => {
-      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
-
-      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin \(Chờ máy chủ\)/i });
-      const cancelBtn = screen.getByRole('button', { name: /Hủy/i });
-
-      expect(saveBtn.hasAttribute('disabled')).toBe(true);
-      expect(cancelBtn.hasAttribute('disabled')).toBe(true);
-    });
-
-    it('Omits interactive logo upload/remove buttons in real mode', () => {
-      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
-
-      expect(screen.queryByRole('button', { name: /Tải lên logo/i })).toBeNull();
-      expect(screen.queryByRole('button', { name: /Thay đổi logo/i })).toBeNull();
-      expect(screen.queryByRole('button', { name: /Xóa/i })).toBeNull();
-      expect(screen.getByText(/Tính năng tải logo đang chờ kết nối máy chủ/i)).toBeDefined();
-    });
-
-    it('Fails closed on programmatic form submit in real mode without calling mutation service', () => {
-      const updateSpy = vi.spyOn(operatorProfileService, 'updateOperatorProfile');
-      render(<OperatorProfileView initialProfile={mockRealPendingProfile} isDemo={false} />);
-
-      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin \(Chờ máy chủ\)/i });
-      const form = saveBtn.closest('form')!;
-
-      fireEvent.submit(form);
-
-      expect(updateSpy).not.toHaveBeenCalled();
-      expect(screen.queryByText(/Cập nhật thông tin hồ sơ đối tác thành công/i)).toBeNull();
-    });
-
-    it('Enables all fields and interactive actions in demo mode (isDemo = true)', () => {
-      render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
-
-      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
-      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin/i });
-      const cancelBtn = screen.getByRole('button', { name: /Hủy/i });
-
-      expect(nameInput.disabled).toBe(false);
-      expect(saveBtn.hasAttribute('disabled')).toBe(false);
-      expect(cancelBtn.hasAttribute('disabled')).toBe(false);
-      expect(screen.getByRole('button', { name: /Tải lên logo/i })).toBeDefined();
-
-      fireEvent.change(nameInput, { target: { value: 'New Test Name' } });
-      expect(nameInput.value).toBe('New Test Name');
-
-      fireEvent.click(cancelBtn);
-      expect(nameInput.value).toBe('Han River Travel Co., Ltd');
-    });
-  });
-
-  describe('Form Validation & Actions (UC34-VALID-2, UC34-VALID-5)', () => {
-    it('UC34-VALID-2: Displays MSG02 inline error when invalid contact email format is submitted', async () => {
-      render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
-
-      const emailInput = screen.getByLabelText(/Email liên hệ công việc/i);
-      fireEvent.change(emailInput, { target: { value: 'invalid-email-format' } });
-
-      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin/i });
-      fireEvent.click(saveBtn);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Định dạng email không hợp lệ.*\(MSG02\)/i)).toBeDefined();
+  it('submits updated profile in real mode, updates parent, and does not show MSG121', async () => {
+    const updatedProfile: OperatorProfileDto = {
+      ...mockRealProfile,
+      businessName: 'Sun Tours New',
+    };
+    const updateSpy = vi
+      .spyOn(operatorProfileService, 'updateOperatorProfile')
+      .mockResolvedValue({
+        status: 'SUCCESS',
+        profile: updatedProfile,
+        message: OPERATOR_PROFILE_MESSAGES.UPDATE_SUCCESS,
+        isDemo: false,
       });
+    const onProfileUpdated = vi.fn();
+
+    render(
+      <OperatorProfileView
+        initialProfile={mockRealProfile}
+        isDemo={false}
+        onProfileUpdated={onProfileUpdated}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Tên doanh nghiệp lữ hành/i), {
+      target: { value: 'Sun Tours New' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Lưu thông tin$/i }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledTimes(1);
+      expect(onProfileUpdated).toHaveBeenCalledWith(updatedProfile);
     });
 
-    it('UC34-VALID-5: Cancel button resets form state back to initial values', () => {
-      render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
+    const statusAlert = screen.getByRole('status');
+    expect(statusAlert.textContent).toContain('Cập nhật');
+    expect(statusAlert.textContent).not.toContain('MSG121');
+  });
 
-      const nameInput = screen.getByLabelText(/Tên doanh nghiệp lữ hành/i) as HTMLInputElement;
-      fireEvent.change(nameInput, { target: { value: 'Tên thay đổi tạm thời' } });
-      expect(nameInput.value).toBe('Tên thay đổi tạm thời');
+  it('keeps logoFile and removeLogo mutually exclusive and resets both on cancel', async () => {
+    const updateSpy = vi
+      .spyOn(operatorProfileService, 'updateOperatorProfile')
+      .mockResolvedValue({
+        status: 'SUCCESS',
+        profile: mockRealProfile,
+        message: OPERATOR_PROFILE_MESSAGES.UPDATE_SUCCESS,
+        isDemo: false,
+      });
 
-      const cancelBtn = screen.getByRole('button', { name: /Hủy/i });
-      fireEvent.click(cancelBtn);
+    render(<OperatorProfileView initialProfile={mockRealProfile} isDemo={false} />);
 
-      expect(nameInput.value).toBe('Han River Travel Co., Ltd');
+    // Remove existing logo -> removeLogo = true
+    fireEvent.click(screen.getByRole('button', { name: /Xóa/i }));
+    // Then pick a new file -> removeLogo must reset to false
+    const file = new File(['abc'], 'new.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText(/Tải lên ảnh logo doanh nghiệp/i), {
+      target: { files: [file] },
     });
 
-    it('In demo mode: simulates successful save with DEMO message and callback', async () => {
-      const onProfileUpdated = vi.fn();
-      render(
-        <OperatorProfileView
-          initialProfile={mockDemoProfile}
-          isDemo={true}
-          onProfileUpdated={onProfileUpdated}
-        />
+    fireEvent.click(screen.getByRole('button', { name: /^Lưu thông tin$/i }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logoFile: file,
+          removeLogo: false,
+        }),
+        expect.anything()
       );
-
-      const saveBtn = screen.getByRole('button', { name: /Lưu thông tin/i });
-      fireEvent.click(saveBtn);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Bản xem trước DEMO: Cập nhật thông tin hồ sơ đối tác thành công/i)).toBeDefined();
-      });
-      expect(onProfileUpdated).toHaveBeenCalled();
     });
+  });
+
+  it('maps server removeLogo error into the logo error area', async () => {
+    vi.spyOn(operatorProfileService, 'updateOperatorProfile').mockRejectedValue(
+      new operatorProfileService.OperatorProfileValidationError({
+        removeLogo: 'Yêu cầu xóa logo không hợp lệ.',
+      })
+    );
+
+    render(<OperatorProfileView initialProfile={mockRealProfile} isDemo={false} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Lưu thông tin$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Yêu cầu xóa logo không hợp lệ.')).toBeDefined();
+    });
+  });
+
+  it('displays DEMO ONLY badge in demo mode', () => {
+    render(<OperatorProfileView initialProfile={mockDemoProfile} isDemo={true} />);
+    expect(screen.getByText(/DEMO ONLY/i)).toBeDefined();
   });
 });

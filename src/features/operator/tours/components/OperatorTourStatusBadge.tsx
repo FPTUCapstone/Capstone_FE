@@ -72,6 +72,15 @@ export function OperatorTourStatusBadge({ status, publishedAtUtc, className = ''
           Bị từ chối
         </span>
       );
+    case 'PendingReview':
+      return (
+        <span
+          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200 ${className}`}
+        >
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 animate-pulse" aria-hidden="true" />
+          Bản nháp chờ duyệt
+        </span>
+      );
     case 'Inactive':
     default:
       return (

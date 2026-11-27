@@ -15,8 +15,12 @@ import { TourPreviewModal } from './TourPreviewModal';
 import { useTourCatalogues } from './useTourCatalogues';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
+  createOrResumeDraftVersion,
+  discardDraftVersion,
   getOperatorTourById,
   OperatorTourValidationError,
+  saveDraftVersion,
+  submitDraftVersion,
   updateTourPackage,
   validateUpdateTourPackage,
 } from '../services/operatorTourService';
@@ -99,42 +103,47 @@ export function UpdateTourPackageView({
 }: UpdateTourPackageViewProps) {
   const router = useRouter();
   const [tour, setTour] = useState<TourPackageDto>(initialTour);
-  const isPending = tour.status === 'Pending';
-  const isInactive = tour.status === 'Inactive';
-  const isReadOnly = isPending || isInactive;
-  // A published package is edited through a new version exactly like an approved one (BR-103).
+  // A published/approved tour uses a draft version for in-place changes (TM-82 / UC-36),
+  // while still supporting direct departure reopening and superseding v(N+1) creation.
   const isApproved = tour.status === 'Approved' || tour.status === 'Published';
+  const isInactive = tour.status === 'Inactive';
+  const [draft, setDraft] = useState<TourPackageDto | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(isApproved);
+  const [draftLoadError, setDraftLoadError] = useState<string | null>(null);
+  const editTarget = isApproved ? (draft ?? tour) : tour;
+  const isPending = editTarget.status === 'Pending' || editTarget.status === 'PendingReview';
+  const isReadOnly = isPending || isInactive;
   const catalogues = useTourCatalogues(isDemo);
-  const [destinationIds, setDestinationIds] = useState<number[]>(tour.destinationIds ?? []);
-  const [highlights, setHighlights] = useState(tour.highlights ?? '');
-  const [travellerRequirements, setTravellerRequirements] = useState(tour.travellerRequirements ?? '');
-  const [allowDeposit, setAllowDeposit] = useState(Boolean(tour.allowDeposit));
-  const [depositPercent, setDepositPercent] = useState<number | null>(tour.depositPercent ?? null);
+  const [destinationIds, setDestinationIds] = useState<number[]>(editTarget.destinationIds ?? []);
+  const [highlights, setHighlights] = useState(editTarget.highlights ?? '');
+  const [travellerRequirements, setTravellerRequirements] = useState(editTarget.travellerRequirements ?? '');
+  const [allowDeposit, setAllowDeposit] = useState(Boolean(editTarget.allowDeposit));
+  const [depositPercent, setDepositPercent] = useState<number | null>(editTarget.depositPercent ?? null);
   const [balanceDueDaysBeforeDeparture, setBalanceDueDaysBeforeDeparture] = useState<number | null>(
-    tour.balanceDueDaysBeforeDeparture ?? null,
+    editTarget.balanceDueDaysBeforeDeparture ?? null,
   );
-  const [timeZoneId] = useState(tour.timeZoneId ?? 'Asia/Ho_Chi_Minh');
+  const [timeZoneId] = useState(editTarget.timeZoneId ?? 'Asia/Ho_Chi_Minh');
   const [media, setMedia] = useState<TourMediaItem[]>(tour.media ?? []);
 
-  // Form State initialized from initialTour
-  const [title, setTitle] = useState(tour.title);
-  const [destination, setDestination] = useState(tour.destination);
-  const [category, setCategory] = useState(tour.category || (isDemo ? 'Di sản & Thiên nhiên' : ''));
-  const [durationDays, setDurationDays] = useState(tour.durationDays);
-  const [basePrice, setBasePrice] = useState(tour.basePrice);
-  const [childPrice] = useState(tour.childPrice);
-  const [maxCapacity] = useState(tour.maxCapacity);
-  const [description, setDescription] = useState(tour.description);
-  const [inclusions, setInclusions] = useState(tour.inclusions || '');
-  const [exclusions, setExclusions] = useState(tour.exclusions || '');
-  const [cancellationPolicy, setCancellationPolicy] = useState(tour.cancellationPolicy);
+  // Form State initialized from editTarget
+  const [title, setTitle] = useState(editTarget.title);
+  const [destination, setDestination] = useState(editTarget.destination);
+  const [category, setCategory] = useState(editTarget.category || (isDemo ? 'Di sản & Thiên nhiên' : ''));
+  const [durationDays, setDurationDays] = useState(editTarget.durationDays);
+  const [basePrice, setBasePrice] = useState(editTarget.basePrice);
+  const [childPrice, setChildPrice] = useState(editTarget.childPrice);
+  const [maxCapacity, setMaxCapacity] = useState(editTarget.maxCapacity);
+  const [description, setDescription] = useState(editTarget.description);
+  const [inclusions, setInclusions] = useState(editTarget.inclusions || '');
+  const [exclusions, setExclusions] = useState(editTarget.exclusions || '');
+  const [cancellationPolicy, setCancellationPolicy] = useState(editTarget.cancellationPolicy);
 
   // Itinerary & Schedules
   const [itinerary, setItinerary] = useState<TourItineraryDay[]>(() =>
-    normalizeItineraryDays(JSON.parse(JSON.stringify(tour.itinerary || [])), tour.durationDays),
+    normalizeItineraryDays(JSON.parse(JSON.stringify(editTarget.itinerary || [])), editTarget.durationDays),
   );
   const [schedules, setSchedules] = useState<TourDepartureSchedule[]>(
-    JSON.parse(JSON.stringify(tour.schedules || []))
+    JSON.parse(JSON.stringify(editTarget.schedules || []))
   );
   const [addDepartureOpen, setAddDepartureOpen] = useState(Boolean(initialOpenAddDeparture && isApproved));
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -239,6 +248,50 @@ export function UpdateTourPackageView({
   useEffect(() => () => {
     if (validationToastTimer.current) clearTimeout(validationToastTimer.current);
   }, []);
+
+  // Create-or-resume the draft version on mount for an Approved/Published tour (spec TM-82 §5.1,
+  // edge cases 1-2). Seeds every form field from the draft's proposed values once it resolves.
+  // `loadingDraft`'s initial value already covers the first run; this effect only needs to flip
+  // it back to true if `initialTour.id` ever changes while mounted (a re-fetch, not the mount).
+  useEffect(() => {
+    if (!isApproved) return;
+    let cancelled = false;
+    Promise.resolve(createOrResumeDraftVersion(tour.id, tour))
+      .then((loaded) => {
+        if (cancelled || !loaded) return;
+        setDraft(loaded);
+        setDestinationIds(loaded.destinationIds ?? []);
+        setHighlights(loaded.highlights ?? '');
+        setTravellerRequirements(loaded.travellerRequirements ?? '');
+        setAllowDeposit(Boolean(loaded.allowDeposit));
+        setDepositPercent(loaded.depositPercent ?? null);
+        setBalanceDueDaysBeforeDeparture(loaded.balanceDueDaysBeforeDeparture ?? null);
+        setTitle(loaded.title);
+        setDestination(loaded.destination);
+        setCategory(loaded.category || (isDemo ? 'Di sản & Thiên nhiên' : ''));
+        setDurationDays(loaded.durationDays);
+        setBasePrice(loaded.basePrice);
+        setChildPrice(loaded.childPrice);
+        setMaxCapacity(loaded.maxCapacity);
+        setDescription(loaded.description);
+        setInclusions(loaded.inclusions || '');
+        setExclusions(loaded.exclusions || '');
+        setCancellationPolicy(loaded.cancellationPolicy);
+        setItinerary(normalizeItineraryDays(JSON.parse(JSON.stringify(loaded.itinerary || [])), loaded.durationDays));
+        setSchedules(JSON.parse(JSON.stringify(loaded.schedules || [])));
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setDraftLoadError(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDraft(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tour.id identifies the tour; re-running on every identity change would re-fetch needlessly.
+  }, [tour.id, isApproved]);
 
   const showValidationToast = (message: string) => {
     setValidationToast(message);
@@ -350,45 +403,11 @@ export function UpdateTourPackageView({
     setSchedules((current) => current.filter((_, idx) => idx !== index));
   };
 
-  // Submit Handler
-  const handleSave = async (andSubmit = false) => {
-    if (isReadOnly) return;
-
-    setErrorMessage(null);
-    setPendingMessage(null);
-    setSuccessMessage(null);
-
-    if (isApproved && !schedules.some((schedule) =>
-      !schedule.isCompleted && schedule.status === 'Scheduled' &&
-      schedule.departureDate >= defaultFutureYmd(1))) {
-      const departureDate = defaultFutureYmd();
-      const template = schedules[0];
-      setSchedules((current) => [...current, {
-        id: `new-version-schedule-${++scheduleSequence.current}`,
-        departureDate,
-        returnDate: addDaysYmd(departureDate, Math.max(0, durationDays - 1)),
-        totalCapacity: Math.max(1, template?.totalCapacity ?? 20),
-        reservedCapacity: 0,
-        minimumCapacity: template?.minimumCapacity ?? 1,
-        adultPrice: template?.adultPrice ?? basePrice,
-        childPrice: template?.childPrice ?? null,
-        infantPrice: template?.infantPrice ?? null,
-        meetingPoint: template?.meetingPoint ?? '',
-        status: 'Scheduled',
-      }]);
-      setPendingMessage('Lịch khởi hành cũ đã kết thúc. Hệ thống vừa thêm ngày đi mới để bạn kiểm tra; hãy chỉnh lịch rồi bấm lưu lần nữa.');
-      scrollToFirstError(['schedules'], { schedules: 'tour-schedules-section' });
-      return;
-    }
-
-    const selectedDestinationNames = destinationIds
-      .map((id) => catalogues.destinations.find((option) => option.destinationId === id)?.name)
-      .filter((name): name is string => Boolean(name));
-    const activeFutureSchedules = isApproved
-      ? schedules.filter((s) => !s.isCompleted && s.status === 'Scheduled' && s.departureDate >= defaultFutureYmd(1))
-      : schedules;
-    const schedulesForSave = activeFutureSchedules;
-    const payload: UpdateTourPackagePayload = {
+  function buildPayload(schedulesForSave: TourDepartureSchedule[] = schedules): UpdateTourPackagePayload {
+    const selectedDestinationNames = catalogues.destinations
+      .filter((option) => destinationIds.includes(option.destinationId))
+      .map((option) => option.name);
+    return {
       id: tour.id,
       title,
       destination: isDemo ? destination : selectedDestinationNames.join(', ') || destination,
@@ -411,8 +430,16 @@ export function UpdateTourPackageView({
       itinerary,
       schedules: schedulesForSave,
     };
+  }
 
-    // Pre-validate locally
+  /** UC-35 direct-edit save, for a Draft/Rejected tour. */
+  const handleSaveDirectEdit = async (andSubmit = false) => {
+    if (isReadOnly) return;
+    setErrorMessage(null);
+    setPendingMessage(null);
+    setSuccessMessage(null);
+
+    const payload = buildPayload(schedules);
     const validationErrors = validateUpdateTourPackage(payload, tour);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -420,28 +447,19 @@ export function UpdateTourPackageView({
       showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       return;
     }
-
     setErrors({});
     setSubmitting(true);
-
     try {
-      // If approved, BR-103 requires creating a new draft version
-      const result = await updateTourPackage(payload, {
-        allowDemo: isDemo,
-        currentTour: tour,
-        createNewVersion: isApproved,
-      });
-
+      const result = await updateTourPackage(payload, { allowDemo: isDemo, currentTour: tour });
       if (result.status === 'SUCCESS' && result.data) {
         setSavedSnapshot(currentSnapshot);
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
-        if (andSubmit) {
-          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(result.data.id), isDemo));
-        } else if (isApproved) {
-          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(result.data.id), isDemo));
-        } else {
-          router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
-        }
+        router.push(
+          withTourDemoMode(
+            andSubmit ? OPERATOR_TOUR_ROUTES.submit(result.data.id) : OPERATOR_TOUR_ROUTES.list,
+            isDemo,
+          ),
+        );
       } else if (result.status === 'PENDING_BE_INTEGRATION') {
         setPendingMessage(result.message || OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
       } else if (result.status === 'ERROR') {
@@ -453,11 +471,145 @@ export function UpdateTourPackageView({
         revealErrors(err.errors);
         showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       } else {
-        setErrorMessage(
-          err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE
-        );
+        setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
       }
     } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /** BR-103: creates a superseding draft version (v+1) from an Approved/Published tour. */
+  const handleCreateNewVersion = async () => {
+    if (isReadOnly || !isApproved) return;
+    setErrorMessage(null);
+    setPendingMessage(null);
+    setSuccessMessage(null);
+
+    if (!schedules.some((schedule) =>
+      !schedule.isCompleted && schedule.status === 'Scheduled' &&
+      schedule.departureDate >= defaultFutureYmd(1))) {
+      const departureDate = defaultFutureYmd();
+      const template = schedules[0];
+      setSchedules((current) => [...current, {
+        id: `new-version-schedule-${++scheduleSequence.current}`,
+        departureDate,
+        returnDate: addDaysYmd(departureDate, Math.max(0, durationDays - 1)),
+        totalCapacity: Math.max(1, template?.totalCapacity ?? 20),
+        reservedCapacity: 0,
+        minimumCapacity: template?.minimumCapacity ?? 1,
+        adultPrice: template?.adultPrice ?? basePrice,
+        childPrice: template?.childPrice ?? null,
+        infantPrice: template?.infantPrice ?? null,
+        meetingPoint: template?.meetingPoint ?? '',
+        status: 'Scheduled',
+      }]);
+      setPendingMessage('Lịch khởi hành cũ đã kết thúc. Hệ thống vừa thêm ngày đi mới để bạn kiểm tra; hãy chỉnh lịch rồi bấm lưu lần nữa.');
+      scrollToFirstError(['schedules'], { schedules: 'tour-schedules-section' });
+      return;
+    }
+
+    const activeFutureSchedules = schedules.filter(
+      (s) => !s.isCompleted && s.status === 'Scheduled' && s.departureDate >= defaultFutureYmd(1),
+    );
+    const payload = buildPayload(activeFutureSchedules);
+    const validationErrors = validateUpdateTourPackage(payload, tour);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      revealErrors(validationErrors);
+      showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
+      return;
+    }
+    setErrors({});
+    setSubmitting(true);
+    try {
+      const result = await updateTourPackage(payload, {
+        allowDemo: isDemo,
+        currentTour: tour,
+        createNewVersion: true,
+      });
+      if (result.status === 'SUCCESS' && result.data) {
+        setSavedSnapshot(currentSnapshot);
+        setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
+        router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(result.data.id), isDemo));
+      } else if (result.status === 'ERROR') {
+        setErrorMessage(result.message || OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      }
+    } catch (err) {
+      if (err instanceof OperatorTourValidationError) {
+        setErrors(err.errors);
+        revealErrors(err.errors);
+        showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /** TM-82 / UC-36: saves the draft version of an Approved/Published tour (spec §5.1/§5.3). */
+  const handleSaveDraft = async () => {
+    if (!draft) return;
+    setErrorMessage(null);
+    setPendingMessage(null);
+    setSuccessMessage(null);
+    const payload = buildPayload(schedules);
+    setErrors({});
+    setSubmitting(true);
+    try {
+      const result = await saveDraftVersion(tour.id, draft.id, payload, tour);
+      if (result.status === 'SUCCESS' && result.data) {
+        setDraft(result.data);
+        setSavedSnapshot(currentSnapshot);
+        setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
+      } else if (result.status === 'ERROR') {
+        setErrorMessage(result.message || OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      }
+    } catch (err) {
+      if (err instanceof OperatorTourValidationError) {
+        setErrors(err.errors);
+        revealErrors(err.errors);
+        showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSave = () => (isApproved ? void handleSaveDraft() : void handleSaveDirectEdit(false));
+
+  /** TM-82 / UC-36: submits the draft version directly — never the UC-37 first-time submit page. */
+  const handleSubmitDraft = async () => {
+    if (!draft) return;
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setSubmitting(true);
+    try {
+      const result = await submitDraftVersion(tour.id, draft.id, tour);
+      if (result.status === 'SUCCESS' && result.data) {
+        setDraft(result.data);
+        setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS);
+      } else if (result.status === 'ERROR') {
+        setErrorMessage(result.message || OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      }
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /** TM-82 / UC-36 edge case 4: discards the draft, then creates a fresh one on next open. */
+  const handleDiscardDraft = async () => {
+    if (!draft) return;
+    setSubmitting(true);
+    try {
+      await discardDraftVersion(tour.id, draft.id);
+      router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
       setSubmitting(false);
     }
   };
@@ -483,8 +635,13 @@ export function UpdateTourPackageView({
                 Phiên bản {tour.version}
               </span>
             )}
+            {isApproved && draft && (
+              <OperatorTourStatusBadge status={draft.status} className="border border-dashed" />
+            )}
           </div>
-          <p className="mt-1 text-xs text-slate-500 break-words">Chỉnh sửa thông tin gói tour.</p>
+          <p className="mt-1 text-xs text-slate-500 break-words">
+            {isApproved ? 'Chỉnh sửa bản nháp đề xuất cho gói tour đã duyệt.' : 'Chỉnh sửa thông tin gói tour.'}
+          </p>
         </div>
 
         <Link
@@ -556,7 +713,7 @@ export function UpdateTourPackageView({
               </span>
               <div className="leading-relaxed">
                 <strong>Gói tour này đang hoạt động và có {totalSoldSlots} chỗ đã xác nhận đặt chỗ.</strong>{' '}
-                Gói tour đã xuất bản không được sửa trực tiếp. Để mở bán thêm ngày đi mới mà giữ nguyên dữ liệu cũ, hãy dùng nút <strong>Mở bán đợt mới</strong>. Mọi thay đổi về giá, sức chứa hoặc lịch trình sẽ tạo thành <strong>phiên bản nháp mới (v{tour.version + 1})</strong>.
+                Gói tour đã xuất bản không được sửa trực tiếp. Để mở bán thêm ngày đi mới mà giữ nguyên dữ liệu cũ, hãy dùng nút <strong>Mở bán đợt mới</strong>. Mọi thay đổi được lưu vào <strong>bản nháp riêng</strong> hoặc nhân bản thành <strong>phiên bản nháp mới (v{tour.version + 1})</strong> trước khi xét duyệt lại.
               </div>
             </div>
             <button
@@ -570,8 +727,22 @@ export function UpdateTourPackageView({
         </div>
       )}
 
-      {/* Rejection Notice if Status is Rejected */}
-      {tour.status === 'Rejected' && tour.rejectionReason && (
+      {loadingDraft && (
+        <div role="status" className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 shadow-xs">
+          <span className="material-symbols-outlined animate-spin text-[18px] text-[#174B4A]">progress_activity</span>
+          <span>Đang tải bản nháp của gói tour...</span>
+        </div>
+      )}
+
+      {draftLoadError && (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-900">
+          <p className="font-bold">Không thể tải bản nháp: {draftLoadError}</p>
+        </div>
+      )}
+
+      {/* Rejection Notice: for Draft/Rejected tours, from the live tour itself (UC-35);
+          for Approved/Published, from the draft version's own rejection (TM-82 §5.3 edge case 7). */}
+      {editTarget.status === 'Rejected' && editTarget.rejectionReason && (
         <div className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs text-rose-900 shadow-xs">
           <div className="flex items-start gap-3">
             <span className="material-symbols-outlined text-[24px] text-rose-600 shrink-0">
@@ -579,7 +750,7 @@ export function UpdateTourPackageView({
             </span>
             <div>
               <p className="font-bold">Lý do từ chối từ Quản trị viên:</p>
-              <p className="mt-1 text-rose-800 leading-relaxed">{tour.rejectionReason}</p>
+              <p className="mt-1 text-rose-800 leading-relaxed">{editTarget.rejectionReason}</p>
               <p className="mt-2 text-[11px] text-rose-700">
                 Vui lòng chỉnh sửa các thông tin chưa đạt yêu cầu và gửi lại để được xét duyệt.
               </p>
@@ -625,7 +796,7 @@ export function UpdateTourPackageView({
               <h3 className="text-base font-extrabold text-[#1C2928]">Thông tin có thể chỉnh sửa</h3>
               {isApproved && (
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-800">
-                  Sẽ tạo v{tour.version + 1}
+                  Lưu vào bản nháp / v{tour.version + 1}
                 </span>
               )}
             </div>
@@ -1060,12 +1231,31 @@ export function UpdateTourPackageView({
             />
           )}
 
-          {/* Card: Version History (Screen #42) */}
+          {/* Card: Live Tour vs. Draft Status & Version History (Screen #42) */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
-              Lịch sử phiên bản
+              {isApproved ? 'Trạng thái & Lịch sử phiên bản' : 'Lịch sử phiên bản'}
             </h3>
             <div className="mt-3 space-y-2.5 text-xs">
+              {isApproved && (
+                <div className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 border border-slate-200">
+                  <div>
+                    <p className="font-bold text-slate-900">{tour.status}</p>
+                    <p className="text-[10px] text-slate-500">Gói tour đang hoạt động, không đổi cho tới khi bản nháp được duyệt</p>
+                  </div>
+                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                    Đang chạy
+                  </span>
+                </div>
+              )}
+              {isApproved && draft && (
+                <div className="flex items-center justify-between rounded-xl p-2.5 border border-dashed border-blue-200 bg-blue-50/50 text-blue-900">
+                  <div>
+                    <p className="font-medium">{draft.status}</p>
+                    <p className="text-[10px] text-blue-700">Bản nháp đang chỉnh sửa</p>
+                  </div>
+                </div>
+              )}
               {(tour.versions && tour.versions.length > 0
                 ? tour.versions
                 : [
@@ -1156,25 +1346,47 @@ export function UpdateTourPackageView({
         </button>
         {!isReadOnly && (
           <>
+            {isApproved && draft && (draft.status === 'Draft' || draft.status === 'Rejected') && (
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                disabled={submitting}
+                className="w-full sm:w-auto text-center rounded-xl border border-rose-200 bg-white px-5 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-50 transition disabled:opacity-50"
+              >
+                Bỏ bản nháp
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => handleSave(false)}
-              disabled={submitting}
+              onClick={handleSave}
+              disabled={submitting || (isApproved && (loadingDraft || !draft))}
               className="w-full sm:w-auto text-center rounded-xl border border-[#174B4A] bg-white px-5 py-2.5 text-xs font-bold text-[#174B4A] hover:bg-[#174B4A]/5 transition disabled:opacity-50"
             >
-              {submitting ? 'Đang lưu…' : isApproved ? 'Lưu thành bản nháp mới' : 'Lưu thay đổi'}
+              {submitting ? 'Đang lưu…' : isApproved ? 'Lưu bản nháp' : 'Lưu thay đổi'}
             </button>
-            {(tour.status === 'Draft' || tour.status === 'Rejected') && (
+            {isApproved && (
+              <button
+                type="button"
+                onClick={() => void handleCreateNewVersion()}
+                disabled={submitting}
+                className="w-full sm:w-auto text-center rounded-xl border border-blue-700 bg-white px-5 py-2.5 text-xs font-bold text-blue-800 hover:bg-blue-50 transition disabled:opacity-50"
+              >
+                {submitting ? 'Đang tạo…' : 'Lưu thành bản nháp mới'}
+              </button>
+            )}
+            {(editTarget.status === 'Draft' || editTarget.status === 'Rejected') && (
               <button
                 type="button"
                 onClick={() => {
-                  if (isDirty) {
-                    void handleSave(true);
+                  if (isApproved) {
+                    void handleSubmitDraft();
+                  } else if (isDirty) {
+                    void handleSaveDirectEdit(true);
                   } else {
                     router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(tour.id), isDemo));
                   }
                 }}
-                disabled={submitting}
+                disabled={submitting || (isApproved && (loadingDraft || !draft))}
                 className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
               >
                 Gửi xét duyệt
