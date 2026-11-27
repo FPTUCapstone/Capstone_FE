@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import type { WebAuthContext } from '@/features/auth/session/authSession';
+import { describeCancellationRules } from '@/features/public/tours/services/tourDetailResponse';
 import type { TourDetailDto, TourScheduleDto } from '@/features/public/tours/types/tour';
 import { ROUTES } from '@/lib/routes';
 import { createBooking, quoteBooking } from '../services/bookingApi';
@@ -39,6 +40,7 @@ function formatDatetime(isoString: string): string {
   try {
     const d = new Date(isoString);
     return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -91,8 +93,10 @@ export function TourBookingView({
   const [selectedSchedule, setSelectedSchedule] = useState<TourScheduleDto | null>(defaultSchedule);
 
   // Traveler Counts
-  const [adultCount, setAdultCount] = useState<number>(() => initialAdultCount ?? 2);
-  const [childCount, setChildCount] = useState<number>(() => initialChildCount ?? (initialAdultCount === undefined ? 1 : 0));
+  const [adultCount, setAdultCount] = useState<number>(() => initialAdultCount ?? (isDemo ? 2 : 1));
+  const [childCount, setChildCount] = useState<number>(
+    () => initialChildCount ?? (isDemo && initialAdultCount === undefined ? 1 : 0),
+  );
   const [infantCount, setInfantCount] = useState<number>(() => initialInfantCount ?? 0);
 
   // Lead Traveler Info (prefill from userContext or demo)
@@ -119,9 +123,10 @@ export function TourBookingView({
   const [couponError, setCouponError] = useState<string | null>(null);
 
   // Server-computed quote (BE spec §3.1). The client never computes price itself.
-  const [quote, setQuote] = useState<BookingQuoteDto | null>(null);
+  const [quoteState, setQuoteState] = useState<{ signature: string; quote: BookingQuoteDto } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState<boolean>(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const bookingAttemptRef = useRef<{ signature: string; key: string } | null>(null);
 
   // Terms agreement (explicit opt-in required)
   const [agreedTerms, setAgreedTerms] = useState<boolean>(false);
@@ -133,17 +138,23 @@ export function TourBookingView({
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // Remaining capacity still comes from the already-loaded tour detail for the selector/counter UI.
-  const remainingSlots = quote?.remainingSlots ?? selectedSchedule?.remainingSlots ?? 0;
+  const remainingSlots = quoteState?.quote.remainingSlots ?? selectedSchedule?.remainingSlots ?? 0;
   const totalTravelers = adultCount + childCount + infantCount;
   const isOverCapacity = totalTravelers > remainingSlots;
+  const quoteSignature = selectedSchedule
+    ? `${selectedSchedule.scheduleId}|${adultCount}|${childCount}|${infantCount}|${appliedVoucherCode ?? ''}`
+    : '';
 
-  // A quote fetched for a now-invalid input (no schedule, zero travelers, over capacity) is stale
-  // and must never be trusted for display or submission, even if React hasn't re-run the effect yet.
-  const isQuoteInputValid = Boolean(selectedSchedule) && totalTravelers > 0 && !isOverCapacity;
-  const effectiveQuote = isQuoteInputValid ? quote : null;
+  // A quote fetched for a now-invalid or stale input must never be trusted for display or submission.
+  const isQuoteInputValid =
+    Boolean(selectedSchedule) &&
+    isBookableSchedule(selectedSchedule!) &&
+    totalTravelers > 0 &&
+    !isOverCapacity;
+  const effectiveQuote =
+    isQuoteInputValid && quoteState?.signature === quoteSignature ? quoteState.quote : null;
 
-  // Monetary amounts are valid only once the server has produced a quote. In particular, the
-  // client must not infer Child/Infant prices from a schedule card or calculate line totals.
+  // Monetary amounts are valid only once the server has produced a quote.
   const findLine = (type: ParticipantType) =>
     effectiveQuote?.priceBreakdown.find((line) => line.participantType === type);
   const adultLine = findLine('Adult');
@@ -156,10 +167,11 @@ export function TourBookingView({
   // UC-27 BR-63: re-quote from the server whenever the inputs that affect price change. Debounced
   // and cancelled on change so a fast typist / counter-clicker never races an earlier request.
   useEffect(() => {
-    if (!selectedSchedule || totalTravelers === 0 || isOverCapacity) {
+    if (!selectedSchedule || !isBookableSchedule(selectedSchedule) || totalTravelers === 0 || isOverCapacity) {
       return;
     }
 
+    const reqSignature = quoteSignature;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       setQuoteLoading(true);
@@ -173,7 +185,7 @@ export function TourBookingView({
         { allowDemo: isDemo, signal: controller.signal },
       )
         .then((result) => {
-          setQuote(result);
+          setQuoteState({ signature: reqSignature, quote: result });
           setQuoteError(null);
           if (appliedVoucherCode && !result.appliedVoucher) {
             setCouponError('Mã ưu đãi không hợp lệ hoặc đã hết lượt áp dụng.');
@@ -183,7 +195,7 @@ export function TourBookingView({
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === 'AbortError') return;
-          setQuote(null);
+          setQuoteState(null);
           setQuoteError(err instanceof Error ? err.message : 'Không thể tải báo giá từ máy chủ.');
         })
         .finally(() => setQuoteLoading(false));
@@ -203,6 +215,7 @@ export function TourBookingView({
     isDemo,
     totalTravelers,
     isOverCapacity,
+    quoteSignature,
   ]);
 
   // Coupon handling — "Apply" only stages the code; the next quote tells us if it was accepted.
@@ -326,17 +339,24 @@ export function TourBookingView({
     ];
 
     try {
-      // One idempotency key per logical submit attempt; the same key is only reused by the
-      // underlying fetch layer's own retry (if any), never minted again for this same click.
+      const submitSignature = JSON.stringify({
+        tourScheduleId: selectedSchedule.scheduleId,
+        participants,
+        voucherCode: effectiveQuote.appliedVoucher?.code ?? null,
+      });
+      if (bookingAttemptRef.current?.signature !== submitSignature) {
+        bookingAttemptRef.current = { signature: submitSignature, key: crypto.randomUUID() };
+      }
       const booking = await createBooking(
         {
           tourScheduleId: selectedSchedule.scheduleId,
           participants,
           voucherCode: effectiveQuote.appliedVoucher?.code,
         },
-        { idempotencyKey: crypto.randomUUID() },
+        { idempotencyKey: bookingAttemptRef.current.key },
       );
 
+      bookingAttemptRef.current = null;
       // UC-27 ends here at PendingPayment. Payment (UC-28) is a separate, user-initiated
       // navigation triggered by the "Pay now" button below — never started automatically.
       setCreatedBooking(booking);
@@ -550,7 +570,11 @@ export function TourBookingView({
                   <div>
                     <span className="font-bold text-slate-900 block text-sm">Người lớn</span>
                     <span className="text-slate-500 text-[11px]">
-                      {adultLine ? `${formatCurrency(adultLine.unitPrice)} / khách` : 'Đang tải báo giá…'}
+                      {adultLine
+                        ? `${formatCurrency(adultLine.unitPrice)} / khách`
+                        : selectedSchedule?.price !== undefined
+                          ? `${formatCurrency(selectedSchedule.price)} / khách`
+                          : 'Đang tải báo giá…'}
                     </span>
                   </div>
 
@@ -584,7 +608,13 @@ export function TourBookingView({
                   <div>
                     <span className="font-bold text-slate-900 block text-sm">Trẻ em (4–11 tuổi)</span>
                     <span className="text-slate-500 text-[11px]">
-                      {childLine ? `${formatCurrency(childLine.unitPrice)} / khách` : 'Đang tải báo giá…'}
+                      {childLine
+                        ? `${formatCurrency(childLine.unitPrice)} / khách`
+                        : selectedSchedule?.childPrice !== undefined
+                          ? `${formatCurrency(selectedSchedule.childPrice)} / khách`
+                          : selectedSchedule?.price !== undefined
+                            ? `${formatCurrency(selectedSchedule.price)} / khách (áp dụng giá người lớn)`
+                            : 'Đang tải báo giá…'}
                     </span>
                   </div>
 
@@ -618,7 +648,17 @@ export function TourBookingView({
                   <div>
                     <span className="font-bold text-slate-900 block text-sm">Em bé (dưới 4 tuổi)</span>
                     <span className="text-slate-500 text-[11px]">
-                      {infantLine ? `${formatCurrency(infantLine.unitPrice)} / khách` : 'Đang tải báo giá…'}
+                      {infantLine
+                        ? infantLine.unitPrice === 0
+                          ? 'Miễn phí'
+                          : `${formatCurrency(infantLine.unitPrice)} / khách`
+                        : selectedSchedule?.infantPrice !== undefined
+                          ? selectedSchedule.infantPrice === 0
+                            ? 'Miễn phí'
+                            : `${formatCurrency(selectedSchedule.infantPrice)} / khách`
+                          : selectedSchedule?.price !== undefined
+                            ? `${formatCurrency(selectedSchedule.price)} / khách (áp dụng giá người lớn)`
+                            : 'Đang tải báo giá…'}
                     </span>
                   </div>
 
@@ -880,6 +920,17 @@ export function TourBookingView({
                 )}
               </div>
 
+              {tour.cancellationRules && tour.cancellationRules.length > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600">
+                  <p className="font-bold text-slate-800 mb-1">Chính sách hủy hiển thị của gói tour:</p>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {describeCancellationRules(tour.cancellationRules).map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Agreement checkbox */}
               <div className={`rounded-xl border p-3 transition ${requiredFieldErrors.agreedTerms ? 'border-red-500 bg-red-50' : 'border-transparent'}`}>
                 <label
@@ -982,10 +1033,17 @@ export function TourBookingView({
               </div>
             </div>
 
-            <p className="pt-4 text-xs text-slate-500">
-              Vui lòng hoàn tất thanh toán trong thời gian giữ chỗ. Số dư và thời hạn chính xác sẽ
-              được máy chủ xác nhận lại ở bước thanh toán.
-            </p>
+            <div className="pt-4 space-y-1 text-xs text-slate-500">
+              {createdBooking?.paymentExpiresAt && (
+                <p className="font-semibold text-amber-800">
+                  Hạn giữ chỗ thanh toán: {formatDatetime(createdBooking.paymentExpiresAt)}
+                </p>
+              )}
+              <p>
+                Vui lòng hoàn tất thanh toán trong thời gian giữ chỗ. Số dư và thời hạn chính xác sẽ
+                được máy chủ xác nhận lại ở bước thanh toán.
+              </p>
+            </div>
           </div>
 
           <button

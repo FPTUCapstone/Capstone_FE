@@ -485,4 +485,69 @@ describe('TourBookingView with real tour detail data (UC-26 handoff)', () => {
     expect(screen.getByText(/Điểm đón: Đang cập nhật/)).toBeTruthy();
     expect(screen.queryByText(/Đà Nẵng/)).toBeNull();
   });
+
+  it('shows schedule unit price fallbacks, cancellation rules and payment expiration notice', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.toString().endsWith('/quote')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                tourId: '9007199254740995',
+                tourScheduleId: '9007199254740997',
+                currency: 'VND',
+                participantCounts: { adult: 1, child: 0, infant: 0 },
+                priceBreakdown: [{ participantType: 'Adult', quantity: 1, unitPrice: 1500000, lineAmount: 1500000 }],
+                subtotalAmount: 1500000,
+                discountAmount: 0,
+                totalAmount: 1500000,
+                remainingSlots: 7,
+                appliedVoucher: null,
+              }),
+              { status: 200, headers: { 'content-type': 'application/json' } },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              bookingId: '457',
+              bookingCode: 'BK-20261017-00002',
+              status: 'PendingPayment',
+              tourScheduleId: '11',
+              currency: 'VND',
+              subtotalAmount: 1500000,
+              discountAmount: 0,
+              totalAmount: 1500000,
+              paymentExpiresAt: '2026-10-17T10:30:00Z',
+              createdAt: '2026-10-17T10:15:00Z',
+            }),
+            { status: 201, headers: { 'content-type': 'application/json' } },
+          ),
+        );
+      }),
+    );
+
+    const realTour = realTourDetailViewModel();
+    render(
+      <TourBookingView
+        tour={realTour}
+        initialScheduleId="11"
+        isDemo={false}
+        userContext={TRAVELER_CONTEXT}
+        profilePhone="0905123456"
+      />,
+    );
+
+    expect(screen.getByText(/Chính sách hủy hiển thị của gói tour:/i)).toBeTruthy();
+    expect(screen.getByText(/900\.000/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Điều khoản đặt tour & Chính sách hoàn hủy/i }));
+    const submitBtn = screen.getByRole('button', { name: /Tiếp tục thanh toán/i }) as HTMLButtonElement;
+    await waitFor(() => expect(submitBtn.disabled).toBe(false));
+    fireEvent.click(submitBtn);
+
+    await screen.findByText('BK-20261017-00002');
+    expect(screen.getByText(/Hạn giữ chỗ thanh toán:/i)).toBeTruthy();
+  });
 });

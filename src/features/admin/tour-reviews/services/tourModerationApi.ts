@@ -59,11 +59,15 @@ export interface TourImage {
 /** Everything Staff need to fill the five-item checklist (UC-60 Screen 14). */
 export interface TourReviewDetail extends Omit<QueueTour, 'submittedAtUtc'> {
   readonly submittedAtUtc: string;
+  readonly submissionNote?: string | null;
   readonly overview: string | null;
   readonly highlights: string | null;
   readonly includedServices: readonly string[];
   readonly excludedServices: readonly string[];
   readonly travellerRequirements: string | null;
+  readonly allowDeposit?: boolean;
+  readonly depositPercent?: number | null;
+  readonly balanceDueDaysBeforeDeparture?: number | null;
   readonly cancellationRules: readonly CancellationRule[];
   readonly schedules: readonly TourSchedule[];
   readonly itinerary: readonly ItineraryStop[];
@@ -181,7 +185,13 @@ export function parsePendingTourPage(payload: unknown): PendingTourPage {
 
 function isHttpsUrl(value: string): boolean {
   try {
-    return new URL(value).protocol === 'https:';
+    const parsed = new URL(value);
+    if (parsed.protocol === 'https:') return true;
+    return (
+      process.env.NODE_ENV !== 'production' &&
+      parsed.protocol === 'http:' &&
+      (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')
+    );
   } catch {
     return false;
   }
@@ -192,11 +202,17 @@ export function parseTourReview(payload: unknown): TourReviewDetail {
   return {
     ...parseCommon(body, body.tourId, body.tourName),
     submittedAtUtc: text(body.submittedAtUtc),
+    submissionNote: textOrNull(body.submissionNote),
     overview: textOrNull(body.overview),
     highlights: textOrNull(body.highlights),
     includedServices: list(body.includedServices).map(text),
     excludedServices: list(body.excludedServices).map(text),
     travellerRequirements: textOrNull(body.travellerRequirements),
+    ...(typeof body.allowDeposit === 'boolean' ? { allowDeposit: body.allowDeposit } : {}),
+    ...(body.depositPercent !== undefined ? { depositPercent: numOrNull(body.depositPercent) } : {}),
+    ...(body.balanceDueDaysBeforeDeparture !== undefined
+      ? { balanceDueDaysBeforeDeparture: numOrNull(body.balanceDueDaysBeforeDeparture) }
+      : {}),
     cancellationRules: list(body.cancellationPolicy).map((item) => {
       const rule = record(item);
       return { daysBeforeDeparture: num(rule.daysBeforeDeparture), feePercent: num(rule.feePercent) };

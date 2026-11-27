@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  addOperatorTourDeparture,
   evaluateTourCompleteness,
   getOperatorTourById,
   resetDemoToursStore,
@@ -491,6 +492,161 @@ describe('operatorTourService', () => {
       expect(res.data?.id).toBe('tour-142');
       expect(res.data?.version).toBe(2);
       expect(res.data?.status).toBe('Approved');
+    });
+  });
+
+  describe('DH-05, DH-09 & DH-10 guardrails', () => {
+    it('rejects departureDate or registrationDeadlineDate equal to today (DH-05)', () => {
+      // Fake system time is 2026-10-15T00:00:00Z -> Vietnam today is 2026-10-15
+      const sameDayDep = validateCreateTourPackage({
+        ...validPayload,
+        schedules: [{
+          ...validPayload.schedules[0],
+          departureDate: '2026-10-15',
+          returnDate: '2026-10-15',
+        }],
+      });
+      expect(sameDayDep.schedules).toBe(OPERATOR_TOUR_MESSAGES.INVALID_SCHEDULE_DATE);
+
+      const sameDayDeadline = validateCreateTourPackage({
+        ...validPayload,
+        schedules: [{
+          ...validPayload.schedules[0],
+          departureDate: '2026-10-20',
+          returnDate: '2026-10-20',
+          registrationDeadlineDate: '2026-10-15',
+        }],
+      });
+      expect(sameDayDeadline.schedules).toContain('ngày mai');
+
+      const tomorrowOk = validateCreateTourPackage({
+        ...validPayload,
+        schedules: [{
+          ...validPayload.schedules[0],
+          departureDate: '2026-10-17',
+          returnDate: '2026-10-17',
+          registrationDeadlineDate: '2026-10-16',
+        }],
+      });
+      expect(tomorrowOk.schedules).toBeUndefined();
+    });
+
+    it('enforces whole-VND integers and BE text-length caps (DH-09)', () => {
+      const decimalBase = validateCreateTourPackage({ ...validPayload, basePrice: 100000.5 });
+      expect(decimalBase.basePrice).toContain('số nguyên');
+
+      const decimalChild = validateCreateTourPackage({ ...validPayload, childPrice: 50000.25 });
+      expect(decimalChild.childPrice).toContain('số nguyên');
+
+      const decimalSchedulePrices = validateCreateTourPackage({
+        ...validPayload,
+        schedules: [{ ...validPayload.schedules[0], adultPrice: 120000.5 }],
+      });
+      expect(decimalSchedulePrices.schedules).toContain('số nguyên');
+
+      const decimalInfantPrice = validateCreateTourPackage({
+        ...validPayload,
+        schedules: [{ ...validPayload.schedules[0], infantPrice: 99.9 }],
+      });
+      expect(decimalInfantPrice.schedules).toContain('số nguyên');
+
+      const longTitle = validateCreateTourPackage({ ...validPayload, title: 'a'.repeat(201) });
+      expect(longTitle.title).toContain('200');
+
+      const longTerms = validateCreateTourPackage({
+        ...validPayload,
+        highlights: 'h'.repeat(4001),
+        inclusions: 'i'.repeat(4001),
+        exclusions: 'e'.repeat(4001),
+        travellerRequirements: 'r'.repeat(4001),
+      });
+      expect(longTerms.highlights).toContain('4.000');
+      expect(longTerms.inclusions).toContain('4.000');
+      expect(longTerms.exclusions).toContain('4.000');
+      expect(longTerms.travellerRequirements).toContain('4.000');
+
+      const longMeeting = validateCreateTourPackage({
+        ...validPayload,
+        schedules: [{ ...validPayload.schedules[0], meetingPoint: 'm'.repeat(501) }],
+      });
+      expect(longMeeting.schedules).toContain('500');
+
+      const longActivityNotes = validateCreateTourPackage({
+        ...validPayload,
+        itinerary: [{
+          ...validPayload.itinerary[0],
+          activities: [{
+            ...validPayload.itinerary[0].activities[0],
+            transport: 'Xe du lịch',
+            notes: 'n'.repeat(495),
+          }],
+        }],
+      });
+      expect(longActivityNotes.itinerary).toContain('500');
+    });
+
+    it('allows re-opening a Cancelled departure date while rejecting duplicate Scheduled dates (DH-10)', async () => {
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES = 'true';
+      try {
+        const approvedWithCancelled: TourPackageDto = {
+          id: 'tour-reopen-1',
+          tourCode: 'TP-REOPEN',
+          operatorUserId: 101,
+          title: validPayload.title,
+          destination: validPayload.destination,
+          category: 'Di sản & Thiên nhiên',
+          durationDays: 1,
+          basePrice: validPayload.basePrice,
+          maxCapacity: 25,
+          description: validPayload.description,
+          cancellationPolicy: validPayload.cancellationPolicy,
+          status: 'Approved',
+          version: 1,
+          itinerary: validPayload.itinerary,
+          schedules: [{
+            id: 'sch-cancelled',
+            departureDate: '2026-11-20',
+            returnDate: '2026-11-20',
+            totalCapacity: 20,
+            reservedCapacity: 0,
+            status: 'Cancelled',
+          }],
+          media: [],
+          createdAt: '2026-10-01',
+          updatedAt: '2026-10-01',
+        };
+
+        const reopened = await addOperatorTourDeparture(
+          approvedWithCancelled.id,
+          {
+            id: 'sch-new',
+            departureDate: '2026-11-20',
+            returnDate: '2026-11-20',
+            totalCapacity: 20,
+            reservedCapacity: 0,
+            status: 'Scheduled',
+          },
+          { allowDemo: true, currentTour: approvedWithCancelled, idempotencyKey: 'k-reopen' },
+        );
+        expect(reopened.status).toBe('SUCCESS');
+
+        await expect(
+          addOperatorTourDeparture(
+            reopened.data!.id,
+            {
+              id: 'sch-dup',
+              departureDate: '2026-11-20',
+              returnDate: '2026-11-20',
+              totalCapacity: 20,
+              reservedCapacity: 0,
+              status: 'Scheduled',
+            },
+            { allowDemo: true, currentTour: reopened.data!, idempotencyKey: 'k-dup' },
+          ),
+        ).rejects.toMatchObject({ errors: { schedules: expect.stringMatching(/trùng lặp/i) } });
+      } finally {
+        delete process.env.NEXT_PUBLIC_ENABLE_DEMO_FIXTURES;
+      }
     });
   });
 });

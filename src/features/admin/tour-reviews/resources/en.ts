@@ -155,6 +155,10 @@ export const tourModerationEn = {
     primaryImage: 'Primary',
     highlightsTitle: 'Highlights',
     requirementsTitle: 'Traveller requirements',
+    paymentPolicyTitle: 'Payment and deposit policy',
+    depositPolicySummary: (percent: number, balanceDueDays: number) =>
+      `Deposit allowed: ${percent}% upfront upon booking; remaining balance due ${balanceDueDays} days before departure (full payment required for bookings after this cutoff).`,
+    fullPaymentSummary: 'Full 100% upfront payment upon booking.',
     noneListed: 'None listed',
     cancellationRule: (daysBefore: number, feePercent: number) =>
       daysBefore === 0
@@ -163,6 +167,7 @@ export const tourModerationEn = {
     noCancellationRules: 'No cancellation rules were submitted.',
     stayMinutes: (minutes: number) => `${minutes} min`,
     noItinerary: 'No itinerary stops were submitted.',
+    submissionNoteLabel: 'Operator submission note',
   },
   decisionLive: {
     recordedReasonLabel: 'Recorded reason',

@@ -104,8 +104,9 @@ function draftFor(liveTour: TourPackageDto, overrides: Partial<TourPackageDto> =
 
 describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
   beforeEach(() => {
+    // Keep the fixed November departure fixture in the future without faking async UI timers.
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-10-15T00:00:00Z'));
+    vi.setSystemTime(new Date('2026-11-01T00:00:00Z'));
     vi.clearAllMocks();
     mocks.createOrResumeDraftVersion.mockReset();
     mocks.saveDraftVersion.mockReset();
@@ -347,5 +348,83 @@ describe('UpdateTourPackageView (UC-36 Screen #42)', () => {
         expect(mocks.push).toHaveBeenCalledWith('/partner/tours?demo=1');
       });
     });
+  });
+
+  it('enforces read-only mode for Inactive tours and opens preview + add-departure modals', () => {
+    const { unmount } = render(
+      <UpdateTourPackageView initialTour={{ ...mockTourDraft, status: 'Inactive' }} isDemo={false} />,
+    );
+    expect(screen.getAllByText(/Ngừng hoạt động/i).length).toBeGreaterThanOrEqual(2);
+    expect((screen.getByLabelText(/Tên gói tour/i) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /Lưu thay đổi/i })).toBeNull();
+    unmount();
+
+    render(<UpdateTourPackageView initialTour={{ ...mockTourDraft, status: 'Published' }} isDemo={false} />);
+    fireEvent.click(screen.getByRole('button', { name: /Xem trước/i }));
+    expect(screen.getByRole('dialog', { name: /Xem trước hiển thị trên trang Du khách/i })).toBeDefined();
+    fireEvent.click(screen.getAllByRole('button', { name: /Đóng xem trước/i })[0]);
+
+    fireEvent.click(screen.getByRole('button', { name: /^\+ Mở bán đợt mới$/i }));
+    expect(screen.getByRole('dialog', { name: /Mở bán đợt khởi hành mới/i })).toBeDefined();
+  });
+
+  it('asks for review of a future departure before cloning an approved tour with only past dates', () => {
+    const pastTour: TourPackageDto = {
+      ...mockTourDraft,
+      status: 'Approved',
+      schedules: mockTourDraft.schedules.map((schedule) => ({
+        ...schedule,
+        departureDate: '2020-01-01',
+        returnDate: '2020-01-02',
+      })),
+    };
+    const { container } = render(<UpdateTourPackageView initialTour={pastTour} isDemo={false} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thành bản nháp mới/i }));
+
+    expect(screen.getByText(/Hệ thống vừa thêm ngày đi mới để bạn kiểm tra/i)).toBeTruthy();
+    expect((container.querySelector<HTMLInputElement>('input[type="date"]')?.value ?? '') > '2020-01-01').toBe(true);
+  });
+
+  it('clears action=add-departure from the URL when AddDepartureModal closes', () => {
+    window.history.replaceState(null, '', '/partner/tours/tour-ba-na/edit?action=add-departure&demo=1');
+    render(
+      <UpdateTourPackageView
+        initialTour={{ ...mockTourDraft, status: 'Approved' }}
+        isDemo={true}
+        initialOpenAddDeparture={true}
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: /Mở bán đợt khởi hành mới/i })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /Đóng hộp thoại/i }));
+
+    expect(window.location.search).toBe('?demo=1');
+  });
+
+  it('renders clickable version history links and deposit setup state', () => {
+    const tourWithHistory: TourPackageDto = {
+      ...mockTourDraft,
+      id: 'tour-v2',
+      version: 2,
+      status: 'Approved',
+      allowDeposit: true,
+      depositPercent: 30,
+      balanceDueDaysBeforeDeparture: 7,
+      versions: [
+        { tourId: 'tour-v2', versionNo: 2, status: 'Approved', createdAtUtc: '2026-10-20T00:00:00Z' },
+        { tourId: 'tour-v1', versionNo: 1, status: 'Inactive', createdAtUtc: '2026-10-10T00:00:00Z' },
+      ],
+    };
+
+    render(<UpdateTourPackageView initialTour={tourWithHistory} isDemo={false} />);
+
+    expect(screen.getByText('v2 · Đã duyệt')).toBeDefined();
+    expect(screen.getByText('v1 · Đã lưu trữ')).toBeDefined();
+    expect(screen.getByText(/10\/10\/2026/)).toBeDefined();
+    const reviewLink = screen.getByRole('link', { name: 'Xem lại' });
+    expect(reviewLink.getAttribute('href')).toBe('/partner/tours/tour-v1/edit');
+    expect((screen.getByLabelText(/Tỉ lệ đặt cọc/i) as HTMLInputElement).value).toBe('30');
+    expect((screen.getByLabelText(/Hạn tất toán trước khởi hành/i) as HTMLInputElement).value).toBe('7');
   });
 });

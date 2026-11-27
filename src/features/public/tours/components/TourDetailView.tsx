@@ -126,6 +126,13 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             <span>Thời lượng: {tour.durationDays} ngày</span>
           </span>
 
+          {tour.category && (
+            <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+              <span className="material-symbols-outlined text-xs">category</span>
+              <span>{tour.category}</span>
+            </span>
+          )}
+
           {tour.aggregateRating !== null && (
             <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
               <span className="material-symbols-outlined text-xs text-amber-600">star</span>
@@ -162,11 +169,11 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             <div className="relative aspect-16/10 md:aspect-auto md:col-span-8 md:h-[420px] overflow-hidden rounded-2xl bg-slate-200">
               <img
                 src={mainImage || ''}
-                alt={`${tour.title} - Ảnh tiêu biểu`}
+                alt={tour.imageDetails?.[activeImageIndex]?.altText || `${tour.title} - Ảnh tiêu biểu`}
                 className="h-full w-full object-cover transition-transform duration-500 hover:scale-102"
               />
               <div className="absolute top-3 left-3 rounded-lg bg-slate-900/70 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-xs">
-                Ảnh tiêu biểu
+                {tour.imageDetails?.[activeImageIndex]?.caption || 'Ảnh tiêu biểu'}
               </div>
             </div>
 
@@ -272,7 +279,7 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             <span>Khởi hành gần nhất</span>
           </div>
           <p className="text-sm font-bold text-slate-900">
-            {formatDateDisplay(tour.schedules[0]?.startDatetime || null)}
+            {formatDateDisplay((tour.schedules.find(isSelectable) ?? tour.schedules[0])?.startDatetime || null)}
           </p>
         </div>
 
@@ -337,15 +344,39 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
           {/* Section 1: Overview */}
           <section
             id="section-description"
-            aria-labelledby="section-description"
+            aria-labelledby="heading-description"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
-            <h2 id="section-description" className="mb-4 text-lg sm:text-xl font-bold text-[#1C2928]">
+            <h2 id="heading-description" className="mb-4 text-lg sm:text-xl font-bold text-[#1C2928]">
               Giới Thiệu Chuyến Đi
             </h2>
             <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-line">
               {tour.description}
             </p>
+
+            {tour.highlights && (
+              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                <strong className="mb-1 flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                  <span className="material-symbols-outlined text-base text-amber-600">auto_awesome</span>
+                  <span>Điểm nổi bật</span>
+                </strong>
+                <p className="text-xs sm:text-sm leading-relaxed text-amber-950 whitespace-pre-line">
+                  {tour.highlights}
+                </p>
+              </div>
+            )}
+
+            {tour.travellerRequirements && (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <strong className="mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                  <span className="material-symbols-outlined text-base text-[#103B39]">info</span>
+                  <span>Lưu ý &amp; Yêu cầu đối với du khách</span>
+                </strong>
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-700 whitespace-pre-line">
+                  {tour.travellerRequirements}
+                </p>
+              </div>
+            )}
 
             {meetingPoint && (
               <div className="mt-6 flex items-start gap-3 rounded-2xl bg-teal-50/60 p-4 border border-teal-100">
@@ -355,6 +386,11 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                 <div>
                   <strong className="block text-xs font-bold text-slate-900">Điểm hẹn tập trung:</strong>
                   <span className="text-xs text-slate-600">{meetingPoint}</span>
+                  {selectedSchedule?.meetingLatitude != null && selectedSchedule?.meetingLongitude != null && (
+                    <span className="mt-0.5 block font-mono text-[11px] text-slate-500">
+                      Tọa độ: {selectedSchedule.meetingLatitude.toFixed(5)}, {selectedSchedule.meetingLongitude.toFixed(5)}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -363,10 +399,10 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
           {/* Section 2: Day-by-Day Journey Timeline */}
           <section
             id="section-itinerary"
-            aria-labelledby="section-itinerary"
+            aria-labelledby="heading-itinerary"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
-            <h2 id="section-itinerary" className="mb-6 text-lg sm:text-xl font-bold text-[#1C2928]">
+            <h2 id="heading-itinerary" className="mb-6 text-lg sm:text-xl font-bold text-[#1C2928]">
               Lịch Trình Chi Tiết
             </h2>
 
@@ -398,30 +434,41 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
 
                       {day.stops && day.stops.length > 0 ? (
                         <ol className="space-y-3 border-t border-slate-200/60 pt-3">
-                          {day.stops.map((stop) => (
-                            <li key={stop.sequenceNo} className="flex items-start gap-3 text-xs text-slate-700">
-                              <span className="material-symbols-outlined text-base text-[#103B39]">
-                                place
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                  {stop.plannedTime && (
-                                    <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-[#103B39]">
-                                      {stop.plannedTime}
-                                    </span>
-                                  )}
-                                  <span className="text-sm font-bold text-slate-900">{stop.poiName}</span>
-                                </div>
-                                {stop.address && (
-                                  <span className="block text-[11px] text-slate-500">{stop.address}</span>
-                                )}
-                                <span className="block text-[11px] text-slate-500">
-                                  Lưu lại {stop.stayDurationMinutes} phút
+                          {day.stops.map((stop) => {
+                            const noteParts = (stop.notes ?? '').split(' | ');
+                            const hasTransportPrefix = noteParts.length > 1 || (stop.notes ?? '').includes(' | ');
+                            const transportLabel = hasTransportPrefix ? noteParts[0]?.trim() : '';
+                            const detailNote = hasTransportPrefix ? noteParts.slice(1).join(' | ').trim() : stop.notes;
+                            return (
+                              <li key={stop.sequenceNo} className="flex items-start gap-3 text-xs text-slate-700">
+                                <span className="material-symbols-outlined text-base text-[#103B39]">
+                                  place
                                 </span>
-                                {stop.notes && <p className="mt-1 text-xs text-slate-600">{stop.notes}</p>}
-                              </div>
-                            </li>
-                          ))}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                    {stop.plannedTime && (
+                                      <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-[#103B39]">
+                                        {stop.plannedTime}
+                                      </span>
+                                    )}
+                                    <span className="text-sm font-bold text-slate-900">{stop.poiName}</span>
+                                    {transportLabel && (
+                                      <span className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
+                                        {transportLabel}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {stop.address && (
+                                    <span className="block text-[11px] text-slate-500">{stop.address}</span>
+                                  )}
+                                  <span className="block text-[11px] text-slate-500">
+                                    Lưu lại {stop.stayDurationMinutes} phút
+                                  </span>
+                                  {detailNote && <p className="mt-1 text-xs text-slate-600">{detailNote}</p>}
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ol>
                       ) : (
                         <ul className="space-y-1.5 border-t border-slate-200/60 pt-3">
@@ -447,10 +494,10 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
           {/* Section 3: Inclusions and Exclusions */}
           <section
             id="section-inclusions"
-            aria-labelledby="section-inclusions"
+            aria-labelledby="heading-inclusions"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
-            <h2 id="section-inclusions" className="mb-6 text-lg sm:text-xl font-bold text-[#1C2928]">
+            <h2 id="heading-inclusions" className="mb-6 text-lg sm:text-xl font-bold text-[#1C2928]">
               Dịch Vụ Bao Gồm & Không Bao Gồm
             </h2>
 
@@ -501,15 +548,32 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
             </div>
           </section>
 
-          {/* Section 4: Cancellation Policy */}
+          {/* Section 4: Cancellation Policy & Deposit */}
           <section
             id="section-policy"
-            aria-labelledby="section-policy"
-            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
+            aria-labelledby="heading-policy"
+            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-4"
           >
-            <h2 id="section-policy" className="mb-4 text-lg sm:text-xl font-bold text-[#1C2928]">
+            <h2 id="heading-policy" className="text-lg sm:text-xl font-bold text-[#1C2928]">
               Chính Sách Hoàn Hủy Tour
             </h2>
+            {tour.allowDeposit && tour.depositPercent && tour.balanceDueDaysBeforeDeparture && (
+              <div className="flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50/60 p-4">
+                <span className="material-symbols-outlined text-xl text-[#103B39] mt-0.5">
+                  payments
+                </span>
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  <strong className="block text-[#103B39]">
+                    Hỗ trợ đặt cọc giữ chỗ {tour.depositPercent}%
+                  </strong>
+                  <p className="mt-1">
+                    Du khách đặt cọc <strong>{tour.depositPercent}%</strong> khi đăng ký và tất toán phần còn lại{' '}
+                    <strong>{100 - tour.depositPercent}%</strong> chậm nhất trước ngày khởi hành{' '}
+                    <strong>{tour.balanceDueDaysBeforeDeparture} ngày</strong>. Các đơn đặt sau mốc này áp dụng thanh toán 100%.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4 border border-slate-200">
               <span className="material-symbols-outlined text-xl text-slate-600 mt-0.5">
                 policy
@@ -533,11 +597,11 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
           {/* Section 5: Reviews */}
           <section
             id="section-reviews"
-            aria-labelledby="section-reviews"
+            aria-labelledby="heading-reviews"
             className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 id="section-reviews" className="text-lg sm:text-xl font-bold text-[#1C2928]">
+              <h2 id="heading-reviews" className="text-lg sm:text-xl font-bold text-[#1C2928]">
                 Đánh Giá Từ Du Khách
               </h2>
               {tour.aggregateRating !== null && (
@@ -613,6 +677,16 @@ export function TourDetailView({ tour, onBackToResults, isAuthenticated }: TourD
                     `Em bé: ${
                       selectedSchedule.infantPrice === 0 ? 'Miễn phí' : formatVndPrice(selectedSchedule.infantPrice)
                     }`}
+                </p>
+              )}
+              {selectedSchedule?.minimumCapacity !== undefined && selectedSchedule.minimumCapacity > 1 && (
+                <p className="mt-1 text-[11px] font-medium text-teal-800">
+                  Yêu cầu tối thiểu {selectedSchedule.minimumCapacity} khách để khởi hành
+                </p>
+              )}
+              {tour.allowDeposit && tour.depositPercent && tour.balanceDueDaysBeforeDeparture && (
+                <p className="mt-2 inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-[#103B39]">
+                  Đặt cọc {tour.depositPercent}% · Tất toán trước {tour.balanceDueDaysBeforeDeparture} ngày
                 </p>
               )}
             </div>

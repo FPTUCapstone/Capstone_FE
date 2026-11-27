@@ -6,11 +6,14 @@ vi.mock('@/features/auth/session/authSession', () => ({
 vi.mock('@/lib/apiBase', () => ({ getApiBase: () => 'http://api.test/api/v1' }));
 
 import {
+  addOperatorTourDeparture,
   createTourPackage,
   evaluateTourCompleteness,
   getOperatorTourById,
   getOperatorTours,
+  OperatorTourValidationError,
   removeTourImage,
+  reorderTourImages,
   setPrimaryTourImage,
   updateTourPackage,
   uploadTourImage,
@@ -370,5 +373,224 @@ describe('operatorTourService against the UC-35 backend contract', () => {
     const remove = fetchMock.mock.calls[2] as [string, RequestInit];
     expect(remove[1].method).toBe('DELETE');
     expect(remove[0]).toContain('/operator/tours/42/media/9');
+  });
+
+  it('adds a new departure to a Published tour without altering existing completed departures', async () => {
+    const publishedWithCompleted: ApiTourDetail = {
+      ...detail,
+      status: 'Published',
+      departures: [
+        {
+          ...detail.departures[0],
+          id: 4,
+          startAtUtc: '2026-10-01T01:00:00+00:00',
+          endAtUtc: '2026-10-01T11:00:00+00:00',
+          status: 'Completed',
+          isCompleted: true,
+          reservedCapacity: 5,
+        },
+      ],
+    };
+    const updatedAfterAdd: ApiTourDetail = {
+      ...publishedWithCompleted,
+      departures: [
+        ...publishedWithCompleted.departures,
+        {
+          id: 99,
+          startAtUtc: '2026-11-25T00:00:00Z',
+          endAtUtc: '2026-11-25T23:59:59Z',
+          meetingPoint: 'Sân bay Đà Nẵng',
+          minimumCapacity: 3,
+          totalCapacity: 25,
+          reservedCapacity: 0,
+          registrationDeadlineAtUtc: '2026-11-20T00:00:00Z',
+          adultPrice: 1500000,
+          childPrice: 800000,
+          infantPrice: 0,
+          status: 'Scheduled',
+          isCompleted: false,
+        },
+      ],
+    };
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(publishedWithCompleted))
+      .mockResolvedValueOnce(jsonResponse(media))
+      .mockResolvedValueOnce(jsonResponse({ tourId: 42, scheduleId: 99, status: 'Scheduled' }, 201))
+      .mockResolvedValueOnce(jsonResponse(updatedAfterAdd))
+      .mockResolvedValueOnce(jsonResponse(media));
+
+    const loaded = (await getOperatorTourById('42', { allowDemo: false })).data!;
+    expect(loaded.schedules[0].isCompleted).toBe(true);
+
+    const added = await addOperatorTourDeparture(
+      '42',
+      {
+        id: 'new',
+        departureDate: '2026-11-25',
+        returnDate: '2026-11-25',
+        totalCapacity: 25,
+        reservedCapacity: 0,
+        minimumCapacity: 3,
+        adultPrice: 1500000,
+        childPrice: 800000,
+        infantPrice: 0,
+        registrationDeadlineDate: '2026-11-20',
+        meetingPoint: 'Sân bay Đà Nẵng',
+        status: 'Scheduled',
+      },
+      { allowDemo: false, currentTour: loaded, idempotencyKey: 'dep-key-1' },
+    );
+
+    expect(added.status).toBe('SUCCESS');
+    expect(added.data?.schedules).toHaveLength(2);
+    const postCall = fetchMock.mock.calls[2] as [string, RequestInit];
+    expect(postCall[0]).toBe('http://api.test/api/v1/operator/tours/42/departures');
+    expect((postCall[1].headers as Record<string, string>)['Idempotency-Key']).toBe('dep-key-1');
+  });
+
+  it('rejects duplicate departure date or invalid deadline before calling the backend and blocks Inactive edits', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ...detail, status: 'Published' })).mockResolvedValueOnce(jsonResponse([]));
+    const published = (await getOperatorTourById('42', { allowDemo: false })).data!;
+
+    await expect(
+      addOperatorTourDeparture(
+        '42',
+        { ...published.schedules[0], registrationDeadlineDate: '2026-10-25' },
+        { allowDemo: false, currentTour: published, idempotencyKey: 'k-dup' },
+      ),
+    ).rejects.toMatchObject({ errors: { schedules: expect.stringMatching(/trùng lặp/i) } });
+
+    await expect(
+      addOperatorTourDeparture(
+        '42',
+        {
+          id: 'n',
+          departureDate: '2026-12-01',
+          returnDate: '2026-12-01',
+          totalCapacity: 10,
+          reservedCapacity: 0,
+          registrationDeadlineDate: '2026-10-01',
+          status: 'Scheduled',
+        },
+        { allowDemo: false, currentTour: published, idempotencyKey: 'k-dead' },
+      ),
+    ).rejects.toMatchObject({ errors: { schedules: expect.stringMatching(/Hạn đăng ký/i) } });
+
+    const inactive = { ...published, status: 'Inactive' as const };
+    const inactiveResult = await updateTourPackage({ ...inactive, schedules: published.schedules }, { currentTour: inactive });
+    expect(inactiveResult.status).toBe('ERROR');
+    expect(inactiveResult.message).toMatch(/Ngừng hoạt động/i);
+  });
+
+  it('reorders media images and maps poiName + departure counts', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(media))
+      .mockResolvedValueOnce(jsonResponse({ ...detail, itineraryItems: [{ ...detail.itineraryItems[0], poiName: 'Cầu Vàng' }] }))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse({
+        items: [{
+          id: 42, title: 'Tour', status: 'Published', basePrice: 1000000, durationDays: 1,
+          updatedAtUtc: '2026-10-01T00:00:00Z', nextDepartureAtUtc: null, destination: 'Đà Nẵng',
+          upcomingDepartureCount: 2, completedDepartureCount: 1, totalDepartureCount: 3,
+        }],
+        page: 1, pageSize: 100, totalCount: 1,
+      }));
+
+    await reorderTourImages('42', ['9', '8'], '8');
+    const detailMapped = (await getOperatorTourById('42')).data!;
+    const listMapped = (await getOperatorTours()).data!;
+
+    expect(detailMapped.itinerary[0].activities[0].poiName).toBe('Cầu Vàng');
+    expect(listMapped[0]).toMatchObject({ upcomingDepartureCount: 2, completedDepartureCount: 1, totalDepartureCount: 3 });
+  });
+
+  it('maps BE 400 ValidationProblemDetails fieldErrors to OperatorTourValidationError on create and update (DH-06)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          title: 'One or more validation errors occurred.',
+          errors: {
+            Title: ['Title is too long.'],
+            BasePrice: ['BasePrice must be positive.'],
+            'Schedules[0].StartAtUtc': ['StartAtUtc must be in the future.'],
+            'ItineraryItems[0].PlannedTime': ['Invalid time.'],
+          },
+        },
+        400,
+      ),
+    );
+
+    await expect(createTourPackage(payload, { idempotencyKey: 'key-dh06' })).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof OperatorTourValidationError &&
+        err.errors.title === 'Title is too long.' &&
+        err.errors.basePrice === 'BasePrice must be positive.' &&
+        err.errors.schedules === 'StartAtUtc must be in the future.' &&
+        err.errors.itinerary === 'Invalid time.',
+    );
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(detail)).mockResolvedValueOnce(jsonResponse([]));
+    const loaded = (await getOperatorTourById('42', { allowDemo: false })).data!;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          title: 'One or more validation errors occurred.',
+          errors: {
+            CancellationPolicyTemplateId: ['Invalid policy.'],
+          },
+        },
+        400,
+      ),
+    );
+
+    await expect(
+      updateTourPackage({ ...loaded, id: '42', schedules: loaded.schedules }, { currentTour: loaded }),
+    ).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof OperatorTourValidationError &&
+        err.errors.cancellationPolicy === 'Invalid policy.',
+    );
+  });
+
+  it('preserves meetingLatitude and meetingLongitude on create and update', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ tourId: 42, status: 'Draft' }, 201))
+      .mockResolvedValueOnce(jsonResponse(detail))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    const payloadWithCoords: CreateTourPackagePayload = {
+      ...payload,
+      schedules: [
+        {
+          ...payload.schedules[0],
+          meetingLatitude: 16.0544,
+          meetingLongitude: 108.2022,
+        },
+      ],
+    };
+
+    await createTourPackage(payloadWithCoords, { idempotencyKey: 'key-coords-1' });
+    const createBody = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(createBody.schedules[0]).toMatchObject({
+      meetingLatitude: 16.0544,
+      meetingLongitude: 108.2022,
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ ...detail, departures: [{ ...detail.departures[0], meetingLatitude: 16.0544, meetingLongitude: 108.2022 }] }))
+      .mockResolvedValueOnce(jsonResponse([]));
+    const loaded = (await getOperatorTourById('42', { allowDemo: false })).data!;
+
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ tourId: 42, status: 'Draft' }))
+      .mockResolvedValueOnce(jsonResponse(detail))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    await updateTourPackage({ ...loaded, id: '42', schedules: loaded.schedules }, { currentTour: loaded });
+    const updateBody = JSON.parse((fetchMock.mock.calls[5] as [string, RequestInit])[1].body as string);
+    expect(updateBody.schedules[0]).toMatchObject({
+      meetingLatitude: 16.0544,
+      meetingLongitude: 108.2022,
+    });
   });
 });

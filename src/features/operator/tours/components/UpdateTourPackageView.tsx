@@ -1,19 +1,23 @@
 'use client';
 
 import { formatDisplayDate } from '@/lib/displayDate';
+import { scrollToFirstError } from '@/lib/scrollUtils';
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AddDepartureModal } from './AddDepartureModal';
 import { OperatorTourStatusBadge } from './OperatorTourStatusBadge';
 import { CancellationPolicySelect, CategorySelect, DestinationCheckboxes, PoiSelect, TransportSelect } from './TourCataloguePickers';
-import { DepartureTermsFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
+import { DepartureTermsFields, TourDepositFields, TourReadinessPanel, TourTermsFields } from './TourExtraFields';
 import { TourMediaManager } from './TourMediaManager';
+import { TourPreviewModal } from './TourPreviewModal';
 import { useTourCatalogues } from './useTourCatalogues';
 import { OPERATOR_TOUR_ROUTES, withTourDemoMode } from '../routes';
 import {
   createOrResumeDraftVersion,
   discardDraftVersion,
+  getOperatorTourById,
   OperatorTourValidationError,
   saveDraftVersion,
   submitDraftVersion,
@@ -34,6 +38,7 @@ import {
 interface UpdateTourPackageViewProps {
   initialTour: TourPackageDto;
   isDemo?: boolean;
+  initialOpenAddDeparture?: boolean;
 }
 
 const START_TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
@@ -41,6 +46,23 @@ const START_TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
   const minutes = ((index % 4) * 15).toString().padStart(2, '0');
   return `${hours}:${minutes}`;
 });
+
+function addDaysYmd(ymd: string, days: number): string {
+  const base = Date.parse(`${ymd}T00:00:00Z`);
+  if (!Number.isFinite(base)) return ymd;
+  return new Date(base + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+function defaultFutureYmd(daysAhead = 14): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '';
+  return addDaysYmd(`${pick('year')}-${pick('month')}-${pick('day')}`, daysAhead);
+}
 
 function normalizeItineraryDays(days: TourItineraryDay[], durationDays: number): TourItineraryDay[] {
   if (days.length >= durationDays) return days.slice(0, durationDays);
@@ -50,51 +72,109 @@ function normalizeItineraryDays(days: TourItineraryDay[], durationDays: number):
   })];
 }
 
-export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTourPackageViewProps) {
+function clearAddDepartureQuery(): void {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('action') === 'add-departure') {
+    url.searchParams.delete('action');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+  }
+}
+
+function formatVersionTimestamp(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return formatDisplayDate(value.slice(0, 10));
+  }
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed);
+}
+
+export function UpdateTourPackageView({
+  initialTour,
+  isDemo = false,
+  initialOpenAddDeparture = false,
+}: UpdateTourPackageViewProps) {
   const router = useRouter();
-  // A published tour is edited through a draft version (TM-82 / UC-36); demo mode is not offered
-  // for this path (spec TM-82 §1.5) — the draft-version API is always real.
-  const isApproved = initialTour.status === 'Approved' || initialTour.status === 'Published';
+  const [tour, setTour] = useState<TourPackageDto>(initialTour);
+  // A published/approved tour uses a draft version for in-place changes (TM-82 / UC-36),
+  // while still supporting direct departure reopening and superseding v(N+1) creation.
+  const isApproved = tour.status === 'Approved' || tour.status === 'Published';
+  const isInactive = tour.status === 'Inactive';
   const [draft, setDraft] = useState<TourPackageDto | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(isApproved);
   const [draftLoadError, setDraftLoadError] = useState<string | null>(null);
-  // The record actually being edited: the draft version for an Approved/Published tour, the live
-  // tour itself for Draft/Rejected (unaffected UC-35 direct-edit path).
-  const editTarget = isApproved ? draft : initialTour;
-  const isPending = editTarget?.status === 'Pending' || editTarget?.status === 'PendingReview';
+  const editTarget = isApproved ? (draft ?? tour) : tour;
+  const isPending = editTarget.status === 'Pending' || editTarget.status === 'PendingReview';
+  const isReadOnly = isPending || isInactive;
   const catalogues = useTourCatalogues(isDemo);
-  const [destinationIds, setDestinationIds] = useState<number[]>(editTarget?.destinationIds ?? []);
-  const [highlights, setHighlights] = useState(editTarget?.highlights ?? '');
-  const [travellerRequirements, setTravellerRequirements] = useState(editTarget?.travellerRequirements ?? '');
-  const [timeZoneId] = useState(editTarget?.timeZoneId ?? 'Asia/Ho_Chi_Minh');
-  const [media, setMedia] = useState<TourMediaItem[]>(initialTour.media ?? []);
+  const [destinationIds, setDestinationIds] = useState<number[]>(editTarget.destinationIds ?? []);
+  const [highlights, setHighlights] = useState(editTarget.highlights ?? '');
+  const [travellerRequirements, setTravellerRequirements] = useState(editTarget.travellerRequirements ?? '');
+  const [allowDeposit, setAllowDeposit] = useState(Boolean(editTarget.allowDeposit));
+  const [depositPercent, setDepositPercent] = useState<number | null>(editTarget.depositPercent ?? null);
+  const [balanceDueDaysBeforeDeparture, setBalanceDueDaysBeforeDeparture] = useState<number | null>(
+    editTarget.balanceDueDaysBeforeDeparture ?? null,
+  );
+  const [timeZoneId] = useState(editTarget.timeZoneId ?? 'Asia/Ho_Chi_Minh');
+  const [media, setMedia] = useState<TourMediaItem[]>(tour.media ?? []);
 
   // Form State initialized from editTarget
-  const [title, setTitle] = useState(editTarget?.title ?? '');
-  const [destination, setDestination] = useState(editTarget?.destination ?? '');
-  const [category, setCategory] = useState(editTarget?.category || 'Di sản & Thiên nhiên');
-  const [durationDays, setDurationDays] = useState(editTarget?.durationDays ?? 1);
-  const [basePrice, setBasePrice] = useState(editTarget?.basePrice ?? 0);
-  const [childPrice, setChildPrice] = useState(editTarget?.childPrice);
-  const [maxCapacity, setMaxCapacity] = useState(editTarget?.maxCapacity ?? 0);
-  const [description, setDescription] = useState(editTarget?.description ?? '');
-  const [inclusions, setInclusions] = useState(editTarget?.inclusions || '');
-  const [exclusions, setExclusions] = useState(editTarget?.exclusions || '');
-  const [cancellationPolicy, setCancellationPolicy] = useState(editTarget?.cancellationPolicy ?? '');
+  const [title, setTitle] = useState(editTarget.title);
+  const [destination, setDestination] = useState(editTarget.destination);
+  const [category, setCategory] = useState(editTarget.category || (isDemo ? 'Di sản & Thiên nhiên' : ''));
+  const [durationDays, setDurationDays] = useState(editTarget.durationDays);
+  const [basePrice, setBasePrice] = useState(editTarget.basePrice);
+  const [childPrice, setChildPrice] = useState(editTarget.childPrice);
+  const [maxCapacity, setMaxCapacity] = useState(editTarget.maxCapacity);
+  const [description, setDescription] = useState(editTarget.description);
+  const [inclusions, setInclusions] = useState(editTarget.inclusions || '');
+  const [exclusions, setExclusions] = useState(editTarget.exclusions || '');
+  const [cancellationPolicy, setCancellationPolicy] = useState(editTarget.cancellationPolicy);
 
   // Itinerary & Schedules
   const [itinerary, setItinerary] = useState<TourItineraryDay[]>(() =>
-    normalizeItineraryDays(JSON.parse(JSON.stringify(editTarget?.itinerary || [])), editTarget?.durationDays ?? 1),
+    normalizeItineraryDays(JSON.parse(JSON.stringify(editTarget.itinerary || [])), editTarget.durationDays),
   );
   const [schedules, setSchedules] = useState<TourDepartureSchedule[]>(
-    JSON.parse(JSON.stringify(editTarget?.schedules || []))
+    JSON.parse(JSON.stringify(editTarget.schedules || []))
   );
+  const [addDepartureOpen, setAddDepartureOpen] = useState(Boolean(initialOpenAddDeparture && isApproved));
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Total confirmed bookings calculation
   const totalSoldSlots = schedules.reduce((acc, s) => acc + (s.reservedCapacity || 0), 0);
 
   // UI & Validation states
   const [errors, setErrors] = useState<TourValidationErrors>({});
+  const revealErrors = (nextErrors: TourValidationErrors) => scrollToFirstError(
+    [
+      ...Object.keys(nextErrors),
+      ...(nextErrors.schedules ? ['tour-schedules-section'] : []),
+    ],
+    {
+      title: 'field-title',
+      destination: 'field-destination',
+      description: 'field-description',
+      inclusions: 'field-inclusions',
+      exclusions: 'field-exclusions',
+      highlights: 'field-highlights',
+      travellerRequirements: 'field-requirements',
+      depositPercent: 'field-deposit-percent',
+      balanceDueDaysBeforeDeparture: 'field-balance-due-days',
+      itinerary: 'tour-itinerary',
+      schedules: 'schedule-validation',
+      basePrice: 'field-basePrice',
+      durationDays: 'field-duration',
+      cancellationPolicy: isDemo ? 'field-policy' : 'field-cancellation',
+    },
+  );
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -103,6 +183,67 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   const [validationToast, setValidationToast] = useState<string | null>(null);
   const validationToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activitySequence = useRef(0);
+  const scheduleSequence = useRef(0);
+
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    JSON.stringify({
+      title: initialTour.title,
+      destination: initialTour.destination,
+      destinationIds: initialTour.destinationIds ?? [],
+      category: initialTour.category || (isDemo ? 'Di sản & Thiên nhiên' : ''),
+      durationDays: initialTour.durationDays,
+      basePrice: initialTour.basePrice,
+      childPrice: initialTour.childPrice,
+      maxCapacity: initialTour.maxCapacity,
+      description: initialTour.description,
+      inclusions: initialTour.inclusions || '',
+      exclusions: initialTour.exclusions || '',
+      highlights: initialTour.highlights ?? '',
+      travellerRequirements: initialTour.travellerRequirements ?? '',
+      allowDeposit: Boolean(initialTour.allowDeposit),
+      depositPercent: initialTour.depositPercent ?? null,
+      balanceDueDaysBeforeDeparture: initialTour.balanceDueDaysBeforeDeparture ?? null,
+      cancellationPolicy: initialTour.cancellationPolicy,
+      itinerary: normalizeItineraryDays(
+        JSON.parse(JSON.stringify(initialTour.itinerary || [])),
+        initialTour.durationDays,
+      ),
+      schedules: initialTour.schedules || [],
+    }),
+  );
+
+  const currentSnapshot = JSON.stringify({
+    title,
+    destination,
+    destinationIds,
+    category,
+    durationDays,
+    basePrice,
+    childPrice,
+    maxCapacity,
+    description,
+    inclusions,
+    exclusions,
+    highlights,
+    travellerRequirements,
+    allowDeposit,
+    depositPercent,
+    balanceDueDaysBeforeDeparture,
+    cancellationPolicy,
+    itinerary,
+    schedules,
+  });
+  const isDirty = currentSnapshot !== savedSnapshot;
+
+  useEffect(() => {
+    if (!isDirty || isReadOnly || submitting) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty, isReadOnly, submitting]);
 
   useEffect(() => () => {
     if (validationToastTimer.current) clearTimeout(validationToastTimer.current);
@@ -115,16 +256,19 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   useEffect(() => {
     if (!isApproved) return;
     let cancelled = false;
-    createOrResumeDraftVersion(initialTour.id, initialTour)
+    Promise.resolve(createOrResumeDraftVersion(tour.id, tour))
       .then((loaded) => {
-        if (cancelled) return;
+        if (cancelled || !loaded) return;
         setDraft(loaded);
         setDestinationIds(loaded.destinationIds ?? []);
         setHighlights(loaded.highlights ?? '');
         setTravellerRequirements(loaded.travellerRequirements ?? '');
+        setAllowDeposit(Boolean(loaded.allowDeposit));
+        setDepositPercent(loaded.depositPercent ?? null);
+        setBalanceDueDaysBeforeDeparture(loaded.balanceDueDaysBeforeDeparture ?? null);
         setTitle(loaded.title);
         setDestination(loaded.destination);
-        setCategory(loaded.category || 'Di sản & Thiên nhiên');
+        setCategory(loaded.category || (isDemo ? 'Di sản & Thiên nhiên' : ''));
         setDurationDays(loaded.durationDays);
         setBasePrice(loaded.basePrice);
         setChildPrice(loaded.childPrice);
@@ -146,8 +290,8 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialTour.id identifies the tour; re-running on every initialTour identity change would re-fetch needlessly.
-  }, [initialTour.id, isApproved]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tour.id identifies the tour; re-running on every identity change would re-fetch needlessly.
+  }, [tour.id, isApproved]);
 
   const showValidationToast = (message: string) => {
     setValidationToast(message);
@@ -158,9 +302,22 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     }, 4500);
   };
 
+  const refreshTourFromServer = async () => {
+    if (isDemo) return;
+    try {
+      const res = await getOperatorTourById(tour.id, { allowDemo: false });
+      if (res.status === 'SUCCESS' && res.data) {
+        setTour(res.data);
+        setMedia(res.data.media ?? []);
+      }
+    } catch {
+      // Readiness refresh is best-effort after media operations.
+    }
+  };
+
   // Handlers for Itinerary
   const handleAddActivity = (dayIndex: number) => {
-    if (isPending) return;
+    if (isReadOnly) return;
     const updated = itinerary.map((day) => ({ ...day, activities: [...day.activities] }));
     if (!updated[dayIndex]) {
       updated.push({ dayNo: 1, title: 'Ngày 1: Khám phá điểm đến', activities: [] });
@@ -169,22 +326,41 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     const newAct: TourItineraryActivity = {
       id: `new-activity-${++activitySequence.current}`,
       time: '16:00',
-      poiName: 'Điểm tham quan mới',
+      poiName: isDemo ? 'Điểm tham quan mới' : '',
       stayDurationMinutes: 45,
       transport: 'Đi bộ',
+      notes: '',
     };
     updated[dayIndex].activities.push(newAct);
     setItinerary(updated);
+  };
+
+  const updateActivityField = (dayIndex: number, actIndex: number, patch: Partial<TourItineraryActivity>) => {
+    setItinerary((current) =>
+      current.map((day, dIdx) =>
+        dIdx === dayIndex
+          ? { ...day, activities: day.activities.map((a, aIdx) => (aIdx === actIndex ? { ...a, ...patch } : a)) }
+          : day,
+      ),
+    );
   };
 
   const handleDurationChange = (nextValue: number) => {
     const nextDuration = Math.max(1, nextValue || 1);
     setDurationDays(nextDuration);
     setItinerary((current) => normalizeItineraryDays(current, nextDuration));
+    if (!isApproved) {
+      setSchedules((current) =>
+        current.map((sch) => ({
+          ...sch,
+          returnDate: addDaysYmd(sch.departureDate, nextDuration - 1),
+        })),
+      );
+    }
   };
 
   const handleRemoveActivity = (dayIndex: number, actIndex: number) => {
-    if (isPending) return;
+    if (isReadOnly) return;
     const updated = itinerary.map((day) => ({ ...day, activities: [...day.activities] }));
     if (!updated[dayIndex]?.activities[actIndex]) return;
     updated[dayIndex].activities.splice(actIndex, 1);
@@ -192,7 +368,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   };
 
   const moveActivity = (fromDayIndex: number, fromIndex: number, toDayIndex: number, toIndex: number) => {
-    if (isPending || (fromDayIndex === toDayIndex && fromIndex === toIndex)) return;
+    if (isReadOnly || (fromDayIndex === toDayIndex && fromIndex === toIndex)) return;
     const updated = itinerary.map((day) => ({ ...day, activities: [...day.activities] }));
     if (!updated[fromDayIndex]?.activities[fromIndex] || !updated[toDayIndex]) return;
     const [activity] = updated[fromDayIndex].activities.splice(fromIndex, 1);
@@ -204,12 +380,35 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     setItinerary(updated);
   };
 
-  function buildPayload(): UpdateTourPackagePayload {
+  const handleAddDraftSchedule = () => {
+    if (isReadOnly || isApproved) return;
+    const lastDep = schedules[schedules.length - 1]?.departureDate;
+    const nextDep = lastDep ? addDaysYmd(lastDep, 7) : defaultFutureYmd(14);
+    const nextSch: TourDepartureSchedule = {
+      id: `new-schedule-${++scheduleSequence.current}`,
+      departureDate: nextDep,
+      returnDate: addDaysYmd(nextDep, Math.max(0, durationDays - 1)),
+      totalCapacity: maxCapacity > 0 ? maxCapacity : 20,
+      reservedCapacity: 0,
+      minimumCapacity: 1,
+      meetingPoint: '',
+      status: 'Scheduled',
+    };
+    setSchedules((current) => [...current, nextSch]);
+  };
+
+  const handleRemoveDraftSchedule = (index: number) => {
+    if (isReadOnly || isApproved || schedules.length <= 1) return;
+    if (schedules[index]?.reservedCapacity > 0) return;
+    setSchedules((current) => current.filter((_, idx) => idx !== index));
+  };
+
+  function buildPayload(schedulesForSave: TourDepartureSchedule[] = schedules): UpdateTourPackagePayload {
     const selectedDestinationNames = catalogues.destinations
       .filter((option) => destinationIds.includes(option.destinationId))
       .map((option) => option.name);
     return {
-      id: initialTour.id,
+      id: tour.id,
       title,
       destination: isDemo ? destination : selectedDestinationNames.join(', ') || destination,
       destinationIds: isDemo ? undefined : destinationIds,
@@ -217,35 +416,50 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       durationDays,
       basePrice,
       childPrice,
-      maxCapacity,
+      maxCapacity: schedulesForSave[0]?.totalCapacity || maxCapacity,
       description,
       inclusions,
       exclusions,
       highlights: isDemo ? undefined : highlights,
       travellerRequirements: isDemo ? undefined : travellerRequirements,
       timeZoneId: isDemo ? undefined : timeZoneId,
+      allowDeposit,
+      depositPercent: allowDeposit ? depositPercent : null,
+      balanceDueDaysBeforeDeparture: allowDeposit ? balanceDueDaysBeforeDeparture : null,
       cancellationPolicy,
       itinerary,
-      schedules,
+      schedules: schedulesForSave,
     };
   }
 
-  /** UC-35 direct-edit save, for a Draft/Rejected tour. Unaffected by TM-82. */
-  const handleSaveDirectEdit = async () => {
-    const payload = buildPayload();
-    const validationErrors = validateUpdateTourPackage(payload, initialTour);
+  /** UC-35 direct-edit save, for a Draft/Rejected tour. */
+  const handleSaveDirectEdit = async (andSubmit = false) => {
+    if (isReadOnly) return;
+    setErrorMessage(null);
+    setPendingMessage(null);
+    setSuccessMessage(null);
+
+    const payload = buildPayload(schedules);
+    const validationErrors = validateUpdateTourPackage(payload, tour);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      revealErrors(validationErrors);
       showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       return;
     }
     setErrors({});
     setSubmitting(true);
     try {
-      const result = await updateTourPackage(payload, { allowDemo: isDemo, currentTour: initialTour });
+      const result = await updateTourPackage(payload, { allowDemo: isDemo, currentTour: tour });
       if (result.status === 'SUCCESS' && result.data) {
+        setSavedSnapshot(currentSnapshot);
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
-        router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
+        router.push(
+          withTourDemoMode(
+            andSubmit ? OPERATOR_TOUR_ROUTES.submit(result.data.id) : OPERATOR_TOUR_ROUTES.list,
+            isDemo,
+          ),
+        );
       } else if (result.status === 'PENDING_BE_INTEGRATION') {
         setPendingMessage(result.message || OPERATOR_TOUR_MESSAGES.PENDING_BE_INTEGRATION);
       } else if (result.status === 'ERROR') {
@@ -254,6 +468,76 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     } catch (err) {
       if (err instanceof OperatorTourValidationError) {
         setErrors(err.errors);
+        revealErrors(err.errors);
+        showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /** BR-103: creates a superseding draft version (v+1) from an Approved/Published tour. */
+  const handleCreateNewVersion = async () => {
+    if (isReadOnly || !isApproved) return;
+    setErrorMessage(null);
+    setPendingMessage(null);
+    setSuccessMessage(null);
+
+    if (!schedules.some((schedule) =>
+      !schedule.isCompleted && schedule.status === 'Scheduled' &&
+      schedule.departureDate >= defaultFutureYmd(1))) {
+      const departureDate = defaultFutureYmd();
+      const template = schedules[0];
+      setSchedules((current) => [...current, {
+        id: `new-version-schedule-${++scheduleSequence.current}`,
+        departureDate,
+        returnDate: addDaysYmd(departureDate, Math.max(0, durationDays - 1)),
+        totalCapacity: Math.max(1, template?.totalCapacity ?? 20),
+        reservedCapacity: 0,
+        minimumCapacity: template?.minimumCapacity ?? 1,
+        adultPrice: template?.adultPrice ?? basePrice,
+        childPrice: template?.childPrice ?? null,
+        infantPrice: template?.infantPrice ?? null,
+        meetingPoint: template?.meetingPoint ?? '',
+        status: 'Scheduled',
+      }]);
+      setPendingMessage('Lịch khởi hành cũ đã kết thúc. Hệ thống vừa thêm ngày đi mới để bạn kiểm tra; hãy chỉnh lịch rồi bấm lưu lần nữa.');
+      scrollToFirstError(['schedules'], { schedules: 'tour-schedules-section' });
+      return;
+    }
+
+    const activeFutureSchedules = schedules.filter(
+      (s) => !s.isCompleted && s.status === 'Scheduled' && s.departureDate >= defaultFutureYmd(1),
+    );
+    const payload = buildPayload(activeFutureSchedules);
+    const validationErrors = validateUpdateTourPackage(payload, tour);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      revealErrors(validationErrors);
+      showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
+      return;
+    }
+    setErrors({});
+    setSubmitting(true);
+    try {
+      const result = await updateTourPackage(payload, {
+        allowDemo: isDemo,
+        currentTour: tour,
+        createNewVersion: true,
+      });
+      if (result.status === 'SUCCESS' && result.data) {
+        setSavedSnapshot(currentSnapshot);
+        setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
+        router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(result.data.id), isDemo));
+      } else if (result.status === 'ERROR') {
+        setErrorMessage(result.message || OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
+      }
+    } catch (err) {
+      if (err instanceof OperatorTourValidationError) {
+        setErrors(err.errors);
+        revealErrors(err.errors);
         showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       } else {
         setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
@@ -266,13 +550,17 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
   /** TM-82 / UC-36: saves the draft version of an Approved/Published tour (spec §5.1/§5.3). */
   const handleSaveDraft = async () => {
     if (!draft) return;
-    const payload = buildPayload();
+    setErrorMessage(null);
+    setPendingMessage(null);
+    setSuccessMessage(null);
+    const payload = buildPayload(schedules);
     setErrors({});
     setSubmitting(true);
     try {
-      const result = await saveDraftVersion(initialTour.id, draft.id, payload, initialTour);
+      const result = await saveDraftVersion(tour.id, draft.id, payload, tour);
       if (result.status === 'SUCCESS' && result.data) {
         setDraft(result.data);
+        setSavedSnapshot(currentSnapshot);
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS);
       } else if (result.status === 'ERROR') {
         setErrorMessage(result.message || OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
@@ -280,6 +568,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     } catch (err) {
       if (err instanceof OperatorTourValidationError) {
         setErrors(err.errors);
+        revealErrors(err.errors);
         showValidationToast('Không thể lưu thay đổi. Vui lòng kiểm tra các trường được đánh dấu.');
       } else {
         setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
@@ -289,7 +578,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     }
   };
 
-  const handleSave = () => (isApproved ? handleSaveDraft() : handleSaveDirectEdit());
+  const handleSave = () => (isApproved ? void handleSaveDraft() : void handleSaveDirectEdit(false));
 
   /** TM-82 / UC-36: submits the draft version directly — never the UC-37 first-time submit page. */
   const handleSubmitDraft = async () => {
@@ -298,7 +587,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     setSuccessMessage(null);
     setSubmitting(true);
     try {
-      const result = await submitDraftVersion(initialTour.id, draft.id, initialTour);
+      const result = await submitDraftVersion(tour.id, draft.id, tour);
       if (result.status === 'SUCCESS' && result.data) {
         setDraft(result.data);
         setSuccessMessage(result.message || OPERATOR_TOUR_MESSAGES.SUBMIT_SUCCESS);
@@ -317,7 +606,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     if (!draft) return;
     setSubmitting(true);
     try {
-      await discardDraftVersion(initialTour.id, draft.id);
+      await discardDraftVersion(tour.id, draft.id);
       router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo));
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : OPERATOR_TOUR_MESSAGES.SYSTEM_FAILURE);
@@ -325,43 +614,27 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
     }
   };
 
-  if (loadingDraft) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-xs">
-        <span className="material-symbols-outlined animate-spin text-[32px] text-[#174B4A]">progress_activity</span>
-        <p className="mt-2 text-xs font-bold">Đang tải bản nháp của gói tour...</p>
-      </div>
-    );
-  }
-
-  if (draftLoadError) {
-    return (
-      <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-rose-900">
-        <h2 className="text-lg font-bold">Không thể tải bản nháp</h2>
-        <p className="mt-2 text-sm text-rose-800">{draftLoadError}</p>
-        <Link
-          href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
-          className="mt-4 inline-flex items-center rounded-xl bg-rose-800 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-rose-700"
-        >
-          Quay lại danh sách tour
-        </Link>
-      </div>
-    );
-  }
+  const upcomingSchedules = schedules.filter((s) => !s.isCompleted && s.status === 'Scheduled' && s.departureDate >= defaultFutureYmd(1));
+  const historicalSchedules = schedules.filter((s) => s.isCompleted || s.status !== 'Scheduled' || s.departureDate < defaultFutureYmd(1));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             <h1 className="text-xl font-extrabold text-[#1C2928] sm:text-2xl break-words">
-              {initialTour.title}
+              {tour.title}
             </h1>
             <span className="rounded-md bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-bold text-slate-700 shrink-0">
-              {initialTour.tourCode}
+              {tour.tourCode}
             </span>
-            <OperatorTourStatusBadge status={initialTour.status} />
+            <OperatorTourStatusBadge status={tour.status} publishedAtUtc={tour.publishedAtUtc} />
+            {isApproved && (
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 shrink-0">
+                Phiên bản {tour.version}
+              </span>
+            )}
             {isApproved && draft && (
               <OperatorTourStatusBadge status={draft.status} className="border border-dashed" />
             )}
@@ -387,7 +660,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
               preview
             </span>
             <span>
-              <strong>Bản xem trước DEMO:</strong> Đang xem và chỉnh sửa gói tour mẫu ({initialTour.tourCode}).
+              <strong>Bản xem trước DEMO:</strong> Đang xem và chỉnh sửa gói tour mẫu ({tour.tourCode}).
             </span>
           </div>
           <span className="rounded bg-amber-200 px-2 py-0.5 font-bold uppercase text-[10px] text-amber-800">
@@ -413,24 +686,63 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         </div>
       )}
 
-      {/* Live Bookings Impact Alert for Approved Tours (Screen #42) */}
-      {isApproved && (
-        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-xs">
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[24px] text-amber-600 shrink-0">
-              warning
-            </span>
-            <div className="leading-relaxed">
-              <strong>Gói tour này đang hoạt động và có {totalSoldSlots} chỗ đã xác nhận đặt chỗ.</strong>{' '}
-              Gói tour đã xuất bản không được sửa trực tiếp. Mọi thay đổi về giá, sức chứa hoặc lịch trình được lưu vào <strong>bản nháp riêng</strong> và cần Quản trị viên xét duyệt lại trước khi áp dụng vào gói tour đang hoạt động.
+      {isInactive && (
+        <div
+          role="status"
+          className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-xs font-bold text-slate-800 shadow-xs"
+        >
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[24px] text-slate-600">pause_circle</span>
+            <div>
+              <p className="font-extrabold text-sm">Gói tour đang ở trạng thái Ngừng hoạt động.</p>
+              <p className="mt-0.5 font-normal text-slate-600">
+                Gói tour này không hiển thị cho du khách và đang ở chế độ chỉ đọc.
+              </p>
             </div>
           </div>
         </div>
       )}
 
+      {/* Live Bookings Impact Alert for Approved Tours (Screen #42) */}
+      {isApproved && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-[24px] text-amber-600 shrink-0">
+                warning
+              </span>
+              <div className="leading-relaxed">
+                <strong>Gói tour này đang hoạt động và có {totalSoldSlots} chỗ đã xác nhận đặt chỗ.</strong>{' '}
+                Gói tour đã xuất bản không được sửa trực tiếp. Để mở bán thêm ngày đi mới mà giữ nguyên dữ liệu cũ, hãy dùng nút <strong>Mở bán đợt mới</strong>. Mọi thay đổi được lưu vào <strong>bản nháp riêng</strong> hoặc nhân bản thành <strong>phiên bản nháp mới (v{tour.version + 1})</strong> trước khi xét duyệt lại.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddDepartureOpen(true)}
+              className="shrink-0 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition"
+            >
+              Mở bán đợt mới
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loadingDraft && (
+        <div role="status" className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 shadow-xs">
+          <span className="material-symbols-outlined animate-spin text-[18px] text-[#174B4A]">progress_activity</span>
+          <span>Đang tải bản nháp của gói tour...</span>
+        </div>
+      )}
+
+      {draftLoadError && (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-900">
+          <p className="font-bold">Không thể tải bản nháp: {draftLoadError}</p>
+        </div>
+      )}
+
       {/* Rejection Notice: for Draft/Rejected tours, from the live tour itself (UC-35);
           for Approved/Published, from the draft version's own rejection (TM-82 §5.3 edge case 7). */}
-      {editTarget?.status === 'Rejected' && editTarget.rejectionReason && (
+      {editTarget.status === 'Rejected' && editTarget.rejectionReason && (
         <div className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs text-rose-900 shadow-xs">
           <div className="flex items-start gap-3">
             <span className="material-symbols-outlined text-[24px] text-rose-600 shrink-0">
@@ -454,7 +766,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       )}
 
       {!isDemo && (
-        <TourReadinessPanel blockers={initialTour.reviewBlockers} warnings={initialTour.warnings} />
+        <TourReadinessPanel blockers={tour.reviewBlockers} warnings={tour.warnings} />
       )}
 
       {/* Success / Error alerts */}
@@ -475,16 +787,16 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
       )}
 
       {/* 2-Column Responsive Layout (Screen #42) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Main Column (2/3) */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 xl:col-span-2">
           {/* Card 1: Editable Fields with Diff Indicator */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-extrabold text-[#1C2928]">Thông tin có thể chỉnh sửa</h3>
               {isApproved && (
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-800">
-                  Lưu vào bản nháp
+                  Lưu vào bản nháp / v{tour.version + 1}
                 </span>
               )}
             </div>
@@ -497,7 +809,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 <input
                   id="field-title"
                   type="text"
-                  disabled={isPending}
+                  disabled={isReadOnly}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50 disabled:text-slate-500"
@@ -514,7 +826,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                     <input
                       id="field-destination"
                       type="text"
-                      disabled={isPending}
+                      disabled={isReadOnly}
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
                       className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
@@ -525,7 +837,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                       selectedIds={destinationIds}
                       onChange={setDestinationIds}
                       labelId="label-destination"
-                      disabled={isPending}
+                      disabled={isReadOnly}
                       hasError={Boolean(errors.destination)}
                     />
                   )}
@@ -539,7 +851,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   {isDemo ? (
                     <select
                       id="field-category"
-                      disabled={isPending}
+                      disabled={isReadOnly}
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
@@ -554,7 +866,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                       options={catalogues.categories}
                       value={category}
                       onChange={setCategory}
-                      disabled={isPending}
+                      disabled={isReadOnly}
                     />
                   )}
                 </div>
@@ -567,7 +879,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                 <textarea
                   id="field-description"
                   rows={4}
-                  disabled={isPending}
+                  disabled={isReadOnly}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
@@ -583,11 +895,12 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   <textarea
                     id="field-inclusions"
                     rows={3}
-                    disabled={isPending}
+                    disabled={isReadOnly}
                     value={inclusions}
                     onChange={(e) => setInclusions(e.target.value)}
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                   />
+                  {errors.inclusions && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.inclusions}</p>}
                 </div>
 
                 <div>
@@ -597,11 +910,12 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   <textarea
                     id="field-exclusions"
                     rows={3}
-                    disabled={isPending}
+                    disabled={isReadOnly}
                     value={exclusions}
                     onChange={(e) => setExclusions(e.target.value)}
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
                   />
+                  {errors.exclusions && <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.exclusions}</p>}
                 </div>
               </div>
 
@@ -613,7 +927,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   <input
                     id="field-policy"
                     type="text"
-                    disabled={isPending}
+                    disabled={isReadOnly}
                     value={cancellationPolicy}
                     onChange={(e) => setCancellationPolicy(e.target.value)}
                     className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-900 focus:border-[#174B4A] focus:outline-hidden disabled:bg-slate-50"
@@ -623,7 +937,7 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                     options={catalogues.policies}
                     value={cancellationPolicy}
                     onChange={setCancellationPolicy}
-                    disabled={isPending}
+                    disabled={isReadOnly}
                     hasError={Boolean(errors.cancellationPolicy)}
                   />
                 )}
@@ -631,11 +945,28 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   <p className="mt-1 text-xs text-rose-600 font-semibold">{errors.cancellationPolicy}</p>
                 )}
               </div>
+
+              <TourDepositFields
+                allowDeposit={allowDeposit}
+                depositPercent={depositPercent}
+                balanceDueDaysBeforeDeparture={balanceDueDaysBeforeDeparture}
+                basePrice={basePrice}
+                disabled={isReadOnly}
+                depositPercentError={errors.depositPercent}
+                balanceDueDaysError={errors.balanceDueDaysBeforeDeparture}
+                onChange={(patch) => {
+                  if (patch.allowDeposit !== undefined) setAllowDeposit(patch.allowDeposit);
+                  if (patch.depositPercent !== undefined) setDepositPercent(patch.depositPercent);
+                  if (patch.balanceDueDaysBeforeDeparture !== undefined) {
+                    setBalanceDueDaysBeforeDeparture(patch.balanceDueDaysBeforeDeparture);
+                  }
+                }}
+              />
             </div>
           </section>
 
           {/* Card 2: Itinerary Changes comparison table (Screen #42) */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+          <section id="tour-itinerary" tabIndex={-1} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-extrabold text-[#1C2928]">Lịch trình & Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></h3>
@@ -661,30 +992,42 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   }}
                   className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
                 >
-                  <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold text-slate-800">Ngày {day.dayNo}</p>{!isPending && <button type="button" onClick={() => handleAddActivity(dIdx)} className="inline-flex items-center gap-1 text-xs font-bold text-[#174B4A] hover:underline"><span className="material-symbols-outlined text-[17px]" aria-hidden="true">add_circle</span>Thêm điểm dừng</button>}</div>
+                  <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold text-slate-800">Ngày {day.dayNo}</p>{!isReadOnly && <button type="button" onClick={() => handleAddActivity(dIdx)} className="inline-flex items-center gap-1 text-xs font-bold text-[#174B4A] hover:underline"><span className="material-symbols-outlined text-[17px]" aria-hidden="true">add_circle</span>Thêm điểm dừng</button>}</div>
                   <div className="mt-3 space-y-3">
                     {day.activities.map((act, aIdx) => (
-                      <div key={act.id} draggable={!isPending} onDragStart={() => setDraggedActivity({ dayIndex: dIdx, activityIndex: aIdx })} onDragEnd={() => setDraggedActivity(null)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => {
+                      <div key={act.id} draggable={!isReadOnly} onDragStart={() => setDraggedActivity({ dayIndex: dIdx, activityIndex: aIdx })} onDragEnd={() => setDraggedActivity(null)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => {
                         event.stopPropagation();
                         if (draggedActivity) moveActivity(draggedActivity.dayIndex, draggedActivity.activityIndex, dIdx, aIdx);
                         setDraggedActivity(null);
                       }} className={`rounded-xl border border-slate-200 bg-white p-3 transition ${draggedActivity?.dayIndex === dIdx && draggedActivity.activityIndex === aIdx ? 'opacity-40' : ''}`}>
                         <div className="mb-3 flex items-center justify-between">
                           <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                            {!isPending && <span className="material-symbols-outlined cursor-grab text-[19px] text-slate-400" title="Kéo để đổi thứ tự">drag_indicator</span>}
+                            {!isReadOnly && <span className="material-symbols-outlined cursor-grab text-[19px] text-slate-400" title="Kéo để đổi thứ tự">drag_indicator</span>}
                             <span>Điểm dừng {aIdx + 1}</span>
-                            {!isPending && <span className="inline-flex gap-1">
+                            {!isReadOnly && <span className="inline-flex gap-1">
                               <button type="button" disabled={aIdx === 0} aria-label="Di chuyển lên" onClick={() => moveActivity(dIdx, aIdx, dIdx, aIdx - 1)} className="rounded p-0.5 text-slate-500 hover:bg-slate-100 disabled:opacity-25">↑</button>
                               <button type="button" disabled={aIdx === day.activities.length - 1} aria-label="Di chuyển xuống" onClick={() => moveActivity(dIdx, aIdx, dIdx, aIdx + 1)} className="rounded p-0.5 text-slate-500 hover:bg-slate-100 disabled:opacity-25">↓</button>
                             </span>}
                           </div>
-                          {!isPending && <button type="button" aria-label={`Xóa điểm dừng ${aIdx + 1}`} onClick={() => handleRemoveActivity(dIdx, aIdx)} className="grid h-8 w-8 place-items-center rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700"><span className="material-symbols-outlined text-[19px]">delete</span></button>}
+                          {!isReadOnly && <button type="button" aria-label={`Xóa điểm dừng ${aIdx + 1}`} onClick={() => handleRemoveActivity(dIdx, aIdx)} className="grid h-8 w-8 place-items-center rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700"><span className="material-symbols-outlined text-[19px]">delete</span></button>}
                         </div>
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-                          <div className="md:col-span-5"><label className="block text-[11px] font-semibold text-slate-600">Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1">{isPending ? <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">{act.poiName}</p> : isDemo ? <input type="text" value={act.poiName} onChange={(e) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].poiName = e.target.value; setItinerary(updated); }} className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs" /> : <PoiSelect options={catalogues.pois} value={act.poiId} currentName={act.poiName} onChange={(poi) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].poiId = poi?.id; updated[dIdx].activities[aIdx].poiName = poi?.name ?? ''; setItinerary(updated); }} />}</div></div>
-                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Giờ bắt đầu <span className="text-rose-500" aria-hidden="true">*</span></label>{isPending ? <p className="mt-1 flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700">{act.time}</p> : <select aria-label={`Giờ bắt đầu điểm dừng ${aIdx + 1}`} value={act.time} onChange={(event) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].time = event.target.value; setItinerary(updated); }} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs">{!START_TIME_OPTIONS.includes(act.time) && <option value={act.time}>{act.time}</option>}{START_TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}</select>}</div>
-                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Lưu lại (phút) <span className="text-rose-500" aria-hidden="true">*</span></label>{isPending ? <p className="mt-1 flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700">{act.stayDurationMinutes} phút</p> : <input aria-label={`Thời lượng điểm dừng ${aIdx + 1}`} type="number" min="1" value={act.stayDurationMinutes} onChange={(event) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].stayDurationMinutes = Number(event.target.value); setItinerary(updated); }} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs" />}</div>
-                          <div className="md:col-span-3"><label className="block text-[11px] font-semibold text-slate-600">Phương tiện <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1">{isPending ? <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">{act.transport}</p> : <TransportSelect value={act.transport} onChange={(value) => { const updated = [...itinerary]; updated[dIdx].activities[aIdx].transport = value; setItinerary(updated); }} />}</div></div>
+                          <div className="md:col-span-5"><label className="block text-[11px] font-semibold text-slate-600">Điểm dừng <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1">{isReadOnly ? <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">{act.poiName}</p> : isDemo ? <input type="text" value={act.poiName} onChange={(e) => updateActivityField(dIdx, aIdx, { poiName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs" /> : <PoiSelect options={catalogues.pois} value={act.poiId} currentName={act.poiName} onChange={(poi) => updateActivityField(dIdx, aIdx, { poiId: poi?.id, poiName: poi?.name ?? '' })} />}</div></div>
+                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Giờ bắt đầu <span className="text-rose-500" aria-hidden="true">*</span></label>{isReadOnly ? <p className="mt-1 flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700">{act.time}</p> : <select aria-label={`Giờ bắt đầu điểm dừng ${aIdx + 1}`} value={act.time} onChange={(event) => updateActivityField(dIdx, aIdx, { time: event.target.value })} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs">{!START_TIME_OPTIONS.includes(act.time) && <option value={act.time}>{act.time}</option>}{START_TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}</select>}</div>
+                          <div className="md:col-span-2"><label className="block text-[11px] font-semibold text-slate-600">Lưu lại (phút) <span className="text-rose-500" aria-hidden="true">*</span></label>{isReadOnly ? <p className="mt-1 flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700">{act.stayDurationMinutes} phút</p> : <input aria-label={`Thời lượng điểm dừng ${aIdx + 1}`} type="number" min="1" value={act.stayDurationMinutes} onChange={(event) => updateActivityField(dIdx, aIdx, { stayDurationMinutes: Number(event.target.value) })} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs" />}</div>
+                          <div className="md:col-span-3"><label className="block text-[11px] font-semibold text-slate-600">Phương tiện <span className="text-rose-500" aria-hidden="true">*</span></label><div className="mt-1">{isReadOnly ? <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">{act.transport}</p> : <TransportSelect value={act.transport} onChange={(value) => updateActivityField(dIdx, aIdx, { transport: value })} />}</div></div>
+                          {!isReadOnly && (
+                            <div className="md:col-span-12">
+                              <input
+                                type="text"
+                                aria-label={`Ghi chú điểm dừng ${aIdx + 1}`}
+                                value={act.notes ?? ''}
+                                onChange={(e) => updateActivityField(dIdx, aIdx, { notes: e.target.value })}
+                                placeholder="Mô tả hoạt động hoặc ghi chú thêm (tùy chọn)"
+                                className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-700 placeholder:text-slate-400"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -698,19 +1041,37 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         {/* Right Sidebar Column (1/3) */}
         <div className="space-y-6">
           {/* Card: Departure Schedules with Sold Slots (BR-61) */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-            <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
-              Lịch khởi hành & Chỗ đã bán <span className="text-rose-500" aria-hidden="true">*</span>
-            </h3>
+          <section id="tour-schedules-section" tabIndex={-1} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <h3 className="text-base font-extrabold text-[#1C2928]">
+                Lịch khởi hành & Chỗ đã bán <span className="text-rose-500" aria-hidden="true">*</span>
+              </h3>
+              {isApproved ? (
+                <button
+                  type="button"
+                  onClick={() => setAddDepartureOpen(true)}
+                  className="rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-800 transition"
+                >
+                  + Mở bán đợt mới
+                </button>
+              ) : !isReadOnly ? (
+                <button
+                  type="button"
+                  onClick={handleAddDraftSchedule}
+                  className="text-xs font-bold text-[#174B4A] hover:underline"
+                >
+                  + Thêm ngày đi
+                </button>
+              ) : null}
+            </div>
             <p className="mt-1 text-[11px] text-slate-500">
               Sức chứa không được giảm xuống dưới số chỗ đã bán.
             </p>
 
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div><label htmlFor="field-basePrice" className="block text-[11px] font-semibold text-slate-600">Giá người lớn (VNĐ) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-basePrice" type="number" disabled={isPending} value={basePrice} onChange={(e) => setBasePrice(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900 disabled:bg-slate-50" />{errors.basePrice && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.basePrice}</p>}</div>
-              <div><label htmlFor="field-childPrice" className="block text-[11px] font-semibold text-slate-600">Giá trẻ em (VNĐ)</label><input id="field-childPrice" type="number" disabled={isPending} value={childPrice ?? ''} onChange={(e) => setChildPrice(e.target.value ? Number(e.target.value) : undefined)} placeholder="Tùy chọn" className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900 disabled:bg-slate-50" /></div>
-              <div><label htmlFor="field-maxCapacity" className="block text-[11px] font-semibold text-slate-600">Sức chứa tối đa <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-maxCapacity" type="number" disabled={isPending} value={maxCapacity} onChange={(e) => setMaxCapacity(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900 disabled:bg-slate-50" />{errors.maxCapacity && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.maxCapacity}</p>}</div>
-              <div><label htmlFor="field-duration" className="block text-[11px] font-semibold text-slate-600">Thời lượng (ngày) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-duration" type="number" min="1" disabled={isPending} value={durationDays} onChange={(e) => handleDurationChange(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900 disabled:bg-slate-50" />{errors.durationDays && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.durationDays}</p>}</div>
+              <div><label htmlFor="field-basePrice" className="block text-[11px] font-semibold text-slate-600">Giá người lớn (VNĐ) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-basePrice" type="number" disabled={isReadOnly} value={basePrice} onChange={(e) => setBasePrice(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs font-mono text-slate-900 disabled:bg-slate-50" />{errors.basePrice && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.basePrice}</p>}</div>
+              <p className="text-xs text-slate-600 sm:col-span-2">Giá trẻ em và sức chứa được lưu riêng cho từng lịch khởi hành. Hãy chỉnh trong từng lịch ở bên dưới.</p>
+              <div><label htmlFor="field-duration" className="block text-[11px] font-semibold text-slate-600">Thời lượng (ngày) <span className="text-rose-500" aria-hidden="true">*</span></label><input id="field-duration" type="number" min="1" disabled={isReadOnly} value={durationDays} onChange={(e) => handleDurationChange(Number(e.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-2.5 text-xs text-slate-900 disabled:bg-slate-50" />{errors.durationDays && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.durationDays}</p>}</div>
             </div>
 
             {errors.schedules && (
@@ -720,45 +1081,124 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
             )}
 
             <div className="mt-3 space-y-3">
-              {schedules.map((sch, sIdx) => (
-                <div key={sch.id} className="rounded-xl border border-slate-200 p-3 bg-slate-50 text-xs space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800">Khởi hành {formatDisplayDate(sch.departureDate)}</span>
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                      Đã bán: {sch.reservedCapacity}
-                    </span>
+              {(isApproved ? upcomingSchedules : schedules).length === 0 && isApproved && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-900">
+                  Hiện chưa có đợt khởi hành sắp tới. Hãy nhấn <strong>+ Mở bán đợt mới</strong> để tiếp tục bán tour này.
+                </p>
+              )}
+              {(isApproved ? upcomingSchedules : schedules).map((sch) => {
+                const sIdx = schedules.findIndex((item) => item.id === sch.id);
+                return (
+                  <div key={sch.id} className="rounded-xl border border-slate-200 p-3 bg-slate-50 text-xs space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-slate-800">Khởi hành {formatDisplayDate(sch.departureDate)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                          Đã bán: {sch.reservedCapacity}
+                        </span>
+                        {!isApproved && !isReadOnly && schedules.length > 1 && sch.reservedCapacity === 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDraftSchedule(sIdx)}
+                            className="text-rose-500 hover:text-rose-700"
+                            title="Xóa đợt khởi hành"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">close</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {(!isApproved || sch.id.startsWith('new-version-schedule-')) && !isReadOnly && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] text-slate-500">Ngày đi *</span>
+                          <input
+                            type="date"
+                            value={sch.departureDate}
+                            onChange={(e) => {
+                              const dep = e.target.value;
+                              const minRet = addDaysYmd(dep, Math.max(0, durationDays - 1));
+                              setSchedules((current) =>
+                                current.map((item, idx) =>
+                                  idx === sIdx
+                                    ? { ...item, departureDate: dep, returnDate: item.returnDate < minRet ? minRet : item.returnDate }
+                                    : item,
+                                ),
+                              );
+                            }}
+                            className="w-full rounded-lg border border-slate-300 bg-white p-1 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500">Ngày về *</span>
+                          <input
+                            type="date"
+                            value={sch.returnDate}
+                            onChange={(e) => {
+                              const ret = e.target.value;
+                              setSchedules((current) =>
+                                current.map((item, idx) => (idx === sIdx ? { ...item, returnDate: ret } : item)),
+                              );
+                            }}
+                            className="w-full rounded-lg border border-slate-300 bg-white p-1 text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label htmlFor={`sch-cap-${sch.id}`} className="text-[11px] text-slate-600 font-semibold">
+                        Sức chứa tổng cộng (Tối thiểu {sch.reservedCapacity}) <span className="text-rose-500" aria-hidden="true">*</span>
+                      </label>
+                      <input
+                        id={`sch-cap-${sch.id}`}
+                        type="number"
+                        disabled={isReadOnly || (isApproved && !sch.id.startsWith('new-version-schedule-'))}
+                        min={sch.reservedCapacity}
+                        value={sch.totalCapacity}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setSchedules((current) =>
+                            current.map((item, idx) => (idx === sIdx ? { ...item, totalCapacity: val } : item)),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 p-1.5 text-xs text-slate-900"
+                      />
+                    </div>
+                    {!isDemo && (
+                      <DepartureTermsFields
+                        schedule={sch}
+                        disabled={isReadOnly || (isApproved && !sch.id.startsWith('new-version-schedule-'))}
+                        onChange={(patch) => {
+                          setSchedules((current) =>
+                            current.map((item, idx) => (idx === sIdx ? { ...item, ...patch } : item)),
+                          );
+                        }}
+                      />
+                    )}
                   </div>
-                  <div>
-                    <label htmlFor={`sch-cap-${sch.id}`} className="text-[11px] text-slate-600 font-semibold">
-                      Sức chứa tổng cộng (Tối thiểu {sch.reservedCapacity}) <span className="text-rose-500" aria-hidden="true">*</span>
-                    </label>
-                    <input
-                      id={`sch-cap-${sch.id}`}
-                      type="number"
-                      disabled={isPending}
-                      min={sch.reservedCapacity}
-                      value={sch.totalCapacity}
-                      onChange={(e) => {
-                        const updated = [...schedules];
-                        updated[sIdx].totalCapacity = Number(e.target.value);
-                        setSchedules(updated);
-                      }}
-                      className="mt-1 w-full rounded-lg border border-slate-300 p-1.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  {!isDemo && (
-                    <DepartureTermsFields
-                      schedule={sch}
-                      disabled={isPending}
-                      onChange={(patch) => {
-                        const updated = [...schedules];
-                        updated[sIdx] = { ...updated[sIdx], ...patch };
-                        setSchedules(updated);
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
+                );
+              })}
+
+              {isApproved && historicalSchedules.length > 0 && (
+                <details className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs">
+                  <summary className="cursor-pointer font-bold text-slate-700">
+                    Lịch sử các đợt đã hoàn thành / đã dừng ({historicalSchedules.length})
+                  </summary>
+                  <ul className="mt-2 space-y-2">
+                    {historicalSchedules.map((sch) => (
+                      <li key={sch.id} className="rounded-lg border border-slate-200 bg-white p-2.5 text-[11px] text-slate-600">
+                        <div className="flex items-center justify-between font-bold text-slate-800">
+                          <span>{sch.departureDate} → {sch.returnDate}</span>
+                          <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700">
+                            {sch.isCompleted || sch.status === 'Completed' ? 'Đã hoàn thành' : 'Đã hủy'}
+                          </span>
+                        </div>
+                        <p className="mt-0.5">Đã bán: {sch.reservedCapacity}/{sch.totalCapacity} chỗ</p>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </div>
           </section>
 
@@ -771,7 +1211,9 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   travellerRequirements={travellerRequirements}
                   onHighlights={setHighlights}
                   onTravellerRequirements={setTravellerRequirements}
-                  disabled={isPending}
+                  disabled={isReadOnly}
+                  highlightsError={errors.highlights}
+                  travellerRequirementsError={errors.travellerRequirements}
                 />
               </div>
             </section>
@@ -779,29 +1221,33 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
 
           {!isDemo && (
             <TourMediaManager
-              tourId={initialTour.id}
-              tourTitle={initialTour.title}
+              tourId={tour.id}
+              tourTitle={tour.title}
               media={media}
               onChange={setMedia}
-              disabled={isPending || isApproved}
+              onReadinessChange={() => void refreshTourFromServer()}
+              confirmOnDelete
+              disabled={isReadOnly || isApproved}
             />
           )}
 
-          {/* Card: Live Tour vs. Draft Status (Screen #42) */}
+          {/* Card: Live Tour vs. Draft Status & Version History (Screen #42) */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
             <h3 className="text-base font-extrabold text-[#1C2928] border-b border-slate-100 pb-3">
-              {isApproved ? 'Trạng thái gói tour' : 'Lịch sử phiên bản'}
+              {isApproved ? 'Trạng thái & Lịch sử phiên bản' : 'Lịch sử phiên bản'}
             </h3>
             <div className="mt-3 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 border border-slate-200">
-                <div>
-                  <p className="font-bold text-slate-900">{initialTour.status}</p>
-                  <p className="text-[10px] text-slate-500">Gói tour đang hoạt động, không đổi cho tới khi bản nháp được duyệt</p>
+              {isApproved && (
+                <div className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 border border-slate-200">
+                  <div>
+                    <p className="font-bold text-slate-900">{tour.status}</p>
+                    <p className="text-[10px] text-slate-500">Gói tour đang hoạt động, không đổi cho tới khi bản nháp được duyệt</p>
+                  </div>
+                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                    Đang chạy
+                  </span>
                 </div>
-                <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
-                  Hiện tại
-                </span>
-              </div>
+              )}
               {isApproved && draft && (
                 <div className="flex items-center justify-between rounded-xl p-2.5 border border-dashed border-blue-200 bg-blue-50/50 text-blue-900">
                   <div>
@@ -810,20 +1256,95 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
                   </div>
                 </div>
               )}
+              {(tour.versions && tour.versions.length > 0
+                ? tour.versions
+                : [
+                    {
+                      tourId: tour.id,
+                      versionNo: tour.version,
+                      status: tour.status,
+                      createdAtUtc: tour.createdAt || null,
+                      publishedAtUtc: tour.publishedAtUtc ?? null,
+                      rejectionReason: tour.rejectionReason ?? null,
+                    },
+                  ]
+              ).map((item) => {
+                const isCurrent = item.tourId === tour.id;
+                const statusLabel =
+                  item.status === 'Draft'
+                    ? 'Bản nháp'
+                    : item.status === 'Pending'
+                      ? 'Chờ duyệt'
+                      : item.status === 'Approved'
+                        ? 'Đã duyệt'
+                        : item.status === 'Published'
+                          ? 'Đang mở bán'
+                          : item.status === 'Rejected'
+                            ? 'Bị từ chối'
+                            : 'Đã lưu trữ';
+                const timestamp = item.publishedAtUtc ?? item.createdAtUtc;
+                return (
+                  <div
+                    key={item.tourId}
+                    className={`flex items-center justify-between gap-2 rounded-xl p-2.5 border ${
+                      isCurrent
+                        ? 'bg-slate-50 border-slate-200'
+                        : 'border-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className={isCurrent ? 'font-bold text-slate-900' : 'font-medium text-slate-800'}>
+                        v{item.versionNo} · {statusLabel}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        {isCurrent
+                          ? 'Phiên bản đang mở'
+                          : timestamp
+                            ? formatVersionTimestamp(timestamp)
+                            : 'Phiên bản trước'}
+                      </p>
+                      {!isCurrent && item.status === 'Rejected' && item.rejectionReason && (
+                        <p className="mt-0.5 truncate text-[10px] text-rose-600" title={item.rejectionReason}>
+                          Lý do: {item.rejectionReason}
+                        </p>
+                      )}
+                    </div>
+                    {isCurrent ? (
+                      <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                        Hiện tại
+                      </span>
+                    ) : (
+                      <Link
+                        href={withTourDemoMode(OPERATOR_TOUR_ROUTES.edit(item.tourId), isDemo)}
+                        className="shrink-0 text-[11px] font-bold text-[#174B4A] hover:underline"
+                      >
+                        {item.status === 'Draft' || item.status === 'Rejected' ? 'Mở sửa' : 'Xem lại'}
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
         </div>
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:pr-48 shadow-xs">
         <Link
           href={withTourDemoMode(OPERATOR_TOUR_ROUTES.list, isDemo)}
           className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
         >
           Quay lại
         </Link>
-        {!isPending && (
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          className="w-full sm:w-auto text-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+        >
+          Xem trước
+        </button>
+        {!isReadOnly && (
           <>
             {isApproved && draft && (draft.status === 'Draft' || draft.status === 'Rejected') && (
               <button
@@ -838,18 +1359,34 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
             <button
               type="button"
               onClick={handleSave}
-              disabled={submitting}
+              disabled={submitting || (isApproved && (loadingDraft || !draft))}
               className="w-full sm:w-auto text-center rounded-xl border border-[#174B4A] bg-white px-5 py-2.5 text-xs font-bold text-[#174B4A] hover:bg-[#174B4A]/5 transition disabled:opacity-50"
             >
               {submitting ? 'Đang lưu…' : isApproved ? 'Lưu bản nháp' : 'Lưu thay đổi'}
             </button>
-            {(editTarget?.status === 'Draft' || editTarget?.status === 'Rejected') && (
+            {isApproved && (
               <button
                 type="button"
-                onClick={() => isApproved
-                  ? handleSubmitDraft()
-                  : router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(initialTour.id), isDemo))}
+                onClick={() => void handleCreateNewVersion()}
                 disabled={submitting}
+                className="w-full sm:w-auto text-center rounded-xl border border-blue-700 bg-white px-5 py-2.5 text-xs font-bold text-blue-800 hover:bg-blue-50 transition disabled:opacity-50"
+              >
+                {submitting ? 'Đang tạo…' : 'Lưu thành bản nháp mới'}
+              </button>
+            )}
+            {(editTarget.status === 'Draft' || editTarget.status === 'Rejected') && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isApproved) {
+                    void handleSubmitDraft();
+                  } else if (isDirty) {
+                    void handleSaveDirectEdit(true);
+                  } else {
+                    router.push(withTourDemoMode(OPERATOR_TOUR_ROUTES.submit(tour.id), isDemo));
+                  }
+                }}
+                disabled={submitting || (isApproved && (loadingDraft || !draft))}
                 className="w-full sm:w-auto text-center rounded-xl bg-[#174B4A] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#103B39] transition disabled:opacity-50"
               >
                 Gửi xét duyệt
@@ -859,8 +1396,59 @@ export function UpdateTourPackageView({ initialTour, isDemo = false }: UpdateTou
         )}
       </div>
 
+      <AddDepartureModal
+        open={addDepartureOpen}
+        tour={{ ...tour, schedules }}
+        isDemo={isDemo}
+        onClose={() => {
+          setAddDepartureOpen(false);
+          clearAddDepartureQuery();
+        }}
+        onSuccess={(updatedTour, msg) => {
+          setTour(updatedTour);
+          setSchedules(JSON.parse(JSON.stringify(updatedTour.schedules || [])));
+          setSuccessMessage(msg);
+          setErrorMessage(null);
+          clearAddDepartureQuery();
+        }}
+      />
+
+      <TourPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        preview={{
+          title,
+          destination: isDemo
+            ? destination
+            : destinationIds
+                .map((id) => catalogues.destinations.find((d) => d.destinationId === id)?.name)
+                .filter((name): name is string => Boolean(name))
+                .join(', ') || destination,
+          category: isDemo
+            ? category
+            : catalogues.categories.find((c) => String(c.categoryId) === category)?.name,
+          durationDays,
+          basePrice,
+          childPrice,
+          description,
+          highlights,
+          travellerRequirements,
+          inclusions,
+          exclusions,
+          allowDeposit,
+          depositPercent,
+          balanceDueDaysBeforeDeparture,
+          cancellationPolicy: isDemo
+            ? cancellationPolicy
+            : catalogues.policies.find((p) => String(p.id) === cancellationPolicy)?.name ?? cancellationPolicy,
+          itinerary,
+          schedules,
+          mediaUrls: media.map((m) => m.url),
+        }}
+      />
+
       {validationToast && (
-        <div role="alert" className="fixed bottom-5 right-5 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-900 shadow-lg">
+        <div role="alert" className="fixed bottom-24 right-5 z-[60] flex max-w-sm items-start gap-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-900 shadow-lg">
           <span className="material-symbols-outlined shrink-0 text-[20px] text-rose-600" aria-hidden="true">error</span>
           <p className="flex-1 font-medium leading-5">{validationToast}</p>
           <button type="button" aria-label="Đóng thông báo" onClick={() => setValidationToast(null)} className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700">

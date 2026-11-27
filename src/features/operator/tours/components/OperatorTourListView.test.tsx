@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { OperatorTourListView } from './OperatorTourListView';
 import type { TourPackageDto } from '../types/tourLifecycle';
@@ -119,5 +119,41 @@ describe('OperatorTourListView', () => {
       const titleLink = screen.getByRole('link', { name: /Tour Bản Nháp Mẫu/i });
       expect(titleLink.getAttribute('href')).toBe('/partner/tours/tour-draft-1/edit');
     });
+  });
+
+  it('aligns Published and Approved tab counts and rows with live badge state (DH-01)', () => {
+    const toursWithLiveApproved: TourPackageDto[] = [
+      ...mockTours,
+      {
+        ...mockTours[1],
+        id: 'tour-approved-live',
+        tourCode: 'TP-004',
+        title: 'Tour Đã Duyệt Và Xuất Bản',
+        status: 'Approved',
+        publishedAtUtc: '2020-01-01T00:00:00Z',
+      },
+      {
+        ...mockTours[1],
+        id: 'tour-published-1',
+        tourCode: 'TP-005',
+        title: 'Tour Status Published',
+        status: 'Published',
+      },
+    ];
+    render(<OperatorTourListView tours={toursWithLiveApproved} />);
+
+    const publishedTab = screen.getByRole('button', { name: /Đã xuất bản/i });
+    const approvedTab = screen.getByRole('button', { name: /Đã duyệt/i });
+    expect(publishedTab.textContent).toContain('2');
+    expect(approvedTab.textContent).toContain('1');
+
+    fireEvent.click(publishedTab);
+    expect(screen.getByText('Tour Đã Duyệt Và Xuất Bản')).toBeTruthy();
+    expect(screen.getByText('Tour Status Published')).toBeTruthy();
+    expect(screen.queryByText('Tour Đã Xuất Bản')).toBeNull();
+
+    fireEvent.click(approvedTab);
+    expect(screen.getByText('Tour Đã Xuất Bản')).toBeTruthy();
+    expect(screen.queryByText('Tour Đã Duyệt Và Xuất Bản')).toBeNull();
   });
 });

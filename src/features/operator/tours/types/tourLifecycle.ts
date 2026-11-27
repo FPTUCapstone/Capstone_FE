@@ -55,6 +55,9 @@ export interface TourDepartureSchedule {
   infantPrice?: number | null;
   /** YYYY-MM-DD, strictly before the departure date; '' = no deadline. */
   registrationDeadlineDate?: string;
+  meetingLatitude?: number | null;
+  meetingLongitude?: number | null;
+  isCompleted?: boolean;
   /** Present only for a departure loaded from the backend. */
   serverTerms?: TourDepartureServerTerms;
 }
@@ -71,6 +74,15 @@ export interface TourWarning {
   dayNo?: number;
   sequenceNo?: number;
   poiId?: number;
+}
+
+export interface TourVersionHistoryItem {
+  tourId: string;
+  versionNo: number;
+  status: TourLifecycleStatus;
+  createdAtUtc?: string | null;
+  publishedAtUtc?: string | null;
+  rejectionReason?: string | null;
 }
 
 export interface TourPackageDto {
@@ -92,6 +104,10 @@ export interface TourPackageDto {
   highlights?: string;
   travellerRequirements?: string;
   timeZoneId?: string;
+  allowDeposit?: boolean;
+  depositPercent?: number | null;
+  balanceDueDaysBeforeDeparture?: number | null;
+  versions?: TourVersionHistoryItem[];
   /** Server-computed readiness (real mode only). Undefined for demo fixtures. */
   reviewBlockers?: string[];
   canSubmitForReview?: boolean;
@@ -102,10 +118,14 @@ export interface TourPackageDto {
   rejectionReason?: string;
   submissionNote?: string | null;
   submittedAtUtc?: string | null;
+  publishedAtUtc?: string | null;
   version: number;
   itinerary: TourItineraryDay[];
   schedules: TourDepartureSchedule[];
   media: TourMediaItem[];
+  upcomingDepartureCount?: number;
+  completedDepartureCount?: number;
+  totalDepartureCount?: number;
   createdAt: string;
   updatedAt: string;
   isDemo?: boolean;
@@ -127,6 +147,9 @@ export interface CreateTourPackagePayload {
   highlights?: string;
   travellerRequirements?: string;
   timeZoneId?: string;
+  allowDeposit?: boolean;
+  depositPercent?: number | null;
+  balanceDueDaysBeforeDeparture?: number | null;
   cancellationPolicy: string;
   itinerary: TourItineraryDay[];
   schedules: TourDepartureSchedule[];
@@ -143,8 +166,15 @@ export interface TourValidationErrors {
   category?: string;
   durationDays?: string;
   basePrice?: string;
+  childPrice?: string;
   maxCapacity?: string;
   description?: string;
+  inclusions?: string;
+  exclusions?: string;
+  highlights?: string;
+  travellerRequirements?: string;
+  depositPercent?: string;
+  balanceDueDaysBeforeDeparture?: string;
   cancellationPolicy?: string;
   itinerary?: string;
   schedules?: string;
@@ -186,6 +216,8 @@ export const OPERATOR_TOUR_MESSAGES = {
   APPROVED_DIRECT_EDIT: 'Gói tour đã duyệt không thể sửa trực tiếp. Thay đổi sẽ được lưu vào phiên bản nháp mới.',
   CREATE_SUCCESS: 'Tạo gói tour thành công ở trạng thái Bản nháp.',
   UPDATE_SUCCESS: 'Cập nhật thông tin gói tour thành công.',
+  ADD_DEPARTURE_SUCCESS: 'Đã mở bán đợt khởi hành mới thành công.',
+  PREVIEW_TITLE: 'Xem trước hiển thị trên trang Du khách',
   SUBMIT_SUCCESS: 'Gói tour đã được gửi để nhân viên TripMate (Staff) kiểm duyệt thành công.',
   SYSTEM_FAILURE: 'TripMate tạm thời không thể xử lý yêu cầu. Vui lòng kiểm tra kết nối và thử lại.',
   PENDING_BE_INTEGRATION: 'Tính năng quản lý gói tour hiện chưa thể kết nối máy chủ.',

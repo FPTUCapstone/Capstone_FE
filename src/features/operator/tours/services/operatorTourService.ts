@@ -8,11 +8,13 @@ import {
   type TourActionResult,
   type TourCompletenessCheckItem,
   type TourCompletenessResult,
+  type TourDepartureSchedule,
   type TourPackageDto,
   type TourValidationErrors,
   type UpdateTourPackagePayload,
 } from '../types/tourLifecycle';
 import {
+  addTourDeparture,
   createOrResumePendingChange,
   createTour,
   discardPendingChange,
@@ -29,9 +31,11 @@ import {
   savePendingChange,
   searchSelectablePois,
   listTours,
+  OperatorTourApiError,
   submitPendingChange,
   submitTour,
   updateTour,
+  type ApiAddDepartureRequest,
   type ApiCreateTour,
   type ApiItineraryItem,
   type ApiPendingChange,
@@ -42,7 +46,7 @@ import {
   type ApiTourMedia,
 } from './operatorTourApi';
 
-export { OperatorTourApiError } from './operatorTourApi';
+export { OperatorTourApiError };
 export async function getCancellationPolicyOptions() {
   return listCancellationPolicies();
 }
@@ -82,8 +86,21 @@ function asBackendId(value: string | number | undefined, field: string): number 
   return id;
 }
 
+const MAX_MONEY_AMOUNT = 9_999_999_999;
+
 function toIsoDateTime(date: string, time: 'start' | 'end'): string {
-  return `${date}T${time === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`;
+  const parsed = new Date(`${date}T${time === 'start' ? '00:00:00' : '23:59:59'}+07:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return `${date}T${time === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`;
+  }
+  return parsed.toISOString();
+}
+
+function daysBetweenDates(startYmd: string, endYmd: string): number {
+  const startMs = Date.parse(`${startYmd}T00:00:00Z`);
+  const endMs = Date.parse(`${endYmd}T00:00:00Z`);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return 0;
+  return Math.round((endMs - startMs) / 86_400_000);
 }
 
 function minutesSinceMidnight(time: string): number {
@@ -109,16 +126,17 @@ function toBackendSchedule(
   payload: CreateTourPackagePayload,
 ): ApiCreateTour['schedules'][number] {
   const terms = schedule.serverTerms;
+  const tz = payload.timeZoneId || 'Asia/Ho_Chi_Minh';
   // Keep the exact instants and prices the backend already holds unless the operator moved the date.
   const unchangedDates =
     terms !== undefined &&
-    dateOnly(terms.startAtUtc) === schedule.departureDate &&
-    dateOnly(terms.endAtUtc) === schedule.returnDate;
+    dateOnly(terms.startAtUtc, tz) === schedule.departureDate &&
+    dateOnly(terms.endAtUtc, tz) === schedule.returnDate;
   // An untouched deadline keeps the server's exact instant; an edited one is a UTC date at midnight.
   const editedDeadline = schedule.registrationDeadlineDate;
   const serverDeadline = terms?.registrationDeadlineAtUtc ?? null;
   const deadlineUntouched =
-    editedDeadline === undefined || editedDeadline === (serverDeadline ? dateOnly(serverDeadline) : '');
+    editedDeadline === undefined || editedDeadline === (serverDeadline ? dateOnly(serverDeadline, tz) : '');
   const registrationDeadlineAtUtc = deadlineUntouched
     ? serverDeadline
     : editedDeadline ? `${editedDeadline}T00:00:00.000Z` : null;
@@ -132,6 +150,8 @@ function toBackendSchedule(
     adultPrice: schedule.adultPrice ?? terms?.adultPrice ?? payload.basePrice,
     childPrice: schedule.childPrice !== undefined ? schedule.childPrice : terms ? terms.childPrice : payload.childPrice ?? null,
     infantPrice: schedule.infantPrice !== undefined ? schedule.infantPrice : terms?.infantPrice ?? null,
+    meetingLatitude: schedule.meetingLatitude ?? null,
+    meetingLongitude: schedule.meetingLongitude ?? null,
   };
 }
 
@@ -146,6 +166,9 @@ function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
     highlights: payload.highlights?.trim() || undefined,
     travellerRequirements: payload.travellerRequirements?.trim() || undefined,
     timeZoneId: payload.timeZoneId?.trim() || undefined,
+    allowDeposit: Boolean(payload.allowDeposit),
+    depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+    balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
     ...(payload.category && /^\d+$/.test(payload.category.trim())
       ? { categoryId: asBackendId(payload.category, 'Mã danh mục') }
       : {}),
@@ -163,7 +186,27 @@ function toBackendPayload(payload: CreateTourPackagePayload): ApiCreateTour {
   };
 }
 
-function dateOnly(value: string): string { return value.slice(0, 10); }
+function dateOnly(value: string, timeZoneId = 'Asia/Ho_Chi_Minh'): string {
+  if (!value) return '';
+  if (!value.includes('T')) return value.slice(0, 10);
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZoneId || 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(parsed);
+    const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+    const y = part('year');
+    const m = part('month');
+    const d = part('day');
+    return y && m && d ? `${y}-${m}-${d}` : value.slice(0, 10);
+  } catch {
+    return value.slice(0, 10);
+  }
+}
 
 function vietnamToday(): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -185,6 +228,7 @@ function statusFromApi(value: string): TourPackageDto['status'] {
 }
 
 function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPackageDto {
+  const tz = detail.timeZoneId || 'Asia/Ho_Chi_Minh';
   const itinerary = new Map<number, TourPackageDto['itinerary'][number]>();
   for (const item of detail.itineraryItems) {
     const day = itinerary.get(item.dayNo) ?? { dayNo: item.dayNo, activities: [] };
@@ -193,7 +237,7 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
       id: `${item.dayNo}-${item.sequenceNo}`,
       time: item.plannedTime?.slice(0, 5) ?? '',
       poiId: item.poiId,
-      poiName: `POI #${item.poiId}`,
+      poiName: item.poiName?.trim() || `POI #${item.poiId}`,
       stayDurationMinutes: item.stayDurationMinutes,
       transport,
       notes: noteParts.join(' | ') || undefined,
@@ -202,11 +246,14 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
   }
   const schedules = detail.departures.map((departure) => ({
     id: String(departure.id),
-    departureDate: dateOnly(departure.startAtUtc),
-    returnDate: dateOnly(departure.endAtUtc),
+    departureDate: dateOnly(departure.startAtUtc, tz),
+    returnDate: dateOnly(departure.endAtUtc, tz),
     totalCapacity: departure.totalCapacity,
     reservedCapacity: departure.reservedCapacity,
     meetingPoint: departure.meetingPoint ?? undefined,
+    meetingLatitude: departure.meetingLatitude ?? null,
+    meetingLongitude: departure.meetingLongitude ?? null,
+    isCompleted: departure.isCompleted ?? (departure.status === 'Completed'),
     status: (departure.status === 'Cancelled' || departure.status === 'Completed'
       ? departure.status
       : 'Scheduled') as 'Scheduled' | 'Cancelled' | 'Completed',
@@ -214,7 +261,7 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
     adultPrice: departure.adultPrice ?? undefined,
     childPrice: departure.childPrice,
     infantPrice: departure.infantPrice,
-    registrationDeadlineDate: departure.registrationDeadlineAtUtc ? dateOnly(departure.registrationDeadlineAtUtc) : '',
+    registrationDeadlineDate: departure.registrationDeadlineAtUtc ? dateOnly(departure.registrationDeadlineAtUtc, tz) : '',
     serverTerms: {
       startAtUtc: departure.startAtUtc,
       endAtUtc: departure.endAtUtc,
@@ -239,6 +286,19 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
     highlights: detail.highlights ?? undefined,
     travellerRequirements: detail.travellerRequirements ?? undefined,
     timeZoneId: detail.timeZoneId,
+    allowDeposit: Boolean(detail.allowDeposit),
+    depositPercent: detail.depositPercent ?? null,
+    balanceDueDaysBeforeDeparture: detail.balanceDueDaysBeforeDeparture ?? null,
+    versions: Array.isArray(detail.versions)
+      ? detail.versions.map((item) => ({
+          tourId: String(item.tourId),
+          versionNo: item.versionNo,
+          status: statusFromApi(item.status),
+          createdAtUtc: item.createdAtUtc,
+          publishedAtUtc: item.publishedAtUtc ?? null,
+          rejectionReason: item.rejectionReason ?? null,
+        }))
+      : undefined,
     reviewBlockers: detail.reviewBlockers,
     canSubmitForReview: detail.canSubmitForReview,
     warnings: detail.warnings.map((warning) => ({
@@ -252,6 +312,7 @@ function mapDetail(detail: ApiTourDetail, media: ApiTourMedia[] = []): TourPacka
     rejectionReason: detail.rejectionReason ?? undefined,
     submissionNote: detail.submissionNote ?? null,
     submittedAtUtc: detail.submittedAtUtc ?? null,
+    publishedAtUtc: detail.publishedAtUtc ?? null,
     version: detail.versionNo ?? 1, itinerary: [...itinerary.values()].sort((a, b) => a.dayNo - b.dayNo), schedules,
     media: mapMedia(media),
     createdAt: '', updatedAt: '',
@@ -282,6 +343,10 @@ function mapListItem(item: ApiTourListItem): TourPackageDto {
     title: item.title, destination: item.destination, category: '', durationDays: item.durationDays,
     basePrice: item.basePrice, maxCapacity: 0, description: '', cancellationPolicy: '',
     status: statusFromApi(item.status), version: item.versionNo ?? 1, itinerary: [], schedules: [], media: [],
+    publishedAtUtc: item.publishedAtUtc ?? null,
+    upcomingDepartureCount: item.upcomingDepartureCount,
+    completedDepartureCount: item.completedDepartureCount,
+    totalDepartureCount: item.totalDepartureCount,
     createdAt: item.updatedAtUtc, updatedAt: item.updatedAtUtc,
   };
 }
@@ -289,11 +354,127 @@ function mapListItem(item: ApiTourListItem): TourPackageDto {
 export class OperatorTourValidationError extends Error {
   errors: TourValidationErrors;
 
-  constructor(errors: TourValidationErrors) {
-    super(OPERATOR_TOUR_MESSAGES.REQUIRED_SUMMARY);
+  constructor(errors: TourValidationErrors, message?: string) {
+    super(message || OPERATOR_TOUR_MESSAGES.REQUIRED_SUMMARY);
     this.name = 'OperatorTourValidationError';
     this.errors = errors;
   }
+}
+
+function mapApiFieldKey(rawKey: string): keyof TourValidationErrors | null {
+  const normalized = rawKey.replace(/^\$\./, '').trim().toLowerCase();
+  if (normalized === 'title') return 'title';
+  if (normalized === 'description') return 'description';
+  if (normalized === 'baseprice') return 'basePrice';
+  if (normalized === 'durationdays') return 'durationDays';
+  if (normalized === 'cancellationpolicytemplateid' || normalized === 'cancellationpolicy') return 'cancellationPolicy';
+  if (normalized === 'destinationids' || normalized === 'destination') return 'destination';
+  if (normalized === 'categoryid' || normalized === 'category') return 'category';
+  if (normalized === 'highlights') return 'highlights';
+  if (normalized === 'inclusions') return 'inclusions';
+  if (normalized === 'exclusions') return 'exclusions';
+  if (normalized === 'travellerrequirements') return 'travellerRequirements';
+  if (normalized === 'depositpercent') return 'depositPercent';
+  if (normalized === 'balanceduedaysbeforedeparture') return 'balanceDueDaysBeforeDeparture';
+  if (normalized.startsWith('itineraryitems') || normalized.startsWith('itinerary')) return 'itinerary';
+  if (normalized.startsWith('schedules')) return 'schedules';
+  return null;
+}
+
+function mapApiFieldErrorsToValidationErrors(fieldErrors: Record<string, string[]>): TourValidationErrors {
+  const mapped: TourValidationErrors = {};
+  for (const [key, messages] of Object.entries(fieldErrors)) {
+    const field = mapApiFieldKey(key);
+    const first = messages[0];
+    if (field && first && !mapped[field]) {
+      mapped[field] = first;
+    }
+  }
+  return mapped;
+}
+
+function rethrowMappedValidationError(err: unknown): never {
+  if (err instanceof OperatorTourApiError && err.fieldErrors) {
+    const mapped = mapApiFieldErrorsToValidationErrors(err.fieldErrors);
+    if (Object.keys(mapped).length > 0) {
+      throw new OperatorTourValidationError(mapped, err.message);
+    }
+  }
+  throw err;
+}
+
+export function validateScheduleEntry(
+  schedule: TourDepartureSchedule,
+  durationDays: number,
+  today: string,
+  seenDates?: Set<string>,
+): string | null {
+  if (!Number.isInteger(schedule.totalCapacity) || schedule.totalCapacity <= 0) {
+    return OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
+  }
+  if (
+    schedule.minimumCapacity !== undefined &&
+    (!Number.isInteger(schedule.minimumCapacity) ||
+      schedule.minimumCapacity < 1 ||
+      schedule.minimumCapacity > schedule.totalCapacity)
+  ) {
+    return 'Sức chứa tối thiểu phải từ 1 đến bằng sức chứa tổng cộng.';
+  }
+  if (!schedule.departureDate || !schedule.returnDate || schedule.departureDate <= today || schedule.returnDate < schedule.departureDate) {
+    return OPERATOR_TOUR_MESSAGES.INVALID_SCHEDULE_DATE;
+  }
+  if (durationDays > 0 && daysBetweenDates(schedule.departureDate, schedule.returnDate) + 1 < durationDays) {
+    return `Ngày về phải bảo đảm tối thiểu ${durationDays} ngày theo thời lượng tour.`;
+  }
+  if (seenDates?.has(schedule.departureDate)) {
+    return `Ngày khởi hành ${schedule.departureDate} bị trùng lặp.`;
+  }
+  if (
+    schedule.registrationDeadlineDate &&
+    (schedule.registrationDeadlineDate <= today || schedule.registrationDeadlineDate >= schedule.departureDate)
+  ) {
+    return 'Hạn đăng ký phải từ ngày mai trở đi và trước ngày khởi hành.';
+  }
+  if (schedule.meetingPoint && schedule.meetingPoint.trim().length > 500) {
+    return 'Điểm tập trung không được vượt quá 500 ký tự.';
+  }
+  if (
+    schedule.adultPrice !== undefined &&
+    (!Number.isFinite(schedule.adultPrice) || !Number.isInteger(schedule.adultPrice) || schedule.adultPrice <= 0 || schedule.adultPrice > MAX_MONEY_AMOUNT)
+  ) {
+    return 'Giá người lớn phải là số nguyên dương (VNĐ) và không vượt quá 9.999.999.999đ.';
+  }
+  if (
+    schedule.childPrice !== undefined &&
+    schedule.childPrice !== null &&
+    (!Number.isFinite(schedule.childPrice) || !Number.isInteger(schedule.childPrice) || schedule.childPrice < 0 || schedule.childPrice > MAX_MONEY_AMOUNT)
+  ) {
+    return 'Giá trẻ em phải là số nguyên không âm (VNĐ) và không vượt quá 9.999.999.999đ.';
+  }
+  if (
+    schedule.infantPrice !== undefined &&
+    schedule.infantPrice !== null &&
+    (!Number.isFinite(schedule.infantPrice) || !Number.isInteger(schedule.infantPrice) || schedule.infantPrice < 0 || schedule.infantPrice > MAX_MONEY_AMOUNT)
+  ) {
+    return 'Giá em bé phải là số nguyên không âm (VNĐ) và không vượt quá 9.999.999.999đ.';
+  }
+  const hasLat = schedule.meetingLatitude !== undefined && schedule.meetingLatitude !== null;
+  const hasLng = schedule.meetingLongitude !== undefined && schedule.meetingLongitude !== null;
+  if (hasLat !== hasLng) {
+    return 'Vui lòng nhập đầy đủ cả vĩ độ và kinh độ điểm tập trung.';
+  }
+  if (
+    hasLat &&
+    (!Number.isFinite(schedule.meetingLatitude!) ||
+      !Number.isFinite(schedule.meetingLongitude!) ||
+      schedule.meetingLatitude! < -90 ||
+      schedule.meetingLatitude! > 90 ||
+      schedule.meetingLongitude! < -180 ||
+      schedule.meetingLongitude! > 180)
+  ) {
+    return 'Tọa độ điểm tập trung không hợp lệ (Vĩ độ [-90..90], Kinh độ [-180..180]).';
+  }
+  return null;
 }
 
 /**
@@ -314,6 +495,8 @@ export function validateCreateTourPackage(
   // BR-101 Mandatory basic fields
   if (!payload.title || payload.title.trim().length === 0) {
     errors.title = OPERATOR_TOUR_MESSAGES.REQUIRED_FIELD;
+  } else if (payload.title.trim().length > 200) {
+    errors.title = 'Tên gói tour không được vượt quá 200 ký tự.';
   }
   const hasCatalogueDestination = (payload.destinationIds?.length ?? 0) > 0;
   if (!hasCatalogueDestination && (!payload.destination || payload.destination.trim().length === 0)) {
@@ -325,15 +508,54 @@ export function validateCreateTourPackage(
   if (!payload.cancellationPolicy || payload.cancellationPolicy.trim().length === 0) {
     errors.cancellationPolicy = OPERATOR_TOUR_MESSAGES.REQUIRED_FIELD;
   }
+  if (payload.inclusions && payload.inclusions.trim().length > 4000) {
+    errors.inclusions = 'Dịch vụ bao gồm không được vượt quá 4.000 ký tự.';
+  }
+  if (payload.exclusions && payload.exclusions.trim().length > 4000) {
+    errors.exclusions = 'Dịch vụ không bao gồm không được vượt quá 4.000 ký tự.';
+  }
+  if (payload.highlights && payload.highlights.trim().length > 4000) {
+    errors.highlights = 'Điểm nổi bật không được vượt quá 4.000 ký tự.';
+  }
+  if (payload.travellerRequirements && payload.travellerRequirements.trim().length > 4000) {
+    errors.travellerRequirements = 'Yêu cầu đối với du khách không được vượt quá 4.000 ký tự.';
+  }
+  if (payload.allowDeposit) {
+    const percent = payload.depositPercent;
+    if (percent === undefined || percent === null || !Number.isFinite(percent) || percent < 10 || percent > 90) {
+      errors.depositPercent = 'Tỉ lệ đặt cọc phải từ 10% đến 90%.';
+    }
+    const dueDays = payload.balanceDueDaysBeforeDeparture;
+    if (
+      dueDays === undefined ||
+      dueDays === null ||
+      !Number.isInteger(dueDays) ||
+      dueDays < 4 ||
+      dueDays > 180
+    ) {
+      errors.balanceDueDaysBeforeDeparture =
+        'Hạn tất toán phần còn lại phải từ 4 đến 180 ngày trước ngày khởi hành (trước mốc khóa 72 giờ).';
+    }
+  }
 
   // Duration, Price & Capacity (BR-79, BR-101 -> MSG143)
-  if (!payload.durationDays || payload.durationDays <= 0) {
+  if (!Number.isInteger(payload.durationDays) || payload.durationDays <= 0) {
     errors.durationDays = OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
   }
-  if (!payload.basePrice || payload.basePrice <= 0) {
+  if (!Number.isFinite(payload.basePrice) || payload.basePrice <= 0) {
     errors.basePrice = OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
+  } else if (!Number.isInteger(payload.basePrice)) {
+    errors.basePrice = 'Giá tour cơ bản phải là số nguyên (VNĐ).';
+  } else if (payload.basePrice > MAX_MONEY_AMOUNT) {
+    errors.basePrice = 'Giá tour cơ bản không được vượt quá 9.999.999.999đ.';
   }
-  if (!payload.maxCapacity || payload.maxCapacity <= 0) {
+  if (
+    payload.childPrice !== undefined &&
+    (!Number.isFinite(payload.childPrice) || !Number.isInteger(payload.childPrice) || payload.childPrice < 0 || payload.childPrice > MAX_MONEY_AMOUNT)
+  ) {
+    errors.childPrice = 'Giá trẻ em phải là số nguyên không âm và không vượt quá 9.999.999.999đ.';
+  }
+  if (!Number.isInteger(payload.maxCapacity) || payload.maxCapacity <= 0) {
     errors.maxCapacity = OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
   }
 
@@ -348,6 +570,10 @@ export function validateCreateTourPackage(
       errors.itinerary = 'Lịch trình phải có ít nhất 1 điểm dừng hoặc hoạt động.';
     } else {
       for (const day of payload.itinerary) {
+        if (day.activities.some((activity) => !Number.isFinite(activity.stayDurationMinutes) || activity.stayDurationMinutes <= 0)) {
+          errors.itinerary = `Ngày ${day.dayNo}: thời gian lưu lại tại mỗi điểm dừng phải lớn hơn 0 phút.`;
+          break;
+        }
         const times = day.activities.map((activity) => activity.time);
         if (times.some((time) => !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))) {
           errors.itinerary = `Ngày ${day.dayNo} có thời gian không hợp lệ.`;
@@ -371,6 +597,14 @@ export function validateCreateTourPackage(
           }
         }
         if (errors.itinerary) break;
+        if (
+          day.activities.some(
+            (activity) => [activity.transport, activity.notes].filter(Boolean).join(' | ').length > 500,
+          )
+        ) {
+          errors.itinerary = `Ngày ${day.dayNo}: phương tiện và ghi chú mỗi điểm dừng không được vượt quá 500 ký tự.`;
+          break;
+        }
         if ((payload.destinationIds?.length ?? 0) > 0 && day.activities.some((activity) => !Number.isSafeInteger(Number(activity.poiId)) || Number(activity.poiId) <= 0)) {
           errors.itinerary = `Vui lòng chọn điểm dừng hợp lệ cho ngày ${day.dayNo}.`;
           break;
@@ -384,18 +618,22 @@ export function validateCreateTourPackage(
     errors.schedules = 'Gói tour phải có ít nhất 1 lịch khởi hành.';
   } else {
     const today = vietnamToday();
+    const seenDates = new Set<string>();
     for (const schedule of payload.schedules) {
-      if (schedule.totalCapacity <= 0) {
-        errors.schedules = OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
+      if (pastDepartureScheduleIds?.has(schedule.id)) {
+        if (!Number.isInteger(schedule.totalCapacity) || schedule.totalCapacity <= 0) {
+          errors.schedules = OPERATOR_TOUR_MESSAGES.POSITIVE_NUMERIC;
+          break;
+        }
+        seenDates.add(schedule.departureDate);
+        continue;
+      }
+      const scheduleError = validateScheduleEntry(schedule, payload.durationDays, today, seenDates);
+      if (scheduleError) {
+        errors.schedules = scheduleError;
         break;
       }
-      // BR-22 Departure date in past or return precedes departure — exempt a schedule the
-      // draft version carries over unchanged from an already-past departure (TM-82 §9 AC 8).
-      if (pastDepartureScheduleIds?.has(schedule.id)) continue;
-      if (schedule.departureDate < today || schedule.returnDate < schedule.departureDate) {
-        errors.schedules = OPERATOR_TOUR_MESSAGES.INVALID_SCHEDULE_DATE;
-        break;
-      }
+      seenDates.add(schedule.departureDate);
     }
   }
 
@@ -666,6 +904,11 @@ export async function createTourPackage(
       description: payload.description,
       inclusions: payload.inclusions,
       exclusions: payload.exclusions,
+      highlights: payload.highlights,
+      travellerRequirements: payload.travellerRequirements,
+      allowDeposit: Boolean(payload.allowDeposit),
+      depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+      balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
       cancellationPolicy: payload.cancellationPolicy,
       status: 'Draft',
       version: 1,
@@ -688,7 +931,10 @@ export async function createTourPackage(
   }
 
   // The caller keeps one key per unchanged payload so a retry after a lost response replays the same draft.
-  const created = await createTour(toBackendPayload(payload), options?.idempotencyKey ?? crypto.randomUUID());
+  const created = await createTour(
+    toBackendPayload(payload),
+    options?.idempotencyKey ?? crypto.randomUUID(),
+  ).catch(rethrowMappedValidationError);
   try {
     for (let index = 0; index < (payload.mediaFiles?.length ?? 0); index += 1) {
       const file = payload.mediaFiles![index];
@@ -721,9 +967,10 @@ export async function updateTourPackage(
   options: {
     allowDemo?: boolean;
     currentTour: TourPackageDto;
+    createNewVersion?: boolean;
   }
 ): Promise<TourActionResult<TourPackageDto>> {
-  const { currentTour } = options;
+  const { currentTour, createNewVersion } = options;
 
   // Validation
   const errors = validateUpdateTourPackage(payload, currentTour);
@@ -739,10 +986,149 @@ export async function updateTourPackage(
     };
   }
 
-  if (currentTour.status === 'Approved' || currentTour.status === 'Published') {
+  if (currentTour.status === 'Inactive') {
     return {
       status: 'ERROR',
-      message: OPERATOR_TOUR_MESSAGES.APPROVED_DIRECT_EDIT,
+      message: 'Gói tour đang ngừng hoạt động và không thể chỉnh sửa.',
+    };
+  }
+
+  if (currentTour.status === 'Approved' || currentTour.status === 'Published') {
+    if (!createNewVersion) {
+      return {
+        status: 'ERROR',
+        message: OPERATOR_TOUR_MESSAGES.APPROVED_DIRECT_EDIT,
+      };
+    }
+
+    const allowDemo = Boolean(options?.allowDemo) && isTourDemoAllowedInCurrentEnv();
+
+    if (allowDemo) {
+      // BR-103 Lineage Resolution:
+      // An Approved tour must NEVER be edited in place. Retain the original Approved record unchanged.
+      if (!demoToursStore.some((t) => t.id === currentTour.id)) {
+        demoToursStore = [...demoToursStore, currentTour];
+      }
+
+      // Search the store for all records belonging to the same tourCode lineage.
+      const lineage = demoToursStore.filter((t) => t.tourCode === currentTour.tourCode);
+      const successors = lineage.filter((t) => t.version > currentTour.version);
+
+      // 1. Fail closed if any successor is currently Pending approval (MSG122)
+      const pendingSuccessor = successors.find((t) => t.status === 'Pending');
+      if (pendingSuccessor) {
+        return {
+          status: 'ERROR',
+          message: OPERATOR_TOUR_MESSAGES.PENDING_READ_ONLY,
+          isDemo: true,
+        };
+      }
+
+      // 2. Reuse / update existing editable Draft or Rejected successor if one exists
+      const editableSuccessor = successors.find(
+        (t) => t.status === 'Draft' || t.status === 'Rejected'
+      );
+      if (editableSuccessor) {
+        const updatedSuccessor: TourPackageDto = {
+          ...editableSuccessor,
+          title: payload.title,
+          destination: payload.destination,
+          category: payload.category || editableSuccessor.category,
+          durationDays: payload.durationDays,
+          basePrice: payload.basePrice,
+          childPrice: payload.childPrice,
+          maxCapacity: payload.maxCapacity,
+          description: payload.description,
+          inclusions: payload.inclusions,
+          exclusions: payload.exclusions,
+          highlights: payload.highlights,
+          travellerRequirements: payload.travellerRequirements,
+          allowDeposit: Boolean(payload.allowDeposit),
+          depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+          balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
+          cancellationPolicy: payload.cancellationPolicy,
+          itinerary: payload.itinerary,
+          schedules: payload.schedules,
+          status: 'Draft',
+          updatedAt: new Date().toISOString(),
+          isDemo: true,
+        };
+
+        demoToursStore = demoToursStore.map((t) =>
+          t.id === editableSuccessor.id ? updatedSuccessor : t
+        );
+
+        return {
+          status: 'SUCCESS',
+          data: updatedSuccessor,
+          message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
+          isDemo: true,
+        };
+      }
+
+      // 3. Otherwise allocate maxVersion + 1 with guaranteed store-wide unique record ID
+      const maxVersion = lineage.reduce(
+        (max, t) => Math.max(max, t.version),
+        currentTour.version
+      );
+      const nextVersion = maxVersion + 1;
+
+      let candidateId = `${currentTour.id}-draft-v${nextVersion}`;
+      let counter = 1;
+      while (demoToursStore.some((t) => t.id === candidateId)) {
+        candidateId = `${currentTour.id}-draft-v${nextVersion}-${counter++}`;
+      }
+      const newDraftId = candidateId;
+
+      const draftTour: TourPackageDto = {
+        ...currentTour,
+        id: newDraftId,
+        tourCode: currentTour.tourCode, // preserve logical tour/package identity
+        version: nextVersion,
+        status: 'Draft',
+        title: payload.title,
+        destination: payload.destination,
+        category: payload.category || currentTour.category,
+        durationDays: payload.durationDays,
+        basePrice: payload.basePrice,
+        childPrice: payload.childPrice,
+        maxCapacity: payload.maxCapacity,
+        description: payload.description,
+        inclusions: payload.inclusions,
+        exclusions: payload.exclusions,
+        highlights: payload.highlights,
+        travellerRequirements: payload.travellerRequirements,
+        allowDeposit: Boolean(payload.allowDeposit),
+        depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+        balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
+        cancellationPolicy: payload.cancellationPolicy,
+        itinerary: payload.itinerary,
+        schedules: payload.schedules,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isDemo: true,
+      };
+
+      // Add the new Draft version to the demo store without replacing the Approved tour
+      demoToursStore = [draftTour, ...demoToursStore];
+
+      return {
+        status: 'SUCCESS',
+        data: draftTour,
+        message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
+        isDemo: true,
+      };
+    }
+
+    const created = await createTour({
+      ...toBackendPayload(payload),
+      sourceTourId: asBackendId(currentTour.id, 'Mã gói tour nguồn'),
+    }, crypto.randomUUID()).catch(rethrowMappedValidationError);
+    return {
+      status: 'SUCCESS',
+      data: await loadTourDetail(created.tourId),
+      message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS,
+      isDemo: false,
     };
   }
 
@@ -762,6 +1148,11 @@ export async function updateTourPackage(
       description: payload.description,
       inclusions: payload.inclusions,
       exclusions: payload.exclusions,
+      highlights: payload.highlights,
+      travellerRequirements: payload.travellerRequirements,
+      allowDeposit: Boolean(payload.allowDeposit),
+      depositPercent: payload.allowDeposit ? (payload.depositPercent ?? null) : null,
+      balanceDueDaysBeforeDeparture: payload.allowDeposit ? (payload.balanceDueDaysBeforeDeparture ?? null) : null,
       cancellationPolicy: payload.cancellationPolicy,
       status: currentTour.status,
       version: currentTour.version,
@@ -782,7 +1173,7 @@ export async function updateTourPackage(
   }
 
   const tourId = asBackendId(payload.id, 'Mã gói tour');
-  await updateTour(tourId, toBackendPayload(payload));
+  await updateTour(tourId, toBackendPayload(payload)).catch(rethrowMappedValidationError);
   return { status: 'SUCCESS', data: await loadTourDetail(tourId), message: OPERATOR_TOUR_MESSAGES.UPDATE_SUCCESS, isDemo: false };
 }
 
@@ -1090,6 +1481,96 @@ export async function setPrimaryTourImage(tourId: string, mediaId: string): Prom
   const current = await listTourMedia(id);
   const ordered = current.slice().sort((a, b) => a.sortOrder - b.sortOrder).map((item) => item.tourMediaId);
   return mapMedia(await reorderTourMedia(id, ordered, asBackendId(mediaId, 'Mã ảnh')));
+}
+
+export async function reorderTourImages(
+  tourId: string,
+  orderedIds: string[],
+  primaryMediaId: string,
+): Promise<TourPackageDto['media']> {
+  const id = asBackendId(tourId, 'Mã gói tour');
+  return mapMedia(
+    await reorderTourMedia(
+      id,
+      orderedIds.map((mediaId) => asBackendId(mediaId, 'Mã ảnh')),
+      asBackendId(primaryMediaId, 'Mã ảnh đại diện'),
+    ),
+  );
+}
+
+export async function addOperatorTourDeparture(
+  tourId: string,
+  schedule: TourDepartureSchedule,
+  options: {
+    allowDemo?: boolean;
+    currentTour: TourPackageDto;
+    idempotencyKey: string;
+  },
+): Promise<TourActionResult<TourPackageDto>> {
+  const { currentTour } = options;
+  if (currentTour.status !== 'Approved' && currentTour.status !== 'Published') {
+    return {
+      status: 'ERROR',
+      message: 'Chỉ có thể mở bán đợt khởi hành mới cho gói tour đã được duyệt hoặc đang xuất bản.',
+    };
+  }
+
+  const normalizedSchedule: TourDepartureSchedule = {
+    ...schedule,
+    adultPrice: schedule.adultPrice ?? currentTour.basePrice,
+  };
+  const existingDates = new Set(currentTour.schedules.filter((s) => s.status === 'Scheduled').map((s) => s.departureDate));
+  const validationError = validateScheduleEntry(
+    normalizedSchedule,
+    currentTour.durationDays,
+    vietnamToday(),
+    existingDates,
+  );
+  if (validationError) {
+    throw new OperatorTourValidationError({ schedules: validationError });
+  }
+
+  const allowDemo = Boolean(options.allowDemo) && isTourDemoAllowedInCurrentEnv();
+  if (allowDemo) {
+    const updatedTour: TourPackageDto = {
+      ...currentTour,
+      schedules: [...currentTour.schedules, { ...normalizedSchedule, id: `sch-${Date.now()}`, reservedCapacity: 0, status: 'Scheduled', isCompleted: false }],
+      updatedAt: new Date().toISOString(),
+      isDemo: true,
+    };
+    demoToursStore = demoToursStore.map((t) => (t.id === currentTour.id ? updatedTour : t));
+    return {
+      status: 'SUCCESS',
+      data: updatedTour,
+      message: OPERATOR_TOUR_MESSAGES.ADD_DEPARTURE_SUCCESS,
+      isDemo: true,
+    };
+  }
+
+  const body: ApiAddDepartureRequest = {
+    startAtUtc: toIsoDateTime(normalizedSchedule.departureDate, 'start'),
+    endAtUtc: toIsoDateTime(normalizedSchedule.returnDate, 'end'),
+    meetingPoint: normalizedSchedule.meetingPoint?.trim() || null,
+    totalCapacity: normalizedSchedule.totalCapacity,
+    minimumCapacity: Math.min(normalizedSchedule.minimumCapacity ?? 1, normalizedSchedule.totalCapacity),
+    registrationDeadlineAtUtc: normalizedSchedule.registrationDeadlineDate
+      ? `${normalizedSchedule.registrationDeadlineDate}T00:00:00.000Z`
+      : null,
+    adultPrice: normalizedSchedule.adultPrice ?? currentTour.basePrice,
+    childPrice: normalizedSchedule.childPrice ?? null,
+    infantPrice: normalizedSchedule.infantPrice ?? null,
+    meetingLatitude: normalizedSchedule.meetingLatitude ?? null,
+    meetingLongitude: normalizedSchedule.meetingLongitude ?? null,
+  };
+
+  const id = asBackendId(tourId, 'Mã gói tour');
+  await addTourDeparture(id, body, options.idempotencyKey);
+  return {
+    status: 'SUCCESS',
+    data: await loadTourDetail(id),
+    message: OPERATOR_TOUR_MESSAGES.ADD_DEPARTURE_SUCCESS,
+    isDemo: false,
+  };
 }
 
 export async function removeTourImage(tourId: string, mediaId: string): Promise<TourPackageDto['media']> {

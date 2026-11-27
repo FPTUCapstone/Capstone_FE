@@ -322,6 +322,45 @@ describe('mapTourDetailResponse', () => {
     expect(tour.schedules).toEqual([]);
     expect(tour.hasBookableSchedule).toBe(false);
   });
+
+  it('maps additive enrichment fields and published reviews when present', () => {
+    const wire = parseTourDetailResponse({
+      ...validWire(),
+      category: 'Văn hóa & Ẩm thực',
+      highlights: 'Đi thuyền thả đèn hoa đăng',
+      travellerRequirements: 'Mang giày thể thao',
+      timeZoneId: 'Asia/Ho_Chi_Minh',
+      reviews: [
+        {
+          reviewId: '501',
+          displayName: 'Lê Minh Hoàng',
+          rating: 5,
+          title: 'Tuyệt vời',
+          content: 'Hướng dẫn viên rất nhiệt tình',
+          createdAtUtc: '2026-10-12T08:00:00Z',
+          updatedAtUtc: '2026-10-12T08:00:00Z',
+        },
+      ],
+      schedules: [
+        {
+          ...(validWire().schedules as Record<string, unknown>[])[0],
+          minimumCapacity: 4,
+          meetingLatitude: 15.8801,
+          meetingLongitude: 108.338,
+        },
+      ],
+    });
+
+    const tour = mapTourDetailResponse(wire);
+
+    expect(tour.category).toBe('Văn hóa & Ẩm thực');
+    expect(tour.highlights).toBe('Đi thuyền thả đèn hoa đăng');
+    expect(tour.travellerRequirements).toBe('Mang giày thể thao');
+    expect(tour.schedules[0].minimumCapacity).toBe(4);
+    expect(tour.schedules[0].meetingLatitude).toBe(15.8801);
+    expect(tour.reviews).toHaveLength(1);
+    expect(tour.reviews[0]).toMatchObject({ authorName: 'Lê Minh Hoàng', rating: 5 });
+  });
 });
 
 describe('describeCancellationRules', () => {
