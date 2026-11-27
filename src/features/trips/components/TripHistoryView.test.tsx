@@ -19,6 +19,9 @@ const { fetchHistoryMock, fetchDetailMock, searchParamMock } = vi.hoisted(() => 
 }));
 
 vi.mock('next/navigation', () => ({ useSearchParams: () => ({ get: searchParamMock }) }));
+vi.mock('@/features/bookings/components/InlineBookingRefund', () => ({
+  InlineBookingRefund: ({ bookingId }: { bookingId: string }) => <div>Live refund for {bookingId}</div>,
+}));
 vi.mock('../services/tripHistoryClient', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../services/tripHistoryClient')>()),
   fetchTripHistory: fetchHistoryMock,
@@ -387,13 +390,18 @@ describe('TripHistoryView — trip details', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('links a real booking to its live refund progress', async () => {
+  it('opens a real booking refund in a centered dialog without leaving trip history', async () => {
     await renderLoaded([refundable]);
 
-    const link = screen.getByRole('link', { name: tripReviewEn.actions.refundDetails });
-
-    expect(link.getAttribute('href')).toBe(`/bookings/${refundable.id}/refund`);
-    expect(screen.queryByRole('button', { name: tripReviewEn.actions.refundDetails })).toBeNull();
+    expect(screen.queryByRole('link', { name: tripReviewEn.actions.refundDetails })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: tripReviewEn.actions.refundDetails }));
+    const refundDialog = screen.getByRole('dialog', { name: 'Chi tiết hoàn tiền' });
+    expect(within(refundDialog).getByText(`Live refund for ${refundable.id}`)).toBeDefined();
+    expect(refundDialog.getAttribute('aria-modal')).toBe('true');
+    expect(fetchDetailMock).not.toHaveBeenCalled();
+    fireEvent.click(within(refundDialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: tripReviewEn.actions.refundDetails })).toBeDefined();
   });
 
   it('opens demo records on the refund inside the dialog', async () => {

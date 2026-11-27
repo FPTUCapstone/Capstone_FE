@@ -109,10 +109,10 @@ describe('TripCard — content', () => {
   });
 
   it.each([
-    ['RefundPending', 'Refund in progress'],
-    ['RefundDisputed', 'Refund disputed'],
-    ['Refunded', 'Refunded'],
-    ['PartiallyRefunded', 'Partially refunded'],
+    ['RefundPending', 'Đang hoàn tiền'],
+    ['RefundDisputed', 'Tranh chấp hoàn tiền'],
+    ['Refunded', 'Đã hoàn tiền'],
+    ['PartiallyRefunded', 'Hoàn tiền một phần'],
     ['PendingPayment', tripReviewEn.tripHistory.statusLabels.PendingPayment],
     ['Confirmed', tripReviewEn.tripHistory.statusLabels.Confirmed],
     ['Cancelled', tripReviewEn.tripHistory.statusLabels.Cancelled],
@@ -219,11 +219,11 @@ describe('TripCard — e-ticket, refund and details actions', () => {
   it('View refund opens a centered dialog without navigation and can close it', () => {
     const onOpenDetail = renderCard(refundable());
 
-    expect(link('Refund Details')).toBeNull();
-    fireEvent.click(button('Refund Details')!);
+    expect(link(tripReviewEn.actions.refundDetails)).toBeNull();
+    fireEvent.click(button(tripReviewEn.actions.refundDetails)!);
     expect(screen.getByText('Inline refund 123')).toBeTruthy();
     expect(screen.getByRole('dialog', { name: 'Chi tiết hoàn tiền' })).toBeTruthy();
-    expect(button('Refund Details')?.getAttribute('aria-expanded')).toBe('true');
+    expect(button(tripReviewEn.actions.refundDetails)?.getAttribute('aria-expanded')).toBe('true');
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByText('Inline refund 123')).toBeNull();
     expect(onOpenDetail).not.toHaveBeenCalled();

@@ -18,8 +18,9 @@ describe('PartnerSidebar', () => {
     expect(screen.getByRole('link', { name: /Mã giảm giá/i })).toBeDefined();
     expect(screen.getByRole('link', { name: /Đơn đặt chỗ/i })).toBeDefined();
     expect(screen.getByRole('link', { name: /Doanh thu/i })).toBeDefined();
-    expect(screen.getByRole('link', { name: /Thanh toán/i })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Hoa hồng & Thanh toán/i })).toBeDefined();
     expect(screen.getByRole('link', { name: /Hồ sơ doanh nghiệp/i })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Đối soát cũ/i }).getAttribute('href')).toBe('/partner/payouts');
   });
 
   it('links to the safety alerts from every workspace page, without the demo flag', () => {
@@ -58,7 +59,7 @@ describe('PartnerSidebar', () => {
     expect(screen.getByRole('link', { name: /Mã giảm giá/i }).getAttribute('href')).toBe('/partner/coupons?demo=1');
     expect(screen.getByRole('link', { name: /Đơn đặt chỗ/i }).getAttribute('href')).toBe('/partner/bookings?demo=1');
     expect(screen.getByRole('link', { name: /Doanh thu/i }).getAttribute('href')).toBe('/partner/revenue?demo=1');
-    expect(screen.getByRole('link', { name: /Thanh toán/i }).getAttribute('href')).toBe('/partner/payouts?demo=1');
+    expect(screen.getByRole('link', { name: /Hoa hồng & Thanh toán/i }).getAttribute('href')).toBe('/partner/commission-statements?demo=1');
   });
 
   it('keeps operational links clean without query param when isDemo is false', () => {
@@ -68,7 +69,7 @@ describe('PartnerSidebar', () => {
     expect(screen.getByRole('link', { name: /Mã giảm giá/i }).getAttribute('href')).toBe('/partner/coupons');
     expect(screen.getByRole('link', { name: /Đơn đặt chỗ/i }).getAttribute('href')).toBe('/partner/bookings');
     expect(screen.getByRole('link', { name: /Doanh thu/i }).getAttribute('href')).toBe('/partner/revenue');
-    expect(screen.getByRole('link', { name: /Thanh toán/i }).getAttribute('href')).toBe('/partner/payouts');
+    expect(screen.getByRole('link', { name: /Hoa hồng & Thanh toán/i }).getAttribute('href')).toBe('/partner/commission-statements');
   });
 
   it('displays the provided operator name and initials', () => {

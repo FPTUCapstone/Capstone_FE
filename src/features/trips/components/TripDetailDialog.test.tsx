@@ -9,6 +9,8 @@ import type { TripDetail, TripListItem } from '../types/tripHistoryContract';
 import { TripDetailDialog } from './TripDetailDialog';
 
 const fetchTripDetailMock = vi.hoisted(() => vi.fn());
+const complaintContextMock = vi.hoisted(() => vi.fn());
+vi.mock('@/features/complaints/submit/services/postTripComplaintApi', () => ({ getPostTripComplaintContext: complaintContextMock }));
 vi.mock('../services/tripHistoryClient', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../services/tripHistoryClient')>()),
   fetchTripDetail: fetchTripDetailMock,
@@ -33,6 +35,11 @@ const dialog = () => screen.getByRole('dialog');
 
 beforeEach(() => {
   fetchTripDetailMock.mockReset();
+  complaintContextMock.mockReset().mockResolvedValue({
+    bookingId: '9001', bookingCode: 'TM-009001', tourTitle: 'Hoi An Lantern Tour',
+    endAtUtc: '2026-10-01T10:00:00Z', submissionDeadlineUtc: '2026-10-04T10:00:00Z',
+    canSubmit: false, canAmendEvidence: false, ineligibilityReason: 'complaint.window_closed', complaint: null,
+  });
 });
 
 describe('TripDetailDialog — loading and accessibility', () => {
