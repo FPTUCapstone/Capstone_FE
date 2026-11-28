@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     const api = getApiProxyRewrites(process.env.TRIPMATE_API_BASE_URL);
     const origin = api[0]?.destination.split('/api/v1/')[0];
-    const hubs = origin ? ['group-chat', 'direct-chat'].map(name => ({ source: `/hubs/${name}/:path*`, destination: `${origin}/hubs/${name}/:path*` })) : [];
+    const hubs = origin ? ['group-chat', 'direct-chat', 'notifications'].map(name => ({ source: `/hubs/${name}/:path*`, destination: `${origin}/hubs/${name}/:path*` })) : [];
     return { beforeFiles: [], afterFiles: [], fallback: [...api, ...hubs] };
   },
 };

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getNotificationInbox, markNotificationRead, NotificationsApiError } from './notificationsApi';
+import { subscribeToNotificationChanges } from './notificationRealtime';
 import type { NotificationInboxItem } from './types';
 
 const PAGE_SIZE = 20;
@@ -19,9 +20,11 @@ export function useNotificationInbox({ enabled = true, consoleSessionKey }: {
   const revision = useRef(0);
   const readInSession = useRef(new Set<number>());
   const requestInFlight = useRef(false);
+  const pendingRealtimeRefresh = useRef(false);
   const hasLoadedMore = useRef(false);
   const unreadOverflow = useRef(false);
   const sessionUnavailable = useRef(false);
+  const refreshRef = useRef<(beforeId?: number, polling?: boolean) => Promise<void>>(async () => undefined);
 
   const reportError = useCallback((failure: unknown) => {
     if (failure instanceof NotificationsApiError && [401, 403].includes(failure.status)) {
@@ -69,24 +72,47 @@ export function useNotificationInbox({ enabled = true, consoleSessionKey }: {
       if (!signal.aborted && revision.current === request) {
         requestInFlight.current = false;
         setLoading(false);
+        if (pendingRealtimeRefresh.current && !sessionUnavailable.current) {
+          pendingRealtimeRefresh.current = false;
+          void Promise.resolve().then(() => {
+            if (!signal.aborted) return refreshRef.current(undefined, true);
+          });
+        }
       }
     }
   }, [consoleSessionKey, reportError, unreadOnly]);
+
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
 
   useEffect(() => {
     if (!enabled) return;
     const scope = new AbortController();
     controller.current = scope;
     hasLoadedMore.current = false;
+    pendingRealtimeRefresh.current = false;
     void Promise.resolve().then(() => {
       if (!scope.signal.aborted) return refresh();
     });
+    const unsubscribeRealtime = consoleSessionKey === undefined
+      ? subscribeToNotificationChanges(() => {
+          if (scope.signal.aborted || sessionUnavailable.current) return;
+          if (requestInFlight.current) {
+            pendingRealtimeRefresh.current = true;
+            return;
+          }
+          void refresh(undefined, true);
+        })
+      : undefined;
     const interval = setInterval(() => void refresh(undefined, true), POLL_INTERVAL_MS);
     return () => {
       scope.abort();
+      pendingRealtimeRefresh.current = false;
       clearInterval(interval);
+      unsubscribeRealtime?.();
     };
-  }, [enabled, refresh]);
+  }, [consoleSessionKey, enabled, refresh]);
 
   const markRead = useCallback(async (notificationId: number) => {
     const signal = controller.current?.signal;
