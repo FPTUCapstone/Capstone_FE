@@ -2,9 +2,29 @@ export const adminUserAccountsEn = {
   moderation: {
     lock: {
       label: 'Lock account',
-      reasonLabel: 'Reason for locking',
       confirmationTitle: 'Lock account',
       confirmLabel: 'Confirm lock',
+      reasonCategoryLabel: 'Lock reason',
+      reasonCategoryPlaceholder: 'Select a reason',
+      reasonCategories: [
+        'Violation of tour safety & travel regulations',
+        'Payment fraud or irregular chargebacks',
+        'Unresolved severe traveler complaints',
+        'Other',
+      ],
+      otherCategory: 'Other',
+      noteLabel: 'Additional details',
+      notePlaceholder: 'Add any details that explain this decision (optional unless Other is selected)',
+      impactNote:
+        'Locking this account prevents any further sign-in and terminates all of its active sessions.',
+      reasonTooLong: 'Reason must be at most 200 characters.',
+      summary: {
+        fullName: 'Full name',
+        email: 'Email',
+        role: 'Role',
+        status: 'Status',
+        noEmail: '—',
+      },
     },
     unlock: {
       label: 'Unlock account',
@@ -13,6 +33,11 @@ export const adminUserAccountsEn = {
       confirmLabel: 'Confirm unlock',
     },
     messages: {
+      MSG123: 'Please enter a reason.',
+      MSG126: 'You do not have permission to access this function.',
+      MSG127:
+        'TripMate is temporarily unable to process your request. Please check your connection and try again.',
+      MSG133: 'This action is not available for the current status of the record.',
       MSG130: 'Are you sure you want to continue? This action may not be reversible.',
       MSG189: 'Account locked. The account holder has been notified.',
       MSG190: 'Account unlocked. The account holder has been notified.',

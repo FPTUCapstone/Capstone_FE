@@ -109,6 +109,12 @@ export default async function UserAccountDetailPage({ params }: { params: Promis
                   <AccountModerationForm
                     accountId={String(userId)}
                     locked={detail.account.status === 'Locked'}
+                    account={{
+                      fullName: detail.account.fullName,
+                      email: detail.account.email,
+                      role: detail.account.role,
+                      statusLabel,
+                    }}
                   />
                 </div>
               ) : (
