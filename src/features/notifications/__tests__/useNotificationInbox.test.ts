@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useNotificationInbox } from '../useNotificationInbox';
 import * as notificationsApi from '../notificationsApi';
+import * as notificationRealtime from '../notificationRealtime';
 
 const mockItem = {
   id: 1,
@@ -212,5 +213,54 @@ describe('useNotificationInbox', () => {
 
     expect(result.current.unreadCount).toBe(1);
     expect(result.current.items[0].isRead).toBe(false);
+  });
+
+  it('refreshes unreadCount immediately on a SignalR hint without waiting for the 30s poll', async () => {
+    let emitChange: (() => void) | undefined;
+    const unsubscribe = vi.fn();
+    vi.spyOn(notificationRealtime, 'subscribeToNotificationChanges').mockImplementation((cb) => {
+      emitChange = cb;
+      return unsubscribe;
+    });
+
+    const secondItem = { ...mockItem, id: 2 };
+    let currentItems = [mockItem];
+    vi.spyOn(notificationsApi, 'getNotificationInbox').mockImplementation(async () => ({
+      items: currentItems,
+      nextBeforeId: null,
+    }));
+
+    const { result, unmount } = renderHook(() => useNotificationInbox());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.unreadCount).toBe(1);
+
+    currentItems = [secondItem, mockItem];
+    await act(async () => {
+      emitChange?.();
+      await Promise.resolve();
+    });
+
+    expect(result.current.unreadCount).toBe(2);
+    expect(result.current.items.map((item) => item.id)).toEqual([2, 1]);
+
+    unmount();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not subscribe to browser-token SignalR for HttpOnly console sessions', async () => {
+    const subscribeSpy = vi.spyOn(notificationRealtime, 'subscribeToNotificationChanges');
+    vi.spyOn(notificationsApi, 'getNotificationInbox').mockResolvedValue({
+      items: [],
+      nextBeforeId: null,
+    });
+
+    renderHook(() => useNotificationInbox({ consoleSessionKey: 99 }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(subscribeSpy).not.toHaveBeenCalled();
   });
 });
