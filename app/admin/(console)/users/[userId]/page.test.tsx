@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 vi.mock('server-only', () => ({}));
 
@@ -212,5 +213,23 @@ describe('UC-46 User Account Detail page route', () => {
     expect(markup).toContain('Account 10');
     expect(markup).toContain('Settlement verified');
     expect(markup).not.toContain('Account moderation');
+  });
+
+  it('opens the lock dialog with the formatted account summary', async () => {
+    mockSealedCookies('Staff');
+    mocks.fetchBackend.mockResolvedValue(Response.json({
+      account: { userId: '4404', fullName: 'Pending Operator', email: null, role: 'TourOperator',
+        status: 'PendingContractSignature', createdAtUtc: '2026-11-15T18:30:00Z', lastLoginAtUtc: null },
+      bookingCount: 0,
+      moderationHistory: [],
+    }));
+    const view = await UserAccountDetailPage({ params: Promise.resolve({ userId: '4404' }) });
+    render(view!);
+    fireEvent.click(screen.getByRole('button', { name: 'Lock account' }));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Pending Operator')).toBeTruthy();
+    expect(within(dialog).getByText('Pending contract signature')).toBeTruthy();
+    expect(within(dialog).getByText('—')).toBeTruthy();
+    expect(within(dialog).queryByText('PendingContractSignature')).toBeNull();
   });
 });
