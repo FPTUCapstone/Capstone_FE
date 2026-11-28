@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
-export function useChatDialog(onClose: () => void) {
+export function useChatDialog(onClose: () => void, shouldRestoreFocus?: () => boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
+  const restore = useRef(shouldRestoreFocus);
+  useEffect(() => { restore.current = shouldRestoreFocus; }, [shouldRestoreFocus]);
   useEffect(() => { close.current = onClose; }, [onClose]);
   useEffect(() => {
     const root = ref.current;
@@ -22,7 +24,7 @@ export function useChatDialog(onClose: () => void) {
     };
     const outside = (event: Event) => { if (event.target === root) close.current(); };
     root.addEventListener('pointerdown', outside); document.addEventListener('keydown', key);
-    return () => { root.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', key); previous?.focus(); };
+    return () => { root.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', key); if (restore.current?.() !== false) previous?.focus(); };
   }, []);
   return ref;
 }

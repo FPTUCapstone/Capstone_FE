@@ -5,15 +5,18 @@ import { useChatDialog } from './useChatDialog';
 import { BroadcastData } from '../types/groupChatTypes';
 
 interface BroadcastModalProps {
+  initialData?: BroadcastData;
+  title?: string;
+  submitLabel?: string;
   apiError?: string;
   onClose: () => void;
   onSubmit: (broadcastData: BroadcastData) => Promise<boolean> | boolean;
 }
 
-export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalProps) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [priority, setPriority] = useState<'high' | 'normal'>('high');
+export function BroadcastModal({ onClose, onSubmit, apiError, initialData, title: dialogTitle = 'Phát thông báo cho đoàn Tour', submitLabel = 'Phát thông báo' }: BroadcastModalProps) {
+  const [title, setTitle] = useState(initialData?.title ?? '');
+  const [content, setContent] = useState(initialData?.content ?? '');
+  const [priority, setPriority] = useState<'high' | 'normal'>(initialData?.priority ?? 'high');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const dialogRef = useChatDialog(onClose);
@@ -30,6 +33,10 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
     }
     if (!trimmedContent) {
       setError('Vui lòng nhập nội dung thông báo cho đoàn.');
+      return;
+    }
+    if (trimmedTitle.length > 200 || trimmedContent.length > 4000) {
+      setError('Tiêu đề tối đa 200 ký tự, nội dung tối đa 4.000 ký tự.');
       return;
     }
 
@@ -54,9 +61,9 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
       role="dialog"
       aria-modal="true"
       aria-labelledby="broadcast-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
-      <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-sm rounded-2xl border border-brand-border bg-white p-4 shadow-2xl sm:p-5">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
@@ -65,7 +72,7 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
             </div>
             <div>
               <h3 id="broadcast-modal-title" className="text-sm font-bold text-slate-900">
-                Phát thông báo cho đoàn Tour
+                {dialogTitle}
               </h3>
               <p className="text-[11px] text-slate-500">
                 Thông báo ưu tiên cao & yêu cầu thành viên xác nhận đã đọc
@@ -75,7 +82,7 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            className="min-h-11 min-w-11 shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined text-lg">close</span>
@@ -91,6 +98,7 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
                 aria-label="Tiêu đề thông báo"
                 disabled={saving}
               type="text"
+              maxLength={200}
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -106,10 +114,12 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Mức độ ưu tiên
             </label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setPriority('high')}
+                disabled={saving}
+                aria-pressed={priority === 'high'}
                 className={`flex-1 rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 transition ${
                   priority === 'high'
                     ? 'bg-rose-100 text-rose-800 border border-rose-300'
@@ -122,6 +132,8 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
               <button
                 type="button"
                 onClick={() => setPriority('normal')}
+                disabled={saving}
+                aria-pressed={priority === 'normal'}
                 className={`flex-1 rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 transition ${
                   priority === 'normal'
                     ? 'bg-teal-100 text-[#103B39] border border-teal-300'
@@ -142,6 +154,7 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
                 aria-label="Nội dung thông báo"
                 disabled={saving}
               rows={4}
+              maxLength={4000}
               value={content}
               onChange={(e) => {
                 setContent(e.target.value);
@@ -156,13 +169,13 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
           </div>
 
           {(error || apiError) && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 flex items-center gap-2">
+            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-rose-600">error</span>
               <span>{error || apiError}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
@@ -175,7 +188,7 @@ export function BroadcastModal({ onClose, onSubmit, apiError }: BroadcastModalPr
               disabled={saving}
               className="rounded-xl bg-[#103B39] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#174B4A] transition"
             >
-              Phát thông báo
+              {submitLabel}
             </button>
           </div>
         </form>

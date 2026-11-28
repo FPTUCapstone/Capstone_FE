@@ -1,6 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { GroupChatHub } from '@/features/traveler/groups/components/GroupChatHub';
 import {
   PublicNavigation,
   PersistentHeaderContext,
@@ -27,15 +28,17 @@ interface PersistentPublicLayoutProps {
  */
 export function PersistentPublicLayout({ children }: PersistentPublicLayoutProps) {
   const pathname = useSafePathname();
+  const [messengerOpen, setMessengerOpen] = useState(false);
   const showHeader = isPublicNavigationRoute(pathname);
 
   return (
     <>
       {showHeader && <PublicNavigation />}
+      {showHeader && pathname !== '/messages' && <GroupChatHub dock onOpenChange={setMessengerOpen} />}
       <PersistentHeaderContext.Provider value={showHeader}>
         {children}
       </PersistentHeaderContext.Provider>
-      {(showHeader || pathname === '/partner' || pathname?.startsWith('/partner/')) ? <SupportChat /> : null}
+      {((showHeader && pathname !== '/messages') || pathname === '/partner' || pathname?.startsWith('/partner/')) ? <SupportChat avoidMessenger={messengerOpen} /> : null}
     </>
   );
 }

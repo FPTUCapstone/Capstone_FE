@@ -16,14 +16,14 @@ import { SupportChatAnswer } from './SupportChatAnswer';
 
 type DisplayMessage = ChatMessage & { sources?: ChatSource[]; actions?: ChatAction[] };
 
-export function SupportChat() {
+export function SupportChat({ avoidMessenger = false }: { avoidMessenger?: boolean } = {}) {
   const { status, context } = useWebSession();
   if (status !== 'authenticated' || !context || !['Traveler', 'TourOperator'].includes(context.role)) return null;
   // Credential replacement also discards old conversations after reauthentication.
-  return <SupportChatPanel key={`${context.userId}:${context.accessToken}`} accessToken={context.accessToken} allowItinerary={context.role === 'Traveler'} />;
+  return <SupportChatPanel key={`${context.userId}:${context.accessToken}`} accessToken={context.accessToken} allowItinerary={context.role === 'Traveler'} avoidMessenger={avoidMessenger} />;
 }
 
-function SupportChatPanel({ accessToken, allowItinerary }: { accessToken: string; allowItinerary: boolean }) {
+function SupportChatPanel({ accessToken, allowItinerary, avoidMessenger }: { accessToken: string; allowItinerary: boolean; avoidMessenger: boolean }) {
   const id = useId();
   const pathname = usePathname();
   const pageMatch = /^(?:\/tours\/([0-9]+)(?:\/book)?|\/itinerary\/([0-9]+)|\/bookings\/([0-9]+)\/refund)$/.exec(pathname ?? '');
@@ -32,6 +32,22 @@ function SupportChatPanel({ accessToken, allowItinerary }: { accessToken: string
     id: pageMatch[1] ?? pageMatch[2] ?? pageMatch[3],
   } : undefined;
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const announce = () => window.dispatchEvent(new CustomEvent('tripmate:support-state', { detail: { open } }));
+    window.addEventListener('tripmate:request-support-state', announce);
+    announce();
+    return () => window.removeEventListener('tripmate:request-support-state', announce);
+  }, [open]);
+  useEffect(() => () => {
+    window.dispatchEvent(new CustomEvent('tripmate:support-state', { detail: { open: false } }));
+  }, []);
+  useEffect(() => {
+    const hideForMessenger = () => setOpen(false);
+    const toggle = () => setOpen(previous => !previous);
+    window.addEventListener('tripmate:open-messenger', hideForMessenger);
+    window.addEventListener('tripmate:toggle-support', toggle);
+    return () => { window.removeEventListener('tripmate:open-messenger', hideForMessenger); window.removeEventListener('tripmate:toggle-support', toggle); };
+  }, []);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [selection, setSelection] = useState<{ pathname: string; context: ChatContext | null } | null>(null);
@@ -160,7 +176,7 @@ function SupportChatPanel({ accessToken, allowItinerary }: { accessToken: string
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] font-sans text-brand-textPrimary [--font-sans:var(--font-geist-sans)] sm:bottom-6 sm:right-6">
+    <div data-support-position="right" data-messenger-active={avoidMessenger} className={`pointer-events-none fixed bottom-4 right-4 max-w-[calc(100vw-2rem)] font-sans text-brand-textPrimary ${open ? 'z-[60]' : 'z-[45]'}`}>
       {open ? (
         <section id={id} aria-label="Support conversation" onKeyDown={(event) => {
           if (event.key === 'Escape') { event.stopPropagation(); close(); }
@@ -241,8 +257,11 @@ function SupportChatPanel({ accessToken, allowItinerary }: { accessToken: string
           </form>
         </section>
       ) : null}
-      <button ref={triggerRef} type="button" aria-expanded={open} aria-controls={open ? id : undefined}
-        onClick={() => setOpen(!open)} className="pointer-events-auto ml-auto flex min-h-11 items-center rounded-full bg-brand-teal px-5 py-3 font-semibold text-white shadow-lg focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">{pending && !open ? 'Support is replying…' : 'Support chat'}</button>
+      <button ref={triggerRef} type="button" aria-expanded={open} aria-controls={open ? id : undefined} aria-label={pending && !open ? 'Support is replying…' : 'Support chat'}
+        title={pending && !open ? 'Hỗ trợ đang trả lời…' : 'Hỗ trợ TripMate'} onClick={() => setOpen(!open)} className="pointer-events-auto ml-auto grid size-12 shrink-0 place-items-center rounded-full border-2 border-brand-border bg-brand-teal text-white shadow-lg transition hover:bg-brand-navy focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
+        <span className="material-symbols-outlined !text-[24px] leading-none" aria-hidden="true">support_agent</span>
+        <span className="sr-only">{pending && !open ? 'Support is replying…' : 'Support chat'}</span>
+      </button>
     </div>
   );
 }
