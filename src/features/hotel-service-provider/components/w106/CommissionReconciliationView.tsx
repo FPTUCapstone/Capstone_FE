@@ -1,22 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { TextField } from '@/components/ui/FormControls';
 import { StatusBadge } from '../common/StatusBadge';
 import { AccessibleSelect } from '../common/AccessibleSelect';
 import { ConfirmationDialog } from '../common/ConfirmationDialog';
 import { useToast } from '../common/Toast';
 import { StaffReconciliationService } from '../../services/staffReconciliationService';
-import type { StatementItem, StatementStatus } from '../../types';
+import { BANK_TRANSFER_REFERENCE_MAX_LENGTH, type StatementItem, type StatementStatus } from '../../types';
 import { formatDate, formatDateTime, formatVnd } from '../../utils/formatters';
 import { hotelProviderVi } from '../../resources/vi';
 import { ROUTES } from '@/lib/routes';
 
-export function CommissionReconciliationView() {
+const PAGE_SIZE = 20;
+
+function canConfirmReceipt({ commissionAmount, status }: StatementItem) {
+  return commissionAmount > 0 && (status === 'PaymentReported' || status === 'Overdue');
+}
+
+export function CommissionReconciliationView({ preview = false }: { preview?: boolean }) {
   const { showToast } = useToast();
 
   const [statements, setStatements] = useState<StatementItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const pagination = hotelProviderVi.common.pagination;
 
   // Filters
   const [selectedProvider, setSelectedProvider] = useState<string>('All');
@@ -37,6 +49,16 @@ export function CommissionReconciliationView() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [inspectStatement, setInspectStatement] = useState<StatementItem | null>(null);
+  const [verifiedReference, setVerifiedReference] = useState('');
+  const [receivedInput, setReceivedInput] = useState('');
+  const [receiptError, setReceiptError] = useState('');
+  const receiptInFlight = useRef(false);
+  const receiptCopy = hotelProviderVi.w106.confirmModal;
+  const trimmedReference = verifiedReference.trim();
+  const receivedAmountVnd = Number(receivedInput.trim());
+  const invalidReference = !trimmedReference || trimmedReference.length > BANK_TRANSFER_REFERENCE_MAX_LENGTH;
+  const invalidAmount = !/^\d+$/.test(receivedInput.trim()) || !Number.isSafeInteger(receivedAmountVnd)
+    || receivedAmountVnd !== targetStatement?.commissionAmount;
 
   useEffect(() => {
     let active = true;
@@ -45,25 +67,38 @@ export function CommissionReconciliationView() {
       period: appliedFilters.period,
       status: appliedFilters.status,
       keyword: appliedFilters.keyword,
-    })
+      page,
+      pageSize: PAGE_SIZE,
+    }, preview)
       .then((data) => {
         if (!active) return;
+        const lastPage = Math.max(1, Math.ceil(data.totalCount / PAGE_SIZE));
+        if (page > lastPage) {
+          setPage(lastPage);
+          return;
+        }
         setStatements(data.items);
+        setTotalCount(data.totalCount);
+        setLoadFailed(false);
         setIsLoading(false);
       })
       .catch(() => {
         if (!active) return;
-        showToast(hotelProviderVi.messages.MSG127, 'error');
+        setStatements([]);
+        setTotalCount(0);
+        setLoadFailed(true);
         setIsLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [appliedFilters, showToast]);
+  }, [appliedFilters, page, preview]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setPage(1);
     setAppliedFilters({
       providerId: selectedProvider,
       period: selectedPeriod,
@@ -73,6 +108,8 @@ export function CommissionReconciliationView() {
   };
 
   const handleReset = () => {
+    setIsLoading(true);
+    setPage(1);
     setSelectedProvider('All');
     setSelectedPeriod('All');
     setSelectedStatus('All');
@@ -85,16 +122,29 @@ export function CommissionReconciliationView() {
     });
   };
 
+  const changePage = (nextPage: number) => {
+    setIsLoading(true);
+    setPage(nextPage);
+  };
+
   const handleOpenReceiptModal = (stmt: StatementItem) => {
+    if (!canConfirmReceipt(stmt)) return;
     setTargetStatement(stmt);
+    setVerifiedReference(stmt.reportedBankReference ?? stmt.bankReference ?? '');
+    setReceivedInput('');
+    setReceiptError('');
     setIsConfirmModalOpen(true);
   };
 
   const handleConfirmReceipt = async () => {
-    if (!targetStatement) return;
+    if (!targetStatement || receiptInFlight.current || invalidReference || invalidAmount) return;
+    receiptInFlight.current = true;
     setIsProcessing(true);
+    setReceiptError('');
     try {
-      const res = await StaffReconciliationService.confirmReceipt(targetStatement.id);
+      const res = await StaffReconciliationService.confirmReceipt(
+        targetStatement.id, trimmedReference, receivedAmountVnd, preview,
+      );
       if (res.success) {
         showToast(hotelProviderVi.messages.MSG209, 'success');
         setStatements((prev) =>
@@ -104,26 +154,32 @@ export function CommissionReconciliationView() {
                   ...s,
                   status: 'Paid',
                   confirmedAt: res.confirmedAt,
-                  confirmedByStaffId: 101,
+                  confirmedByStaffId: res.confirmedByStaffId,
+                  bankReference: res.bankReference ?? s.bankReference,
+                  reportedBankReference: res.reportedBankReference ?? s.reportedBankReference,
+                  verifiedBankReference: res.verifiedBankReference,
                 }
               : s
           )
         );
         setIsConfirmModalOpen(false);
       } else {
-        showToast(res.error || hotelProviderVi.messages.MSG127, 'error');
+        setReceiptError(res.error || hotelProviderVi.messages.MSG127);
       }
     } catch {
-      showToast(hotelProviderVi.messages.MSG133, 'error');
+      setReceiptError(hotelProviderVi.messages.MSG127);
     } finally {
+      receiptInFlight.current = false;
       setIsProcessing(false);
     }
   };
 
   const providerOptions = React.useMemo(() => {
     const map = new Map<string, string>();
-    map.set('42', 'Hội An Riverside Heritage Resort');
-    map.set('43', 'Da Nang Beachfront Boutique Resort');
+    if (preview) {
+      map.set('42', 'Hội An Riverside Heritage Resort');
+      map.set('43', 'Da Nang Beachfront Boutique Resort');
+    }
     statements.forEach((s) => {
       if (s.providerId) map.set(String(s.providerId), s.providerName);
     });
@@ -131,10 +187,11 @@ export function CommissionReconciliationView() {
       { value: 'All', label: 'Tất cả đối tác' },
       ...Array.from(map.entries()).map(([value, label]) => ({ value, label })),
     ];
-  }, [statements]);
+  }, [preview, statements]);
 
   const periodOptions = React.useMemo(() => {
-    const set = new Set<string>(['11/2026', '10/2026', '09/2026']);
+    const set = new Set<string>(preview ? ['11/2026', '10/2026', '09/2026'] : []);
+    if (selectedPeriod !== 'All') set.add(selectedPeriod);
     statements.forEach((s) => {
       if (s.period) set.add(s.period);
     });
@@ -142,7 +199,7 @@ export function CommissionReconciliationView() {
       { value: 'All', label: 'Tất cả các kỳ' },
       ...Array.from(set).map((p) => ({ value: p, label: `Tháng ${p}` })),
     ];
-  }, [statements]);
+  }, [preview, selectedPeriod, statements]);
 
   const statusOptions = [
     { value: 'All', label: 'Tất cả trạng thái' },
@@ -274,6 +331,8 @@ export function CommissionReconciliationView() {
             </span>
             {hotelProviderVi.common.loading}
           </div>
+        ) : loadFailed ? (
+          <p role="alert" className="p-6 text-sm text-accent-text">{hotelProviderVi.messages.MSG127}</p>
         ) : statements.length === 0 ? (
           <div className="p-12 text-center text-xs text-[#5B6E69]">
             <span className="material-symbols-outlined text-[36px] text-[#8E9E9B] mb-2 block mx-auto">
@@ -319,7 +378,6 @@ export function CommissionReconciliationView() {
               </thead>
               <tbody className="divide-y divide-[#E8ECE9] text-[#1C2928]">
                 {statements.map((item) => {
-                  const isReported = item.status === 'PaymentReported';
                   const isPaid = item.status === 'Paid';
 
                   return (
@@ -342,20 +400,32 @@ export function CommissionReconciliationView() {
 
                       {/* Due Date */}
                       <td className="py-3 px-3.5 whitespace-nowrap text-[#5B6E69]">
-                        {formatDate(item.dueDate)}
+                        {item.commissionAmount === 0 ? '—' : formatDate(item.dueDate)}
                       </td>
 
                       {/* Status */}
                       <td className="py-3 px-3.5">
-                        <StatusBadge status={item.status} size="sm" />
+                        {item.commissionAmount === 0
+                          ? <span className="text-xs font-medium text-brand-textSecondary">{hotelProviderVi.w106.noPaymentDue}</span>
+                          : <StatusBadge status={item.status} size="sm" />}
                       </td>
 
                       {/* Bank Reference */}
                       <td className="py-3 px-3.5 font-mono font-bold">
                         {item.bankReference ? (
-                          <span className="bg-[#E8ECE9] px-2 py-0.5 rounded text-[#1C2928]">
-                            {item.bankReference}
-                          </span>
+                          <>
+                            <span
+                              className="break-all rounded bg-brand-lightTeal px-2 py-0.5 text-brand-textPrimary"
+                              title={item.verifiedBankReference ? hotelProviderVi.w106.verifiedReference : undefined}
+                            >
+                              {item.bankReference}
+                            </span>
+                            {item.verifiedBankReference && item.reportedBankReference && item.reportedBankReference !== item.verifiedBankReference && (
+                              <span className="mt-1 block break-all font-sans text-xs font-normal text-brand-textSecondary">
+                                {hotelProviderVi.w106.reportedReference}: {item.reportedBankReference}
+                              </span>
+                            )}
+                          </>
                         ) : (
                           <span className="text-[#8E9E9B] italic font-normal font-sans">
                             Chưa có mã
@@ -381,7 +451,7 @@ export function CommissionReconciliationView() {
                             <span className="material-symbols-outlined text-[16px] block">visibility</span>
                           </button>
 
-                          {isReported ? (
+                          {item.commissionAmount === 0 ? null : canConfirmReceipt(item) ? (
                             <button
                               type="button"
                               onClick={() => handleOpenReceiptModal(item)}
@@ -408,6 +478,27 @@ export function CommissionReconciliationView() {
               </tbody>
             </table>
           </div>
+        )}
+        {!isLoading && !loadFailed && totalPages > 1 && (
+          <nav aria-label={hotelProviderVi.w106.pageTitle} className="flex items-center justify-end gap-3 border-t border-brand-border px-4 py-3 text-sm">
+            <button
+              type="button"
+              disabled={page === 1}
+              onClick={() => changePage(page - 1)}
+              className="min-h-11 rounded-lg border border-brand-border px-3 disabled:opacity-50"
+            >
+              {pagination.previous}
+            </button>
+            <span role="status">{pagination.page} {page} / {totalPages}</span>
+            <button
+              type="button"
+              disabled={page === totalPages}
+              onClick={() => changePage(page + 1)}
+              className="min-h-11 rounded-lg border border-brand-border px-3 disabled:opacity-50"
+            >
+              {pagination.next}
+            </button>
+          </nav>
         )}
       </div>
 
@@ -442,11 +533,15 @@ export function CommissionReconciliationView() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[#5B6E69]">Hạn thanh toán:</span>
-                <span className="font-medium text-[#1C2928]">{formatDate(inspectStatement.dueDate)}</span>
+                <span className="font-medium text-[#1C2928]">
+                  {inspectStatement.commissionAmount === 0 ? '—' : formatDate(inspectStatement.dueDate)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[#5B6E69]">Trạng thái:</span>
-                <StatusBadge status={inspectStatement.status} size="sm" />
+                {inspectStatement.commissionAmount === 0
+                  ? <span>{hotelProviderVi.w106.noPaymentDue}</span>
+                  : <StatusBadge status={inspectStatement.status} size="sm" />}
               </div>
             </div>
 
@@ -471,11 +566,17 @@ export function CommissionReconciliationView() {
             <div className="p-3 border border-[#E8ECE9] rounded-xl text-xs space-y-2">
               <span className="font-semibold text-[#1C2928] block">Thông tin thanh toán ngân hàng:</span>
               <div className="flex items-center justify-between">
-                <span className="text-[#5B6E69]">Mã giao dịch ngân hàng:</span>
-                <span className="font-mono font-bold text-[#1C2928]">
-                  {inspectStatement.bankReference || 'Chưa cung cấp'}
+                <span className="text-brand-textSecondary">{hotelProviderVi.w106.reportedReference}</span>
+                <span className="break-all font-mono font-bold text-brand-textPrimary">
+                  {inspectStatement.reportedBankReference || 'Chưa cung cấp'}
                 </span>
               </div>
+              {inspectStatement.verifiedBankReference && (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-brand-textSecondary">{hotelProviderVi.w106.verifiedReference}</span>
+                  <span className="break-all font-mono font-bold text-brand-textPrimary">{inspectStatement.verifiedBankReference}</span>
+                </div>
+              )}
               {inspectStatement.reportedAt && (
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-[#5B6E69]">Thời gian gửi mã:</span>
@@ -539,7 +640,7 @@ export function CommissionReconciliationView() {
               >
                 Đóng
               </button>
-              {inspectStatement.status === 'PaymentReported' && (
+              {canConfirmReceipt(inspectStatement) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -564,25 +665,56 @@ export function CommissionReconciliationView() {
           isOpen={isConfirmModalOpen}
           onClose={() => setIsConfirmModalOpen(false)}
           onConfirm={handleConfirmReceipt}
-          title={hotelProviderVi.w106.confirmModal.title}
+          title={receiptCopy.title}
           message={
             <div className="space-y-2">
               <p>
-                {hotelProviderVi.w106.confirmModal.message(
-                  formatVnd(targetStatement.commissionAmount),
-                  targetStatement.providerName,
-                  targetStatement.bankReference || 'VCB-REF'
-                )}
+                {receiptCopy.verifyBankCredit(formatVnd(targetStatement.commissionAmount), targetStatement.providerName)}
               </p>
+              {targetStatement.reportedBankReference && (
+                <p className="break-all">
+                  {hotelProviderVi.w106.reportedReference}: <strong>{targetStatement.reportedBankReference}</strong>
+                </p>
+              )}
+              <TextField
+                label={receiptCopy.verifiedReferenceLabel}
+                name="bankTransferReference"
+                required
+                maxLength={BANK_TRANSFER_REFERENCE_MAX_LENGTH}
+                disabled={isProcessing}
+                value={verifiedReference}
+                spellCheck={false}
+                autoComplete="off"
+                onChange={(event) => {
+                  setVerifiedReference(event.target.value);
+                  setReceiptError('');
+                }}
+              />
+              <TextField
+                label={receiptCopy.receivedAmountLabel}
+                name="receivedAmountVnd"
+                required
+                inputMode="numeric"
+                autoComplete="off"
+                disabled={isProcessing}
+                value={receivedInput}
+                error={receivedInput.trim() && invalidAmount ? receiptCopy.amountMismatch : undefined}
+                onChange={(event) => {
+                  setReceivedInput(event.target.value);
+                  setReceiptError('');
+                }}
+              />
+              {receiptError && <p role="alert" className="font-semibold text-red-700">{receiptError}</p>}
               <div className="p-2.5 bg-[#F7F5EF] border border-[#DCE2DD] rounded-lg text-[11px] text-[#5B6E69]">
                 {hotelProviderVi.w106.confirmModal.auditNotice}
               </div>
             </div>
           }
-          confirmLabel={hotelProviderVi.w106.confirmModal.confirmButton}
-          cancelLabel={hotelProviderVi.w106.confirmModal.cancelButton}
+          confirmLabel={receiptCopy.confirmButton}
+          cancelLabel={receiptCopy.cancelButton}
           variant="primary"
           isLoading={isProcessing}
+          confirmDisabled={invalidReference || invalidAmount}
         />
       )}
     </div>

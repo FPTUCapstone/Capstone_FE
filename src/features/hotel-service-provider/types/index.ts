@@ -91,6 +91,8 @@ export type StatementStatus =
   | 'Paid'
   | 'Overdue';
 
+export const BANK_TRANSFER_REFERENCE_MAX_LENGTH = 100;
+
 export interface CompletedBookingBreakdown {
   id: string;
   bookingCode: string;
@@ -115,6 +117,8 @@ export interface StatementItem {
   dueDate: string;
   status: StatementStatus;
   bankReference?: string;
+  reportedBankReference?: string;
+  verifiedBankReference?: string;
   reportedAt?: string;
   confirmedAt?: string;
   confirmedByStaffId?: number;

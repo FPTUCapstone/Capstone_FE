@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { CommissionStatementsView } from '../components/w105/CommissionStatementsView';
@@ -8,6 +8,12 @@ import { ProviderStatementService } from '../services/providerStatementService';
 describe('Screen W105: Commission Statements (Service Provider Workspace, UC-82)', () => {
   beforeEach(() => {
     ProviderStatementService.resetState();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   const renderComponent = () =>
@@ -113,5 +119,41 @@ describe('Screen W105: Commission Statements (Service Provider Workspace, UC-82)
       expect(screen.getByText(/Đã Thông Báo Chuyển Khoản/i)).toBeDefined();
       expect(screen.getByText(/VCB-20261205-777888/i)).toBeDefined();
     });
+  });
+
+  it('shows that a zero balance needs no payment and hides transfer instructions', async () => {
+    vi.spyOn(ProviderStatementService, 'fetchStatements').mockResolvedValue({ items: [{
+      id: 'zero-statement', statementCode: 'ZERO-82', providerId: 1, providerName: 'Provider',
+      period: '11/2026', periodStartDate: '2026-11-01', periodEndDate: '2026-11-30', completedCount: 1,
+      totalRevenue: 1, commissionAmount: 0, dueDate: '2026-12-05', status: 'Overdue',
+    }], totalCount: 1 });
+    renderComponent();
+
+    await screen.findByText('ZERO-82');
+    expect(screen.getAllByText(/Không cần thanh toán/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /Xác nhận Đã chuyển khoản/i })).toBeNull();
+    expect(screen.queryByText(/TÀI KHOẢN THỤ HƯỞNG/i)).toBeNull();
+  });
+
+  it('uses the real statementId DTO for opening a statement and reporting a transfer', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const statement = { statementId: 71, statementCode: 'REAL-71', commissionAmount: 170000, status: 'Issued' };
+    const fetchRequest = vi.fn()
+      .mockResolvedValueOnce(Response.json({ success: true, data: { items: [statement], totalCount: 1 } }))
+      .mockResolvedValueOnce(Response.json({ success: true, data: { ...statement, requests: [] } }))
+      .mockResolvedValueOnce(Response.json({ success: true, data: {
+        ...statement, status: 'PaymentReported', reportedAtUtc: '2026-11-27T12:00:00Z',
+      } }));
+    vi.stubGlobal('fetch', fetchRequest);
+    renderComponent();
+
+    await screen.findByText('REAL-71');
+    await waitFor(() => expect(fetchRequest.mock.calls[1]?.[0]).toBe('/api/provider/statements/71'));
+    fireEvent.change(screen.getByLabelText(/Mã giao dịch ngân hàng \/ Số bút toán/i), { target: { value: 'WIRE-71' } });
+    fireEvent.click(screen.getByRole('button', { name: /Xác nhận Đã chuyển khoản/i }));
+
+    await screen.findByText(/Đã gửi thông tin chuyển khoản/i);
+    expect(fetchRequest.mock.calls[2][0]).toBe('/api/provider/statements/71/report-payment');
+    expect(JSON.parse(fetchRequest.mock.calls[2][1].body)).toEqual({ bankTransferReference: 'WIRE-71' });
   });
 });

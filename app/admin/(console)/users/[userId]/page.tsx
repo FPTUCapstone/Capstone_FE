@@ -15,6 +15,8 @@ const actionLabels = new Map([
   ['RejectOperatorApplication', 'Application rejected'],
   ['ResubmitOperatorApplication', 'Application resubmitted'],
 ]);
+const lockActions = new Set(['USER_ACCOUNT_LOCKED', 'TOUR_OPERATOR_AUTO_LOCKED', 'SERVICE_PROVIDER_AUTO_LOCKED']);
+const unlockActions = new Set(['USER_ACCOUNT_UNLOCKED', 'UnlockUserAccount', 'TOUR_OPERATOR_UNLOCKED']);
 
 export default async function UserAccountDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const session = await accountSession();
@@ -29,6 +31,17 @@ export default async function UserAccountDetailPage({ params }: { params: Promis
   if (detail && !canManageAccount(session.role, detail.account.role)) return notFound();
 
   const statusLabel = detail ? accountStatusLabel(detail.account.status) : '';
+  const locked = detail?.account.status === 'Locked';
+  const latestLockChange = locked ? detail.moderationHistory.find(
+    (item) => lockActions.has(item.action) || unlockActions.has(item.action),
+  ) : undefined;
+  const currentLock = latestLockChange && lockActions.has(latestLockChange.action)
+    ? {
+        reason: latestLockChange.reason,
+        actor: latestLockChange.actorAttribution,
+        at: accountTimestamp(latestLockChange.atUtc),
+      }
+    : undefined;
   const statusTone =
     detail?.account.status === 'Active'
       ? 'border-[#CBE0D4] bg-[#E8F0EA] text-[#103B39]'
@@ -108,7 +121,14 @@ export default async function UserAccountDetailPage({ params }: { params: Promis
                 <div className="mt-4">
                   <AccountModerationForm
                     accountId={String(userId)}
-                    locked={detail.account.status === 'Locked'}
+                    account={{
+                      fullName: detail.account.fullName,
+                      email: detail.account.email,
+                      role: detail.account.role,
+                      status: statusLabel,
+                    }}
+                    locked={locked}
+                    currentLock={currentLock}
                   />
                 </div>
               ) : (

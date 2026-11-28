@@ -100,7 +100,6 @@ export function AdminSidebar({
         { href: ROUTES.admin.users, label: 'User Governance', icon: 'manage_accounts' },
         { href: ROUTES.admin.reports, label: 'Statistical Reports', icon: 'analytics' },
         { href: ROUTES.admin.tourCommissionStatements, label: 'Đối soát hoa hồng TO', icon: 'receipt_long' },
-        { href: ROUTES.admin.commissionReconciliation, label: 'Commission Reconciliation', icon: 'account_balance_wallet' },
         { href: ROUTES.admin.refundReconciliation, label: 'Refund Reconciliation', icon: 'currency_exchange' },
         { href: ROUTES.admin.directRefundDisputes, label: 'Direct Refund Disputes', icon: 'gavel' },
       ],

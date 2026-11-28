@@ -65,7 +65,7 @@ describe('AdminDashboard (Screen #5)', () => {
     const links = screen.getAllByRole('link');
 
     expect(links.map((link) => link.getAttribute('href')).sort()).toEqual(
-      ['/admin/audit-logs', '/admin/users', '/admin/reports', '/admin/commercial-settlements/reconciliation', '/admin/refund-reconciliation', '/admin/catalogue/points-of-interest'].sort(),
+      ['/admin/audit-logs', '/admin/users', '/admin/reports', '/admin/refund-reconciliation', '/admin/catalogue/points-of-interest'].sort(),
     );
     for (const link of links) {
       expect(routeFileExists(link.getAttribute('href') ?? '')).toBe(true);
@@ -78,7 +78,6 @@ describe('AdminDashboard (Screen #5)', () => {
     const expectations: Record<string, string> = {
       'Statistical Reports': adminDashboardEn.statusLabels.available,
       'User Governance': adminDashboardEn.statusLabels.available,
-      'Commission Reconciliation': adminDashboardEn.statusLabels.available,
       'Refund Reconciliation': adminDashboardEn.statusLabels.available,
       'POI Master Data': adminDashboardEn.statusLabels.available,
       'Audit Logs': adminDashboardEn.statusLabels.available,
@@ -96,6 +95,7 @@ describe('AdminDashboard (Screen #5)', () => {
   it('does not surface removed configuration or Staff workspace entries', () => {
     render(<AdminDashboard />);
     expect(screen.queryByRole('article', { name: 'System Configuration' })).toBeNull();
+    expect(screen.queryByRole('article', { name: 'Commission Reconciliation' })).toBeNull();
     expect(screen.queryByRole('link', { name: /Staff Workspace/i })).toBeNull();
   });
 });

@@ -28,13 +28,13 @@ const ALLOWED: Record<string, { upstream: string; body: BodyKind }> = {
   'GET approved-tours': { upstream: `${UPSTREAM_BASE}/approved-tours`, body: 'none' },
 };
 
-const SIGN_IN_REQUIRED = { title: 'Administrator or Staff sign-in required.' };
+const SIGN_IN_REQUIRED = { title: 'Staff sign-in required.' };
 const UNAVAILABLE = { title: landingContentEn.errors.unavailable };
 
 /**
- * Same-origin proxy for UC-66. The bearer token only ever exists in the
+ * Same-origin proxy for UC-62 (Update Landing Page Content). The bearer token only ever exists in the
  * HttpOnly admin session cookie; the browser never sees or stores it.
- * Administrator and Staff sessions are allowed; any other role is denied.
+ * Only Staff sessions are allowed.
  */
 export async function proxyLandingContent(request: Request, path: string[] | undefined): Promise<Response> {
   const entry = ALLOWED[`${request.method} ${(path ?? []).join('/')}`];

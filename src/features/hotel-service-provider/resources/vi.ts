@@ -236,6 +236,7 @@ export const hotelProviderVi = {
   },
 
   w105: {
+    noPaymentDue: 'Không cần thanh toán',
     pageTitle: 'Bảng kê hoa hồng',
     subtitle: 'Theo dõi quyết toán hoa hồng hàng tháng, kiểm tra doanh thu lưu trú hoàn thành và thông báo mã giao dịch chuyển khoản.',
     tableHeaders: {
@@ -284,6 +285,7 @@ export const hotelProviderVi = {
   },
 
   w106: {
+    noPaymentDue: 'Không cần thanh toán',
     pageTitle: 'Đối soát hoa hồng đối tác',
     breadcrumb: 'Quyết toán thương mại',
     subtitle: 'Kiểm tra giao dịch chuyển khoản hoa hồng của đối tác với sao kê ngân hàng và xác nhận thu tiền.',
@@ -309,10 +311,16 @@ export const hotelProviderVi = {
     },
     recordReceiptButton: 'Xác nhận thu tiền',
     reconciledBadge: 'Đã đối soát',
+    reportedReference: 'Đối tác đã khai',
+    verifiedReference: 'Đã xác minh trên sao kê',
     confirmModal: {
       title: 'Xác nhận Đã thu tiền Hoa hồng',
-      message: (amount: string, provider: string, ref: string) =>
-        `Xác nhận số tiền hoa hồng ${amount} từ ${provider} với mã giao dịch ngân hàng "${ref}" đã được ghi có vào tài khoản ngân hàng của TripMate?`,
+      verifyBankCredit: (amount: string, provider: string) =>
+        `Kiểm tra trên sao kê rằng TripMate đã nhận đủ ${amount} tiền hoa hồng từ ${provider} trước khi xác nhận.`,
+      verifiedReferenceLabel: 'Mã giao dịch trên sao kê',
+      receivedAmountLabel: 'Số tiền thực nhận (VND)',
+      amountMismatch: 'Số tiền thực nhận phải khớp với hoa hồng phải nộp trên bảng kê.',
+      referenceAlreadyUsed: 'Mã giao dịch này đã được dùng để xác nhận bảng kê khác. Kiểm tra lại sao kê.',
       confirmButton: 'Xác nhận & Cập nhật Đã thanh toán',
       cancelButton: 'Hủy bỏ',
       auditNotice: 'Thao tác này sẽ lưu vết giao dịch tài chính chính thức và cập nhật trạng thái bảng kê.',
