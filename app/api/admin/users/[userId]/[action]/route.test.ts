@@ -1,53 +1,136 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { accountSessionMock, fetchAccountsMock } = vi.hoisted(() => ({
+  accountSessionMock: vi.fn(),
+  fetchAccountsMock: vi.fn(),
+}));
+
+vi.mock('@/features/admin/user-accounts/server/accounts', () => ({
+  accountSession: accountSessionMock,
+  fetchAccounts: fetchAccountsMock,
+}));
+vi.mock('@/lib/server/adminSession', () => ({
+  isSameOriginRequest: () => true,
+  jsonNoStore: (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
+}));
+
+import { adminUserAccountsEn } from '@/features/admin/user-accounts/resources/en';
 import { POST } from './route';
 
-const mocks = vi.hoisted(() => ({ accountSession: vi.fn(), fetchAccounts: vi.fn() }));
-vi.mock('@/features/admin/user-accounts/server/accounts', () => mocks);
+const { MSG126, MSG127, MSG133 } = adminUserAccountsEn.moderation.messages;
 
-function moderate(action = 'unlock') {
-  const origin = 'http://localhost:3000';
-  const request = new Request(`${origin}/api/admin/users/42/${action}`, {
-    method: 'POST',
-    headers: { origin, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reason: 'Resolved' }),
-  });
-
-  return POST(request, { params: Promise.resolve({ userId: '42', action }) });
+function call(action: 'lock' | 'unlock', reason: unknown = 'x') {
+  return POST(
+    new Request(`http://localhost/api/admin/users/42/${action}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+    { params: Promise.resolve({ userId: '42', action }) },
+  );
 }
 
-describe('account moderation proxy', () => {
+async function expectResponse(response: Response, status: number, title: string) {
+  expect(response.status).toBe(status);
+  expect(await response.json()).toEqual({ title });
+}
+
+describe('/api/admin/users/[userId]/[action] route', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    mocks.accountSession.mockResolvedValue({ role: 'Staff', token: 'test-session' });
+    vi.clearAllMocks();
+    accountSessionMock.mockResolvedValue({ role: 'Staff', token: 'tok' });
   });
 
-  it('forwards the safe MSG199 details to the Staff unlock form', async () => {
-    mocks.fetchAccounts.mockResolvedValue(Response.json({
-      title: 'This account cannot be unlocked until the balance is paid.',
-      messageCode: 'MSG199',
-      outstandingAmountVnd: 1250000,
-      detail: 'Internal details',
-    }, { status: 409 }));
+  describe('lock', () => {
+    it('maps backend 403 to MSG126', async () => {
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 403 });
+      await expectResponse(await call('lock'), 403, MSG126);
+    });
 
-    const response = await moderate();
-    expect(response.status).toBe(409);
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
-    expect(await response.json()).toEqual({
-      title: 'The account cannot be updated in its current state.',
-      messageCode: 'MSG199',
-      outstandingAmountVnd: 1250000,
+    it('maps backend 409 to MSG133', async () => {
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 409 });
+      await expectResponse(await call('lock'), 409, MSG133);
+    });
+
+    it('maps an unmapped backend status to MSG127 with 503', async () => {
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 500 });
+      await expectResponse(await call('lock'), 503, MSG127);
+    });
+
+    it('maps a network failure to MSG127 with 503', async () => {
+      fetchAccountsMock.mockRejectedValue(new Error('network'));
+      await expectResponse(await call('lock'), 503, MSG127);
+    });
+
+    it('keeps the existing 400/401/404 titles', async () => {
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 400 });
+      await expectResponse(await call('lock'), 400, 'Check the supplied reason.');
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 401 });
+      await expectResponse(await call('lock'), 401, 'Sign in again to continue.');
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 404 });
+      await expectResponse(await call('lock'), 404, 'Account unavailable.');
     });
   });
 
-  it.each([
-    ['unlock', { messageCode: 'OTHER', outstandingAmountVnd: 1250000 }],
-    ['unlock', { messageCode: 'MSG199', outstandingAmountVnd: '1250000' }],
-    ['lock', { messageCode: 'MSG199', outstandingAmountVnd: 1250000 }],
-  ])('uses the existing conflict response for %s with unsupported details', async (action, problem) => {
-    mocks.fetchAccounts.mockResolvedValue(Response.json(problem, { status: 409 }));
+  describe('unlock', () => {
+    it('returns only the allow-listed MSG199 details for an outstanding balance', async () => {
+      fetchAccountsMock.mockResolvedValue(Response.json({
+        messageCode: 'MSG199',
+        outstandingAmountVnd: 1250000,
+        detail: 'Internal details',
+      }, { status: 409 }));
+      const response = await call('unlock');
+      expect(response.status).toBe(409);
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(await response.json()).toEqual({
+        title: 'The account cannot be updated in its current state.',
+        messageCode: 'MSG199',
+        outstandingAmountVnd: 1250000,
+      });
+    });
 
-    const response = await moderate(action);
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({ title: 'The account cannot be updated in its current state.' });
+    it('ignores malformed outstanding balances', async () => {
+      fetchAccountsMock.mockResolvedValue(Response.json({
+        messageCode: 'MSG199',
+        outstandingAmountVnd: '1250000',
+      }, { status: 409 }));
+      await expectResponse(await call('unlock'), 409, 'The account cannot be updated in its current state.');
+    });
+
+    it('keeps the existing 409 title', async () => {
+      fetchAccountsMock.mockResolvedValue(new Response(null, { status: 409 }));
+      await expectResponse(await call('unlock'), 409, 'The account cannot be updated in its current state.');
+    });
+
+    it('keeps the existing 403 title', async () => {
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 403 });
+      await expectResponse(await call('unlock'), 403, 'Access denied.');
+    });
+
+    it('keeps the existing network failure title', async () => {
+      fetchAccountsMock.mockRejectedValue(new Error('network'));
+      await expectResponse(await call('unlock'), 503, 'Account management is temporarily unavailable.');
+    });
+
+    it('keeps the existing unmapped-status title', async () => {
+      fetchAccountsMock.mockResolvedValue({ ok: false, status: 500 });
+      await expectResponse(await call('unlock'), 503, 'Account management is temporarily unavailable.');
+    });
+  });
+
+  it('rejects a reason longer than 200 characters without calling the backend', async () => {
+    await expectResponse(await call('lock', 'a'.repeat(201)), 400, 'Enter a reason of up to 200 characters.');
+    expect(fetchAccountsMock).not.toHaveBeenCalled();
+  });
+
+  it('forwards the trimmed reason and returns updated: true on success', async () => {
+    fetchAccountsMock.mockResolvedValue({ ok: true, status: 200 });
+    const response = await call('lock', '  x  ');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ updated: true });
+    expect(fetchAccountsMock).toHaveBeenCalledWith('tok', '/42/lock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'x' }),
+    });
   });
 });

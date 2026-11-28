@@ -125,7 +125,7 @@ export default async function UserAccountDetailPage({ params }: { params: Promis
                       fullName: detail.account.fullName,
                       email: detail.account.email,
                       role: detail.account.role,
-                      status: statusLabel,
+                      statusLabel,
                     }}
                     locked={locked}
                     currentLock={currentLock}

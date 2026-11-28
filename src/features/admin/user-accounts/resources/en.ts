@@ -2,18 +2,29 @@ export const adminUserAccountsEn = {
   moderation: {
     lock: {
       label: 'Lock account',
-      reasonLabel: 'Reason for locking',
       confirmationTitle: 'Lock account',
       confirmLabel: 'Confirm lock',
-      impact: 'The account holder will be signed out on every device and cannot sign in until the account is unlocked.',
-      suggestedReasonLabel: 'Suggested lock reason',
-      selectReasonLabel: 'Choose a reason or write your own below',
-      suggestedReasons: [
-        'Repeated abusive review content',
-        'Fraudulent payment attempt',
-        'Expired business licence',
-        'Duplicate account',
+      reasonCategoryLabel: 'Lock reason',
+      reasonCategoryPlaceholder: 'Select a reason',
+      reasonCategories: [
+        'Violation of tour safety & travel regulations',
+        'Payment fraud or irregular chargebacks',
+        'Unresolved severe traveler complaints',
+        'Other',
       ],
+      otherCategory: 'Other',
+      noteLabel: 'Additional details',
+      notePlaceholder: 'Add any details that explain this decision (optional unless Other is selected)',
+      impactNote:
+        'Locking this account prevents any further sign-in and terminates all of its active sessions.',
+      reasonTooLong: 'Reason must be at most 200 characters.',
+      summary: {
+        fullName: 'Full name',
+        email: 'Email',
+        role: 'Role',
+        status: 'Status',
+        noEmail: '—',
+      },
     },
     unlock: {
       label: 'Unlock account',
@@ -23,12 +34,17 @@ export const adminUserAccountsEn = {
       impact: 'The account will return to its status before the lock. Normal sign-in rules will apply.',
     },
     messages: {
+      MSG123: 'Please enter a reason.',
+      MSG126: 'You do not have permission to access this function.',
+      MSG127:
+        'TripMate is temporarily unable to process your request. Please check your connection and try again.',
+      MSG133: 'This action is not available for the current status of the record.',
       MSG130: 'Are you sure you want to continue? This action may not be reversible.',
       MSG189: 'Account locked. The account holder has been notified.',
       MSG190: 'Account unlocked. The account holder has been notified.',
       MSG199: (amountVnd: string) => `This account cannot be unlocked until its outstanding amount of ${amountVnd} VND is fully paid.`,
     },
-    reasonSummary: 'Reason recorded in the audit log',
+    reasonSummary: 'Reason',
     cancelLabel: 'Cancel',
     closeLabel: 'Close confirmation',
     updatingLabel: 'Updating…',
