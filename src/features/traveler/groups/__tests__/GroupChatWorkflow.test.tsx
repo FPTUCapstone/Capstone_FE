@@ -6,6 +6,7 @@ vi.mock('@/features/auth/session/useWebSession', () => ({ useWebSession: () => (
 vi.mock('../services/chatNotifications', () => ({ subscribeToChatChanges: () => () => undefined }));
 vi.mock('../services/travelGroupApi', async original => ({ ...(await original<object>()), fetchGroupConversations: a.groups, fetchGroupMessages: a.history, postGroupMessage: a.post, fetchChatMembers: a.members, votePollOption: a.vote, acknowledgeBroadcastMessage: a.ack, checkinRollCallMessage: a.present, markGroupRead: a.read }));
 vi.mock('../services/directChatApi', async original => ({ ...(await original<object>()), fetchDirectConversations: a.direct, searchChatUsers: a.search, openDirectConversation: a.start, fetchDirectMessages: a.directHistory }));
+vi.mock('../services/chatGroupApi', async original => ({ ...(await original<object>()), fetchChatGroupConversations: vi.fn(async () => ({ items: [], nextBeforeGroupId: null })) }));
 import { GroupChatHub } from '../components/GroupChatHub';
 const group = (id = 73, status = 'Active') => ({ groupId: id, groupName: `Nhóm DB ${id}`, itineraryId: 91, itineraryTitle: 'Trip', itinerarySourceType: 'Manual', hostUserId: 42, memberCount: 2, status, lastMessage: null, lastMessageAtUtc: null, unreadCount: 0 });
 const message = (id = 804, type = 'text', meta: object | null = null) => ({ messageId: id, groupId: 73, senderUserId: 42, senderName: 'Người gửi thật', messageType: type, content: `Nội dung ${id}`, metadataJson: meta ? JSON.stringify(meta) : null, createdAtUtc: '2026-11-23T00:00:00Z', isReadByMe: false, readByCount: 0, isPresentByMe: false, presentCount: 0, paidUserIds: [], pollVoteCounts: {}, myPollVoteOption: null });
@@ -25,7 +26,7 @@ it('rejects a late history response from the previous group', async () => {
 it('uses zero-based poll indices and explicit persisted cancellation', async () => {
  const poll = { ...message(804, 'poll', { question: 'Chọn địa điểm', options: [{ text: 'Lựa chọn A' }, { text: 'Lựa chọn B' }] }), myPollVoteOption: 0, pollVoteCounts: { 0: 1 } };
  a.history.mockResolvedValueOnce([poll]).mockResolvedValue([{ ...poll, myPollVoteOption: null, pollVoteCounts: {} }]); a.vote.mockResolvedValue({}); await ready();
- fireEvent.click(screen.getByRole('button', { name: /Lựa chọn A/ })); await waitFor(() => expect(a.vote).toHaveBeenCalledWith(73, 804, -1)); await waitFor(() => expect(screen.getByRole('button', { name: /Lựa chọn A/ }).getAttribute('aria-pressed')).toBe('false'));
+ fireEvent.click(screen.getByRole('button', { name: /Lựa chọn A/ })); await waitFor(() => expect(a.vote).toHaveBeenCalledWith(73, 804, -1, 0)); await waitFor(() => expect(screen.getByRole('button', { name: /Lựa chọn A/ }).getAttribute('aria-pressed')).toBe('false'));
 });
 it('does not toggle persisted receipts or attendance back to false', async () => {
  a.history.mockResolvedValue([{ ...message(1, 'broadcast', { title: 'Thông báo thật', content: 'Nội dung' }), isReadByMe: true, readByCount: 2 }, { ...message(2, 'roll_call', { title: 'Điểm danh thật' }), isPresentByMe: true, presentCount: 2 }]); await ready();

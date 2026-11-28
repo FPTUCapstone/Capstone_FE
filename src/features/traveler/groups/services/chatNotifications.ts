@@ -12,7 +12,7 @@ export function subscribeToChatChanges(userId: number, notify: () => void): () =
       accessTokenFactory: () => AuthStorage.getContext()?.userId === userId ? AuthStorage.getAccessToken() ?? '' : '',
       transport: HttpTransportType.LongPolling,
     }).configureLogging(LogLevel.None).withAutomaticReconnect([1000, 3000, 10000]).build();
-    for (const event of ['MessageReceived', 'ConversationChanged', 'BroadcastAcknowledged', 'RollCallCheckedIn', 'ExpensePaymentUpdated', 'PollVoteRecorded']) {
+    for (const event of ['MessageReceived', 'MessageUpdated', 'ConversationChanged', 'MembershipChanged', 'BroadcastAcknowledged', 'RollCallCheckedIn', 'ExpensePaymentUpdated', 'PollVoteRecorded']) {
       c.on(event, () => { if (!stopped && AuthStorage.getContext()?.userId === userId) notify(); });
     }
     c.onreconnected(() => { if (!stopped) notify(); });

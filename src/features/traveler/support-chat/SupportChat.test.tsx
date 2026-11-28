@@ -34,6 +34,13 @@ beforeEach(() => {
 });
 
 describe('SupportChat', () => {
+  it('keeps its conversation when moved away from the messenger dock', async () => {
+    const view = render(<SupportChat />); openChat(); send();
+    await screen.findByText('Refund guidance');
+    view.rerender(<SupportChat avoidMessenger />);
+    expect(screen.getByText('Refund guidance')).toBeDefined();
+    expect(screen.getByLabelText('Support conversation').parentElement?.getAttribute('data-support-position')).toBe('right');
+  });
   it('keeps a complete Unicode character when bounding assistant history', async () => {
     const answer = `${'a'.repeat(1999)}🌴 more`;
     vi.mocked(sendSupportMessage).mockResolvedValue({ answer, sources: [] });

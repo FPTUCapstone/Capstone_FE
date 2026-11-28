@@ -160,6 +160,8 @@ export async function joinTravelGroup(
 }
 
 export interface GroupMessageApiDto {
+  revision?: number;
+  editedAtUtc?: string | null;
   messageId: number;
   groupId: number;
   senderUserId: number;
@@ -183,15 +185,16 @@ let renewal: ReturnType<typeof webRefresh> | null = null;
 
 export async function chatRequest<T>(
   url: string,
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   body?: unknown,
   signal?: AbortSignal,
+  extraHeaders?: Record<string, string>,
 ): Promise<T> {
   const owner = AuthStorage.getContext();
   if (!owner) throw new TravelGroupHttpError(401, 'Vui lòng đăng nhập để trò chuyện.', 'auth.unauthorized');
   const send = (token: string) => fetch(url, {
     method, credentials: 'include', signal: signal ?? AbortSignal.timeout(20000),
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}` },
+    headers: { ...extraHeaders, 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}` },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   let response: Response;
@@ -283,9 +286,10 @@ export async function postGroupMessage(
 export async function acknowledgeBroadcastMessage(
   groupId: number,
   messageId: number,
+  expectedRevision?: number,
 ): Promise<number> {
   return chatRequest<number>(
-    `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/acknowledge`,
+    `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/acknowledge${expectedRevision === undefined ? '' : `?expectedRevision=${expectedRevision}`}`,
     'POST',
   );
 }
@@ -304,11 +308,12 @@ export async function toggleExpensePaymentStatus(
   groupId: number,
   messageId: number,
   isPaid: boolean,
+  expectedRevision?: number,
 ): Promise<number[]> {
   return chatRequest<number[]>(
     `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/toggle-payment`,
     'POST',
-    { isPaid },
+    { isPaid, ...(expectedRevision !== undefined ? { expectedRevision } : {}) },
   );
 }
 
@@ -316,11 +321,12 @@ export async function votePollOption(
   groupId: number,
   messageId: number,
   optionIndex: number,
+  expectedRevision?: number,
 ): Promise<Record<number, number>> {
   return chatRequest<Record<number, number>>(
     `${getApiBase()}/travel-groups/${groupId}/messages/${messageId}/vote`,
     'POST',
-    { optionIndex },
+    { optionIndex, ...(expectedRevision !== undefined ? { expectedRevision } : {}) },
   );
 }
 
@@ -341,6 +347,8 @@ export function isGroupMessage(v: unknown): v is GroupMessageApiDto {
     && typeof d.senderName === 'string' && typeof d.content === 'string'
     && ['text', 'broadcast', 'roll_call', 'split_bill', 'poll'].includes(String(d.messageType))
     && typeof d.createdAtUtc === 'string' && Number.isFinite(Date.parse(d.createdAtUtc))
+    && (d.revision === undefined || (Number.isSafeInteger(d.revision) && Number(d.revision) >= 0))
+    && (d.editedAtUtc === undefined || d.editedAtUtc === null || (typeof d.editedAtUtc === 'string' && Number.isFinite(Date.parse(d.editedAtUtc))))
     && typeof d.isReadByMe === 'boolean' && typeof d.isPresentByMe === 'boolean'
     && Number.isSafeInteger(d.readByCount) && Number(d.readByCount) >= 0
     && Number.isSafeInteger(d.presentCount) && Number(d.presentCount) >= 0
@@ -360,7 +368,7 @@ export async function fetchGroupConversations(beforeGroupId?: number, signal?: A
     || !(data.nextBeforeGroupId === null || positiveId(data.nextBeforeGroupId))) throw invalidContract();
   return data;
 }
-export interface ChatMember { memberId: number; displayName: string; isHost: boolean }
+export interface ChatMember { memberId: number; displayName: string; isHost: boolean; canReceiveHost?: boolean }
 export async function fetchChatMembers(groupId: number): Promise<ChatMember[]> {
   const data = await chatRequest<{ groupId: number; members: ChatMember[] }>(`${getApiBase()}/travel-groups/${groupId}/members`, 'GET');
   if (!data || data.groupId !== groupId || !Array.isArray(data.members) || !data.members.every(m => m && positiveId(m.memberId) && typeof m.displayName === 'string' && typeof m.isHost === 'boolean')) throw invalidContract();

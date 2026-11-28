@@ -30,6 +30,10 @@ vi.mock('@/lib/authApi', async (importOriginal) => ({
 import { PublicSignInForm } from './PublicSignInForm';
 
 describe('PublicSignInForm admin/staff entry point', () => {
+  it('uses POST for native submission so credentials cannot enter the URL before hydration', () => {
+    render(<PublicSignInForm />);
+    expect(screen.getByLabelText(/Email/i).closest('form')?.getAttribute('method')).toBe('post');
+  });
   it('links to the separate /admin/login route, not the traveler sign-in form', () => {
     render(<PublicSignInForm />);
     const link = screen.getByRole('link', { name: /Đăng nhập quản trị/i });

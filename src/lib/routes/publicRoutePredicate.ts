@@ -27,6 +27,7 @@
  */
 
 const PUBLIC_WHITELIST_PATTERNS: RegExp[] = [
+  /^\/messages$/,                         // Messenger workspace
   /^\/$/,                                // Home
   /^\/about(?:\/.*)?$/,                  // About TripMate
   /^\/weather(?:\/.*)?$/,                // Public Weather Forecast

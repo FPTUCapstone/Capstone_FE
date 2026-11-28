@@ -39,6 +39,12 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
   const pathname = useSafePathname();
   const router = useRouter();
 
+  const [messengerState, setMessengerState] = useState({ expanded: false, unread: 0 });
+  useEffect(() => {
+    const update = (event: Event) => setMessengerState((event as CustomEvent<{ expanded: boolean; unread: number }>).detail);
+    window.addEventListener('tripmate:messenger-state', update);
+    return () => window.removeEventListener('tripmate:messenger-state', update);
+  }, []);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -332,7 +338,6 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
       : []),
     { key: 'weather', href: ROUTES.weather, label: strings.links.weatherForecast },
     { key: 'tours', href: ROUTES.tours, label: strings.links.localTours },
-    ...(context ? [{ key: 'messages', href: ROUTES.messages, label: locale === 'en' ? 'Messages' : 'Tin nhắn' }] : []),
   ];
 
   if (isNestedUnderPersistentLayout) {
@@ -444,6 +449,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
               className: linkClassName,
             };
 
+            if (item.key === 'messages') return <button key={item.key} {...commonProps} type="button" data-messenger-toggle aria-label={locale === 'en' ? 'Open messages' : 'Mở tin nhắn'} onClick={() => window.dispatchEvent(new Event('tripmate:toggle-messenger'))}>{item.label}</button>;
             return item.isAnchor ? (
               <a key={item.key} href={item.href} {...commonProps}>
                 {item.label}
@@ -456,12 +462,14 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
           })}
         </nav>
 
+        {context && pathname !== ROUTES.messages && <button type="button" data-messenger-toggle aria-expanded={messengerState.expanded} aria-controls="tripmate-messenger-picker" className="relative grid size-10 shrink-0 place-items-center rounded-full text-brand-teal transition hover:bg-brand-lightTeal focus-visible:outline-2 focus-visible:outline-offset-2 sm:hidden" aria-label={locale === 'en' ? 'Open messages' : 'Mở tin nhắn'} title={locale === 'en' ? 'Messages' : 'Tin nhắn'} onClick={() => window.dispatchEvent(new Event('tripmate:toggle-messenger'))}><span className="material-symbols-outlined" aria-hidden="true">forum</span>{messengerState.unread > 0 && <span aria-label={`${messengerState.unread} tin chưa đọc`} className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{messengerState.unread > 99 ? '99+' : messengerState.unread}</span>}</button>}
         {/* Desktop Account / Session Actions */}
         <div className="flex shrink-0 items-center gap-2">
           {context?.role === 'Traveler' && !context.mustChangePassword && (
             <WorkspaceNotificationBell key={context.userId} role="Traveler" />
           )}
         <div className="hidden sm:flex items-center gap-3">
+          {context && pathname !== ROUTES.messages && <button type="button" data-messenger-toggle aria-expanded={messengerState.expanded} aria-controls="tripmate-messenger-picker" className="relative grid size-10 shrink-0 place-items-center rounded-full text-brand-teal transition hover:bg-brand-lightTeal focus-visible:outline-2 focus-visible:outline-offset-2" aria-label={locale === 'en' ? 'Open messages' : 'Mở tin nhắn'} title={locale === 'en' ? 'Messages' : 'Tin nhắn'} onClick={() => window.dispatchEvent(new Event('tripmate:toggle-messenger'))}><span className="material-symbols-outlined" aria-hidden="true">forum</span>{messengerState.unread > 0 && <span aria-label={`${messengerState.unread} tin chưa đọc`} className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{messengerState.unread > 99 ? '99+' : messengerState.unread}</span>}</button>}
           {status === 'authenticated' ? (
             <div className="flex items-center justify-end gap-2">
               {context?.role === 'TourOperator' ? (
@@ -772,7 +780,7 @@ export function PublicNavigation({ isLanding = false, locale }: PublicNavigation
                     </div>
                   </Link>
                 )}
-                {context && <Link href={ROUTES.messages} onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3.5 rounded-xl p-3 text-sm font-bold text-brand-textPrimary transition hover:bg-brand-lightTeal"><span className="material-symbols-outlined text-xl text-brand-teal" aria-hidden="true">forum</span>{locale === 'en' ? 'Messages' : 'Tin nhắn'}</Link>}
+                {context && pathname !== ROUTES.messages && <button type="button" data-messenger-toggle onClick={() => { setIsDrawerOpen(false); window.dispatchEvent(new Event('tripmate:toggle-messenger')); }} className="flex items-center gap-3.5 rounded-xl p-3 text-sm font-bold text-brand-textPrimary transition hover:bg-brand-lightTeal"><span className="material-symbols-outlined text-xl text-brand-teal" aria-hidden="true">forum</span>{locale === 'en' ? 'Messages' : 'Tin nhắn'}</button>}
               </nav>
             </div>
 

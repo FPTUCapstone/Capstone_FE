@@ -214,12 +214,14 @@ export function MyItinerariesPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <Link
-                href={ROUTES.messages}
+              <button
+                type="button"
+                data-messenger-toggle
+                onClick={() => window.dispatchEvent(new Event('tripmate:toggle-messenger'))}
                 className="inline-flex items-center gap-2 rounded-xl border border-[#DCE2DD] bg-white px-4 py-2.5 text-xs font-semibold text-[#174B4A]"
               >
                 Tin nhắn
-              </Link>
+              </button>
               <button
                 type="button"
                 onClick={() => {

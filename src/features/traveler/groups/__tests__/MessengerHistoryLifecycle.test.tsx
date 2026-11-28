@@ -21,6 +21,7 @@ vi.mock('../services/directChatApi', async original => ({
 vi.mock('../services/chatNotifications', () => ({
   subscribeToChatChanges: (_userId: number, notify: () => void) => { api.notify = notify; return () => { api.notify = null; }; },
 }));
+vi.mock('../services/chatGroupApi', async original => ({ ...(await original<object>()), fetchChatGroupConversations: vi.fn(async () => ({ items: [], nextBeforeGroupId: null })) }));
 import { groupThread, useMessenger } from '../components/useMessenger';
 import { TravelGroupHttpError } from '../services/travelGroupApi';
 
@@ -60,6 +61,16 @@ it('keeps a server-confirmed send when the initial history snapshot arrives late
   await act(async () => initial.resolve([message(100)]));
   expect(result.current.messages.map(m => m.messageId)).toEqual([100, 101]);
   expect(result.current.draft).toBe('');
+});
+
+it('keeps a confirmed edit when a later refresh returns an older revision', async () => {
+  api.history.mockResolvedValue([message(100, { revision: 0, content: 'Old question' })]);
+  const { result } = renderHook(() => useMessenger(42, 'Traveler'));
+  await waitFor(() => expect(result.current.messages).toHaveLength(1));
+  act(() => result.current.applyEditedMessage(message(100, { revision: 2, content: 'Corrected question' })));
+  act(() => api.notify?.());
+  await waitFor(() => expect(api.history).toHaveBeenCalledTimes(2));
+  expect(result.current.messages[0]).toMatchObject({ revision: 2, content: 'Corrected question' });
 });
 
 it('preserves loaded conversation pages and their frontier during a background refresh', async () => {
@@ -325,4 +336,14 @@ it('retains an uncertain operation nonce across retries and keeps a newer draft 
   await act(async () => { retry.resolve(message(101, { senderUserId: 42, content: 'Original' })); await sending; });
   expect(api.post.mock.calls[1][1].clientMessageId).toBe(api.post.mock.calls[0][1].clientMessageId);
   expect(result.current.draft).toBe('New draft');
+});
+
+it('does not mark incoming history read while the dock is minimized', async () => {
+  api.history.mockResolvedValue([message(100)]);
+  const { result, rerender } = renderHook(({ readable }) => useMessenger(42, 'Traveler', readable), { initialProps: { readable: false } });
+  await waitFor(() => expect(result.current.loadingMessages).toBe(false));
+  expect(api.read).not.toHaveBeenCalled();
+  rerender({ readable: true });
+  act(() => result.current.select(result.current.selected!));
+  await waitFor(() => expect(api.read).toHaveBeenCalled());
 });

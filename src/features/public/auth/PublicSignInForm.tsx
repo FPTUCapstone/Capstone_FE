@@ -43,7 +43,7 @@ export function PublicSignInForm() {
         </p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <form method="post" className="space-y-4" onSubmit={handleSubmit} noValidate>
         <SignInField
           id="email"
           name="email"
