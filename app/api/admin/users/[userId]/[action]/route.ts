@@ -1,3 +1,4 @@
+import { readOutstandingAmountVnd } from '@/features/admin/user-accounts/moderationProblem';
 import { adminUserAccountsEn } from '@/features/admin/user-accounts/resources/en';
 import { accountSession, fetchAccounts } from '@/features/admin/user-accounts/server/accounts';
 import { parseUserAccountRouteId } from '@/features/admin/user-accounts/server/userAccountRouteId';
@@ -38,6 +39,13 @@ export async function POST(request: Request, context: { params: Promise<{ userId
     });
     if (result.ok) return jsonNoStore({ updated: true });
     const title = titles[result.status];
+    if (result.status === 409 && action === 'unlock') {
+      const problem: unknown = await result.json().catch(() => null);
+      const outstandingAmountVnd = readOutstandingAmountVnd(problem);
+      if (outstandingAmountVnd !== null) {
+        return jsonNoStore({ title, messageCode: 'MSG199', outstandingAmountVnd }, 409);
+      }
+    }
     if (title) return jsonNoStore({ title }, result.status);
   } catch {
     return jsonNoStore({ title: unavailable }, 503);

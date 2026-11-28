@@ -12,6 +12,7 @@ interface ConfirmationDialogProps {
   cancelLabel?: string;
   variant?: 'primary' | 'danger';
   isLoading?: boolean;
+  confirmDisabled?: boolean;
 }
 
 export function ConfirmationDialog({
@@ -24,6 +25,7 @@ export function ConfirmationDialog({
   cancelLabel = 'Cancel',
   variant = 'primary',
   isLoading = false,
+  confirmDisabled = false,
 }: ConfirmationDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
@@ -66,7 +68,11 @@ export function ConfirmationDialog({
       previouslyFocusedElementRef.current = document.activeElement as HTMLElement;
       const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-      confirmButtonRef.current?.focus();
+      if (confirmButtonRef.current?.disabled) {
+        dialogRef.current?.querySelector<HTMLElement>('input:not(:disabled), button:not(:disabled)')?.focus();
+      } else {
+        confirmButtonRef.current?.focus();
+      }
       const listener = (event: KeyboardEvent) => handleKeyDown(event);
       document.addEventListener('keydown', listener);
       return () => {
@@ -128,7 +134,7 @@ export function ConfirmationDialog({
           <button
             ref={confirmButtonRef}
             type="button"
-            disabled={isLoading}
+            disabled={isLoading || confirmDisabled}
             onClick={onConfirm}
             className={`min-h-11 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50 ${
               variant === 'danger'

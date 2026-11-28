@@ -90,6 +90,7 @@ export function CommissionStatementsView() {
     let paidCount = 0;
 
     for (const s of statements) {
+      if (s.commissionAmount === 0) continue;
       if (s.status === 'Overdue') {
         dueTotal += s.commissionAmount;
         overdueCount += 1;
@@ -109,7 +110,7 @@ export function CommissionStatementsView() {
 
   const handleReportPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedStatement) return;
+    if (!selectedStatement || selectedStatement.commissionAmount === 0) return;
 
     if (!bankRefInput.trim()) {
       setBankRefError(res.messages.MSG172);
@@ -413,10 +414,12 @@ export function CommissionStatementsView() {
                               : 'text-[#5B6E69]'
                           }`}
                         >
-                          {formatDate(stmt.dueDate)}
+                          {stmt.commissionAmount === 0 ? '—' : formatDate(stmt.dueDate)}
                         </td>
                         <td className="whitespace-nowrap px-3.5 py-3.5 text-right">
-                          <StatusBadge status={stmt.status} locale={locale} size="sm" />
+                          {stmt.commissionAmount === 0
+                            ? <span className="text-xs font-medium text-brand-textSecondary">{res.w105.noPaymentDue}</span>
+                            : <StatusBadge status={stmt.status} locale={locale} size="sm" />}
                         </td>
                       </tr>
                     );
@@ -437,13 +440,18 @@ export function CommissionStatementsView() {
                   <span className="rounded-md border border-[#C3DDD3] bg-[#E8F0EA] px-2 py-0.5 font-mono text-xs font-bold text-[#174B4A]">
                     {selectedStatement.statementCode}
                   </span>
-                  <StatusBadge status={selectedStatement.status} locale={locale} size="sm" />
+                  {selectedStatement.commissionAmount > 0 && (
+                    <StatusBadge status={selectedStatement.status} locale={locale} size="sm" />
+                  )}
                 </div>
                 <h3 className="text-base font-extrabold text-[#1C2928]">
                   {ui.detailHeading(selectedStatement.period)}
                 </h3>
                 <p className="mt-0.5 text-xs text-[#5B6E69]">
-                  {ui.dueMeta(formatDate(selectedStatement.dueDate), selectedStatement.completedCount)}
+                  {ui.dueMeta(
+                    selectedStatement.commissionAmount === 0 ? '—' : formatDate(selectedStatement.dueDate),
+                    selectedStatement.completedCount,
+                  )}
                 </p>
 
                 <div className="mt-3.5 flex items-center justify-between rounded-xl border border-[#E3E8E4] bg-[#F7F5EF] px-3.5 py-3">
@@ -455,7 +463,7 @@ export function CommissionStatementsView() {
               </div>
 
               {/* Overdue Warning Alert (BR-200) */}
-              {selectedStatement.status === 'Overdue' && (
+              {selectedStatement.commissionAmount > 0 && selectedStatement.status === 'Overdue' && (
                 <div
                   className="space-y-1.5 rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] p-3.5 text-xs"
                   role="alert"
@@ -523,7 +531,7 @@ export function CommissionStatementsView() {
               )}
 
               {/* Bank Account Information - Clearly distinguished DEMO / SANDBOX */}
-              <div className="space-y-2.5 rounded-xl border-2 border-[#F3D1AE] bg-[#FFF9F2] p-4 text-xs">
+              {selectedStatement.commissionAmount > 0 && <div className="space-y-2.5 rounded-xl border-2 border-[#F3D1AE] bg-[#FFF9F2] p-4 text-xs">
                 <div className="flex items-center gap-1.5 rounded-lg border border-[#FBD38D] bg-[#FEEBC8] px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-[#9C4221]">
                   <span className="material-symbols-outlined text-[16px] text-[#DD6B20]" aria-hidden="true">
                     warning
@@ -599,10 +607,14 @@ export function CommissionStatementsView() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>}
 
               {/* Wire Payment Reporting Form */}
-              {selectedStatement.status === 'Issued' || selectedStatement.status === 'Overdue' ? (
+              {selectedStatement.commissionAmount === 0 ? (
+                <p className="rounded-xl border border-brand-border bg-brand-surface p-4 text-xs font-semibold text-brand-textPrimary">
+                  {res.w105.noPaymentDue}
+                </p>
+              ) : selectedStatement.status === 'Issued' || selectedStatement.status === 'Overdue' ? (
                 <form
                   onSubmit={handleReportPayment}
                   className="space-y-3 border-t border-[#EDF1EE] pt-4"

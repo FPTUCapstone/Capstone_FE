@@ -67,7 +67,8 @@ afterEach(() => {
 });
 
 describe('landing content proxy', () => {
-  it('forwards an Administrator GET with the cookie bearer and passes the body through', async () => {
+  it('forwards a Staff GET with the cookie bearer and passes the body through', async () => {
+    cookiesMock.mockResolvedValue(cookieJar('staff-token', 'Staff'));
     upstreamReply(200, { ok: true });
     const res = await proxyLandingContent(makeRequest('GET'), undefined);
     expect(res.status).toBe(200);
@@ -75,10 +76,10 @@ describe('landing content proxy', () => {
     const [path, init] = fetchBackendMock.mock.calls[0];
     expect(path).toBe(UPSTREAM);
     expect(init.method).toBe('GET');
-    expect(init.headers.Authorization).toBe('Bearer admin-token');
+    expect(init.headers.Authorization).toBe('Bearer staff-token');
   });
 
-  it('forwards a Staff session as well', async () => {
+  it('forwards the Staff approved tours lookup', async () => {
     cookiesMock.mockResolvedValue(cookieJar('staff-token', 'Staff'));
     upstreamReply(200);
     const res = await proxyLandingContent(makeRequest('GET'), ['approved-tours']);
@@ -86,10 +87,17 @@ describe('landing content proxy', () => {
     expect(fetchBackendMock.mock.calls[0][0]).toBe(`${UPSTREAM}/approved-tours`);
   });
 
+  it('rejects an Administrator before calling the backend', async () => {
+    cookiesMock.mockResolvedValue(cookieJar('admin-token', 'Administrator'));
+    expect((await proxyLandingContent(makeRequest('GET'), undefined)).status).toBe(403);
+    expect(fetchBackendMock).not.toHaveBeenCalled();
+  });
+
   it('returns 401 without a backend call when the cookie is missing', async () => {
     cookiesMock.mockResolvedValue(cookieJar(undefined));
     const res = await proxyLandingContent(makeRequest('GET'), undefined);
     expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ title: 'Staff sign-in required.' });
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
@@ -102,7 +110,7 @@ describe('landing content proxy', () => {
     expect(fetchBackendMock).not.toHaveBeenCalled();
   });
 
-  it('defense in depth: returns 403 if the verifier ever yields a role other than Administrator or Staff', async () => {
+  it('rejects any other role returned by the session verifier', async () => {
     vi.mocked(verifyAdminSessionFromCookies).mockReturnValueOnce({
       role: 'Operator',
       userId: 1,

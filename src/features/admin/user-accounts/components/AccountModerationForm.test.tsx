@@ -131,6 +131,36 @@ describe('AccountModerationForm', () => {
     expect((screen.getByLabelText('Reason for unlocking') as HTMLTextAreaElement).value).toBe('Resolved');
   });
 
+  it('shows the outstanding amount and retains the same reason when Staff retries after settlement', async () => {
+    const request = vi.fn()
+      .mockResolvedValueOnce(Response.json({ messageCode: 'MSG199', outstandingAmountVnd: 1250000 }, { status: 409 }))
+      .mockResolvedValueOnce(Response.json({ updated: true }));
+    vi.stubGlobal('fetch', request);
+    render(<AccountModerationForm accountId="42" locked account={account} />);
+    fireEvent.click(within(openConfirmation(actions[0])).getByRole('button', { name: 'Confirm unlock' }));
+    expect((await screen.findByRole('alert')).textContent)
+      .toBe('This account cannot be unlocked until its outstanding amount of 1.250.000 VND is fully paid.');
+    expect(refresh).not.toHaveBeenCalled();
+    expect((screen.getByLabelText('Reason for unlocking') as HTMLTextAreaElement).value).toBe('Resolved');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock account' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm unlock' }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(request.mock.calls[0]).toEqual(request.mock.calls[1]);
+  });
+
+  it('shows the account summary and previous lock details in the unlock confirmation', () => {
+    render(<AccountModerationForm accountId="42" locked account={{ ...account, statusLabel: 'Locked' }}
+      currentLock={{ reason: 'Outstanding balance', actor: 'System', at: '16/11/2026, 01:30:00' }}
+    />);
+    const dialog = within(openConfirmation(actions[0]));
+    expect(dialog.getByText(account.fullName)).toBeTruthy();
+    expect(dialog.getByText('Locked')).toBeTruthy();
+    expect(dialog.getByText('Outstanding balance')).toBeTruthy();
+    expect(dialog.getByText('System')).toBeTruthy();
+    expect(dialog.getByText('16/11/2026, 01:30:00')).toBeTruthy();
+  });
+
   it('preserves the network failure message without success feedback', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Network unavailable')));
     render(<AccountModerationForm accountId="42" locked={true} account={account} />);

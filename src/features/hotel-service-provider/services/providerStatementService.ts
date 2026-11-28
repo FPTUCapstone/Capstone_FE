@@ -36,7 +36,7 @@ export const ProviderStatementService = {
             const data = json.data;
             const rawItems = Array.isArray(data.items) ? data.items : [];
             const items: StatementItem[] = rawItems.map((s: Record<string, unknown>) => ({
-              id: String(s.id),
+              id: String(s.statementId ?? s.id),
               statementCode: String(s.statementCode ?? ''),
               providerId: typeof s.providerId === 'number' ? s.providerId : 0,
               providerName: typeof s.providerName === 'string' ? s.providerName : 'Provider',
@@ -95,7 +95,7 @@ export const ProviderStatementService = {
             const s = json.data;
             const requests = Array.isArray(s.requests) ? s.requests : [];
             const item: StatementItem = {
-              id: String(s.id),
+              id: String(s.statementId ?? s.id),
               statementCode: String(s.statementCode ?? ''),
               providerId: typeof s.providerId === 'number' ? s.providerId : 0,
               providerName: typeof s.providerName === 'string' ? s.providerName : 'Provider',

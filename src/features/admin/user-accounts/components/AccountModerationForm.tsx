@@ -6,19 +6,23 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ModerationDialog } from '@/features/admin/tour-reviews/components/ModerationDialog';
 import { composeLockReason, lockReasonIssue } from '../lockReason';
+import { readOutstandingAmountVnd } from '../moderationProblem';
 import { adminUserAccountsEn } from '../resources/en';
 import { LockAccountDialog, type LockAccountSummary } from './LockAccountDialog';
 
 const TOAST_DURATION_MS = 8000;
+const vndNumber = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 
 export function AccountModerationForm({
   accountId,
   locked,
   account,
+  currentLock,
 }: {
   accountId: string;
   locked: boolean;
   account: LockAccountSummary;
+  currentLock?: { reason: string | null; actor: string; at: string };
 }) {
   const router = useRouter();
   const [reason, setReason] = useState('');
@@ -76,7 +80,10 @@ export function AccountModerationForm({
       });
       if (!response.ok) {
         const problem = await response.json().catch(() => null);
-        setError(typeof problem?.title === 'string' ? problem.title : copy.updateFailed);
+        const outstanding = response.status === 409 ? readOutstandingAmountVnd(problem) : null;
+        setError(outstanding !== null
+          ? copy.messages.MSG199(vndNumber.format(outstanding))
+          : typeof problem?.title === 'string' ? problem.title : copy.updateFailed);
         return;
       }
       setReason('');
@@ -217,15 +224,29 @@ export function AccountModerationForm({
       <ModerationDialog open={confirmationOpen} titleId={`${dialogId}-title`}
         title={actionCopy.confirmationTitle} descriptionId={`${dialogId}-description`}
         description={copy.messages.MSG130} onClose={closeConfirmation}>
+        <p className="mb-4 text-sm text-brand-textSecondary">{actionCopy.impact}</p>
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 text-sm text-brand-textPrimary">
-            <p className="font-semibold">{copy.reasonSummary}</p>
-            <p className="mt-1 break-words whitespace-pre-wrap">{reason}</p>
-          </div>
+          <dl className="grid min-w-0 grid-cols-[auto_1fr] gap-x-3 gap-y-1 break-words text-sm text-brand-textPrimary">
+            <dt className="font-semibold">{copy.lock.summary.fullName}</dt><dd>{account.fullName}</dd>
+            <dt className="font-semibold">{copy.lock.summary.email}</dt><dd>{account.email ?? copy.lock.summary.noEmail}</dd>
+            <dt className="font-semibold">{copy.lock.summary.role}</dt><dd>{account.role}</dd>
+            <dt className="font-semibold">{copy.lock.summary.status}</dt><dd>{account.statusLabel}</dd>
+          </dl>
           <button type="button" aria-label={copy.closeLabel} onClick={closeConfirmation} disabled={busy}
             className="flex min-h-11 min-w-11 items-center justify-center rounded-lg focus-visible:ring-2 disabled:opacity-50">
             <span className="material-symbols-outlined" aria-hidden="true">close</span>
           </button>
+        </div>
+        {currentLock && (
+          <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-xl border border-brand-border bg-brand-surface p-3 text-sm text-brand-textPrimary">
+            <dt className="font-semibold">Locked on</dt><dd>{currentLock.at}</dd>
+            <dt className="font-semibold">Locked by</dt><dd className="min-w-0 break-words">{currentLock.actor}</dd>
+            <dt className="font-semibold">Lock reason</dt><dd className="min-w-0 break-words">{currentLock.reason ?? '—'}</dd>
+          </dl>
+        )}
+        <div className="mt-4 text-sm text-brand-textPrimary">
+          <p className="font-semibold">{copy.reasonSummary}</p>
+          <p className="mt-1 break-words whitespace-pre-wrap">{reason.trim()}</p>
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" onClick={closeConfirmation} disabled={busy}

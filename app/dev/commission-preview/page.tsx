@@ -84,7 +84,7 @@ export default function CommissionPreviewPage() {
               </div>
             ) : (
               <div className="bg-[#FAF9F5] border border-[#E8ECE9] rounded-2xl p-6 shadow-sm">
-                <CommissionReconciliationView />
+                <CommissionReconciliationView preview />
               </div>
             )}
           </div>

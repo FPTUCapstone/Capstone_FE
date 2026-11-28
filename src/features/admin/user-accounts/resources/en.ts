@@ -31,6 +31,7 @@ export const adminUserAccountsEn = {
       reasonLabel: 'Reason for unlocking',
       confirmationTitle: 'Unlock account',
       confirmLabel: 'Confirm unlock',
+      impact: 'The account will return to its status before the lock. Normal sign-in rules will apply.',
     },
     messages: {
       MSG123: 'Please enter a reason.',
@@ -41,6 +42,7 @@ export const adminUserAccountsEn = {
       MSG130: 'Are you sure you want to continue? This action may not be reversible.',
       MSG189: 'Account locked. The account holder has been notified.',
       MSG190: 'Account unlocked. The account holder has been notified.',
+      MSG199: (amountVnd: string) => `This account cannot be unlocked until its outstanding amount of ${amountVnd} VND is fully paid.`,
     },
     reasonSummary: 'Reason',
     cancelLabel: 'Cancel',

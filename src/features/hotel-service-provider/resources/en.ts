@@ -234,6 +234,7 @@ export const hotelProviderEn = {
   },
 
   w105: {
+    noPaymentDue: 'No payment due',
     pageTitle: 'Commission Statements',
     subtitle: 'Review monthly commission summaries, audit completed guest stays, and report bank wire transfer references.',
     tableHeaders: {

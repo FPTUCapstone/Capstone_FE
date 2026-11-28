@@ -8,8 +8,31 @@ import type {
   StatementStatus,
 } from '../types';
 import { DEMO_STATEMENTS } from '../fixtures';
+import { hotelProviderVi } from '../resources/vi';
 
 let reconciliationStatements = [...DEMO_STATEMENTS];
+
+type StatementReferences = Pick<StatementItem, 'bankReference' | 'reportedBankReference' | 'verifiedBankReference'>;
+
+type ConfirmReceiptResult =
+  | ({ success: true; confirmedAt: string; confirmedByStaffId?: number } & StatementReferences)
+  | { success: false; error?: string };
+
+const receiptMessages = hotelProviderVi.w106.confirmModal;
+const receiptErrors = new Map([
+  ['CommissionStatement.MissingBankReference', hotelProviderVi.messages.MSG172],
+  ['CommissionStatement.ReceiptAmountMismatch', receiptMessages.amountMismatch],
+  ['CommissionStatement.BankReferenceAlreadyUsed', receiptMessages.referenceAlreadyUsed],
+]);
+
+function readReferences(data: Record<string, unknown>): StatementReferences {
+  const bankReference = typeof data.bankTransferReference === 'string' ? data.bankTransferReference : undefined;
+  const verifiedBankReference = typeof data.verifiedBankTransferReference === 'string' ? data.verifiedBankTransferReference : undefined;
+  const reportedBankReference = 'reportedBankTransferReference' in data
+    ? (typeof data.reportedBankTransferReference === 'string' ? data.reportedBankTransferReference : undefined)
+    : (verifiedBankReference ? undefined : bankReference);
+  return { bankReference: verifiedBankReference ?? bankReference ?? reportedBankReference, verifiedBankReference, reportedBankReference };
+}
 
 export const StaffReconciliationService = {
   resetState(): void {
@@ -17,48 +40,43 @@ export const StaffReconciliationService = {
   },
 
   async fetchReconciliationStatements(
-    filters: StatementFilterParams = {}
+    filters: StatementFilterParams = {},
+    preview = false,
   ): Promise<{ items: StatementItem[]; totalCount: number }> {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') {
-      try {
-        const query = new URLSearchParams();
-        if (filters.providerId && filters.providerId !== 'All') query.set('providerId', filters.providerId);
-        if (filters.period && filters.period !== 'All') query.set('period', filters.period);
-        if (filters.status && filters.status !== 'All') query.set('status', filters.status);
-        if (filters.keyword && filters.keyword.trim()) query.set('keyword', filters.keyword.trim());
-        query.set('pageNumber', String(filters.page ?? 1));
-        query.set('pageSize', String(filters.pageSize ?? 20));
+    if (!preview) {
+      const query = new URLSearchParams();
+      if (filters.providerId && filters.providerId !== 'All') query.set('providerId', filters.providerId);
+      if (filters.period && filters.period !== 'All') query.set('period', filters.period);
+      if (filters.status && filters.status !== 'All') query.set('status', filters.status);
+      if (filters.keyword && filters.keyword.trim()) query.set('keyword', filters.keyword.trim());
+      query.set('pageNumber', String(filters.page ?? 1));
+      query.set('pageSize', String(filters.pageSize ?? 20));
 
-        const res = await fetch(`/api/admin/commercial-settlements/reconciliation?${query}`, { credentials: 'same-origin', cache: 'no-store' });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.success && json.data) {
-            const data = json.data;
-            const rawItems = Array.isArray(data.items) ? data.items : [];
-            const items: StatementItem[] = rawItems.map((s: Record<string, unknown>) => ({
-              id: String(s.id),
-              statementCode: String(s.statementCode ?? ''),
-              providerId: typeof s.providerId === 'number' ? s.providerId : 0,
-              providerName: typeof s.providerName === 'string' ? s.providerName : 'Provider',
-              period: String(s.period ?? ''),
-              periodStartDate: String(s.issueDate ?? ''),
-              periodEndDate: String(s.dueDate ?? ''),
-              completedCount: typeof s.totalRequests === 'number' ? s.totalRequests : 0,
-              totalRevenue: typeof s.totalActualAmount === 'number' ? s.totalActualAmount : 0,
-              commissionAmount: typeof s.commissionAmount === 'number' ? s.commissionAmount : 0,
-              dueDate: String(s.dueDate ?? ''),
-              status: (s.status as StatementStatus) || 'Issued',
-              bankReference: typeof s.bankTransferReference === 'string' ? s.bankTransferReference : undefined,
-              reportedAt: typeof s.reportedAtUtc === 'string' ? s.reportedAtUtc : undefined,
-              confirmedAt: typeof s.confirmedAtUtc === 'string' ? s.confirmedAtUtc : undefined,
-              confirmedByStaffId: typeof s.confirmedByUserId === 'number' ? s.confirmedByUserId : undefined,
-            }));
-            return { items, totalCount: typeof data.totalCount === 'number' ? data.totalCount : items.length };
-          }
-        }
-      } catch {
-        // Fall back to local mock data
+      const res = await fetch(`/api/admin/commercial-settlements/reconciliation?${query}`, { credentials: 'same-origin', cache: 'no-store' });
+      const json = res.ok ? await res.json() : null;
+      const data = json?.data;
+      if (json?.success !== true || !Array.isArray(data?.items)) {
+        throw new Error('Reconciliation statements unavailable.');
       }
+      const items: StatementItem[] = data.items.map((s: Record<string, unknown>) => ({
+        id: String(s.statementId ?? s.id),
+        statementCode: String(s.statementCode ?? ''),
+        providerId: typeof s.providerId === 'number' ? s.providerId : 0,
+        providerName: typeof s.providerName === 'string' ? s.providerName : 'Provider',
+        period: String(s.period ?? ''),
+        periodStartDate: String(s.issueDate ?? ''),
+        periodEndDate: String(s.dueDate ?? ''),
+        completedCount: typeof s.totalRequests === 'number' ? s.totalRequests : 0,
+        totalRevenue: typeof s.totalActualAmount === 'number' ? s.totalActualAmount : 0,
+        commissionAmount: typeof s.commissionAmount === 'number' ? s.commissionAmount : 0,
+        dueDate: String(s.dueDate ?? ''),
+        status: (s.status as StatementStatus) || 'Issued',
+        ...readReferences(s),
+        reportedAt: typeof s.reportedAtUtc === 'string' ? s.reportedAtUtc : undefined,
+        confirmedAt: typeof s.confirmedAtUtc === 'string' ? s.confirmedAtUtc : undefined,
+        confirmedByStaffId: typeof s.confirmedByUserId === 'number' ? s.confirmedByUserId : undefined,
+      }));
+      return { items, totalCount: typeof data.totalCount === 'number' ? data.totalCount : items.length };
     }
 
     let filtered = [...reconciliationStatements];
@@ -89,8 +107,10 @@ export const StaffReconciliationService = {
       );
     }
 
+    const pageSize = filters.pageSize ?? 20;
+    const offset = ((filters.page ?? 1) - 1) * pageSize;
     return {
-      items: filtered,
+      items: filtered.slice(offset, offset + pageSize),
       totalCount: filtered.length,
     };
   },
@@ -101,35 +121,36 @@ export const StaffReconciliationService = {
    */
   async confirmReceipt(
     statementId: string,
-    staffId: number = 101
-  ): Promise<{
-    success: boolean;
-    updatedStatus: StatementStatus;
-    confirmedAt: string;
-    error?: string;
-  }> {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') {
-      try {
-        const res = await fetch(`/api/admin/commercial-settlements/reconciliation/${encodeURIComponent(statementId)}/reconcile`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({ notes: `Confirmed by staff ${staffId}` }),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.success && json.data) {
-            return {
-              success: true,
-              updatedStatus: 'Paid',
-              confirmedAt: typeof json.data.confirmedAtUtc === 'string' ? json.data.confirmedAtUtc : new Date().toISOString(),
-            };
-          }
-        }
-        // If not ok (mock id, unauthenticated, or backend offline), fall back to local mock state
-      } catch {
-        // Fall back to local mock data
+    bankTransferReference: string,
+    receivedAmountVnd: number,
+    preview = false,
+  ): Promise<ConfirmReceiptResult> {
+    const reference = bankTransferReference.trim();
+    if (!preview) {
+      const res = await fetch(`/api/admin/commercial-settlements/reconciliation/${encodeURIComponent(statementId)}/reconcile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ bankTransferReference: reference, receivedAmountVnd }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        const error = receiptErrors.get(json?.errorCode)
+          ?? (res.status === 401 || res.status === 403
+            ? hotelProviderVi.messages.MSG126
+            : res.status === 409 ? hotelProviderVi.messages.MSG133 : hotelProviderVi.messages.MSG127);
+        return { success: false, error };
       }
+      const data = json?.data;
+      if (json?.success !== true || data?.status !== 'Paid' || typeof data.confirmedAtUtc !== 'string') {
+        return { success: false };
+      }
+      return {
+        success: true,
+        confirmedAt: data.confirmedAtUtc,
+        confirmedByStaffId: typeof data.confirmedByUserId === 'number' ? data.confirmedByUserId : undefined,
+        ...readReferences(data),
+      };
     }
 
     const idx = reconciliationStatements.findIndex(
@@ -139,20 +160,23 @@ export const StaffReconciliationService = {
     if (idx === -1) {
       return {
         success: false,
-        updatedStatus: 'PaymentReported',
-        confirmedAt: '',
         error: 'Statement not found.',
       };
     }
 
     const current = reconciliationStatements[idx];
-    if (current.status !== 'PaymentReported') {
-      return {
-        success: false,
-        updatedStatus: current.status,
-        confirmedAt: '',
-        error: 'Only statements in Payment Reported status can be reconciled and confirmed.',
-      };
+    if (current.commissionAmount <= 0 || (current.status !== 'PaymentReported' && current.status !== 'Overdue')) {
+      return { success: false };
+    }
+    if (!reference) {
+      return { success: false, error: hotelProviderVi.messages.MSG172 };
+    }
+    if (receivedAmountVnd !== current.commissionAmount) {
+      return { success: false, error: receiptMessages.amountMismatch };
+    }
+    if (reconciliationStatements.some((statement) => statement.status === 'Paid'
+      && (statement.verifiedBankReference ?? statement.bankReference)?.toUpperCase() === reference.toUpperCase())) {
+      return { success: false, error: receiptMessages.referenceAlreadyUsed };
     }
 
     const confirmedAt = new Date().toISOString();
@@ -161,15 +185,21 @@ export const StaffReconciliationService = {
       ...current,
       status: 'Paid',
       confirmedAt,
-      confirmedByStaffId: staffId,
+      confirmedByStaffId: 101,
+      bankReference: reference,
+      reportedBankReference: current.reportedBankReference ?? current.bankReference,
+      verifiedBankReference: reference,
     };
 
     reconciliationStatements[idx] = updated;
 
     return {
       success: true,
-      updatedStatus: 'Paid',
       confirmedAt,
+      confirmedByStaffId: updated.confirmedByStaffId,
+      bankReference: updated.bankReference,
+      reportedBankReference: updated.reportedBankReference,
+      verifiedBankReference: updated.verifiedBankReference,
     };
   },
 };

@@ -11,7 +11,7 @@ vi.mock('@/features/admin/user-accounts/server/accounts', () => ({
 }));
 vi.mock('@/lib/server/adminSession', () => ({
   isSameOriginRequest: () => true,
-  jsonNoStore: (body: unknown, status = 200) => Response.json(body, { status }),
+  jsonNoStore: (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }),
 }));
 
 import { adminUserAccountsEn } from '@/features/admin/user-accounts/resources/en';
@@ -72,8 +72,32 @@ describe('/api/admin/users/[userId]/[action] route', () => {
   });
 
   describe('unlock', () => {
+    it('returns only the allow-listed MSG199 details for an outstanding balance', async () => {
+      fetchAccountsMock.mockResolvedValue(Response.json({
+        messageCode: 'MSG199',
+        outstandingAmountVnd: 1250000,
+        detail: 'Internal details',
+      }, { status: 409 }));
+      const response = await call('unlock');
+      expect(response.status).toBe(409);
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(await response.json()).toEqual({
+        title: 'The account cannot be updated in its current state.',
+        messageCode: 'MSG199',
+        outstandingAmountVnd: 1250000,
+      });
+    });
+
+    it('ignores malformed outstanding balances', async () => {
+      fetchAccountsMock.mockResolvedValue(Response.json({
+        messageCode: 'MSG199',
+        outstandingAmountVnd: '1250000',
+      }, { status: 409 }));
+      await expectResponse(await call('unlock'), 409, 'The account cannot be updated in its current state.');
+    });
+
     it('keeps the existing 409 title', async () => {
-      fetchAccountsMock.mockResolvedValue({ ok: false, status: 409 });
+      fetchAccountsMock.mockResolvedValue(new Response(null, { status: 409 }));
       await expectResponse(await call('unlock'), 409, 'The account cannot be updated in its current state.');
     });
 

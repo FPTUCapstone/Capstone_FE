@@ -78,17 +78,6 @@ export const adminDashboardEn = {
       actionLabel: 'Open statistical reports',
     },
     {
-      id: 'commission-reconciliation',
-      title: 'Commission Reconciliation',
-      category: 'Financial operations',
-      description:
-        'Review commission statements and reconcile provider payments.',
-      icon: 'account_balance',
-      status: 'available',
-      href: ROUTES.admin.commissionReconciliation,
-      actionLabel: 'Open commission reconciliation',
-    },
-    {
       id: 'refund-reconciliation',
       title: 'Refund Reconciliation',
       category: 'Financial operations',

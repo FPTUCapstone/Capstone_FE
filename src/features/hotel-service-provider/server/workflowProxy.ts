@@ -3,6 +3,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { ADMIN_ACCESS_TOKEN_COOKIE, isSameOriginRequest, verifyAdminSessionFromCookies } from '@/lib/server/adminSession';
 import { fetchBackend } from '@/lib/server/backend';
+import { BANK_TRANSFER_REFERENCE_MAX_LENGTH } from '../types';
 
 const PROVIDER_PATH = '/api/v1/provider/service-booking-requests';
 const PROVIDER_STATEMENTS_PATH = '/api/v1/provider/commission-statements';
@@ -11,6 +12,9 @@ const SAFE_CODES = new Set(['MSG01', 'MSG05', 'MSG34', 'MSG123', 'MSG126', 'MSG1
 const QUERY_KEYS = ['status', 'requestedDateFrom', 'requestedDateTo', 'keyword', 'pageNumber', 'pageSize'];
 const STATEMENT_QUERY_KEYS = ['status', 'period', 'keyword', 'pageNumber', 'pageSize'];
 const RECONCILIATION_QUERY_KEYS = ['providerId', 'status', 'period', 'keyword', 'pageNumber', 'pageSize'];
+const RECEIPT_AMOUNT_MISMATCH = 'CommissionStatement.ReceiptAmountMismatch';
+SAFE_CODES.add(RECEIPT_AMOUNT_MISMATCH);
+SAFE_CODES.add('CommissionStatement.BankReferenceAlreadyUsed');
 
 function json(body: unknown, status = 200): Response {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -264,7 +268,8 @@ export async function proxyStaffReconciliation(
     const store = await cookies();
     const session = verifyAdminSessionFromCookies(store);
     if (!session) return failure(401);
-    if ((session.role !== 'Staff' && session.role !== 'Administrator') || session.mustChangePassword) {
+    const staffOnly = !action || action === 'reconcile';
+    if (session.mustChangePassword || (session.role !== 'Staff' && (staffOnly || session.role !== 'Administrator'))) {
       return failure(403);
     }
     const token = store.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
@@ -277,10 +282,21 @@ export async function proxyStaffReconciliation(
     if (action === 'reconcile') {
       const body = await readBody(request);
       if (body instanceof Response) return body;
+      const reference = body.bankTransferReference;
+      if (typeof reference !== 'string' || !reference.trim()
+        || reference.trim().length > BANK_TRANSFER_REFERENCE_MAX_LENGTH) {
+        return failure(400, { errorCode: 'CommissionStatement.MissingBankReference' });
+      }
+      const receivedAmountVnd = body.receivedAmountVnd;
+      if (typeof receivedAmountVnd !== 'number' || !Number.isSafeInteger(receivedAmountVnd) || receivedAmountVnd <= 0) {
+        return failure(400, { errorCode: RECEIPT_AMOUNT_MISMATCH });
+      }
       path += '/reconcile';
       headers['Content-Type'] = 'application/json';
       payload = JSON.stringify({
         notes: typeof body.notes === 'string' ? body.notes.trim() : null,
+        bankTransferReference: reference.trim(),
+        receivedAmountVnd,
       });
     } else if (action === 'generate') {
       path += '/generate';
