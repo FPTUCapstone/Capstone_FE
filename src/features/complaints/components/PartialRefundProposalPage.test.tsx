@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/features/auth/session/useWebSession", () => ({
   useWebSession: mocks.useWebSession,
 }));
+vi.mock("../staff-review/PartyStaffReviewPanel", () => ({ PartyStaffReviewPanel: () => null }));
 
 const GET_URL = "/api/v1/traveler/complaints/501/partial-refund-proposal";
 const POST_URL = `${GET_URL}/response`;
@@ -65,6 +66,13 @@ function postedDecision(fetchMock: ReturnType<typeof vi.fn>) {
 }
 
 describe("PartialRefundProposalPage", () => {
+  it("keeps a final refusal open for Staff review without implying a refund was accepted", async () => {
+    stubFetch(jsonResponse({ ...finalProposal, status: "AwaitingStaffReview", canRespond: false }));
+    render(<PartialRefundProposalPage complaintId="501" />);
+    expect(await screen.findByText("Awaiting Staff review")).toBeDefined();
+    expect(screen.queryByText(partialRefundMessages.MSG165)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Accept" })).toBeNull();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.useWebSession.mockReturnValue({ status: "authenticated" });
@@ -110,7 +118,7 @@ describe("PartialRefundProposalPage", () => {
       expect(screen.getByText(partialRefundMessages.MSG164)).toBeDefined(),
     );
     expect(postedDecision(fetchMock)).toBe("Accept");
-    expect(screen.getByText("Accepted")).toBeDefined();
+    expect(screen.getByText("Refund approved")).toBeDefined();
     expect(screen.queryByRole("button", { name: "Accept" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Send counter-offer" })).toBeNull();
   });

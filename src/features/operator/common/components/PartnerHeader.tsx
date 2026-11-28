@@ -22,6 +22,8 @@ export interface PartnerHeaderProps {
 }
 
 const TAB_LABELS: Record<PartnerWorkspaceTabKey, string> = {
+  paymentSettings: 'Kết nối payOS',
+  contract: 'Hợp đồng đối tác',
   dashboard: 'Bảng điều khiển',
   weatherSafety: 'Cảnh báo an toàn',
   tours: 'Gói tour',
@@ -30,6 +32,8 @@ const TAB_LABELS: Record<PartnerWorkspaceTabKey, string> = {
   complaints: 'Khiếu nại sau tour',
   revenue: 'Doanh thu',
   payouts: 'Thanh toán & Rút tiền',
+  commissions: 'Hoa hồng & Thanh toán',
+  refunds: 'Hoàn tiền trực tiếp',
   profile: 'Hồ sơ doanh nghiệp',
 };
 

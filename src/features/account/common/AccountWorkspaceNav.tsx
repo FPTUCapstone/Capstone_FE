@@ -12,7 +12,8 @@ export type AccountTabKey =
   | 'favorites'
   | 'security'
   | 'trips'
-  | 'complaints';
+  | 'complaints'
+  | 'refundAccount';
 
 export interface AccountWorkspaceNavProps {
   activeTab: AccountTabKey;
@@ -34,6 +35,12 @@ export const ACCOUNT_WORKSPACE_TABS: NavTabItem[] = [
     label: accountCommonEn.navigation.tabs.profile,
     href: ROUTES.account.profile,
     icon: 'account_circle',
+  },
+  {
+    key: 'refundAccount',
+    label: 'Tài khoản nhận hoàn tiền',
+    href: ROUTES.account.refundAccount,
+    icon: 'account_balance',
   },
   {
     key: 'preferences',

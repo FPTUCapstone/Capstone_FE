@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { ROUTES } from '@/lib/routes';
 import { useRouter } from 'next/navigation';
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { OperatorTourApiError } from '../services/operatorTourApi';
@@ -243,6 +244,7 @@ export function SubmitTourApprovalView({
                   }`}
                 >
                   {item.summaryText}
+                  {item.key === 'payment_channel_not_ready' && <> · <Link className="inline-flex min-h-11 items-center underline focus-visible:outline-2" href={ROUTES.partner.paymentSettings}>Kết nối payOS</Link></>}
                 </span>
               </div>
             ))}

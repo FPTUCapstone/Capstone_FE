@@ -77,6 +77,20 @@ export const financeEn = {
       formulaHint: 'Only payout settlements marked Settled, less bank returns confirmed by TripMate, are included.',
     },
 
+    // Direct Operator Payment flow — labels override when paymentFlow = OperatorDirect.
+    // Keeps the same summary card positions; only copy and help text differ.
+    directFlow: {
+      grossRevenueHelp: 'Total booking value collected directly by your payment channel',
+      platformCommission: 'Commission Owed to TripMate',
+      platformCommissionHelp: 'Commission payable to TripMate per statement ({rate}% rate)',
+      netAmount: 'Operator Retained Amount',
+      netAmountHelp: 'Booking value less commission owed and refunds issued',
+      settlementSubtitle: 'Direct payment model: you collect booking value; commission is billed via monthly statement.',
+      platformCommissionLabel: 'Commission Owed',
+      netPayoutLabel: 'Operator Retained',
+      formulaHint: 'Direct flow: commission billed monthly via statement; refunds you issued are reflected in net.',
+    },
+
     chart: {
       title: 'Revenue Trend',
       subtitle: 'Revenue, refunds, and net earnings over the selected period.',

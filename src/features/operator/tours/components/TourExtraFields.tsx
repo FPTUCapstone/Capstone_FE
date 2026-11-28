@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/lib/routes';
 import { REVIEW_BLOCKER_MESSAGES, TOUR_WARNING_MESSAGES } from '../services/operatorTourService';
 import type { TourDepartureSchedule, TourWarning } from '../types/tourLifecycle';
 
@@ -496,7 +498,7 @@ export function TourReadinessPanel({ blockers, warnings }: TourReadinessPanelPro
           <p className="font-bold">Cần hoàn thành trước khi gửi xét duyệt:</p>
           <ul className="mt-1 list-disc pl-5">
             {blockers!.map((code) => (
-              <li key={code}>{REVIEW_BLOCKER_MESSAGES[code] ?? code}</li>
+              <li key={code}>{REVIEW_BLOCKER_MESSAGES[code] ?? code}{code === 'payment_channel_not_ready' && <>. <Link href={ROUTES.partner.paymentSettings} className="inline-flex min-h-11 items-center font-semibold underline focus-visible:outline-2">Kết nối payOS</Link></>}</li>
             ))}
           </ul>
         </div>

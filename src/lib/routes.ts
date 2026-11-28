@@ -20,6 +20,7 @@ export const ROUTES = {
   bookingTicket: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/ticket`,
   bookingComplaint: (bookingId: string | number) => `/bookings/${encodeURIComponent(bookingId)}/complaint`,
   partner: {
+    paymentSettings: '/partner/payment-settings',
     contract: '/partner/contract',
     dashboard: '/partner',
     profile: '/partner/profile',
@@ -31,9 +32,11 @@ export const ROUTES = {
     createCoupon: '/partner/coupons/create',
     revenue: '/partner/revenue',
     payouts: '/partner/payouts',
+    commissions: '/partner/commission-statements',
     payoutSettlements: '/partner/payout-settlements',
     refunds: '/partner/refunds',
     refundDetail: (refundId: string | number) => `/partner/refunds/${encodeURIComponent(refundId)}`,
+    directRefundDetail: (caseId: string | number) => `/partner/refunds/direct/${encodeURIComponent(caseId)}`,
     postTripComplaints: '/partner/post-trip-complaints',
     postTripComplaint: (complaintId: string | number) =>
       `/partner/post-trip-complaints/${encodeURIComponent(complaintId)}`,
@@ -48,6 +51,7 @@ export const ROUTES = {
     statements: '/provider/statements',
   },
   account: {
+    refundAccount: '/account/refund-account',
     profile: '/account/profile',
     preferences: '/account/preferences',
     favorites: '/account/favorites',
@@ -63,6 +67,7 @@ export const ROUTES = {
       `/account/complaints/${encodeURIComponent(complaintId)}/partial-refund-proposal`,
   },
   admin: {
+    operatorPaymentChannels: '/admin/operator-payment-channels',
     contractTemplates: '/admin/contract-templates',
     contractTemplate: (id: string | number) => `/admin/contract-templates/${encodeURIComponent(id)}`,
     login: '/admin/login',
@@ -70,6 +75,8 @@ export const ROUTES = {
     accountSecurity: '/admin/account/security',
     dashboard: '/admin',
     staffDashboard: '/admin/staff',
+    staffPostTripComplaints: '/admin/staff/post-trip-complaints',
+    staffPostTripComplaint: (id: string | number) => `/admin/staff/post-trip-complaints/${encodeURIComponent(id)}`,
     reports: '/admin/reports',
     auditLogs: '/admin/audit-logs',
     tourReviews: '/admin/tours/reviews',
@@ -90,11 +97,13 @@ export const ROUTES = {
     routeCreate: '/admin/routes/create',
     pois: '/admin/catalogue/points-of-interest',
     commissionReconciliation: '/admin/commercial-settlements/reconciliation',
+    tourCommissionStatements: '/admin/commission-statements',
     landingContent: '/admin/landing-content',
     payoutSettlements: '/admin/payout-settlements',
     payoutSettlementDetail: (batchId: string | number) =>
       `/admin/payout-settlements/${encodeURIComponent(batchId)}`,
     refundReconciliation: '/admin/refund-reconciliation',
     escalatedRefunds: '/admin/refunds/escalated',
+    directRefundDisputes: '/admin/direct-refund-disputes',
   },
 } as const;

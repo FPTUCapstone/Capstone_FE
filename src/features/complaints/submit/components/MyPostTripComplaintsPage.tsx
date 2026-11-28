@@ -14,6 +14,8 @@ type State = { kind: 'loading' } | { kind: 'ready'; complaints: readonly MyPostT
 function formatDate(value: string): string { return new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(value)); }
 
 function responseActionCopy(status: string): string {
+  if (status === 'AwaitingStaffReview') return 'View Staff review';
+  if (status === 'AwaitingStaffEvidence') return 'View evidence request';
   return status === 'AwaitingTravelerResponse' ? 'Review refund proposal' : 'View operator response';
 }
 
@@ -99,7 +101,7 @@ export function MyPostTripComplaintsPage() {
                     {complaint.status}
                   </span>
                   <Link
-                    href={ROUTES.account.partialRefundProposal(complaint.complaintId)}
+                    href={['AwaitingStaffReview', 'AwaitingStaffEvidence'].includes(complaint.status) ? ROUTES.bookingComplaint(complaint.bookingId) : ROUTES.account.partialRefundProposal(complaint.complaintId)}
                     className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-teal px-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                   >
                     {responseActionCopy(complaint.status)}

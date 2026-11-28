@@ -139,7 +139,7 @@ function statusCopy(status: RefundProgress["status"]) {
   }
 }
 
-export function RefundProgressPage({ bookingId }: { bookingId: string }) {
+export function RefundProgressPage({ bookingId, embedded = false }: { bookingId: string; embedded?: boolean }) {
   const { status: sessionStatus } = useWebSession();
   const router = useRouter();
   const [progress, setProgress] = useState<RefundProgress | null>(null);
@@ -215,18 +215,20 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
       <RefundDetails progress={progress} />
     ) : null;
 
+  const Container = embedded ? 'div' : 'main';
+  const Heading = embedded ? 'h2' : 'h1';
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <PublicNavigation />
-      <main className="mx-auto max-w-xl px-4 py-8">
-        <Link
+    <div className={embedded ? '' : 'min-h-screen bg-[#f8fafc]'}>
+      {!embedded && <PublicNavigation />}
+      <Container className={embedded ? '' : 'mx-auto max-w-xl px-4 py-8'}>
+        {!embedded && <Link
           href={ROUTES.home}
           className="text-sm font-semibold text-[#174B4A]"
         >
           ← Back to TripMate
-        </Link>
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h1 className="text-xl font-bold text-[#1C2928]">Refund progress</h1>
+        </Link>}
+        <section className={embedded ? 'space-y-4 rounded-xl bg-slate-50/50 p-4' : 'mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'}>
+          <Heading className="text-xl font-bold text-[#1C2928]">Refund progress</Heading>
           <p className="mt-1 text-sm text-slate-600">
             Track the refund for booking {bookingId}.
           </p>
@@ -238,7 +240,7 @@ export function RefundProgressPage({ bookingId }: { bookingId: string }) {
             </ActionButton>
           ) : null}
         </section>
-      </main>
+      </Container>
     </div>
   );
 }

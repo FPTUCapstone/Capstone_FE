@@ -16,7 +16,8 @@ describe('AccountWorkspaceNav', () => {
     expect(nav).toBeDefined();
 
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(6);
+    expect(tabs.length).toBe(7);
+    expect(screen.getByRole('tab', { name: /Tài khoản nhận hoàn tiền/i }).getAttribute('href')).toBe('/account/refund-account');
 
     const profileTab = screen.getByRole('tab', { name: new RegExp(accountCommonEn.navigation.tabs.profile, 'i') });
     expect(profileTab.getAttribute('aria-selected')).toBe('true');

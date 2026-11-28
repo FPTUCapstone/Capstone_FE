@@ -59,9 +59,11 @@ export function AdminSidebar({
     {
       title: 'Operational Queues',
       items: [
+        { href: ROUTES.admin.staffPostTripComplaints, label: 'Khiếu nại sau tour', icon: 'support_agent' },
         { href: ROUTES.admin.tourOperatorApplications, label: 'Operator Applications', icon: 'assignment_ind' },
         { href: ROUTES.admin.tourReviews, label: 'Tour Moderation', icon: 'rate_review' },
         { href: ROUTES.admin.createServiceProvider, label: 'Create Service Provider', icon: 'person_add' },
+        { href: ROUTES.admin.tourCommissionStatements, label: 'Đối soát hoa hồng TO', icon: 'receipt_long' },
         { href: ROUTES.admin.commissionReconciliation, label: 'Commission Reconciliation', icon: 'account_balance_wallet' },
         { href: ROUTES.admin.refundReconciliation, label: 'Refund Reconciliation', icon: 'currency_exchange' },
       ],
@@ -94,10 +96,13 @@ export function AdminSidebar({
     {
       title: 'Governance & Finance',
       items: [
+        { href: ROUTES.admin.operatorPaymentChannels, label: 'Kênh thanh toán TO', icon: 'account_balance' },
         { href: ROUTES.admin.users, label: 'User Governance', icon: 'manage_accounts' },
         { href: ROUTES.admin.reports, label: 'Statistical Reports', icon: 'analytics' },
+        { href: ROUTES.admin.tourCommissionStatements, label: 'Đối soát hoa hồng TO', icon: 'receipt_long' },
         { href: ROUTES.admin.commissionReconciliation, label: 'Commission Reconciliation', icon: 'account_balance_wallet' },
         { href: ROUTES.admin.refundReconciliation, label: 'Refund Reconciliation', icon: 'currency_exchange' },
+        { href: ROUTES.admin.directRefundDisputes, label: 'Direct Refund Disputes', icon: 'gavel' },
       ],
     },
     {

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -47,6 +48,45 @@ function refundStatusBadgeClass(status: RefundStatus): string {
   return 'border border-[#CBE0D4] bg-[#E8F0EA] text-[#103B39]';
 }
 
+function DirectRefundLookup() {
+  const router = useRouter();
+  const [caseId, setCaseId] = useState('');
+  return (
+    <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Direct Refund Cases</p>
+      <p className="mt-1 text-sm text-amber-900">
+        Bookings paid through TripMate&apos;s Direct Payment channel use a separate refund process.
+        Enter a case ID to open it.
+      </p>
+      <form
+        className="mt-3 flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const id = caseId.trim();
+          if (!id) return;
+          router.push(`/partner/refunds/direct/${encodeURIComponent(id)}`);
+        }}
+      >
+        <input
+          type="number"
+          min="1"
+          value={caseId}
+          onChange={(e) => setCaseId(e.target.value)}
+          placeholder="Case ID"
+          className="w-32 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+        />
+        <button
+          type="submit"
+          disabled={!caseId.trim()}
+          className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-50"
+        >
+          Open
+        </button>
+      </form>
+    </div>
+  );
+}
+
 /**
  * The Tour Operator's own refund requests (UC-42), each linking to its Confirm Booking Refund
  * screen. Read-only: every action happens on that screen. The backend scopes the list to the
@@ -85,6 +125,8 @@ export function OperatorRefundListScreen() {
         title="Refund Requests"
         description="Refunds of your cancelled bookings. Open a request to confirm it or to report your return transfer."
       />
+
+      <DirectRefundLookup />
 
       {state === 'loading' ? (
         <div role="status" className={panel}>

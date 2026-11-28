@@ -10,6 +10,8 @@ import { PaymentApiError } from '../types/payment';
 export { PaymentApiError };
 
 export const PAYMENT_ERROR_MESSAGES: Record<string, string> = {
+  'payment.reconciliation_required': 'Liên kết thanh toán cũ cần được đối soát. Vui lòng liên hệ hỗ trợ trước khi thanh toán; không chuyển tiền thêm.',
+  'payment.channel_not_ready': 'Kênh thanh toán của đối tác chưa sẵn sàng. Vui lòng liên hệ đối tác hoặc thử lại sau; đơn vẫn giữ thời hạn thanh toán ban đầu.',
   PAYMENT_BOOKING_NOT_ELIGIBLE:
     'Đơn đặt tour không ở trạng thái hợp lệ để thanh toán.',
   PAYMENT_BOOKING_EXPIRED:

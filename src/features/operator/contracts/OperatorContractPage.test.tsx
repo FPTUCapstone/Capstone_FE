@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OperatorContractPage } from './OperatorContractPage';
 import type { OperatorContract } from './operatorContracts';
+// These signing cases represent a newly approved operator awaiting signature.
+vi.mock('@/features/auth/session/useWebSession', () => ({ useWebSession: () => ({ context: { onboardingState: 'AwaitingSignature' } }) }));
 vi.mock('next/link', () => ({ default: ({ children, ...props }: React.ComponentProps<'a'>) => <a {...props}>{children}</a> }));
 vi.mock('@/components/layout/PartnerShell', () => ({ PartnerShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
 vi.mock('@/lib/authApi', () => ({ webRefresh: vi.fn() }));

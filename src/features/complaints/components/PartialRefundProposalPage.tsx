@@ -8,6 +8,7 @@ import { ActionButton } from "@/components/ui/ActionButton";
 import { FeedbackAlert } from "@/components/ui/FeedbackAlert";
 import { useWebSession } from "@/features/auth/session/useWebSession";
 import { ROUTES } from "@/lib/routes";
+import { PartyStaffReviewPanel } from "../staff-review/PartyStaffReviewPanel";
 
 import {
   PARTIAL_REFUND_ERROR_CODES as CODES,
@@ -59,6 +60,10 @@ function formatDeadline(iso: string) {
 
 function statusCopy(proposal: PartialRefundProposal) {
   switch (proposal.status) {
+    case "AwaitingStaffReview":
+      return { label: "Awaiting Staff review", tone: "bg-amber-100 text-amber-800", description: "Negotiation has ended without agreement. Staff will review the complaint and contractual basis before deciding. No refund has been agreed yet." };
+    case "AwaitingStaffEvidence":
+      return { label: "Awaiting additional evidence", tone: "bg-amber-100 text-amber-800", description: "Staff has requested more evidence. Review the request below; the complaint remains open." };
     case "AwaitingTravelerResponse":
       return {
         label: "Awaiting your response",
@@ -68,9 +73,9 @@ function statusCopy(proposal: PartialRefundProposal) {
       };
     case "Approved":
       return {
-        label: "Accepted",
+        label: "Refund approved",
         tone: "bg-emerald-100 text-emerald-800",
-        description: `The refund of ${formatVnd(proposal.proposedAmount)} is paid after the Tour Operator confirms it.`,
+        description: `A refund of ${formatVnd(proposal.proposedAmount)} has been approved. Follow the refund progress to check the actual transfer and receipt.`,
       };
     case "Declined":
       return {
@@ -189,7 +194,7 @@ function ProposalScreen({ complaintId }: { complaintId: string }) {
               ? "Approved"
               : decision === "CounterOffer"
                 ? "AwaitingOperatorReconsideration"
-                : "Declined";
+                : "AwaitingStaffReview";
         setProposal((current) => (current ? { ...current, status, canRespond: false } : current));
         setResponded(true);
         setNotice({ tone: "success", text: MSG.MSG164 });
@@ -248,6 +253,7 @@ function ProposalScreen({ complaintId }: { complaintId: string }) {
         </p>
         {content}
       </section>
+      {proposal && ["AwaitingStaffReview", "AwaitingStaffEvidence", "Approved", "Rejected"].includes(proposal.status) ? <PartyStaffReviewPanel key={proposal.complaintId} complaintId={proposal.complaintId} party="Traveler" /> : null}
       {pendingDecision && proposal ? (
         <ConfirmDecisionDialog
           decision={pendingDecision}
@@ -282,7 +288,7 @@ function ProposalDetails({
   return (
     <div className="mt-6 space-y-4 text-sm">
       {notice ? <FeedbackAlert tone={notice.tone}>{notice.text}</FeedbackAlert> : null}
-      {!proposal.canRespond && !responded ? (
+      {!proposal.canRespond && !responded && !["AwaitingStaffReview", "AwaitingStaffEvidence"].includes(proposal.status) ? (
         <FeedbackAlert tone="warning">{MSG.MSG165}</FeedbackAlert>
       ) : null}
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -406,7 +412,7 @@ function ConfirmDecisionDialog({
         <p className="mt-2 text-sm text-slate-600">
           {accept
             ? `You accept a refund of ${formatVnd(amount)}. It is paid after the Tour Operator confirms it.`
-            : "The proposal ends and the complaint is handled under the partnership contract."}{" "}
+            : "The proposal ends and Staff reviews the complaint and contractual basis. Refusing this offer does not create a refund obligation."}{" "}
           You cannot change this answer later.
         </p>
         <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

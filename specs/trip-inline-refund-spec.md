@@ -1,0 +1,3 @@
+# Inline refund details in My Trips
+
+Clicking Refund Details on a real commerce booking opens the existing refund UI in a centered modal, without route navigation or duplicate page/header chrome. Reuse LegalModal with a body portal, backdrop, close button, Escape/focus handling, scroll lock and internal scrolling; data is fetched only when opened. Direct refund resolution uses the authenticated by-booking endpoint; only a 404 falls back to the legacy refund UI. Failures retain an explicit retry state. Existing recipient/receipt actions remain unchanged. Demo records retain their existing local detail behavior and never call live APIs. Standalone refund routes continue to work.

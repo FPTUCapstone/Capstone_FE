@@ -1,5 +1,9 @@
 # TripMate Web Scope Matrix
 
+## Approved change request — payOS TO onboarding (25/11/2026)
+
+User-approved direct-payment change and explicit FE implementation request add `/partner/payment-settings` (TourOperator Web; Mobile owned separately) and `/admin/operator-payment-channels` (Administrator Web only, Staff denied). Scope: channel save/verify/status, Admin list/approve/disable, existing Traveler payment integration and server tour-review blocker. Screen/contract details: [payOS onboarding screen spec](../specs/payos-onboarding-web-screen-spec.md). This change does not reclassify unrelated SRS entries below. Real provider verification/webhook readiness is not verified: current BE verifier remains a stub; see slice plan for blockers.
+
 ## A. Document overview and source baseline
 
 Version 2.1 · Updated 13 November 2026 (Asia/Ho_Chi_Minh). This document records the original SRS requirements, FE source evidence and unresolved approval gates. It authorizes no new feature, permission, financial operation or requirement change.

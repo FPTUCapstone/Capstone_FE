@@ -6,6 +6,10 @@ import { tripReviewEn } from '../resources/en';
 import type { BookingTripItem, ItineraryTripItem, TripListItem } from '../types/tripHistoryContract';
 import { TripCard } from './TripCard';
 
+vi.mock('@/features/bookings/components/InlineBookingRefund', () => ({
+  InlineBookingRefund: ({ bookingId }: { bookingId: string }) => <div>Inline refund {bookingId}</div>,
+}));
+
 const booking = (over: Partial<BookingTripItem> = {}): BookingTripItem => ({
   kind: 'commerceBooking',
   id: '123',
@@ -105,6 +109,10 @@ describe('TripCard — content', () => {
   });
 
   it.each([
+    ['RefundPending', 'Đang hoàn tiền'],
+    ['RefundDisputed', 'Tranh chấp hoàn tiền'],
+    ['Refunded', 'Đã hoàn tiền'],
+    ['PartiallyRefunded', 'Hoàn tiền một phần'],
     ['PendingPayment', tripReviewEn.tripHistory.statusLabels.PendingPayment],
     ['Confirmed', tripReviewEn.tripHistory.statusLabels.Confirmed],
     ['Cancelled', tripReviewEn.tripHistory.statusLabels.Cancelled],
@@ -208,11 +216,16 @@ describe('TripCard — e-ticket, refund and details actions', () => {
       actions: { canReview: false, canViewETicket: false, ticketId: null, canViewRefund: true },
     });
 
-  it('View refund links to the live refund progress of the booking', () => {
+  it('View refund opens a centered dialog without navigation and can close it', () => {
     const onOpenDetail = renderCard(refundable());
 
-    expect(link(tripReviewEn.actions.refundDetails)?.getAttribute('href')).toBe('/bookings/123/refund');
-    expect(button(tripReviewEn.actions.refundDetails)).toBeNull();
+    expect(link(tripReviewEn.actions.refundDetails)).toBeNull();
+    fireEvent.click(button(tripReviewEn.actions.refundDetails)!);
+    expect(screen.getByText('Inline refund 123')).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Chi tiết hoàn tiền' })).toBeTruthy();
+    expect(button(tripReviewEn.actions.refundDetails)?.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText('Inline refund 123')).toBeNull();
     expect(onOpenDetail).not.toHaveBeenCalled();
   });
 

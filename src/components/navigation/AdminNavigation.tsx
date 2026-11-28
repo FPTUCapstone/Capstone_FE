@@ -85,6 +85,12 @@ export function AdminNavigation({ role = 'Administrator' }: AdminNavigationProps
                 {adminStaffEn.navigation.statisticalReports}
               </Link>
               <Link
+                href={ROUTES.admin.directRefundDisputes}
+                className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
+              >
+                Refund Disputes
+              </Link>
+              <Link
                 href={ROUTES.admin.auditLogs}
                 className="rounded-lg px-3 py-2 text-xs font-semibold text-[#DCE2DD] hover:bg-[#103B39] hover:text-white transition"
               >

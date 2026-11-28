@@ -60,6 +60,8 @@ export function OperatorDashboard() {
           <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-[#5B6E69]">Không gian quản lý</h2>
           <div className="grid gap-4 md:grid-cols-3">
             {[
+              ['Kết nối payOS', 'Thiết lập kênh nhận thanh toán của doanh nghiệp trước khi gửi tour xét duyệt.', '/partner/payment-settings', 'account_balance'],
+              ['Hoa hồng & Thanh toán', 'Xem đối soát tháng và thanh toán hoa hồng cho TripMate.', '/partner/commission-statements', 'payments'],
               ['Gói tour', 'Quản lý danh sách tour, trạng thái xét duyệt và lịch khởi hành.', '/partner/tours', 'tour'],
               ['Mã giảm giá', 'Tạo và quản lý ưu đãi dành cho khách hàng.', '/partner/coupons', 'confirmation_number'],
               ['Hồ sơ doanh nghiệp', 'Cập nhật thông tin hiển thị của doanh nghiệp.', '/partner/profile', 'domain'],

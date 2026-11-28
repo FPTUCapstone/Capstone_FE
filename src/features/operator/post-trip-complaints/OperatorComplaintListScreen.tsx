@@ -58,6 +58,8 @@ export function OperatorComplaintListScreen() {
           <option value="">All statuses</option>
           <option value="AwaitingOperatorResponse">Awaiting response</option>
           <option value="AwaitingTravelerResponse">Awaiting traveler response</option>
+          <option value="AwaitingStaffReview">Awaiting Staff review</option>
+          <option value="AwaitingStaffEvidence">Awaiting additional evidence</option>
           <option value="Resolved">Resolved</option>
           <option value="Rejected">Rejected</option>
           <option value="Expired">Expired</option>

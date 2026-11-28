@@ -25,7 +25,7 @@ export default async function ConfirmBookingRefundPage({ params }: { params: Pro
 
   return (
     <BookingRouteGuard>
-      <PartnerWorkspaceLayout activeTab="bookings">
+      <PartnerWorkspaceLayout activeTab="refunds">
         <PageContentContainer>
           <ConfirmBookingRefundScreen refundId={refundIdNumber} />
         </PageContentContainer>

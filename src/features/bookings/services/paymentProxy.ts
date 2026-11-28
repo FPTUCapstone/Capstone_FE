@@ -9,6 +9,8 @@ const REFRESH_COOKIE = 'tripmate_refresh';
 const MAX_REQUEST_BYTES = 64 * 1024;
 
 const SAFE_CODES = new Set([
+  'payment.reconciliation_required',
+  'payment.channel_not_ready',
   'PAYMENT_BOOKING_NOT_ELIGIBLE',
   'PAYMENT_BOOKING_EXPIRED',
   'PAYMENT_NOT_FOUND',

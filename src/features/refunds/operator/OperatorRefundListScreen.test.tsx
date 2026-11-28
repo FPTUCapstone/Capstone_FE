@@ -1,6 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: routerPush }) }));
+
 vi.mock('./refundsOperatorService', () => ({
   fetchOperatorRefunds: vi.fn(),
   RefundsOperatorError: class extends Error {
@@ -26,7 +29,16 @@ const item = {
 
 describe('OperatorRefundListScreen', () => {
   beforeEach(() => {
+    routerPush.mockReset();
     vi.mocked(fetchOperatorRefunds).mockReset().mockResolvedValue({ pageNumber: 1, pageSize: 20, totalCount: 1, items: [item] });
+  });
+
+  it('opens a direct refund case using its case ID', async () => {
+    render(<OperatorRefundListScreen />);
+    await screen.findByRole('link', { name: 'BK-20261022-00042' });
+    fireEvent.change(screen.getByPlaceholderText('Case ID'), { target: { value: '42' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect(routerPush).toHaveBeenCalledWith('/partner/refunds/direct/42');
   });
 
   it('lists the operator refunds, each linking to its Confirm Booking Refund screen', async () => {

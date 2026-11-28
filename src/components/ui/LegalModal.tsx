@@ -4,12 +4,14 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 interface LegalModalProps {
+  size?: 'default' | 'wide';
+  showDismissAction?: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
 }
 
-export function LegalModal({ onClose, title, children }: LegalModalProps) {
+export function LegalModal({ onClose, title, children, showDismissAction = true, size = 'default' }: LegalModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const handleClose = useCallback(() => onClose(), [onClose]);
 
@@ -68,7 +70,7 @@ export function LegalModal({ onClose, title, children }: LegalModalProps) {
       aria-labelledby="legal-modal-title"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div ref={dialogRef} className="relative flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl">
+      <div ref={dialogRef} className={`relative flex w-full flex-col rounded-2xl bg-white shadow-2xl ${size === 'wide' ? 'max-h-[90dvh] max-w-4xl' : 'max-h-[80vh] max-w-lg'}`}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#e2e5ea] px-6 py-4">
           <h2 id="legal-modal-title" className="text-base font-extrabold text-[#1C2928]">
@@ -90,7 +92,7 @@ export function LegalModal({ onClose, title, children }: LegalModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-[#e2e5ea] px-6 py-4">
+        {showDismissAction && <div className="border-t border-[#e2e5ea] px-6 py-4">
           <button
             type="button"
             onClick={handleClose}
@@ -98,7 +100,7 @@ export function LegalModal({ onClose, title, children }: LegalModalProps) {
           >
             I understand
           </button>
-        </div>
+        </div>}
       </div>
     </div>
   );

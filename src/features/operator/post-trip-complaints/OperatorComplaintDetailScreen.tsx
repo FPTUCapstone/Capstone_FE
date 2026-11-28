@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FeedbackAlert } from '@/components/ui/FeedbackAlert';
 import { ROUTES } from '@/lib/routes';
+import { PartyStaffReviewPanel } from '@/features/complaints/staff-review/PartyStaffReviewPanel';
 import { formatDateTime, formatVnd, type OperatorComplaintAction, type OperatorComplaintDetail } from './operatorPostTripComplaints';
 import { fetchOperatorComplaint, OperatorComplaintError, respondToOperatorComplaint } from './operatorPostTripComplaintsService';
 
@@ -196,6 +197,7 @@ export function OperatorComplaintDetailScreen({ complaintId }: { complaintId: nu
           )}
         </aside>
       </div>
+      <PartyStaffReviewPanel key={complaintId} complaintId={complaintId} party="Operator" />
     </main>
   );
 }

@@ -1,5 +1,13 @@
 # TripMate Frontend
 
+## payOS operator channel setup (branch slice)
+
+- TO: `/partner/payment-settings`, accessible after operator approval/contract onboarding. Save credentials/beneficiary details, then trigger verification; server `allowedActions` controls write buttons. Credentials are write-only and submitted through same-origin server routes, never public environment variables or local storage.
+- Administrator: `/admin/operator-payment-channels` to filter/paginate channels, approve or disable with reason and expected version. Staff cannot administer channels.
+- Tour readiness links to setup when BE reports `payment_channel_not_ready`; draft editing remains available. Existing Traveler payOS checkout uses its existing server payment endpoints and explains `payment.channel_not_ready` without a platform-account fallback.
+- **BE prerequisite:** current source `PayOsChannelVerifier` is a stub and pending approval does not persist a webhook URL; fresh-channel approval therefore needs a BE fix before real onboarding/payment E2E can pass. FE tests use mocked transport and do not prove live payOS verification. Current payment DTO also omits beneficiary metadata, so FE does not invent recipient details.
+- Scope and validation plan: [screen spec](specs/payos-onboarding-web-screen-spec.md), [implementation plan](plans/payos-onboarding-web-plan.md). No new environment variable is required by this FE slice.
+
 TripMate is a smart travel planning and travel services platform. This repository contains its responsive Next.js Web application.
 
 ## Engineering Documentation

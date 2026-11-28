@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Centralized Vietnamese user-facing copy for Traveler Trip History (UC-32)
  * and Trip Review (UC-33) across BFF, services, pages, components, and dialogs (CR-09).
  */
@@ -101,6 +101,10 @@ export const tripReviewEn = {
       Confirmed: 'Đã xác nhận',
       PendingPayment: 'Chờ thanh toán',
       Cancelled: 'Đã hủy',
+      RefundPending: 'Đang hoàn tiền',
+      RefundDisputed: 'Tranh chấp hoàn tiền',
+      Refunded: 'Đã hoàn tiền',
+      PartiallyRefunded: 'Hoàn tiền một phần',
       Expired: 'Đã hết hạn',
       Interrupted: 'Đã dừng vì an toàn',
       Active: 'Đã lên lịch',
@@ -110,6 +114,11 @@ export const tripReviewEn = {
       Processing: 'Đang xử lý',
       RetryPending: 'Đang xử lý',
       ManualReview: 'Đang xem xét',
+      AwaitingRecipient: 'Chờ cung cấp tài khoản nhận',
+      AwaitingTransfer: 'Chờ nhà điều hành chuyển khoản',
+      AwaitingTravelerConfirmation: 'Chờ xác nhận nhận tiền',
+      Disputed: 'Đang tranh chấp',
+      Completed: 'Đã hoàn tiền',
       Processed: 'Đã hoàn tiền',
       Failed: 'Thất bại',
       Rejected: 'Từ chối',
