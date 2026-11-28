@@ -1,0 +1,30 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { GroupHighlights } from '../components/GroupHighlights';
+import type { GroupMessageApiDto } from '../services/travelGroupApi';
+import type { Thread } from '../components/useMessenger';
+const api = vi.hoisted(() => ({ read: vi.fn() }));
+vi.mock('../services/groupMessageToolsApi', () => ({ fetchImportantMessages: api.read }));
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
+const thread = { key: 'group:1', id: 1, kind: 'group', title: 'Trip', group: { status: 'Active' } } as Thread;
+const poll = { messageId: 3, groupId: 1, senderUserId: 42, senderName: 'Host', content: 'Bình chọn cũ', messageType: 'poll', metadataJson: JSON.stringify({ question: 'Bình chọn cũ', options: [{ text: 'Biển' }, { text: 'Núi' }] }), createdAtUtc: '2026-11-24T00:00:00Z', pollVoteCounts: {}, paidUserIds: [] } as unknown as GroupMessageApiDto;
+it('keeps older polls reachable above the text stream and opens their voter list', async () => {
+  api.read.mockResolvedValue({ items: [poll], nextBeforeMessageId: null });
+  const voters = vi.fn();
+  render(<GroupHighlights thread={thread} userId={42} messages={[{ content: 'Latest unrelated text' }]} busy={false} onInteract={vi.fn()} onQr={vi.fn()} onEdit={vi.fn()} onVoters={voters} />);
+  await screen.findByText('Bình chọn cũ');
+  fireEvent.click(screen.getByRole('button', { name: 'Bình chọn và thông báo nhóm' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Xem người bình chọn' }));
+  expect(voters).toHaveBeenCalledWith(poll);
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+it('loads older important cards with their own cursor and surfaces action failures', async () => {
+  api.read.mockResolvedValueOnce({ items: [poll], nextBeforeMessageId: 3 }).mockResolvedValueOnce({ items: [{ ...poll, messageId: 2, content: 'Bình chọn trước' }], nextBeforeMessageId: null });
+  render(<GroupHighlights thread={thread} userId={42} messages={[]} busy={false} actionError="Bạn không còn quyền bình chọn." onInteract={vi.fn()} onQr={vi.fn()} onEdit={vi.fn()} onVoters={vi.fn()} />);
+  await screen.findByText('Bình chọn cũ');
+  fireEvent.click(screen.getByRole('button', { name: 'Bình chọn và thông báo nhóm' }));
+  expect(screen.getByRole('alert').textContent).toContain('Bạn không còn quyền');
+  fireEvent.click(screen.getByRole('button', { name: 'Xem nội dung trước' }));
+  await waitFor(() => expect(api.read.mock.calls[1][1]).toBe(3));
+  await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(2));
+});
